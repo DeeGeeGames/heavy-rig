@@ -1,3 +1,4 @@
+import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, padLabel, validKey, type Action } from './bindings';
 import { getWeapon } from './arsenal';
 import { getFrame } from './frames';
 import { MOUNTS, rankLabel } from './loadout-ui';
@@ -33,12 +34,6 @@ const inputElement = function (id: string): HTMLInputElement {
 	if (!(value instanceof HTMLInputElement)) throw new Error(`Missing input: ${id}`);
 	return value;
 };
-const bindings = new Map([
-	['KeyW', 'forward'], ['ArrowUp', 'forward'], ['KeyS', 'back'], ['ArrowDown', 'back'],
-	['KeyA', 'left'], ['ArrowLeft', 'left'], ['KeyD', 'right'], ['ArrowRight', 'right'],
-	['KeyX', 'stop'], ['Space', 'mount-0'], ['KeyE', 'mount-1'], ['KeyQ', 'mount-2'], ['KeyF', 'mount-3'], ['KeyV', 'coolant'],
-	['Digit1', 'mount-0'], ['Digit2', 'mount-1'], ['Digit3', 'mount-2'], ['Digit4', 'mount-3'],
-]);
 const formatTime = function (time: number) { return `${Math.floor(time / 60)}:${Math.floor(time % 60).toString().padStart(2, '0')}`; };
 type Screen = ShipScreen | 'title' | 'jump' | 'playing' | 'pause-panel' | 'result' | 'training-result';
 type Auxiliary = 'settings' | 'handbook' | 'confirm' | 'save-conflict';
@@ -106,7 +101,8 @@ const shutdown = await mountGame('game', async function (container) {
 	let lastSoundState = '';
 	const resetInput = function () { keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); padInput.requireNeutral(); void feedback.stop(); };
 	const playing = function () { return screen === 'playing' && !auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
-	const active = function (action: string) { return MOUNTS.some(function (binding) { return binding.action === action && mouseButtons.has(binding.button); }) || [...keys].some(function (code) { return bindings.get(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
+	const keyboardAction = function (code: string) { return ACTIONS.find(function (action) { return profile.settings.keyboard[action].includes(code); }); };
+	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
 	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false }); };
 	const unlockSound = function () { void audio.unlock(); };
 	const updateMenuHint = function () {
@@ -144,7 +140,7 @@ const shutdown = await mountGame('game', async function (container) {
 	};
 	const menu = function () { return auxiliary ? element(auxiliary) : screen === 'playing' ? undefined : element(screen); };
 	const focusable = function (root: HTMLElement) {
-		return [...root.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]')].filter(function (item) { return !item.closest('[hidden], [inert]') && item.getClientRects().length > 0; });
+		return [...root.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), [tabindex="0"]')].filter(function (item) { return !item.closest('[hidden], [inert]') && item.getClientRects().length > 0; });
 	};
 	const syncScreen = function (focus = true) {
 		if (campaignConflict) auxiliary = 'save-conflict';
@@ -211,6 +207,7 @@ const shutdown = await mountGame('game', async function (container) {
 	};
 	const closeAuxiliary = function () {
 		if (campaignConflict) return;
+		capture = undefined; renderMappings();
 		auxiliary = undefined; confirmedAction = undefined; syncScreen(false);
 		if (returnFocus?.isConnected && !returnFocus.closest('[hidden], [inert]')) returnFocus.focus({ preventScroll: true });
 		else syncScreen();
@@ -372,7 +369,36 @@ const shutdown = await mountGame('game', async function (container) {
 	}, listenerOptions);
 	for (const id of ['pause-settings']) listen(id, function () { showAuxiliary('settings'); });
 	for (const id of ['pause-controls']) listen(id, function () { showAuxiliary('handbook'); });
-	listen('close-settings', closeAuxiliary); listen('close-handbook', closeAuxiliary);
+	let capture: Action | undefined;
+	const renderMappings = function () {
+		const root = element('keyboard-mappings'); const focusedAction = root.querySelector('button:focus')?.getAttribute('data-action'); root.replaceChildren();
+		for (const action of ACTIONS) {
+			const button = document.createElement('button'); button.className = 'secondary'; button.type = 'button';
+			button.dataset['action'] = action;
+			button.textContent = `${LABELS[action]}: ${capture === action ? 'PRESS KEY / MOUSE · ESC CANCEL' : profile.settings.keyboard[action].map(keyLabel).join(' / ') || 'Unbound'}`;
+			button.addEventListener('click', function () { capture = action; renderMappings(); }); root.append(button); if (capture === action || focusedAction === action) button.focus();
+		}
+	};
+	const assignKey = function (code: string) {
+		if (!capture) return;
+		for (const action of ACTIONS) profile.settings.keyboard[action] = profile.settings.keyboard[action].filter(function (key) { return key !== code; });
+		profile.settings.keyboard[capture] = [code]; capture = undefined; resetInput(); save(); renderMappings();
+	};
+	element('keyboard-mappings').addEventListener('mousedown', function (event) { if (capture && auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); event.stopPropagation(); consumedMouseButtons.add(event.button); assignKey(`Mouse${event.button}`); } });
+	for (const action of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) {
+		const label = document.createElement('label'); label.textContent = `${LABELS[action]} `;
+		const select = document.createElement('select'); select.dataset['mapping'] = action;
+		for (let index = 1; index <= 17; index++) { if (index === 9) continue; const option = document.createElement('option'); option.value = String(index); option.textContent = padLabel(index); select.append(option); }
+		select.value = String(profile.settings.controller[action]);
+		select.addEventListener('change', function () { const previous = profile.settings.controller[action]; const next = Number(select.value); for (const other of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) if (other !== action && profile.settings.controller[other] === next) profile.settings.controller[other] = previous; profile.settings.controller[action] = next; resetInput(); save(); syncControllerMappings(); });
+		label.append(select); element('controller-mappings').append(label);
+	}
+	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } };
+	listen('reset-keyboard', function () { capture = undefined; profile.settings.keyboard = defaultKeyboard(); resetInput(); save(); renderMappings(); });
+	listen('reset-controller', function () { profile.settings.controller = defaultController(); resetInput(); save(); syncControllerMappings(); });
+	renderMappings();
+	for (const tab of element('settings').querySelectorAll('[data-dialog-tab]')) tab.addEventListener('click', function () { capture = undefined; renderMappings(); });
+	listen('close-settings', function () { capture = undefined; renderMappings(); closeAuxiliary(); }); listen('close-handbook', closeAuxiliary);
 	listen('dismiss-hint', function () { tipDismissed = true; ui.hint.hidden = true; canvas.focus({ preventScroll: true }); });
 	listen('sound', function () {
 		if (audio.status() !== 'running') { muted = false; audio.setMuted(false); unlockSound(); }
@@ -412,6 +438,7 @@ const shutdown = await mountGame('game', async function (container) {
 	};
 	window.addEventListener('keydown', function (event) {
 		setInputMode('keyboard'); if (event.isTrusted) unlockSound();
+		if (capture && auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); if (event.code === 'Escape') { capture = undefined; renderMappings(); } else if (!event.repeat && validKey(event.code)) assignKey(event.code); return; }
 		if (event.code === 'Escape') { event.preventDefault(); if (!event.repeat) back(); return; }
 		const root = menu();
 		if (root && screen === 'title' && !auxiliary && (event.code === 'ArrowUp' || event.code === 'ArrowDown')) {
@@ -428,10 +455,10 @@ const shutdown = await mountGame('game', async function (container) {
 		}
 		if (!playing()) return;
 		if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLInputElement) return;
-		const action = bindings.get(event.code); if (!action) return;
+		const action = keyboardAction(event.code); if (!action) return;
 		event.preventDefault(); if (event.repeat && !keys.has(event.code)) return; keys.add(event.code); if (!event.repeat) pending.add(action);
 	}, listenerOptions);
-	window.addEventListener('keyup', function (event) { const action = bindings.get(event.code); if (action) keys.delete(event.code); }, listenerOptions);
+	window.addEventListener('keyup', function (event) { const action = keyboardAction(event.code); if (action) keys.delete(event.code); }, listenerOptions);
 	container.addEventListener('pointerdown', function (event) { setInputMode(event.pointerType === 'touch' ? 'touch' : 'keyboard'); if (event.isTrusted) unlockSound(); }, listenerOptions);
 	container.addEventListener('click', function (event) {
 		if (!(event.target instanceof Element) || !event.target.closest('button') || !menu()) return;
@@ -466,9 +493,9 @@ const shutdown = await mountGame('game', async function (container) {
 	// Pointerdown only fires for the first mouse button in a chord. Mouse events
 	// report every press/release, so all four mounts remain independent.
 	canvas.addEventListener('mousedown', function (event) {
-		const binding = MOUNTS.find(function (mount) { return mount.button === event.button; });
+		const binding = keyboardAction(`Mouse${event.button}`);
 		if (!binding || !playing()) return;
-		event.preventDefault(); mouseButtons.add(event.button); consumedMouseButtons.add(event.button); pending.add(binding.action);
+		event.preventDefault(); mouseButtons.add(event.button); consumedMouseButtons.add(event.button); pending.add(binding);
 	}, listenerOptions);
 	window.addEventListener('mouseup', function (event) {
 		// Chromium handles side-button history on mouseup, before auxclick.
@@ -496,7 +523,7 @@ const shutdown = await mountGame('game', async function (container) {
 		if (state.mission) { ui.phase.textContent = state.mission.stage === 'extract' ? 'OBJECTIVE COMPLETE / EXTRACT' : MISSION_NAMES[state.mission.contract.kind].toUpperCase(); ui.status.textContent = missionObjective(state); }
 		element('training-guide').hidden = !training || screen !== 'playing';
 		if (training) {
-			const copy = trainingCopy(training, inputMode === 'gamepad');
+			const copy = trainingCopy(training, inputMode === 'gamepad', profile.settings);
 			container.dataset['trainingStage'] = training.stage;
 			ui.phase.textContent = 'WARDEN QUALIFICATION'; ui.status.textContent = 'STANDARD TRAINING FRAME · NO SCORED RECORD';
 			element('training-progress').textContent = `DRILL ${copy.progress}`;
@@ -516,10 +543,10 @@ const shutdown = await mountGame('game', async function (container) {
 			button.disabled = !mount || Boolean(training && training.stage !== 'combined' && index !== drillSlot);
 			const firing = Boolean(mount && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index]));
 			button.classList.toggle('empty', !mount); button.classList.toggle('firing', firing); button.classList.toggle('locked', p.overheated);
-			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${binding.mouse} mouse or hold ${binding.key}; controller ${binding.pad}.` : `Mount ${index + 1} empty. Equip purchased weapons in the Mech Bay.`);
+			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${padLabel(profile.settings.controller[binding.action])}.` : `Mount ${index + 1} empty. Equip purchased weapons in the Mech Bay.`);
 			const title = button.querySelector('b'); if (title) title.textContent = mount && weapon ? weapon.name : 'EMPTY';
 			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}${mount ? ` · ${rankLabel(mount.level)}` : ''}`;
-			const prompt = button.querySelector('kbd'); if (prompt) prompt.textContent = inputMode === 'gamepad' ? binding.pad : inputMode === 'touch' ? `HOLD ${index + 1}` : `${binding.mouse} / ${binding.key}`;
+			const prompt = button.querySelector('kbd'); if (prompt) prompt.textContent = inputMode === 'gamepad' ? padLabel(profile.settings.controller[binding.action]) : inputMode === 'touch' ? `HOLD ${index + 1}` : profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'UNBOUND';
 			const label = button.querySelector('em'); if (label) label.textContent = !mount ? 'NOT FITTED' : button.disabled ? 'DRILL LOCK' : p.overheated ? 'HEAT LOCK' : firing ? 'FIRING' : mount.cooldown > 0 ? `${mount.cooldown.toFixed(1)}s` : 'READY';
 			const fill = button.querySelector('i'); if (fill) fill.style.width = `${mount && weapon ? Math.max(0, 1 - mount.cooldown / Math.max(.01, weapon.interval)) * 100 : 0}%`;
 			button.style.setProperty('--weapon-color', weapon?.color ?? 'var(--muted)');
@@ -528,7 +555,8 @@ const shutdown = await mountGame('game', async function (container) {
 		ui.coolant.textContent = `${state.coolantCharges} ${state.coolantCharges === 1 ? 'CHARGE' : 'CHARGES'}`;
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE STICKS AND TRIGGERS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
 		ui.hint.hidden = tipDismissed || state.time > 35 || screen !== 'playing';
-		ui.hintCopy.textContent = inputMode === 'gamepad' ? 'Left stick sets throttle; X / □ stops. Right stick aims. RT / LT / RB / LB combine fire; B / ○ vents.' : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Tap the field to aim. Hold + to move; STOP sets neutral. Hold a weapon to fire.' : state.time < 14 ? 'W / S set throttle. Release to cruise. X sets neutral; A / D steer.' : 'Hold left / right / middle / thumb to combine mounts. Hold 1–4 also fires. V vents coolant.';
+		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) coolantPrompt.textContent = inputMode === 'gamepad' ? padLabel(profile.settings.controller.coolant) : profile.settings.keyboard.coolant.map(keyLabel).join(' / ') || 'UNBOUND';
+		ui.hintCopy.textContent = inputMode === 'gamepad' ? `Left stick sets throttle; ${padLabel(profile.settings.controller.stop)} stops. Right stick aims. See weapon buttons for fire mappings; ${padLabel(profile.settings.controller.coolant)} vents.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Tap the field to aim. Hold + to move; STOP sets neutral. Hold a weapon to fire.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
 		const soundState = audioState === 'unavailable' ? 'UNAVAILABLE' : needsGesture ? 'ENABLE SOUND' : muted ? 'SOUND OFF' : 'SOUND ON';
 		if (lastSoundState !== soundState) { lastSoundState = soundState; ui.sound.textContent = soundState; ui.sound.setAttribute('aria-label', needsGesture ? 'Click to enable audio' : audioState === 'unavailable' ? 'Retry audio' : muted ? 'Unmute sound' : 'Mute sound'); ui.sound.setAttribute('aria-pressed', String(muted)); }
@@ -551,7 +579,7 @@ const shutdown = await mountGame('game', async function (container) {
 		let pads: readonly (Gamepad | null)[] = [];
 		try { pads = navigator.getGamepads?.() ?? []; } catch { /* Gamepad access can be restricted by an embedding policy. */ }
 		if (!focused || document.hidden || contextLost) padInput.suspend();
-		const pad = padInput.read(pads, now);
+		const pad = padInput.read(pads, now, profile.settings.controller);
 		currentPad = pad;
 		if (pad.lost) { controllerLost = true; setPaused(true); }
 		feedback.update(pads.find(function (candidate) { return candidate?.index === pad.index; }) ?? undefined, playing() && profile.settings.vibration && inputMode === 'gamepad');
@@ -565,7 +593,8 @@ const shutdown = await mountGame('game', async function (container) {
 		if (root && pad.connected && screenRevision === revisionAtFrame && focused && !document.hidden && !contextLost) {
 			if (pad.navigate) {
 				const focusedElement = document.activeElement;
-				if (pad.adjust && focusedElement instanceof HTMLInputElement && focusedElement.type === 'range') {
+				if (pad.adjust && focusedElement instanceof HTMLSelectElement) { focusedElement.selectedIndex = (focusedElement.selectedIndex + pad.adjust + focusedElement.options.length) % focusedElement.options.length; focusedElement.dispatchEvent(new Event('change', { bubbles: true }));
+				} else if (pad.adjust && focusedElement instanceof HTMLInputElement && focusedElement.type === 'range') {
 					focusedElement.value = String(Math.max(Number(focusedElement.min), Math.min(Number(focusedElement.max), Number(focusedElement.value) + pad.adjust * 5)));
 					focusedElement.dispatchEvent(new Event('input', { bubbles: true }));
 				} else {

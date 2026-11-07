@@ -1,3 +1,4 @@
+import { defaultKeyboard, defaultController, keyLabel, padLabel, type KeyboardBindings, type ControllerBindings } from './bindings';
 import { createMount } from './arsenal';
 import { angleDelta, createState, distance, step, type Controls, type Point, type State } from './simulation';
 
@@ -87,17 +88,18 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 	state.outcome = 'playing'; state.phase = 'combat';
 };
 
-export const trainingCopy = function (training: Training, controller: boolean): { title: string; instruction: string; progress: string } {
+export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
+	const key = function (action: keyof KeyboardBindings) { return mappings.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
 	const controls = controller
-		? { drive: 'Push the left stick up', stop: 'Hold X / □', steer: 'Move the left stick left or right', aim: 'Aim with the right stick', cannon: 'RT', missile: 'RB', laser: 'LT', coolant: 'B / ○' }
-		: { drive: 'Hold W / ↑ or the + control', stop: 'Hold X or STOP', steer: 'Hold A / D or a turn arrow', aim: 'Point at the target', cannon: '1 / Space / AC/38', missile: '3 / Q / TRIDENT', laser: '2 / E / ARC', coolant: 'V / VENT COOLANT' };
+		? { drive: 'Push the left stick up', stop: `Hold ${padLabel(mappings.controller.stop)}`, steer: 'Move the left stick left or right', aim: 'Aim with the right stick', cannon: padLabel(mappings.controller['mount-0']), missile: padLabel(mappings.controller['mount-2']), laser: padLabel(mappings.controller['mount-1']), coolant: padLabel(mappings.controller.coolant) }
+		: { drive: `Hold ${key('forward')} or +`, stop: `Hold ${key('stop')} or STOP`, steer: `Hold ${key('left')} / ${key('right')} or a turn arrow`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-1'), coolant: key('coolant') };
 	const copy: Record<TrainingStage, [string, string]> = {
 		drive: ['SET THE FRAME IN MOTION', `${controls.drive} to raise throttle. Release it to cruise. Travel 100 meters.`],
 		neutral: ['BRING IT TO NEUTRAL', `${controls.stop} until the frame settles. Neutral cuts engine demand; eighty tons still need time to stop.`],
 		steer: ['TURN THE HULL', `${controls.steer}. The hull and your turret turn independently.`],
 		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; fire ${controls.cannon}. The turret needs a moment to track your aim.`],
 		missiles: ['GUIDED FIRE', `${controls.aim}; fire ${controls.missile}. Trident follows a locked target.`],
-		combined: ['COMBINE YOUR FIRE', controller ? 'Hold any two of RT, LT, RB and LB together for a moment. All four mounts can fire at once, but share reactor heat.' : 'Hold any two weapon buttons together for a moment: mouse left/right/middle/thumb, keys 1–4, or two on-screen mounts. All four can fire at once.'],
+		combined: ['COMBINE YOUR FIRE', 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. All four mounts share reactor heat.'],
 		heat: ['FEEL THE REACTOR', `Hold ${controls.laser} to build heat to 45%. Every weapon heats the same reactor.`],
 		coolant: ['VENT THE HEAT', `Press ${controls.coolant}. One charge purges 55 heat. At 100% heat, weapons lock until the reactor cools.`],
 		evade: ['CLEAR THE IMPACT ZONE', `Frame reset to the practice lane. ${controls.drive} when the orange circle appears. Leave it before impact; the strike stays where marked.`],
