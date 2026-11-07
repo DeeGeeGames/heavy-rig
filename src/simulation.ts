@@ -1,30 +1,29 @@
-import { createMount, DRAFT_MILESTONES, getWeapon, MAX_WEAPON_LEVEL, WEAPONS, weaponDamage, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
+import { createMount, getWeapon, weaponDamage, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
 import { getFrame, type FrameId } from './frames';
-import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty, type RefitChoice } from './operation';
+import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, FACILITY_TARGET_ID, generateMissionMap, missionHostileCount, missionSpawn } from './missions';
 
 export interface Point { x: number; y: number }
 export type EnemyKind = 'scout' | 'striker' | 'siege';
-export type CombatEvent = 'artillery' | 'refit' | 'requisition' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'pickup' | 'coolant' | 'overheat' | 'defeat' | 'victory';
+export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
 export interface Unit extends Point { id: number; hp: number; maxHp: number; angle: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean }
 export interface Shot extends Point { vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[] }
 export interface Effect extends Point { life: number; size: number; color: string; source?: 'muzzle' }
-export interface Salvage extends Point { id: number; kind: 'repair' | 'coolant'; life: number }
 export interface Warning extends Point { kind: EnemyKind; life: number; commander?: boolean }
 export interface ArtilleryStrike extends Point { id: number; life: number; duration: number; radius: number; damage: number }
-export interface CombatStats { damageDealt: number; damageTaken: number; relayDamage: number; shotsFired: number; shotsHit: number; salvageRecovered: number; overheats: number; killScore: number; commanderDestroyed: boolean }
+export interface CombatStats { damageDealt: number; damageTaken: number; relayDamage: number; shotsFired: number; shotsHit: number; overheats: number; killScore: number; commanderDestroyed: boolean }
 export interface Wreck extends Point { kind: EnemyKind; angle: number }
 export interface Controls { drive: number; stop: boolean; turn: number; aim: Point; fire: FireInputs; coolant: boolean }
 export interface State {
 	mission?: MissionRuntime;
-	frame: FrameId; difficulty: Difficulty; phase: 'combat' | 'refit' | 'requisition'; loadout: WeaponMount[]; draftCount: number; offers: WeaponId[]; seed: number; draftsEnabled: boolean; upgrades: Record<RefitChoice, number>; stats: CombatStats; strikes: ArtilleryStrike[];
+	frame: FrameId; difficulty: Difficulty; phase: 'combat'; loadout: WeaponMount[]; seed: number; stats: CombatStats; strikes: ArtilleryStrike[];
 	player: Point & { angle: number; turret: number; throttle: number; speed: number; hp: number; heat: number; overheated: boolean };
 	relay: number; enemies: Unit[]; shots: Shot[]; effects: Effect[]; wave: number; spawned: number; spawnIn: number;
 	intermission: number; cannonIn: number; time: number; kills: number; shake: number;
 	beam: Point | undefined; outcome: 'playing' | 'won' | 'lost'; nextId: number;
-	coolantCharges: number; coolantHeld: boolean; salvage: Salvage[]; warnings: Warning[]; wrecks: Wreck[]; events: CombatEvent[];
+	coolantCharges: number; coolantHeld: boolean; warnings: Warning[]; wrecks: Wreck[]; events: CombatEvent[];
 }
 export const ARENA = { width: 1800, height: 1200, relayX: 900, relayY: 600 };
 interface EnemyStats { hp: number; speed: number; range: number; reload: number; damage: number; aggro: number }
@@ -33,8 +32,21 @@ export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
 	striker: { hp: 76, speed: 44, range: 240, reload: 2.5, damage: 7, aggro: 440 },
 	siege: { hp: 125, speed: 28, range: 550, reload: 1.8, damage: 10, aggro: 650 },
 };
-export const createMissionState = function (contract: Contract, options: { difficulty?: Difficulty; frame?: FrameId } = {}): State {
-	const state = createState({ ...options, seed: contract.seed });
+export interface MissionDeployment {
+	difficulty?: Difficulty;
+	frame?: FrameId;
+	loadout?: readonly (WeaponId | null)[];
+	integrity?: number;
+	coolantCharges?: number;
+}
+export const createMissionState = function (contract: Contract, options: MissionDeployment = {}): State {
+	const state = createState({ ...options, frame: options.frame ?? 'kestrel', seed: contract.seed });
+	if (options.loadout !== undefined) state.loadout = options.loadout.slice(0, 4).flatMap(function (weapon, slot) {
+		return weapon === null ? [] : [{ ...createMount(weapon), slot }];
+	});
+	state.player.hp = options.integrity === undefined ? 100 : Number.isFinite(options.integrity) ? Math.max(0, Math.min(100, options.integrity)) : 0;
+	if (state.player.hp === 0) state.outcome = 'lost';
+	state.coolantCharges = options.coolantCharges === undefined ? 2 : Number.isFinite(options.coolantCharges) ? Math.max(0, Math.min(3, Math.floor(options.coolantCharges))) : 0;
 	const map = generateMissionMap(contract);
 	const hostileCount = missionHostileCount(contract);
 	const structureHp = (350 + Math.max(1, Math.min(3, contract.tier)) * 100) * getDifficultyDefinition(state.difficulty).enemyArmor;
@@ -77,12 +89,12 @@ const clamp = function (value: number, min: number, max: number) { return Math.m
 export const createState = function (options: { difficulty?: Difficulty; frame?: FrameId; starter?: WeaponId; seed?: number } = {}): State {
 	const frame = getFrame(options.frame ?? 'warden');
 	return {
-		frame: frame.id, difficulty: options.difficulty ?? 'standard', phase: 'combat', loadout: [createMount(options.starter ?? frame.starter)], draftCount: 0, offers: [], seed: options.seed ?? 1, draftsEnabled: true, upgrades: { arsenal: 0, cooling: 0, bastion: 0 }, strikes: [],
-		stats: { damageDealt: 0, damageTaken: 0, relayDamage: 0, shotsFired: 0, shotsHit: 0, salvageRecovered: 0, overheats: 0, killScore: 0, commanderDestroyed: false },
+		frame: frame.id, difficulty: options.difficulty ?? 'standard', phase: 'combat', loadout: [createMount(options.starter ?? frame.starter)], seed: options.seed ?? 1, strikes: [],
+		stats: { damageDealt: 0, damageTaken: 0, relayDamage: 0, shotsFired: 0, shotsHit: 0, overheats: 0, killScore: 0, commanderDestroyed: false },
 		player: { x: 900, y: 780, angle: -Math.PI / 2, turret: -Math.PI / 2, throttle: 0, speed: 0, hp: 100, heat: 0, overheated: false },
 		relay: 100, enemies: [], shots: [], effects: [], wave: 1, spawned: 0, spawnIn: 4, intermission: 0,
 		cannonIn: 0, time: 0, kills: 0, shake: 0, beam: undefined, outcome: 'playing', nextId: 1,
-		coolantCharges: 2, coolantHeld: false, salvage: [], warnings: [], wrecks: [], events: [],
+		coolantCharges: 2, coolantHeld: false, warnings: [], wrecks: [], events: [],
 	};
 };
 const burst = function (state: State, at: Point, size: number, color: string, source?: 'muzzle') { state.effects.push({ x: at.x, y: at.y, size, color, life: 0.5, ...(source ? { source } : {}) }); };
@@ -95,49 +107,8 @@ const launchWeapon = function (state: State, weapon: WeaponDefinition, mount: We
 	state.stats.shotsFired++;
 	state.shots.push({ x: p.x + Math.cos(angle) * 30, y: p.y + Math.sin(angle) * 30,
 		vx: Math.cos(angle) * weapon.speed, vy: Math.sin(angle) * weapon.speed, life: weapon.range / weapon.speed,
-		kind: weapon.kind, target, damage: weaponDamage(weapon, mount.level) * (1 + state.upgrades.arsenal * 0.15),
+		kind: weapon.kind, target, damage: weaponDamage(weapon, mount.level),
 		...(weapon.splash > 0 ? { splash: weapon.splash } : {}), ...(weapon.kind === 'ppc' ? { hitIds: [] } : {}) });
-};
-const random = function (state: State) {
-	state.seed = (Math.imul(state.seed, 1664525) + 1013904223) >>> 0;
-	return state.seed / 4294967296;
-};
-const prepareRequisition = function (state: State): boolean {
-	const threshold = DRAFT_MILESTONES[state.draftCount];
-	if (!state.draftsEnabled || threshold === undefined || state.kills < threshold || state.outcome !== 'playing') return false;
-	const unowned = WEAPONS.filter(function (weapon) { return !state.loadout.some(function (mount) { return mount.weapon === weapon.id; }); }).map(function (weapon) { return weapon.id; });
-	const upgrades = state.loadout.filter(function (mount) { return mount.level < MAX_WEAPON_LEVEL; }).map(function (mount) { return mount.weapon; });
-	const candidates = state.loadout.length < 4 ? unowned : [...unowned, ...upgrades];
-	const offers: WeaponId[] = [];
-	if (state.loadout.length === 4 && upgrades.length > 0) {
-		const guaranteed = upgrades[Math.floor(random(state) * upgrades.length)];
-		if (guaranteed) offers.push(guaranteed);
-	}
-	while (offers.length < 3 && candidates.length > 0) {
-		const index = Math.floor(random(state) * candidates.length);
-		const candidate = candidates.splice(index, 1)[0];
-		if (candidate && !offers.includes(candidate)) offers.push(candidate);
-	}
-	state.offers = offers; state.phase = 'requisition'; state.beam = undefined;
-	for (const mount of state.loadout) mount.firing = false;
-	state.events.push('requisition');
-	return true;
-};
-export const chooseWeapon = function (state: State, weapon: WeaponId, replaceSlot?: number): boolean {
-	if (state.phase !== 'requisition' || state.outcome !== 'playing' || !state.offers.includes(weapon)) return false;
-	const installed = state.loadout.find(function (mount) { return mount.weapon === weapon; });
-	if (installed) {
-		if (installed.level >= MAX_WEAPON_LEVEL) return false;
-		installed.level++; installed.cooldown = 0;
-	} else if (state.loadout.length < 4) state.loadout.push(createMount(weapon));
-	else {
-		if (replaceSlot === undefined || !Number.isInteger(replaceSlot) || replaceSlot < 0 || replaceSlot >= state.loadout.length) return false;
-		state.loadout[replaceSlot] = createMount(weapon);
-	}
-	state.draftCount++; state.offers = []; state.phase = 'combat'; state.events = ['refit'];
-	// A multi-kill can earn several choices. Resolve each before time resumes.
-	prepareRequisition(state);
-	return true;
 };
 // Return the earliest entry into a circle along a finite movement segment.
 const hitFraction = function (from: Point, to: Point, target: Point, radius: number): number | undefined {
@@ -177,7 +148,7 @@ const hurtTarget = function (state: State, target: CombatTarget, damage: number,
 	if (structure.hp === 0) { burst(state, structure, 180, '#ffab62'); state.events.push('explosion'); state.stats.killScore += 1000; }
 };
 const hurtPlayer = function (state: State, damage: number) {
-	const resisted = damage * getFrame(state.frame).incomingDamage * Math.max(0.6, 1 - state.upgrades.bastion * 0.1);
+	const resisted = damage * getFrame(state.frame).incomingDamage;
 	if (resisted > 0 && state.player.hp > 0) state.events.push('player-hit');
 	state.stats.damageTaken += Math.min(state.player.hp, resisted);
 	state.player.hp = Math.max(0, state.player.hp - resisted);
@@ -212,21 +183,6 @@ const commitBarrage = function (state: State, enemy: Unit, target: Point) {
 	enemy.attack = { phase: 'committed', remaining: duration + (pulses - 1) * 0.7, cycle: enraged ? 2 : 1 };
 	state.events.push('artillery');
 };
-export const applyRefit = function (state: State, choice: RefitChoice): boolean {
-	if (state.mission || state.outcome !== 'playing' || state.phase !== 'refit' || state.wave >= WAVES.length) return false;
-	state.upgrades[choice]++;
-	state.player.hp = Math.min(100, state.player.hp + 25);
-	state.player.heat = 0; state.player.overheated = false;
-	state.player.throttle = 0; state.player.speed = 0;
-	state.coolantCharges = Math.min(3, state.coolantCharges + (choice === 'cooling' ? 2 : 1));
-	if (choice === 'bastion') state.relay = Math.min(100, state.relay + 12);
-	state.coolantHeld = false;
-	state.cannonIn = 0;
-	for (const mount of state.loadout) { mount.cooldown = 0; mount.firing = false; }
-	state.wave++; state.spawned = 0; state.spawnIn = 4; state.intermission = 0; state.phase = 'combat';
-	state.events = ['wave'];
-	return true;
-};
 export interface OperationReport {
 	score: number;
 	rank: 'S' | 'A' | 'B' | 'C' | 'D';
@@ -238,7 +194,6 @@ export interface OperationReport {
 	damageDealt: number;
 	damageTaken: number;
 	relayDamage: number;
-	salvageRecovered: number;
 	overheats: number;
 	commanderDestroyed: boolean;
 }
@@ -247,7 +202,7 @@ export const getOperationReport = function (state: State): OperationReport {
 	const completion = won ? 2000 + state.relay * 30 + state.player.hp * 10 + Math.max(0, 600 - state.time) * 4 : 0;
 	const score = Math.floor((state.stats.killScore + completion) * getDifficultyDefinition(state.difficulty).scoreMultiplier);
 	const rank = !won ? 'D' : state.relay >= 80 && state.player.hp >= 60 && state.stats.overheats <= 3 ? 'S' : state.relay >= 60 && state.player.hp >= 35 ? 'A' : state.relay >= 40 ? 'B' : 'C';
-	return { score, rank, kills: state.kills, time: state.time, relay: Math.ceil(state.relay), armor: Math.ceil(state.player.hp), accuracy: state.stats.shotsFired > 0 ? Math.round(state.stats.shotsHit / state.stats.shotsFired * 100) : 0, damageDealt: Math.round(state.stats.damageDealt), damageTaken: Math.round(state.stats.damageTaken), relayDamage: Math.round(state.stats.relayDamage), salvageRecovered: state.stats.salvageRecovered, overheats: state.stats.overheats, commanderDestroyed: state.stats.commanderDestroyed };
+	return { score, rank, kills: state.kills, time: state.time, relay: Math.ceil(state.relay), armor: Math.ceil(state.player.hp), accuracy: state.stats.shotsFired > 0 ? Math.round(state.stats.shotsHit / state.stats.shotsFired * 100) : 0, damageDealt: Math.round(state.stats.damageDealt), damageTaken: Math.round(state.stats.damageTaken), relayDamage: Math.round(state.stats.relayDamage), overheats: state.stats.overheats, commanderDestroyed: state.stats.commanderDestroyed };
 };
 export const step = function (state: State, input: Controls, dt: number) {
 	state.events = [];
@@ -264,7 +219,7 @@ export const step = function (state: State, input: Controls, dt: number) {
 	state.cannonIn = Math.max(0, state.cannonIn - dt);
 	for (const mount of state.loadout) { mount.cooldown = Math.max(0, mount.cooldown - dt); mount.firing = false; }
 	state.shake = Math.max(0, state.shake - dt * 15);
-	p.heat = Math.max(0, p.heat - dt * frame.cooling * (1 + state.upgrades.cooling * 0.18));
+	p.heat = Math.max(0, p.heat - dt * frame.cooling);
 	if (input.coolant && !state.coolantHeld && state.coolantCharges > 0 && p.heat > 0) {
 		state.coolantCharges--; p.heat = Math.max(0, p.heat - 55);
 		state.events.push('coolant'); burst(state, p, 80, '#93e9e1');
@@ -281,7 +236,7 @@ export const step = function (state: State, input: Controls, dt: number) {
 	p.turret += clamp(angleDelta(p.turret, aimAngle), -dt * frame.turretRate, dt * frame.turretRate);
 	state.beam = undefined;
 	if (!p.overheated) state.loadout.forEach(function (mount, index) {
-		if (!input.fire[index]) return;
+		if (!input.fire[mount.slot ?? index]) return;
 		const weapon = getWeapon(mount.weapon);
 		if (weapon.kind === 'laser') {
 			const hit = combatTargets(state).map(function (target) {
@@ -290,7 +245,7 @@ export const step = function (state: State, input: Controls, dt: number) {
 			}).filter(function (candidate) { return candidate.along > 0 && candidate.along < weapon.range && candidate.across < (candidate.target.kind === 'enemy' ? 24 : candidate.target.radius); }).sort(function (a, b) { return a.along - b.along; })[0];
 			const length = hit?.along ?? weapon.range;
 			state.beam = { x: p.x + Math.cos(p.turret) * length, y: p.y + Math.sin(p.turret) * length };
-			if (hit) hurtTarget(state, hit.target, weaponDamage(weapon, mount.level) * dt * (1 + state.upgrades.arsenal * 0.15), p);
+			if (hit) hurtTarget(state, hit.target, weaponDamage(weapon, mount.level) * dt, p);
 			p.heat += weapon.heat * dt; mount.firing = true;
 			return;
 		}
@@ -409,40 +364,29 @@ export const step = function (state: State, input: Controls, dt: number) {
 		if (enemy.commander) state.stats.commanderDestroyed = true;
 		burst(state, enemy, 65, '#ffab62'); state.events.push('explosion');
 		state.wrecks.push({ x: enemy.x, y: enemy.y, angle: enemy.angle, kind: enemy.kind });
-		if (state.kills % 2 === 0) state.salvage.push({ id: state.nextId++, x: enemy.x, y: enemy.y, kind: state.kills % 4 === 0 ? 'coolant' : 'repair', life: 45 });
 	}
 	state.enemies = state.enemies.filter(function (enemy) { return enemy.hp > 0; });
 	state.effects = state.effects.filter(function (effect) { effect.life -= dt; return effect.life > 0; });
-	state.salvage = state.salvage.filter(function (salvage) {
-		salvage.life -= dt;
-		if (salvage.life <= 0) return false;
-		if (p.hp <= 0 || distance(salvage, p) > 55 || (salvage.kind === 'repair' ? p.hp >= 100 : state.coolantCharges >= 3)) return true;
-		if (salvage.kind === 'repair') p.hp = Math.min(100, p.hp + 22);
-		else state.coolantCharges = Math.min(3, state.coolantCharges + 1);
-		state.stats.salvageRecovered++; state.events.push('pickup'); burst(state, p, 55, '#93e9e1'); return false;
-	});
 	if (p.hp <= 0 || relay && state.relay <= 0) { state.outcome = 'lost'; state.events.push('defeat'); }
 	else if (mission) {
 		mission.progress = mission.contract.kind === 'demolition' ? Number(mission.structure?.hp === 0)
 			: mission.contract.kind === 'assassination' ? Number(mission.targetId !== undefined && !state.enemies.some(function (enemy) { return enemy.id === mission.targetId; })) : state.kills;
 		if (mission.stage === 'active' && mission.progress >= mission.required && (mission.contract.kind !== 'defend' || state.spawned === quota && state.warnings.length === 0)) {
 			mission.stage = 'extract'; mission.extractTime = 0;
-			burst(state, mission.map.extraction, 180, '#93e9e1'); state.events.push('pickup');
+			burst(state, mission.map.extraction, 180, '#93e9e1'); state.events.push('objective-complete');
 		}
 		if (mission.stage === 'extract') {
 			mission.extractTime = distance(p, mission.map.extraction) <= EXTRACTION_RADIUS ? mission.extractTime + dt : 0;
 			if (mission.extractTime >= EXTRACTION_SECONDS) { state.outcome = 'won'; state.events.push('victory'); }
 		}
-		if (state.outcome === 'playing') prepareRequisition(state);
 	}
-	else if (prepareRequisition(state)) { /* Requisitions freeze incoming ordnance and preserve momentum. */ }
 	else if (state.spawned === quota && state.enemies.length === 0 && state.warnings.length === 0 && state.strikes.length === 0 && !state.shots.some(function (shot) { return shot.kind === 'enemy'; })) {
 		state.intermission += dt;
 		if (state.intermission >= 4) {
 			if (state.wave === WAVES.length) { state.outcome = 'won'; state.events.push('victory'); }
 			else {
-				state.phase = 'refit'; p.throttle = 0; p.speed = 0; state.beam = undefined;
-				state.shots = []; state.effects = []; state.shake = 0; state.events.push('refit');
+				state.wave++; state.spawned = 0; state.spawnIn = 4; state.intermission = 0;
+				state.events.push('wave');
 			}
 		}
 	}

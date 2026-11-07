@@ -1,6 +1,9 @@
 import { html, render } from 'lit-html';
 import { canAcceptContract, FACTIONS, getContracts, getFaction, getPlanet, PLANETS, reputationLabel, travelTo, type Campaign } from './campaign';
 import type { Contract, MissionKind, PlanetId } from './campaign-types';
+import { getOwnedMech, workOrderFor } from './company';
+import { renderShipHeader, type ShipScreen } from './company-ui';
+import { getFrame } from './frames';
 
 export const MISSION_NAMES: Readonly<Record<MissionKind, string>> = {
 	defend: 'Garrison defense', demolition: 'Facility demolition', assassination: 'Priority target', clearance: 'Area clearance',
@@ -21,23 +24,22 @@ export interface BridgeActions {
 	deploy: () => void;
 	abandon: () => void;
 	training: () => void;
-	legacy: () => void;
+	navigate: (screen: ShipScreen) => void;
 	settings: () => void;
 	handbook: () => void;
 }
 
 export const renderBridge = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, selection: string | undefined, saved: boolean, actions: BridgeActions) {
 	const planet = getPlanet(destination);
-	const current = getPlanet(campaign.planetId);
 	const contracts = getContracts(destination === campaign.planetId ? campaign : travelTo(campaign, destination), destination);
 	const selected = campaign.active ?? contracts.find(function (contract) { return contract.id === selection; }) ?? contracts.find(function (contract) { return canAcceptContract(campaign, contract); }) ?? contracts[0];
 	const local = destination === campaign.planetId;
 	const active = campaign.active;
+	const mech = getOwnedMech(campaign);
+	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	render(html`
-		<header class="bridge-header">
-			<div class="bridge-brand"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow">HEAVY RIG / FRONTIER COMPANY</span><h1>WAYFARER<span>COMMAND BRIDGE</span></h1></div></div>
-			<div class="career-stats"><div><small>IN ORBIT</small><b>${current.name}</b></div><div><small>CAREER EARNINGS</small><b>${campaign.credits.toLocaleString()} <em>CR</em></b></div><div><small>CONTRACTS CLEARED</small><b>${String(campaign.completed).padStart(2, '0')}</b></div></div>
-		</header>
+		${renderShipHeader(campaign, 'bridge', actions.navigate)}
+		<div class="company-readiness"><div><span class="eyebrow">SELECTED FRAME</span><b>${mech ? getFrame(mech.frameId).name : 'NO FRAME'} <small>${mech ? `${Math.ceil(mech.integrity)}% INTEGRITY` : ''}</small></b></div><p>${order ? `In Engineering until day ${order.readyDay}. Advance time or choose another frame.` : mech && mech.integrity <= 0 ? 'Frame disabled. Schedule repairs in Engineering before deployment.' : mech && !mech.loadout.some(function (weapon) { return weapon !== null; }) ? 'Frame unarmed. Fit a purchased weapon in the Mech Bay before deployment.' : 'Your company starts with a Kestrel. Earn credits from contracts to buy weapons and additional frames.'}</p><button class="secondary" @click=${function () { actions.navigate(order || mech && mech.integrity <= 0 ? 'engineering' : 'mechbay'); }}>${order || mech && mech.integrity <= 0 ? 'VIEW ENGINEERING' : 'MANAGE MECH BAY'} →</button></div>
 		<div class="bridge-layout">
 			<section class="navigation-panel" aria-labelledby="navigation-title">
 				<div class="bridge-section-title"><span class="eyebrow">01 / NAVIGATION</span><span>DAY ${String(campaign.day).padStart(2, '0')}</span></div>
@@ -53,25 +55,25 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			<section class="contract-board" aria-labelledby="contracts-title">
 				<div class="bridge-section-title"><span class="eyebrow">02 / CONTRACT EXCHANGE</span><span>${local ? 'LOCAL UPLINK' : 'REMOTE INTELLIGENCE'}</span></div>
 				<h2 id="contracts-title">${active ? 'CONTRACT ACCEPTED.' : 'CHOOSE YOUR WORK.'}</h2>
-				<p class="bridge-description">${active ? 'Your dropship is standing by. Select a frame and deploy to the surface.' : `Current postings on ${planet.name}. Review the opposing faction before you commit.`}</p>
+				<p class="bridge-description">${active ? 'Your dropship is standing by. Review your owned frame and installed equipment before deployment.' : `Current postings on ${planet.name}. Review the opposing faction before you commit.`}</p>
 				<div class="contract-list">${(active ? [active] : contracts).map(function (contract) {
 					const employer = getFaction(contract.employer); const locked = campaign.reputation[contract.employer] < contract.requiredReputation;
-					return html`<button class="contract-card" aria-pressed=${contract.id === selected?.id} @click=${function () { actions.selectContract(contract.id); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]} <em>TIER ${contract.tier}</em></span><b>${contract.title}</b><span class="contract-employer" style="color:${employer.color}">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED · READY TO DROP' : locked ? `REQUIRES ${signed(contract.requiredReputation)} REPUTATION` : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
+					return html`<button class="contract-card" aria-pressed=${contract.id === selected?.id} @click=${function () { actions.selectContract(contract.id); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]} <em>TIER ${contract.tier}</em></span><b>${contract.title}</b><span class="contract-employer" style="color:${employer.color}">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED · PREPARE IN MECH BAY' : locked ? `REQUIRES ${signed(contract.requiredReputation)} REPUTATION` : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
 				})}</div>
-				${active ? html`<div class="accepted-note"><b>ACCEPTANCE RECORDED</b><p>${getFaction(active.opponent).name}: −${active.hostility} reputation already applied. Reloading lets you relaunch this same sortie without a second penalty.</p></div>` : html`<p class="board-note">Postings change after a contract or jump. Favor unlocks higher-tier work and better rates; entry contracts stay available.</p>`}
+				${active ? html`<div class="accepted-note"><b>ACCEPTANCE RECORDED</b><p>${getFaction(active.opponent).name}: −${active.hostility} reputation already applied. You can prepare your company before deployment. Leaving or reloading a deployed sortie records an abort and retains its damage.</p></div>` : html`<p class="board-note">Postings change after a contract or jump. Favor unlocks higher-tier work and better rates; entry contracts stay available.</p>`}
 			</section>
 			<aside class="contract-dossier" aria-label="Contract briefing">${selected ? html`
 				<div class="bridge-section-title"><span class="eyebrow">03 / DROP BRIEFING</span><span>${active ? 'COMMITTED' : 'REVIEW'}</span></div>
 				<div class="contract-symbol" aria-hidden="true">${selected.kind === 'defend' ? '◈' : selected.kind === 'demolition' ? '▥' : selected.kind === 'assassination' ? '⌖' : '⊞'}</div>
 				<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span>
 				<h2>${selected.title}</h2><p class="contract-briefing">${selected.briefing}</p>
-				<div class="objective-brief"><span class="eyebrow">SURFACE OBJECTIVE</span><p>${OBJECTIVES[selected.kind]}</p><small>Bounded, generated battlefield · fresh frame & arsenal</small></div>
+				<div class="objective-brief"><span class="eyebrow">SURFACE OBJECTIVE</span><p>${OBJECTIVES[selected.kind]}</p><small>Persistent frame damage · installed company loadout</small></div>
 				<dl class="reputation-stakes"><dt>EMPLOYER</dt><dd>${getFaction(selected.employer).name}<strong class="positive">+${selected.favor} on success</strong></dd><dt>OPPOSITION</dt><dd>${getFaction(selected.opponent).name}<strong class="negative">−${selected.hostility} ${active ? 'applied on acceptance' : 'on acceptance'}</strong></dd><dt>PAYMENT</dt><dd>${selected.reward.toLocaleString()} CR <small>after extraction</small></dd></dl>
-				${active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>CHOOSE FRAME & DROP <span>↘</span></button><button class="text-button" @click=${actions.abandon}>ABORT CONTRACT</button>` : html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canAcceptContract(campaign, selected)} @click=${function () { actions.accept(selected); }}>${!local ? 'TRAVEL HERE TO ACCEPT' : campaign.reputation[selected.employer] < selected.requiredReputation ? `NEEDS ${signed(selected.requiredReputation)} EMPLOYER REP` : 'ACCEPT CONTRACT'}<span>→</span></button><p class="accept-warning">Acceptance immediately changes faction standing. Failure or abort keeps the opposition penalty.</p>`}
+				${active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE IN MECH BAY <span>↘</span></button><button class="text-button" @click=${actions.abandon}>ABORT CONTRACT</button>` : html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canAcceptContract(campaign, selected)} @click=${function () { actions.accept(selected); }}>${!local ? 'TRAVEL HERE TO ACCEPT' : campaign.reputation[selected.employer] < selected.requiredReputation ? `NEEDS ${signed(selected.requiredReputation)} EMPLOYER REP` : 'ACCEPT CONTRACT'}<span>→</span></button><p class="accept-warning">Acceptance immediately changes faction standing. Failure or abort keeps the opposition penalty.</p>`}
 			` : ''}</aside>
 		</div>
 		<section class="faction-standings" aria-label="Faction reputation"><div><span class="eyebrow">YOUR REPUTATION</span><b>EVERY CONTRACT TAKES A SIDE.</b></div>${FACTIONS.map(function (faction) { const value = campaign.reputation[faction.id]; return html`<div class="faction-standing" style="--faction-color:${faction.color}"><div><b>${faction.name}</b><strong>${signed(value)}</strong></div><span>${reputationLabel(value)}</span><div class="reputation-track"><i style="left:${value < 0 ? 50 + value / 2 : 50}%;width:${Math.abs(value) / 2}%"></i></div></div>`; })}</section>
 		${campaign.lastResult ? html`<p class="campaign-log"><span>${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}</span> ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor</p>` : ''}
-		<footer class="bridge-footer"><div><button @click=${actions.training}>FRAME TRAINING</button><button @click=${actions.legacy}>LAST TRANSMISSION</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>
+		<footer class="bridge-footer"><div><button @click=${actions.training}>FRAME TRAINING</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>
 	`, root);
 };

@@ -371,10 +371,6 @@ export const createAudio = function () {
 					tone({ at, frequency: 880, endFrequency: 330, duration: 0.32, volume: 0.13, type: 'triangle' });
 					tone({ at: at + 0.36, frequency: 660, endFrequency: 220, duration: 0.32, volume: 0.1, type: 'triangle' });
 					break;
-				case 'requisition':
-				case 'refit':
-					for (const [index, note] of [50, 57, 62].entries()) tone({ at: at + index * 0.14, frequency: frequency(note), duration: 0.6, volume: 0.13, type: 'triangle', attack: 0.02, cutoff: 1400 });
-					break;
 				case 'machine-gun':
 					noise({ at, duration: 0.07, volume: 0.18, frequency: 3400, type: 'bandpass', pan: -0.12 });
 					tone({ at, frequency: 160, endFrequency: 75, duration: 0.055, volume: 0.12, type: 'triangle' });
@@ -414,7 +410,7 @@ export const createAudio = function () {
 					noise({ at: at + 0.06, duration: 0.8, volume: 0.28, frequency: 3600, type: 'bandpass', pan: 0.25 });
 					tone({ at, frequency: 780, endFrequency: 260, duration: 0.4, volume: 0.07 });
 					break;
-				case 'pickup':
+				case 'objective-complete':
 					for (const [index, note] of [74, 81, 86].entries()) tone({ at: at + index * 0.085, frequency: frequency(note), duration: 0.24, volume: 0.12, type: 'triangle', cutoff: 2200 });
 					break;
 				case 'overheat':

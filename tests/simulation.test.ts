@@ -1,37 +1,16 @@
 import { describe, expect, test } from 'bun:test';
-import { chooseWeapon, applyRefit, getEnemyDefense, getOperationReport, angleDelta, createState, distance, ENEMY_STATS, step, type Controls, type EnemyKind, type State } from '../src/simulation';
-import { getWaveDefinition, TOTAL_HOSTILES, WAVES, type Difficulty } from '../src/operation';
+import { getEnemyDefense, angleDelta, createState, ENEMY_STATS, step, type Controls, type EnemyKind, type State } from '../src/simulation';
+import { getWaveDefinition, WAVES, type Difficulty } from '../src/operation';
 import { createMount } from '../src/arsenal';
-// Combat fixtures equip the training bank so individual weapon mechanics can
-// be tested without driving the separate requisition progression.
+// Combat fixtures equip the training bank to exercise concurrent weapon mechanics.
 const createCombatState = function (options: { difficulty?: Difficulty } = {}) {
-	const state = createState(options); state.draftsEnabled = false;
+	const state = createState(options);
 	state.loadout = [createMount('autocannon'), createMount('laser'), createMount('cluster-missiles')];
 	return state;
 };
 const idle: Controls = { drive: 0, stop: false, turn: 0, aim: { x: 900, y: 200 }, fire: [false, false, false, false], coolant: false };
 const run = function (state: State, seconds: number, input = idle) { for (let i = 0; i < seconds * 60; i++) step(state, input, 1 / 60); };
 const target = function (state: State, x = 900, y = 580) { state.enemies.push({ id: state.nextId++, x, y, angle: 0, cooldown: 100, hp: 100, maxHp: 100, heavy: false, kind: 'striker' }); };
-const flyOperation = function (difficulty: Difficulty, moving: boolean) {
-	const state = createState({ difficulty });
-	for (let tick = 0; tick < 60 * 600 && state.outcome === 'playing'; tick++) {
-		if (state.phase === 'refit') applyRefit(state, 'arsenal');
-		if (state.phase === 'requisition') {
-			const preferred = ['stream-missiles', 'laser', 'autocannon', 'machine-gun', 'ppc', 'cluster-missiles', 'stream-rockets', 'cluster-rockets'];
-			const offer = [...state.offers].sort(function (a, b) { return preferred.indexOf(a) - preferred.indexOf(b); })[0];
-			if (offer) chooseWeapon(state, offer, 3);
-		}
-		const p = state.player;
-		const target = [...state.enemies].sort(function (a, b) { return distance(a, p) - distance(b, p); })[0];
-		// A simple orbit exercises ordinary throttle and turning. It has no
-		// perfect artillery dodge, invulnerability, or special boss knowledge.
-		const radial = Math.atan2(p.y - 600, p.x - 900);
-		const heading = radial + Math.PI / 2 + Math.atan((Math.hypot(p.x - 900, p.y - 600) - 300) / 160);
-		step(state, { ...idle, drive: moving ? 1 : 0, turn: moving ? Math.max(-1, Math.min(1, angleDelta(p.angle, heading) * 2)) : 0,
-			aim: target ?? idle.aim, fire: [Boolean(target) && p.heat < 85, Boolean(target) && p.heat < 75, Boolean(target) && p.heat < 75, Boolean(target) && p.heat < 75], coolant: p.heat > 85 }, 1 / 60);
-	}
-	return state;
-};
 describe('Heavy Rig combat', function () {
 	test('heavy drive accelerates gradually and turning uses the shortest angle', function () {
 		const state = createCombatState(); run(state, 0.1, { ...idle, drive: 1 });
@@ -78,11 +57,10 @@ describe('Heavy Rig combat', function () {
 		const state = createCombatState(); state.relay = 0; step(state, idle, 1 / 60);
 		expect(state.outcome).toBe('lost'); const time = state.time; run(state, 1); expect(state.time).toBe(time);
 	});
-	test('clear waves stop for refit and the final clear wins', function () {
+	test('cleared waves advance without repairing or resupplying and the final clear wins', function () {
 		const state = createCombatState(); state.player.hp = 50; state.spawned = 5; run(state, 4.1);
-		expect(state.phase).toBe('refit'); expect(state.wave).toBe(1); expect(state.player.hp).toBe(50);
-		expect(applyRefit(state, 'arsenal')).toBe(true);
-		expect(state.wave).toBe(2); expect(state.player.hp).toBe(75);
+		expect(state.phase).toBe('combat'); expect(state.wave).toBe(2); expect(state.player.hp).toBe(50);
+		expect(state.coolantCharges).toBe(2); expect(state.loadout.map(function (mount) { return mount.level; })).toEqual([1, 1, 1]);
 		state.wave = WAVES.length; state.spawned = getWaveDefinition(state.wave).enemies.length; state.enemies = []; state.shots = []; state.intermission = 0; run(state, 4.1);
 		expect(state.outcome).toBe('won');
 	});
@@ -118,19 +96,11 @@ describe('Heavy Rig combat', function () {
 		step(state, idle, 1 / 60); step(state, { ...idle, coolant: true }, 1 / 60); expect(state.coolantCharges).toBe(0);
 		step(state, idle, 1 / 60); step(state, { ...idle, coolant: true }, 1 / 60); expect(state.coolantCharges).toBe(0);
 	});
-	test('salvage repairs and resupplies by proximity, without wasting full supplies', function () {
-		const state = createCombatState(); state.player.hp = 90; state.coolantCharges = 2;
-		state.salvage.push({ id: 1, x: state.player.x, y: state.player.y, kind: 'repair', life: 45 }, { id: 2, x: state.player.x, y: state.player.y, kind: 'coolant', life: 45 });
-		step(state, idle, 1 / 60); expect(state.player.hp).toBe(100); expect(state.coolantCharges).toBe(3); expect(state.salvage).toHaveLength(0);
-		state.salvage.push({ id: 3, x: state.player.x, y: state.player.y, kind: 'repair', life: 45 });
-		step(state, idle, 1 / 60); expect(state.salvage).toHaveLength(1);
-		state.player.hp = 0;
-		step(state, idle, 1 / 60); expect(state.outcome).toBe('lost'); expect(state.player.hp).toBe(0);
-	});
-	test('kills leave wrecks and deterministic salvage, and events do not replay after terminal state', function () {
+
+	test('kills leave wrecks without powerups, and events do not replay after terminal state', function () {
 		const state = createCombatState(); target(state); target(state, 1200, 300);
 		for (const enemy of state.enemies) enemy.hp = 0;
-		step(state, idle, 1 / 60); expect(state.kills).toBe(2); expect(state.wrecks).toHaveLength(2); expect(state.salvage[0]?.kind).toBe('repair');
+		step(state, idle, 1 / 60); expect(state.kills).toBe(2); expect(state.wrecks).toHaveLength(2);
 		expect(state.events).toContain('explosion');
 		state.relay = 0; step(state, idle, 1 / 60); expect(state.events).toContain('defeat');
 		step(state, idle, 1 / 60); expect(state.events).toHaveLength(0);
@@ -141,48 +111,6 @@ describe('Heavy Rig combat', function () {
 		state.shots.push({ x: 900, y: 650, vx: 0, vy: -4000, life: 1, kind: 'cannon', target: undefined, damage: 38 });
 		step(state, { ...idle, fire: [true, false, false, false] }, 0.04);
 		expect(state.enemies[0]?.hp).toBe(100); expect(state.enemies[1]?.hp).toBe(62); expect(state.player.speed).toBe(0);
-	});
-	test('progressing a four-weapon build completes Standard and Veteran, with movement preserving materially more integrity', function () {
-		for (const difficulty of ['standard', 'veteran'] as const) {
-			const state = flyOperation(difficulty, true);
-			expect(state.outcome).toBe('won'); expect(state.kills).toBe(TOTAL_HOSTILES); expect(state.relay).toBeGreaterThan(0);
-			const report = getOperationReport(state);
-			expect(report.commanderDestroyed).toBe(true); expect(report.score).toBeGreaterThan(10000);
-			expect(report.damageDealt).toBeGreaterThan(3000); expect(report.accuracy).toBeGreaterThan(0); expect(report.accuracy).toBeLessThanOrEqual(100);
-			const stationary = flyOperation(difficulty, false);
-			expect(state.relay - stationary.relay).toBeGreaterThan(25);
-			expect(state.player.hp - stationary.player.hp).toBeGreaterThan(25);
-			expect(report.score).toBeGreaterThan(getOperationReport(stationary).score);
-			expect(state.loadout).toHaveLength(4); expect(state.draftCount).toBe(7);
-		}
-		expect(flyOperation('story', false).outcome).toBe('won');
-	});
-
-	test('refit freezes the entire fight until a single explicit upgrade is applied', function () {
-		const state = createCombatState(); state.spawned = 5; state.player.throttle = 0.8; run(state, 4.1);
-		expect(state.phase).toBe('refit'); expect(state.player.throttle).toBe(0);
-		state.events = [];
-		const snapshot = structuredClone(state);
-		run(state, 30, { ...idle, drive: 1, fire: [true, true, true, true], coolant: true });
-		expect(state).toEqual(snapshot);
-		expect(applyRefit(state, 'cooling')).toBe(true);
-		expect(state.upgrades.cooling).toBe(1); expect(state.phase).toBe('combat'); expect(state.wave).toBe(2);
-		expect(applyRefit(state, 'bastion')).toBe(false); expect(state.upgrades.bastion).toBe(0); expect(state.wave).toBe(2);
-		state.outcome = 'lost'; state.phase = 'refit';
-		expect(applyRefit(state, 'arsenal')).toBe(false);
-	});
-
-	test('refit choices affect sustained fire, damage and survival rather than just labels', function () {
-		const arsenal = createCombatState(); arsenal.phase = 'refit'; applyRefit(arsenal, 'arsenal'); arsenal.spawnIn = 100;
-		target(arsenal); run(arsenal, 0.4, { ...idle, fire: [true, false, false, false] });
-		expect(arsenal.enemies[0]?.hp).toBeCloseTo(100 - 38 * 1.15);
-		const cooling = createCombatState(); cooling.phase = 'refit'; applyRefit(cooling, 'cooling'); cooling.spawnIn = 100;
-		cooling.player.heat = 50; run(cooling, 1);
-		expect(cooling.player.heat).toBeCloseTo(50 - 12 * 1.18); expect(cooling.coolantCharges).toBe(3);
-		const bastion = createCombatState(); bastion.phase = 'refit'; bastion.relay = 50; applyRefit(bastion, 'bastion'); bastion.spawnIn = 100;
-		bastion.shots.push({ x: 900, y: 780, vx: 0, vy: 0, life: 1, kind: 'enemy', target: undefined, damage: 20 });
-		step(bastion, idle, 1 / 60);
-		expect(bastion.player.hp).toBe(82); expect(bastion.relay).toBe(62);
 	});
 
 	test('artillery announces a fixed impact point and gives a neutral mech time to escape', function () {
@@ -245,7 +173,7 @@ describe('Heavy Rig combat', function () {
 		}
 	});
 
-	test('incoming artillery resolves before the refit can open and can still lose the relay', function () {
+	test('incoming artillery prevents wave advancement and can still lose the relay', function () {
 		const state = createCombatState(); state.spawned = 5; state.intermission = 3.9; state.relay = 5;
 		state.strikes.push({ id: 1, x: 900, y: 600, life: 0.5, duration: 2.8, radius: 62, damage: 10 });
 		run(state, 0.3); expect(state.phase).toBe('combat'); expect(state.outcome).toBe('playing');

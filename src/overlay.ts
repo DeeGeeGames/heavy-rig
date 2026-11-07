@@ -138,10 +138,6 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		text(`IMPACT ${strike.life.toFixed(1)}`, strike, 8, '#ffd2a6', 11, -14);
 	}
-	for (const salvage of state.salvage) {
-		const bob = options.reducedMotion ? 0 : Math.sin(state.time * 2) * 2;
-		text(salvage.kind === 'repair' ? '+ REPAIR' : 'COOLANT', salvage, 38 + bob, salvage.kind === 'repair' ? '#b2f4c9' : '#a2e8f2', 9);
-	}
 	const target = state.enemies.reduce<State['enemies'][number] | undefined>(function (nearest, enemy) {
 		return !nearest || distance(enemy, aim) < distance(nearest, aim) ? enemy : nearest;
 	}, undefined);
@@ -228,7 +224,6 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.fillStyle = '#f1e4b9'; ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-3, -3); ctx.lineTo(-1, 0); ctx.lineTo(-3, 3); ctx.closePath(); ctx.fill(); ctx.restore();
 		for (const enemy of state.enemies) dot(enemy, enemy.commander ? '#ffd6a7' : '#f2a571', enemy.commander ? 4 : enemy.kind === 'siege' ? 3 : 2);
 		for (const warning of state.warnings) dot(warning, '#e5a46f', 4, true);
-		for (const salvage of state.salvage) dot(salvage, salvage.kind === 'repair' ? '#83bba2' : '#86b6c1', 1.5);
 		for (const strike of state.strikes) dot(strike, '#ff8154', strike.radius / bounds.width * w, true);
 		ctx.restore();
 		ctx.font = `${options.couchMode ? 14 : 11}px monospace`; ctx.textAlign = 'left'; ctx.fillStyle = '#91a9a3'; ctx.fillText(`${state.enemies.length.toString().padStart(2, '0')} CONTACTS`, x + 9, y + h + 15);

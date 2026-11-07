@@ -1,6 +1,6 @@
 export type WeaponId = 'laser' | 'machine-gun' | 'autocannon' | 'ppc' | 'stream-missiles' | 'cluster-missiles' | 'stream-rockets' | 'cluster-rockets';
 export type FireInputs = readonly [boolean, boolean, boolean, boolean];
-export interface WeaponMount { weapon: WeaponId; level: number; cooldown: number; firing: boolean }
+export interface WeaponMount { weapon: WeaponId; level: number; cooldown: number; firing: boolean; slot?: number }
 export interface WeaponDefinition {
 	id: WeaponId;
 	name: string;
@@ -19,8 +19,6 @@ export interface WeaponDefinition {
 	spread: number;
 	splash: number;
 }
-export const MAX_WEAPON_LEVEL = 3;
-export const DRAFT_MILESTONES: readonly number[] = [2, 5, 9, 14, 20, 27, 35];
 export const WEAPONS: readonly WeaponDefinition[] = [
 	{ id: 'autocannon', name: 'AC/38', type: 'Auto Cannon', role: 'Precise impact', description: 'Heavy, accurate shells. Reliable opening fire with modest reactor demand.', color: '#ffd28b', icon: '╋', kind: 'cannon', damage: 38, interval: 0.65, heat: 6, range: 845, speed: 650, projectiles: 1, spread: 0, splash: 0 },
 	{ id: 'laser', name: 'ARC', type: 'Laser', role: 'Continuous beam', description: 'A continuous beam that stops at the first target. Track steadily; watch your heat.', color: '#8ff5e7', icon: 'ϟ', kind: 'laser', damage: 56, interval: 0, heat: 24, range: 620, speed: 0, projectiles: 1, spread: 0, splash: 0 },
