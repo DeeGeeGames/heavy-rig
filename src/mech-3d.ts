@@ -45,12 +45,13 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		parts.push(mesh); parent.add(mesh); return mesh;
 	};
 	const hull = new Group(); hull.name = 'hull'; root.add(hull);
-	if (original) box(hull, 0, 0, 45, 25, 37, 12, dark);
+	// Recess the waist face behind the turret when their headings align.
+	if (original) box(hull, 0, 0, 45, 24.2, 37, 12, dark);
 	else {
-		box(hull, rig.hipForward, 0, rig.hipHeight - 4, 22, rig.hipWidth * 2, 10, dark);
+		box(hull, rig.hipForward, 0, rig.hipHeight - 4, frame === 'longbow' ? 21.2 : 22, rig.hipWidth * 2, 10, dark);
 		for (const side of [-1, 1]) {
 			box(hull, rig.hipForward, side * rig.hipWidth, rig.hipHeight - 6, 16, 9, 14, steel);
-			box(hull, rig.hipForward + 2, side * (rig.hipWidth + 5), rig.hipHeight - 3, 10, 2, 7, amber);
+			box(hull, rig.hipForward + 2, side * (rig.hipWidth + 5), rig.hipHeight - 3, 10, frame === 'longbow' ? 1.2 : 2, 7, amber);
 		}
 	}
 	const turret = new Group(); turret.name = 'turret'; root.add(turret);
@@ -78,7 +79,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		// Recess the cooling pack below the adjoining armor's top face.
 		box(turret, -29, 0, 47, 16, 30, 26.6, dark);
 		for (const side of [-1, 1]) {
-			box(turret, -24, side * 19, 50, 11, 7, 24, steel);
+			box(turret, -24, side * 19, 50, 11, 7, 23.6, steel);
 			for (let vent = 0; vent < 5; vent++) box(turret, -33, side * 10, 51 + vent * 4.5, 2, 8, 2, trim);
 			box(hull, 2, side * 23, 39, 25, 8, 14, steel);
 			box(hull, 10, side * 28, 41, 17, 2, 8, amber);
@@ -123,7 +124,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			for (const side of [-1, 1]) {
 				const shield = box(turret, 12, side * 48, 40, 19, 9, 38, steel); shield.rotation.z = -0.16;
 				box(turret, 22, side * 48, 46, 2, 10, 24, amber);
-				box(hull, -3, side * 28, 31, 35, 12, 10, dark);
+				box(hull, -3, side * 28, 31, 34.2, 12, 10, dark);
 			}
 		}
 		if (commander) {
@@ -205,13 +206,15 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 				const cap = box(turret, -4, side * 34, 99, 27, 22, 3, trim); cap.rotation.x = side * 0.1;
 				const shoulder = box(turret, 10, side * 34, 86, 6, 19, 12, steel); shoulder.rotation.z = -0.25;
 				box(turret, 14, side * 34, 90, 2, 10, 3, amber);
-				box(turret, -3, side * 38, 63, 12, 12, 24, dark);
-				box(turret, -2, side * 40, 65, 16, 9, 16, steel);
-				box(turret, 2, side * 40, 59, 17, 16, 9, dark);
+				// Clear the moving pod lid throughout the full recoil stroke.
+				box(turret, -3, side * 38, 66.4, 12, 12, 20.6, dark);
+				box(turret, -2, side * 40, 66.8, 16, 9, 14.2, steel);
+				box(turret, 2, side * 40, 59, 16.2, 16, 9, dark);
 				rack(side * 41, 39, 19, 2, 10);
-				box(turret, 12, side * 55, 41, 26, 5, 21, steel);
+				box(turret, 12, side * 55, 41, 26.8, 5, 21, steel);
 				box(turret, 24, side * 55, 43, 3, 6, 15, amber);
-				box(turret, -24, side * 14, 68, 13, 15, 25, dark);
+				// Keep the pack's top and sides inside the adjoining chest armor.
+				box(turret, -24, side * 14, 68, 13, 14.2, 24.6, dark);
 				vent(-31, side * 14, 74, 4);
 			}
 			box(turret, -2, 0, 93, 14, 14, 7, dark);
@@ -244,10 +247,10 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			}
 			const accelerator = gun(-27, 68, 83, 8, 25);
 			for (const x of [4, 15, 26, 37]) box(accelerator, x, -27, 66, 3, 13, 12, amber);
-			box(turret, 3, 27, 57, 16, 14, 20, steel);
+			box(turret, 3.4, 27, 57, 16, 14, 20, steel);
 			box(turret, 7, 27, 55, 15, 12, 6, dark);
 			box(turret, -22, 14, 84, 18, 16, 30, dark);
-			for (const side of [9, 15, 22]) box(turret, -23, side, 85, 23, 2, 29, trim);
+			for (const side of [9, 15, 22]) box(turret, -23, side, 85.4, 23, 2, 28.6, trim);
 			box(turret, -23, 15, 114, 24, 17, 3, amber);
 			vent(-16, -6, 90, 4);
 		} else {
@@ -257,7 +260,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			cockpit(17, 49, 24, 35, 15);
 			box(turret, 30, 0, 45, 13, 28, 5, amber);
 			for (const side of [-1, 1]) {
-				box(turret, -13, side * 24, 50, 22, 14, 16, steel);
+				box(turret, -13, side * 24, 50, 22.8, 14, 16, steel);
 				rack(side * 36, 65, 22, 4, -17);
 				box(turret, -31, side * 36, 55, 10, 26, 13, dark);
 				const brace = box(turret, -25, side * 30, 49, 10, 8, 24, steel); brace.rotation.x = side * -0.35;
@@ -283,22 +286,23 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		} else if (frame === 'kestrel') {
 			box(foot, -5, 0, 0, 18, 10, 6, dark);
 			for (const side of [-1, 1]) {
-				const toe = box(foot, 11, side * 6, 0, 23, 4, 4, steel); toe.rotation.y = side * -0.15;
-				box(foot, 20, side * 8, 0, 7, 4, 3, trim);
+				const toe = box(foot, 11, side * 6, 0.2, 23, 4, 4, steel); toe.rotation.y = side * -0.15;
+				box(foot, 20, side * 8, 0.4, 7, 4, 3, trim);
 			}
-			box(foot, -18, 0, 0, 15, 5, 4, steel);
+			box(foot, -18, 0, 0.2, 15, 5, 4, steel);
 		} else {
 			const broad = frame === 'maul' ? 23 : frame === 'morrow' ? 26 : 14;
 			box(foot, 0, 0, 0, 33, broad, 7, dark);
 			box(foot, 10, 0, 2, 23, broad + 2, 7, steel);
 			box(foot, 21, 0, 1, 5, broad, 4, trim);
-			box(foot, -12, 0, 1, 9, broad + 2, 5, steel);
-			if (frame === 'morrow') for (const side of [-1, 1]) box(foot, 4, side * 15, 0, 25, 5, 4, steel);
+			// Heel and outboard plates extend past the base instead of sharing faces.
+			box(foot, -12, 0, 1, 9.8, broad + 2, 5, steel);
+			if (frame === 'morrow') for (const side of [-1, 1]) box(foot, 4, side * 15, 0.2, 25.8, 5, 4, steel);
 		}
 		return {
 			foot, upper: box(root, 0, 0, 0, 1, 1, 1, dark), lower: box(root, 0, 0, 0, 1, 1, 1, steel),
 			piston: box(root, 0, 0, 0, 1, 1, 1, steel),
-			knee: box(root, 0, 0, 0, original ? 14 : frame === 'kestrel' ? 9 : 14, original ? 17 : frame === 'kestrel' ? 12 : 18, 9, dark),
+			knee: box(root, 0, 0, 0, original ? 14 : frame === 'kestrel' ? 9 : 14, original ? 17 : frame === 'kestrel' ? 12 : frame === 'morrow' ? 18.8 : 18, 9, dark),
 			ankle: box(root, 0, 0, 0, 13, original ? 14.8 : frame === 'kestrel' ? 10 : 14, 9, steel),
 			guard: original ? undefined : box(root, 0, 0, 0, 1, 1, 1, steel),
 			thigh: !kind && (frame === 'maul' || frame === 'longbow') ? box(root, 0, 0, 0, 1, 1, 1, steel) : undefined,
