@@ -110,7 +110,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		const contract = accepted.active;
 		if (!contract) throw new Error('Acceptance failed');
 		const malformed: unknown[] = [
-			undefined, [], null, { ...campaign, version: 2 }, { ...campaign, credits: -1 }, { ...campaign, completed: 0.5 },
+			undefined, [], null, { ...campaign, version: 1 }, { ...campaign, credits: -1 }, { ...campaign, completed: 0.5 },
 			{ ...campaign, reputation: { freeholds: 0, combine: 0, accord: 101 } },
 			{ ...accepted, reputation: campaign.reputation },
 			{ ...accepted, active: { ...contract, reward: contract.reward + 100 } },

@@ -1,0 +1,35 @@
+{
+  "checks": [
+    "Fresh campaign starts with only Kestrel and no arcade entry",
+    "Unaffordable equipment and mechs cannot be purchased",
+    "Mech Bay deployment stays visible at desktop and laptop sizes",
+    "Market deducts funds and adds one chassis with its default plus bought weapons",
+    "Staged loadout survives department navigation and restores picker focus",
+    "Refit reserves parts, blocks deployment, persists through reload, and installs only on due day",
+    "Mission deploys purchased loadout with empty third slot and independently fires mount two",
+    "Persistent throttle and explicit neutral survive new deployment flow",
+    "Abort returns to ship with one recovery day and no payout",
+    "Destroyed starting mech repairs at zero credits only after five calendar days",
+    "All four company screens fit phone and short landscape without horizontal overflow",
+    "Keyboard picker selects current weapon and Escape restores mount focus",
+    "Simulated gamepad confirms navigation and Back returns to Contracts",
+    "Other-tab save changes lock stale tab and shutdown does not overwrite newer progress",
+    "Actual combat damage checkpoints survive reload, abort exactly once, and repair through Engineering",
+    "Opening another tab during deployment locks the stale mission and preserves recovered state on shutdown",
+    "Emulated phone touch: purchase, refit, wait, deploy, held throttle and abort through rendered controls"
+  ],
+  "errors": [],
+  "seededScenarios": "Funds generated using successful domain settlements; destroyed-company fixture generated through deployment damage and failure. UI actions use real buttons. Combat input is simulated.",
+  "combatDamageEvidence": {
+    "beforeReload": 90.9,
+    "afterReload": 90.9
+  },
+  "automatedChecks": "bun run check: 116 tests passed, strict typecheck, ESLint, production build",
+  "unmeasured": [
+    "Physical controller and touch feel",
+    "Audio listening quality",
+    "Hardware GPU performance",
+    "Economy and combat balance",
+    "Owner acceptance"
+  ]
+}

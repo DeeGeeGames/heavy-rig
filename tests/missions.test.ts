@@ -47,7 +47,7 @@ describe('Heavy Rig surface contracts', function () {
 
 	test('assassination and demolition allow surviving escorts but require uninterrupted extraction', function () {
 		for (const kind of ['assassination', 'demolition'] as const) {
-			const state = createMissionState(contract(kind)); const mission = missionOf(state); state.draftsEnabled = false;
+			const state = createMissionState(contract(kind)); const mission = missionOf(state);
 			state.relay = 0; // Offensive sorties have no friendly relay failure condition.
 			if (mission.structure) mission.structure.hp = 0;
 			const target = state.enemies.find(function (enemy) { return enemy.id === mission.targetId; }); if (target) target.hp = 0;
@@ -62,7 +62,7 @@ describe('Heavy Rig surface contracts', function () {
 	});
 
 	test('clearance requires every deployed hostile and fatal damage wins over extraction on the same tick', function () {
-		const state = createMissionState(contract('clearance')); const mission = missionOf(state); state.draftsEnabled = false;
+		const state = createMissionState(contract('clearance')); const mission = missionOf(state);
 		for (const [index, enemy] of state.enemies.entries()) if (index > 0) enemy.hp = 0;
 		step(state, idle, 1 / 60); expect(mission.stage).toBe('active');
 		for (const enemy of state.enemies) enemy.hp = 0;
@@ -74,7 +74,7 @@ describe('Heavy Rig surface contracts', function () {
 	});
 
 	test('defense is a finite local assault and incoming ordnance can still destroy its relocated relay', function () {
-		const state = createMissionState(contract('defend')); const mission = missionOf(state); state.draftsEnabled = false;
+		const state = createMissionState(contract('defend')); const mission = missionOf(state);
 		const quota = missionHostileCount(mission.contract);
 		for (let tick = 0; tick < 60 * 180 && mission.stage === 'active'; tick++) {
 			for (const enemy of state.enemies) enemy.hp = 0;
@@ -85,7 +85,7 @@ describe('Heavy Rig surface contracts', function () {
 		state.relay = 1;
 		state.strikes.push({ id: state.nextId++, ...mission.map.objective, life: 0.001, duration: 1, radius: 62, damage: 10 });
 		step(state, idle, 1 / 60); expect(state.outcome).toBe('lost');
-		const abandoned = createMissionState(contract('defend')); abandoned.draftsEnabled = false;
+		const abandoned = createMissionState(contract('defend'));
 		run(abandoned, 180); expect(abandoned.outcome).toBe('lost');
 	});
 
@@ -93,7 +93,7 @@ describe('Heavy Rig surface contracts', function () {
 		for (const weapon of WEAPONS) {
 			const state = createMissionState(contract('demolition')); const mission = missionOf(state); const structure = mission.structure;
 			if (!structure) throw new Error('Missing facility');
-			state.enemies = []; state.loadout = [createMount(weapon.id)]; state.draftsEnabled = false;
+			state.enemies = []; state.loadout = [createMount(weapon.id)];
 			state.player.x = structure.x - 300; state.player.y = structure.y; state.player.angle = 0; state.player.turret = 0;
 			const input = { ...idle, aim: structure, fire: [true, false, false, false] as const };
 			step(state, input, 1 / 60);

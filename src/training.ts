@@ -19,7 +19,7 @@ export interface Training {
 export const createTraining = function (): Training {
 	const state = createState({ difficulty: 'story' });
 	state.loadout = [createMount('autocannon'), createMount('laser'), createMount('cluster-missiles'), createMount('machine-gun')];
-	state.spawnIn = 3600; state.draftsEnabled = false;
+	state.spawnIn = 3600;
 	return { state, stage: 'drive', distance: 0, turn: 0, combinedTime: 0, startedAt: 0, strikeOrigin: undefined, strikeIssued: false };
 };
 

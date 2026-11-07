@@ -7,7 +7,6 @@ import { createWorldObjects } from '../src/world-3d';
 
 test('world pools track live combat state and restart removes transient objects', function () {
 	const scene = new Scene(); const presentation = createWorldObjects(scene); const state = createState();
-	state.salvage.push({ id: 1, x: 50, y: 60, kind: 'repair', life: 40 });
 	state.warnings.push({ x: 80, y: 90, kind: 'scout', life: 2 });
 	state.strikes.push({ id: 2, x: 180, y: 200, life: 1.8, duration: 2.8, radius: 62, damage: 13 });
 	state.shots.push({ x: 100, y: 120, vx: 200, vy: 100, life: 1, kind: 'cannon', target: undefined, damage: 38 });
@@ -17,10 +16,10 @@ test('world pools track live combat state and restart removes transient objects'
 	state.player.heat = 80; state.beam = { x: 300, y: 400 };
 	try {
 		presentation.update(state, false);
-		for (const name of ['salvage', 'inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeDefined();
+		for (const name of ['inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeDefined();
 		expect(scene.getObjectByName('laser')?.visible).toBe(true); expect(scene.getObjectByName('reactor-vent')?.visible).toBe(true);
 		presentation.update(createState(), false);
-		for (const name of ['salvage', 'inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeUndefined();
+		for (const name of ['inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeUndefined();
 		expect(scene.getObjectByName('laser')?.visible).toBe(false); expect(scene.getObjectByName('reactor-vent')?.visible).toBe(false);
 		expect(scene.getObjectByName('relay')).toBeDefined();
 		const floor = scene.getObjectByName('industrial-apron');
@@ -50,18 +49,17 @@ test('transparent world effects retain depth tests without writing depth and dis
 	presentation.update(state, false); expect(scene.children).toHaveLength(0);
 });
 
-test('reduced motion freezes decorative bobbing and vent drift while retaining combat effects', function () {
+test('reduced motion freezes vent drift while retaining the heat effect', function () {
 	const scene = new Scene(); const presentation = createWorldObjects(scene); const state = createState();
-	state.salvage.push({ id: 1, x: 50, y: 60, kind: 'repair', life: 40 });
 	state.player.heat = 80; state.time = 0.2;
 	try {
 		presentation.update(state, true);
-		const vent = scene.getObjectByName('reactor-vent'); const salvage = scene.getObjectByName('salvage');
-		const ventHeight = vent?.position.y; const salvageHeight = salvage?.children[0]?.position.y;
+		const vent = scene.getObjectByName('reactor-vent');
+		const ventHeight = vent?.position.y;
 		state.time = 1.2; presentation.update(state, true);
-		expect(vent?.position.y).toBe(ventHeight); expect(salvage?.children[0]?.position.y).toBe(salvageHeight);
+		expect(vent?.position.y).toBe(ventHeight);
 		presentation.update(state, false);
-		expect(vent?.position.y).not.toBe(ventHeight); expect(salvage?.children[0]?.position.y).not.toBe(salvageHeight);
+		expect(vent?.position.y).not.toBe(ventHeight);
 	} finally { presentation.dispose(); }
 });
 
@@ -211,17 +209,16 @@ test('Warden keeps its original effects and hostile rounds ignore revised player
 	} finally { warden.dispose(); longbow.dispose(); world.dispose(); }
 });
 
-test('real weapon flashes anchor once to revised hardware without lifting coolant, pickup, impact, or Warden effects', function () {
+test('real weapon flashes anchor once to revised hardware without lifting coolant, impact, or Warden effects', function () {
 	for (const frame of ['warden', 'kestrel', 'maul', 'longbow', 'morrow'] as const) {
 		const scene = new Scene(); const world = createWorldObjects(scene); const state = createState({ frame });
 		const model = createMech(undefined, false, frame);
 		state.player.heat = 40; state.player.hp = 70;
-		state.salvage.push({ id: 1, x: state.player.x, y: state.player.y, kind: 'repair', life: 40 });
 		state.shots.push({ x: state.player.x, y: state.player.y, vx: 0, vy: 0, life: 1, kind: 'enemy', target: undefined, damage: 1 });
 		try {
 			step(state, { drive: 0, stop: false, turn: 0, aim: { x: state.player.x, y: 200 }, fire: [true, false, false, false], coolant: true }, 1 / 60);
-			expect(state.events).toContain('coolant'); expect(state.events).toContain('pickup'); expect(state.events).toContain('impact');
-			expect(state.effects).toHaveLength(4);
+			expect(state.events).toContain('coolant'); expect(state.events).toContain('impact');
+			expect(state.effects).toHaveLength(3);
 			expect(state.effects.filter(function (effect) { return effect.source === 'muzzle'; })).toHaveLength(1);
 			model.pose(createGaits(state).player, state.player.turret);
 			const anchors = frameEffects(model, state);

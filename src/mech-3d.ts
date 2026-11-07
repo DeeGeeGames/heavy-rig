@@ -8,7 +8,7 @@ import type { EnemyKind } from './simulation';
 export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; reducedMotion: boolean }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
-// with combat and works for every equipped family, including later draft mounts.
+// with combat and works for every equipped family, including purchased armaments.
 export const weaponRecoil = function (loadout: readonly WeaponMount[]): number {
 	return loadout.reduce(function (largest, mount) {
 		const weapon = getWeapon(mount.weapon);

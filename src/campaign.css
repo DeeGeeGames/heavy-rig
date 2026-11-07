@@ -103,3 +103,232 @@
 .contract-bottom small { font-size: 9px; }
 .planet-node small { font-size: 8px; }
 .ship-status span { font-size: 8px; }
+
+/* Company departments share the ship shell, but each has a distinct work area. */
+.company-screen { position: absolute; inset: 0; overflow: auto; padding: 28px 36px 74px; background: radial-gradient(ellipse at 12% 0%, #28454b66, transparent 55%), #0b151cf7; scroll-padding: 24px 0 70px; }
+.company-screen:focus { outline: none; }
+.company-screen h2 { font: 34px/1.05 var(--display); letter-spacing: .5px; }
+.company-screen h3 { margin: 0; }
+.ship-navigation { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--border); gap: 6px; padding: 12px 0; }
+.ship-navigation button { display: flex; align-items: center; gap: 12px; padding: 14px 18px; min-height: 48px; text-align: left; background: transparent; border-color: transparent; border-bottom: 2px solid transparent; }
+.ship-navigation button small { font: 10px var(--mono); color: var(--muted); }
+.ship-navigation button span { font: 20px var(--display); letter-spacing: .5px; text-transform: uppercase; }
+.ship-navigation button b { display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; margin-left: auto; font: 11px var(--mono); color: var(--cyan); background: #92d6c51c; }
+.ship-navigation button[aria-current="page"] { color: var(--amber); border-bottom-color: var(--amber); background: #f3b35b0c; }
+.ship-navigation button:hover { border-color: #f3b35b66; }
+.company-readiness { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 20px; background: #92d6c509; border-bottom: 1px solid var(--border); padding: 18px 16px; }
+.company-readiness b { display: block; font: 23px var(--display); margin-top: 4px; }
+.company-readiness b small { display: block; font: 9px var(--mono); color: var(--cyan); margin-top: 5px; }
+.company-readiness p { font: 12px/1.6 Arial, sans-serif; color: var(--muted); max-width: 630px; margin: 0; }
+.company-readiness>.secondary { width: auto; }
+.company-page-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 26px 0; }
+.company-page-heading h2 { font-size: 42px; margin: 8px 0; }
+.company-page-heading p { color: var(--muted); font: 13px/1.65 Arial, sans-serif; margin: 0; max-width: 690px; }
+.company-count { flex-shrink: 0; padding-bottom: 4px; font: 10px var(--mono); color: var(--cyan); }
+.company-notice { font: 11px/1.6 var(--mono); padding: 12px 16px; margin: 14px 0 0; border-left: 2px solid var(--cyan); color: var(--cyan); background: #92d6c50c; }
+.company-notice:empty { display: none; }
+.company-note { color: var(--muted); font: 11px/1.7 Arial, sans-serif; }
+.mechbay-layout { display: grid; grid-template-columns: minmax(180px, .75fr) minmax(220px, 1fr) minmax(310px, 1.4fr); gap: 26px; align-items: start; }
+.fleet-roster>h3 { margin-bottom: 16px; font-size: 10px; color: var(--muted); }
+.fleet-frame { width: 100%; padding: 18px 16px; display: grid; gap: 9px; text-align: left; margin-bottom: 10px; background: #14242b; border-left: 3px solid var(--frame-color); }
+.fleet-frame[aria-pressed="true"] { border-color: var(--frame-color); background: color-mix(in srgb, var(--frame-color) 10%, #122128); }
+.fleet-frame>span { color: var(--muted); font: 9px var(--mono); }
+.fleet-frame>b { font: 27px var(--display); letter-spacing: 1px; }
+.fleet-frame>small { font: 9px/1.7 var(--mono); color: var(--frame-color); }
+.fleet-market { margin-top: 10px; }
+.frame-inspection { background: #11232b; border: 1px solid var(--border); padding: 20px; }
+.frame-inspection>h2 { font-size: 40px; margin: 9px 0 0; color: var(--frame-color); }
+.company-frame-art { display: block; width: 100%; max-height: 270px; color: var(--frame-color); font-family: var(--mono); }
+.schematic-solid { fill: #18313a; }
+.company-integrity { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; padding-top: 14px; }
+.company-integrity>span { font: 9px var(--mono); color: var(--muted); }
+.company-integrity>b { font: 29px var(--display); }
+.company-integrity>.track { width: 100%; flex-basis: 100%; height: 5px; }
+.frame-specifications { grid-template-columns: 1fr auto; margin: 20px 0 12px; gap: 9px; }
+.frame-specifications dt { font-size: 9px; color: var(--muted); }
+.frame-specifications dd { font: 11px var(--mono); color: var(--paper); }
+.loadout-workbench>h2 { margin: 12px 0 20px; }
+.company-mounts { display: grid; gap: 8px; }
+.company-mount { display: grid; grid-template-columns: 30px 1fr auto; gap: 14px; align-items: center; padding: 14px; min-width: 0; text-align: left; }
+.company-mount[aria-pressed="true"] { border-color: var(--cyan); background: #92d6c510; }
+.company-mount.changed { border-left: 3px solid var(--amber); }
+.mount-number { font: 22px var(--display); color: var(--muted); }
+.company-mount>span:nth-child(2) { display: grid; gap: 5px; }
+.company-mount small { color: var(--muted); font: 9px/1.4 var(--mono); }
+.company-mount b { font: 22px var(--display); }
+.company-mount em { color: var(--muted); font: 10px/1.4 Arial, sans-serif; font-style: normal; }
+.company-mount.changed em { color: var(--amber); }
+.mount-change { color: var(--cyan); font-size: 22px; }
+.equipment-picker { margin: 16px 0; padding: 16px; background: #92d6c508; border: 1px solid #92d6c540; }
+.equipment-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.equipment-choices button { display: grid; gap: 5px; text-align: left; padding: 12px; min-height: 55px; }
+.equipment-choices button[aria-pressed="true"] { border-color: var(--cyan); }
+.equipment-choices b { font: 18px var(--display); }
+.equipment-choices small { font: 9px/1.5 var(--mono); color: var(--muted); }
+.equipment-picker .text-button { padding-bottom: 0; color: var(--cyan); }
+.refit-estimate, .service-note { border: 1px solid #f3b35b50; padding: 18px; margin-top: 18px; background: #f3b35b08; }
+.refit-estimate strong { display: block; font: 28px var(--display); color: var(--amber); margin-top: 6px; }
+.refit-estimate p, .service-note p { font: 12px/1.65 Arial, sans-serif; color: var(--muted); }
+.refit-estimate .negative { color: var(--danger); }
+.refit-estimate>.text-button { padding-bottom: 0; }
+.service-note>b { font: 11px var(--mono); color: var(--amber); }
+.company-deploy { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px; }
+.company-deploy>p { font: 12px/1.7 Arial, sans-serif; color: var(--muted); }
+.company-deploy>.secondary { margin-top: 10px; }
+.market-section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border); margin: 28px 0 18px; min-height: 44px; }
+.market-section-heading h3 { font-size: 12px; }
+.market-section-heading .company-note { margin-bottom: 8px; }
+.market-section-heading .text-button { padding-top: 8px; padding-bottom: 8px; color: var(--cyan); }
+.weapon-market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.market-weapon { display: flex; flex-direction: column; padding: 20px; border: 1px solid var(--border); border-top: 2px solid var(--weapon-color); background: #12232b; }
+.market-weapon-title { display: flex; align-items: center; gap: 14px; }
+.market-weapon-title>span { font: 38px var(--mono); color: var(--weapon-color); }
+.market-weapon-title small { color: var(--muted); font: 8px/1.5 var(--mono); }
+.market-weapon-title h3 { color: var(--paper); font: 29px var(--display); letter-spacing: .5px; margin-top: 4px; }
+.market-weapon>p { color: var(--muted); font: 12px/1.7 Arial, sans-serif; flex: 1; margin: 17px 0; }
+.weapon-market-spec { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font: 8px/1.5 var(--mono); color: var(--weapon-color); margin-bottom: 16px; }
+.stock-count { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font: 9px var(--mono); color: var(--muted); border-top: 1px solid var(--border); padding: 12px 0; }
+.purchase-button { display: grid; gap: 5px; min-height: 57px; }
+.purchase-button b { font: 11px/1.5 var(--mono); color: var(--paper); }
+.purchase-button span { font: 8px/1.5 var(--mono); color: var(--muted); }
+.purchase-button:not(:disabled) { border-color: #92d6c570; }
+.purchase-button:not(:disabled) b, .purchase-button:not(:disabled) span { color: var(--cyan); }
+.frame-market-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.market-frame { display: grid; grid-template-columns: minmax(120px, .8fr) minmax(0, 1.3fr); padding: 20px; gap: 20px; background: #12232b; border: 1px solid var(--border); border-left: 2px solid var(--frame-color); }
+.market-frame-art { display: flex; align-items: center; }
+.market-frame-body>h3 { color: var(--frame-color); font: 32px var(--display); margin: 8px 0; letter-spacing: .5px; }
+.market-frame-body>.eyebrow { font-size: 8px; letter-spacing: 1px; }
+.market-frame-body>p { color: var(--muted); font: 12px/1.6 Arial, sans-serif; }
+.market-frame-body .company-note { font-size: 11px; }
+.included-weapon { display: block; font: 9px/1.6 var(--mono); margin: 14px 0; color: var(--paper); }
+.engineering-layout { display: grid; grid-template-columns: minmax(350px, 1.5fr) minmax(260px, 1fr); gap: 32px; }
+.calendar-console { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 24px; background: #183039; border: 1px solid #92d6c550; }
+.calendar-console h2 { font-size: 52px; margin: 8px 0; color: var(--cyan); }
+.calendar-console p { color: var(--muted); font: 12px/1.6 Arial, sans-serif; margin-bottom: 0; }
+.calendar-actions { display: grid; gap: 10px; min-width: 180px; }
+.work-order-list { display: grid; gap: 14px; margin: 18px 0; }
+.company-empty { padding: 34px 22px; text-align: center; background: #92d6c505; border: 1px dashed var(--border); color: var(--muted); }
+.company-empty>span { display: block; font-size: 35px; color: var(--cyan); margin-bottom: 16px; }
+.company-empty>b { font: 22px var(--display); color: var(--paper); }
+.company-empty>p { font: 12px/1.6 Arial, sans-serif; }
+.work-order { border: 1px solid var(--border); border-left: 3px solid var(--amber); padding: 20px; background: #12232b; }
+.work-order-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.work-order-heading h3 { font: 30px var(--display); margin: 6px 0 0; color: var(--paper); }
+.work-order-heading>strong { font: 25px var(--display); color: var(--amber); text-align: right; }
+.work-order-heading>strong small { display: block; font: 8px var(--mono); color: var(--muted); margin-top: 5px; }
+.work-order-dates { display: flex; justify-content: space-between; gap: 10px; margin: 24px 0 10px; font: 9px/1.5 var(--mono); color: var(--muted); }
+.work-order-dates>b { color: var(--cyan); }
+.work-order>p { font: 11px/1.7 var(--mono); color: var(--muted); }
+.work-order>.text-button { padding: 8px 0; color: var(--paper); min-height: 38px; }
+.work-order>small { display: block; }
+.maintenance-roster>h3 { margin-bottom: 14px; }
+.maintenance-roster>.company-note { margin: 0 0 18px; }
+.maintenance-frame { padding: 20px; background: #12232b; border: 1px solid var(--border); margin-bottom: 14px; }
+.maintenance-frame>div:first-child { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px; }
+.maintenance-frame b { font: 26px var(--display); }
+.maintenance-frame strong { font: 23px var(--display); }
+.maintenance-frame>p { font: 11px/1.6 var(--mono); color: var(--muted); margin: 16px 0; }
+.company-screen .bridge-footer { border-top: 1px solid var(--border); margin-top: 30px; padding-top: 14px; }
+#game:is([data-screen="mechbay"], [data-screen="market"], [data-screen="engineering"]) canvas { opacity: 0; }
+#game:is([data-screen="mechbay"], [data-screen="market"], [data-screen="engineering"]) .menu-controls { background: #0b151cf7; padding-top: 6px; }
+@media (min-width: 1700px) { .company-screen { padding: 40px max(40px, calc((100vw - 1600px) / 2)) 75px; } }
+@media (max-width: 1150px) {
+	.company-screen { padding: 20px 24px 74px; }
+	.mechbay-layout { grid-template-columns: minmax(200px, .85fr) minmax(300px, 1.25fr); gap: 22px; }
+	.fleet-roster { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: start; gap: 10px; }
+	.fleet-roster>h3 { width: 100%; margin-bottom: 0; }
+	.fleet-frame { width: auto; min-width: 180px; flex: 1; margin: 0; }
+	.fleet-market { width: auto; align-self: stretch; max-width: 210px; margin: 0; }
+	.fleet-roster>.company-note { width: 100%; margin: 0; }
+	.weapon-market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.market-frame { grid-template-columns: 1fr; }
+	.market-frame-art { max-height: 150px; }
+	.market-frame-art .company-frame-art { height: 150px; }
+	.engineering-layout { grid-template-columns: minmax(290px, 1.2fr) minmax(250px, 1fr); gap: 22px; }
+	.calendar-console { display: block; }
+	.calendar-actions { grid-template-columns: 1fr 1fr; margin-top: 20px; }
+	.calendar-actions button { font-size: 10px; padding: 12px; }
+}
+@media (max-width: 650px) {
+	.company-screen { padding: 18px 16px 90px; }
+	.ship-navigation { gap: 4px; padding: 10px 0; }
+	.ship-navigation button { display: grid; grid-template-columns: 1fr; gap: 5px; padding: 10px 5px; text-align: center; position: relative; }
+	.ship-navigation button small { font-size: 8px; }
+	.ship-navigation button span { font-size: 15px; letter-spacing: 0; }
+	.ship-navigation button b { position: absolute; right: 3px; top: 4px; min-width: 15px; height: 15px; font-size: 9px; }
+	.company-readiness { grid-template-columns: 1fr auto; padding: 16px 0; gap: 13px; }
+	.company-readiness>p { grid-column: 1 / -1; grid-row: 2; }
+	.company-readiness>.secondary { font-size: 9px; padding: 11px; }
+	.company-page-heading { display: block; margin: 24px 0 20px; }
+	.company-page-heading h2 { font-size: 36px; }
+	.company-page-heading p { font-size: 12px; }
+	.company-count { display: block; margin-top: 14px; }
+	.mechbay-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+	.fleet-frame { min-width: 135px; padding: 14px; }
+	.fleet-frame>span { font-size: 8px; }
+	.fleet-market { max-width: none; width: 100%; }
+	.frame-inspection { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; padding: 18px; }
+	.frame-inspection>.bridge-section-title, .frame-inspection>h2 { grid-column: 1 / -1; }
+	.frame-inspection>.company-frame-art { grid-row: 3 / 6; grid-column: 1; max-height: 210px; align-self: center; }
+	.frame-inspection>.company-integrity { grid-column: 2; align-self: start; gap: 7px; }
+	.frame-inspection>.company-note { grid-column: 1 / -1; }
+	.frame-inspection>.secondary { grid-column: 1 / -1; }
+	.frame-specifications { grid-template-columns: 1fr; gap: 4px; }
+	.frame-specifications dd { margin-bottom: 7px; }
+	.company-integrity>span { font-size: 8px; }
+	.company-integrity>b { font-size: 25px; }
+	.company-mount { padding: 12px; gap: 10px; }
+	.company-mount small { font-size: 8px; }
+	.weapon-market-grid { grid-template-columns: minmax(0, 1fr); }
+	.market-weapon { padding: 18px; }
+	.market-weapon>p { margin: 14px 0; }
+	.frame-market-grid { grid-template-columns: minmax(0, 1fr); }
+	.market-frame { padding: 18px; gap: 12px; grid-template-columns: minmax(80px, .55fr) minmax(0, 1fr); }
+	.market-frame-art { max-height: none; }
+	.market-frame-art .company-frame-art { height: auto; }
+	.market-frame-body>h3 { font-size: 29px; }
+	.market-frame-body>p { font-size: 11px; }
+	.engineering-layout { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+	.calendar-console { padding: 20px; }
+	.calendar-console h2 { font-size: 45px; }
+	.work-order { padding: 16px; }
+	.work-order-heading .eyebrow { font-size: 8px; }
+	.work-order-dates { font-size: 8px; }
+	.company-screen .bridge-footer { gap: 16px; }
+}
+@media (max-height: 500px) and (min-width: 651px) {
+	.company-screen { padding-top: 16px; }
+	.ship-navigation { padding: 8px 0; }
+	.ship-navigation button { min-height: 40px; padding: 9px 14px; }
+	.company-page-heading { margin: 20px 0; }
+	.company-page-heading h2 { font-size: 34px; }
+}
+
+/* Keep the sortie action within a laptop-height bay; mobile remains a flowing page. */
+@media (min-width: 1151px) {
+	#mechbay { padding-top: 18px; }
+	#mechbay .bridge-header { padding-bottom: 14px; }
+	#mechbay .bridge-brand h1 { font-size: 30px; }
+	#mechbay .ship-navigation { padding: 8px 0; }
+	#mechbay .ship-navigation button { min-height: 44px; padding: 10px 18px; }
+	#mechbay .company-page-heading { margin: 16px 0; }
+	#mechbay .company-page-heading h2 { font-size: 34px; margin: 6px 0; }
+	#mechbay .company-page-heading p { font-size: 12px; line-height: 1.5; }
+	#mechbay .loadout-workbench>h2 { font-size: 30px; margin: 8px 0 12px; }
+	#mechbay .company-mounts { gap: 6px; }
+	#mechbay .company-mount { padding: 8px 12px; }
+	#mechbay .company-mount>span:nth-child(2) { gap: 3px; }
+	#mechbay .company-mount b { font-size: 20px; line-height: 1; }
+	#mechbay .loadout-workbench>.company-note { margin: 8px 0; line-height: 1.5; }
+	#mechbay .company-deploy { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; padding-top: 12px; margin-top: 12px; align-items: center; }
+	#mechbay .company-deploy>.eyebrow { grid-column: 1 / -1; }
+	#mechbay .company-deploy>p { margin: 0; font-size: 11px; line-height: 1.6; }
+	#mechbay .company-deploy>.primary { width: auto; min-width: 180px; padding: 12px 14px; font-size: 11px; letter-spacing: .6px; }
+	#mechbay .company-deploy>.secondary { grid-column: 1 / -1; margin-top: 0; }
+	#mechbay .frame-inspection { padding: 16px; }
+	#mechbay .frame-inspection>h2 { font-size: 34px; }
+	#mechbay .frame-inspection>.company-frame-art { max-height: 200px; }
+	#mechbay .company-integrity { padding-top: 10px; }
+	#mechbay .frame-specifications { margin: 14px 0 10px; }
+	#mechbay .bridge-footer { margin-top: 22px; }
+}
