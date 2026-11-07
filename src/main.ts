@@ -17,7 +17,7 @@ import { abandonContract, acceptContract, CAMPAIGN_STORAGE_KEY, getFaction, getP
 import { MISSION_NAMES, renderBridge } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
 import { missionObjective } from './missions';
-import { advanceDays, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
+import { advanceDays, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, unlockAllRigs } from './company';
 import { renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import type { Campaign } from './campaign';
 import { createTitleScene } from './title-scene';
@@ -436,9 +436,21 @@ const shutdown = await mountGame('game', async function (container) {
 		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
 		syncScreen();
 	};
+	const rigCode = ['ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
+	let rigCodeInput: string[] = [];
 	window.addEventListener('keydown', function (event) {
+		if (capture) rigCodeInput = [];
 		setInputMode('keyboard'); if (event.isTrusted) unlockSound();
 		if (capture && auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); if (event.code === 'Escape') { capture = undefined; renderMappings(); } else if (!event.repeat && validKey(event.code)) assignKey(event.code); return; }
+		if (capture || auxiliary || campaignConflict || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLElement && event.target.isContentEditable) {
+			rigCodeInput = [];
+		} else if (!event.repeat) {
+			rigCodeInput = [...rigCodeInput, event.code].slice(-rigCode.length);
+			if (rigCode.every(function (code, index) { return code === rigCodeInput[index]; })) {
+				rigCodeInput = [];
+				updateCompany(unlockAllRigs(campaign), 'Cheat enabled: all rigs unlocked.');
+			}
+		}
 		if (event.code === 'Escape') { event.preventDefault(); if (!event.repeat) back(); return; }
 		const root = menu();
 		if (root && screen === 'title' && !auxiliary && (event.code === 'ArrowUp' || event.code === 'ArrowDown')) {
