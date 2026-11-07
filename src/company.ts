@@ -86,6 +86,17 @@ export const buyFrame = function (campaign: Campaign, frameId: FrameId): Campaig
 		inventory: { ...campaign.inventory, [starter]: campaign.inventory[starter] + 1 },
 	};
 };
+// Grant only missing chassis; existing equipment, damage and deployment stay intact.
+export const unlockAllRigs = function (campaign: Campaign): Campaign {
+	return FRAMES.reduce(function (company, frame) {
+		if (getOwnedMech(company, frame.id)) return company;
+		return {
+			...company,
+			fleet: [...company.fleet, { frameId: frame.id, integrity: 100, loadout: [frame.starter, null, null, null] }],
+			inventory: { ...company.inventory, [frame.starter]: Math.min(MAX_INVENTORY, company.inventory[frame.starter] + 1) },
+		};
+	}, campaign);
+};
 export const buyWeapon = function (campaign: Campaign, weapon: WeaponId): Campaign {
 	if (campaign.deployed || !isWeaponId(weapon) || campaign.credits < WEAPON_PRICES[weapon] || campaign.inventory[weapon] >= MAX_INVENTORY) return campaign;
 	return { ...campaign, credits: campaign.credits - WEAPON_PRICES[weapon], inventory: { ...campaign.inventory, [weapon]: campaign.inventory[weapon] + 1 } };
