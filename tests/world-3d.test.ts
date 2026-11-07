@@ -15,10 +15,10 @@ test('world pools track live combat state and restart removes transient objects'
 	state.enemies.push({ id: 3, x: 300, y: 320, angle: 0, hp: 125, maxHp: 125, cooldown: 0, heavy: true, kind: 'siege', attack: { phase: 'committed', remaining: 2, cycle: 1 } });
 	state.player.heat = 80; state.beam = { x: 300, y: 400 };
 	try {
-		presentation.update(state, false);
+		presentation.update(state);
 		for (const name of ['inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeDefined();
 		expect(scene.getObjectByName('laser')?.visible).toBe(true); expect(scene.getObjectByName('reactor-vent')?.visible).toBe(true);
-		presentation.update(createState(), false);
+		presentation.update(createState());
 		for (const name of ['inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeUndefined();
 		expect(scene.getObjectByName('laser')?.visible).toBe(false); expect(scene.getObjectByName('reactor-vent')?.visible).toBe(false);
 		expect(scene.getObjectByName('relay')).toBeDefined();
@@ -33,7 +33,7 @@ test('transparent world effects retain depth tests without writing depth and dis
 	state.effects.push({ x: 100, y: 120, life: 0.4, size: 30, color: '#ff8866' });
 	state.strikes.push({ id: 1, x: 180, y: 200, life: 1.8, duration: 2.8, radius: 62, damage: 13 });
 	state.enemies.push({ id: 2, x: 300, y: 320, angle: 0, hp: 125, maxHp: 125, cooldown: 0, heavy: true, kind: 'siege' });
-	presentation.update(state, false);
+	presentation.update(state);
 	const geometries = new Set<BufferGeometry>(); const materials = new Set<Material>(); const disposed = new Map<BufferGeometry | Material, number>();
 	scene.traverse(function (object) {
 		if (!(object instanceof Mesh) && !(object instanceof LineSegments)) return;
@@ -46,19 +46,19 @@ test('transparent world effects retain depth tests without writing depth and dis
 	for (const asset of [...geometries, ...materials]) asset.addEventListener('dispose', function () { disposed.set(asset, (disposed.get(asset) ?? 0) + 1); });
 	presentation.dispose(); presentation.dispose();
 	for (const asset of [...geometries, ...materials]) expect(disposed.get(asset)).toBe(1);
-	presentation.update(state, false); expect(scene.children).toHaveLength(0);
+	presentation.update(state); expect(scene.children).toHaveLength(0);
 });
 
-test('reduced motion freezes vent drift while retaining the heat effect', function () {
+test('vent drift advances with simulation time and stays fixed while paused', function () {
 	const scene = new Scene(); const presentation = createWorldObjects(scene); const state = createState();
 	state.player.heat = 80; state.time = 0.2;
 	try {
-		presentation.update(state, true);
+		presentation.update(state);
 		const vent = scene.getObjectByName('reactor-vent');
 		const ventHeight = vent?.position.y;
-		state.time = 1.2; presentation.update(state, true);
+		presentation.update(state);
 		expect(vent?.position.y).toBe(ventHeight);
-		presentation.update(state, false);
+		state.time = 1.2; presentation.update(state);
 		expect(vent?.position.y).not.toBe(ventHeight);
 	} finally { presentation.dispose(); }
 });
@@ -87,7 +87,7 @@ test('revised frames launch from posed weapon faces even before ECS updates a st
 		const model = createMech(undefined, false, frame);
 		state.player.angle = 0; state.player.turret = Math.PI / 2;
 		const gait = createGaits(state).player;
-		const feedback = { recoil: 0.7, hit: 0, heat: 0, time: 0, reducedMotion: false };
+		const feedback = { recoil: 0.7, hit: 0, heat: 0, time: 0 };
 		try {
 			model.pose(gait, state.player.turret, feedback);
 			const faces: Vector3[] = [];
@@ -103,7 +103,7 @@ test('revised frames launch from posed weapon faces even before ECS updates a st
 				expect(anchor.distanceTo(face)).toBeLessThan(0.000001);
 				state.shots.push({ x: state.player.x, y: state.player.y + 30, vx: 0, vy: 300, life: 2, kind: frame === 'longbow' ? 'ppc' : 'rocket', target: undefined, damage: 1 });
 			}
-			world.update(state, false, effects);
+			world.update(state, effects);
 			for (const [index, projectile] of projectiles(scene).entries()) {
 				const muzzle = effects.muzzles[index]; if (!muzzle) throw new Error('Missing launch socket');
 				expect(meshChild(projectile, 1).position.distanceTo(muzzle)).toBeLessThan(0.000001);
@@ -123,7 +123,7 @@ test('airborne shots keep their launch origin across later aim and movement, pau
 		model.pose(createGaits(state).player, 0);
 		const effects = frameEffects(model, state); const muzzle = effects.muzzles[0];
 		if (!muzzle) throw new Error('Missing Longbow muzzle');
-		world.update(state, false, effects);
+		world.update(state, effects);
 		const projectile = projectiles(scene)[0]; const head = meshChild(projectile, 1); const trail = meshChild(projectile, 0);
 		const launch = head.position.clone();
 		expect(launch.distanceTo(muzzle)).toBeLessThan(0.000001);
@@ -133,26 +133,26 @@ test('airborne shots keep their launch origin across later aim and movement, pau
 		muzzle.set(-500, 400, -800);
 		state.player.x += 350; state.player.y -= 240; state.player.turret = Math.PI;
 		model.pose(createGaits(state).player, state.player.turret);
-		for (const reducedMotion of [false, true, false]) {
-			world.update(state, reducedMotion, effects);
+		for (let i = 0; i < 3; i++) {
+			world.update(state, effects);
 			expect(head.position.distanceTo(launch)).toBeLessThan(0.000001);
-			world.update(state, reducedMotion, frameEffects(model, state));
+			world.update(state, frameEffects(model, state));
 			expect(head.position.distanceTo(launch)).toBeLessThan(0.000001);
 		}
 		const launchDistance = launch.distanceTo(new Vector3(shot.x, 42, shot.y));
 		shot.x += 12; state.time += 0.04;
-		world.update(state, false, frameEffects(model, state)); scene.updateMatrixWorld(true);
+		world.update(state, frameEffects(model, state)); scene.updateMatrixWorld(true);
 		expect(head.position.y).toBeGreaterThan(42); expect(head.position.y).toBeLessThan(launch.y);
 		expect(head.position.distanceTo(new Vector3(shot.x, 42, shot.y))).toBeLessThan(launchDistance);
 		const [tail, tip] = segmentEnds(trail);
 		expect(tail.distanceTo(launch)).toBeLessThan(0.000001);
 		expect(tip.distanceTo(head.position)).toBeLessThan(0.000001);
 		const pausedHead = head.position.clone(); const pausedTrail = trail.matrix.clone();
-		for (let i = 0; i < 4; i++) world.update(state, i % 2 === 0, frameEffects(model, state));
+		for (let i = 0; i < 4; i++) world.update(state, frameEffects(model, state));
 		expect(head.position.equals(pausedHead)).toBe(true);
 		trail.updateMatrix(); expect(trail.matrix.equals(pausedTrail)).toBe(true);
 		shot.x += 300; state.time += 1;
-		world.update(state, true, frameEffects(model, state)); scene.updateMatrixWorld(true);
+		world.update(state, frameEffects(model, state)); scene.updateMatrixWorld(true);
 		expect(head.position.distanceTo(new Vector3(shot.x, 42, shot.y))).toBeLessThan(0.000001);
 		for (const point of segmentEnds(trail)) expect(point.y).toBeCloseTo(42, 6);
 	} finally { model.dispose(); world.dispose(); }
@@ -166,20 +166,19 @@ test('revised-frame lasers and heat exhaust follow live posed hardware while imp
 		try {
 			for (const heading of [0, Math.PI / 2, Math.PI]) {
 				state.player.x += 20; state.player.y -= 10; state.player.turret = heading;
-				model.pose(createGaits(state).player, heading, { recoil: 0.5, heat: 90, hit: 0, time: state.time, reducedMotion: true });
+				model.pose(createGaits(state).player, heading, { recoil: 0.5, heat: 90, hit: 0, time: state.time });
 				const effects = frameEffects(model, state); const muzzle = effects.muzzles[0];
 				if (!muzzle || !effects.exhaust) throw new Error('Missing frame effects anchors');
-				world.update(state, true, effects); scene.updateMatrixWorld(true);
+				world.update(state, effects); scene.updateMatrixWorld(true);
 				const laser = scene.getObjectByName('laser'); const [origin, impact] = segmentEnds(meshChild(laser, 0));
 				expect(origin.distanceTo(muzzle)).toBeLessThan(0.000001);
 				expect(impact.distanceTo(new Vector3(state.beam.x, 42, state.beam.y))).toBeLessThan(0.000001);
 				const exhaust = scene.getObjectByName('reactor-vent'); if (!exhaust) throw new Error('Missing vent effect');
-				expect(exhaust.position.distanceTo(effects.exhaust)).toBeLessThan(0.000001);
-				state.time += 0.2; world.update(state, true, effects);
-				expect(exhaust.position.distanceTo(effects.exhaust)).toBeLessThan(0.000001);
-				world.update(state, false, effects);
 				expect(exhaust.position.x).toBe(effects.exhaust.x); expect(exhaust.position.z).toBe(effects.exhaust.z);
-				expect(exhaust.position.y).toBeGreaterThan(effects.exhaust.y);
+				expect(exhaust.position.y).toBeCloseTo(effects.exhaust.y + state.time * 25 % 24, 6);
+				state.time += 0.2; world.update(state, effects);
+				expect(exhaust.position.x).toBe(effects.exhaust.x); expect(exhaust.position.z).toBe(effects.exhaust.z);
+				expect(exhaust.position.y).toBeCloseTo(effects.exhaust.y + state.time * 25 % 24, 6);
 			}
 		} finally { model.dispose(); world.dispose(); }
 	}
@@ -194,7 +193,7 @@ test('Warden keeps its original effects and hostile rounds ignore revised player
 	try {
 		warden.pose(createGaits(state).player, 0);
 		expect(warden.muzzles).toHaveLength(0); expect(warden.exhaust).toBeUndefined();
-		world.update(state, true, frameEffects(warden, state)); scene.updateMatrixWorld(true);
+		world.update(state, frameEffects(warden, state)); scene.updateMatrixWorld(true);
 		expect(meshChild(projectiles(scene)[0], 1).position.toArray()).toEqual([shot.x, 42, shot.y]);
 		const [origin, impact] = segmentEnds(meshChild(scene.getObjectByName('laser'), 0));
 		expect(origin.distanceTo(new Vector3(state.player.x, 42, state.player.y))).toBeLessThan(0.000001);
@@ -202,7 +201,7 @@ test('Warden keeps its original effects and hostile rounds ignore revised player
 		expect(scene.getObjectByName('reactor-vent')?.position.toArray()).toEqual([state.player.x - 23, 70, state.player.y]);
 		const enemy = { ...shot, kind: 'enemy' as const }; state.shots = [enemy];
 		longbow.pose(createGaits(createState({ frame: 'longbow' })).player, Math.PI / 2);
-		world.update(state, false, frameEffects(longbow, state)); scene.updateMatrixWorld(true);
+		world.update(state, frameEffects(longbow, state)); scene.updateMatrixWorld(true);
 		const projectile = projectiles(scene)[0];
 		expect(meshChild(projectile, 1).position.toArray()).toEqual([enemy.x, 42, enemy.y]);
 		for (const point of segmentEnds(meshChild(projectile, 0))) expect(point.y).toBeCloseTo(42, 6);
@@ -222,7 +221,7 @@ test('real weapon flashes anchor once to revised hardware without lifting coolan
 			expect(state.effects.filter(function (effect) { return effect.source === 'muzzle'; })).toHaveLength(1);
 			model.pose(createGaits(state).player, state.player.turret);
 			const anchors = frameEffects(model, state);
-			world.update(state, false, anchors);
+			world.update(state, anchors);
 			const rendered: Object3D[] = [];
 			scene.traverse(function (object) { if (object.name === 'impact-effect') rendered.push(object); });
 			expect(rendered).toHaveLength(state.effects.length);
@@ -234,16 +233,14 @@ test('real weapon flashes anchor once to revised hardware without lifting coolan
 			}
 			const origins = rendered.map(function (effect) { return effect.position.clone(); });
 			// A burst stays at the firing position while the player moves or
-			// aims elsewhere; pausing and reduced motion must not relocate it.
+			// aims elsewhere; rendering a paused frame must not relocate it.
 			anchors.muzzles[0]?.set(-500, 400, -800);
 			state.player.x += 200; state.player.y += 100; state.player.turret += Math.PI;
 			model.pose(createGaits(state).player, state.player.turret);
-			for (const reducedMotion of [true, false]) {
-				world.update(state, reducedMotion, frameEffects(model, state));
-				for (const [index, visual] of rendered.entries()) {
-					const origin = origins[index]; if (!origin) throw new Error('Missing original effect position');
-					expect(visual.position.distanceTo(origin)).toBeLessThan(0.000001);
-				}
+			world.update(state, frameEffects(model, state));
+			for (const [index, visual] of rendered.entries()) {
+				const origin = origins[index]; if (!origin) throw new Error('Missing original effect position');
+				expect(visual.position.distanceTo(origin)).toBeLessThan(0.000001);
 			}
 		} finally { model.dispose(); world.dispose(); }
 	}

@@ -19,6 +19,7 @@ import { missionObjective } from './missions';
 import { advanceDays, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
 import { renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import type { Campaign } from './campaign';
+import { createTitleScene } from './title-scene';
 
 const element = function (id: string): HTMLElement {
 	const value = document.getElementById(id);
@@ -37,13 +38,21 @@ const bindings = new Map([
 	['Digit1', 'mount-0'], ['Digit2', 'mount-1'], ['Digit3', 'mount-2'], ['Digit4', 'mount-3'],
 ]);
 const formatTime = function (time: number) { return `${Math.floor(time / 60)}:${Math.floor(time % 60).toString().padStart(2, '0')}`; };
-type Screen = ShipScreen | 'jump' | 'playing' | 'pause-panel' | 'result' | 'training-result';
+type Screen = ShipScreen | 'title' | 'jump' | 'playing' | 'pause-panel' | 'result' | 'training-result';
 type Auxiliary = 'settings' | 'handbook' | 'confirm' | 'save-conflict';
 const shutdown = await mountGame('game', async function (container) {
 	const canvas = container.querySelector('canvas');
 	if (!canvas) throw new Error('Missing battlefield');
 	canvas.tabIndex = 0;
 	const presentation = await createPresentation(canvas);
+	const titleCanvas = element('title-scene');
+	if (!(titleCanvas instanceof HTMLCanvasElement)) throw new Error('Missing title scene');
+	let titleScene: ReturnType<typeof createTitleScene> | undefined;
+	const showTitleScene = function () {
+		if (titleScene) return;
+		try { titleScene = createTitleScene(titleCanvas); }
+		catch (error: unknown) { console.warn('Title scene unavailable', error); }
+	};
 	const audio = createAudio();
 	const padInput = createGamepadInput();
 	const feedback = createControllerFeedback();
@@ -53,6 +62,7 @@ const shutdown = await mountGame('game', async function (container) {
 	};
 	let campaignSnapshot = savedSnapshot();
 	let campaign = readCampaign();
+	const returningCompany = campaignSnapshot !== null && campaignSnapshot !== undefined;
 	let campaignSaved = false;
 	let campaignConflict = false;
 	let destination: PlanetId = campaign.planetId;
@@ -60,7 +70,6 @@ const shutdown = await mountGame('game', async function (container) {
 	let jumpUntil = 0;
 	const abort = new AbortController(); const listenerOptions = { signal: abort.signal };
 	const keys = new Set<string>(); const pending = new Set<string>(); const held = new Map<number, string>();
-	const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 	const coarsePointer = window.matchMedia('(pointer: coarse)');
 	const ui = {
 		phase: element('phase'), status: element('status'), armor: element('armor-value'), armorFill: element('armor-fill'),
@@ -78,7 +87,8 @@ const shutdown = await mountGame('game', async function (container) {
 	});
 	element('weapon-bank').replaceChildren(...weaponButtons);
 	let training: Training | undefined;
-	let screen: Screen = 'bridge'; let auxiliary: Auxiliary | undefined;
+	let screen: Screen = 'title'; let auxiliary: Auxiliary | undefined;
+	let trainingOrigin: 'title' | 'bridge' = 'bridge';
 	let editor: CompanyEditor = { loadout: [...(getOwnedMech(campaign)?.loadout ?? [])], slot: null, notice: '' };
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
@@ -87,15 +97,18 @@ const shutdown = await mountGame('game', async function (container) {
 	let frame = 0; let previous = 0; let accumulator = 0; let lastHud = 0;
 	let message = ''; let messageUntil = 0; let terminalUntil = 0; let contextLost = false; let focused = true;
 	let returnFocus: HTMLElement | undefined; let confirmedAction: (() => void) | undefined; let tipDismissed = false;
-	let inputMode: 'keyboard' | 'gamepad' | 'touch' = 'keyboard'; let controllerLost = false; let screenRevision = 0;
+	let inputMode: 'keyboard' | 'gamepad' | 'touch' = coarsePointer.matches ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
 	let currentPad: PadInput | undefined;
 	let lastSoundState = '';
 	const resetInput = function () { keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); padInput.requireNeutral(); void feedback.stop(); };
 	const playing = function () { return screen === 'playing' && !auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
 	const active = function (action: string) { return MOUNTS.some(function (binding) { return binding.action === action && mouseButtons.has(binding.button); }) || [...keys].some(function (code) { return bindings.get(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
 	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false }); };
-	const motionReduced = function () { return reducedMotion.matches || profile.settings.reducedMotion; };
 	const unlockSound = function () { void audio.unlock(); };
+	const updateMenuHint = function () {
+		const onTitle = screen === 'title' && !auxiliary;
+		element('menu-input-hint').textContent = inputMode === 'gamepad' ? onTitle ? 'D-PAD / STICK SELECT · A / × CONFIRM' : 'A / × SELECT · B / ○ BACK · RIGHT STICK SCROLL' : inputMode === 'touch' ? onTitle ? 'TAP TO SELECT' : 'TAP TO SELECT · SWIPE TO SCROLL' : onTitle ? '↑ / ↓ OR TAB SELECT · ENTER CONFIRM' : 'TAB SELECT · ENTER CONFIRM · ESC BACK';
+	};
 	const setInputMode = function (value: typeof inputMode) {
 		if (inputMode === value && container.dataset['input'] === value && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
 		inputMode = value; container.dataset['input'] = value;
@@ -107,20 +120,18 @@ const shutdown = await mountGame('game', async function (container) {
 			const prompt = container.querySelector(selector); if (prompt) prompt.textContent = value === 'gamepad' ? gamepad : keyboard;
 		}
 		element('weapon-hint').textContent = value === 'gamepad' ? 'HOLD TRIGGERS + BUMPERS' : value === 'touch' ? 'HOLD TOGETHER TO COMBINE' : 'HOLD MOUSE BUTTONS / 1–4';
-		element('menu-input-hint').textContent = value === 'gamepad' ? 'A / × SELECT · B / ○ BACK · RIGHT STICK SCROLL' : value === 'touch' ? 'TAP TO SELECT · SWIPE TO SCROLL' : 'TAB SELECT · ENTER CONFIRM · ESC BACK';
+		updateMenuHint();
 	};
 	const save = function () {
 		element('storage-status').textContent = saveProfile(profile) ? 'Preferences are saved on this device.' : 'Device storage is unavailable. You can keep playing; records will last for this session.';
 	};
 	const updateSettings = function () {
 		audio.setMix(profile.settings);
-		container.classList.toggle('reduced-motion', motionReduced());
 		container.classList.toggle('touch-enabled', coarsePointer.matches || profile.settings.touchControls);
 		for (const name of ['master', 'music', 'effects'] as const) {
 			inputElement(`${name}-volume`).value = String(Math.round(profile.settings[name] * 100));
 			element(`${name}-output`).textContent = `${Math.round(profile.settings[name] * 100)}%`;
 		}
-		inputElement('reduce-motion').checked = profile.settings.reducedMotion;
 		inputElement('show-touch').checked = profile.settings.touchControls;
 		inputElement('large-interface').checked = profile.settings.couchUI;
 		inputElement('controller-vibration').checked = profile.settings.vibration;
@@ -135,17 +146,20 @@ const shutdown = await mountGame('game', async function (container) {
 		screenRevision++;
 		element('reset').hidden = !training;
 		element('reset').textContent = 'RESTART TRAINING';
-		element('leave').textContent = state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : 'RETURN TO SHIP';
+		element('leave').textContent = state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('training-deploy').textContent = campaign.active ? 'REVIEW CONTRACT LOADOUT →' : 'RETURN TO SHIP →';
-		element('training-briefing').textContent = 'RETURN TO SHIP';
+		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('pause-copy').textContent = training ? 'Training is paused. The simulator does not affect your company.' : 'Your throttle and mission are preserved. Aborting or reloading returns the mech with its current damage.';
-		for (const id of ['bridge', 'mechbay', 'market', 'engineering', 'jump', 'pause-panel', 'result', 'training-result', 'settings', 'handbook', 'confirm', 'save-conflict']) {
+		for (const id of ['title', 'bridge', 'mechbay', 'market', 'engineering', 'jump', 'pause-panel', 'result', 'training-result', 'settings', 'handbook', 'confirm', 'save-conflict']) {
 			const node = element(id); const visible = auxiliary ? id === auxiliary : id === screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
 		const modal = screen !== 'playing' || Boolean(auxiliary);
 		container.classList.toggle('training-active', Boolean(training));
 		container.classList.toggle('menu-open', modal); container.dataset['screen'] = auxiliary ?? screen;
+		updateMenuHint();
+		element('title-save-status').textContent = `${campaignSaved ? 'LOCAL COMPANY' : 'SESSION ONLY · STORAGE UNAVAILABLE'} / DAY ${String(campaign.day).padStart(2, '0')} / ${getPlanet(campaign.planetId).name.toUpperCase()}`;
+		if (screen === 'title') showTitleScene();
 		element('hud').inert = modal; canvas.inert = modal;
 		resetInput(); accumulator = 0; lastHud = 0;
 		if (!focus) return;
@@ -174,6 +188,7 @@ const shutdown = await mountGame('game', async function (container) {
 	};
 	const startTraining = function () {
 		if (contextLost) return;
+		if (!training) trainingOrigin = screen === 'title' ? 'title' : 'bridge';
 		presentation.resetZoom();
 		training = createTraining(); state = training.state; gaits = createGaits(state);
 		screen = 'playing'; auxiliary = undefined; pointer = undefined; aim = { x: 900, y: 450 };
@@ -277,7 +292,7 @@ const shutdown = await mountGame('game', async function (container) {
 				campaign = next; if (!persistCampaign()) return;
 				element('jump-destination').textContent = getPlanet(campaign.planetId).name.toUpperCase();
 				element('jump-copy').textContent = `${origin.name} → ${getPlanet(campaign.planetId).name} · DAY ${campaign.day} · APPROACHING ORBIT`;
-				screen = 'jump'; jumpUntil = performance.now() + (motionReduced() ? 350 : 2200); syncScreen();
+				screen = 'jump'; jumpUntil = performance.now() + 2200; syncScreen();
 				element('jump').focus({ preventScroll: true });
 			},
 			accept: function (contract) {
@@ -289,6 +304,7 @@ const shutdown = await mountGame('game', async function (container) {
 			deploy: function () { navigateShip('mechbay'); },
 			abandon: function () { confirm(function () { campaign = abandonContract(campaign); persistCampaign(); toBridge(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains.', 'ABORT THIS CONTRACT?'); },
 			training: startTraining,
+			title: toTitle,
 			settings: function () { showAuxiliary('settings'); },
 			handbook: function () { showAuxiliary('handbook'); },
 		});
@@ -302,21 +318,44 @@ const shutdown = await mountGame('game', async function (container) {
 		pointer = undefined; presentation.resetZoom(); audio.reset(); syncScreen();
 	};
 	const toBridge = function () { navigateShip('bridge'); };
+	const toTitle = function () {
+		element('title-company-label').textContent = 'CONTINUE COMPANY';
+		training = undefined; screen = 'title'; auxiliary = undefined; audio.reset(); syncScreen();
+	};
 	const back = function () {
 		if (auxiliary) { closeAuxiliary(); return; }
 		if (screen === 'mechbay' && editor.slot !== null) { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`); return; }
+		if (screen === 'training-result' && trainingOrigin === 'title') { toTitle(); return; }
 		if (screen === 'mechbay' || screen === 'market' || screen === 'engineering' || screen === 'training-result') { toBridge(); return; }
+		if (screen === 'bridge') { toTitle(); return; }
 		setPaused(screen === 'playing');
 	};
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', callback, listenerOptions); };
+	listen('title-continue', toBridge);
+	listen('title-training', startTraining);
+	listen('title-settings', function () { showAuxiliary('settings'); });
+	listen('title-handbook', function () { showAuxiliary('handbook'); });
+	const titleChoices = ['title-continue', 'title-training', 'title-settings', 'title-handbook'];
+	const describeTitleChoice = function (selected: string) {
+		for (const id of titleChoices) element(`${id}-description`).hidden = id !== selected;
+	};
+	for (const id of titleChoices) {
+		element(id).addEventListener('focus', function () { describeTitleChoice(id); }, listenerOptions);
+		element(id).addEventListener('pointerenter', function () { describeTitleChoice(id); }, listenerOptions);
+		element(id).addEventListener('pointerleave', function () {
+			const focusedId = document.activeElement instanceof HTMLElement ? document.activeElement.id : '';
+			describeTitleChoice(titleChoices.includes(focusedId) ? focusedId : 'title-continue');
+		}, listenerOptions);
+	}
+	element('title-company-label').textContent = returningCompany ? 'CONTINUE COMPANY' : 'START COMPANY';
 	listen('training-deploy', function () { if (campaign.active) navigateShip('mechbay'); else toBridge(); });
-	listen('training-briefing', toBridge); listen('restart', toBridge);
+	listen('training-briefing', function () { if (trainingOrigin === 'title') toTitle(); else toBridge(); }); listen('restart', toBridge);
 	listen('resume', function () { setPaused(false); });
 	listen('pause', function () { setPaused(true); });
 	listen('reset', function () { if (training) confirm(startTraining, 'RESTART TRAINING'); });
 	listen('leave', function () {
 		if (state.mission && !training) confirm(function () { checkpoint(); campaign = abandonContract(campaign); persistCampaign(); toBridge(); }, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains. Recovery takes one day.', 'ABORT THIS CONTRACT?');
-		else confirm(toBridge, 'RETURN TO SHIP');
+		else confirm(trainingOrigin === 'title' ? toTitle : toBridge, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
 	});
 	listen('result-briefing', toBridge);
 	listen('confirm-action', function () { const action = confirmedAction; confirmedAction = undefined; action?.(); });
@@ -341,12 +380,11 @@ const shutdown = await mountGame('game', async function (container) {
 	for (const name of ['master', 'music', 'effects'] as const) inputElement(`${name}-volume`).addEventListener('input', function () {
 		profile.settings[name] = Number(inputElement(`${name}-volume`).value) / 100; updateSettings(); save(); unlockSound();
 	}, listenerOptions);
-	inputElement('reduce-motion').addEventListener('change', function () { profile.settings.reducedMotion = inputElement('reduce-motion').checked; updateSettings(); save(); }, listenerOptions);
 	inputElement('show-touch').addEventListener('change', function () { profile.settings.touchControls = inputElement('show-touch').checked; updateSettings(); save(); }, listenerOptions);
 	inputElement('large-interface').addEventListener('change', function () { profile.settings.couchUI = inputElement('large-interface').checked; updateSettings(); save(); }, listenerOptions);
 	inputElement('controller-vibration').addEventListener('change', function () { profile.settings.vibration = inputElement('controller-vibration').checked; updateSettings(); save(); if (!profile.settings.vibration) void feedback.stop(); }, listenerOptions);
 	element('handbook').tabIndex = -1;
-	reducedMotion.addEventListener('change', updateSettings, listenerOptions); coarsePointer.addEventListener('change', updateSettings, listenerOptions);
+	coarsePointer.addEventListener('change', updateSettings, listenerOptions);
 	const showResult = function (now: number) {
 		if (training || !state.mission) return;
 		checkpoint();
@@ -370,6 +408,10 @@ const shutdown = await mountGame('game', async function (container) {
 		setInputMode('keyboard'); if (event.isTrusted) unlockSound();
 		if (event.code === 'Escape') { event.preventDefault(); if (!event.repeat) back(); return; }
 		const root = menu();
+		if (root && screen === 'title' && !auxiliary && (event.code === 'ArrowUp' || event.code === 'ArrowDown')) {
+			event.preventDefault(); const items = focusable(root); const index = items.findIndex(function (item) { return item === document.activeElement; });
+			items[(index + (event.code === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); audio.cue('focus'); return;
+		}
 		// Purchases and work orders require a fresh confirmation press.
 		if (root && event.repeat && (event.code === 'Enter' || event.code === 'Space')) { event.preventDefault(); return; }
 		if (root && event.code === 'Tab') {
@@ -488,10 +530,10 @@ const shutdown = await mountGame('game', async function (container) {
 		if (element('audio-status').textContent !== audioStatus) element('audio-status').textContent = audioStatus;
 	};
 	const audioFrame = function (now: number) {
-		const combat = playing(); const audibleMenu = screen === 'jump' || screen === 'bridge' || screen === 'mechbay' || screen === 'market' || screen === 'engineering' || screen === 'training-result' || (screen === 'result' && now < terminalUntil + 30000);
+		const combat = playing(); const audibleMenu = screen === 'title' || screen === 'jump' || screen === 'bridge' || screen === 'mechbay' || screen === 'market' || screen === 'engineering' || screen === 'training-result' || (screen === 'result' && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			active: !contextLost && focused && !document.hidden && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
-			phase: screen === 'jump' || screen === 'bridge' || screen === 'mechbay' || screen === 'market' || screen === 'engineering' ? 'briefing' as const : screen === 'training-result' ? 'refit' as const : screen === 'result' ? 'result' as const : 'combat' as const,
+			phase: screen === 'title' || screen === 'jump' || screen === 'bridge' || screen === 'mechbay' || screen === 'market' || screen === 'engineering' ? 'briefing' as const : screen === 'training-result' ? 'refit' as const : screen === 'result' ? 'result' as const : 'combat' as const,
 			intensity: Math.min(1, state.enemies.length / 5 + (state.wave - 1) * 0.08), danger: Math.max(0, 1 - Math.min(state.player.hp, state.relay) / 50), victory: state.outcome === 'won' };
 	};
 	const tick = function (now: number) {
@@ -499,7 +541,7 @@ const shutdown = await mountGame('game', async function (container) {
 		const revisionAtFrame = screenRevision;
 		const elapsed = previous ? Math.min((now - previous) / 1000, 0.1) : 0; previous = now;
 		const rect = canvas.getBoundingClientRect(); const width = rect.width; const height = rect.height;
-		presentation.resize(state, width, height, motionReduced());
+		presentation.resize(state, width, height);
 		let pads: readonly (Gamepad | null)[] = [];
 		try { pads = navigator.getGamepads?.() ?? []; } catch { /* Gamepad access can be restricted by an embedding policy. */ }
 		if (!focused || document.hidden || contextLost) padInput.suspend();
@@ -569,11 +611,12 @@ const shutdown = await mountGame('game', async function (container) {
 			}
 		}
 		audio.update(audioFrame(now));
-		if (!contextLost && (screen === 'playing' || screen === 'pause-panel' || screen === 'result' || screen === 'training-result')) presentation.render(state, aim, gaits, motionReduced(), false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI);
+		if (screen === 'title' && !auxiliary && focused && !document.hidden) titleScene?.render(now);
+		if (!contextLost && (screen === 'playing' || screen === 'pause-panel' || screen === 'result' || screen === 'training-result')) presentation.render(state, aim, gaits, false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI);
 		if (now - lastHud > 80 || lastHud === 0) { updateHud(); lastHud = now; }
 		frame = requestAnimationFrame(tick);
 	};
 	updateSettings(); updateDifficulty(); refreshBridge(); persistCampaign(); syncScreen(); frame = requestAnimationFrame(tick);
-	return async function () { checkpoint(); cancelAnimationFrame(frame); abort.abort(); resetInput(); padInput.reset(); await feedback.dispose(); try { await audio.dispose(); } finally { await presentation.dispose(); } };
+	return async function () { checkpoint(); cancelAnimationFrame(frame); abort.abort(); resetInput(); padInput.reset(); titleScene?.dispose(); await feedback.dispose(); try { await audio.dispose(); } finally { await presentation.dispose(); } };
 });
 if (import.meta.hot) import.meta.hot.dispose(shutdown);

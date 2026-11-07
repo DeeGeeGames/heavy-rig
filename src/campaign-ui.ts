@@ -24,6 +24,7 @@ export interface BridgeActions {
 	deploy: () => void;
 	abandon: () => void;
 	training: () => void;
+	title: () => void;
 	navigate: (screen: ShipScreen) => void;
 	settings: () => void;
 	handbook: () => void;
@@ -74,6 +75,6 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 		</div>
 		<section class="faction-standings" aria-label="Faction reputation"><div><span class="eyebrow">YOUR REPUTATION</span><b>EVERY CONTRACT TAKES A SIDE.</b></div>${FACTIONS.map(function (faction) { const value = campaign.reputation[faction.id]; return html`<div class="faction-standing" style="--faction-color:${faction.color}"><div><b>${faction.name}</b><strong>${signed(value)}</strong></div><span>${reputationLabel(value)}</span><div class="reputation-track"><i style="left:${value < 0 ? 50 + value / 2 : 50}%;width:${Math.abs(value) / 2}%"></i></div></div>`; })}</section>
 		${campaign.lastResult ? html`<p class="campaign-log"><span>${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}</span> ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor</p>` : ''}
-		<footer class="bridge-footer"><div><button @click=${actions.training}>FRAME TRAINING</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>
+		<footer class="bridge-footer"><div><button @click=${actions.training}>FRAME TRAINING</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button><button @click=${actions.title}>TITLE SCREEN</button></div><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>
 	`, root);
 };

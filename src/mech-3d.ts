@@ -5,7 +5,7 @@ import { legJoints, mechScale, posedLegRig, STANDARD_LEG_RIG, type WalkerGait } 
 import { FRAME_RIGS } from './frame-rig';
 import type { EnemyKind } from './simulation';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; reducedMotion: boolean }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
@@ -356,20 +356,19 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			const poseRig = posedLegRig(gait, size, rig);
 			const humanoid = rig.kneeDirection === 1;
 			hull.position.y = (poseRig.hipHeight - rig.hipHeight) * size;
-			const motion = feedback?.reducedMotion ? 0 : 1;
 			// Tall humanoids stabilize their upper assembly over the pelvis.
 			// Keep a small support-side shift and lean without magnifying the
 			// shared suspension roll through their much longer waist-to-head lever.
 			const roll = gait.motion.roll * (humanoid ? 0.28 : 1);
 			const pitch = gait.motion.pitch * (humanoid ? 0.5 : 1);
-			const sway = gait.motion.roll * (humanoid ? 6 : 26) * size * motion * suspension;
-			turret.position.set(-Math.sin(gait.body.angle) * sway, humanoid ? poseRig.hipHeight * size : waistHeight + gait.motion.lift * size * motion * suspension, Math.cos(gait.body.angle) * sway);
+			const sway = gait.motion.roll * (humanoid ? 6 : 26) * size * suspension;
+			turret.position.set(-Math.sin(gait.body.angle) * sway, humanoid ? poseRig.hipHeight * size : waistHeight + gait.motion.lift * size * suspension, Math.cos(gait.body.angle) * sway);
 			// Express chassis-relative lean in turret space so aiming does not
 			// rotate the weight shift away from the supporting foot.
 			const relativeHeading = gait.body.angle - heading;
-			turret.rotation.x = (Math.cos(relativeHeading) * roll - Math.sin(relativeHeading) * pitch) * motion * suspension;
-			turret.rotation.z = (Math.sin(relativeHeading) * roll + Math.cos(relativeHeading) * pitch) * motion * suspension;
-			const recoil = feedback?.reducedMotion ? 0 : feedback?.recoil ?? 0;
+			turret.rotation.x = (Math.cos(relativeHeading) * roll - Math.sin(relativeHeading) * pitch) * suspension;
+			turret.rotation.z = (Math.sin(relativeHeading) * roll + Math.cos(relativeHeading) * pitch) * suspension;
+			const recoil = feedback?.recoil ?? 0;
 			for (const barrel of barrels) barrel.part.position.x = barrel.x - recoil * 7 * size * (kind ? 1 : definition.recoil);
 			for (const shutter of shutters) shutter.part.position.y = shutter.y + recoil * 5 * size;
 			const hit = feedback?.hit ?? 0;

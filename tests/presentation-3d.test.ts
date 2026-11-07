@@ -114,7 +114,7 @@ test('render batches follow planted pose handles when ECS synchronizes the root 
 	}
 });
 
-test('reduced motion restores the torso without changing feet or independent turret aim', function () {
+test('weapon feedback preserves walking torso motion, planted feet, and independent turret aim', function () {
 	for (const kind of [undefined, 'scout', 'striker', 'siege'] as const) {
 		const size = kind ? mechScale(kind) : 1; const model = createMech(kind);
 		let gait = createGait({ x: 0, y: 0, angle: 0 }, size);
@@ -130,8 +130,9 @@ test('reduced motion restores the torso without changing feet or independent tur
 			const footTransforms = feet.map(function (foot) { return foot.matrix.clone(); });
 			expect(walking.equals(rest)).toBe(false);
 			expect(turret.rotation.y).toBe(-Math.PI / 2);
-			model.pose(gait, Math.PI / 2, { recoil: 0, hit: 0, heat: 0, time: 0, reducedMotion: true });
-			expect(turret.matrix.equals(rest)).toBe(true);
+			model.pose(gait, Math.PI / 2, { recoil: 1, hit: 0, heat: 0, time: 0 });
+			expect(turret.matrix.equals(walking)).toBe(true);
+			expect(turret.rotation.y).toBe(-Math.PI / 2);
 			expect(feet.map(function (foot) { return foot.matrix; })).toEqual(footTransforms);
 			model.pose(gait, Math.PI / 2);
 			expect(turret.matrix.equals(walking)).toBe(true);

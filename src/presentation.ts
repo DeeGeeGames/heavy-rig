@@ -57,7 +57,7 @@ export const createPresentation = async function (canvas: HTMLCanvasElement) {
 	};
 	try { await world.initialize(); player = makeUnit(); }
 	catch (error: unknown) { await dispose(); throw error; }
-	const resize = function (state: State, nextWidth: number, nextHeight: number, reducedMotion: boolean) {
+	const resize = function (state: State, nextWidth: number, nextHeight: number) {
 		width = nextWidth; height = nextHeight;
 		if (disposed || width <= 0 || height <= 0) return;
 		const dpr = Math.min(devicePixelRatio, 2);
@@ -66,14 +66,14 @@ export const createPresentation = async function (canvas: HTMLCanvasElement) {
 		}
 		if (labels.width !== canvas.width || labels.height !== canvas.height) { labels.width = canvas.width; labels.height = canvas.height; }
 		camera.clearViewOffset(); camera.zoom = 1; alignCamera(camera, width, height, state, zoom);
-		if (!reducedMotion && state.shake > 0) camera.setViewOffset(width, height, -Math.sin(state.time * 79) * state.shake, -Math.cos(state.time * 91) * state.shake, width, height);
+		if (state.shake > 0) camera.setViewOffset(width, height, -Math.sin(state.time * 79) * state.shake, -Math.cos(state.time * 91) * state.shake, width, height);
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 	};
-	const pose = function (unit: ReturnType<typeof makeUnit>, gait: Gaits['player'], heading: number, hp: number, state: State, reducedMotion: boolean, recoil = 0) {
+	const pose = function (unit: ReturnType<typeof makeUnit>, gait: Gaits['player'], heading: number, hp: number, state: State, recoil = 0) {
 		if (unit.damage.hp !== undefined && hp < unit.damage.hp) unit.damage.hitAt = state.time;
 		unit.damage.hp = hp;
 		unit.entity.components.localTransform3D.x = gait.body.x; unit.entity.components.localTransform3D.z = gait.body.y;
-		world.markChanged(unit.entity.id, 'localTransform3D'); unit.model.pose(gait, heading, { hit: Math.max(0, 1 - (state.time - unit.damage.hitAt) / 0.16), recoil, heat: kindHeat(unit.kind, state), time: state.time, reducedMotion });
+		world.markChanged(unit.entity.id, 'localTransform3D'); unit.model.pose(gait, heading, { hit: Math.max(0, 1 - (state.time - unit.damage.hitAt) / 0.16), recoil, heat: kindHeat(unit.kind, state), time: state.time });
 	};
 	const kindHeat = function (kind: EnemyKind | undefined, state: State) { return kind ? 0 : state.player.heat; };
 	return {
@@ -82,7 +82,7 @@ export const createPresentation = async function (canvas: HTMLCanvasElement) {
 		resetZoom: function () { zoom = 1; },
 		toGround: function (point: Point) { return toGround(point, camera, width, height); },
 		toScreen: function (point: Point, elevation = 0) { return toScreen(point, camera, width, height, elevation); },
-		render: function (state: State, aim: Point, gaits: Gaits, reducedMotion: boolean, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false) {
+		render: function (state: State, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false) {
 			if (disposed || width <= 0 || height <= 0) return;
 			if (biome !== state.mission?.map.biome) {
 				biome = state.mission?.map.biome;
@@ -102,7 +102,7 @@ export const createPresentation = async function (canvas: HTMLCanvasElement) {
 			if (relayHp !== undefined && state.relay < relayHp) relayHitAt = state.time;
 			relayHp = state.relay;
 			previousStateTime = state.time;
-			resize(state, width, height, reducedMotion);
+			resize(state, width, height);
 			sun.position.set(state.player.x - 420, 900, state.player.y - 500); sun.target.position.set(state.player.x, 0, state.player.y);
 			fill.position.set(state.player.x + 700, 450, state.player.y + 600); fill.target.position.set(state.player.x, 50, state.player.y);
 			if (hangar) {
@@ -117,7 +117,7 @@ export const createPresentation = async function (canvas: HTMLCanvasElement) {
 			if (player) {
 				const heading = attract ? Math.PI / 4 - 0.22 : state.player.turret;
 				const gait = attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player;
-				pose(player, gait, heading, state.player.hp, state, reducedMotion, weaponRecoil(state.loadout));
+				pose(player, gait, heading, state.player.hp, state, weaponRecoil(state.loadout));
 				const transform = player.entity.components.localTransform3D;
 				transform.sx = transform.sy = transform.sz = hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1;
 				world.markChanged(player.entity.id, 'localTransform3D');
@@ -128,10 +128,10 @@ export const createPresentation = async function (canvas: HTMLCanvasElement) {
 				let unit = enemies.get(enemy.id);
 				if (unit && (unit.kind !== enemy.kind || unit.commander !== Boolean(enemy.commander))) { world.removeEntity(unit.entity.id); unit.model.dispose(); unit = undefined; }
 				if (!unit) { unit = makeUnit(enemy.kind, enemy.commander); enemies.set(enemy.id, unit); }
-				pose(unit, gaits.enemies.get(enemy.id) ?? createGait(enemy, mechScale(enemy.kind)), enemy.angle, enemy.hp, state, reducedMotion);
+				pose(unit, gaits.enemies.get(enemy.id) ?? createGait(enemy, mechScale(enemy.kind)), enemy.angle, enemy.hp, state);
 			}
 			const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
-			objects.update(state, reducedMotion, player ? {
+			objects.update(state, player ? {
 				muzzles: player.model.muzzles.map(worldAnchor), exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
 			} : undefined);
 			reticle.visible = barrel.visible = !attract;
@@ -139,7 +139,7 @@ export const createPresentation = async function (canvas: HTMLCanvasElement) {
 			const positions = barrelGeometry.getAttribute('position'); const p = state.player;
 			positions.setXYZ(0, p.x, 0.25, p.y); positions.setXYZ(1, p.x + Math.cos(p.turret) * 110, 0.25, p.y + Math.sin(p.turret) * 110); positions.needsUpdate = true;
 			world.update(0);
-			drawOverlay(ctx, width, height, state, aim, { reducedMotion, showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode,
+			drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode,
 				armorHit: Math.max(0, 1 - (state.time - (player?.damage.hitAt ?? -10)) / 0.9),
 				...(player && state.frame !== 'warden' ? { armorHitHeight: player.model.labelHeight + 20 } : {}),
 				relayHit: Math.max(0, 1 - (state.time - relayHitAt) / 1.6) });
