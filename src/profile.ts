@@ -1,5 +1,8 @@
+import { defaultKeyboard, defaultController, parseKeyboard, parseController, type KeyboardBindings, type ControllerBindings } from './bindings';
 import type { Difficulty } from './operation';
 export interface Settings {
+	keyboard: KeyboardBindings;
+	controller: ControllerBindings;
 	master: number;
 	music: number;
 	effects: number;
@@ -21,7 +24,7 @@ export interface OperationRecord {
 export interface Profile { settings: Settings; records: OperationRecord[]; bests: OperationRecord[] }
 const STORAGE_KEY = 'heavy-rig:profile:v1';
 export const defaultSettings = function (): Settings {
-	return { master: 0.8, music: 0.55, effects: 0.85, touchControls: false, couchUI: false, vibration: true, difficulty: 'standard' };
+	return { keyboard: defaultKeyboard(), controller: defaultController(), master: 0.8, music: 0.55, effects: 0.85, touchControls: false, couchUI: false, vibration: true, difficulty: 'standard' };
 };
 export const isDifficulty = function (value: unknown): value is Difficulty { return value === 'story' || value === 'standard' || value === 'veteran'; };
 const object = function (value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); };
@@ -48,6 +51,7 @@ export const parseProfile = function (raw: string | null): Profile {
 		if (!object(parsed)) return defaults;
 		const settings = parsed['settings'];
 		if (object(settings)) defaults.settings = {
+			keyboard: parseKeyboard(settings['keyboard']), controller: parseController(settings['controller']),
 			master: bounded(settings['master'], defaults.settings.master), music: bounded(settings['music'], defaults.settings.music), effects: bounded(settings['effects'], defaults.settings.effects),
 			touchControls: settings['touchControls'] === true,
 			couchUI: settings['couchUI'] === true, vibration: settings['vibration'] !== false,
