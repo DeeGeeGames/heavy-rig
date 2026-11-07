@@ -1,3 +1,4 @@
+import { defaultController, type ControllerBindings } from './bindings';
 import type { FireInputs } from './arsenal';
 
 export type GamepadSnapshot = Pick<Gamepad, 'axes' | 'buttons' | 'connected' | 'index' | 'mapping' | 'id'>;
@@ -43,7 +44,7 @@ export const createGamepadInput = function () {
 	const requireNeutral = function () { gameplayReady = false; menuReady = false; navigation = 0; };
 	const suspend = function () { previous.clear(); navigation = 0; menuReady = false; requireNeutral(); };
 	const reset = function () { suspend(); owner = undefined; repeatAt = 0; };
-	const read = function (pads: readonly (GamepadSnapshot | null)[], now: number): PadInput {
+	const read = function (pads: readonly (GamepadSnapshot | null)[], now: number, bindings: ControllerBindings = defaultController()): PadInput {
 		const connected = pads.filter(function (candidate): candidate is GamepadSnapshot { return candidate !== null && candidate.connected && candidate.mapping === 'standard'; });
 		const samples = connected.map(function (pad) { return { pad, key: identity(pad), buttons: pressedButtons(pad) }; });
 		let sample = samples.find(function (candidate) { return candidate.key === owner; });
@@ -65,7 +66,7 @@ export const createGamepadInput = function () {
 		const edge = function (button: number) { return menuReady && !claimed && before !== undefined && pressed(button) && !before.has(button); };
 		const x = deadZone(sample?.pad.axes[0] ?? 0); const y = deadZone(sample?.pad.axes[1] ?? 0);
 		const aimX = deadZone(sample?.pad.axes[2] ?? 0); const aimY = deadZone(sample?.pad.axes[3] ?? 0);
-		const neutral = x === 0 && y === 0 && aimX === 0 && aimY === 0 && ![1, 2, 4, 5, 6, 7].some(pressed);
+		const neutral = x === 0 && y === 0 && aimX === 0 && aimY === 0 && !Object.values(bindings).some(pressed);
 		if (sample && !claimed && neutral) gameplayReady = true;
 		if (sample && x === 0 && y === 0 && aimX === 0 && aimY === 0 && ![0, 1, 9, 12, 13, 14, 15].some(pressed)) menuReady = true;
 		const direction = pressed(12) || pressed(14) || y < -0.55 || x < -0.55 ? -1 : pressed(13) || pressed(15) || y > 0.55 || x > 0.55 ? 1 : 0;
@@ -77,8 +78,8 @@ export const createGamepadInput = function () {
 			connected: Boolean(sample), available: connected.length > 0, lost, claimed,
 			activity: Boolean(sample) && (claimed || buttons.size > 0 || x !== 0 || y !== 0 || aimX !== 0 || aimY !== 0), ready, index: sample?.pad.index,
 			drive: ready ? -y : 0, turn: ready ? x : 0, aimX: ready ? aimX : 0, aimY: ready ? aimY : 0,
-			fire: [ready && pressed(7), ready && pressed(6), ready && pressed(5), ready && pressed(4)],
-			coolant: ready && pressed(1), stop: ready && pressed(2),
+			fire: [ready && pressed(bindings['mount-0']), ready && pressed(bindings['mount-1']), ready && pressed(bindings['mount-2']), ready && pressed(bindings['mount-3'])],
+			coolant: ready && pressed(bindings.coolant), stop: ready && pressed(bindings.stop),
 			pause: edge(9), confirm: edge(0), back: edge(1), navigate,
 			adjust: pressed(14) || pressed(15) || Math.abs(x) > 0.55 ? navigate : 0,
 			scroll: claimed || !menuReady ? 0 : aimY,
