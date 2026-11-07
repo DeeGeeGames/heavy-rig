@@ -20,6 +20,8 @@ import { advanceDays, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, che
 import { renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import type { Campaign } from './campaign';
 import { createTitleScene } from './title-scene';
+import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane } from './workspace';
+import { mountDialogLayout } from './dialog-layout';
 
 const element = function (id: string): HTMLElement {
 	const value = document.getElementById(id);
@@ -69,6 +71,8 @@ const shutdown = await mountGame('game', async function (container) {
 	let selectedContract: string | undefined;
 	let jumpUntil = 0;
 	const abort = new AbortController(); const listenerOptions = { signal: abort.signal };
+	const updateWorkspaceLayout = mountWorkspaceLayout(container, abort.signal);
+	const updateDialogLayout = mountDialogLayout(container, abort.signal);
 	const keys = new Set<string>(); const pending = new Set<string>(); const held = new Map<number, string>();
 	const coarsePointer = window.matchMedia('(pointer: coarse)');
 	const ui = {
@@ -107,7 +111,7 @@ const shutdown = await mountGame('game', async function (container) {
 	const unlockSound = function () { void audio.unlock(); };
 	const updateMenuHint = function () {
 		const onTitle = screen === 'title' && !auxiliary;
-		element('menu-input-hint').textContent = inputMode === 'gamepad' ? onTitle ? 'D-PAD / STICK SELECT · A / × CONFIRM' : 'A / × SELECT · B / ○ BACK · RIGHT STICK SCROLL' : inputMode === 'touch' ? onTitle ? 'TAP TO SELECT' : 'TAP TO SELECT · SWIPE TO SCROLL' : onTitle ? '↑ / ↓ OR TAB SELECT · ENTER CONFIRM' : 'TAB SELECT · ENTER CONFIRM · ESC BACK';
+		element('menu-input-hint').textContent = inputMode === 'gamepad' ? onTitle ? 'D-PAD / STICK SELECT · A / × CONFIRM' : 'D-PAD SELECT · A / × CONFIRM · B / ○ BACK' : inputMode === 'touch' ? onTitle ? 'TAP TO SELECT' : 'TAP TO SELECT · PREV / NEXT FOR PAGES' : onTitle ? '↑ / ↓ OR TAB SELECT · ENTER CONFIRM' : 'TAB SELECT · ENTER CONFIRM · ESC BACK';
 	};
 	const setInputMode = function (value: typeof inputMode) {
 		if (inputMode === value && container.dataset['input'] === value && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
@@ -121,6 +125,7 @@ const shutdown = await mountGame('game', async function (container) {
 		}
 		element('weapon-hint').textContent = value === 'gamepad' ? 'HOLD TRIGGERS + BUMPERS' : value === 'touch' ? 'HOLD TOGETHER TO COMBINE' : 'HOLD MOUSE BUTTONS / 1–4';
 		updateMenuHint();
+		updateWorkspaceLayout(); updateDialogLayout();
 	};
 	const save = function () {
 		element('storage-status').textContent = saveProfile(profile) ? 'Preferences are saved on this device.' : 'Device storage is unavailable. You can keep playing; records will last for this session.';
@@ -139,7 +144,7 @@ const shutdown = await mountGame('game', async function (container) {
 	};
 	const menu = function () { return auxiliary ? element(auxiliary) : screen === 'playing' ? undefined : element(screen); };
 	const focusable = function (root: HTMLElement) {
-		return [...root.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]')].filter(function (item) { return !item.closest('[hidden], [inert]'); });
+		return [...root.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]')].filter(function (item) { return !item.closest('[hidden], [inert]') && item.getClientRects().length > 0; });
 	};
 	const syncScreen = function (focus = true) {
 		if (campaignConflict) auxiliary = 'save-conflict';
@@ -162,12 +167,12 @@ const shutdown = await mountGame('game', async function (container) {
 		if (screen === 'title') showTitleScene();
 		element('hud').inert = modal; canvas.inert = modal;
 		resetInput(); accumulator = 0; lastHud = 0;
+		updateWorkspaceLayout(); updateDialogLayout();
 		if (!focus) return;
 		const root = menu();
 		const initial = auxiliary === 'save-conflict' ? element('reload-company') : auxiliary === 'settings' ? element('master-volume') : auxiliary === 'handbook' ? element('handbook') : auxiliary === 'confirm' ? element('confirm-cancel') : screen === 'bridge' ? element('bridge') : screen === 'pause-panel' ? element('resume') : screen === 'result' ? element('restart') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
-		if (root) (root.querySelector<HTMLElement>('.frame-list') ?? root).scrollTop = 0;
 		(initial ?? canvas).focus({ preventScroll: true });
-		if (initial && auxiliary !== 'handbook') initial.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		updateDialogLayout();
 	};
 	const updateDifficulty = function () {
 		for (const input of container.querySelectorAll<HTMLInputElement>('input[data-difficulty]')) input.checked = input.value === profile.settings.difficulty;
@@ -244,7 +249,7 @@ const shutdown = await mountGame('game', async function (container) {
 	};
 	const focusCompany = function (selector: string, fallback?: string) {
 		const target = element('mechbay').querySelector<HTMLElement>(selector) ?? (fallback ? element('mechbay').querySelector<HTMLElement>(fallback) : null);
-		target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: 'nearest' });
+		if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); }
 	};
 	const refreshCompany = function () {
 		if (screen !== 'mechbay' && screen !== 'market' && screen !== 'engineering') return;
@@ -253,13 +258,14 @@ const shutdown = await mountGame('game', async function (container) {
 		renderCompany(root, campaign, screen, editor, campaignSaved, {
 			navigate: navigateShip,
 			selectFrame: function (id) { updateCompany(selectFrame(campaign, id), 'Frame selected.'); },
-			editSlot: function (slot) { editor = { ...editor, slot }; refreshCompany(); focusCompany('.equipment-choices button[aria-pressed="true"]:not(:disabled)', '.equipment-choices button:not(:disabled)'); },
+			editSlot: function (slot) { editor = { ...editor, slot }; refreshCompany(); focusCompany('.equipment-choice[aria-pressed="true"]:not(:disabled)', '.equipment-choice:not(:disabled)'); },
 			setWeapon: function (weapon) {
 				if (editor.slot === null) return;
 				const slot = editor.slot;
 				editor = { ...editor, loadout: editor.loadout.map(function (current, index) { return index === editor.slot ? weapon : current; }), slot: null, notice: 'Refit staged. Queue the work order to fit these weapons.' }; refreshCompany();
 				focusCompany(`[data-loadout-slot="${slot}"]`);
 			},
+			closePicker: function () { editor = { ...editor, slot: null }; refreshCompany(); focusCompany('[data-loadout-slot]'); },
 			discardRefit: function () { resetEditor('Staged changes discarded.'); refreshCompany(); },
 			queueRefit: function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout), 'Refit queued. Advance the calendar to finish installation.', 'engineering'); },
 			buyFrame: function (id) { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its standard weapon. Select it in the Mech Bay.`); },
@@ -285,7 +291,7 @@ const shutdown = await mountGame('game', async function (container) {
 		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, {
 			navigate: navigateShip,
 			selectPlanet: function (id) { if (campaign.active) return; destination = id; selectedContract = undefined; refreshBridge(); },
-			selectContract: function (id) { selectedContract = id; refreshBridge(); },
+			selectContract: function (id) { selectedContract = id; refreshBridge(); selectWorkspacePane(element('bridge'), 'briefing', true); },
 			travel: function () {
 				if (screen !== 'bridge' || auxiliary || contextLost) return;
 				const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, destination); if (next === campaign) return;
@@ -299,7 +305,7 @@ const shutdown = await mountGame('game', async function (container) {
 				if (screen !== 'bridge' || auxiliary || destination !== campaign.planetId) return;
 				const next = acceptContract(campaign, contract.id); if (next === campaign) return;
 				campaign = next; if (!persistCampaign()) return; refreshBridge(); syncScreen();
-				element('bridge-deploy').focus({ preventScroll: true }); element('bridge-deploy').scrollIntoView({ block: 'nearest' });
+				selectWorkspacePane(element('bridge'), 'briefing'); element('bridge-deploy').focus({ preventScroll: true });
 			},
 			deploy: function () { navigateShip('mechbay'); },
 			abandon: function () { confirm(function () { campaign = abandonContract(campaign); persistCampaign(); toBridge(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains.', 'ABORT THIS CONTRACT?'); },
@@ -557,7 +563,6 @@ const shutdown = await mountGame('game', async function (container) {
 		if (pad.pause && focused && !document.hidden && !contextLost) { audio.cue('back'); if (auxiliary) closeAuxiliary(); else setPaused(screen === 'playing'); }
 		const root = menu();
 		if (root && pad.connected && screenRevision === revisionAtFrame && focused && !document.hidden && !contextLost) {
-			if (Math.abs(pad.scroll) > 0.15) (root.querySelector<HTMLElement>('.frame-list') ?? root).scrollTop += pad.scroll * elapsed * 540;
 			if (pad.navigate) {
 				const focusedElement = document.activeElement;
 				if (pad.adjust && focusedElement instanceof HTMLInputElement && focusedElement.type === 'range') {
@@ -566,7 +571,7 @@ const shutdown = await mountGame('game', async function (container) {
 				} else {
 					const items = focusable(root); const index = items.findIndex(function (item) { return item === focusedElement; });
 					const next = index < 0 ? (pad.navigate < 0 ? items.length - 1 : 0) : (index + pad.navigate + items.length) % items.length;
-					items[next]?.focus({ preventScroll: true }); items[next]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+					items[next]?.focus({ preventScroll: true });
 				}
 				audio.cue('focus');
 			}

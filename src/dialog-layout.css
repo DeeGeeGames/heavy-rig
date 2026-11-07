@@ -1,0 +1,84 @@
+/* Dialog content uses measured pages. The action row never leaves the window. */
+#game .modal {
+	left: 50%; top: calc((100% - var(--dialog-bottom-gap, 70px)) / 2); bottom: auto;
+	transform: translate(-50%, -50%); width: min(760px, calc(100% - 32px));
+	height: min(680px, calc(100% - var(--dialog-bottom-gap, 70px) - 24px)); max-height: none;
+	padding: 22px 26px 16px; display: flex; flex-direction: column; gap: 14px; overflow: clip;
+}
+#game .modal.compact { width: min(580px, calc(100% - 32px)); }
+#game .handbook-modal { width: min(900px, calc(100% - 32px)); }
+.dialog-heading { flex: none; }
+#game .dialog-heading h2 { font-size: clamp(25px, 3.7vw, 38px); margin: 8px 0 0; line-height: 1.04; }
+.dialog-tabs { display: flex; flex: none; gap: 5px; }
+.dialog-tabs button { flex: 1; min-width: 0; min-height: 38px; padding: 8px 7px; font: 10px var(--mono); background: transparent; border-bottom: 2px solid var(--border); }
+.dialog-tabs button[aria-pressed='true'] { color: var(--amber); border-bottom-color: var(--amber); background: #f3b35b0b; }
+.dialog-body { flex: 1; min-height: 0; overflow: clip; }
+[data-dialog-topic] { height: 100%; display: flex; flex-direction: column; gap: 14px; }
+[data-dialog-topic] > * { flex: none; margin: 0; }
+[data-dialog-topic] > p { font: 14px/1.6 Arial, sans-serif; color: var(--muted); }
+[data-dialog-topic] > h3 { font-size: 11px; }
+.dialog-item-offpage, .dialog-source-split { display: none !important; }
+.dialog-pager { flex: none; min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dialog-pager button { min-height: 32px; padding: 6px 10px; font: 10px var(--mono); }
+.dialog-pager span { font: 10px var(--mono); color: var(--muted); }
+.dialog-single-page { visibility: hidden; }
+.dialog-actions { flex: none; display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+#game .dialog-actions > button { flex: 1; min-height: 42px; padding: 10px 12px; font: 10px/1.4 var(--mono); letter-spacing: .4px; }
+#game .dialog-actions .text-button { border: 1px solid var(--border); }
+#game .dialog-body .slider-setting { margin: 0; gap: 10px; padding: 9px 0; }
+#game .dialog-body .toggle-setting { margin: 0; padding: 6px 0; align-items: center; }
+#game .dialog-body .toggle-setting small { font-size: 12px; }
+#game .dialog-body .difficulty-picker span { padding: 12px 7px; }
+#game .dialog-body .muted { font: 11px/1.6 var(--mono); }
+.manual-binding { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 18px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.manual-binding b { font: 12px/1.5 var(--mono); color: var(--paper); }
+.manual-binding span { font: 14px/1.5 Arial, sans-serif; color: var(--muted); }
+#game .dialog-body .report-score { margin: 0; gap: 20px; }
+#game .dialog-body #result-rank { min-width: 68px; height: 68px; font-size: 44px; }
+#game .dialog-body .report-score b { font-size: 35px; }
+#game .dialog-body .result-stats { padding: 15px 0; }
+#game .dialog-body .result-stats small { font-size: 8px; }
+#game .dialog-body .report-upgrades { font: 11px/1.6 var(--mono); }
+#game.couch-ui .dialog-body p, #game.couch-ui .manual-binding span { font-size: 17px; }
+#game.couch-ui .manual-binding b, #game.couch-ui .dialog-tabs button, #game.couch-ui .dialog-pager button { font-size: 13px; }
+#game.couch-ui .dialog-body .toggle-setting, #game.couch-ui .dialog-body .slider-setting { font-size: 13px; }
+#game.couch-ui .dialog-body .toggle-setting small { font-size: 15px; }
+@media (max-width: 600px) {
+	#game .modal { width: calc(100% - 24px); padding: 16px 16px 12px; gap: 11px; }
+	#game .modal.compact, #game .handbook-modal { width: calc(100% - 24px); }
+	.handbook-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.dialog-tabs button { min-height: 34px; font-size: 9px; }
+	.manual-binding { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 5px 0; }
+	.manual-binding b { font-size: 10px; }
+	.manual-binding span { font-size: 13px; }
+	#game .dialog-actions > button { font-size: 9px; padding: 9px; }
+	#game .dialog-body .result-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 0; gap: 12px; }
+	#game .dialog-body .result-stats b { font-size: 22px; }
+	#game.couch-ui .dialog-body p, #game.couch-ui .manual-binding span { font-size: 15px; }
+	#game.couch-ui .manual-binding b, #game.couch-ui .dialog-tabs button { font-size: 10px; }
+}
+@media (max-height: 520px) {
+	#game .modal { padding: 12px 18px 10px; gap: 8px; }
+	#game .dialog-heading h2 { font-size: 25px; margin-top: 4px; }
+	.dialog-heading > .eyebrow, .dialog-heading .eyebrow { font-size: 8px; }
+	.dialog-tabs button { min-height: 30px; padding: 5px; }
+	[data-dialog-topic] { gap: 9px; }
+	[data-dialog-topic] > p { font-size: 13px; line-height: 1.5; }
+	.dialog-pager { min-height: 28px; }
+	.dialog-pager button { min-height: 28px; padding: 4px 8px; }
+	.dialog-actions { padding-top: 8px; }
+	#game .dialog-actions > button { min-height: 34px; padding: 7px 10px; }
+	#game .dialog-body .slider-setting { padding: 3px 0; gap: 5px; }
+	#game .dialog-body .toggle-setting { padding: 2px 0; }
+	#game .dialog-body .report-score { gap: 12px; }
+	#game .dialog-body #result-rank { min-width: 44px; height: 44px; font-size: 32px; }
+	#game .dialog-body .report-score b { font-size: 27px; margin-top: 4px; }
+	#game .dialog-body .result-stats { padding: 8px 0; }
+}
+@media (max-height: 420px) {
+	.dialog-heading > .eyebrow, .dialog-heading .eyebrow { display: none; }
+	#game .dialog-heading h2 { margin-top: 0; font-size: 23px; }
+	.handbook-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+	.handbook-tabs button { font-size: 8px; padding-inline: 2px; }
+	.manual-binding { padding-block: 3px; }
+}
