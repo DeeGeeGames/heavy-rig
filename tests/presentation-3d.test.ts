@@ -87,6 +87,31 @@ test('cockpit visor has physical depth separation from the shell through a full 
 	} finally { model.dispose(); }
 });
 
+test('gun covers and toe armor stay separated from their underlying surfaces through rotation', function () {
+	for (const kind of [undefined, 'scout', 'striker', 'siege'] as const) {
+		const size = kind ? mechScale(kind) : 1; const model = createMech(kind);
+		const ray = new Raycaster(); const up = new Vector3(0, 1, 0);
+		try {
+			for (let step = 0; step < 24; step++) {
+				const angle = step * Math.PI / 12;
+				model.pose(createGait({ x: 0, y: 0, angle }, size), angle);
+				for (const side of [-1, 1]) {
+					for (const probe of [
+						{ origin: new Vector3(0, 200, side * 33), direction: new Vector3(0, -1, 0) },
+						{ origin: new Vector3(15, 2, side * 200), direction: new Vector3(0, 0, -side) },
+					]) {
+						ray.set(probe.origin.multiplyScalar(size).applyAxisAngle(up, -angle), probe.direction.applyAxisAngle(up, -angle));
+						const hits = ray.intersectObject(model.root).filter(function (hit) { return hit.object instanceof InstancedMesh; });
+						const [outer, inner] = hits;
+						if (!outer || !inner) throw new Error('Missing layered armor surfaces');
+						expect(inner.distance - outer.distance).toBeGreaterThan(0.1 * size);
+					}
+				}
+			}
+		} finally { model.dispose(); }
+	}
+});
+
 test('render batches follow planted pose handles when ECS synchronizes the root after posing', function () {
 	const kinds: readonly (EnemyKind | undefined)[] = [undefined, 'scout', 'striker', 'siege'];
 	for (const kind of kinds) {
