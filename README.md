@@ -9,6 +9,14 @@ A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,
 its Rattler machine gun fitted in mount 1. The other three mounts are empty.
 Campaign missions and a separate Frame Training simulator are the playable modes.
 
+The game opens on a console-style title menu with a rendered Wayfarer hangar.
+Choose **Start Company** on a fresh device or **Continue Company** to board the
+ship with existing progress. Frame Training, Settings, and the Pilot Handbook
+are also available here. Up/down or Tab selects a menu item; Enter confirms.
+Controller and touch prompts follow the active input device. The bridge's
+**Title Screen** button (or Escape on the bridge) returns without resetting
+company progress. Training entered from the title can return directly to it.
+
 ## Company operations
 
 The ship has four departments, with company funds and the calendar visible
@@ -215,8 +223,8 @@ An original locally synthesized 96-BPM score changes its layers with combat
 intensity and uses quieter ship arrangements. Weapon, mechanical, damage,
 coolant, artillery, and outcome effects have separate mix controls. Audio starts
 after browser activation and reports when a click or key press is required.
-Settings include master/music/effects levels and reduced motion, alongside the
-operating system's motion preference.
+Settings include master/music/effects levels, controller vibration, a larger
+interface, and optional touch controls.
 
 All gameplay geometry, surface graphics, and music are original to this demo.
 The bundled [Barlow Condensed](https://github.com/google/fonts/tree/main/ofl/barlowcondensed)
@@ -268,6 +276,12 @@ destroyed-company scenarios use explicit domain fixtures, and real combat
 damage was separately exercised through browser inputs. Automated inputs and passing
 checks do not establish physical controller/touch feel, audio listening quality,
 GPU performance, combat balance, or owner acceptance.
+
+Title-menu and settings verification is recorded in
+[`docs/title-validation.json`](./docs/title-validation.json), with production
+captures in `docs/title-*.png` and `docs/settings-desktop.png`. It covers first
+load and continue, focus restoration, training return, preserved preferences
+and company progress, and simulated keyboard/controller/touch input.
 
 ## Hosting and save compatibility
 

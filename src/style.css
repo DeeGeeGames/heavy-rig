@@ -279,8 +279,6 @@ dd { margin: 0; color: var(--muted); }
 	.touch-enabled #touch button { min-height: 42px; }
 	.touch-enabled .pilot-hint { top: 96px; bottom: auto; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
-.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { transition: none !important; animation: none !important; }
 
 @media (max-width: 380px) {
 	.left-instruments { width: 142px; }

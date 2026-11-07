@@ -1,0 +1,320 @@
+{
+  "build": "Production Bun build",
+  "checks": {
+    "testsPassed": 116,
+    "testsFailed": 0,
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "titlePanel": {
+    "model": "gpt-6-astra",
+    "reasoningEffort": "high",
+    "rounds": [
+      {
+        "art": 7.6,
+        "usability": 7.7,
+        "integration": 7.8
+      },
+      {
+        "art": 8.2,
+        "usability": 7.9,
+        "integration": 8.4
+      },
+      {
+        "usability": 8.3
+      }
+    ],
+    "ownerPreviewApproved": true,
+    "appliedFeedback": [
+      "Reserve title, menu, descriptions and footer space across desktop/portrait/landscape.",
+      "Pull portrait camera back to show the connected mech silhouette.",
+      "Initialize touch prompts from input capability and restore focused menu controls.",
+      "Associate stable descriptions with menu buttons."
+    ]
+  },
+  "currentBuildJourneys": {
+    "checks": [
+      "Fresh boot opens title with Start Company focused.",
+      "Arrow-key wrap, handbook entry, Escape and focus restoration.",
+      "Settings return restores focus.",
+      "Company entry and bridge Title Screen return preserve save.",
+      "Training starts, pauses, exits to title without changing company save.",
+      "Simulated standard controller claims without activation, navigates, confirms training and pauses.",
+      "Reload opens title with Continue Company and preserved save.",
+      {
+        "viewport": "desktop",
+        "menu": {
+          "top": 493.328125,
+          "bottom": 540.328125,
+          "left": 119.1875,
+          "right": 454.1875
+        },
+        "handbook": {
+          "top": 643.328125,
+          "bottom": 690.328125,
+          "left": 115.1875,
+          "right": 450.1875
+        },
+        "description": {
+          "top": 702.328125,
+          "bottom": 738.328125
+        },
+        "footer": {
+          "x": 74.875,
+          "y": 799,
+          "width": 1290.25,
+          "height": 25,
+          "top": 799,
+          "right": 1365.125,
+          "bottom": 824,
+          "left": 74.875
+        },
+        "edition": {
+          "x": 115.1875,
+          "y": 421.328125,
+          "width": 283,
+          "height": 25,
+          "top": 421.328125,
+          "right": 398.1875,
+          "bottom": 446.328125,
+          "left": 115.1875
+        },
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "viewport": "phone",
+        "menu": {
+          "top": 490,
+          "bottom": 534,
+          "left": 35.1875,
+          "right": 362.8125
+        },
+        "handbook": {
+          "top": 631,
+          "bottom": 675,
+          "left": 31.1875,
+          "right": 358.8125
+        },
+        "description": {
+          "top": 687,
+          "bottom": 719
+        },
+        "footer": {
+          "x": 20.265625,
+          "y": 732,
+          "width": 349.46875,
+          "height": 21,
+          "top": 732,
+          "right": 369.734375,
+          "bottom": 753,
+          "left": 20.265625
+        },
+        "edition": {
+          "x": 31.1875,
+          "y": 317.59375,
+          "width": 216,
+          "height": 22,
+          "top": 317.59375,
+          "right": 247.1875,
+          "bottom": 339.59375,
+          "left": 31.1875
+        },
+        "width": 390,
+        "height": 844
+      },
+      {
+        "viewport": "landscape",
+        "menu": {
+          "top": 85.796875,
+          "bottom": 126.796875,
+          "left": 294.703125,
+          "right": 554.140625
+        },
+        "handbook": {
+          "top": 217.796875,
+          "bottom": 258.796875,
+          "left": 290.703125,
+          "right": 550.140625
+        },
+        "description": {
+          "top": 266.796875,
+          "bottom": 281.1875
+        },
+        "footer": {
+          "x": 43.875,
+          "y": 305,
+          "width": 756.25,
+          "height": 23,
+          "top": 305,
+          "right": 800.125,
+          "bottom": 328,
+          "left": 43.875
+        },
+        "edition": {
+          "x": 40.640625,
+          "y": 234.328125,
+          "width": 170,
+          "height": 21,
+          "top": 234.328125,
+          "right": 210.640625,
+          "bottom": 255.328125,
+          "left": 40.640625
+        },
+        "width": 844,
+        "height": 390
+      },
+      {
+        "viewport": "small-phone",
+        "menu": {
+          "top": 313,
+          "bottom": 357,
+          "left": 34,
+          "right": 349
+        },
+        "handbook": {
+          "top": 454,
+          "bottom": 498,
+          "left": 30,
+          "right": 345
+        },
+        "description": {
+          "top": 510,
+          "bottom": 542
+        },
+        "footer": {
+          "x": 19.484375,
+          "y": 555,
+          "width": 336.03125,
+          "height": 21,
+          "top": 555,
+          "right": 355.515625,
+          "bottom": 576,
+          "left": 19.484375
+        },
+        "edition": {
+          "x": 30,
+          "y": 250.09375,
+          "width": 216,
+          "height": 22,
+          "top": 250.09375,
+          "right": 246,
+          "bottom": 272.09375,
+          "left": 30
+        },
+        "width": 375,
+        "height": 667
+      },
+      {
+        "viewport": "short-phone",
+        "menu": {
+          "top": 250.78125,
+          "bottom": 292.78125,
+          "left": 29.59375,
+          "right": 298.40625
+        },
+        "handbook": {
+          "top": 385.78125,
+          "bottom": 427.78125,
+          "left": 25.59375,
+          "right": 294.40625
+        },
+        "description": {
+          "top": 0,
+          "bottom": 0
+        },
+        "footer": {
+          "x": 16.625,
+          "y": 456,
+          "width": 286.75,
+          "height": 21,
+          "top": 456,
+          "right": 303.375,
+          "bottom": 477,
+          "left": 16.625
+        },
+        "edition": {
+          "x": 25.59375,
+          "y": 212.78125,
+          "width": 216,
+          "height": 22,
+          "top": 212.78125,
+          "right": 241.59375,
+          "bottom": 234.78125,
+          "left": 25.59375
+        },
+        "width": 320,
+        "height": 568
+      },
+      {
+        "viewport": "laptop",
+        "menu": {
+          "top": 391.53125,
+          "bottom": 434.53125,
+          "left": 99.609375,
+          "right": 434.609375
+        },
+        "handbook": {
+          "top": 529.53125,
+          "bottom": 572.53125,
+          "left": 95.609375,
+          "right": 430.609375
+        },
+        "description": {
+          "top": 582.53125,
+          "bottom": 618.53125
+        },
+        "footer": {
+          "x": 71.03125,
+          "y": 667,
+          "width": 1223.9375,
+          "height": 25,
+          "top": 667,
+          "right": 1294.96875,
+          "bottom": 692,
+          "left": 71.03125
+        },
+        "edition": {
+          "x": 95.609375,
+          "y": 325.53125,
+          "width": 283,
+          "height": 25,
+          "top": 325.53125,
+          "right": 378.609375,
+          "bottom": 350.53125,
+          "left": 95.609375
+        },
+        "width": 1366,
+        "height": 768
+      },
+      "Simulated touch opens settings, returns to title, and enters training."
+    ],
+    "errors": []
+  },
+  "settingsCleanup": {
+    "passed": true,
+    "checks": [
+      "Removed preference is absent from Settings and ignored in existing saves; volume, difficulty, vibration and historical records survive; saving omits the obsolete field.",
+      "Title camera remains animated with an OS motion preference set.",
+      "Training still enters, accepts throttle input, renders gameplay and pauses."
+    ],
+    "errors": [],
+    "independentIntegrationReview": {
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "score": 8.5,
+      "blockingFindings": 0
+    }
+  },
+  "priorTitleLayoutVerification": {
+    "viewports": 16,
+    "allMenuDescriptionsChecked": true,
+    "contextRestoration": true,
+    "initialTouchPrompt": true
+  },
+  "limitations": [
+    "Controller and touch inputs were simulated.",
+    "Physical controller and touch feel, audio listening, hardware performance, and gameplay balance were not validated."
+  ]
+}

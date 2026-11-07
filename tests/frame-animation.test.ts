@@ -72,7 +72,7 @@ for (const frame of FRAMES) {
 		}
 	});
 
-	test(`${frame.name} starter visibly actuates its hardware and reduced motion restores the assembly`, function () {
+	test(`${frame.name} starter visibly actuates its hardware and returns to rest after recoil`, function () {
 		const state = createState({ frame: frame.id }); state.spawnIn = 3600;
 		const gait = createGaits(state).player;
 		const model = createMech(undefined, false, frame.id);
@@ -86,9 +86,9 @@ for (const frame of FRAMES) {
 			step(state, { ...idle, fire: [true, false, false, false] }, dt);
 			const recoil = weaponRecoil(state.loadout);
 			expect(recoil).toBeGreaterThan(0);
-			model.pose(gait, state.player.turret, { recoil, hit: 0, heat: state.player.heat, time: state.time, reducedMotion: false });
+			model.pose(gait, state.player.turret, { recoil, hit: 0, heat: state.player.heat, time: state.time });
 			expect(parts.some(function (part, index) { return !part.matrixWorld.equals(rest[index] ?? part.matrixWorld); })).toBe(true);
-			model.pose(gait, state.player.turret, { recoil, hit: 0, heat: state.player.heat, time: state.time, reducedMotion: true });
+			model.pose(gait, state.player.turret, { recoil: 0, hit: 0, heat: state.player.heat, time: state.time });
 			expect(parts.map(function (part) { return part.matrixWorld; })).toEqual(rest);
 			for (const part of parts) {
 				expect(part.matrix.elements.every(Number.isFinite)).toBe(true);

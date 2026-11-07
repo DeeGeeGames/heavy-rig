@@ -173,7 +173,7 @@ export const createWorldObjects = function (scene: Scene) {
 	};
 	let disposed = false;
 	return {
-		update: function (state: State, reducedMotion: boolean, frameEffects?: FrameEffects) {
+		update: function (state: State, frameEffects?: FrameEffects) {
 			if (disposed) return;
 			if (missionMap !== state.mission?.map) {
 				missionEnvironment?.dispose(); missionEnvironment = undefined;
@@ -183,10 +183,10 @@ export const createWorldObjects = function (scene: Scene) {
 			yard.visible = !state.mission;
 			relay.visible = !state.mission || state.mission.contract.kind === 'defend';
 			relay.position.set(state.mission?.map.objective.x ?? ARENA.relayX, 0, state.mission?.map.objective.y ?? ARENA.relayY);
-			if (state.mission) missionEnvironment?.update(state.mission, state.time, reducedMotion);
+			if (state.mission) missionEnvironment?.update(state.mission, state.time);
 			const muzzles = frameEffects?.muzzles ?? [];
 			beaconSurface.color.set(state.relay < 30 ? '#ff865e' : '#b9fff0');
-			beacon.scale.setScalar(reducedMotion ? 4 : 4 + Math.sin(state.time * 2.4) * 0.6);
+			beacon.scale.setScalar(4 + Math.sin(state.time * 2.4) * 0.6);
 			const siege = state.enemies.filter(function (enemy) { return enemy.kind === 'siege'; });
 			sync(defenses, siege.length, createDefense, function (value, index) {
 				const enemy = siege[index]; if (!enemy) return;
@@ -203,7 +203,7 @@ export const createWorldObjects = function (scene: Scene) {
 				return { root: value };
 			}, function (value, index) { const wreck = state.wrecks[index]; if (!wreck) return; value.root.position.set(wreck.x, 0, wreck.y); value.root.rotation.y = -wreck.angle; });
 			sync(warnings, state.warnings.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
-				const warning = state.warnings[index]; if (!warning) return; value.root.position.set(warning.x, 0.12, warning.y); value.root.scale.setScalar(45 + (reducedMotion ? 0 : Math.sin(state.time * 8) * 5));
+				const warning = state.warnings[index]; if (!warning) return; value.root.position.set(warning.x, 0.12, warning.y); value.root.scale.setScalar(45 + Math.sin(state.time * 8) * 5);
 			});
 			sync(strikes, state.strikes.length, createStrike, function (value, index) {
 				const strike = state.strikes[index]; if (!strike) return;
@@ -275,9 +275,9 @@ export const createWorldObjects = function (scene: Scene) {
 			}
 			smoke.visible = state.player.heat > 60;
 			if (smoke.visible) {
-				smoke.position.set(state.player.x - Math.cos(state.player.angle) * 23, 70 + (reducedMotion ? 0 : state.time * 25 % 24), state.player.y - Math.sin(state.player.angle) * 23);
+				smoke.position.set(state.player.x - Math.cos(state.player.angle) * 23, 70 + state.time * 25 % 24, state.player.y - Math.sin(state.player.angle) * 23);
 				if (frameEffects?.exhaust) {
-					smoke.position.copy(frameEffects.exhaust); smoke.position.y += reducedMotion ? 0 : state.time * 25 % 24;
+					smoke.position.copy(frameEffects.exhaust); smoke.position.y += state.time * 25 % 24;
 				}
 				smoke.scale.setScalar((6 + state.player.heat / 15) / Math.sqrt(1.5));
 			}

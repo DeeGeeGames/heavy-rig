@@ -8,7 +8,6 @@ import { FACILITY_TARGET_ID, EXTRACTION_SECONDS } from './missions';
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
 export interface OverlayOptions {
 	obstructions?: readonly ScreenRect[];
-	reducedMotion: boolean;
 	showRadar: boolean;
 	gaits: Gaits;
 	camera: OrthographicCamera;
@@ -94,7 +93,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	vignette.addColorStop(0, '#07141900'); vignette.addColorStop(1, '#0714198c'); ctx.fillStyle = vignette; ctx.fillRect(0, 0, width, height);
 	if ((options.armorHit ?? 0) > 0) {
 		ctx.save(); ctx.globalAlpha = Math.min(0.55, options.armorHit ?? 0);
-		ctx.strokeStyle = '#ff9b7a'; ctx.lineWidth = options.reducedMotion ? 3 : 7;
+		ctx.strokeStyle = '#ff9b7a'; ctx.lineWidth = 7;
 		ctx.strokeRect(2, 2, width - 4, height - 4); ctx.restore();
 	}
 	const text = function (content: string, point: Point, elevation: number, color: string, size = 10, offsetY = 0) {

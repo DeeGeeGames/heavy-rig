@@ -13,7 +13,7 @@ test('mission rendering follows facility destruction and extraction, reuses a li
 	const scene = new Scene(); const world = createWorldObjects(scene); const state = createMissionState(contract);
 	const mission = state.mission; if (!mission?.structure) throw new Error('Missing demolition mission');
 	try {
-		world.update(state, true);
+		world.update(state);
 		const terrain = scene.getObjectByName('mission-terrain'); if (!terrain) throw new Error('Missing terrain');
 		expect(scene.getObjectByName('legacy-terrain')?.visible).toBe(false);
 		expect(scene.getObjectByName('relay')?.visible).toBe(false);
@@ -28,21 +28,21 @@ test('mission rendering follows facility destruction and extraction, reuses a li
 		});
 		for (const asset of assets) asset.addEventListener('dispose', function () { disposed.set(asset, (disposed.get(asset) ?? 0) + 1); });
 		mission.structure.hp = 0; mission.stage = 'extract';
-		world.update(state, false);
+		world.update(state);
 		expect(scene.getObjectByName('mission-terrain')).toBe(terrain);
 		expect(scene.getObjectByName('facility-intact')?.visible).toBe(false);
 		expect(scene.getObjectByName('facility-rubble')?.visible).toBe(true);
 		expect(scene.getObjectByName('extraction-zone')?.visible).toBe(true);
 		expect(disposed.size).toBe(0);
 		const defense = createMissionState({ ...contract, seed: 57, kind: 'defend', planetId: 'borealis' });
-		world.update(defense, true);
+		world.update(defense);
 		expect(scene.getObjectByName('mission-terrain')).not.toBe(terrain);
 		expect(terrain.parent).toBeNull();
 		for (const asset of assets) expect(disposed.get(asset)).toBe(1);
 		expect(scene.getObjectByName('relay')?.visible).toBe(true);
 		expect(scene.getObjectByName('relay')?.position.x).toBe(defense.mission?.map.objective.x);
 		expect(scene.getObjectByName('relay')?.position.z).toBe(defense.mission?.map.objective.y);
-		world.update(createState(), true);
+		world.update(createState());
 		expect(scene.getObjectByName('mission-terrain')).toBeUndefined();
 		expect(scene.getObjectByName('legacy-terrain')?.visible).toBe(true);
 		world.dispose();
