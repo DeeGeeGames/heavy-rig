@@ -1,0 +1,2930 @@
+{
+  "build": "Bun 1.3.14 production bundle; integrated master ff36cbf",
+  "checks": {
+    "tests": 126,
+    "failures": 0,
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "departmentPages": {
+    "results": [
+      {
+        "screen": "bridge",
+        "viewport": [
+          1280,
+          800
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "route",
+            "pages": 2,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "board",
+            "pages": 2,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "briefing",
+            "pages": 2,
+            "total": 9,
+            "visited": 9
+          },
+          {
+            "pane": "factions",
+            "pages": 1,
+            "total": 3,
+            "visited": 3
+          }
+        ],
+        "outside": [],
+        "root": [
+          762,
+          762
+        ],
+        "document": [
+          800,
+          800
+        ]
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          1280,
+          800
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "fleet",
+            "pages": 2,
+            "total": 7,
+            "visited": 7
+          },
+          {
+            "pane": "condition",
+            "pages": 2,
+            "total": 5,
+            "visited": 5
+          },
+          {
+            "pane": "loadout",
+            "pages": 2,
+            "total": 7,
+            "visited": 7
+          }
+        ],
+        "outside": [],
+        "root": [
+          762,
+          762
+        ],
+        "document": [
+          800,
+          800
+        ]
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          1280,
+          800
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "catalogue",
+            "pages": 3,
+            "total": 10,
+            "visited": 10
+          },
+          {
+            "pane": "details",
+            "pages": 1,
+            "total": 4,
+            "visited": 4
+          }
+        ],
+        "outside": [],
+        "root": [
+          762,
+          762
+        ],
+        "document": [
+          800,
+          800
+        ]
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          1280,
+          800
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "calendar",
+            "pages": 1,
+            "total": 4,
+            "visited": 4
+          },
+          {
+            "pane": "orders",
+            "pages": 3,
+            "total": 16,
+            "visited": 16
+          },
+          {
+            "pane": "condition",
+            "pages": 3,
+            "total": 11,
+            "visited": 11
+          }
+        ],
+        "outside": [],
+        "root": [
+          762,
+          762
+        ],
+        "document": [
+          800,
+          800
+        ]
+      },
+      {
+        "screen": "bridge",
+        "viewport": [
+          390,
+          844
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "route",
+            "pages": 1,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "board",
+            "pages": 2,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "briefing",
+            "pages": 2,
+            "total": 9,
+            "visited": 9
+          },
+          {
+            "pane": "factions",
+            "pages": 1,
+            "total": 3,
+            "visited": 3
+          }
+        ],
+        "outside": [],
+        "root": [
+          806,
+          806
+        ],
+        "document": [
+          844,
+          844
+        ]
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          390,
+          844
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "fleet",
+            "pages": 2,
+            "total": 7,
+            "visited": 7
+          },
+          {
+            "pane": "condition",
+            "pages": 1,
+            "total": 5,
+            "visited": 5
+          },
+          {
+            "pane": "loadout",
+            "pages": 2,
+            "total": 7,
+            "visited": 7
+          }
+        ],
+        "outside": [],
+        "root": [
+          806,
+          806
+        ],
+        "document": [
+          844,
+          844
+        ]
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          390,
+          844
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "catalogue",
+            "pages": 2,
+            "total": 10,
+            "visited": 10
+          },
+          {
+            "pane": "details",
+            "pages": 1,
+            "total": 4,
+            "visited": 4
+          }
+        ],
+        "outside": [],
+        "root": [
+          806,
+          806
+        ],
+        "document": [
+          844,
+          844
+        ]
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          390,
+          844
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "calendar",
+            "pages": 1,
+            "total": 4,
+            "visited": 4
+          },
+          {
+            "pane": "orders",
+            "pages": 3,
+            "total": 16,
+            "visited": 16
+          },
+          {
+            "pane": "condition",
+            "pages": 2,
+            "total": 11,
+            "visited": 11
+          }
+        ],
+        "outside": [],
+        "root": [
+          806,
+          806
+        ],
+        "document": [
+          844,
+          844
+        ]
+      },
+      {
+        "screen": "bridge",
+        "viewport": [
+          844,
+          390
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "route",
+            "pages": 3,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "board",
+            "pages": 5,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "briefing",
+            "pages": 3,
+            "total": 9,
+            "visited": 9
+          },
+          {
+            "pane": "factions",
+            "pages": 2,
+            "total": 3,
+            "visited": 3
+          }
+        ],
+        "outside": [],
+        "root": [
+          356,
+          356
+        ],
+        "document": [
+          390,
+          390
+        ]
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          844,
+          390
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "fleet",
+            "pages": 5,
+            "total": 7,
+            "visited": 7
+          },
+          {
+            "pane": "condition",
+            "pages": 4,
+            "total": 5,
+            "visited": 5
+          },
+          {
+            "pane": "loadout",
+            "pages": 5,
+            "total": 7,
+            "visited": 7
+          }
+        ],
+        "outside": [],
+        "root": [
+          356,
+          356
+        ],
+        "document": [
+          390,
+          390
+        ]
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          844,
+          390
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "catalogue",
+            "pages": 8,
+            "total": 10,
+            "visited": 10
+          },
+          {
+            "pane": "details",
+            "pages": 2,
+            "total": 4,
+            "visited": 4
+          }
+        ],
+        "outside": [],
+        "root": [
+          356,
+          356
+        ],
+        "document": [
+          390,
+          390
+        ]
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          844,
+          390
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "calendar",
+            "pages": 1,
+            "total": 4,
+            "visited": 4
+          },
+          {
+            "pane": "orders",
+            "pages": 8,
+            "total": 16,
+            "visited": 16
+          },
+          {
+            "pane": "condition",
+            "pages": 10,
+            "total": 11,
+            "visited": 11
+          }
+        ],
+        "outside": [],
+        "root": [
+          356,
+          356
+        ],
+        "document": [
+          390,
+          390
+        ]
+      },
+      {
+        "screen": "bridge",
+        "viewport": [
+          320,
+          480
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "route",
+            "pages": 2,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "board",
+            "pages": 4,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "briefing",
+            "pages": 3,
+            "total": 9,
+            "visited": 9
+          },
+          {
+            "pane": "factions",
+            "pages": 2,
+            "total": 3,
+            "visited": 3
+          }
+        ],
+        "outside": [],
+        "root": [
+          446,
+          446
+        ],
+        "document": [
+          480,
+          480
+        ]
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          320,
+          480
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "fleet",
+            "pages": 4,
+            "total": 7,
+            "visited": 7
+          },
+          {
+            "pane": "condition",
+            "pages": 2,
+            "total": 5,
+            "visited": 5
+          },
+          {
+            "pane": "loadout",
+            "pages": 3,
+            "total": 7,
+            "visited": 7
+          }
+        ],
+        "outside": [],
+        "root": [
+          446,
+          446
+        ],
+        "document": [
+          480,
+          480
+        ]
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          320,
+          480
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "catalogue",
+            "pages": 5,
+            "total": 10,
+            "visited": 10
+          },
+          {
+            "pane": "details",
+            "pages": 2,
+            "total": 4,
+            "visited": 4
+          }
+        ],
+        "outside": [],
+        "root": [
+          446,
+          446
+        ],
+        "document": [
+          480,
+          480
+        ]
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          320,
+          480
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "calendar",
+            "pages": 2,
+            "total": 4,
+            "visited": 4
+          },
+          {
+            "pane": "orders",
+            "pages": 6,
+            "total": 16,
+            "visited": 16
+          },
+          {
+            "pane": "condition",
+            "pages": 6,
+            "total": 11,
+            "visited": 11
+          }
+        ],
+        "outside": [],
+        "root": [
+          446,
+          446
+        ],
+        "document": [
+          480,
+          480
+        ]
+      },
+      {
+        "screen": "bridge",
+        "viewport": [
+          568,
+          320
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "route",
+            "pages": 3,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "board",
+            "pages": 5,
+            "total": 6,
+            "visited": 6
+          },
+          {
+            "pane": "briefing",
+            "pages": 5,
+            "total": 9,
+            "visited": 9
+          },
+          {
+            "pane": "factions",
+            "pages": 3,
+            "total": 3,
+            "visited": 3
+          }
+        ],
+        "outside": [],
+        "root": [
+          286,
+          286
+        ],
+        "document": [
+          320,
+          320
+        ]
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          568,
+          320
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "fleet",
+            "pages": 7,
+            "total": 7,
+            "visited": 7
+          },
+          {
+            "pane": "condition",
+            "pages": 4,
+            "total": 5,
+            "visited": 5
+          },
+          {
+            "pane": "loadout",
+            "pages": 5,
+            "total": 7,
+            "visited": 7
+          }
+        ],
+        "outside": [],
+        "root": [
+          286,
+          286
+        ],
+        "document": [
+          320,
+          320
+        ]
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          568,
+          320
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "catalogue",
+            "pages": 10,
+            "total": 10,
+            "visited": 10
+          },
+          {
+            "pane": "details",
+            "pages": 3,
+            "total": 4,
+            "visited": 4
+          }
+        ],
+        "outside": [],
+        "root": [
+          286,
+          286
+        ],
+        "document": [
+          320,
+          320
+        ]
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          568,
+          320
+        ],
+        "overflow": [],
+        "coverage": [
+          {
+            "pane": "calendar",
+            "pages": 2,
+            "total": 4,
+            "visited": 4
+          },
+          {
+            "pane": "orders",
+            "pages": 10,
+            "total": 16,
+            "visited": 16
+          },
+          {
+            "pane": "condition",
+            "pages": 10,
+            "total": 11,
+            "visited": 11
+          }
+        ],
+        "outside": [],
+        "root": [
+          286,
+          286
+        ],
+        "document": [
+          320,
+          320
+        ]
+      }
+    ],
+    "errors": []
+  },
+  "simulatedControllerAndStatus": {
+    "result": [
+      {
+        "screen": "bridge",
+        "viewport": [
+          568,
+          320
+        ],
+        "issues": [],
+        "bottom": 269.5,
+        "controlsTop": 279.5
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          568,
+          320
+        ],
+        "issues": [],
+        "bottom": 269.5,
+        "controlsTop": 279.5
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          568,
+          320
+        ],
+        "issues": [],
+        "bottom": 269.5,
+        "controlsTop": 279.5
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          568,
+          320
+        ],
+        "issues": [],
+        "bottom": 269.5,
+        "controlsTop": 279.5
+      },
+      {
+        "screen": "bridge",
+        "viewport": [
+          844,
+          390
+        ],
+        "issues": [],
+        "bottom": 355.75,
+        "controlsTop": 365.75
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          844,
+          390
+        ],
+        "issues": [],
+        "bottom": 355.75,
+        "controlsTop": 365.75
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          844,
+          390
+        ],
+        "issues": [],
+        "bottom": 355.75,
+        "controlsTop": 365.75
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          844,
+          390
+        ],
+        "issues": [],
+        "bottom": 355.75,
+        "controlsTop": 365.75
+      },
+      {
+        "screen": "bridge",
+        "viewport": [
+          320,
+          480
+        ],
+        "issues": [],
+        "bottom": 418.25,
+        "controlsTop": 428.25
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          320,
+          480
+        ],
+        "issues": [],
+        "bottom": 418.25,
+        "controlsTop": 428.25
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          320,
+          480
+        ],
+        "issues": [],
+        "bottom": 418.25,
+        "controlsTop": 428.25
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          320,
+          480
+        ],
+        "issues": [],
+        "bottom": 418.25,
+        "controlsTop": 428.25
+      },
+      {
+        "screen": "bridge",
+        "viewport": [
+          390,
+          844
+        ],
+        "issues": [],
+        "bottom": 793.5,
+        "controlsTop": 803.5
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          390,
+          844
+        ],
+        "issues": [],
+        "bottom": 793.5,
+        "controlsTop": 803.5
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          390,
+          844
+        ],
+        "issues": [],
+        "bottom": 793.5,
+        "controlsTop": 803.5
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          390,
+          844
+        ],
+        "issues": [],
+        "bottom": 793.5,
+        "controlsTop": 803.5
+      },
+      {
+        "screen": "bridge",
+        "viewport": [
+          1280,
+          800
+        ],
+        "issues": [],
+        "bottom": 762,
+        "controlsTop": 775.75
+      },
+      {
+        "screen": "mechbay",
+        "viewport": [
+          1280,
+          800
+        ],
+        "issues": [],
+        "bottom": 762,
+        "controlsTop": 775.75
+      },
+      {
+        "screen": "market",
+        "viewport": [
+          1280,
+          800
+        ],
+        "issues": [],
+        "bottom": 762,
+        "controlsTop": 775.75
+      },
+      {
+        "screen": "engineering",
+        "viewport": [
+          1280,
+          800
+        ],
+        "issues": [],
+        "bottom": 762,
+        "controlsTop": 775.75
+      }
+    ],
+    "errors": []
+  },
+  "journey": {
+    "passed": true,
+    "errors": [],
+    "steps": [
+      "accept contract and transfer focus",
+      "purchase weapon and frame",
+      "stage mount and restore focus",
+      "queue refit and finish calendar work",
+      "deploy with installed weapons",
+      "pause, handbook, focus restoration",
+      "abort and retain company equipment",
+      "travel and calendar advancement",
+      "resize with visible focus"
+    ]
+  },
+  "dialogs": [
+    {
+      "width": 1366,
+      "height": 768,
+      "reports": [
+        {
+          "screen": "title",
+          "size": [
+            1366,
+            768
+          ],
+          "scroll": [
+            0,
+            0
+          ],
+          "bad": []
+        },
+        {
+          "screen": "settings",
+          "topic": "audio",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "sortie",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "controls",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "keyboard",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            },
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "gamepad",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "touch",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "contracts",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "combat",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "equipment",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "reports": [
+        {
+          "screen": "title",
+          "size": [
+            390,
+            844
+          ],
+          "scroll": [
+            0,
+            0
+          ],
+          "bad": []
+        },
+        {
+          "screen": "settings",
+          "topic": "audio",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                430,
+                430
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "sortie",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                430,
+                430
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "controls",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                430,
+                430
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "keyboard",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                391,
+                391
+              ]
+            },
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                391,
+                391
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "gamepad",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                391,
+                391
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "touch",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                391,
+                391
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "contracts",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                391,
+                391
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "combat",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                391,
+                391
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "equipment",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                391,
+                391
+              ]
+            },
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                391,
+                391
+              ]
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "reports": [
+        {
+          "screen": "title",
+          "size": [
+            844,
+            390
+          ],
+          "scroll": [
+            0,
+            0
+          ],
+          "bad": []
+        },
+        {
+          "screen": "settings",
+          "topic": "audio",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "sortie",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "controls",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "keyboard",
+          "pages": 3,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            },
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            },
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "gamepad",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            },
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "touch",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "contracts",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "combat",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "equipment",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            },
+            {
+              "modal": [
+                334,
+                334
+              ],
+              "body": [
+                155,
+                155
+              ]
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 320,
+      "height": 480,
+      "reports": [
+        {
+          "screen": "title",
+          "size": [
+            320,
+            480
+          ],
+          "scroll": [
+            0,
+            0
+          ],
+          "bad": []
+        },
+        {
+          "screen": "settings",
+          "topic": "audio",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                221,
+                221
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "sortie",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                221,
+                221
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "controls",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                221,
+                221
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "keyboard",
+          "pages": 4,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            },
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            },
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            },
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "gamepad",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            },
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "touch",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "contracts",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            },
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "combat",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            },
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "equipment",
+          "pages": 3,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            },
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            },
+            {
+              "modal": [
+                424,
+                424
+              ],
+              "body": [
+                186,
+                186
+              ]
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 480,
+      "height": 320,
+      "reports": [
+        {
+          "screen": "title",
+          "size": [
+            480,
+            320
+          ],
+          "scroll": [
+            0,
+            0
+          ],
+          "bad": []
+        },
+        {
+          "screen": "settings",
+          "topic": "audio",
+          "pages": 3,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "sortie",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "controls",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "keyboard",
+          "pages": 6,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "gamepad",
+          "pages": 4,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "touch",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "contracts",
+          "pages": 3,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "combat",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "equipment",
+          "pages": 5,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            },
+            {
+              "modal": [
+                264,
+                264
+              ],
+              "body": [
+                85,
+                85
+              ]
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "reports": [
+        {
+          "screen": "title",
+          "size": [
+            1920,
+            1080
+          ],
+          "scroll": [
+            0,
+            0
+          ],
+          "bad": []
+        },
+        {
+          "screen": "settings",
+          "topic": "audio",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "sortie",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "settings",
+          "topic": "controls",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "keyboard",
+          "pages": 2,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            },
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "gamepad",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "touch",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "contracts",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "combat",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        },
+        {
+          "screen": "handbook",
+          "topic": "equipment",
+          "pages": 1,
+          "allText": true,
+          "bad": [],
+          "offscreenActions": [],
+          "sizes": [
+            {
+              "modal": [
+                676,
+                676
+              ],
+              "body": [
+                390,
+                390
+              ]
+            }
+          ]
+        }
+      ],
+      "errors": []
+    }
+  ],
+  "dialogFlowsAndFixtures": [
+    {
+      "id": "pause-panel",
+      "size": [
+        1366,
+        768
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "confirm",
+      "size": [
+        1366,
+        768
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "result",
+      "size": [
+        1366,
+        768
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "training-result",
+      "size": [
+        1366,
+        768
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "save-conflict",
+      "size": [
+        1366,
+        768
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "pause-panel",
+      "size": [
+        390,
+        844
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "confirm",
+      "size": [
+        390,
+        844
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "result",
+      "size": [
+        390,
+        844
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "training-result",
+      "size": [
+        390,
+        844
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "save-conflict",
+      "size": [
+        390,
+        844
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "pause-panel",
+      "size": [
+        844,
+        390
+      ],
+      "pages": 2,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "confirm",
+      "size": [
+        844,
+        390
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "result",
+      "size": [
+        844,
+        390
+      ],
+      "pages": 2,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "training-result",
+      "size": [
+        844,
+        390
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "save-conflict",
+      "size": [
+        844,
+        390
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "pause-panel",
+      "size": [
+        320,
+        480
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "confirm",
+      "size": [
+        320,
+        480
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "result",
+      "size": [
+        320,
+        480
+      ],
+      "pages": 2,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "training-result",
+      "size": [
+        320,
+        480
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "save-conflict",
+      "size": [
+        320,
+        480
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "pause-panel",
+      "size": [
+        480,
+        320
+      ],
+      "pages": 3,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "confirm",
+      "size": [
+        480,
+        320
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true
+    },
+    {
+      "id": "result",
+      "size": [
+        480,
+        320
+      ],
+      "pages": 3,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "training-result",
+      "size": [
+        480,
+        320
+      ],
+      "pages": 2,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    },
+    {
+      "id": "save-conflict",
+      "size": [
+        480,
+        320
+      ],
+      "pages": 1,
+      "allText": true,
+      "bad": [],
+      "modalOverflow": [
+        0,
+        0
+      ],
+      "bounds": true,
+      "fixture": true
+    }
+  ],
+  "review": "Independent review identified oversized short-window rows, detail-pane focus loss, and dynamic status overlap; repaired and revalidated.",
+  "limits": [
+    "Controller and touch inputs are simulated; physical device feel is not established.",
+    "Audio listening quality, hardware GPU performance, combat balance and owner acceptance were not established.",
+    "Result, qualification and save-conflict geometry uses fixtures rather than earned end states.",
+    "Shared preview snapshots timed out; production verification used local Playwright."
+  ]
+}

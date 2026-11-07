@@ -1,4 +1,5 @@
-import { html, render } from 'lit-html';
+import { html } from 'lit-html';
+import { renderWorkspace, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
 import { getWeapon, WEAPONS, type WeaponId } from './arsenal';
 import { getPlanet, type Campaign } from './campaign';
 import { availableWeapons, canDeploy, canRefit, FRAME_PRICES, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
@@ -18,6 +19,7 @@ export interface CompanyActions {
 	editSlot: (slot: number) => void;
 	setWeapon: (weapon: WeaponId | null) => void;
 	discardRefit: () => void;
+	closePicker: () => void;
 	queueRefit: () => void;
 	buyFrame: (frameId: FrameId) => void;
 	buyWeapon: (weapon: WeaponId) => void;
@@ -68,85 +70,108 @@ const frameSchematic = function (frame: FrameDefinition) {
 	</svg>`;
 };
 
-const renderMechBay = function (campaign: Campaign, editor: CompanyEditor, actions: CompanyActions) {
+interface CompanyView { kind: 'weapons' | 'frames'; weapon: WeaponId; frame: FrameId; slot: number | null }
+const views = new WeakMap<HTMLElement, CompanyView>();
+
+const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, actions: CompanyActions): WorkspacePane[] {
 	const mech = getOwnedMech(campaign);
-	if (!mech) return html`<p class="company-empty">No frame is selected.</p>`;
+	if (!mech) return [{ id: 'fleet', label: 'Fleet', items: textItems('No frame is selected.') }];
 	const frame = getFrame(mech.frameId);
 	const order = workOrderFor(campaign, mech.frameId);
 	const changed = refitDays(mech.loadout, editor.loadout);
-	const draftValid = canRefit(campaign, mech.frameId, editor.loadout);
-	const chosenSlot = editor.slot;
+	const slot = editor.slot;
+	const equipment = slot !== null && !order;
 	const ready = canDeploy(campaign);
-	return html`
-		<div class="company-page-heading"><div><span class="eyebrow">02 / FRAME OPERATIONS</span><h2>YOUR MACHINES.</h2><p>Choose a frame, plan its four mounts, and send fitting work to Engineering.</p></div><span class="company-count">${campaign.fleet.length} / ${FRAMES.length} FRAMES OWNED</span></div>
-		<div class="mechbay-layout">
-			<aside class="fleet-roster" aria-label="Owned frames"><h3>ACTIVE HANGAR</h3>${campaign.fleet.map(function (owned) {
-				const definition = getFrame(owned.frameId); const job = workOrderFor(campaign, owned.frameId);
-				return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${definition.name}</b><small>${integrityLabel(owned.integrity)} INTEGRITY · ${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`;
-			})}<button class="secondary fleet-market" @click=${function () { actions.navigate('market'); }}>ACQUIRE ANOTHER FRAME →</button><p class="company-note">Each chassis is purchased once and includes its signature weapon. Equipment stays with its frame between sorties.</p></aside>
-			<section class="frame-inspection" style="--frame-color:${frame.color}" aria-label="Selected frame condition">
-				<div class="bridge-section-title"><span class="eyebrow">${frame.role.toUpperCase()}</span><span>FRAME ${frame.designation}</span></div><h2>${frame.name}</h2>
-				${frameSchematic(frame)}
-				<div class="company-integrity"><span>FRAME INTEGRITY</span><b class=${mech.integrity < 35 ? 'negative' : ''}>${integrityLabel(mech.integrity)}</b><div class="track"><i style="width:${mech.integrity}%"></i></div></div>
-				<dl class="frame-specifications"><dt>CRUISE</dt><dd>${frame.speed} m/s</dd><dt>COOLING</dt><dd>${frame.cooling} heat/s</dd><dt>MASS</dt><dd>${frame.mass} tonnes</dd></dl><p class="company-note">${frame.tradeoff}</p>
-				${mech.integrity < 100 ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>${mech.integrity <= 0 ? 'RECOVER THIS FRAME' : 'SCHEDULE REPAIRS'} →</button>` : ''}
-			</section>
-			<section class="loadout-workbench" aria-labelledby="company-loadout-title">
-				<div class="bridge-section-title"><span class="eyebrow">WEAPON MOUNTS</span><span>${order ? 'FRAME IN SERVICE' : changed > 0 ? 'UNSCHEDULED CHANGES' : 'INSTALLED LOADOUT'}</span></div><h2 id="company-loadout-title">FIT FOR THE JOB.</h2>
-				<div class="company-mounts">${MOUNTS.map(function (binding, index) {
-					const weaponId = editor.loadout[index]; const weapon = weaponId ? getWeapon(weaponId) : undefined;
-					const different = weaponId !== mech.loadout[index];
-					return html`<button class="company-mount ${different ? 'changed' : ''}" data-loadout-slot=${index} aria-pressed=${chosenSlot === index} aria-label=${`Mount ${index + 1}: ${weapon?.name ?? 'empty'}. Change weapon.`} ?disabled=${Boolean(order)} @click=${function () { actions.editSlot(index); }}><span class="mount-number">0${index + 1}</span><span><small>${binding.mouse} / ${binding.pad} / ${binding.key}</small><b>${weapon?.name ?? 'EMPTY MOUNT'}</b><em>${different ? 'REFIT PENDING' : weapon?.type ?? 'Select to equip a purchased weapon'}</em></span><span class="mount-change" aria-hidden="true">${order ? '—' : '↗'}</span></button>`;
-				})}</div>
-				${chosenSlot !== null && !order ? html`<section class="equipment-picker" aria-label=${`Choose equipment for mount ${chosenSlot + 1}`}><div class="bridge-section-title"><span class="eyebrow">MOUNT ${chosenSlot + 1} / COMPANY ARMORY</span></div><div class="equipment-choices"><button data-equip-weapon="empty" aria-pressed=${editor.loadout[chosenSlot] === null} @click=${function () { actions.setWeapon(null); }}><b>EMPTY</b><small>Unmount weapon</small></button>${WEAPONS.filter(function (weapon) { return campaign.inventory[weapon.id] > 0; }).map(function (weapon) {
-					const used = editor.loadout.filter(function (id, index) { return index !== chosenSlot && id === weapon.id; }).length;
-					const usable = availableWeapons(campaign, weapon.id, mech.frameId) - used;
-					return html`<button data-equip-weapon=${weapon.id} aria-pressed=${editor.loadout[chosenSlot] === weapon.id} ?disabled=${usable <= 0} @click=${function () { actions.setWeapon(weapon.id); }}><b>${weapon.name}</b><small>${usable > 0 ? `${usable} available to fit` : 'Allocated elsewhere'}</small></button>`;
-				})}</div><button class="text-button" @click=${function () { actions.navigate('market'); }}>BROWSE WEAPON MARKET →</button></section>` : ''}
-				${order ? html`<div class="service-note"><b>${order.kind === 'repair' ? 'REPAIRS UNDERWAY' : 'REFIT UNDERWAY'}</b><p>Ready on day ${order.readyDay} · ${daysLabel(order.readyDay - campaign.day)} remaining. The frame cannot deploy while work is in progress.</p><button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW WORK ORDER →</button></div>` : changed > 0 ? html`<div class="refit-estimate"><div><span class="eyebrow">FITTING ESTIMATE</span><strong>${daysLabel(changed)}</strong><p>Ready day ${campaign.day + changed}. Parts are reserved when you queue the order. Installed weapons stay in place until work finishes.</p>${!editor.loadout.some(function (weapon) { return weapon !== null; }) ? html`<p class="negative">An unarmed frame cannot deploy. Removed equipment returns to stores when the refit finishes.</p>` : ''}</div><button id="queue-refit" class="primary" ?disabled=${!draftValid} @click=${actions.queueRefit}>QUEUE REFIT <span>→</span></button><button class="text-button" @click=${actions.discardRefit}>DISCARD CHANGES</button></div>` : html`<p class="company-note">Select a mount to change its weapon. Each changed mount requires one calendar day of fitting work. Weapons must be purchased first.</p>`}
-				<div class="company-deploy"><span class="eyebrow">${campaign.active ? `ACCEPTED / ${campaign.active.title}` : 'NO CONTRACT ACCEPTED'}</span><p>${changed > 0 ? 'Queue or discard your loadout changes before deployment.' : order ? `Your frame will be ready on day ${order.readyDay}.` : mech.integrity <= 0 ? 'This frame needs repairs before it can deploy.' : !mech.loadout.some(function (weapon) { return weapon !== null; }) ? 'This frame is unarmed. Fit at least one weapon and complete the refit before deployment.' : campaign.active ? `${frame.name} will deploy at ${integrityLabel(mech.integrity)} integrity with its installed weapons.` : 'Choose and accept a contract from the command bridge.'}</p><button id="company-deploy" class="primary" ?disabled=${!ready || changed > 0} @click=${actions.deploy}>DEPLOY ${frame.name} <span>↘</span></button>${!campaign.active ? html`<button class="secondary" @click=${function () { actions.navigate('bridge'); }}>FIND A CONTRACT →</button>` : ''}</div>
-			</section>
-		</div>
-	`;
+	const status = changed > 0 ? 'Queue or discard your loadout changes before deployment.' : order ? `Your frame will be ready on day ${order.readyDay}. It cannot deploy while work is in progress.` : mech.integrity <= 0 ? 'This frame needs repairs before it can deploy.' : !mech.loadout.some(function (weapon) { return weapon !== null; }) ? 'This frame is unarmed. Fit at least one weapon and complete the refit before deployment.' : campaign.active ? `${frame.name} will deploy at ${integrityLabel(mech.integrity)} integrity with its installed weapons.` : 'Choose and accept a contract from the command bridge.';
+	const mounts = MOUNTS.map(function (binding, index) {
+		const weaponId = editor.loadout[index]; const weapon = weaponId ? getWeapon(weaponId) : undefined;
+		const different = weaponId !== mech.loadout[index];
+		return html`<button class="company-mount ${different ? 'changed' : ''}" data-loadout-slot=${index} aria-pressed=${slot === index} aria-label=${`Mount ${index + 1}: ${weapon?.name ?? 'empty'}. Change weapon.`} ?disabled=${Boolean(order)} @click=${function () { actions.editSlot(index); }}><span class="mount-number">0${index + 1}</span><span><small>${binding.mouse} / ${binding.pad} / ${binding.key}</small><b>${weapon?.name ?? 'EMPTY MOUNT'}</b><em>${different ? 'REFIT PENDING' : weapon?.type ?? 'Select to equip a purchased weapon'}</em></span><span class="mount-change" aria-hidden="true">${order ? '—' : '↗'}</span></button>`;
+	});
+	const choices = slot === null ? [] : [html`<button class="equipment-choice" data-equip-weapon="empty" aria-pressed=${editor.loadout[slot] === null} @click=${function () { actions.setWeapon(null); }}><b>EMPTY</b><small>Unmount weapon</small></button>`, ...WEAPONS.filter(function (weapon) { return campaign.inventory[weapon.id] > 0; }).map(function (weapon) {
+		const used = editor.loadout.filter(function (id, index) { return index !== slot && id === weapon.id; }).length;
+		const usable = availableWeapons(campaign, weapon.id, mech.frameId) - used;
+		return html`<button class="equipment-choice" data-equip-weapon=${weapon.id} aria-pressed=${editor.loadout[slot] === weapon.id} ?disabled=${usable <= 0} @click=${function () { actions.setWeapon(weapon.id); }}><b>${weapon.name}</b><small>${usable > 0 ? `${usable} available to fit` : 'Allocated elsewhere'}</small></button>`;
+	})];
+	return [
+		{ id: 'fleet', label: 'Fleet', items: [
+			html`<span class="eyebrow">${campaign.fleet.length} / ${FRAMES.length} FRAMES OWNED</span>`,
+			...campaign.fleet.map(function (owned) { const definition = getFrame(owned.frameId); const job = workOrderFor(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${definition.name}</b><small>${integrityLabel(owned.integrity)} INTEGRITY · ${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
+			...textItems('Each chassis is purchased once and includes its signature weapon. Equipment stays with its frame between sorties.'),
+		], actions: html`<button class="secondary" @click=${function () { actions.navigate('market'); }}>ACQUIRE FRAME →</button>` },
+		{ id: 'condition', label: 'Condition', items: [
+			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${frame.name}</h2></div>`, frameSchematic(frame),
+			html`<div class="company-integrity"><span>FRAME INTEGRITY</span><b class=${mech.integrity < 35 ? 'negative' : ''}>${integrityLabel(mech.integrity)}</b><div class="track"><i style="width:${mech.integrity}%"></i></div></div>`,
+			html`<dl class="frame-specifications"><dt>CRUISE</dt><dd>${frame.speed} m/s</dd><dt>COOLING</dt><dd>${frame.cooling} heat/s</dd><dt>MASS</dt><dd>${frame.mass} tonnes</dd></dl>`,
+			...textItems(frame.tradeoff),
+		], ...(mech.integrity < 100 ? { actions: html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>${mech.integrity <= 0 ? 'RECOVER FRAME' : 'SCHEDULE REPAIRS'} →</button>` } : {}) },
+		{ id: 'loadout', label: equipment ? `Mount ${slot + 1}` : 'Loadout', items: equipment ? choices : [
+			...mounts,
+			...textItems(order ? `${order.kind === 'repair' ? 'Repairs' : 'Refit'} underway. Ready day ${order.readyDay} · ${daysLabel(order.readyDay - campaign.day)} remaining.` : changed > 0 ? `Fitting estimate: ${daysLabel(changed)}. Ready day ${campaign.day + changed}. Parts are reserved when queued. Installed weapons stay in place until work finishes.` : 'Select a mount to change its weapon. Each changed mount requires one calendar day of fitting work. Weapons must be purchased first.'),
+			...(changed > 0 && !editor.loadout.some(function (weapon) { return weapon !== null; }) ? textItems('An unarmed frame cannot deploy. Removed equipment returns to stores when the refit finishes.') : []),
+			html`<span class="eyebrow">${campaign.active ? `ACCEPTED / ${campaign.active.title}` : 'NO CONTRACT ACCEPTED'}</span>`, ...textItems(status),
+		], actions: equipment ? html`<button class="secondary" @click=${actions.closePicker}>BACK TO MOUNTS</button><button class="text-button" @click=${function () { actions.navigate('market'); }}>MARKET →</button>` : changed > 0 ? html`<button id="queue-refit" class="primary" ?disabled=${!canRefit(campaign, mech.frameId, editor.loadout)} @click=${actions.queueRefit}>QUEUE ${daysLabel(changed)} REFIT →</button><button class="text-button" @click=${actions.discardRefit}>DISCARD</button>` : order ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW ENGINEERING →</button>` : !campaign.active ? html`<button class="primary" @click=${function () { actions.navigate('bridge'); }}>FIND A CONTRACT →</button>` : html`<button id="company-deploy" class="primary" ?disabled=${!ready} @click=${actions.deploy}>DEPLOY ${frame.name} ↘</button>` },
+	];
 };
 
-const renderMarket = function (campaign: Campaign, actions: CompanyActions) {
-	return html`
-		<div class="company-page-heading"><div><span class="eyebrow">03 / PROCUREMENT EXCHANGE</span><h2>BUILD YOUR COMPANY.</h2><p>Buy armaments for your inventory or acquire a complete frame. Purchases are available immediately; fitting takes time.</p></div><span class="company-count">${creditsLabel(campaign.credits)} AVAILABLE</span></div>
-		<section aria-labelledby="weapon-market-title"><div class="market-section-heading"><h3 id="weapon-market-title">ARMAMENTS</h3><button class="text-button" @click=${function () { actions.navigate('mechbay'); }}>EQUIP PURCHASED WEAPONS →</button></div><div class="weapon-market-grid">${WEAPONS.map(function (weapon) {
-			const price = WEAPON_PRICES[weapon.id]; const affordable = campaign.credits >= price;
-			return html`<article class="market-weapon" style="--weapon-color:${weapon.color}"><div class="market-weapon-title"><span aria-hidden="true">${weapon.icon}</span><div><small>${weapon.type.toUpperCase()}</small><h3>${weapon.name}</h3></div></div><p>${weapon.description}</p><div class="weapon-market-spec"><span>${weapon.range}m RANGE</span><span>${weapon.kind === 'laser' ? `${weapon.heat} HEAT / S` : `${weapon.heat} HEAT / SHOT`}</span></div><div class="stock-count"><span>${campaign.inventory[weapon.id]} OWNED</span><span>${availableWeapons(campaign, weapon.id)} IN STORES</span></div><button class="secondary purchase-button" data-buy-weapon=${weapon.id} ?disabled=${!affordable || Boolean(campaign.deployed)} @click=${function () { actions.buyWeapon(weapon.id); }}><b>BUY · ${creditsLabel(price)}</b><span>${affordable ? '+' : `NEED ${creditsLabel(price - campaign.credits)}`}</span></button></article>`;
-		})}</div></section>
-		<section aria-labelledby="frame-market-title"><div class="market-section-heading"><h3 id="frame-market-title">COMPLETE FRAMES</h3><span class="company-note">SIGNATURE WEAPON INCLUDED / ONE OF EACH CHASSIS</span></div><div class="frame-market-grid">${FRAMES.map(function (frame) {
-			const owned = Boolean(getOwnedMech(campaign, frame.id)); const price = FRAME_PRICES[frame.id]; const affordable = campaign.credits >= price;
-			return html`<article class="market-frame" style="--frame-color:${frame.color}"><div class="market-frame-art">${frameSchematic(frame)}</div><div class="market-frame-body"><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h3>${frame.name}</h3><p>${frame.description}</p><p class="company-note">${frame.tradeoff}</p><span class="included-weapon">INCLUDES ${getWeapon(frame.starter).name}</span><button class="secondary purchase-button" data-buy-frame=${frame.id} ?disabled=${owned || !affordable || Boolean(campaign.deployed)} @click=${function () { actions.buyFrame(frame.id); }}><b>${owned ? 'IN YOUR HANGAR' : `BUY · ${creditsLabel(price)}`}</b><span>${owned ? '✓' : affordable ? '+' : `NEED ${creditsLabel(price - campaign.credits)}`}</span></button></div></article>`;
-		})}</div></section>
-	`;
+const marketPanes = function (root: HTMLElement, campaign: Campaign, view: CompanyView, actions: CompanyActions, refresh: () => void): WorkspacePane[] {
+	const weapon = getWeapon(view.weapon); const frame = getFrame(view.frame);
+	const weaponMarket = view.kind === 'weapons';
+	const price = weaponMarket ? WEAPON_PRICES[weapon.id] : FRAME_PRICES[frame.id];
+	const owned = !weaponMarket && Boolean(getOwnedMech(campaign, frame.id));
+	const affordable = campaign.credits >= price;
+	const select = function () { refresh(); selectWorkspacePane(root, 'details', true); };
+	return [
+		{ id: 'catalogue', label: 'Catalogue', items: [
+			html`<div class="market-kind"><button aria-pressed=${weaponMarket} @click=${function () { view.kind = 'weapons'; refresh(); }}>WEAPONS</button><button aria-pressed=${!weaponMarket} @click=${function () { view.kind = 'frames'; refresh(); }}>FRAMES</button></div>`,
+			...(weaponMarket ? WEAPONS.map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.id; select(); }}><span><b>${item.name}</b><small>${item.type} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.name}</b><small>${item.mass}T / ${item.role}</small></span><span>${getOwnedMech(campaign, item.id) ? 'OWNED' : creditsLabel(FRAME_PRICES[item.id])}</span></button>`; })),
+			...textItems('Purchases arrive immediately. Installing weapons requires a refit in the Mech Bay. Each chassis can be purchased once and includes its signature weapon.'),
+		], actions: html`<button class="secondary" @click=${function () { actions.navigate('mechbay'); }}>EQUIP PURCHASES →</button>` },
+		{ id: 'details', label: 'Item details', items: weaponMarket ? [
+			html`<span class="eyebrow">${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
+			...textItems(weapon.description),
+			html`<dl class="frame-specifications"><dt>RANGE</dt><dd>${weapon.range} m</dd><dt>HEAT</dt><dd>${weapon.heat} / ${weapon.kind === 'laser' ? 'second' : 'shot'}</dd><dt>OWNED</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
+			...textItems(affordable ? `${creditsLabel(price)}. Buy another copy to equip the same weapon on another mount or frame.` : `Price ${creditsLabel(price)}. Need ${creditsLabel(price - campaign.credits)} more.`),
+		] : [
+			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.name}</h2></div>`, frameSchematic(frame),
+			...textItems(frame.description), ...textItems(frame.tradeoff),
+			html`<p class="workspace-copy">INCLUDES ${getWeapon(frame.starter).name} · ${owned ? 'ALREADY IN YOUR HANGAR' : creditsLabel(price)}</p>`,
+		], actions: html`<button class="secondary" @click=${function () { selectWorkspacePane(root, 'catalogue'); }}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${owned || !affordable || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>${owned ? 'OWNED' : `BUY · ${creditsLabel(price)}`}</button>` },
+	];
 };
 
-const renderEngineering = function (campaign: Campaign, actions: CompanyActions) {
+const engineeringPanes = function (campaign: Campaign, actions: CompanyActions): WorkspacePane[] {
 	const ordered = [...campaign.workOrders].sort(function (a, b) { return a.readyDay - b.readyDay; });
 	const next = ordered[0];
-	return html`
-		<div class="company-page-heading"><div><span class="eyebrow">04 / ENGINEERING DECK</span><h2>TIME TO REBUILD.</h2><p>Repairs and refits complete on the ship calendar. Each frame has its own crew; work progresses in parallel.</p></div><span class="company-count">${ordered.length} ACTIVE ${ordered.length === 1 ? 'ORDER' : 'ORDERS'}</span></div>
-		<div class="engineering-layout"><section class="engineering-schedule" aria-labelledby="schedule-title"><div class="calendar-console"><div><span class="eyebrow">SHIP CALENDAR</span><h2 id="schedule-title">DAY ${String(campaign.day).padStart(2, '0')}</h2><p>${next ? `Next completion: ${getFrame(next.frameId).name} on day ${next.readyDay}.` : 'No scheduled work. Your crews are standing by.'}</p></div><div class="calendar-actions"><button id="advance-day" class="secondary" ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.advanceDays(1); }}>ADVANCE 1 DAY</button><button id="advance-work" class="primary" ?disabled=${!next || Boolean(campaign.deployed)} @click=${function () { if (next) actions.advanceDays(next.readyDay - campaign.day); }}>${next ? `WAIT ${daysLabel(next.readyDay - campaign.day)}` : 'NO WORK PENDING'} <span>→</span></button></div></div>
-			<div class="work-order-list" aria-label="Scheduled work">${ordered.length === 0 ? html`<div class="company-empty"><span aria-hidden="true">◇</span><b>ALL BAYS CLEAR</b><p>Schedule repairs below or plan a refit in the Mech Bay.</p></div>` : ordered.map(function (order) {
-				const frame = getFrame(order.frameId); const elapsed = campaign.day - order.startedDay; const total = order.readyDay - order.startedDay;
-				return html`<article class="work-order" data-work-order=${order.frameId}><div class="work-order-heading"><div><span class="eyebrow">${order.kind === 'repair' ? 'FRAME RESTORATION' : 'WEAPON REFIT'}</span><h3>${frame.name}</h3></div><strong>${daysLabel(order.readyDay - campaign.day)}<small>REMAINING</small></strong></div><div class="work-order-dates"><span>STARTED DAY ${order.startedDay}</span><b>READY DAY ${order.readyDay}</b></div><div class="track"><i style="width:${total > 0 ? elapsed / total * 100 : 100}%"></i></div><p>${order.kind === 'repair' ? 'Restore frame integrity to 100%. Weapons stay installed.' : order.loadout.map(function (weapon, index) { return `${index + 1}: ${weapon ? getWeapon(weapon).name : 'Empty'}`; }).join(' · ')}</p><button class="text-button" data-cancel-work=${order.frameId} @click=${function () { actions.cancelWork(order.frameId); }}>CANCEL ORDER</button><small class="company-note">Cancellation keeps the original condition and loadout.</small></article>`;
-			})}</div><p class="company-note">Each jump or sortie also advances work by one day. Waiting does not charge credits or refresh contract postings.</p></section>
-			<section class="maintenance-roster" aria-labelledby="maintenance-title"><h3 id="maintenance-title">FRAME CONDITION</h3><p class="company-note">Your own crews perform repairs without a credit fee. Every 20 missing integrity takes one day; a wrecked frame needs five days.</p>${campaign.fleet.map(function (mech) {
+	return [
+		{ id: 'calendar', label: 'Calendar', items: [
+			html`<span class="eyebrow">SHIP CALENDAR</span><h2>DAY ${String(campaign.day).padStart(2, '0')}</h2>`,
+			...textItems(next ? `Next completion: ${getFrame(next.frameId).name} on day ${next.readyDay}. ${ordered.length} active work orders.` : 'No scheduled work. Your crews are standing by.'),
+			...textItems('Each frame has its own crew. Repairs and refits progress in parallel, completing on the ship calendar.'),
+			...textItems('Each jump or sortie also advances work by one day. Waiting does not charge credits or refresh contract postings.'),
+		], actions: html`<button id="advance-day" class="secondary" ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.advanceDays(1); }}>ADVANCE 1 DAY</button><button id="advance-work" class="primary" ?disabled=${!next || Boolean(campaign.deployed)} @click=${function () { if (next) actions.advanceDays(next.readyDay - campaign.day); }}>${next ? `WAIT ${daysLabel(next.readyDay - campaign.day)}` : 'NO WORK PENDING'}</button>` },
+		{ id: 'orders', label: 'Work orders', items: ordered.length === 0 ? [html`<div class="company-empty"><b>ALL BAYS CLEAR</b><p>Schedule repairs in Condition or plan a refit in the Mech Bay.</p></div>`] : ordered.flatMap(function (order) {
+			const frame = getFrame(order.frameId); const total = order.readyDay - order.startedDay;
+			return [html`<article class="work-order" data-work-order=${order.frameId}><div class="work-order-heading"><div><span class="eyebrow">${order.kind === 'repair' ? 'RESTORATION' : 'WEAPON REFIT'}</span><h3>${frame.name}</h3></div><strong>${daysLabel(order.readyDay - campaign.day)}</strong></div><div class="work-order-dates"><span>STARTED ${order.startedDay}</span><b>READY DAY ${order.readyDay}</b></div><div class="track"><i style="width:${total > 0 ? (campaign.day - order.startedDay) / total * 100 : 100}%"></i></div></article>`, html`<button class="secondary" data-cancel-work=${order.frameId} @click=${function () { actions.cancelWork(order.frameId); }}>CANCEL ${frame.name} ORDER</button>`, ...textItems(order.kind === 'repair' ? `${frame.name}: restore integrity to 100%. Weapons stay installed.` : `${frame.name} refit: ${order.loadout.map(function (weapon, index) { return `${index + 1}: ${weapon ? getWeapon(weapon).name : 'Empty'}`; }).join(' · ')}`)];
+		}).concat(textItems('Cancellation keeps the original condition and installed loadout. Elapsed days are not refunded.')) },
+		{ id: 'condition', label: 'Condition', items: [
+			...campaign.fleet.flatMap(function (mech) {
 				const frame = getFrame(mech.frameId); const order = workOrderFor(campaign, mech.frameId); const days = repairDays(mech.integrity);
-				return html`<article class="maintenance-frame" data-maintenance-frame=${mech.frameId}><div><b>${frame.name}</b><strong class=${mech.integrity < 35 ? 'negative' : ''}>${integrityLabel(mech.integrity)}</strong></div><div class="track"><i style="width:${mech.integrity}%"></i></div><p>${order ? `${order.kind === 'repair' ? 'Repair' : 'Refit'} underway · ready day ${order.readyDay}` : mech.integrity >= 100 ? 'Fully serviced. No repairs required.' : `${daysLabel(days)} to restore · ready day ${campaign.day + days}`}</p><button class="secondary" data-repair-frame=${mech.frameId} ?disabled=${Boolean(order) || mech.integrity >= 100 || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>${order ? 'WORK ALREADY IN PROGRESS' : mech.integrity >= 100 ? 'FRAME INTACT' : `QUEUE REPAIRS · ${daysLabel(days)}`}</button></article>`;
-			})}<button class="secondary" @click=${function () { actions.navigate('mechbay'); }}>RETURN TO MECH BAY →</button></section>
-		</div>
-	`;
+				return [html`<article class="maintenance-frame" data-maintenance-frame=${mech.frameId}><div><b>${frame.name}</b><strong class=${mech.integrity < 35 ? 'negative' : ''}>${integrityLabel(mech.integrity)}</strong></div><div class="track"><i style="width:${mech.integrity}%"></i></div><p>${order ? `${order.kind === 'repair' ? 'Repair' : 'Refit'} underway · ready day ${order.readyDay}` : mech.integrity >= 100 ? 'Fully serviced.' : `${daysLabel(days)} to restore · ready day ${campaign.day + days}`}</p></article>`, html`<button class="secondary" data-repair-frame=${mech.frameId} ?disabled=${Boolean(order) || mech.integrity >= 100 || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>${frame.name} · ${order ? 'WORK IN PROGRESS' : mech.integrity >= 100 ? 'FRAME INTACT' : `REPAIR · ${daysLabel(days)}`}</button>`];
+			}), ...textItems('Your own crews repair without a credit fee. Every 20 missing integrity takes one day; a wrecked frame needs five days.'),
+		], actions: html`<button class="secondary" @click=${function () { actions.navigate('mechbay'); }}>MECH BAY →</button>` },
+	];
 };
 
 export const renderCompany = function (root: HTMLElement, campaign: Campaign, screen: CompanyScreen, editor: CompanyEditor, saved: boolean, actions: CompanyActions) {
-	render(html`
-		${renderShipHeader(campaign, screen, actions.navigate)}
-		<p class="company-notice" role="status" aria-live="polite">${editor.notice}</p>
-		${screen === 'mechbay' ? renderMechBay(campaign, editor, actions) : screen === 'market' ? renderMarket(campaign, actions) : renderEngineering(campaign, actions)}
-		<footer class="bridge-footer"><div><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'COMPANY SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>
-	`, root);
+	let view = views.get(root);
+	if (!view) { view = { kind: 'weapons', weapon: 'autocannon', frame: 'warden', slot: null }; views.set(root, view); }
+	const previousSlot = view.slot;
+	view.slot = editor.slot;
+	const refresh = function () { renderCompany(root, campaign, screen, editor, saved, actions); };
+	const panes = screen === 'mechbay' ? mechBayPanes(campaign, editor, actions) : screen === 'market' ? marketPanes(root, campaign, view, actions, refresh) : engineeringPanes(campaign, actions);
+	const footer = html`<footer class="bridge-footer"><div><button @click=${function () { actions.navigate('bridge'); }}>CONTRACTS</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>`;
+	const announcedPanes = editor.notice ? panes.map(function (pane) { return { ...pane, items: [...textItems(editor.notice), ...pane.items] }; }) : panes;
+	renderWorkspace(root, renderShipHeader(campaign, screen, actions.navigate), announcedPanes, footer, screen === 'mechbay' ? 'loadout' : screen === 'market' ? 'catalogue' : 'calendar');
+	if (screen === 'mechbay' && (editor.slot !== previousSlot || editor.slot !== null)) selectWorkspacePane(root, 'loadout');
 };
