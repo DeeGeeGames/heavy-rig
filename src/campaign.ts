@@ -1,4 +1,5 @@
 import type { Biome, Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
+import { advanceDays, createCompany, MAX_DAY, parseCompany, type CompanyState } from './company';
 
 export interface FactionDefinition {
 	id: FactionId;
@@ -44,8 +45,8 @@ export interface CampaignResult {
 	day: number;
 }
 
-export interface Campaign {
-	version: 1;
+export interface Campaign extends CompanyState {
+	version: 2;
 	seed: number;
 	planetId: PlanetId;
 	day: number;
@@ -59,7 +60,7 @@ export interface Campaign {
 	lastResult: CampaignResult | undefined;
 }
 
-const STORAGE_KEY = 'heavy-rig:campaign:v1';
+export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v2';
 const FACTION_IDS: readonly FactionId[] = ['freeholds', 'combine', 'accord'];
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance'];
 const MAX_COUNT = 1_000_000;
@@ -79,7 +80,7 @@ const freshSeed = function () {
 
 export const createCampaign = function (seed?: number): Campaign {
 	return {
-		version: 1, seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
+		...createCompany(), version: 2, seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
 		credits: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 	};
 };
@@ -122,7 +123,8 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 };
 
 export const canAcceptContract = function (campaign: Campaign, contract: Contract): boolean {
-	return !campaign.active && contract.planetId === campaign.planetId && campaign.reputation[contract.employer] >= contract.requiredReputation
+	return !campaign.active && !campaign.deployed && campaign.boardRevision < MAX_COUNT && campaign.day < MAX_DAY
+		&& contract.planetId === campaign.planetId && campaign.reputation[contract.employer] >= contract.requiredReputation
 		&& getContracts(campaign).some(function (posted) { return posted.id === contract.id; });
 };
 
@@ -136,26 +138,27 @@ export const acceptContract = function (campaign: Campaign, contractId: string):
 };
 
 export const travelTo = function (campaign: Campaign, planetId: PlanetId): Campaign {
-	if (campaign.active || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || !isPlanetId(planetId)) return campaign;
-	return { ...campaign, planetId, day: campaign.day + 1, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation } };
+	if (campaign.active || campaign.deployed || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
+	return { ...advanceDays(campaign, 1), planetId, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation } };
 };
 
 const finishContract = function (campaign: Campaign, won: boolean, aborted: boolean): Campaign {
 	const contract = campaign.active;
-	if (!contract || campaign.boardRevision >= MAX_COUNT) return campaign;
+	if (!contract || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY) return campaign;
 	const favor = won ? Math.min(contract.favor, 100 - campaign.reputation[contract.employer]) : 0;
 	const payout = won ? Math.min(contract.reward, MAX_CREDITS - campaign.credits) : 0;
 	const reputation = { ...campaign.reputation, [contract.employer]: boundedReputation(campaign.reputation[contract.employer] + favor) };
 	const day = campaign.day + 1;
-	return {
-		...campaign, active: undefined, reputation, boardReputation: { ...reputation }, day, boardRevision: campaign.boardRevision + 1,
+	return advanceDays({
+		...campaign, active: undefined, deployed: undefined, reputation, boardReputation: { ...reputation }, boardRevision: campaign.boardRevision + 1,
 		credits: campaign.credits + payout, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
 		lastResult: { contract, won, aborted, payout, favor, day },
-	};
+	}, 1);
 };
 
 export const settleContract = function (campaign: Campaign, won: boolean): Campaign { return finishContract(campaign, won, false); };
 export const abandonContract = function (campaign: Campaign): Campaign { return finishContract(campaign, false, true); };
+export const recoverInterruptedDeployment = function (campaign: Campaign): Campaign { return campaign.deployed ? abandonContract(campaign) : campaign; };
 
 const isReputation = function (value: unknown): value is Record<FactionId, number> {
 	return object(value) && FACTION_IDS.every(function (id) { return isInteger(value[id], -100, 100); });
@@ -175,7 +178,7 @@ const isResult = function (value: unknown): value is CampaignResult {
 	const contract = value['contract'];
 	return typeof value['won'] === 'boolean' && typeof value['aborted'] === 'boolean' && !(value['won'] && value['aborted'])
 		&& isInteger(value['payout'], 0, contract.reward) && isInteger(value['favor'], 0, contract.favor)
-		&& (value['won'] || value['payout'] === 0 && value['favor'] === 0) && isInteger(value['day'], 2, MAX_COUNT + 1);
+		&& (value['won'] || value['payout'] === 0 && value['favor'] === 0) && isInteger(value['day'], 2, MAX_DAY);
 };
 
 const sameContract = function (saved: Contract, generated: Contract): boolean {
@@ -191,13 +194,15 @@ export const parseCampaign = function (raw: string | null): Campaign {
 	if (!raw) return createCampaign();
 	try {
 		const value: unknown = JSON.parse(raw);
-		if (!object(value) || value['version'] !== 1 || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
-			|| !isInteger(value['day'], 1, MAX_COUNT + 1) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] !== value['boardRevision'] + 1
+		if (!object(value) || value['version'] !== 2 || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
+			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > value['boardRevision'] || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
 			|| value['active'] !== undefined && !isContract(value['active']) || value['lastResult'] !== undefined && !isResult(value['lastResult'])) return createCampaign();
+		const company = parseCompany(value, value['day'], value['active'] !== undefined);
+		if (!company) return createCampaign();
 		const campaign: Campaign = {
-			version: 1, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
+			...company, version: 2, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 		};
@@ -208,6 +213,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		})) return createCampaign();
 		const active = campaign.active;
 		if (active) {
+			if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT) return createCampaign();
 			const generated = getContracts(campaign).find(function (contract) { return contract.id === active.id; });
 			if (!generated || !sameContract(active, generated) || campaign.reputation[active.employer] < active.requiredReputation) return createCampaign();
 			campaign.active = generated;
@@ -217,9 +223,9 @@ export const parseCampaign = function (raw: string | null): Campaign {
 };
 
 export const readCampaign = function (): Campaign {
-	try { return parseCampaign(localStorage.getItem(STORAGE_KEY)); } catch { return createCampaign(); }
+	try { return recoverInterruptedDeployment(parseCampaign(localStorage.getItem(CAMPAIGN_STORAGE_KEY))); } catch { return createCampaign(); }
 };
 
 export const saveCampaign = function (campaign: Campaign): boolean {
-	try { localStorage.setItem(STORAGE_KEY, JSON.stringify(campaign)); return true; } catch { return false; }
+	try { localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(campaign)); return true; } catch { return false; }
 };

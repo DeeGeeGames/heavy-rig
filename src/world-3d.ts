@@ -26,8 +26,7 @@ export const createWorldObjects = function (scene: Scene) {
 	const cylinder = geometry(new CylinderGeometry(1, 1, 1, 8));
 	const steel = solid('#667677'); const dark = solid('#293b42'); const cyan = glow('#a3ede3');
 	const brass = solid('#a78a53'); const ivory = solid('#b9baa6');
-	const repair = glow('#82dfbb'); const coolant = glow('#8bdcec'); const shadow = glow('#050d14', 0.3);
-	const repairHaloMaterial = glow('#74cfb7', 0.25); const coolantHaloMaterial = glow('#75cce5', 0.25);
+	const shadow = glow('#050d14', 0.3);
 	const group = function (name: string) { const value = new Group(); value.name = name; root.add(value); return value; };
 	const box = function (parent: Group, surface: Material, x: number, y: number, z: number, length: number, breadth: number, height: number) {
 		const value = new Mesh(cube, surface); value.position.set(x, y + height / 2, z); value.scale.set(length, height, breadth); value.castShadow = true; value.receiveShadow = true; parent.add(value); return value;
@@ -97,7 +96,7 @@ export const createWorldObjects = function (scene: Scene) {
 		parts.forEach(function (part, index) { part.updateMatrix(); batch.setMatrixAt(index, part.matrix); relay.remove(part); });
 		batch.castShadow = true; batch.receiveShadow = true; relay.add(batch); relayBatches.push(batch);
 	}
-	const wrecks: PooledObject[] = []; const salvages: ReturnType<typeof createSalvage>[] = [];
+	const wrecks: PooledObject[] = [];
 	const warnings: PooledObject[] = []; const shots: ReturnType<typeof createShot>[] = []; const effects: ReturnType<typeof createEffect>[] = [];
 	const strikes: ReturnType<typeof createStrike>[] = [];
 	const defenses: ReturnType<typeof createDefense>[] = [];
@@ -106,13 +105,6 @@ export const createWorldObjects = function (scene: Scene) {
 		while (pool.length > count) { const value = pool.pop(); value?.root.removeFromParent(); value?.dispose?.(); }
 		while (pool.length < count) { const value = create(); root.add(value.root); pool.push(value); }
 		pool.forEach(update);
-	};
-	const createSalvage = function () {
-		const value = new Group(); value.name = 'salvage';
-		const repairBox = box(value, repair, 0, 5, 0, 17, 17, 12); const coolantBox = box(value, coolant, 0, 5, 0, 17, 17, 12);
-		const repairHalo = disc(value, repairHaloMaterial, 27); const coolantHalo = disc(value, coolantHaloMaterial, 27);
-		repairHalo.position.y = 0.06; coolantHalo.position.y = 0.06;
-		return { root: value, repairBox, coolantBox, repairHalo, coolantHalo };
 	};
 	const armorArc = geometry(new RingGeometry(0.9, 1, 32, 1, -Math.PI / 3, Math.PI * 2 / 3));
 	const armorSurface = glow('#eec58b', 0.8); const exposedSurface = glow('#a2f0d2', 0.9);
@@ -210,12 +202,6 @@ export const createWorldObjects = function (scene: Scene) {
 				box(value, dark, 24, 0, -19, 24, 7, 5).rotation.y = 0.5; box(value, dark, -21, 0, 22, 17, 10, 4).rotation.y = -0.3;
 				return { root: value };
 			}, function (value, index) { const wreck = state.wrecks[index]; if (!wreck) return; value.root.position.set(wreck.x, 0, wreck.y); value.root.rotation.y = -wreck.angle; });
-			sync(salvages, state.salvage.length, createSalvage, function (value, index) {
-				const salvage = state.salvage[index]; if (!salvage) return;
-				value.root.position.set(salvage.x, 0, salvage.y); const bob = reducedMotion ? 0 : Math.sin(state.time * 2) * 2;
-				value.repairBox.position.y = 11 + bob; value.coolantBox.position.y = 11 + bob;
-				value.repairBox.visible = value.repairHalo.visible = salvage.kind === 'repair'; value.coolantBox.visible = value.coolantHalo.visible = salvage.kind === 'coolant';
-			});
 			sync(warnings, state.warnings.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
 				const warning = state.warnings[index]; if (!warning) return; value.root.position.set(warning.x, 0.12, warning.y); value.root.scale.setScalar(45 + (reducedMotion ? 0 : Math.sin(state.time * 8) * 5));
 			});
