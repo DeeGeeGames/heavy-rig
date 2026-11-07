@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { abandonContract, acceptContract, createCampaign, getContracts, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
-import { advanceDays, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, FRAME_PRICES, getOwnedMech, queueRefit, queueRepair, selectFrame, WEAPON_PRICES } from '../src/company';
+import { advanceDays, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, FRAME_PRICES, getOwnedMech, queueRefit, queueRepair, selectFrame, unlockAllRigs, WEAPON_PRICES } from '../src/company';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
 const accept = function (campaign: Campaign): Campaign {
@@ -182,4 +182,16 @@ describe('Company ownership and workshop transactions', function () {
 			expect(restored.deployed).toBeUndefined();
 		}
 	});
+});
+
+test('rig cheat preserves an active deployment and survives save validation without duplicate grants', function () {
+	const deployed = beginDeployment(accept(funded()));
+	const unlocked = unlockAllRigs(deployed);
+	expect(unlocked.fleet).toHaveLength(5);
+	expect(unlocked.credits).toBe(deployed.credits);
+	expect(unlocked.deployed).toEqual(deployed.deployed);
+	expect(unlocked.active).toEqual(deployed.active);
+	expect(unlocked.fleet[0]).toEqual(deployed.fleet[0]);
+	expect(roundTrip(unlocked)).toEqual(unlocked);
+	expect(unlockAllRigs(unlocked)).toBe(unlocked);
 });
