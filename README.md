@@ -198,11 +198,13 @@ back-button actions are suppressed over the battlefield.
 
 Wheel zoom ranges from 0.5× to 2.5× and keeps the frame centered. It survives
 pause and resizing; a new mission or training session restores the default.
-Menus retain normal scrolling, and Ctrl/Command + wheel retains browser zoom.
+Company screens and dialogs fill the available window without scrolling.
+Tabs select content panes; Previous/Next buttons page longer content.
+Ctrl/Command + wheel retains browser zoom.
 
 The active device changes prompts. Controller use enables the larger interface;
-Settings can enable it for keyboard and mouse. Right-stick scrolling traverses
-long menus, and left/right adjusts a focused volume slider. Touch controls
+Settings can enable it for keyboard and mouse. D-pad/stick navigation reaches
+the tabs and page buttons; left/right adjusts a focused volume slider. Touch controls
 activate on touch-first devices or through Settings. Optional recoil/damage
 vibration depends on browser and controller support.
 
@@ -282,6 +284,15 @@ Title-menu and settings verification is recorded in
 captures in `docs/title-*.png` and `docs/settings-desktop.png`. It covers first
 load and continue, focus restoration, training return, preserved preferences
 and company progress, and simulated keyboard/controller/touch input.
+
+Viewport validation is recorded in [`docs/viewport-validation.json`](./docs/viewport-validation.json).
+It covers every department pane/page with a full fleet and work orders, large
+interface mode, simulated controller loss, and long status messages. It also
+covers purchase/refit/deploy/abort/travel journeys, focus restoration, all
+Settings/Handbook pages, and dialog geometry. End-report and save-conflict layout
+checks use fixtures. Screenshots: [`desktop`](./docs/viewport-desktop.png),
+[`portrait`](./docs/viewport-portrait.png), and
+[`landscape`](./docs/viewport-landscape.png).
 
 ## Hosting and save compatibility
 
