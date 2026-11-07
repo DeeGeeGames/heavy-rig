@@ -13,9 +13,9 @@ const claimedInput = function () {
 describe('Heavy Rig player preferences and input boundaries', function () {
 	test('corrupt or partial storage cannot prevent deployment or introduce invalid settings', function () {
 		expect(parseProfile('{broken')).toEqual({ settings: defaultSettings(), records: [], bests: [] });
-		const profile = parseProfile(JSON.stringify({ settings: { master: 90, music: -5, effects: 'loud', difficulty: 'impossible', reducedMotion: 'false' }, records: [{ score: 100 }, null] }));
+		const profile = parseProfile(JSON.stringify({ settings: { master: 90, music: -5, effects: 'loud', difficulty: 'impossible', touchControls: 'false' }, records: [{ score: 100 }, null] }));
 		expect(profile.settings.master).toBe(1); expect(profile.settings.music).toBe(0); expect(profile.settings.effects).toBe(0.85);
-		expect(profile.settings.difficulty).toBe('standard'); expect(profile.settings.reducedMotion).toBe(false); expect(profile.records).toEqual([]);
+		expect(profile.settings.difficulty).toBe('standard'); expect(profile.settings.touchControls).toBe(false); expect(profile.records).toEqual([]);
 	});
 	test('historical difficulty records survive bounded recent history and storage reload', function () {
 		let profile = addOperationRecord(parseProfile(null), { difficulty: 'standard', won: true, score: 18000, rank: 'S', kills: 39, wave: 5, time: 300, relay: 90 });

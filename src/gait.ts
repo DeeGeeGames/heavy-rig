@@ -112,7 +112,7 @@ export const advanceGait = function (gait: WalkerGait, actualBody: Body, dt: num
 
 // Straight standing legs need a shared moving pelvis: as a planted foot falls
 // behind the body, lower the hips to keep both fixed-length limbs within reach.
-// This is structural motion, so it also applies with reduced motion enabled.
+// Structural pelvis motion keeps the leg rig within its authored reach.
 export const posedLegRig = function (gait: WalkerGait, size: number, rig: LegRig): LegRig {
 	if (rig.kneeDirection !== 1) return rig;
 	const reach = (rig.upper + rig.lower) * size;

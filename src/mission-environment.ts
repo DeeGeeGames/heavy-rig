@@ -132,11 +132,11 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	let disposed = false;
 	return {
 		root,
-		update: function (mission: MissionRuntime, time: number, reducedMotion: boolean) {
+		update: function (mission: MissionRuntime, time: number) {
 			if (disposed) return;
 			const ready = mission.stage === 'extract';
 			extraction.visible = ready; objective.visible = !ready && (mission.contract.kind === 'defend' || mission.contract.kind === 'demolition');
-			extraction.scale.setScalar(reducedMotion ? 1 : 1 + Math.sin(time * 2) * 0.015);
+			extraction.scale.setScalar(1 + Math.sin(time * 2) * 0.015);
 			progress.visible = mission.extractTime > 0;
 			progress.scale.setScalar(Math.max(0.03, Math.min(1, mission.extractTime / EXTRACTION_SECONDS)));
 			facility.visible = Boolean(mission.structure);
