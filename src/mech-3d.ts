@@ -75,7 +75,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		}
 		box(turret, 26, 0, 56, 22, 28, 5, dark);
 		box(turret, 25, 0, 58, 22, 29, 2, amber);
-		box(turret, -29, 0, 47, 16, 30, 27, dark);
+		// Recess the cooling pack below the adjoining armor's top face.
+		box(turret, -29, 0, 47, 16, 30, 26.6, dark);
 		for (const side of [-1, 1]) {
 			box(turret, -24, side * 19, 50, 11, 7, 24, steel);
 			for (let vent = 0; vent < 5; vent++) box(turret, -33, side * 10, 51 + vent * 4.5, 2, 8, 2, trim);
@@ -92,7 +93,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			// Bores are boxes, unlike the front-facing missile-port planes below.
 			bore.material = dark;
 			barrels.push({ part: bore, x: bore.position.x });
-			box(turret, 3, side * 33, 62, 17, 20, 3, trim);
+			// The cover must stand above the gun housing, whose top is Y=65.
+			box(turret, 3, side * 33, 62.4, 17, 20, 3, trim);
 			if (kind === 'scout') {
 				box(turret, -11, side * 33, 67, 23, 14, 8, amber);
 				box(turret, -14, side * 33, 75, 3, 3, 16, dark);
@@ -276,7 +278,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		const foot = new Group(); foot.name = 'planted-foot'; root.add(foot);
 		if (original) {
 			box(foot, 0, 0, 0, 38, 18, 7, dark);
-			for (const side of [-1, 1]) box(foot, 15, side * 6, 0, 15, 6, 5, steel);
+			// Toe sidewalls project beyond the sole; inset their undersides too.
+			for (const side of [-1, 1]) box(foot, 15, side * 6, 0.2, 15, 6.8, 5, steel);
 		} else if (frame === 'kestrel') {
 			box(foot, -5, 0, 0, 18, 10, 6, dark);
 			for (const side of [-1, 1]) {
@@ -296,7 +299,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			foot, upper: box(root, 0, 0, 0, 1, 1, 1, dark), lower: box(root, 0, 0, 0, 1, 1, 1, steel),
 			piston: box(root, 0, 0, 0, 1, 1, 1, steel),
 			knee: box(root, 0, 0, 0, original ? 14 : frame === 'kestrel' ? 9 : 14, original ? 17 : frame === 'kestrel' ? 12 : 18, 9, dark),
-			ankle: box(root, 0, 0, 0, 13, original ? 14 : frame === 'kestrel' ? 10 : 14, 9, steel),
+			ankle: box(root, 0, 0, 0, 13, original ? 14.8 : frame === 'kestrel' ? 10 : 14, 9, steel),
 			guard: original ? undefined : box(root, 0, 0, 0, 1, 1, 1, steel),
 			thigh: !kind && (frame === 'maul' || frame === 'longbow') ? box(root, 0, 0, 0, 1, 1, 1, steel) : undefined,
 		};
