@@ -1,0 +1,12 @@
+{
+  "results": [
+    "Travel completes queued refit without false draft; map remains clickable",
+    "Market restores independent focus per category",
+    "Purchase cancel is inert; confirm buys once without time; real refit draft preserved",
+    "Queued refit completes through confirmed calendar advance and clears draft",
+    "Repair and cancellation require confirmation and persist correct orders",
+    "Reload retains purchases, completed refit and calendar progress",
+    "Confirmed contract acceptance and deployment reach combat; pause/abort return to command deck"
+  ],
+  "errors": []
+}

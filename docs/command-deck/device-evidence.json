@@ -1,0 +1,51 @@
+{
+  "checks": [
+    {
+      "family": "xbox",
+      "footer": "✛ / LS\nMove\nView briefing\nTitle\nButton guide",
+      "glyphs": [
+        "A button",
+        "B button",
+        "Y button"
+      ],
+      "missingImages": 0
+    },
+    {
+      "family": "playstation",
+      "footer": "✛ / LS\nMove\nChange mount\nTitle\nButton guide",
+      "glyphs": [
+        "Cross button",
+        "Circle button",
+        "Triangle button"
+      ],
+      "missingImages": 0
+    },
+    {
+      "family": "switch",
+      "footer": "✛ / LS\nMove\nChange mount\nTitle\nButton guide",
+      "glyphs": [
+        "B button",
+        "A button",
+        "X button"
+      ],
+      "missingImages": 0
+    },
+    {
+      "family": "steamdeck",
+      "footer": "✛ / LS\nMove\nFIND A CONTRACT →\nTitle\nButton guide",
+      "glyphs": [
+        "A button",
+        "B button",
+        "Y button"
+      ],
+      "missingImages": 0
+    },
+    {
+      "family": "generic",
+      "footer": "✛ / LS\nMove\nSouth\nSETTINGS\nEast\nTitle\nNorth\nButton guide",
+      "glyphs": [],
+      "missingImages": 0
+    }
+  ],
+  "errors": []
+}

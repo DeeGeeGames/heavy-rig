@@ -13,9 +13,10 @@ The game opens on a console-style title menu with a rendered Wayfarer hangar.
 Choose **Start Company** on a fresh device or **Continue Company** to board the
 ship with existing progress. Frame Training, Settings, and the Pilot Handbook
 are also available here. Up/down or Tab selects a menu item; Enter confirms.
-Controller and touch prompts follow the active input device. The bridge's
-**Title Screen** button (or Escape on the bridge) returns without resetting
-company progress. Training entered from the title can return directly to it.
+Controller and touch prompts follow the active input device. Escape or the
+controller's east face button opens a confirmation to return to the title from
+any company department without resetting company progress. Training entered
+from the title can return directly to it.
 
 ## Company operations
 
@@ -28,6 +29,15 @@ throughout:
 | Mech Bay | Select an owned frame, inspect its condition, plan chassis-specific weapon hardpoints, and deploy. |
 | Market | Spend contract earnings on weapon copies or additional frames with their signature weapons included. |
 | Engineering | Schedule repairs, inspect or cancel work orders, and advance calendar days. |
+
+**LB/RB** switches departments; **LT/RT** switches pages within a department.
+Keyboard equivalents are **Q/E** and **Z/C**. The button key along the bottom
+shows the focused action, Back, button guide (**Y / triangle / H**), and Discard
+Draft (**X / square / X**) when a refit is staged. D-pad, left stick, or arrow
+keys move focus; longer content uses visible Previous/Next page buttons.
+Pages remember their focus and refit drafts survive department changes.
+Purchases, work orders, calendar advances, travel, contract acceptance, and
+deployment show a confirmation with their cost or consequences first.
 
 Each chassis can be purchased once. Purchases arrive immediately; installing or
 moving weapons requires a refit. Weapons are physical inventory copies shared
@@ -190,7 +200,8 @@ accepted contract's loadout review.
 
 ## Controls
 
-Press A / cross or Menu to claim a connected standard controller. The claiming
+Press the south face button (A / cross / Nintendo B) or Menu to claim a
+connected standard controller. The claiming
 press is consumed; confirm again to act. Ownership stays with that controller
 when another connects. Losing it pauses combat; a replacement must be claimed
 and the mission explicitly resumed. Release sticks and triggers after menu
@@ -222,9 +233,13 @@ Company screens and dialogs fill the available window without scrolling.
 Tabs select content panes; Previous/Next buttons page longer content.
 Ctrl/Command + wheel retains browser zoom.
 
-The active device changes prompts. Controller use enables the larger interface;
-Settings can enable it for keyboard and mouse. D-pad/stick navigation reaches
-the tabs and page buttons; left/right adjusts a focused volume slider. Touch controls
+The active device changes prompts, using Xbox, PlayStation, Nintendo, or Steam
+Deck glyphs when identified and physical-position labels for unknown pads.
+Nintendo keeps standard physical positions: B confirms and A goes back.
+Controller use enables the larger interface; Settings can enable it for keyboard
+and mouse. D-pad/stick navigation reaches content and page buttons; bumpers
+and triggers change departments and their pages. Left/right adjusts a focused
+volume slider. Touch controls
 activate on touch-first devices or through Settings. Optional recoil/damage
 vibration depends on browser and controller support.
 

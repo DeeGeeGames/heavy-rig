@@ -54,7 +54,7 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			}),
 			...textItems(active ? `${getFaction(active.opponent).name}: −${active.hostility} reputation applied on acceptance. Review your owned frame and equipment before deployment.` : `Current postings on ${planet.name}. ${local ? 'Local uplink.' : 'Remote preview; travel here to accept work.'}`),
 			...textItems('Postings change after a contract or jump. Favor unlocks higher-tier work and better rates; entry contracts stay available.'),
-		], actions: html`<button class="secondary" @click=${function () { actions.navigate(order || mech && mech.integrity <= 0 ? 'engineering' : 'mechbay'); }}>${order || mech && mech.integrity <= 0 ? 'VIEW ENGINEERING' : 'MANAGE MECH BAY'} →</button>` },
+		] },
 		{ id: 'briefing', label: 'Briefing', items: selected ? [
 			html`<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span><h2>${selected.title}</h2>`,
 			...textItems(selected.briefing),
@@ -69,6 +69,10 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			...(campaign.lastResult ? textItems(`${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}: ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor`) : []),
 		] },
 	];
-	const footer = html`<footer class="bridge-footer"><div><button @click=${actions.training}>TRAINING</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button><button @click=${actions.title}>TITLE</button></div><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>`;
-	renderWorkspace(root, renderShipHeader(campaign, 'bridge', actions.navigate), panes, footer, 'board');
+	const footer = html`<footer class="bridge-footer"><div><button @click=${actions.training}>TRAINING</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>`;
+	renderWorkspace(root, renderShipHeader(campaign, 'bridge', actions.navigate), panes, footer, 'board', [
+		{ id: 'board', label: 'Board', panes: ['board', 'briefing'] },
+		{ id: 'route', label: 'Route', panes: ['route'] },
+		{ id: 'factions', label: 'Factions', panes: ['factions'] },
+	]);
 };
