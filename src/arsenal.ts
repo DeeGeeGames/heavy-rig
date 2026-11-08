@@ -1,4 +1,5 @@
-export type WeaponId = 'laser' | 'machine-gun' | 'autocannon' | 'ppc' | 'stream-missiles' | 'cluster-missiles' | 'stream-rockets' | 'cluster-rockets';
+export type LauncherId = 'stream-missiles' | 'cluster-missiles' | 'stream-rockets' | 'cluster-rockets';
+export type WeaponId = `${LauncherId}-${4 | 6}` | 'laser' | 'machine-gun' | 'autocannon' | 'ppc' | 'stream-missiles' | 'cluster-missiles' | 'stream-rockets' | 'cluster-rockets';
 export type WeaponFamily = 'ballistic' | 'energy' | 'launcher';
 export const WEAPON_FAMILY_LABELS: Readonly<Record<WeaponFamily, string>> = { ballistic: 'Ballistic', energy: 'Energy', launcher: 'Launcher' };
 export type FireInputs = readonly [boolean, boolean, boolean, boolean];
@@ -21,8 +22,9 @@ export interface WeaponDefinition {
 	projectiles: number;
 	spread: number;
 	splash: number;
+	stream?: boolean;
 }
-export const WEAPONS: readonly WeaponDefinition[] = [
+const BASE_WEAPONS: readonly WeaponDefinition[] = [
 	{ id: 'autocannon', family: 'ballistic', name: 'AC/38', type: 'Auto Cannon', role: 'Precise impact', description: 'Heavy, accurate shells. Reliable opening fire with modest reactor demand.', color: '#ffd28b', icon: '╋', kind: 'cannon', damage: 38, interval: 0.65, heat: 6, range: 845, speed: 650, projectiles: 1, spread: 0, splash: 0 },
 	{ id: 'laser', family: 'energy', name: 'ARC', type: 'Laser', role: 'Continuous beam', description: 'A continuous beam that stops at the first target. Track steadily; watch your heat.', color: '#8ff5e7', icon: 'ϟ', kind: 'laser', damage: 56, interval: 0, heat: 24, range: 620, speed: 0, projectiles: 1, spread: 0, splash: 0 },
 	{ id: 'machine-gun', family: 'ballistic', name: 'RATTLER', type: 'Machine Gun', role: 'Cool sustained fire', description: 'Rapid low-heat tracers with a narrow spread. Best against nearby light frames.', color: '#fff2ba', icon: '≋', kind: 'bullet', damage: 8, interval: 0.105, heat: 0.7, range: 700, speed: 1000, projectiles: 1, spread: 0.035, splash: 0 },
@@ -32,6 +34,18 @@ export const WEAPONS: readonly WeaponDefinition[] = [
 	{ id: 'stream-rockets', family: 'launcher', name: 'LANCE', type: 'Stream Rockets', role: 'Unguided pressure', description: 'Fast rockets fly straight along the turret bearing. Lead moving targets.', color: '#ffad6a', icon: '⇢', kind: 'rocket', damage: 31, interval: 0.42, heat: 3, range: 1000, speed: 520, projectiles: 1, spread: 0, splash: 0 },
 	{ id: 'cluster-rockets', family: 'launcher', name: 'HAILSTORM', type: 'Cluster Rockets', role: 'Unguided area volley', description: 'Five unguided rockets fire straight forward from random tubes in the pod. Lead moving targets.', color: '#ff837a', icon: '⋔', kind: 'rocket', damage: 24, interval: 1.8, heat: 12, range: 900, speed: 470, projectiles: 5, spread: 0, splash: 80 },
 ];
+// Existing IDs remain the two-round variants so saved equipment keeps its identity.
+export const WEAPONS: readonly WeaponDefinition[] = BASE_WEAPONS.flatMap(function (weapon): WeaponDefinition[] {
+	if (weapon.id !== 'stream-missiles' && weapon.id !== 'cluster-missiles' && weapon.id !== 'stream-rockets' && weapon.id !== 'cluster-rockets') return [weapon];
+	const launcherId = weapon.id;
+	return ([2, 4, 6] as const).map(function (rounds): WeaponDefinition {
+		const id: WeaponId = rounds === 2 ? weapon.id : `${launcherId}-${rounds}`;
+		const stream = weapon.id.startsWith('stream-');
+		return { ...weapon, id, name: `${weapon.name}/${rounds}`, type: `${weapon.type} ${rounds}`, projectiles: rounds, stream,
+			description: `${rounds} ${weapon.kind === 'missile' ? 'guided missiles' : 'unguided rockets'} fire ${stream ? 'in sequence' : weapon.kind === 'rocket' ? 'in a staggered volley' : 'together in a fan'}. ${weapon.splash ? 'Explosions damage nearby enemies.' : 'Direct impact damage.'}`,
+			interval: Math.max(weapon.interval, rounds * 0.1), heat: weapon.heat * rounds / weapon.projectiles };
+	});
+});
 export const getWeapon = function (id: WeaponId): WeaponDefinition {
 	const weapon = WEAPONS.find(function (candidate) { return candidate.id === id; });
 	if (!weapon) throw new RangeError(`Unknown Heavy Rig weapon: ${id}`);

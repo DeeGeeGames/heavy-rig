@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createMount, getWeapon } from '../src/arsenal';
+import { WEAPONS, createMount, getWeapon } from '../src/arsenal';
 import { createMissionState, createState, step, type Controls, type State } from '../src/simulation';
 import type { Contract } from '../src/campaign-types';
 
@@ -130,4 +130,18 @@ test('deployment and combat reject incompatible weapons and nonexistent chassis 
 	expect(state.beam).toBeUndefined();
 	expect(state.shots.map(function (shot) { return shot.kind; })).toEqual(['bullet']);
 	expect(state.loadout.map(function (mount) { return mount.firing; })).toEqual([false, true, false, false, false]);
+});
+
+// Protect exact burst counts, release completion and guided follow-up rounds.
+test('all launcher varieties fire their advertised count once per trigger cycle', function () {
+	for (const weapon of WEAPONS.filter(function (candidate) { return candidate.family === 'launcher'; })) {
+		const state = createState({ frame: 'maul', starter: weapon.id }); state.spawnIn = 3600;
+		const enemy = target(state, state.player.x + 400, state.player.y - 400);
+		step(state, { ...idle, aim: enemy, fire: [true, false, false, false] }, 1 / 60);
+		expect(state.stats.shotsFired).toBe(weapon.kind === 'rocket' || weapon.stream ? 1 : weapon.projectiles);
+		advance(state, 0.6, { ...idle, aim: enemy });
+		expect(state.stats.shotsFired).toBe(weapon.projectiles);
+		expect(state.loadout[0]?.rocketVolley).toBeUndefined();
+		if (weapon.kind === 'missile') expect(state.shots.every(function (shot) { return shot.target === enemy.id; })).toBe(true);
+	}
 });

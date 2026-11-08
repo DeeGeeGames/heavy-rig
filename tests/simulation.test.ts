@@ -50,8 +50,8 @@ describe('Heavy Rig combat', function () {
 	test('missiles lock closest to aim and salvo cannot spam', function () {
 		const state = createCombatState(); target(state); target(state, 1000, 550);
 		step(state, { ...idle, fire: [false, false, true, false], aim: { x: 1000, y: 550 } }, 1 / 60);
-		expect(state.shots).toHaveLength(3); expect(state.shots.every(function (shot) { return shot.target === 2; })).toBe(true);
-		step(state, { ...idle, fire: [false, false, true, false] }, 1 / 60); expect(state.shots).toHaveLength(3);
+		expect(state.shots).toHaveLength(2); expect(state.shots.every(function (shot) { return shot.target === 2; })).toBe(true);
+		step(state, { ...idle, fire: [false, false, true, false] }, 1 / 60); expect(state.shots).toHaveLength(2);
 	});
 	test('relay destruction loses and terminal states freeze', function () {
 		const state = createCombatState(); state.relay = 0; step(state, idle, 1 / 60);

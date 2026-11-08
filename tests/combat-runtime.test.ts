@@ -182,9 +182,9 @@ test('rocket volleys stagger by 0.1 seconds, finish on release, and freeze durin
 	try {
 		combat.setControls(function () { return { ...idle, fire: [true, false, false, false] }; });
 		world.update(1 / 60);
-		expect(state.stats.shotsFired).toBe(1); expect(state.player.heat).toBe(12);
+		expect(state.stats.shotsFired).toBe(1); expect(state.player.heat).toBe(4.8);
 		combat.setControls(function () { return idle; });
-		for (let rocket = 2; rocket <= 5; rocket++) {
+		for (let rocket = 2; rocket <= 2; rocket++) {
 			for (let tick = 0; tick < 5; tick++) world.update(1 / 60);
 			expect(state.stats.shotsFired).toBe(rocket - 1);
 			combat.setEnabled(false);
@@ -196,6 +196,6 @@ test('rocket volleys stagger by 0.1 seconds, finish on release, and freeze durin
 		}
 		expect(state.loadout[0]?.rocketVolley).toBeUndefined();
 		for (let tick = 0; tick < 120; tick++) world.update(1 / 60);
-		expect(state.stats.shotsFired).toBe(5);
+		expect(state.stats.shotsFired).toBe(2);
 	} finally { await world.dispose(); }
 });
