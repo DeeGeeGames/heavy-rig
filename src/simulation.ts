@@ -28,9 +28,9 @@ export interface State {
 export const ARENA = { width: 1800, height: 1200, relayX: 900, relayY: 600 };
 interface EnemyStats { hp: number; speed: number; range: number; reload: number; damage: number; aggro: number }
 export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
-	scout: { hp: 48, speed: 66, range: 170, reload: 2, damage: 5, aggro: 650 },
-	striker: { hp: 76, speed: 44, range: 240, reload: 2.5, damage: 7, aggro: 440 },
-	siege: { hp: 125, speed: 28, range: 550, reload: 1.8, damage: 10, aggro: 650 },
+	scout: { hp: 480, speed: 66, range: 170, reload: 2, damage: 5, aggro: 650 },
+	striker: { hp: 760, speed: 44, range: 240, reload: 2.5, damage: 7, aggro: 440 },
+	siege: { hp: 500, speed: 28, range: 550, reload: 1.8, damage: 10, aggro: 650 },
 };
 export interface MissionDeployment {
 	difficulty?: Difficulty;
@@ -73,7 +73,7 @@ const relayPosition = function (state: State): Point | undefined {
 	return state.mission ? state.mission.contract.kind === 'defend' ? state.mission.map.objective : undefined : { x: ARENA.relayX, y: ARENA.relayY };
 };
 const createEnemy = function (state: State, spawn: Point & { kind: EnemyKind; commander?: boolean }): Unit {
-	const hp = Math.round((spawn.commander ? 420 : ENEMY_STATS[spawn.kind].hp) * getDifficultyDefinition(state.difficulty).enemyArmor);
+	const hp = Math.round((spawn.commander ? 1680 : ENEMY_STATS[spawn.kind].hp) * getDifficultyDefinition(state.difficulty).enemyArmor);
 	const target = relayPosition(state) ?? state.player;
 	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege', kind: spawn.kind, ...(spawn.commander ? { commander: true } : {}) };
 };
