@@ -6,7 +6,8 @@ export { STANDARD_LEG_RIG, type LegRig } from './frame-rig';
 interface Body extends Point { angle: number }
 export interface Foot extends Point { lift: number; angle: number }
 type FootIndex = 0 | 1;
-interface Swing { index: FootIndex; from: Foot; elapsed: number; duration: number }
+interface Swing { index: FootIndex; from: Foot; elapsed: number; duration: number; launchPitch?: number; direction?: number }
+export interface FootPose extends Foot { pitch: number; toePitch: number }
 interface BodyMotion { lift: number; roll: number; pitch: number; impact: number }
 export interface WalkerGait {
 	body: Body;
@@ -21,6 +22,12 @@ interface Joint extends Point { z: number }
 
 const clamp = function (value: number, min: number, max: number) { return Math.max(min, Math.min(max, value)); };
 const mix = function (from: number, to: number, t: number) { return from + (to - from) * t; };
+const smooth = function (value: number) { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t); };
+const stancePitch = function (gait: WalkerGait, foot: Foot, size: number) {
+	const direction = clamp(-gait.motion.pitch / 0.02, -1, 1);
+	const trailing = ((gait.body.x - foot.x) * Math.cos(foot.angle) + (gait.body.y - foot.y) * Math.sin(foot.angle)) / size + 7;
+	return -direction * 0.32 * smooth((trailing * direction - 4) / 18);
+};
 export const mechScale = function (kind: EnemyKind) { return kind === 'scout' ? 0.8 : kind === 'siege' ? 1.15 : 1; };
 const restFoot = function (body: Body, index: FootIndex, size: number, rig: LegRig): Foot {
 	const side = index === 0 ? -1 : 1;
@@ -85,7 +92,9 @@ export const advanceGait = function (gait: WalkerGait, actualBody: Body, dt: num
 		const other = preferred === 0 ? 1 : 0;
 		const index = starting || needsStep(preferred) ? preferred : other;
 		if (starting || needsStep(index)) {
-			swing = { index, from: gait.feet[index], elapsed: 0, duration: settling ? 0.24 : clamp(26 * size * stepStride / speed, 0.12 * stride, 0.65 * stride) };
+			const from = gait.feet[index]; const rest = restFoot(body, index, size, rig);
+			const direction = clamp(((rest.x - from.x) * Math.cos(from.angle) + (rest.y - from.y) * Math.sin(from.angle)) / (8 * size), -1, 1);
+			swing = { index, from, elapsed: 0, duration: settling ? 0.24 : clamp(26 * size * stepStride / speed, 0.12 * stride, 0.65 * stride), launchPitch: stancePitch(gait, from, size), direction };
 		}
 	}
 	if (!swing) return { ...gait, ...travel, body, motion: advanceBodyMotion(gait.motion, undefined, forwardSpeed, dt) };
@@ -110,6 +119,30 @@ export const advanceGait = function (gait: WalkerGait, actualBody: Body, dt: num
 	};
 };
 
+// The gait's feet remain fixed ground contacts. Roll the shoe around its toe
+// hinge at push-off or its heel on recovery, then solve the leg to that ankle.
+// Keeping this derived from fixed-step state also freezes articulation on pause.
+export const footPose = function (gait: WalkerGait, index: FootIndex, size = 1, rig: LegRig = STANDARD_LEG_RIG, heel = -16): FootPose {
+	const foot = gait.feet[index];
+	if (rig.kneeDirection === 1) return { ...foot, pitch: 0, toePitch: 0 };
+	const swing = gait.swing?.index === index ? gait.swing : undefined;
+	const progress = swing ? swing.elapsed / swing.duration : 0;
+	const direction = swing?.direction ?? 0;
+	const pitch = swing
+		? (swing.launchPitch ?? 0) * (1 - smooth(progress / 0.35))
+			- direction * 0.36 * Math.sin(Math.PI * clamp(progress / 0.52, 0, 1))
+			+ direction * 0.24 * Math.sin(Math.PI * clamp((progress - 0.36) / 0.64, 0, 1))
+		: stancePitch(gait, foot, size);
+	const curledToe = Math.max(0, -pitch) * (swing ? 1 - smooth((progress - 0.25) / 0.4) : 1)
+		- direction * 0.12 * Math.sin(progress * Math.PI) ** 2;
+	// Uncurl as clearance runs out, including a toe-first reverse landing.
+	const toePitch = pitch < 0 ? Math.max(curledToe, -pitch - Math.atan(foot.lift / (18 * size))) : curledToe;
+	const pivotX = pitch < 0 ? 8 : heel; const pivotY = pitch < 0 ? 3 : 0;
+	const forward = (pivotX * (1 - Math.cos(pitch)) + pivotY * Math.sin(pitch)) * size;
+	const lift = (pivotY * (1 - Math.cos(pitch)) - pivotX * Math.sin(pitch)) * size;
+	return { ...foot, x: foot.x + Math.cos(foot.angle) * forward, y: foot.y + Math.sin(foot.angle) * forward, lift: foot.lift + lift, pitch, toePitch };
+};
+
 // Straight standing legs need a shared moving pelvis: as a planted foot falls
 // behind the body, lower the hips to keep both fixed-length limbs within reach.
 // Structural pelvis motion keeps the leg rig within its authored reach.
@@ -129,13 +162,14 @@ export const posedLegRig = function (gait: WalkerGait, size: number, rig: LegRig
 
 // Solve fixed-length limbs above the planted or swinging foot. Existing
 // callers keep the original Warden anatomy unless they supply a frame rig.
-export const legJoints = function (body: Body, foot: Foot, index: FootIndex, size = 1, rig: LegRig = STANDARD_LEG_RIG) {
+export const legJoints = function (body: Body, foot: Foot, index: FootIndex, size = 1, rig: LegRig = STANDARD_LEG_RIG, pitch = 0) {
 	const side = index === 0 ? -1 : 1;
 	const hip: Joint = {
 		x: body.x + Math.cos(body.angle) * rig.hipForward * size - Math.sin(body.angle) * side * rig.hipWidth * size,
 		y: body.y + Math.sin(body.angle) * rig.hipForward * size + Math.cos(body.angle) * side * rig.hipWidth * size, z: rig.hipHeight * size,
 	};
-	const ankle: Joint = { x: foot.x - Math.cos(foot.angle) * 5 * size, y: foot.y - Math.sin(foot.angle) * 5 * size, z: 10 * size + foot.lift };
+	const ankleForward = (-5 * Math.cos(pitch) - 10 * Math.sin(pitch)) * size;
+	const ankle: Joint = { x: foot.x + Math.cos(foot.angle) * ankleForward, y: foot.y + Math.sin(foot.angle) * ankleForward, z: (10 * Math.cos(pitch) - 5 * Math.sin(pitch)) * size + foot.lift };
 	const dx = ankle.x - hip.x; const dy = ankle.y - hip.y; const dz = ankle.z - hip.z;
 	const length = Math.hypot(dx, dy, dz);
 	const ux = dx / length; const uy = dy / length; const uz = dz / length;
