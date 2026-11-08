@@ -278,12 +278,24 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 	const p = state.player;
 	state.beam = undefined;
 	const firingSlots = new Set<number>();
-	if (!p.overheated) state.loadout.forEach(function (mount, index) {
+	state.loadout.forEach(function (mount, index) {
 		const slot = mount.slot ?? index;
 		if (!canEquipWeapon(state.frame, slot, mount.weapon) || firingSlots.has(slot)) return;
 		firingSlots.add(slot);
-		if (!input.fire[slot]) return;
 		const weapon = getWeapon(mount.weapon);
+		const volley = mount.rocketVolley;
+		if (volley && weapon.kind === 'rocket') {
+			volley.nextIn -= dt;
+			while (volley.remaining > 0 && volley.nextIn <= 1e-9) {
+				launchWeapon(state, weapon, mount, p.turret, slot);
+				volley.remaining--; volley.nextIn += 0.1; mount.firing = true;
+				state.events.push('rocket');
+				burst(state, { x: p.x + Math.cos(p.turret) * 36, y: p.y + Math.sin(p.turret) * 36 }, 20, weapon.color, 'muzzle', slot);
+			}
+			if (volley.remaining === 0) delete mount.rocketVolley;
+			return;
+		}
+		if (p.overheated || !input.fire[slot]) return;
 		if (weapon.kind === 'laser') {
 			const hit = combatTargets(state).map(function (target) {
 				const dx = target.body.x - p.x; const dy = target.body.y - p.y;
@@ -297,10 +309,11 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 		}
 		if (mount.cooldown > 0) return;
 		const target = weapon.kind === 'missile' ? combatTargets(state).filter(function (candidate) { return distance(candidate.body, p) <= weapon.range; }).reduce<CombatTarget | undefined>(function (best, candidate) { return !best || distance(candidate.body, input.aim) < distance(best.body, input.aim) ? candidate : best; }, undefined) : undefined;
-		for (let projectile = 0; projectile < weapon.projectiles; projectile++) {
+		for (let projectile = 0; projectile < (weapon.kind === 'rocket' ? 1 : weapon.projectiles); projectile++) {
 			const spread = weapon.projectiles === 1 ? Math.sin(state.stats.shotsFired * 2.4) * weapon.spread : (projectile - (weapon.projectiles - 1) / 2) * weapon.spread;
 			launchWeapon(state, weapon, mount, p.turret + spread, slot, target?.id);
 		}
+		if (weapon.kind === 'rocket' && weapon.projectiles > 1) mount.rocketVolley = { remaining: weapon.projectiles - 1, nextIn: 0.1 };
 		mount.cooldown = weapon.interval; mount.firing = true; p.heat += weapon.heat;
 		if (weapon.kind === 'cannon' || weapon.kind === 'ppc') { state.cannonIn = 0.65; state.shake = weapon.kind === 'ppc' ? 4 : 3; }
 		state.events.push(weapon.kind === 'bullet' ? 'machine-gun' : weapon.kind);

@@ -174,3 +174,28 @@ test('ordinary enemy component replacement rebinds capability owners before the 
 		expect(replacement.hp).toBe(313); expect(replacement.hp).toBe(health.hp);
 	} finally { await world.dispose(); }
 });
+
+test('rocket volleys stagger by 0.1 seconds, finish on release, and freeze during pause', async function () {
+	const initial = createState({ frame: 'maul' }); initial.spawnIn = 3600;
+	initial.loadout = [{ ...createMount('cluster-rockets'), slot: 0 }];
+	const { world, combat, state } = await harness(initial);
+	try {
+		combat.setControls(function () { return { ...idle, fire: [true, false, false, false] }; });
+		world.update(1 / 60);
+		expect(state.stats.shotsFired).toBe(1); expect(state.player.heat).toBe(12);
+		combat.setControls(function () { return idle; });
+		for (let rocket = 2; rocket <= 5; rocket++) {
+			for (let tick = 0; tick < 5; tick++) world.update(1 / 60);
+			expect(state.stats.shotsFired).toBe(rocket - 1);
+			combat.setEnabled(false);
+			for (let tick = 0; tick < 30; tick++) world.update(1 / 60);
+			expect(state.stats.shotsFired).toBe(rocket - 1);
+			combat.setEnabled(true); world.update(1 / 60);
+			expect(state.stats.shotsFired).toBe(rocket);
+			expect(state.events).toContain('rocket');
+		}
+		expect(state.loadout[0]?.rocketVolley).toBeUndefined();
+		for (let tick = 0; tick < 120; tick++) world.update(1 / 60);
+		expect(state.stats.shotsFired).toBe(5);
+	} finally { await world.dispose(); }
+});

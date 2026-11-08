@@ -2,7 +2,7 @@ export type WeaponId = 'laser' | 'machine-gun' | 'autocannon' | 'ppc' | 'stream-
 export type WeaponFamily = 'ballistic' | 'energy' | 'launcher';
 export const WEAPON_FAMILY_LABELS: Readonly<Record<WeaponFamily, string>> = { ballistic: 'Ballistic', energy: 'Energy', launcher: 'Launcher' };
 export type FireInputs = readonly [boolean, boolean, boolean, boolean];
-export interface WeaponMount { weapon: WeaponId; level: number; cooldown: number; firing: boolean; slot?: number }
+export interface WeaponMount { weapon: WeaponId; level: number; cooldown: number; firing: boolean; rocketVolley?: { remaining: number; nextIn: number }; slot?: number }
 export interface WeaponDefinition {
 	id: WeaponId;
 	family: WeaponFamily;
