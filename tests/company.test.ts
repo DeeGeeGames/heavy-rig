@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { abandonContract, acceptContract, createCampaign, getContracts, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
-import { advanceDays, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, FRAME_PRICES, getOwnedMech, queueRefit, queueRepair, selectFrame, unlockAllRigs, WEAPON_PRICES } from '../src/company';
+import { advanceDays, applyRigCheat, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, FRAME_PRICES, getOwnedMech, queueRefit, queueRepair, selectFrame, unlockAllRigs, WEAPON_PRICES } from '../src/company';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
 const accept = function (campaign: Campaign): Campaign {
@@ -196,4 +196,19 @@ test('rig cheat preserves an active deployment and survives save validation with
 	expect(unlocked.fleet[0]).toEqual(deployed.fleet[0]);
 	expect(roundTrip(unlocked)).toEqual(unlocked);
 	expect(unlockAllRigs(unlocked)).toBe(unlocked);
+});
+
+test('rig cheat adds credits on every entry while preserving deployment and valid saves', function () {
+	const deployed = beginDeployment(accept(funded()));
+	const granted = applyRigCheat(deployed);
+	expect(granted.credits).toBe(deployed.credits + 1_000_000);
+	expect(granted.fleet).toHaveLength(5);
+	expect(granted.deployed).toEqual(deployed.deployed);
+	expect(roundTrip(granted)).toEqual(granted);
+	const repeated = applyRigCheat(granted);
+	expect(repeated.credits).toBe(granted.credits + 1_000_000);
+	expect(repeated.fleet).toEqual(granted.fleet);
+	const capped = applyRigCheat({ ...granted, credits: 999_999_999_999 });
+	expect(capped.credits).toBe(1_000_000_000_000);
+	expect(roundTrip(capped)).toEqual(capped);
 });
