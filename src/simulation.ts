@@ -16,7 +16,7 @@ export interface Warning extends Point { kind: EnemyKind; life: number; commande
 export interface ArtilleryStrike extends Point { id: number; life: number; duration: number; radius: number; damage: number; weapon?: WeaponId; slot?: number; owner?: number }
 export interface CombatStats { damageDealt: number; damageTaken: number; relayDamage: number; shotsFired: number; shotsHit: number; overheats: number; killScore: number; commanderDestroyed: boolean }
 export interface Wreck extends Point { kind: EnemyKind; angle: number }
-export interface Controls { drive: number; stop: boolean; turn: number; aim: Point; fire: FireInputs; coolant: boolean }
+export interface Controls { heading?: number; throttleTarget?: number; turretTurn?: number; drive: number; stop: boolean; turn: number; aim: Point; fire: FireInputs; coolant: boolean }
 export interface State {
 	mission?: MissionRuntime;
 	frame: FrameId; difficulty: Difficulty; phase: 'combat'; loadout: WeaponMount[]; seed: number; stats: CombatStats; strikes: ArtilleryStrike[];
@@ -251,14 +251,17 @@ export const step = function (state: State, input: Controls, dt: number) {
 	}
 	state.coolantHeld = input.coolant;
 	if (p.overheated && p.heat <= 35) p.overheated = false;
-	p.angle += input.turn * dt * frame.turnRate;
-	// Drive input adjusts the engine setting; releasing it holds that setting.
-	p.throttle = input.stop ? 0 : clamp(p.throttle + input.drive * dt * 0.75, -1, 1);
+	p.angle += input.heading === undefined ? input.turn * dt * frame.turnRate : clamp(angleDelta(p.angle, input.heading), -dt * frame.turnRate, dt * frame.turnRate);
+	// Simulation holds its engine setting; arcade approaches stick demand, including neutral.
+	const throttleChange = dt * 0.75;
+	p.throttle = input.stop ? 0 : input.throttleTarget === undefined
+		? clamp(p.throttle + input.drive * throttleChange, -1, 1)
+		: p.throttle + clamp(clamp(input.throttleTarget, 0, 1) - p.throttle, -throttleChange, throttleChange);
 	p.speed += (p.throttle * (p.throttle < 0 ? frame.reverseSpeed : frame.speed) - p.speed) * Math.min(1, dt * frame.acceleration);
 	p.x = clamp(p.x + Math.cos(p.angle) * p.speed * dt, 35, bounds.width - 35);
 	p.y = clamp(p.y + Math.sin(p.angle) * p.speed * dt, 35, bounds.height - 35);
 	const aimAngle = Math.atan2(input.aim.y - p.y, input.aim.x - p.x);
-	p.turret += clamp(angleDelta(p.turret, aimAngle), -dt * frame.turretRate, dt * frame.turretRate);
+	p.turret += input.turretTurn === undefined ? clamp(angleDelta(p.turret, aimAngle), -dt * frame.turretRate, dt * frame.turretRate) : clamp(input.turretTurn, -1, 1) * dt * frame.turretRate;
 	state.beam = undefined;
 	const firingSlots = new Set<number>();
 	if (!p.overheated) state.loadout.forEach(function (mount, index) {

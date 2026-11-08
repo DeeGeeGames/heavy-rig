@@ -1,4 +1,5 @@
 import { defaultKeyboard, defaultController, keyLabel, padLabel, type KeyboardBindings, type ControllerBindings } from './bindings';
+import type { ControlMode } from './profile';
 import { createMount } from './arsenal';
 import { angleDelta, createState, distance, step, type Controls, type Point, type State } from './simulation';
 
@@ -93,13 +94,14 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 	state.outcome = 'playing'; state.phase = 'combat';
 };
 
-export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
+export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings; controlMode?: ControlMode } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
 	const key = function (action: keyof KeyboardBindings) { return mappings.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
+	const arcade = mappings.controlMode === 'arcade';
 	const controls = controller
-		? { drive: 'Push the left stick up', stop: `Hold ${padLabel(mappings.controller.stop)}`, steer: 'Move the left stick left or right', aim: 'Aim with the right stick', cannon: padLabel(mappings.controller['mount-0']), missile: padLabel(mappings.controller['mount-2']), laser: padLabel(mappings.controller['mount-0']), coolant: padLabel(mappings.controller.coolant) }
-		: { drive: `Hold ${key('forward')} or +`, stop: `Hold ${key('stop')} or STOP`, steer: `Hold ${key('left')} / ${key('right')} or a turn arrow`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-0'), coolant: key('coolant') };
+		? { drive: 'Push the left stick up', stop: `Hold ${padLabel(mappings.controller.stop)}`, steer: arcade ? 'Point the left stick toward a new direction' : 'Move the left stick left or right', aim: arcade ? 'Point the right stick at the target' : 'Hold the right stick left or right to rotate the torso', cannon: padLabel(mappings.controller['mount-0']), missile: padLabel(mappings.controller['mount-2']), laser: padLabel(mappings.controller['mount-0']), coolant: padLabel(mappings.controller.coolant) }
+		: { drive: `Hold ${key('forward')} or +`, stop: `Hold ${key('stop')} or STOP`, steer: arcade ? `Use ${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} to choose a direction` : `Hold ${key('left')} / ${key('right')} or a turn arrow`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-0'), coolant: key('coolant') };
 	const copy: Record<TrainingStage, [string, string]> = {
-		drive: ['SET THE FRAME IN MOTION', `${controls.drive} to raise throttle. Release it to cruise. Travel 100 meters.`],
+		drive: ['SET THE FRAME IN MOTION', `${controls.drive} to move. ${arcade ? 'Keep holding to travel; release to slow.' : 'Release it to cruise.'} Travel 100 meters.`],
 		neutral: ['BRING IT TO NEUTRAL', `${controls.stop} until the frame settles. Neutral cuts engine demand; eighty tons still need time to stop.`],
 		steer: ['TURN THE HULL', `${controls.steer}. The hull and your turret turn independently.`],
 		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; fire ${controls.cannon}. The turret needs a moment to track your aim.`],
