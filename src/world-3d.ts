@@ -1,5 +1,5 @@
 import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, Group, InstancedMesh, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector3 } from 'three';
-import { ARENA, getEnemyDefense, type Effect, type Shot, type State } from './simulation';
+import { ARENA, getEnemyDefense, type Effect, type Shot, type CombatStateView } from './simulation';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
 import { createMissionEnvironment } from './mission-environment';
@@ -175,7 +175,7 @@ export const createWorldObjects = function (scene: Scene) {
 	};
 	let disposed = false;
 	return {
-		update: function (state: State, frameEffects?: FrameEffects) {
+		update: function (state: CombatStateView, frameEffects?: FrameEffects) {
 			if (disposed) return;
 			if (missionMap !== state.mission?.map) {
 				missionEnvironment?.dispose(); missionEnvironment = undefined;

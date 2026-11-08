@@ -87,6 +87,6 @@ export const createTitleScene = function (canvas: HTMLCanvasElement) {
 			camera.updateProjectionMatrix();
 			renderer.render(scene, camera);
 		},
-		dispose: function () { canvas.removeEventListener('webglcontextrestored', invalidate); mech.dispose(); geometry.dispose(); platformGeometry.dispose(); materials.forEach(function (value) { value.dispose(); }); key.shadow.dispose(); scene.clear(); renderer.dispose(); renderer.forceContextLoss(); },
+		dispose: function () { canvas.removeEventListener('webglcontextrestored', invalidate); mech.dispose(); geometry.dispose(); platformGeometry.dispose(); materials.forEach(function (value) { value.dispose(); }); key.shadow.dispose(); scene.clear(); renderer.dispose(); },
 	};
 };

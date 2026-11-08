@@ -1,5 +1,5 @@
 import type { Biome, Contract, Landmark, MissionMap } from './campaign-types';
-import type { EnemyKind, Point, State } from './simulation';
+import type { EnemyKind, Point, CombatStateView } from './simulation';
 
 export const EXTRACTION_RADIUS = 150;
 export const EXTRACTION_SECONDS = 3;
@@ -57,7 +57,7 @@ export const missionSpawn = function (contract: Contract, map: MissionMap, index
 	return { x: Math.max(100, Math.min(map.width - 100, site.x + Math.cos(angle) * radius)), y: Math.max(100, Math.min(map.height - 100, site.y + Math.sin(angle) * radius)), kind, ...(commander ? { commander: true } : {}) };
 };
 
-export const missionObjective = function (state: State): string {
+export const missionObjective = function (state: CombatStateView): string {
 	const mission = state.mission;
 	if (!mission) return 'Protect Relay 09';
 	if (mission.stage === 'extract') return mission.extractTime > 0

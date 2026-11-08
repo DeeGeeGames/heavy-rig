@@ -1,12 +1,12 @@
 import { defaultKeyboard, defaultController, keyLabel, padLabel, type KeyboardBindings, type ControllerBindings } from './bindings';
 import type { ControlMode } from './profile';
 import { createMount } from './arsenal';
-import { angleDelta, createState, distance, step, type Controls, type Point, type State } from './simulation';
+import { angleDelta, createState, distance, step, type Controls, type Point, type CombatStateView } from './simulation';
 
 export const TRAINING_STAGES = ['drive', 'neutral', 'steer', 'cannon', 'missiles', 'combined', 'heat', 'coolant', 'evade', 'complete'] as const;
 export type TrainingStage = typeof TRAINING_STAGES[number];
 export interface Training {
-	state: State;
+	state: CombatStateView;
 	stage: TrainingStage;
 	distance: number;
 	turn: number;
@@ -25,7 +25,7 @@ export const createTraining = function (): Training {
 	return { state, stage: 'drive', distance: 0, turn: 0, combinedTime: 0, startedAt: 0, strikeOrigin: undefined, strikeIssued: false };
 };
 
-const placeTarget = function (state: State) {
+const placeTarget = function (state: CombatStateView) {
 	const p = state.player;
 	const x = Math.max(80, Math.min(1720, p.x + Math.cos(p.turret) * 140));
 	const y = Math.max(80, Math.min(1120, p.y + Math.sin(p.turret) * 140));
@@ -55,13 +55,15 @@ const advance = function (training: Training, stage: TrainingStage) {
 	}
 };
 
-export const stepTraining = function (training: Training, controls: Controls, dt: number) {
-	if (training.stage === 'complete') { training.state.events = []; return; }
+export interface TrainingBefore { x: number; y: number; angle: number; hits: number }
+export const prepareTraining = function (training: Training, controls: Controls): Controls {
 	const state = training.state;
-	const before = { x: state.player.x, y: state.player.y, angle: state.player.angle, hits: state.stats.shotsHit };
 	state.spawnIn = 3600;
 	if (training.stage === 'coolant') state.player.heat = Math.max(45, state.player.heat);
-	step(state, { ...controls, fire: training.stage === 'combined' ? controls.fire : [(training.stage === 'cannon' || training.stage === 'heat') && controls.fire[0], false, training.stage === 'missiles' && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant }, dt);
+	return { ...controls, fire: training.stage === 'combined' ? controls.fire : [(training.stage === 'cannon' || training.stage === 'heat') && controls.fire[0], false, training.stage === 'missiles' && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant };
+};
+export const finishTraining = function (training: Training, controls: Controls, dt: number, before: TrainingBefore) {
+	const state = training.state;
 	// A missed drill is a retry, never a defeat or scored kill.
 	state.player.hp = 100; state.relay = 100;
 	training.distance += distance(before, state.player);
@@ -92,6 +94,13 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 		}
 	}
 	state.outcome = 'playing'; state.phase = 'combat';
+};
+export const stepTraining = function (training: Training, controls: Controls, dt: number) {
+	if (training.stage === 'complete') { training.state.events = []; return; }
+	const state = training.state;
+	const before = { x: state.player.x, y: state.player.y, angle: state.player.angle, hits: state.stats.shotsHit };
+	step(state, prepareTraining(training, controls), dt);
+	finishTraining(training, controls, dt, before);
 };
 
 export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings; controlMode?: ControlMode } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {

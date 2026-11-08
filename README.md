@@ -251,6 +251,44 @@ procedural terrain, layered frame geometry, lighting/shadows, planted-foot gait,
 artillery warnings, weapon trails, and pooled effects. Ship departments use
 DOM interfaces with responsive layouts and visible focus and selection states.
 
+`main.ts` composes one ECSpresso application world for combat, screens, input
+handoff, and renderer integration. Its single frame driver calls `world.update`;
+ECSpresso owns the 60 Hz accumulator. `combat-runtime.ts` owns live player
+capabilities, enemies, ordnance, spawn warnings, facilities, effects, and wrecks.
+Explicit system references preserve cooling → movement → weapons → spawning →
+enemy attacks → artillery → projectiles → deaths → effects → mission outcome.
+New ordnance is visible to later systems in the same tick, and fatal damage
+still takes precedence over extraction. Training runs those same systems with
+scenario preparation and completion hooks. The plain-data `step` entry point
+remains available for deterministic domain callers and regression comparisons.
+Live adapters use `CombatStateView`: collections are frozen, ordered query
+snapshots with explicit append and whole-collection replacement operations.
+The original plain-data `State` keeps ordinary mutable arrays. Component and
+resource replacement stays visible through live capability accessors; runtime
+entity IDs remain separate from mission target IDs and persistent company data.
+
+`runtime-navigation.ts` derives navigation from ECSpresso screens and their
+overlay stack. Pause and auxiliary dialogs retain the underlying combat entities;
+simulation systems stop while browser input and permitted presentation continue.
+Transitions clear pending input and require controller neutral before resuming.
+Save conflicts remain locked to reload. Company transactions, save validation,
+and serialization remain ordinary domain functions, with unchanged v3 company
+and v1 preference formats. Mission replacement removes the previous entities;
+their view components release models. The application cleanup owner stops
+listeners and adapters, disposes the shared world, then releases its supplied
+renderer, including after partial initialization failure.
+
+Physical-key bindings and independent touch pointers remain DOM adapters, and
+`gamepad.ts` retains controller claiming, reconnect and neutral policy. ECSpresso
+0.24.1's published input plugin uses logical `KeyboardEvent.key` values and does
+not provide those policies; replacing it would change existing remappings and
+device behavior. `runtime-input.ts` bridges sampled actions into fixed steps:
+short presses survive until consumed, held controls remain available across
+steps, and transitions discard stale presses. Gait, camera projection, terrain
+and effect pools, synthesized audio, haptics, and DOM rendering remain explicit
+presentation adapters consuming the authoritative runtime view and feedback.
+Rendering optimization remains separate work under issue #10.
+
 All five company frames and the scout, striker, siege, and Crown commander now
 use shaped low-poly armor, octagonal hardware, and articulated legs in gameplay.
 The title scene uses the same redesigned Warden. Existing frame proportions,
@@ -336,6 +374,13 @@ Settings/Handbook pages, and dialog geometry. End-report and save-conflict layou
 checks use fixtures. Screenshots: [`desktop`](./docs/viewport-desktop.png),
 [`portrait`](./docs/viewport-portrait.png), and
 [`landscape`](./docs/viewport-landscape.png).
+
+Runtime migration evidence is recorded in
+[`docs/runtime-validation.json`](./docs/runtime-validation.json), including
+original-baseline simulation comparisons, production company/combat journeys,
+simulated input, responsive captures, shutdown/remount on the same DOM, and
+partial-initialization cleanup. Same-DOM remount checks exercise the lifecycle;
+the development server's HMR transport was not separately tested.
 
 ## Hosting and save compatibility
 
