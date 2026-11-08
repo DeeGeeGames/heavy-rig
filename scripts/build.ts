@@ -6,7 +6,7 @@ const dist = join(root, 'dist');
 await rm(dist, { recursive: true, force: true });
 
 const result = await Bun.build({
-	entrypoints: [join(root, 'index.html')],
+	entrypoints: [join(root, 'index.html'), join(root, 'warden-preview.html')],
 	outdir: dist,
 	target: 'browser',
 	minify: true,
@@ -22,3 +22,4 @@ for (const path of ['CNAME', '.nojekyll']) {
 	await Bun.write(join(dist, path), Bun.file(join(root, path)));
 }
 console.log('Built Heavy Rig in dist/');
+await import('./build-warden-study');

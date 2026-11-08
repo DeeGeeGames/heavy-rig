@@ -221,6 +221,11 @@ procedural terrain, layered frame geometry, lighting/shadows, planted-foot gait,
 artillery warnings, weapon trails, and pooled effects. Ship departments use
 DOM interfaces with responsive layouts and visible focus and selection states.
 
+The separate `warden-preview.html` motion study explores a shaped low-poly
+Warden using the existing gait, with walk, reverse, turn, aim, and recoil
+controls. `bun run build` also creates `dist/warden-study.html`, a standalone
+review file that opens offline. The study does not replace any gameplay frame.
+
 An original locally synthesized 96-BPM score changes its layers with combat
 intensity and uses quieter ship arrangements. Weapon, mechanical, damage,
 coolant, artillery, and outcome effects have separate mix controls. Audio starts

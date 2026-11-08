@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Warden 08 · Motion study</title>
+	<style>
+		:root { color-scheme: dark; font-family: system-ui, sans-serif; color: #dce5df; background: #0d181d; }
+		* { box-sizing: border-box; }
+		body { margin: 0; }
+		main { max-width: 1200px; margin: 0 auto; }
+		header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 20px 22px 14px; }
+		h1 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: .06em; }
+		h1 span { color: #e1b46c; }
+		header p { margin: 0; color: #91aaa9; font-size: 12px; }
+		.stage { position: relative; background: #102027; border-radius: 10px; overflow: hidden; }
+		canvas { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: none; }
+		.readout { position: absolute; inset: 16px auto auto 18px; pointer-events: none; }
+		.readout strong { display: block; color: #e2ba7c; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
+		.readout small { display: block; max-width: 240px; margin-top: 5px; color: #9eb4b3; font-size: 11px; line-height: 1.5; }
+		.drag-hint { position: absolute; bottom: 12px; right: 16px; color: #89a3a1; font-size: 10px; pointer-events: none; }
+		.controls { padding: 14px 18px 16px; }
+		.motion-bank { display: flex; flex-wrap: wrap; gap: 6px; }
+		button, select { border: 1px solid #354a4e; background: #16282e; color: #c0cfcc; border-radius: 5px; min-height: 34px; padding: 7px 11px; font: inherit; font-size: 12px; cursor: pointer; }
+		button:hover { background: #243b40; }
+		button[aria-pressed="true"] { background: #d5ae6b; border-color: #d5ae6b; color: #152328; }
+		.secondary { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 12px; }
+		label { display: flex; align-items: center; gap: 7px; color: #8fa6a5; font-size: 11px; }
+		input[type="range"] { width: 100px; accent-color: #d5ae6b; }
+		output { min-width: 28px; color: #bfceca; font-variant-numeric: tabular-nums; }
+		.note { margin: 13px 0 0; color: #839c9c; font-size: 11px; line-height: 1.5; }
+		#error { color: #f1bfa8; padding: 12px; }
+		@media (max-width: 500px) { header { align-items: flex-start; padding: 14px 10px 12px; } h1 { font-size: 15px; } header p { max-width: 125px; text-align: right; font-size: 10px; } canvas { aspect-ratio: 1 / 1; } .controls { padding: 12px 8px; } .readout { top: 12px; left: 12px; } .readout small { max-width: 180px; font-size: 10px; } .secondary { gap: 9px; } button, select { padding: 7px 9px; } }
+	</style>
+</head>
+<body>
+<main>
+	<header><h1><span>08 /</span> WARDEN</h1><p>Low-poly motion study · Articulated 3D prototype</p></header>
+	<div class="stage" id="stage">
+		<canvas id="warden-canvas"></canvas>
+		<div class="readout"><strong id="motion-name">Walk</strong><small id="motion-description">Planted feet, loaded suspension, and working pistons.</small></div>
+		<span class="drag-hint">Drag to orbit · Scroll to zoom</span>
+	</div>
+	<div class="controls">
+		<div class="motion-bank">
+			<button data-motion="showcase" aria-pressed="true">Showcase</button><button data-motion="walk" aria-pressed="false">Walk</button><button data-motion="reverse" aria-pressed="false">Reverse</button><button data-motion="turn" aria-pressed="false">Turn</button><button data-motion="aim" aria-pressed="false">Aim</button><button data-motion="fire" aria-pressed="false">Fire</button><button data-motion="rest" aria-pressed="false">Rest</button>
+		</div>
+		<div class="secondary">
+			<button id="pause" aria-pressed="false">Pause</button>
+			<label>Playback <select id="playback"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select></label>
+			<label>Throttle <input id="throttle" type="range" min="25" max="100" value="65"><output id="throttle-value">65%</output></label>
+			<label>View <select id="view"><option value="three-quarter">Three quarter</option><option value="side">Side</option><option value="game">Game angle</option></select></label>
+			<button id="orbit" aria-pressed="false">Orbit camera</button>
+		</div>
+		<p class="note">Showcase cycles through walking, reversing, turning, aiming, and firing. This mesh uses the game's planted-foot gait; the still's lighting and surface finish are approximated here.</p>
+		<p id="error" hidden></p>
+	</div>
+</main>
+<script type="module" src="./src/warden-study.ts"></script>
+</body>
+</html>
