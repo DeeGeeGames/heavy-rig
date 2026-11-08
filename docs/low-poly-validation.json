@@ -1,0 +1,670 @@
+{
+  "study": {
+    "renderer": "Headless Chromium with SwiftShader; no hardware FPS acceptance",
+    "models": [
+      {
+        "id": "warden",
+        "rest": {
+          "model": "warden",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "54",
+          "frames": "33",
+          "triangles": "6246",
+          "calls": "63"
+        },
+        "motions": [
+          {
+            "model": "warden",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "70",
+            "frames": "48",
+            "triangles": "6246",
+            "calls": "63"
+          },
+          {
+            "model": "warden",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "84",
+            "frames": "54",
+            "triangles": "6246",
+            "calls": "63"
+          },
+          {
+            "model": "warden",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "115",
+            "frames": "61",
+            "triangles": "6246",
+            "calls": "63"
+          },
+          {
+            "model": "warden",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "134",
+            "frames": "65",
+            "triangles": "6246",
+            "calls": "63"
+          },
+          {
+            "model": "warden",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "157",
+            "frames": "70",
+            "triangles": "6246",
+            "calls": "63"
+          }
+        ]
+      },
+      {
+        "id": "kestrel",
+        "rest": {
+          "model": "kestrel",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "286",
+          "frames": "104",
+          "triangles": "5128",
+          "calls": "56"
+        },
+        "motions": [
+          {
+            "model": "kestrel",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "305",
+            "frames": "108",
+            "triangles": "5128",
+            "calls": "56"
+          },
+          {
+            "model": "kestrel",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "329",
+            "frames": "113",
+            "triangles": "5132",
+            "calls": "58"
+          },
+          {
+            "model": "kestrel",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "353",
+            "frames": "117",
+            "triangles": "5130",
+            "calls": "57"
+          },
+          {
+            "model": "kestrel",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "377",
+            "frames": "122",
+            "triangles": "5132",
+            "calls": "58"
+          },
+          {
+            "model": "kestrel",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "397",
+            "frames": "128",
+            "triangles": "5134",
+            "calls": "59"
+          }
+        ]
+      },
+      {
+        "id": "maul",
+        "rest": {
+          "model": "maul",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "517",
+          "frames": "164",
+          "triangles": "6868",
+          "calls": "70"
+        },
+        "motions": [
+          {
+            "model": "maul",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "539",
+            "frames": "171",
+            "triangles": "6870",
+            "calls": "71"
+          },
+          {
+            "model": "maul",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "556",
+            "frames": "175",
+            "triangles": "6874",
+            "calls": "73"
+          },
+          {
+            "model": "maul",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "579",
+            "frames": "180",
+            "triangles": "6874",
+            "calls": "73"
+          },
+          {
+            "model": "maul",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "597",
+            "frames": "184",
+            "triangles": "6874",
+            "calls": "73"
+          },
+          {
+            "model": "maul",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "616",
+            "frames": "190",
+            "triangles": "6874",
+            "calls": "73"
+          }
+        ]
+      },
+      {
+        "id": "longbow",
+        "rest": {
+          "model": "longbow",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "718",
+          "frames": "229",
+          "triangles": "6298",
+          "calls": "67"
+        },
+        "motions": [
+          {
+            "model": "longbow",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "739",
+            "frames": "237",
+            "triangles": "6298",
+            "calls": "67"
+          },
+          {
+            "model": "longbow",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "754",
+            "frames": "242",
+            "triangles": "6298",
+            "calls": "67"
+          },
+          {
+            "model": "longbow",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "772",
+            "frames": "248",
+            "triangles": "6298",
+            "calls": "67"
+          },
+          {
+            "model": "longbow",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "788",
+            "frames": "254",
+            "triangles": "6298",
+            "calls": "67"
+          },
+          {
+            "model": "longbow",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "804",
+            "frames": "259",
+            "triangles": "6298",
+            "calls": "67"
+          }
+        ]
+      },
+      {
+        "id": "morrow",
+        "rest": {
+          "model": "morrow",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "905",
+          "frames": "301",
+          "triangles": "6662",
+          "calls": "67"
+        },
+        "motions": [
+          {
+            "model": "morrow",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "925",
+            "frames": "306",
+            "triangles": "6662",
+            "calls": "67"
+          },
+          {
+            "model": "morrow",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "944",
+            "frames": "312",
+            "triangles": "6664",
+            "calls": "68"
+          },
+          {
+            "model": "morrow",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "962",
+            "frames": "319",
+            "triangles": "6664",
+            "calls": "68"
+          },
+          {
+            "model": "morrow",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "982",
+            "frames": "324",
+            "triangles": "6664",
+            "calls": "68"
+          },
+          {
+            "model": "morrow",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "999",
+            "frames": "329",
+            "triangles": "6664",
+            "calls": "68"
+          }
+        ]
+      },
+      {
+        "id": "scout",
+        "rest": {
+          "model": "scout",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "1099",
+          "frames": "363",
+          "triangles": "5694",
+          "calls": "59"
+        },
+        "motions": [
+          {
+            "model": "scout",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "1116",
+            "frames": "369",
+            "triangles": "5694",
+            "calls": "59"
+          },
+          {
+            "model": "scout",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "1137",
+            "frames": "375",
+            "triangles": "5694",
+            "calls": "59"
+          },
+          {
+            "model": "scout",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "1157",
+            "frames": "382",
+            "triangles": "5694",
+            "calls": "59"
+          },
+          {
+            "model": "scout",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "1175",
+            "frames": "388",
+            "triangles": "5696",
+            "calls": "60"
+          },
+          {
+            "model": "scout",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "1191",
+            "frames": "392",
+            "triangles": "5696",
+            "calls": "60"
+          }
+        ]
+      },
+      {
+        "id": "striker",
+        "rest": {
+          "model": "striker",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "1296",
+          "frames": "429",
+          "triangles": "6244",
+          "calls": "62"
+        },
+        "motions": [
+          {
+            "model": "striker",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "1317",
+            "frames": "436",
+            "triangles": "6246",
+            "calls": "63"
+          },
+          {
+            "model": "striker",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "1336",
+            "frames": "441",
+            "triangles": "6246",
+            "calls": "63"
+          },
+          {
+            "model": "striker",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "1354",
+            "frames": "447",
+            "triangles": "6246",
+            "calls": "63"
+          },
+          {
+            "model": "striker",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "1374",
+            "frames": "453",
+            "triangles": "6246",
+            "calls": "63"
+          },
+          {
+            "model": "striker",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "1389",
+            "frames": "459",
+            "triangles": "6246",
+            "calls": "63"
+          }
+        ]
+      },
+      {
+        "id": "siege",
+        "rest": {
+          "model": "siege",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "1498",
+          "frames": "493",
+          "triangles": "7040",
+          "calls": "66"
+        },
+        "motions": [
+          {
+            "model": "siege",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "1515",
+            "frames": "499",
+            "triangles": "7040",
+            "calls": "66"
+          },
+          {
+            "model": "siege",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "1535",
+            "frames": "503",
+            "triangles": "7042",
+            "calls": "67"
+          },
+          {
+            "model": "siege",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "1559",
+            "frames": "508",
+            "triangles": "7042",
+            "calls": "67"
+          },
+          {
+            "model": "siege",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "1575",
+            "frames": "513",
+            "triangles": "7042",
+            "calls": "67"
+          },
+          {
+            "model": "siege",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "1598",
+            "frames": "518",
+            "triangles": "7042",
+            "calls": "67"
+          }
+        ]
+      },
+      {
+        "id": "commander",
+        "rest": {
+          "model": "commander",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "1714",
+          "frames": "555",
+          "triangles": "7602",
+          "calls": "67"
+        },
+        "motions": [
+          {
+            "model": "commander",
+            "motion": "walk",
+            "phase": "walk",
+            "ticks": "1734",
+            "frames": "560",
+            "triangles": "7602",
+            "calls": "67"
+          },
+          {
+            "model": "commander",
+            "motion": "reverse",
+            "phase": "reverse",
+            "ticks": "1749",
+            "frames": "565",
+            "triangles": "7602",
+            "calls": "67"
+          },
+          {
+            "model": "commander",
+            "motion": "turn",
+            "phase": "turn",
+            "ticks": "1771",
+            "frames": "571",
+            "triangles": "7602",
+            "calls": "67"
+          },
+          {
+            "model": "commander",
+            "motion": "aim",
+            "phase": "aim",
+            "ticks": "1792",
+            "frames": "577",
+            "triangles": "7602",
+            "calls": "67"
+          },
+          {
+            "model": "commander",
+            "motion": "fire",
+            "phase": "fire",
+            "ticks": "1813",
+            "frames": "583",
+            "triangles": "7604",
+            "calls": "68"
+          }
+        ]
+      }
+    ],
+    "layouts": [
+      {
+        "width": 1100,
+        "height": 960,
+        "data": {
+          "model": "longbow",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "1849",
+          "frames": "617",
+          "triangles": "6298",
+          "calls": "67"
+        }
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "data": {
+          "model": "longbow",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "1864",
+          "frames": "640",
+          "triangles": "6298",
+          "calls": "67"
+        }
+      },
+      {
+        "width": 844,
+        "height": 390,
+        "data": {
+          "model": "longbow",
+          "motion": "rest",
+          "phase": "rest",
+          "ticks": "1872",
+          "frames": "671",
+          "triangles": "6298",
+          "calls": "67"
+        }
+      }
+    ],
+    "errors": [],
+    "offline": true,
+    "training": true
+  },
+  "game": {
+    "allFiveHangar": true,
+    "responsive": [
+      [
+        1440,
+        900
+      ],
+      [
+        390,
+        844
+      ],
+      [
+        844,
+        390
+      ]
+    ],
+    "deployment": true,
+    "persistentThrottle": "FWD 28%",
+    "firing": true,
+    "pause": true,
+    "errors": []
+  },
+  "modelGeometry": [
+    {
+      "name": "warden",
+      "triangles": 3008,
+      "draws": 21,
+      "bytes": 324864,
+      "materials": 2
+    },
+    {
+      "name": "kestrel",
+      "triangles": 2456,
+      "draws": 21,
+      "bytes": 265248,
+      "materials": 2
+    },
+    {
+      "name": "maul",
+      "triangles": 3316,
+      "draws": 23,
+      "bytes": 358128,
+      "materials": 2
+    },
+    {
+      "name": "longbow",
+      "triangles": 3028,
+      "draws": 20,
+      "bytes": 327024,
+      "materials": 2
+    },
+    {
+      "name": "morrow",
+      "triangles": 3216,
+      "draws": 23,
+      "bytes": 347328,
+      "materials": 2
+    },
+    {
+      "name": "scout",
+      "triangles": 2736,
+      "draws": 21,
+      "bytes": 295488,
+      "materials": 2
+    },
+    {
+      "name": "striker",
+      "triangles": 3008,
+      "draws": 21,
+      "bytes": 324864,
+      "materials": 2
+    },
+    {
+      "name": "siege",
+      "triangles": 3404,
+      "draws": 22,
+      "bytes": 367632,
+      "materials": 2
+    },
+    {
+      "name": "commander",
+      "triangles": 3684,
+      "draws": 22,
+      "bytes": 397872,
+      "materials": 2
+    }
+  ],
+  "limitations": "Software-rendered Chromium. Physical input feel, audio, representative GPU performance, balance and owner visual acceptance are not established by automation."
+}

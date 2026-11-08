@@ -79,7 +79,7 @@ for (const frame of FRAMES) {
 		try {
 			model.pose(gait, state.player.turret);
 			const parts: Mesh[] = [];
-			model.root.traverse(function (object) { if (object instanceof Mesh && !object.visible) parts.push(object); });
+			model.root.traverse(function (object) { if (object instanceof Mesh && object.visible) parts.push(object); });
 			// Hardware can recoil as one assembly; compare visible world poses,
 			// including parent transforms rather than only each mesh's local pose.
 			const rest = parts.map(function (part) { return part.matrixWorld.clone(); });
