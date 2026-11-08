@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 import { Mesh, MeshStandardMaterial } from 'three';
 import { FRAMES } from '../src/frames';
 import { FRAME_RIGS } from '../src/frame-rig';
-import { advanceGaits, createGaits, legJoints, posedLegRig } from '../src/gait';
+import { advanceGaits, createGaits, footPose, legJoints, posedLegRig } from '../src/gait';
 import { createMech, weaponRecoil } from '../src/mech-3d';
 import { createState, step, type Controls } from '../src/simulation';
 
@@ -48,7 +48,8 @@ for (const frame of FRAMES) {
 			for (const index of [0, 1] as const) {
 				if (previous.swing?.index !== index && gaits.player.swing?.index !== index) expect(gaits.player.feet[index]).toEqual(previous.feet[index]);
 				const rig = posedLegRig(gaits.player, frame.size, FRAME_RIGS[frame.id]);
-				const { hip, knee, ankle } = legJoints(gaits.player.body, gaits.player.feet[index], index, frame.size, rig);
+				const foot = footPose(gaits.player, index, frame.size, FRAME_RIGS[frame.id]);
+				const { hip, knee, ankle } = legJoints(gaits.player.body, foot, index, frame.size, rig, foot.pitch);
 				expect(Math.hypot(knee.x - hip.x, knee.y - hip.y, knee.z - hip.z)).toBeCloseTo(rig.upper * frame.size, 6);
 				expect(Math.hypot(knee.x - ankle.x, knee.y - ankle.y, knee.z - ankle.z)).toBeCloseTo(rig.lower * frame.size, 6);
 			}
@@ -60,13 +61,16 @@ for (const frame of FRAMES) {
 		expect(gaits.player.feet.every(function (foot) { return foot.lift === 0; })).toBe(true);
 		if (FRAME_RIGS[frame.id].kneeDirection === 1) {
 			// After braking and pivoting, humanoids take real settling steps and
-			// recover the same fully extended stance they use on first deployment.
+			// recover the same soft-kneed stance they use on first deployment.
 			for (const gait of [createGaits(createState({ frame: frame.id })).player, gaits.player]) {
 				const rig = posedLegRig(gait, frame.size, FRAME_RIGS[frame.id]);
-				expect(rig.hipHeight).toBeCloseTo(FRAME_RIGS[frame.id].hipHeight, 4);
+				expect(rig.hipHeight).toBeLessThan(FRAME_RIGS[frame.id].hipHeight);
 				for (const index of [0, 1] as const) {
-					const { hip, ankle } = legJoints(gait.body, gait.feet[index], index, frame.size, rig);
-					expect(Math.hypot(hip.x - ankle.x, hip.y - ankle.y, hip.z - ankle.z)).toBeCloseTo((rig.upper + rig.lower) * frame.size, 4);
+					const { hip, knee, ankle } = legJoints(gait.body, gait.feet[index], index, frame.size, rig);
+					const upper = { x: hip.x - knee.x, y: hip.y - knee.y, z: hip.z - knee.z };
+					const lower = { x: ankle.x - knee.x, y: ankle.y - knee.y, z: ankle.z - knee.z };
+					const cosine = (upper.x * lower.x + upper.y * lower.y + upper.z * lower.z) / (rig.upper * rig.lower * frame.size ** 2);
+					expect(180 - Math.acos(Math.max(-1, Math.min(1, cosine))) * 180 / Math.PI).toBeCloseTo(30, 3);
 				}
 			}
 		}
