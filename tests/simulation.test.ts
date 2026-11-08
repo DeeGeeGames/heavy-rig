@@ -83,7 +83,8 @@ describe('Heavy Rig combat', function () {
 		}
 		expect(positions.get('scout') ?? 0).toBeGreaterThan(positions.get('striker') ?? 0);
 		expect(positions.get('striker') ?? 0).toBeGreaterThan(positions.get('siege') ?? 0);
-		expect(ENEMY_STATS.siege.hp).toBeGreaterThan(ENEMY_STATS.striker.hp);
+		expect(ENEMY_STATS.striker.hp).toBeGreaterThan(ENEMY_STATS.siege.hp);
+		expect(ENEMY_STATS.siege.hp).toBeGreaterThan(ENEMY_STATS.scout.hp);
 		expect(ENEMY_STATS.siege.range).toBeGreaterThan(ENEMY_STATS.striker.range);
 		expect(ENEMY_STATS.striker.range).toBeGreaterThan(ENEMY_STATS.scout.range);
 	});
