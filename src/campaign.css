@@ -302,32 +302,3 @@
 	.company-page-heading { margin: 20px 0; }
 	.company-page-heading h2 { font-size: 34px; }
 }
-
-/* Keep the sortie action within a laptop-height bay; mobile remains a flowing page. */
-@media (min-width: 1151px) {
-	#mechbay { padding-top: 18px; }
-	#mechbay .bridge-header { padding-bottom: 14px; }
-	#mechbay .bridge-brand h1 { font-size: 30px; }
-	#mechbay .ship-navigation { padding: 8px 0; }
-	#mechbay .ship-navigation button { min-height: 44px; padding: 10px 18px; }
-	#mechbay .company-page-heading { margin: 16px 0; }
-	#mechbay .company-page-heading h2 { font-size: 34px; margin: 6px 0; }
-	#mechbay .company-page-heading p { font-size: 12px; line-height: 1.5; }
-	#mechbay .loadout-workbench>h2 { font-size: 30px; margin: 8px 0 12px; }
-	#mechbay .company-mounts { gap: 6px; }
-	#mechbay .company-mount { padding: 8px 12px; }
-	#mechbay .company-mount>span:nth-child(2) { gap: 3px; }
-	#mechbay .company-mount b { font-size: 20px; line-height: 1; }
-	#mechbay .loadout-workbench>.company-note { margin: 8px 0; line-height: 1.5; }
-	#mechbay .company-deploy { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; padding-top: 12px; margin-top: 12px; align-items: center; }
-	#mechbay .company-deploy>.eyebrow { grid-column: 1 / -1; }
-	#mechbay .company-deploy>p { margin: 0; font-size: 11px; line-height: 1.6; }
-	#mechbay .company-deploy>.primary { width: auto; min-width: 180px; padding: 12px 14px; font-size: 11px; letter-spacing: .6px; }
-	#mechbay .company-deploy>.secondary { grid-column: 1 / -1; margin-top: 0; }
-	#mechbay .frame-inspection { padding: 16px; }
-	#mechbay .frame-inspection>h2 { font-size: 34px; }
-	#mechbay .frame-inspection>.company-frame-art { max-height: 200px; }
-	#mechbay .company-integrity { padding-top: 10px; }
-	#mechbay .frame-specifications { margin: 14px 0 10px; }
-	#mechbay .bridge-footer { margin-top: 22px; }
-}
