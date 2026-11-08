@@ -288,3 +288,28 @@ test('enemy fire uses the owning enemy slot and freezes the airborne origin', fu
 		expect(head.position.distanceTo(origin)).toBeLessThan(0.000001);
 	} finally { world.dispose(); }
 });
+
+test('rocket volleys launch from pod tubes and retain parallel paths after turret movement', function () {
+	const state = createState({ frame: 'maul' }); const scene = new Scene();
+	const world = createWorldObjects(scene); const model = createMech(undefined, false, 'maul');
+	state.player.turret = 0; state.loadout = [{ ...createMount('cluster-rockets'), slot: 0 }];
+	try {
+		model.pose(createGaits(state).player, 0);
+		const offset = new Vector3(state.player.x, 0, state.player.y);
+		const rocketMuzzles = model.rocketMuzzles.map(function (tubes) { return tubes.map(function (tube) { return tube.clone().add(offset); }); });
+		const tubes = rocketMuzzles[0]; if (!tubes?.length) throw new Error('Missing pod tubes');
+		weaponsStep(state, { drive: 0, stop: false, turn: 0, aim: { x: 1500, y: 780 }, fire: [true, false, false, false], coolant: false }, 1 / 60);
+		expect(state.shots).toHaveLength(5);
+		for (const shot of state.shots) { expect(shot.vx).toBe(470); expect(shot.vy).toBe(0); }
+		world.update(state, { ...frameEffects(model, state), rocketMuzzles });
+		const starts = projectiles(scene).map(function (projectile) { return meshChild(projectile, 1).position.clone(); });
+		for (const start of starts) expect(tubes.some(function (tube) { return tube.distanceTo(start) < 0.000001; })).toBe(true);
+		for (const shot of state.shots) shot.x += 200;
+		state.player.turret = 1; model.pose(createGaits(state).player, 1);
+		world.update(state, frameEffects(model, state));
+		for (const [index, projectile] of projectiles(scene).entries()) {
+			const start = starts[index]; if (!start) throw new Error('Missing launch');
+			expect(meshChild(projectile, 1).position.distanceTo(start.clone().add(new Vector3(200, 0, 0)))).toBeLessThan(0.000001);
+		}
+	} finally { model.dispose(); world.dispose(); }
+});

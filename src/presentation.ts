@@ -188,7 +188,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
 				objects.update(state, player ? {
-					muzzles: player.model.muzzles.map(worldAnchor), enemies: enemyMuzzles, exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
+					muzzles: player.model.muzzles.map(worldAnchor), rocketMuzzles: player.model.rocketMuzzles.map(function (tubes) { return tubes.map(worldAnchor); }), enemies: enemyMuzzles, exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
 				} : undefined);
 				reticle.visible = barrel.visible = !attract;
 				reticle.position.set(aim.x, 0.25, aim.y);

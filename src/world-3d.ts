@@ -7,7 +7,7 @@ import type { MissionMap } from './campaign-types';
 import { createProjectileSmoke } from './projectile-smoke';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
-interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined; enemies?: ReadonlyMap<number, readonly Vector3[]> }
+interface FrameEffects { rocketMuzzles?: readonly (readonly Vector3[])[]; muzzles: readonly Vector3[]; exhaust: Vector3 | undefined; enemies?: ReadonlyMap<number, readonly Vector3[]> }
 
 // World presentation owns its meshes and GPU assets. Simulation objects never
 // retain Three.js objects; pools shrink with live state, including on restart.
@@ -228,7 +228,8 @@ export const createWorldObjects = function (scene: Scene) {
 				if (launch || shotMuzzles.length > 0) {
 					const speed = Math.hypot(shot.vx, shot.vy);
 					if (!launch && speed > 0) {
-						const muzzle = shotMuzzles[shot.slot ?? nextMuzzle++ % shotMuzzles.length];
+						const tubes = shot.kind === 'rocket' ? frameEffects?.rocketMuzzles?.[shot.slot ?? 0] : undefined;
+						const muzzle = tubes?.[Math.floor(Math.random() * tubes.length)] ?? shotMuzzles[shot.slot ?? nextMuzzle++ % shotMuzzles.length];
 						if (muzzle) {
 							const dx = shot.vx / speed; const dy = shot.vy / speed;
 							const owner = shot.kind === 'enemy' ? state.enemies.find(function (enemy) { return enemy.id === shot.owner; }) : state.player;
@@ -238,12 +239,12 @@ export const createWorldObjects = function (scene: Scene) {
 						}
 					}
 					if (launch) {
-						// Fix the muzzle offset at launch, then converge to the unchanged
-						// collision path. Turning the mech cannot drag airborne shots.
+						// Freeze launch offsets so turning cannot drag airborne shots.
+						// Rockets retain parallel paths; other projectiles converge.
 						launch.distance += Math.hypot(shot.x - launch.x, shot.y - launch.y); launch.x = shot.x; launch.y = shot.y;
 						const trailTime = speed > 0 ? Math.min(style.duration, launch.distance / speed) : 0;
-						from.set(shot.x - shot.vx * trailTime, 42, shot.y - shot.vy * trailTime).addScaledVector(launch.offset, launchWeight(launch.distance - speed * trailTime));
-						to.addScaledVector(launch.offset, launchWeight(launch.distance));
+						from.set(shot.x - shot.vx * trailTime, 42, shot.y - shot.vy * trailTime).addScaledVector(launch.offset, shot.kind === 'rocket' ? 1 : launchWeight(launch.distance - speed * trailTime));
+						to.addScaledVector(launch.offset, shot.kind === 'rocket' ? 1 : launchWeight(launch.distance));
 					}
 				}
 				value.trail.material = style.trail; value.head.material = style.surface;
