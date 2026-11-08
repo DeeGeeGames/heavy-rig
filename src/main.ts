@@ -1,10 +1,15 @@
+import ECSpresso from 'ecspresso';
+import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
+import { createCombatRuntime } from './combat-runtime';
+import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-navigation';
+import { createRuntimeInput } from './runtime-input';
 import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, padLabel, validKey, type Action } from './bindings';
 import { getWeapon, WEAPON_FAMILY_LABELS } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getFrame } from './frames';
 import { MOUNTS, rankLabel } from './loadout-ui';
 import { mountGame } from './shared/lifecycle';
-import { createMissionState, createState, distance, getOperationReport, step, type Controls, type Point } from './simulation';
+import { createMissionState, createState, distance, getOperationReport, type Controls, type Point } from './simulation';
 import { createPresentation } from './presentation';
 import { advanceGaits, createGaits } from './gait';
 import { viewScale } from './projection-3d';
@@ -12,7 +17,7 @@ import type { ScreenRect } from './overlay';
 import { createAudio } from './audio';
 import { createGamepadInput, type PadInput } from './gamepad';
 import { createControllerFeedback } from './controller-feedback';
-import { createTraining, stepTraining, trainingCopy, type Training } from './training';
+import { createTraining, trainingCopy, type Training } from './training';
 import { isDifficulty, readProfile, saveProfile } from './profile';
 import { abandonContract, acceptContract, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, readCampaign, saveCampaign, settleContract, travelTo } from './campaign';
 import { MISSION_NAMES, renderBridge } from './campaign-ui';
@@ -36,24 +41,41 @@ const inputElement = function (id: string): HTMLInputElement {
 	return value;
 };
 const formatTime = function (time: number) { return `${Math.floor(time / 60)}:${Math.floor(time % 60).toString().padStart(2, '0')}`; };
-type Screen = ShipScreen | 'title' | 'jump' | 'playing' | 'pause-panel' | 'result' | 'training-result';
-type Auxiliary = 'settings' | 'handbook' | 'confirm' | 'save-conflict';
-const shutdown = await mountGame('game', async function (container) {
+const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const canvas = container.querySelector('canvas');
 	if (!canvas) throw new Error('Missing battlefield');
 	canvas.tabIndex = 0;
-	const presentation = await createPresentation(canvas);
+	const presentation = createPresentation(canvas);
+	onCleanup(presentation.dispose);
+	const combatRuntime = createCombatRuntime();
+	const navigation = createRuntimeNavigation();
+	const runtimeInput = createRuntimeInput();
+	const world = ECSpresso.create()
+		.withPlugin(combatRuntime.plugin)
+		.withPlugin(runtimeInput.plugin)
+		.withPlugin(presentation.plugin)
+		.withPlugin(navigation.plugin)
+		.withScreens(navigation.screens)
+		.withFixedTimestep(1 / 60)
+		.build();
+	onCleanup(function () { return world.dispose(); });
+	presentation.bind(combatRuntime);
+	await world.initialize(); await navigation.initialize();
 	const titleCanvas = element('title-scene');
 	if (!(titleCanvas instanceof HTMLCanvasElement)) throw new Error('Missing title scene');
 	let titleScene: ReturnType<typeof createTitleScene> | undefined;
+	onCleanup(function () { titleScene?.dispose(); });
 	const showTitleScene = function () {
 		if (titleScene) return;
 		try { titleScene = createTitleScene(titleCanvas); }
 		catch (error: unknown) { console.warn('Title scene unavailable', error); }
 	};
 	const audio = createAudio();
+	onCleanup(audio.dispose);
 	const padInput = createGamepadInput();
+	onCleanup(padInput.reset);
 	const feedback = createControllerFeedback();
+	onCleanup(feedback.dispose);
 	const profile = readProfile();
 	const savedSnapshot = function (): string | null | undefined {
 		try { return localStorage.getItem(CAMPAIGN_STORAGE_KEY); } catch { return undefined; }
@@ -67,6 +89,7 @@ const shutdown = await mountGame('game', async function (container) {
 	let selectedContract: string | undefined;
 	let jumpUntil = 0;
 	const abort = new AbortController(); const listenerOptions = { signal: abort.signal };
+	onCleanup(function () { abort.abort(); });
 	const updateWorkspaceLayout = mountWorkspaceLayout(container, abort.signal);
 	const updateDialogLayout = mountDialogLayout(container, abort.signal);
 	const keys = new Set<string>(); const pending = new Set<string>(); const held = new Map<number, string>();
@@ -87,27 +110,27 @@ const shutdown = await mountGame('game', async function (container) {
 	});
 	element('weapon-bank').replaceChildren(...weaponButtons);
 	let training: Training | undefined;
-	let screen: Screen = 'title'; let auxiliary: Auxiliary | undefined;
 	let trainingOrigin: 'title' | 'bridge' = 'bridge';
 	let editor: CompanyEditor = { loadout: [...(getOwnedMech(campaign)?.loadout ?? [])], slot: null, notice: '' };
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
-	let state = createState({ difficulty: profile.settings.difficulty }); let gaits = createGaits(state); let muted = false;
+	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
 	let aim: Point = { x: 900, y: 450 }; let pointer: Point | undefined; let aimMode: 'pointer' | 'gamepad' = 'pointer';
-	let frame = 0; let previous = 0; let accumulator = 0; let lastHud = 0;
+	let frame = 0; let previous = 0; let lastHud = 0;
+	onCleanup(function () { cancelAnimationFrame(frame); });
 	let message = ''; let messageUntil = 0; let terminalUntil = 0; let contextLost = false; let focused = true;
 	let returnFocus: HTMLElement | undefined; let confirmedAction: (() => void) | undefined; let tipDismissed = false;
 	let inputMode: 'keyboard' | 'gamepad' | 'touch' = coarsePointer.matches ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
 	let currentPad: PadInput | undefined;
 	let lastSoundState = '';
-	const resetInput = function () { keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); padInput.requireNeutral(); void feedback.stop(); };
-	const playing = function () { return screen === 'playing' && !auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
+	const resetInput = function () { keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
+	const playing = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
 	const keyboardAction = function (code: string) { return ACTIONS.find(function (action) { return profile.settings.keyboard[action].includes(code); }); };
 	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
 	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false }); };
 	const unlockSound = function () { void audio.unlock(); };
 	const updateMenuHint = function () {
-		const onTitle = screen === 'title' && !auxiliary;
+		const onTitle = navigation.screen === 'title' && !navigation.auxiliary;
 		element('menu-input-hint').textContent = inputMode === 'gamepad' ? onTitle ? 'D-PAD / STICK SELECT · A / × CONFIRM' : 'D-PAD SELECT · A / × CONFIRM · B / ○ BACK' : inputMode === 'touch' ? onTitle ? 'TAP TO SELECT' : 'TAP TO SELECT · PREV / NEXT FOR PAGES' : onTitle ? '↑ / ↓ OR TAB SELECT · ENTER CONFIRM' : 'TAB SELECT · ENTER CONFIRM · ESC BACK';
 	};
 	const setInputMode = function (value: typeof inputMode) {
@@ -140,12 +163,11 @@ const shutdown = await mountGame('game', async function (container) {
 		const modeSelect = element('control-mode'); if (modeSelect instanceof HTMLSelectElement) modeSelect.value = profile.settings.controlMode;
 		setInputMode(inputMode);
 	};
-	const menu = function () { return auxiliary ? element(auxiliary) : screen === 'playing' ? undefined : element(screen); };
+	const menu = function () { return navigation.auxiliary ? element(navigation.auxiliary) : navigation.screen === 'playing' ? undefined : element(navigation.screen); };
 	const focusable = function (root: HTMLElement) {
 		return [...root.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), [tabindex="0"]')].filter(function (item) { return !item.closest('[hidden], [inert]') && item.getClientRects().length > 0; });
 	};
 	const syncScreen = function (focus = true) {
-		if (campaignConflict) auxiliary = 'save-conflict';
 		screenRevision++;
 		element('reset').hidden = !training;
 		element('reset').textContent = 'RESTART TRAINING';
@@ -154,71 +176,83 @@ const shutdown = await mountGame('game', async function (container) {
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('pause-copy').textContent = training ? 'Training is paused. The simulator does not affect your company.' : 'Your throttle and mission are preserved. Aborting or reloading returns the mech with its current damage.';
 		for (const id of ['title', 'bridge', 'mechbay', 'market', 'engineering', 'jump', 'pause-panel', 'result', 'training-result', 'settings', 'handbook', 'confirm', 'save-conflict']) {
-			const node = element(id); const visible = auxiliary ? id === auxiliary : id === screen;
+			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
-		const modal = screen !== 'playing' || Boolean(auxiliary);
+		const modal = navigation.screen !== 'playing' || Boolean(navigation.auxiliary);
 		container.classList.toggle('training-active', Boolean(training));
-		container.classList.toggle('menu-open', modal); container.dataset['screen'] = auxiliary ?? screen;
+		container.classList.toggle('menu-open', modal); container.dataset['screen'] = navigation.auxiliary ?? navigation.screen;
 		updateMenuHint();
 		element('title-save-status').textContent = `${campaignSaved ? 'LOCAL COMPANY' : 'SESSION ONLY · STORAGE UNAVAILABLE'} / DAY ${String(campaign.day).padStart(2, '0')} / ${getPlanet(campaign.planetId).name.toUpperCase()}`;
-		if (screen === 'title') showTitleScene();
+		if (navigation.screen === 'title') showTitleScene();
 		element('hud').inert = modal; canvas.inert = modal;
-		resetInput(); accumulator = 0; lastHud = 0;
+		resetInput(); lastHud = 0;
 		updateWorkspaceLayout(); updateDialogLayout();
 		if (!focus) return;
 		const root = menu();
-		const initial = auxiliary === 'save-conflict' ? element('reload-company') : auxiliary === 'settings' ? element('master-volume') : auxiliary === 'handbook' ? element('handbook') : auxiliary === 'confirm' ? element('confirm-cancel') : screen === 'bridge' ? element('bridge') : screen === 'pause-panel' ? element('resume') : screen === 'result' ? element('restart') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
+		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? element('handbook') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
 		(initial ?? canvas).focus({ preventScroll: true });
 		updateDialogLayout();
+	};
+	let stopped = false;
+	const transition = function (operation: Promise<void>, after: () => void = syncScreen) {
+		screenRevision++; resetInput();
+		void operation.then(function () { if (!stopped) after(); }).catch(function (error: unknown) {
+			console.error(error); const node = element('error'); node.textContent = 'Could not change screen. Reload to recover.'; node.hidden = false;
+		});
 	};
 	const updateDifficulty = function () {
 		for (const input of container.querySelectorAll<HTMLInputElement>('input[data-difficulty]')) input.checked = input.value === profile.settings.difficulty;
 	};
 	const start = function () {
-		if (contextLost || auxiliary || screen !== 'mechbay') return;
+		if (contextLost || navigation.auxiliary || navigation.screen !== 'mechbay') return;
 		const next = beginDeployment(campaign);
 		if (next === campaign || !next.active || !next.deployed) return;
 		const mech = getOwnedMech(next);
 		if (!mech) return;
 		campaign = next; if (!persistCampaign()) return;
 		presentation.resetZoom(); training = undefined;
-		state = createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: mech.frameId, loadout: mech.loadout, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges });
-		gaits = createGaits(state); screen = 'playing'; auxiliary = undefined; aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer';
+		state = combatRuntime.attach(createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: mech.frameId, loadout: mech.loadout, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges }));
+		gaits = createGaits(state); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer';
 		aim = state.mission ? { ...state.mission.map.objective } : { ...state.player };
 		pointer = undefined; message = `${getFrame(mech.frameId).name} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`; messageUntil = 5; tipDismissed = false;
-		terminalUntil = 0; audio.reset(); syncScreen(); unlockSound();
+		terminalUntil = 0; audio.reset(); transition(navigation.setScreen('playing')); unlockSound();
 	};
 	const startTraining = function () {
 		if (contextLost) return;
-		if (!training) trainingOrigin = screen === 'title' ? 'title' : 'bridge';
+		if (!training) trainingOrigin = navigation.screen === 'title' ? 'title' : 'bridge';
 		presentation.resetZoom();
-		training = createTraining(); state = training.state; gaits = createGaits(state);
-		screen = 'playing'; auxiliary = undefined; aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; pointer = undefined; aim = { x: 900, y: 450 };
+		training = createTraining(); state = combatRuntime.attach(training.state, training); gaits = createGaits(state);
+		aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; pointer = undefined; aim = { x: 900, y: 450 };
 		message = ''; messageUntil = 0; tipDismissed = true; terminalUntil = 0;
-		audio.reset(); syncScreen(); unlockSound();
+		audio.reset(); transition(navigation.setScreen('playing', true)); unlockSound();
 	};
 	const setPaused = function (paused: boolean) {
+		if (campaignConflict) return;
 		if (paused) silenceAudio();
-		if (paused && screen === 'playing') { screen = 'pause-panel'; auxiliary = undefined; syncScreen(); }
-		else if (!paused && screen === 'pause-panel' && !contextLost) { screen = 'playing'; auxiliary = undefined; aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; syncScreen(); unlockSound(); }
+		if (paused && navigation.screen === 'playing') transition(navigation.pause());
+		else if (!paused && navigation.screen === 'pause-panel' && !contextLost) { aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; transition(navigation.resume()); unlockSound(); }
 	};
-	const showAuxiliary = function (value: Auxiliary) {
+	const showAuxiliary = function (value: RuntimeAuxiliary) {
 		if (document.activeElement instanceof HTMLElement) returnFocus = document.activeElement;
-		auxiliary = value; syncScreen();
+		transition(navigation.showAuxiliary(value));
 	};
 	const closeAuxiliary = function () {
 		if (campaignConflict) return;
 		capture = undefined; renderMappings();
-		auxiliary = undefined; confirmedAction = undefined; syncScreen(false);
-		if (returnFocus?.isConnected && !returnFocus.closest('[hidden], [inert]')) returnFocus.focus({ preventScroll: true });
-		else syncScreen();
+		confirmedAction = undefined;
+		transition(navigation.closeAuxiliary(), function () {
+			syncScreen(false);
+			if (returnFocus?.isConnected) updateDialogLayout(returnFocus);
+			if (returnFocus?.isConnected && !returnFocus.closest('[hidden], [inert]')) returnFocus.focus({ preventScroll: true });
+			else syncScreen();
+		});
 	};
 	const confirm = function (action: () => void, label: string, copy = 'The current operation will be lost. Your recorded results and settings will be kept.', title = 'ABANDON THIS RUN?') {
 		confirmedAction = action; element('confirm-action').textContent = label; element('confirm-copy').textContent = copy; element('confirm-title').textContent = title; showAuxiliary('confirm');
 	};
 	const stopForConflict = function () {
-		campaignConflict = true; silenceAudio(); padInput.suspend(); auxiliary = 'save-conflict'; syncScreen();
+		campaignConflict = true; silenceAudio(); padInput.suspend(); transition(navigation.showAuxiliary('save-conflict'));
 	};
 	const persistCampaign = function (): boolean {
 		if (campaignConflict) return false;
@@ -241,9 +275,9 @@ const shutdown = await mountGame('game', async function (container) {
 		const current = getOwnedMech(campaign); const upcoming = getOwnedMech(next);
 		const installedChanged = current?.frameId !== upcoming?.frameId || current?.loadout.some(function (weapon, index) { return weapon !== upcoming?.loadout[index]; });
 		campaign = next; if (!persistCampaign()) return;
-		if (installedChanged || nextScreen || screen === 'mechbay') resetEditor(notice);
+		if (installedChanged || nextScreen || navigation.screen === 'mechbay') resetEditor(notice);
 		else editor = { ...editor, notice };
-		if (nextScreen && nextScreen !== 'bridge') { screen = nextScreen; refreshCompany(); syncScreen(); }
+		if (nextScreen && nextScreen !== 'bridge') { transition(navigation.setScreen(nextScreen), function () { refreshCompany(); syncScreen(); }); }
 		else refreshCompany();
 	};
 	const focusCompany = function (selector: string, fallback?: string) {
@@ -251,10 +285,10 @@ const shutdown = await mountGame('game', async function (container) {
 		if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); }
 	};
 	const refreshCompany = function () {
-		if (screen !== 'mechbay' && screen !== 'market' && screen !== 'engineering') return;
-		const root = element(screen); const previousFocus = document.activeElement;
+		if (navigation.screen !== 'mechbay' && navigation.screen !== 'market' && navigation.screen !== 'engineering') return;
+		const root = element(navigation.screen); const previousFocus = document.activeElement;
 		const focusIndex = focusable(root).findIndex(function (item) { return item === previousFocus; });
-		renderCompany(root, campaign, screen, editor, campaignSaved, {
+		renderCompany(root, campaign, navigation.screen, editor, campaignSaved, {
 			navigate: navigateShip,
 			selectFrame: function (id) { updateCompany(selectFrame(campaign, id), 'Frame selected.'); },
 			editSlot: function (slot) {
@@ -298,16 +332,15 @@ const shutdown = await mountGame('game', async function (container) {
 			selectPlanet: function (id) { if (campaign.active) return; destination = id; selectedContract = undefined; refreshBridge(); },
 			selectContract: function (id) { selectedContract = id; refreshBridge(); selectWorkspacePane(element('bridge'), 'briefing', true); },
 			travel: function () {
-				if (screen !== 'bridge' || auxiliary || contextLost) return;
+				if (navigation.screen !== 'bridge' || navigation.auxiliary || contextLost) return;
 				const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, destination); if (next === campaign) return;
 				campaign = next; if (!persistCampaign()) return;
 				element('jump-destination').textContent = getPlanet(campaign.planetId).name.toUpperCase();
 				element('jump-copy').textContent = `${origin.name} → ${getPlanet(campaign.planetId).name} · DAY ${campaign.day} · APPROACHING ORBIT`;
-				screen = 'jump'; jumpUntil = performance.now() + 2200; syncScreen();
-				element('jump').focus({ preventScroll: true });
+				jumpUntil = performance.now() + 2200; transition(navigation.setScreen('jump'), function () { syncScreen(); element('jump').focus({ preventScroll: true }); });
 			},
 			accept: function (contract) {
-				if (screen !== 'bridge' || auxiliary || destination !== campaign.planetId) return;
+				if (navigation.screen !== 'bridge' || navigation.auxiliary || destination !== campaign.planetId) return;
 				const next = acceptContract(campaign, contract.id); if (next === campaign) return;
 				campaign = next; if (!persistCampaign()) return; refreshBridge(); syncScreen();
 				selectWorkspacePane(element('bridge'), 'briefing'); element('bridge-deploy').focus({ preventScroll: true });
@@ -322,26 +355,30 @@ const shutdown = await mountGame('game', async function (container) {
 	};
 	const navigateShip = function (target: ShipScreen) {
 		if (campaignConflict) return;
-		training = undefined; screen = target; auxiliary = undefined;
+		training = undefined; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state);
 		editor = { ...editor, slot: null };
-		if (target === 'bridge') { destination = campaign.planetId; selectedContract = undefined; refreshBridge(); }
-		else refreshCompany();
-		pointer = undefined; presentation.resetZoom(); audio.reset(); syncScreen();
+		pointer = undefined; presentation.resetZoom(); audio.reset();
+		transition(navigation.setScreen(target), function () {
+			if (target === 'bridge') { destination = campaign.planetId; selectedContract = undefined; refreshBridge(); }
+			else refreshCompany();
+			syncScreen();
+		});
 	};
 	const toBridge = function () { navigateShip('bridge'); };
 	const toTitle = function () {
 		element('title-company-label').textContent = 'CONTINUE COMPANY';
-		training = undefined; screen = 'title'; auxiliary = undefined; audio.reset(); syncScreen();
+		training = undefined; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state); audio.reset(); transition(navigation.setScreen('title'));
 	};
 	const back = function () {
-		if (auxiliary) { closeAuxiliary(); return; }
-		if (screen === 'mechbay' && editor.slot !== null) { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`); return; }
-		if (screen === 'training-result' && trainingOrigin === 'title') { toTitle(); return; }
-		if (screen === 'mechbay' || screen === 'market' || screen === 'engineering' || screen === 'training-result') { toBridge(); return; }
-		if (screen === 'bridge') { toTitle(); return; }
-		setPaused(screen === 'playing');
+		if (navigation.transitioning) return;
+		if (navigation.auxiliary) { closeAuxiliary(); return; }
+		if (navigation.screen === 'mechbay' && editor.slot !== null) { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`); return; }
+		if (navigation.screen === 'training-result' && trainingOrigin === 'title') { toTitle(); return; }
+		if (navigation.screen === 'mechbay' || navigation.screen === 'market' || navigation.screen === 'engineering' || navigation.screen === 'training-result') { toBridge(); return; }
+		if (navigation.screen === 'bridge') { toTitle(); return; }
+		setPaused(navigation.screen === 'playing');
 	};
-	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', callback, listenerOptions); };
+	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
 	listen('title-continue', toBridge);
 	listen('title-training', startTraining);
 	listen('title-settings', function () { showAuxiliary('settings'); });
@@ -393,13 +430,14 @@ const shutdown = await mountGame('game', async function (container) {
 		for (const action of ACTIONS) profile.settings.keyboard[action] = profile.settings.keyboard[action].filter(function (key) { return key !== code; });
 		profile.settings.keyboard[capture] = [code]; capture = undefined; resetInput(); save(); renderMappings();
 	};
-	element('keyboard-mappings').addEventListener('mousedown', function (event) { if (capture && auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); event.stopPropagation(); consumedMouseButtons.add(event.button); assignKey(`Mouse${event.button}`); } });
+	element('keyboard-mappings').addEventListener('mousedown', function (event) { if (capture && navigation.auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); event.stopPropagation(); consumedMouseButtons.add(event.button); assignKey(`Mouse${event.button}`); } }, listenerOptions);
+	element('controller-mappings').replaceChildren();
 	for (const action of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) {
 		const label = document.createElement('label'); label.textContent = `${LABELS[action]} `;
 		const select = document.createElement('select'); select.dataset['mapping'] = action;
 		for (let index = 1; index <= 17; index++) { if (index === 9) continue; const option = document.createElement('option'); option.value = String(index); option.textContent = padLabel(index); select.append(option); }
 		select.value = String(profile.settings.controller[action]);
-		select.addEventListener('change', function () { const previous = profile.settings.controller[action]; const next = Number(select.value); for (const other of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) if (other !== action && profile.settings.controller[other] === next) profile.settings.controller[other] = previous; profile.settings.controller[action] = next; resetInput(); save(); syncControllerMappings(); });
+		select.addEventListener('change', function () { const previous = profile.settings.controller[action]; const next = Number(select.value); for (const other of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) if (other !== action && profile.settings.controller[other] === next) profile.settings.controller[other] = previous; profile.settings.controller[action] = next; resetInput(); save(); syncControllerMappings(); }, listenerOptions);
 		label.append(select); element('controller-mappings').append(label);
 	}
 	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } };
@@ -410,7 +448,7 @@ const shutdown = await mountGame('game', async function (container) {
 	listen('reset-keyboard', function () { capture = undefined; profile.settings.keyboard = defaultKeyboard(); resetInput(); save(); renderMappings(); });
 	listen('reset-controller', function () { profile.settings.controller = defaultController(); resetInput(); save(); syncControllerMappings(); });
 	renderMappings();
-	for (const tab of element('settings').querySelectorAll('[data-dialog-tab]')) tab.addEventListener('click', function () { capture = undefined; renderMappings(); });
+	for (const tab of element('settings').querySelectorAll('[data-dialog-tab]')) tab.addEventListener('click', function () { capture = undefined; renderMappings(); }, listenerOptions);
 	listen('close-settings', function () { capture = undefined; renderMappings(); closeAuxiliary(); }); listen('close-handbook', closeAuxiliary);
 	listen('dismiss-hint', function () { tipDismissed = true; ui.hint.hidden = true; canvas.focus({ preventScroll: true }); });
 	listen('sound', function () {
@@ -435,7 +473,7 @@ const shutdown = await mountGame('game', async function (container) {
 		checkpoint();
 		const report = getOperationReport(state); const won = state.outcome === 'won'; const contract = state.mission.contract;
 		campaign = settleContract(campaign, won); if (!persistCampaign()) return;
-		screen = 'result'; terminalUntil = now + 1600;
+		terminalUntil = now + 1600;
 		element('result-title').textContent = won ? 'CONTRACT COMPLETE.' : 'CONTRACT FAILED.';
 		element('result-copy').textContent = won ? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} has confirmed the objective and released payment.` : `The sortie was lost. Your frame was recovered with ${report.armor}% integrity. No payment or employer favor was earned. Repair it in Engineering before its next deployment.`;
 		element('result-difficulty').textContent = `${getFrame(state.frame).name} · ${state.difficulty.toUpperCase()}`;
@@ -447,15 +485,15 @@ const shutdown = await mountGame('game', async function (container) {
 		element('result-upgrades').textContent = `DAY ${campaign.day} · Equipment retained. Damage requires a repair work order. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
 		element('restart').textContent = 'RETURN TO SHIP →'; element('result-briefing').hidden = true;
 		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
-		syncScreen();
+		transition(navigation.setScreen('result'));
 	};
 	const rigCode = ['ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
 	let rigCodeInput: string[] = [];
 	window.addEventListener('keydown', function (event) {
 		if (capture) rigCodeInput = [];
 		setInputMode('keyboard'); if (event.isTrusted) unlockSound();
-		if (capture && auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); if (event.code === 'Escape') { capture = undefined; renderMappings(); } else if (!event.repeat && validKey(event.code)) assignKey(event.code); return; }
-		if (capture || auxiliary || campaignConflict || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLElement && event.target.isContentEditable) {
+		if (capture && navigation.auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); if (event.code === 'Escape') { capture = undefined; renderMappings(); } else if (!event.repeat && validKey(event.code)) assignKey(event.code); return; }
+		if (capture || navigation.auxiliary || campaignConflict || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLElement && event.target.isContentEditable) {
 			rigCodeInput = [];
 		} else if (!event.repeat) {
 			rigCodeInput = [...rigCodeInput, event.code].slice(-rigCode.length);
@@ -466,7 +504,7 @@ const shutdown = await mountGame('game', async function (container) {
 		}
 		if (event.code === 'Escape') { event.preventDefault(); if (!event.repeat) back(); return; }
 		const root = menu();
-		if (root && screen === 'title' && !auxiliary && (event.code === 'ArrowUp' || event.code === 'ArrowDown')) {
+		if (root && navigation.screen === 'title' && !navigation.auxiliary && (event.code === 'ArrowUp' || event.code === 'ArrowDown')) {
 			event.preventDefault(); const items = focusable(root); const index = items.findIndex(function (item) { return item === document.activeElement; });
 			items[(index + (event.code === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); audio.cue('focus'); return;
 		}
@@ -497,7 +535,7 @@ const shutdown = await mountGame('game', async function (container) {
 		event.preventDefault(); contextLost = true; padInput.suspend(); resetInput(); setPaused(true);
 		const error = element('error'); error.textContent = 'Graphics interrupted. Waiting for recovery…'; error.hidden = false;
 	}, listenerOptions);
-	canvas.addEventListener('webglcontextrestored', function () { contextLost = false; padInput.suspend(); element('error').hidden = true; accumulator = 0; previous = 0; }, listenerOptions);
+	canvas.addEventListener('webglcontextrestored', function () { contextLost = false; padInput.suspend(); element('error').hidden = true; previous = 0; }, listenerOptions);
 	const updatePointer = function (event: PointerEvent) {
 		if (!playing()) return;
 		const rect = canvas.getBoundingClientRect(); pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top }; aimMode = 'pointer';
@@ -546,7 +584,7 @@ const shutdown = await mountGame('game', async function (container) {
 		element('relay-readout').hidden = Boolean(state.mission && state.mission.contract.kind !== 'defend');
 		element('relay-name').textContent = state.mission ? 'CONTRACT RELAY' : 'RELAY 09';
 		if (state.mission) { ui.phase.textContent = state.mission.stage === 'extract' ? 'OBJECTIVE COMPLETE / EXTRACT' : MISSION_NAMES[state.mission.contract.kind].toUpperCase(); ui.status.textContent = missionObjective(state); }
-		element('training-guide').hidden = !training || screen !== 'playing';
+		element('training-guide').hidden = !training || navigation.screen !== 'playing';
 		if (training) {
 			const copy = trainingCopy(training, inputMode === 'gamepad', { ...profile.settings, controlMode: inputMode === 'touch' ? 'simulation' : profile.settings.controlMode });
 			container.dataset['trainingStage'] = training.stage;
@@ -588,7 +626,7 @@ const shutdown = await mountGame('game', async function (container) {
 		element('coolant').toggleAttribute('disabled', Boolean(training && training.stage !== 'coolant'));
 		ui.coolant.textContent = `${state.coolantCharges} ${state.coolantCharges === 1 ? 'CHARGE' : 'CHARGES'}`;
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE STICKS AND TRIGGERS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
-		ui.hint.hidden = tipDismissed || state.time > 35 || screen !== 'playing';
+		ui.hint.hidden = tipDismissed || state.time > 35 || navigation.screen !== 'playing';
 		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) coolantPrompt.textContent = inputMode === 'gamepad' ? padLabel(profile.settings.controller.coolant) : profile.settings.keyboard.coolant.map(keyLabel).join(' / ') || 'UNBOUND';
 		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${padLabel(profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${padLabel(profile.settings.controller.stop)} stops.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Tap the field to aim. Hold + to move; STOP sets neutral. Hold a weapon to fire.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
@@ -598,16 +636,18 @@ const shutdown = await mountGame('game', async function (container) {
 		if (element('audio-status').textContent !== audioStatus) element('audio-status').textContent = audioStatus;
 	};
 	const audioFrame = function (now: number) {
-		const combat = playing(); const audibleMenu = screen === 'title' || screen === 'jump' || screen === 'bridge' || screen === 'mechbay' || screen === 'market' || screen === 'engineering' || screen === 'training-result' || (screen === 'result' && now < terminalUntil + 30000);
+		const combat = playing(); const audibleMenu = navigation.screen === 'title' || navigation.screen === 'jump' || navigation.screen === 'bridge' || navigation.screen === 'mechbay' || navigation.screen === 'market' || navigation.screen === 'engineering' || navigation.screen === 'training-result' || (navigation.screen === 'result' && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			active: !contextLost && focused && !document.hidden && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
-			phase: screen === 'title' || screen === 'jump' || screen === 'bridge' || screen === 'mechbay' || screen === 'market' || screen === 'engineering' ? 'briefing' as const : screen === 'training-result' ? 'refit' as const : screen === 'result' ? 'result' as const : 'combat' as const,
+			phase: navigation.screen === 'title' || navigation.screen === 'jump' || navigation.screen === 'bridge' || navigation.screen === 'mechbay' || navigation.screen === 'market' || navigation.screen === 'engineering' ? 'briefing' as const : navigation.screen === 'training-result' ? 'refit' as const : navigation.screen === 'result' ? 'result' as const : 'combat' as const,
 			intensity: Math.min(1, state.enemies.length / 5 + (state.wave - 1) * 0.08), danger: Math.max(0, 1 - Math.min(state.player.hp, state.relay) / 50), victory: state.outcome === 'won' };
 	};
-	const tick = function (now: number) {
-		if (screen === 'jump' && focused && !document.hidden && now >= jumpUntil) toBridge();
+	let frameTime = 0;
+	let makeInput = function (): Controls { return { drive: 0, stop: false, turn: 0, aim, fire: [false, false, false, false], coolant: false }; };
+	world.addSystem('browser-input').inPhase('preUpdate').setProcess(function () {
+		const now = frameTime;
+		if (!navigation.transitioning && navigation.screen === 'jump' && focused && !document.hidden && now >= jumpUntil) toBridge();
 		const revisionAtFrame = screenRevision;
-		const elapsed = previous ? Math.min((now - previous) / 1000, 0.1) : 0; previous = now;
 		const rect = canvas.getBoundingClientRect(); const width = rect.width; const height = rect.height;
 		presentation.resize(state, width, height);
 		let pads: readonly (Gamepad | null)[] = [];
@@ -625,9 +665,9 @@ const shutdown = await mountGame('game', async function (container) {
 		container.dataset['controllerState'] = pad.connected ? 'connected' : controllerLost ? 'disconnected' : pad.available ? 'available' : 'none';
 		const controllerStatus = pad.connected ? 'CONTROLLER CONNECTED' : controllerLost ? 'CONTROLLER LOST · PRESS A / MENU TO RECONNECT, THEN RESUME' : pad.available ? 'PRESS A / MENU TO CONNECT CONTROLLER' : 'CONTROLLER OPTIONAL · CONNECT AND PRESS A / MENU';
 		if (element('controller-status').textContent !== controllerStatus) element('controller-status').textContent = controllerStatus;
-		if (pad.pause && focused && !document.hidden && !contextLost) { audio.cue('back'); if (auxiliary) closeAuxiliary(); else setPaused(screen === 'playing'); }
+		if (pad.pause && focused && !document.hidden && !contextLost) { audio.cue('back'); if (navigation.auxiliary) closeAuxiliary(); else setPaused(navigation.screen === 'playing'); }
 		const root = menu();
-		if (root && pad.connected && screenRevision === revisionAtFrame && focused && !document.hidden && !contextLost) {
+		if (root && !navigation.transitioning && pad.connected && screenRevision === revisionAtFrame && focused && !document.hidden && !contextLost) {
 			if (pad.navigate) {
 				const focusedElement = document.activeElement;
 				if (pad.adjust && focusedElement instanceof HTMLSelectElement) { focusedElement.selectedIndex = (focusedElement.selectedIndex + pad.adjust + focusedElement.options.length) % focusedElement.options.length; focusedElement.dispatchEvent(new Event('change', { bubbles: true }));
@@ -664,7 +704,7 @@ const shutdown = await mountGame('game', async function (container) {
 				if (picked && distance(presentation.toScreen(picked, 45), cursor) < 42 * viewScale(width, height)) aim = { x: picked.x, y: picked.y };
 			}
 			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') aim = { x: state.player.x + Math.cos(state.player.turret) * 600, y: state.player.y + Math.sin(state.player.turret) * 600 };
-			const makeInput = function (): Controls {
+			makeInput = function (): Controls {
 				const arcade = profile.settings.controlMode === 'arcade' && inputMode !== 'touch';
 				const x = Math.max(-1, Math.min(1, Number(active('right')) - Number(active('left')) + pad.turn));
 				const y = Math.max(-1, Math.min(1, Number(active('back')) - Number(active('forward')) - pad.drive));
@@ -678,33 +718,67 @@ const shutdown = await mountGame('game', async function (container) {
 					fire: [active('mount-0') || pad.fire[0], active('mount-1') || pad.fire[1], active('mount-2') || pad.fire[2], active('mount-3') || pad.fire[3]], coolant: active('coolant') || pad.coolant,
 				};
 			};
-			accumulator += elapsed;
-			while (accumulator >= 1 / 60 && playing()) {
-				const previousGaits = gaits;
-				const previousStage = training?.stage;
-				const previousFrame = state.frame;
-				const previousMissionStage = state.mission?.stage;
-				if (training) stepTraining(training, makeInput(), 1 / 60); else step(state, makeInput(), 1 / 60);
-				gaits = state.frame !== previousFrame || training?.stage === 'evade' && previousStage !== 'evade' ? createGaits(state) : advanceGaits(gaits, state);
-				pending.clear(); accumulator -= 1 / 60;
-				if (training && previousStage !== training.stage) audio.cue('confirm');
-				audio.update(audioFrame(now)); audio.play(state.events);
-				feedback.play(state.events, now);
-				for (const index of [0, 1] as const) if (previousGaits.player.feet[index].lift > 0 && gaits.player.feet[index].lift === 0) audio.footstep(index === 0 ? -1 : 1);
-				if (state.mission?.stage === 'extract' && previousMissionStage !== 'extract') { message = 'OBJECTIVE COMPLETE · REACH EXTRACTION AND HOLD FOR 3 SECONDS'; messageUntil = state.time + 7; }
-				if (state.events.includes('coolant')) { message = 'COOLANT PURGE / REACTOR STABILIZING'; messageUntil = state.time + 2; }
-				if (training?.stage === 'complete') { screen = 'training-result'; syncScreen(); }
-				else if (!training && state.outcome !== 'playing') showResult(now);
-				else checkpoint();
-			}
+			runtimeInput.sample(makeInput());
 		}
+		combatRuntime.setEnabled(playing() && screenRevision === revisionAtFrame);
+	});
+	world.addSystem('combat-feedback').setEventHandlers({
+		combatStepFinished: function ({ data }) {
+			audio.update(audioFrame(frameTime)); audio.play(data.events);
+			feedback.play(data.events, frameTime);
+		},
+	});
+	let previousGaits = gaits;
+	let previousStage = training?.stage;
+	let previousFrame = state.frame;
+	let previousMissionStage = state.mission?.stage;
+	combatRuntime.setControls(function () { return runtimeInput.consume(makeInput()); });
+	combatRuntime.setHooks({
+		beforeStep: function () {
+			previousGaits = gaits; previousStage = training?.stage;
+			previousFrame = state.frame; previousMissionStage = state.mission?.stage;
+		},
+		afterStep: function () {
+			const now = frameTime;
+			gaits = state.frame !== previousFrame || training?.stage === 'evade' && previousStage !== 'evade' ? createGaits(state) : advanceGaits(gaits, state);
+			pending.clear();
+			if (training && previousStage !== training.stage) audio.cue('confirm');
+
+			for (const index of [0, 1] as const) if (previousGaits.player.feet[index].lift > 0 && gaits.player.feet[index].lift === 0) audio.footstep(index === 0 ? -1 : 1);
+			if (state.mission?.stage === 'extract' && previousMissionStage !== 'extract') { message = 'OBJECTIVE COMPLETE · REACH EXTRACTION AND HOLD FOR 3 SECONDS'; messageUntil = state.time + 7; }
+			if (state.events.includes('coolant')) { message = 'COOLANT PURGE / REACTOR STABILIZING'; messageUntil = state.time + 2; }
+			if (training?.stage === 'complete') transition(navigation.setScreen('training-result'));
+			else if (!training && state.outcome !== 'playing') showResult(now);
+			else checkpoint();
+		},
+	});
+	const battlefieldVisible = function () {
+		return !contextLost && (navigation.screen === 'playing' || navigation.screen === 'pause-panel' || navigation.screen === 'result' || navigation.screen === 'training-result');
+	};
+	world.addSystem('battlefield-presentation').inPhase('postUpdate').before(transform3DSystems.propagate).setProcess(function () {
+		if (battlefieldVisible()) {
+			world.enableSystemGroup('renderer3d');
+			presentation.prepare(state, aim, gaits, false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI);
+		} else world.disableSystemGroup('renderer3d');
+	});
+	world.addSystem('browser-feedback').inPhase('render').setPriority(-100).setProcess(function () {
+		const now = frameTime;
 		audio.update(audioFrame(now));
-		if (screen === 'title' && !auxiliary && focused && !document.hidden) titleScene?.render(now);
-		if (!contextLost && (screen === 'playing' || screen === 'pause-panel' || screen === 'result' || screen === 'training-result')) presentation.render(state, aim, gaits, false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI);
+		if (navigation.screen === 'title' && !navigation.auxiliary && focused && !document.hidden) titleScene?.render(now);
+		if (battlefieldVisible()) presentation.drawOverlay();
 		if (now - lastHud > 80 || lastHud === 0) { updateHud(); lastHud = now; }
+	});
+	const tick = function (now: number) {
+		if (stopped) return;
+		const elapsed = previous ? Math.min((now - previous) / 1000, 0.1) : 0; previous = now;
+		frameTime = now;
+		world.update(elapsed);
 		frame = requestAnimationFrame(tick);
 	};
 	updateSettings(); updateDifficulty(); refreshBridge(); persistCampaign(); syncScreen(); frame = requestAnimationFrame(tick);
-	return async function () { checkpoint(); cancelAnimationFrame(frame); abort.abort(); resetInput(); padInput.reset(); titleScene?.dispose(); await feedback.dispose(); try { await audio.dispose(); } finally { await presentation.dispose(); } };
+	return function () {
+		if (stopped) return; stopped = true;
+		checkpoint(); cancelAnimationFrame(frame); abort.abort(); resetInput();
+	};
 });
 if (import.meta.hot) import.meta.hot.dispose(shutdown);

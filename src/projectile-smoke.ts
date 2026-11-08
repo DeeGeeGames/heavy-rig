@@ -1,5 +1,5 @@
 import { Color, DynamicDrawUsage, Float32BufferAttribute, InstancedBufferAttribute, InstancedBufferGeometry, Mesh, ShaderMaterial, UniformsLib, UniformsUtils, Vector3 } from 'three';
-import type { Shot, State } from './simulation';
+import type { Shot, CombatStateView } from './simulation';
 
 const LIFETIME = 1;
 const SPACING = 4;
@@ -65,11 +65,11 @@ export const createProjectileSmoke = function () {
 	let ages = new InstancedBufferAttribute(new Float32Array(0), 2);
 	let puffs: Puff[] = [];
 	let tracks = new Map<Shot, Track>();
-	let previousState: State | undefined;
+	let previousState: CombatStateView | undefined;
 	let previousTime = 0; let sequence = 0; let disposed = false;
 	return {
 		root,
-		update: function (state: State, positions: ReadonlyMap<Shot, Vector3>) {
+		update: function (state: CombatStateView, positions: ReadonlyMap<Shot, Vector3>) {
 			if (disposed) return;
 			if (previousState !== state || state.time < previousTime) { puffs = []; tracks.clear(); sequence = 0; }
 			previousState = state; previousTime = state.time;

@@ -1,0 +1,345 @@
+{
+  "issue": "https://github.com/DeeGeeGames/heavy-rig/issues/14",
+  "testedAt": "2026-11-08T17:14:00.225Z",
+  "passed": true,
+  "build": {
+    "baseHead": "a8e8f91af015d5679ef89118e3af95b30dc470aa",
+    "description": "Frozen migration working tree; source hashes identify the tested implementation before delivery commit.",
+    "productionEntry": "chunk-63tn1hg1.js",
+    "productionEntrySha256": "2429e772ecc5ec530cc4e7ddf8c2545c72336d319fdd03e4b1164104e69d7fe2",
+    "sourceSha256": {
+      "src/main.ts": "c9a03b868be3eb33d5eaf50bf7b3675734ac75db639b4aef717446bf939155b4",
+      "src/combat-runtime.ts": "99b6af7c9c4bfe2bb955e3a64f26e46a8eb116265cf84d14e7f00e19a468dac8",
+      "src/simulation.ts": "022d30998417eec8be3e807291ba8c39ec7923c203594118b8868daa9c134786",
+      "src/training.ts": "6f1d951e77e979adb0e1dcf0024114399667e9628ba28f7071acf5de4f8c09d9",
+      "src/presentation.ts": "efbd8eabe48b5a7e327099d47c5c2086bfff78620b4c9e94f808d65b80b3d517",
+      "src/runtime-navigation.ts": "06255c2482379ee5bcd13f41bf23dff5c85d2e9fc743a568aeffee64c46003e8",
+      "src/runtime-input.ts": "2692265d2010f747be3f34289998f2780a8e27cf658898c8e69c6f11cfa716a1",
+      "src/dialog-layout.ts": "ec3ccc63f5a28753c3ae36450ba8f5e5275dd6623e8e035c6d25050cdf109f5e",
+      "src/shared/lifecycle.ts": "cbe325b15331a1a9bbeea68107e00b51437f2f7cc359c68c2a847535dc978945",
+      "src/title-scene.ts": "d16ef72cbb7012a5afbe8249a5c71275b6a2023182b0bba509745dd4a5432ac1"
+    }
+  },
+  "environment": {
+    "browser": "Headless Chromium via Playwright",
+    "rendering": "SwiftShader software WebGL",
+    "url": "http://localhost:3057/",
+    "viewports": [
+      {
+        "width": 1280,
+        "height": 800
+      },
+      {
+        "width": 390,
+        "height": 844
+      },
+      {
+        "width": 568,
+        "height": 320
+      }
+    ]
+  },
+  "journeys": [
+    {
+      "name": "company purchases, legal refit, calendar, deployment, abort, travel",
+      "passed": true,
+      "errors": [],
+      "campaign": {
+        "fleet": [
+          {
+            "frameId": "kestrel",
+            "integrity": 100,
+            "loadout": [
+              "machine-gun",
+              "machine-gun"
+            ]
+          },
+          {
+            "frameId": "warden",
+            "integrity": 100,
+            "loadout": [
+              "autocannon",
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "selectedFrame": "kestrel",
+        "inventory": {
+          "machine-gun": 2,
+          "autocannon": 1,
+          "laser": 0,
+          "ppc": 0,
+          "stream-rockets": 0,
+          "cluster-rockets": 0,
+          "stream-missiles": 0,
+          "cluster-missiles": 0
+        },
+        "workOrders": [],
+        "version": 3,
+        "seed": 23,
+        "planetId": "cinder",
+        "day": 4,
+        "boardRevision": 2,
+        "credits": 24500,
+        "completed": 0,
+        "failed": 1,
+        "reputation": {
+          "freeholds": -6,
+          "combine": 0,
+          "accord": 0
+        },
+        "boardReputation": {
+          "freeholds": -6,
+          "combine": 0,
+          "accord": 0
+        },
+        "lastResult": {
+          "contract": {
+            "id": "23-0-meridian-defend",
+            "seed": 3134760603,
+            "planetId": "meridian",
+            "kind": "defend",
+            "employer": "combine",
+            "opponent": "freeholds",
+            "title": "Hold the signal",
+            "briefing": "Defend the contracted uplink through the hostile assault. Keep its integrity above zero, then rendezvous with your dropship.",
+            "reward": 1200,
+            "favor": 8,
+            "hostility": 6,
+            "tier": 1,
+            "requiredReputation": -100
+          },
+          "won": false,
+          "aborted": true,
+          "payout": 0,
+          "favor": 0,
+          "day": 3
+        }
+      }
+    },
+    {
+      "name": "pause settings resume, remapping, interrupted reload and actual damage checkpoint",
+      "passed": true,
+      "errors": [],
+      "damaged": 98,
+      "integrity": 97.25,
+      "recoveredDay": 2
+    },
+    {
+      "name": "fragile company actual defeat, result settlement, and return to ship",
+      "passed": true,
+      "errors": [],
+      "fixture": "Accepted Warden company with1 integrity; defeat from actual hostile combat, no gameplay injection",
+      "payout": 0,
+      "integrity": 0,
+      "day": 2
+    },
+    {
+      "name": "save conflict remains authoritative through blur and context loss",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "controller claim consumption, neutral guard, Confirm+Back deployment chord and loss/reclaim",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "independent simulated touch pointers and responsive combat/dialog layouts",
+      "passed": true,
+      "errors": [],
+      "drive": "FWD 59%",
+      "afterRelease": "FWD 71%",
+      "firingHeat": "5%",
+      "captures": [
+        {
+          "name": "portrait",
+          "layout": {
+            "width": 390,
+            "height": 844,
+            "scrollWidth": 390,
+            "scrollHeight": 844,
+            "canvas": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "top": 0,
+              "right": 390,
+              "bottom": 844,
+              "left": 0
+            }
+          },
+          "restoredFocus": "pause-settings"
+        },
+        {
+          "name": "landscape",
+          "layout": {
+            "width": 568,
+            "height": 320,
+            "scrollWidth": 568,
+            "scrollHeight": 320,
+            "canvas": {
+              "x": 0,
+              "y": 0,
+              "width": 568,
+              "height": 320,
+              "top": 0,
+              "right": 568,
+              "bottom": 320,
+              "left": 0
+            }
+          },
+          "restoredFocus": "pause-settings"
+        },
+        {
+          "name": "desktop",
+          "layout": {
+            "width": 1280,
+            "height": 800,
+            "scrollWidth": 1280,
+            "scrollHeight": 800,
+            "canvas": {
+              "x": 0,
+              "y": 0,
+              "width": 1280,
+              "height": 800,
+              "top": 0,
+              "right": 1280,
+              "bottom": 800,
+              "left": 0
+            }
+          },
+          "restoredFocus": "pause-settings"
+        }
+      ]
+    }
+  ],
+  "lifecycle": [
+    {
+      "name": "shutdown releases world and remount on the same DOM does not duplicate views or controls",
+      "passed": true,
+      "before": {
+        "labels": 1,
+        "pagers": 7,
+        "mappings": 6,
+        "pendingFrames": 1
+      },
+      "stopped": {
+        "labels": 0,
+        "pagers": 0,
+        "pendingFrames": 0
+      },
+      "after": {
+        "labels": 1,
+        "pagers": 7,
+        "mappings": 6,
+        "pendingFrames": 2,
+        "error": "",
+        "errorVisible": false
+      },
+      "finalStopped": {
+        "labels": 0,
+        "pagers": 0,
+        "pendingFrames": 0
+      },
+      "errors": [],
+      "consoleErrors": []
+    },
+    {
+      "name": "missing title canvas initialization failure tears down allocated world and renderer",
+      "passed": true,
+      "state": {
+        "error": "Could not start the game. Reload to try again.",
+        "labels": 0,
+        "pagers": 0,
+        "pendingFrames": 0
+      },
+      "errors": [],
+      "consoleErrors": [
+        "Error: Missing interface element: title-scene\n    at w0 (http://localhost:3057/chunk-63tn1hg1.js:4293:25816)\n    at http://localhost:3057/chunk-63tn1hg1.js:4293:26502\n    at async sJ (http://localhost:3057/chunk-63tn1hg1.js:4220:145742)\n    at async http://localhost:3057/chunk-63tn1hg1.js:4293:26069"
+      ],
+      "fixture": "Removed title-scene canvas from served HTML"
+    }
+  ],
+  "pageErrors": [],
+  "fixtures": [
+    {
+      "name": "Funded current-v3 Kestrel company",
+      "scope": "30,000 credits to exercise actual UI purchases, legal second machine-gun refit, calendar and deployment."
+    },
+    {
+      "name": "Accepted current-v3 Warden defend contract",
+      "scope": "Normal company, input, damage/reload, conflict, controller and touch paths; no mutation of live gameplay."
+    },
+    {
+      "name": "Fragile company",
+      "scope": "Same accepted Warden company with 1 integrity before application initialization; defeat is caused by actual hostile combat after UI deployment."
+    },
+    {
+      "name": "Missing title canvas",
+      "scope": "Explicit startup-failure injection by removing title-scene canvas from HTML; expected caught console error is recorded in lifecycle result."
+    }
+  ],
+  "harnessAssumptions": [
+    "Software-rendered first combat/model setup can consume more than 600 ms while advancing only one fixed tick. Input assertions wait for observable speed/throttle readiness instead of equating wall time with simulation time.",
+    "Paged short-landscape dialog actions are reached through normal Next controls.",
+    "Same-DOM shutdown and module reimport tests remount cleanup; this is not a claim that a real Bun HMR edit was exercised."
+  ],
+  "screenshots": [
+    "runtime-desktop.png",
+    "runtime-portrait.png",
+    "runtime-landscape.png",
+    "runtime-settings-landscape.png",
+    "runtime-result.png",
+    "runtime-remount.png",
+    "runtime-initialization-failure.png"
+  ],
+  "resourceCleanup": {
+    "ownedBrowserContextsClosed": true,
+    "ownedBrowsersClosed": true,
+    "ownedNodeProcessesExited": true,
+    "sharedProductionServer": "Stopped by primary agent after validation; port3057 verified closed."
+  },
+  "acceptance": {
+    "automatedBrowserJourneys": "passed",
+    "simulatedKeyboardControllerAndTouch": "passed",
+    "physicalControllerAndTouchFeel": "unmeasured",
+    "audioListening": "unmeasured",
+    "representativeGpuPerformance": "unmeasured",
+    "balance": "unmeasured",
+    "ownerAcceptance": "unmeasured; separate from implementation validation"
+  },
+  "checks": {
+    "command": "bun run check",
+    "tests": 193,
+    "testFiles": 26,
+    "failed": 0,
+    "typecheck": "passed",
+    "lint": "passed",
+    "productionBuild": "passed",
+    "bun": "1.3.14",
+    "ecspresso": "0.24.1"
+  },
+  "originalBaselineComparison": {
+    "baseline": "a8e8f91af015d5679ef89118e3af95b30dc470aa",
+    "cases": 75,
+    "ticks": 54000,
+    "passed": true,
+    "setup": "All five frames, three difficulties, classic wave scenario and all four mission types, compared after every fixed tick against the original simulation source."
+  },
+  "independentReview": {
+    "status": "repaired and rechecked",
+    "findings": [
+      "same-frame controller transition guard",
+      "mandatory save conflict retention",
+      "paginated focus restoration",
+      "component replacement ownership",
+      "collection ordering and restricted view types",
+      "active-only capability and facility change publication",
+      "reusable renderer context after shutdown"
+    ]
+  }
+}

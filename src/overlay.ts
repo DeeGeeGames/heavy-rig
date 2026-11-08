@@ -2,7 +2,7 @@ import type { OrthographicCamera } from 'three';
 import { getWeapon } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
-import { ARENA, distance, getEnemyDefense, type Point, type State, type Unit } from './simulation';
+import { ARENA, distance, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
 import { FACILITY_TARGET_ID, EXTRACTION_SECONDS } from './missions';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
@@ -44,10 +44,10 @@ export const edgeMarker = function (point: Point, width: number, height: number,
 };
 
 // Match each fitted guidance system's actual acquisition range and aim choice.
-export const targetSolution = function (state: State, target: Unit, aim: Point): { guided: boolean; inRange: boolean } {
+export const targetSolution = function (state: CombatStateView, target: Unit, aim: Point): { guided: boolean; inRange: boolean } {
 	return solutionFor(state, target, target.id, aim);
 };
-const solutionFor = function (state: State, target: Point, id: number, aim: Point): { guided: boolean; inRange: boolean } {
+const solutionFor = function (state: CombatStateView, target: Point, id: number, aim: Point): { guided: boolean; inRange: boolean } {
 	const weapons = state.loadout.map(function (mount) { return getWeapon(mount.weapon); });
 	const range = distance(target, state.player);
 	const structure = state.mission?.structure;
@@ -62,7 +62,7 @@ const solutionFor = function (state: State, target: Point, id: number, aim: Poin
 	return { guided, inRange: weapons.some(function (weapon) { return range <= weapon.range; }) };
 };
 
-export const missionNavigation = function (state: State): { point: Point; label: string; color: string } | undefined {
+export const missionNavigation = function (state: CombatStateView): { point: Point; label: string; color: string } | undefined {
 	const mission = state.mission; if (!mission) return undefined;
 	if (mission.stage === 'extract') return { point: mission.map.extraction, label: 'EXTRACT', color: '#b9f5ca' };
 	const target = mission.contract.kind === 'assassination' ? state.enemies.find(function (enemy) { return enemy.id === mission.targetId; })
@@ -81,7 +81,7 @@ const bracket = function (ctx: CanvasRenderingContext2D, x: number, y: number, w
 
 // World labels use the same projection as ground picking and the 3D scene.
 // Tactical diagrams remain screen-space, so they stay legible while moving.
-export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: number, height: number, state: State, aim: Point, options: OverlayOptions) {
+export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: number, height: number, state: CombatStateView, aim: Point, options: OverlayOptions) {
 	ctx.clearRect(0, 0, width, height);
 	if (width <= 0 || height <= 0) return;
 	ctx.save();
@@ -137,7 +137,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		text(`IMPACT ${strike.life.toFixed(1)}`, strike, 8, '#ffd2a6', 11, -14);
 	}
-	const target = state.enemies.reduce<State['enemies'][number] | undefined>(function (nearest, enemy) {
+	const target = state.enemies.reduce<CombatStateView['enemies'][number] | undefined>(function (nearest, enemy) {
 		return !nearest || distance(enemy, aim) < distance(nearest, aim) ? enemy : nearest;
 	}, undefined);
 	const selectedFacility = facility && facility.hp > 0 && distance(facility, aim) < 100 && (!target || distance(facility, aim) < distance(target, aim)) ? facility : undefined;
