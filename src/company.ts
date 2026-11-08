@@ -25,6 +25,8 @@ const MAX_INVENTORY = 1000;
 export const FRAME_PRICES: Readonly<Record<FrameId, number>> = { kestrel: 4000, warden: 5000, longbow: 6000, morrow: 6500, maul: 7500 };
 export const WEAPON_PRICES: Readonly<Record<WeaponId, number>> = {
 	'machine-gun': 500, autocannon: 750, laser: 800, 'stream-rockets': 850,
+	'stream-rockets-4': 1700, 'stream-rockets-6': 2550, 'stream-missiles-4': 2000, 'stream-missiles-6': 3000,
+	'cluster-rockets-4': 2400, 'cluster-rockets-6': 3600, 'cluster-missiles-4': 2800, 'cluster-missiles-6': 4200,
 	'stream-missiles': 1000, 'cluster-rockets': 1200, 'cluster-missiles': 1400, ppc: 1500,
 };
 const isObject = function (value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); };
@@ -37,7 +39,7 @@ const countWeapon = function (loadout: Loadout, weapon: WeaponId) { return loado
 export const createCompany = function (): CompanyState {
 	return {
 		fleet: [{ frameId: 'kestrel', integrity: 100, loadout: createStarterLoadout('kestrel') }], selectedFrame: 'kestrel',
-		inventory: { 'machine-gun': 1, autocannon: 0, laser: 0, ppc: 0, 'stream-rockets': 0, 'cluster-rockets': 0, 'stream-missiles': 0, 'cluster-missiles': 0 },
+		inventory: { 'stream-rockets-4': 0, 'stream-rockets-6': 0, 'stream-missiles-4': 0, 'stream-missiles-6': 0, 'cluster-rockets-4': 0, 'cluster-rockets-6': 0, 'cluster-missiles-4': 0, 'cluster-missiles-6': 0, 'machine-gun': 1, autocannon: 0, laser: 0, ppc: 0, 'stream-rockets': 0, 'cluster-rockets': 0, 'stream-missiles': 0, 'cluster-missiles': 0 },
 		workOrders: [], deployed: undefined,
 	};
 };
@@ -163,7 +165,8 @@ const isInventory = function (value: unknown): value is Record<WeaponId, number>
 // Validate the whole ownership transaction, not just individual shapes. An
 // edited/corrupt save must not equip or reserve more copies than were owned.
 export const parseCompany = function (value: Record<string, unknown>, day: number, active: boolean): CompanyState | undefined {
-	const fleet = value['fleet']; const workOrders = value['workOrders']; const inventory = value['inventory']; const selectedFrame = value['selectedFrame']; const deployed = value['deployed'];
+	const fleet = value['fleet']; const workOrders = value['workOrders']; const savedInventory = value['inventory'];
+	const inventory = isObject(savedInventory) ? { ...Object.fromEntries(WEAPONS.filter(function (weapon) { return weapon.id.endsWith('-4') || weapon.id.endsWith('-6'); }).map(function (weapon) { return [weapon.id, 0]; })), ...savedInventory } : savedInventory; const selectedFrame = value['selectedFrame']; const deployed = value['deployed'];
 	if (!Array.isArray(fleet) || fleet.length < 1 || fleet.length > FRAMES.length || !fleet.every(isOwnedMech)
 		|| !Array.isArray(workOrders) || workOrders.length > fleet.length || !workOrders.every(isWorkOrder)
 		|| !isInventory(inventory) || !isFrameId(selectedFrame) || deployed !== undefined && !isDeployment(deployed)) return undefined;
