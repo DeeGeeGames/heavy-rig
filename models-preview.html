@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Heavy Rig · Model motion study</title>
+	<style>
+		:root { color-scheme: dark; font-family: system-ui, sans-serif; color: #dce5df; background: #0d181d; }
+		* { box-sizing: border-box; }
+		body { margin: 0; }
+		main { max-width: 1100px; margin: 0 auto; }
+		header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px 18px; }
+		h1 { margin: 0; color: #d9b36e; font-size: 16px; font-weight: 650; letter-spacing: .08em; }
+		.stage { position: relative; background: #102027; border-radius: 8px; overflow: hidden; }
+		canvas { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: none; }
+		.readout { position: absolute; inset: 14px auto auto 16px; pointer-events: none; }
+		.readout strong { display: block; color: #e2ba7c; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+		.readout small { display: block; max-width: 240px; margin-top: 5px; color: #9eb4b3; font-size: 11px; line-height: 1.5; }
+		.drag-hint { position: absolute; bottom: 12px; right: 16px; color: #89a3a1; font-size: 10px; pointer-events: none; }
+		.controls { padding: 12px 16px 16px; }
+		.motion-bank, .secondary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+		.secondary { gap: 12px; margin-top: 12px; }
+		button, select { border: 1px solid #354a4e; background: #16282e; color: #c0cfcc; border-radius: 5px; min-height: 34px; padding: 7px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+		button:hover { background: #243b40; }
+		button[aria-pressed="true"] { background: #d5ae6b; border-color: #d5ae6b; color: #152328; }
+		label { display: flex; align-items: center; gap: 7px; color: #8fa6a5; font-size: 11px; }
+		input[type="range"] { width: 90px; accent-color: #d5ae6b; }
+		output { min-width: 28px; color: #bfceca; font-variant-numeric: tabular-nums; }
+		.note { margin: 12px 0 0; color: #839c9c; font-size: 11px; line-height: 1.5; }
+		#error { color: #f1bfa8; }
+		@media (max-width: 500px) { header { padding: 12px 10px; } h1 { font-size: 14px; } canvas { aspect-ratio: 1; } .controls { padding: 12px 8px; } .readout { top: 12px; left: 12px; } .readout small { max-width: 180px; font-size: 10px; } .secondary { gap: 9px; } button, select { padding: 7px 8px; } }
+		@media (max-height: 500px) and (min-width: 650px) { main { max-width: 840px; } header { padding: 8px 12px; } canvas { aspect-ratio: 3 / 1; } .controls { padding: 8px 12px; } .secondary { margin-top: 8px; } .note { margin-top: 8px; } }
+	</style>
+</head>
+<body>
+<main>
+	<header><h1>HEAVY RIG / MODEL STUDY</h1><label>Model <select id="model"><optgroup label="Company frames"><option value="warden">Warden 08</option><option value="kestrel">Kestrel 21</option><option value="maul">Maul 34</option><option value="longbow">Longbow 16</option><option value="morrow">Morrow 52</option></optgroup><optgroup label="Hostile frames"><option value="scout">Scout</option><option value="striker">Striker</option><option value="siege">Siege</option><option value="commander">Crown commander</option></optgroup></select></label></header>
+	<div class="stage" id="stage">
+		<canvas id="model-canvas"></canvas>
+		<div class="readout"><strong id="motion-name">Walk</strong><small id="motion-description">Planted feet, loaded suspension, and working pistons.</small></div>
+		<span class="drag-hint">Drag to orbit · Scroll to zoom</span>
+	</div>
+	<div class="controls">
+		<div class="motion-bank"><button data-motion="showcase" aria-pressed="true">Showcase</button><button data-motion="walk" aria-pressed="false">Walk</button><button data-motion="reverse" aria-pressed="false">Reverse</button><button data-motion="turn" aria-pressed="false">Turn</button><button data-motion="aim" aria-pressed="false">Aim</button><button data-motion="fire" aria-pressed="false">Fire</button><button data-motion="rest" aria-pressed="false">Rest</button></div>
+		<div class="secondary">
+			<button id="pause" aria-pressed="false">Pause</button>
+			<label>Playback <select id="playback"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select></label>
+			<label>Throttle <input id="throttle" type="range" min="25" max="100" value="65"><output id="throttle-value">65%</output></label>
+			<label>View <select id="view"><option value="three-quarter">Three quarter</option><option value="side">Side</option><option value="game">Game angle</option></select></label>
+			<button id="orbit" aria-pressed="false">Orbit camera</button>
+		</div>
+		<p class="note">All nine production models, using their own gait and proportions. Showcase cycles through walking, reversing, turning, aiming, and firing.</p>
+		<p id="error" hidden></p>
+	</div>
+</main>
+<script type="module" src="./src/models-study.ts"></script>
+</body>
+</html>

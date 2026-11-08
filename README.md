@@ -221,10 +221,18 @@ procedural terrain, layered frame geometry, lighting/shadows, planted-foot gait,
 artillery warnings, weapon trails, and pooled effects. Ship departments use
 DOM interfaces with responsive layouts and visible focus and selection states.
 
-The separate `warden-preview.html` motion study explores a shaped low-poly
-Warden using the existing gait, with walk, reverse, turn, aim, and recoil
-controls. `bun run build` also creates `dist/warden-study.html`, a standalone
-review file that opens offline. The study does not replace any gameplay frame.
+All five company frames and the scout, striker, siege, and Crown commander now
+use shaped low-poly armor, octagonal hardware, and articulated legs in gameplay.
+The title scene uses the same redesigned Warden. Existing frame proportions,
+gait rigs, and combat handling are preserved. Rigid surfaces use vertex colors and are combined
+per articulated assembly; weapon and cooling effects follow their posed anchors.
+
+`models-preview.html` presents all nine production models with walk, reverse,
+turn, independent aim, recoil, playback, and orbit controls. `bun run build` also
+creates `dist/models-study.html`, a standalone review file that opens offline.
+The original `warden-preview.html` and `dist/warden-study.html` remain available
+as the approved design reference. Crowd profiling and shared model resources
+remain tracked in [performance issue #10](https://github.com/DeeGeeGames/heavy-rig/issues/10).
 
 An original locally synthesized 96-BPM score changes its layers with combat
 intensity and uses quieter ship arrangements. Weapon, mechanical, damage,
