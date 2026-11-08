@@ -4,6 +4,7 @@ import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
 import { createMissionEnvironment } from './mission-environment';
 import type { MissionMap } from './campaign-types';
+import { createProjectileSmoke } from './projectile-smoke';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
 interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
@@ -12,6 +13,7 @@ interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefin
 // retain Three.js objects; pools shrink with live state, including on restart.
 export const createWorldObjects = function (scene: Scene) {
 	const root = new Group(); root.name = 'heavy-rig-world'; scene.add(root);
+	const projectileSmoke = createProjectileSmoke(); root.add(projectileSmoke.root);
 	const yard = new Group(); yard.name = 'legacy-terrain'; root.add(yard);
 	const environment = createEnvironment(); yard.add(environment.root);
 	let missionMap: MissionMap | undefined;
@@ -122,8 +124,8 @@ export const createWorldObjects = function (scene: Scene) {
 		bullet: { surface: glow('#fff3bd'), trail: glow('#f8dc87', 0.75), duration: 0.022, width: 0.8, length: 4, radius: 1.5 },
 		cannon: { surface: playerTrail, trail: glow('#eebf70', 0.85), duration: 0.05, width: 2.4, length: 8, radius: 3 },
 		ppc: { surface: glow('#e6e2ff'), trail: glow('#ae9aff', 0.62), duration: 0.09, width: 4, length: 11, radius: 6 },
-		missile: { surface: glow('#b7f4ec'), trail: glow('#91d9d0', 0.55), duration: 0.18, width: 1.5, length: 10, radius: 2.5 },
-		rocket: { surface: glow('#ffd3a3'), trail: glow('#e59c67', 0.6), duration: 0.16, width: 2, length: 12, radius: 2.5 },
+		missile: { surface: glow('#b7f4ec'), trail: playerTrail, duration: 0, width: 1.5, length: 10, radius: 2.5 },
+		rocket: { surface: glow('#ffd3a3'), trail: playerTrail, duration: 0, width: 2, length: 12, radius: 2.5 },
 		enemy: { surface: enemyTrail, trail: enemyTrail, duration: 0.04, width: 1, length: 4, radius: 2 },
 	};
 	const plasmaGlow = glow('#b196ff', 0.24);
@@ -217,6 +219,7 @@ export const createWorldObjects = function (scene: Scene) {
 				const unit = index === 0 ? state.player : state.enemies[index - 1]; if (!unit) return;
 				value.root.position.set(unit.x, 0.05, unit.y); value.root.scale.setScalar('kind' in unit ? mechScale(unit.kind) : 1);
 			});
+			const smokePositions = new Map<Shot, Vector3>();
 			sync(shots, state.shots.length, createShot, function (value, index) {
 				const shot = state.shots[index]; if (!shot) return; const style = shotStyle[shot.kind];
 				from.set(shot.x - shot.vx * style.duration, 42, shot.y - shot.vy * style.duration); to.set(shot.x, 42, shot.y);
@@ -246,7 +249,9 @@ export const createWorldObjects = function (scene: Scene) {
 				value.head.position.copy(to); value.head.rotation.y = -Math.atan2(shot.vy, shot.vx);
 				value.head.scale.set(style.length, style.radius, style.radius); segment(value.trail, style.width);
 				value.halo.visible = shot.kind === 'ppc'; value.halo.position.copy(to); value.halo.scale.setScalar(12);
+				if (shot.kind === 'missile' || shot.kind === 'rocket') smokePositions.set(shot, to.clone());
 			});
+			projectileSmoke.update(state, smokePositions);
 			sync(effects, state.effects.length, createEffect, function (value, index) {
 				const effect = state.effects[index]; if (!effect) return; const progress = Math.max(0, 1 - effect.life * 2); const radius = Math.max(1, effect.size * progress) / Math.sqrt(1.5);
 				value.root.position.set(effect.x, 36, effect.y); value.halo.scale.setScalar(radius);
@@ -289,6 +294,7 @@ export const createWorldObjects = function (scene: Scene) {
 			for (const batch of relayBatches) batch.dispose();
 			missionEnvironment?.dispose();
 			environment.dispose();
+			projectileSmoke.dispose();
 			floor.dispose(); stains.dispose();
 			for (const value of geometries) value.dispose(); for (const value of materials) value.dispose();
 			root.removeFromParent(); root.clear();
