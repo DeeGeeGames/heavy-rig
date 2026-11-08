@@ -1,9 +1,13 @@
 import ECSpresso from 'ecspresso';
+import { html, render } from 'lit-html';
+import { createHangarPreview } from './hangar-preview';
+import { detectControllerFamily, controllerButtonLabel, renderControllerButton, renderGlyph, type ControllerFamily, type PromptDevice } from './input-prompts';
+import { refreshNavigationGlyphs, menuActionLabel } from './menu-prompts';
 import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
 import { createCombatRuntime } from './combat-runtime';
 import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-navigation';
 import { createRuntimeInput } from './runtime-input';
-import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, padLabel, validKey, type Action } from './bindings';
+import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey, type Action } from './bindings';
 import { getWeapon, WEAPON_FAMILY_LABELS } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getFrame } from './frames';
@@ -23,11 +27,11 @@ import { abandonContract, acceptContract, CAMPAIGN_STORAGE_KEY, getFaction, getP
 import { MISSION_NAMES, renderBridge } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
 import { missionObjective } from './missions';
-import { advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
-import { renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
+import { FRAME_PRICES, WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
+import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import type { Campaign } from './campaign';
 import { createTitleScene } from './title-scene';
-import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane } from './workspace';
+import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane, focusWorkspace, rememberWorkspaceFocus, moveWorkspaceFocus, cycleWorkspaceView } from './workspace';
 import { mountDialogLayout } from './dialog-layout';
 
 const element = function (id: string): HTMLElement {
@@ -122,6 +126,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let returnFocus: HTMLElement | undefined; let confirmedAction: (() => void) | undefined; let tipDismissed = false;
 	let inputMode: 'keyboard' | 'gamepad' | 'touch' = coarsePointer.matches ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
 	let currentPad: PadInput | undefined;
+	let controllerFamily: ControllerFamily = 'generic';
+	let lastMenuTarget: HTMLElement | undefined;
+	let hangar: { canvas: HTMLCanvasElement; view: ReturnType<typeof createHangarPreview> } | undefined;
+	onCleanup(function () { hangar?.view.dispose(); });
+	const promptDevice = function (): PromptDevice { return inputMode === 'gamepad' ? controllerFamily : inputMode; };
+	const hasRefitDraft = function () { const mech = getOwnedMech(campaign); return Boolean(mech && editor.loadout.some(function (weapon, index) { return weapon !== mech.loadout[index]; })); };
+	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
+	const companyNavigationReady = function () { return companyOpen() && !navigation.transitioning && editor.slot === null && !campaignConflict && !contextLost; };
 	let lastSoundState = '';
 	const resetInput = function () { keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const playing = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
@@ -130,20 +142,40 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false }); };
 	const unlockSound = function () { void audio.unlock(); };
 	const updateMenuHint = function () {
-		const onTitle = navigation.screen === 'title' && !navigation.auxiliary;
-		element('menu-input-hint').textContent = inputMode === 'gamepad' ? onTitle ? 'D-PAD / STICK SELECT · A / × CONFIRM' : 'D-PAD SELECT · A / × CONFIRM · B / ○ BACK' : inputMode === 'touch' ? onTitle ? 'TAP TO SELECT' : 'TAP TO SELECT · PREV / NEXT FOR PAGES' : onTitle ? '↑ / ↓ OR TAB SELECT · ENTER CONFIRM' : 'TAB SELECT · ENTER CONFIRM · ESC BACK';
+		const device = promptDevice();
+		refreshNavigationGlyphs(container, device);
+		for (const node of container.querySelectorAll<HTMLElement>('[data-controller-bindings]')) {
+			const names = node.dataset['controllerBindings']?.split(' ') ?? [];
+			const bindings = names.flatMap(function (name) {
+				switch (name) { case 'stop': case 'coolant': case 'mount-0': case 'mount-1': case 'mount-2': case 'mount-3': return [profile.settings.controller[name]]; default: return []; }
+			});
+			render(html`${bindings.map(function (index) { return renderControllerButton(controllerFamily, index); })}`, node);
+		}
+		for (const node of container.querySelectorAll<HTMLElement>('[data-controller-button]')) render(renderControllerButton(controllerFamily, Number(node.dataset['controllerButton'])), node);
+		const root = menu();
+		const focusedElement = document.activeElement;
+		if (root && focusedElement instanceof HTMLElement && root.contains(focusedElement) && focusedElement.matches('button, input, select, a')) lastMenuTarget = focusedElement;
+		const target = root && lastMenuTarget?.isConnected && root.contains(lastMenuTarget) && !lastMenuTarget.closest('[hidden], [inert]') && !lastMenuTarget.matches(':disabled') ? lastMenuTarget : undefined;
+		const onCompany = companyOpen();
+		const label = menuActionLabel(target);
+		render(html`
+			${device !== 'touch' ? html`<span class="menu-key">${renderGlyph(device, 'move')}<span class="key-label">Move</span></span>` : ''}
+			${target ? html`<button class="menu-key" @click=${function () { target.click(); }}>${renderGlyph(device, 'confirm')}<span class="key-label">${label}</span></button>` : ''}
+			${navigation.screen !== 'title' || navigation.auxiliary ? html`<button class="menu-key" @click=${back}>${renderGlyph(device, 'back')}<span class="key-label">${onCompany && editor.slot === null ? 'Title' : 'Back'}</span></button>` : ''}
+			${onCompany && editor.slot === null ? html`<button class="menu-key" @click=${function () { showAuxiliary('handbook'); }}>${renderGlyph(device, 'help')}<span class="key-label">Button guide</span></button>` : ''}
+			${onCompany && editor.slot === null && hasRefitDraft() ? html`<button class="menu-key" @click=${discardDraft}>${renderGlyph(device, 'discard')}<span class="key-label">Discard draft</span></button>` : ''}
+		`, element('menu-input-hint'));
 	};
 	const setInputMode = function (value: typeof inputMode) {
-		if (inputMode === value && container.dataset['input'] === value && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
-		inputMode = value; container.dataset['input'] = value;
+		if (inputMode === value && container.dataset['input'] === value && container.dataset['promptDevice'] === promptDevice() && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
+		inputMode = value; container.dataset['input'] = value; container.dataset['promptDevice'] = promptDevice();
 		container.classList.toggle('using-gamepad', value === 'gamepad');
 		container.classList.toggle('couch-ui', value === 'gamepad' || profile.settings.couchUI);
 		ui.inputMode.textContent = value === 'gamepad' ? 'GAMEPAD' : value === 'touch' ? 'TOUCH' : 'KB / MOUSE';
-		const prompts = [['#pause kbd', 'Esc', 'Menu'], ['#coolant kbd', 'V', 'B / ○']] as const;
-		for (const [selector, keyboard, gamepad] of prompts) {
-			const prompt = container.querySelector(selector); if (prompt) prompt.textContent = value === 'gamepad' ? gamepad : keyboard;
-		}
+		const pausePrompt = element('pause').querySelector('kbd');
+		if (pausePrompt) render(renderGlyph(promptDevice(), inputMode === 'keyboard' ? 'back' : 'settings'), pausePrompt);
 		element('weapon-hint').textContent = value === 'gamepad' ? 'HOLD TRIGGERS + BUMPERS' : value === 'touch' ? 'HOLD TOGETHER TO COMBINE' : 'HOLD MOUSE BUTTONS / 1–4';
+		for (const select of container.querySelectorAll<HTMLSelectElement>('#controller-mappings select')) for (const option of select.options) option.textContent = controllerButtonLabel(controllerFamily, Number(option.value));
 		updateMenuHint();
 		updateWorkspaceLayout(); updateDialogLayout();
 	};
@@ -191,8 +223,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!focus) return;
 		const root = menu();
 		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? element('handbook') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
-		(initial ?? canvas).focus({ preventScroll: true });
-		updateDialogLayout();
+		if (root?.classList.contains('workspace')) focusWorkspace(root);
+		else (initial ?? canvas).focus({ preventScroll: true });
+		updateMenuHint(); updateDialogLayout();
 	};
 	let stopped = false;
 	const transition = function (operation: Promise<void>, after: () => void = syncScreen) {
@@ -210,7 +243,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (next === campaign || !next.active || !next.deployed) return;
 		const mech = getOwnedMech(next);
 		if (!mech) return;
-		campaign = next; if (!persistCampaign()) return;
+		if (!replaceCampaign(next)) return;
 		presentation.resetZoom(); training = undefined;
 		state = combatRuntime.attach(createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: mech.frameId, loadout: mech.loadout, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges }));
 		gaits = createGaits(state); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer';
@@ -249,6 +282,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		});
 	};
 	const confirm = function (action: () => void, label: string, copy = 'The current operation will be lost. Your recorded results and settings will be kept.', title = 'ABANDON THIS RUN?') {
+		element('confirm-cancel').textContent = isShipScreen(navigation.screen) ? 'KEEP BROWSING' : 'CANCEL';
 		confirmedAction = action; element('confirm-action').textContent = label; element('confirm-copy').textContent = copy; element('confirm-title').textContent = title; showAuxiliary('confirm');
 	};
 	const stopForConflict = function () {
@@ -265,20 +299,28 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const checkpoint = function () {
 		if (training || !state.mission || !campaign.deployed) return;
 		const next = checkpointDeployment(campaign, state.player.hp, state.coolantCharges);
-		if (next !== campaign) { campaign = next; if (!persistCampaign()) return; }
+		if (next !== campaign) { if (!replaceCampaign(next)) return; }
 	};
 	const resetEditor = function (notice = '') {
 		editor = { loadout: [...(getOwnedMech(campaign)?.loadout ?? [])], slot: null, notice };
 	};
-	const updateCompany = function (next: Campaign, notice: string, nextScreen?: ShipScreen) {
-		if (next === campaign) return;
+	const replaceCampaign = function (next: Campaign): boolean {
 		const current = getOwnedMech(campaign); const upcoming = getOwnedMech(next);
 		const installedChanged = current?.frameId !== upcoming?.frameId || current?.loadout.some(function (weapon, index) { return weapon !== upcoming?.loadout[index]; });
-		campaign = next; if (!persistCampaign()) return;
-		if (installedChanged || nextScreen || navigation.screen === 'mechbay') resetEditor(notice);
+		campaign = next;
+		if (installedChanged) resetEditor();
+		return persistCampaign();
+	};
+	const updateCompany = function (next: Campaign, notice: string, nextScreen?: ShipScreen, clearDraft = false) {
+		if (next === campaign || !replaceCampaign(next)) return;
+		if (clearDraft) resetEditor(notice);
 		else editor = { ...editor, notice };
 		if (nextScreen && nextScreen !== 'bridge') { transition(navigation.setScreen(nextScreen), function () { refreshCompany(); syncScreen(); }); }
 		else refreshCompany();
+	};
+	const discardDraft = function () {
+		if (!hasRefitDraft()) return;
+		confirm(function () { resetEditor('Staged changes discarded.'); if (navigation.screen === 'bridge') refreshBridge(); else refreshCompany(); }, 'DISCARD DRAFT', 'Installed equipment stays unchanged. No work order is queued and no calendar time passes.', 'DISCARD REFIT DRAFT?');
 	};
 	const focusCompany = function (selector: string, fallback?: string) {
 		const target = element('mechbay').querySelector<HTMLElement>(selector) ?? (fallback ? element('mechbay').querySelector<HTMLElement>(fallback) : null);
@@ -290,7 +332,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const focusIndex = focusable(root).findIndex(function (item) { return item === previousFocus; });
 		renderCompany(root, campaign, navigation.screen, editor, campaignSaved, {
 			navigate: navigateShip,
-			selectFrame: function (id) { updateCompany(selectFrame(campaign, id), 'Frame selected.'); },
+			selectFrame: function (id) { const select = function () { updateCompany(selectFrame(campaign, id), 'Frame selected.'); }; if (hasRefitDraft() && id !== campaign.selectedFrame) confirm(select, 'DISCARD & SELECT FRAME', 'Changing frames discards this unqueued refit. Installed equipment is unchanged.', 'DISCARD REFIT DRAFT?'); else select(); },
 			editSlot: function (slot) {
 				if (!getHardpoints(campaign.selectedFrame)[slot]) return;
 				editor = { ...editor, slot }; refreshCompany(); focusCompany('.equipment-choice[aria-pressed="true"]:not(:disabled)', '.equipment-choice:not(:disabled)');
@@ -305,19 +347,19 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				focusCompany(`[data-loadout-slot="${slot}"]`);
 			},
 			closePicker: function () { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`, '[data-loadout-slot]'); },
-			discardRefit: function () { resetEditor('Staged changes discarded.'); refreshCompany(); },
-			queueRefit: function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout), 'Refit queued. Advance the calendar to finish installation.', 'engineering'); },
-			buyFrame: function (id) { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its standard weapon. Select it in the Mech Bay.`); },
-			buyWeapon: function (id) { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); },
-			repair: function (id) { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); },
-			cancelWork: function (id) { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); },
-			advanceDays: function (days) { updateCompany(advanceDays(campaign, days), `${days} calendar ${days === 1 ? 'day' : 'days'} elapsed. Due work orders are complete.`); },
+			discardRefit: discardDraft,
+			queueRefit: function () { const days = refitDays(getOwnedMech(campaign)?.loadout ?? [], editor.loadout); confirm(function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout), 'Refit queued. Advance the calendar to finish installation.', 'engineering', true); }, 'QUEUE REFIT', `${days} calendar days. Ready day ${campaign.day + days}. The frame cannot deploy until work finishes.`, 'QUEUE THIS REFIT?'); },
+			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its standard weapon. Select it in the Mech Bay.`); }, 'BUY FRAME', `${FRAME_PRICES[id].toLocaleString()} CR. Includes its signature weapon; arrives immediately.`, `BUY ${getFrame(id).name}?`); },
+			buyWeapon: function (id) { confirm(function () { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); }, 'BUY WEAPON', `${WEAPON_PRICES[id].toLocaleString()} CR. Delivered to stores. Installation requires a separate refit.`, `BUY ${getWeapon(id).name}?`); },
+			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${getFrame(id).name}?`); },
+			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${getFrame(id).name} WORK?`); },
+			advanceDays: function (days) { confirm(function () { updateCompany(advanceDays(campaign, days), `${days} calendar ${days === 1 ? 'day' : 'days'} elapsed. Due work orders are complete.`); }, `ADVANCE ${days} ${days === 1 ? 'DAY' : 'DAYS'}`, `Move from day ${campaign.day} to day ${campaign.day + days}. All work orders progress. No credit fee; contract postings remain unchanged.`, 'ADVANCE SHIP CALENDAR?'); },
 			deploy: function () {
 				const mech = getOwnedMech(campaign);
 				if (mech && editor.loadout.some(function (weapon, index) { return weapon !== mech.loadout[index]; })) {
 					editor = { ...editor, notice: 'Queue or discard your staged loadout before deployment.' }; refreshCompany(); return;
 				}
-				start();
+				confirm(start, 'DEPLOY FRAME', `${getFrame(campaign.selectedFrame).name} deploys with installed weapons and ${Math.ceil(mech?.integrity ?? 0)}% integrity. Damage persists between sorties.`, 'DEPLOY ON THIS CONTRACT?');
 			},
 			settings: function () { showAuxiliary('settings'); },
 			handbook: function () { showAuxiliary('handbook'); },
@@ -330,36 +372,41 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, {
 			navigate: navigateShip,
 			selectPlanet: function (id) { if (campaign.active) return; destination = id; selectedContract = undefined; refreshBridge(); },
-			selectContract: function (id) { selectedContract = id; refreshBridge(); selectWorkspacePane(element('bridge'), 'briefing', true); },
+			selectContract: function (id) { selectedContract = id; refreshBridge(); selectWorkspacePane(element('bridge'), 'briefing', true); const target = element('bridge').querySelector<HTMLElement>('[data-pane="briefing"] .pane-actions button:not(:disabled), [data-pane="briefing"] .paged-content'); target?.focus({ preventScroll: true }); },
 			travel: function () {
 				if (navigation.screen !== 'bridge' || navigation.auxiliary || contextLost) return;
-				const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, destination); if (next === campaign) return;
-				campaign = next; if (!persistCampaign()) return;
-				element('jump-destination').textContent = getPlanet(campaign.planetId).name.toUpperCase();
-				element('jump-copy').textContent = `${origin.name} → ${getPlanet(campaign.planetId).name} · DAY ${campaign.day} · APPROACHING ORBIT`;
-				jumpUntil = performance.now() + 2200; transition(navigation.setScreen('jump'), function () { syncScreen(); element('jump').focus({ preventScroll: true }); });
+				confirm(function () {
+					const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, destination); if (next === campaign) return;
+					if (!replaceCampaign(next)) return;
+					element('jump-destination').textContent = getPlanet(campaign.planetId).name.toUpperCase();
+					element('jump-copy').textContent = `${origin.name} → ${getPlanet(campaign.planetId).name} · DAY ${campaign.day} · APPROACHING ORBIT`;
+					jumpUntil = performance.now() + 2200; transition(navigation.setScreen('jump'), function () { syncScreen(); element('jump').focus({ preventScroll: true }); });
+				}, 'CONFIRM JUMP', `One calendar day · 0 CR. Arrive at ${getPlanet(destination).name} on day ${campaign.day + 1}. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
 			},
 			accept: function (contract) {
 				if (navigation.screen !== 'bridge' || navigation.auxiliary || destination !== campaign.planetId) return;
-				const next = acceptContract(campaign, contract.id); if (next === campaign) return;
-				campaign = next; if (!persistCampaign()) return; refreshBridge(); syncScreen();
-				selectWorkspacePane(element('bridge'), 'briefing'); element('bridge-deploy').focus({ preventScroll: true });
+				confirm(function () {
+					const next = acceptContract(campaign, contract.id); if (next === campaign) return;
+					if (!replaceCampaign(next)) return; refreshBridge(); syncScreen();
+					selectWorkspacePane(element('bridge'), 'briefing'); element('bridge-deploy').focus({ preventScroll: true });
+				}, 'ACCEPT CONTRACT', `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction.`, 'ACCEPT THIS CONTRACT?');
 			},
 			deploy: function () { navigateShip('mechbay'); },
-			abandon: function () { confirm(function () { campaign = abandonContract(campaign); persistCampaign(); toBridge(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains.', 'ABORT THIS CONTRACT?'); },
+			abandon: function () { confirm(function () { if (replaceCampaign(abandonContract(campaign))) toBridge(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains.', 'ABORT THIS CONTRACT?'); },
 			training: startTraining,
-			title: toTitle,
+			title: back,
 			settings: function () { showAuxiliary('settings'); },
 			handbook: function () { showAuxiliary('handbook'); },
 		});
 	};
 	const navigateShip = function (target: ShipScreen) {
-		if (campaignConflict) return;
+		if (campaignConflict || navigation.auxiliary || navigation.transitioning || editor.slot !== null) return;
+		if (isShipScreen(navigation.screen)) rememberWorkspaceFocus(element(navigation.screen));
 		training = undefined; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state);
 		editor = { ...editor, slot: null };
 		pointer = undefined; presentation.resetZoom(); audio.reset();
 		transition(navigation.setScreen(target), function () {
-			if (target === 'bridge') { destination = campaign.planetId; selectedContract = undefined; refreshBridge(); }
+			if (target === 'bridge') refreshBridge();
 			else refreshCompany();
 			syncScreen();
 		});
@@ -374,8 +421,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (navigation.auxiliary) { closeAuxiliary(); return; }
 		if (navigation.screen === 'mechbay' && editor.slot !== null) { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`); return; }
 		if (navigation.screen === 'training-result' && trainingOrigin === 'title') { toTitle(); return; }
-		if (navigation.screen === 'mechbay' || navigation.screen === 'market' || navigation.screen === 'engineering' || navigation.screen === 'training-result') { toBridge(); return; }
-		if (navigation.screen === 'bridge') { toTitle(); return; }
+		if (isShipScreen(navigation.screen)) { confirm(toTitle, 'RETURN TO TITLE', hasRefitDraft() ? 'Company progress is saved. Your unqueued refit draft is kept while this session remains open.' : 'Company progress is saved on this device.', 'RETURN TO TITLE?'); return; }
+		if (navigation.screen === 'training-result') { toBridge(); return; }
 		setPaused(navigation.screen === 'playing');
 	};
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
@@ -402,11 +449,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('pause', function () { setPaused(true); });
 	listen('reset', function () { if (training) confirm(startTraining, 'RESTART TRAINING'); });
 	listen('leave', function () {
-		if (state.mission && !training) confirm(function () { checkpoint(); campaign = abandonContract(campaign); persistCampaign(); toBridge(); }, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains. Recovery takes one day.', 'ABORT THIS CONTRACT?');
+		if (state.mission && !training) confirm(function () { checkpoint(); if (replaceCampaign(abandonContract(campaign))) toBridge(); }, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains. Recovery takes one day.', 'ABORT THIS CONTRACT?');
 		else confirm(trainingOrigin === 'title' ? toTitle : toBridge, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
 	});
 	listen('result-briefing', toBridge);
-	listen('confirm-action', function () { const action = confirmedAction; confirmedAction = undefined; action?.(); });
+	listen('confirm-action', function () {
+		const action = confirmedAction; confirmedAction = undefined;
+		transition(navigation.closeAuxiliary(), function () { syncScreen(false); action?.(); if (!navigation.transitioning) { const root = menu(); if (root?.classList.contains('workspace')) focusWorkspace(root); updateMenuHint(); } });
+	});
 	listen('confirm-cancel', closeAuxiliary);
 	listen('reload-company', function () { window.location.reload(); });
 	window.addEventListener('storage', function (event) {
@@ -435,12 +485,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	for (const action of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) {
 		const label = document.createElement('label'); label.textContent = `${LABELS[action]} `;
 		const select = document.createElement('select'); select.dataset['mapping'] = action;
-		for (let index = 1; index <= 17; index++) { if (index === 9) continue; const option = document.createElement('option'); option.value = String(index); option.textContent = padLabel(index); select.append(option); }
+		for (let index = 1; index <= 17; index++) { if (index === 9) continue; const option = document.createElement('option'); option.value = String(index); option.textContent = controllerButtonLabel(controllerFamily, index); select.append(option); }
 		select.value = String(profile.settings.controller[action]);
 		select.addEventListener('change', function () { const previous = profile.settings.controller[action]; const next = Number(select.value); for (const other of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) if (other !== action && profile.settings.controller[other] === next) profile.settings.controller[other] = previous; profile.settings.controller[action] = next; resetInput(); save(); syncControllerMappings(); }, listenerOptions);
 		label.append(select); element('controller-mappings').append(label);
 	}
-	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } };
+	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } updateMenuHint(); };
 	element('control-mode').addEventListener('change', function (event) {
 		const select = event.target; if (!(select instanceof HTMLSelectElement) || (select.value !== 'simulation' && select.value !== 'arcade')) return;
 		profile.settings.controlMode = select.value; capture = undefined; resetInput(); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; save(); renderMappings(); updateSettings();
@@ -472,7 +522,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (training || !state.mission) return;
 		checkpoint();
 		const report = getOperationReport(state); const won = state.outcome === 'won'; const contract = state.mission.contract;
-		campaign = settleContract(campaign, won); if (!persistCampaign()) return;
+		if (!replaceCampaign(settleContract(campaign, won))) return;
 		terminalUntil = now + 1600;
 		element('result-title').textContent = won ? 'CONTRACT COMPLETE.' : 'CONTRACT FAILED.';
 		element('result-copy').textContent = won ? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} has confirmed the objective and released payment.` : `The sortie was lost. Your frame was recovered with ${report.armor}% integrity. No payment or employer favor was earned. Repair it in Engineering before its next deployment.`;
@@ -487,6 +537,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
 		transition(navigation.setScreen('result'));
 	};
+	container.addEventListener('focusin', function (event) { if (event.target instanceof HTMLElement && !event.target.closest('.menu-controls')) updateMenuHint(); }, listenerOptions);
+	container.addEventListener('workspacechange', updateMenuHint, listenerOptions);
 	const rigCode = ['ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
 	let rigCodeInput: string[] = [];
 	window.addEventListener('keydown', function (event) {
@@ -504,6 +556,21 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		}
 		if (event.code === 'Escape') { event.preventDefault(); if (!event.repeat) back(); return; }
 		const root = menu();
+		if (root?.classList.contains('workspace') && companyOpen()) {
+			if (['KeyQ', 'KeyE', 'KeyZ', 'KeyC', 'KeyH', 'KeyX', 'F1'].includes(event.code)) {
+				event.preventDefault();
+				if (!event.repeat && companyNavigationReady() && isShipScreen(navigation.screen)) {
+					if (event.code === 'KeyQ' || event.code === 'KeyE') navigateShip(adjacentShipScreen(navigation.screen, event.code === 'KeyQ' ? -1 : 1));
+					else if (event.code === 'KeyZ' || event.code === 'KeyC') cycleWorkspaceView(root, event.code === 'KeyZ' ? -1 : 1);
+					else if (event.code === 'KeyH') showAuxiliary('handbook');
+					else if (event.code === 'F1') showAuxiliary('settings');
+					else if (event.code === 'KeyX' && hasRefitDraft()) discardDraft();
+				}
+				return;
+			}
+			const direction = event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down' : event.code === 'ArrowLeft' ? 'left' : event.code === 'ArrowRight' ? 'right' : undefined;
+			if (direction) { event.preventDefault(); moveWorkspaceFocus(root, direction); audio.cue('focus'); return; }
+		}
 		if (root && navigation.screen === 'title' && !navigation.auxiliary && (event.code === 'ArrowUp' || event.code === 'ArrowDown')) {
 			event.preventDefault(); const items = focusable(root); const index = items.findIndex(function (item) { return item === document.activeElement; });
 			items[(index + (event.code === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); audio.cue('focus'); return;
@@ -586,7 +653,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (state.mission) { ui.phase.textContent = state.mission.stage === 'extract' ? 'OBJECTIVE COMPLETE / EXTRACT' : MISSION_NAMES[state.mission.contract.kind].toUpperCase(); ui.status.textContent = missionObjective(state); }
 		element('training-guide').hidden = !training || navigation.screen !== 'playing';
 		if (training) {
-			const copy = trainingCopy(training, inputMode === 'gamepad', { ...profile.settings, controlMode: inputMode === 'touch' ? 'simulation' : profile.settings.controlMode });
+			const copy = trainingCopy(training, inputMode === 'gamepad', { ...profile.settings, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); }, controlMode: inputMode === 'touch' ? 'simulation' : profile.settings.controlMode });
 			container.dataset['trainingStage'] = training.stage;
 			ui.phase.textContent = `${getFrame(state.frame).name} QUALIFICATION`; ui.status.textContent = 'LOANED TRAINING FRAME · NO SCORED RECORD';
 			element('training-progress').textContent = `DRILL ${copy.progress}`;
@@ -613,12 +680,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			button.disabled = !mount || Boolean(training && training.stage !== 'combined' && index !== drillSlot);
 			const firing = Boolean(mount && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index]));
 			button.classList.toggle('empty', !mount); button.classList.toggle('firing', firing); button.classList.toggle('locked', p.overheated);
-			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${padLabel(profile.settings.controller[binding.action])}.` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. Equip compatible purchased weapons in the Mech Bay.`);
+			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${controllerButtonLabel(controllerFamily, profile.settings.controller[binding.action])}.` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. Equip compatible purchased weapons in the Mech Bay.`);
 			const location = button.querySelector('.weapon-mount'); if (location) location.textContent = hardpoint.name;
 			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${weapon.type}` : ' · Empty'}`;
 			const title = button.querySelector('b'); if (title) title.textContent = mount && weapon ? weapon.name : 'EMPTY';
 			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}${mount ? ` · ${rankLabel(mount.level)}` : ''}`;
-			const prompt = button.querySelector('kbd'); if (prompt) prompt.textContent = inputMode === 'gamepad' ? padLabel(profile.settings.controller[binding.action]) : inputMode === 'touch' ? `HOLD ${index + 1}` : profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'UNBOUND';
+			const prompt = button.querySelector('kbd'); if (prompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[binding.action]) : html`${inputMode === 'touch' ? `HOLD ${index + 1}` : profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'UNBOUND'}`, prompt);
 			const label = button.querySelector('em'); if (label) label.textContent = `${family.toUpperCase()} · ${!mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : p.overheated ? 'HEAT LOCK' : firing ? 'FIRING' : mount.cooldown > 0 ? `${mount.cooldown.toFixed(1)}s` : 'READY'}`;
 			const fill = button.querySelector('i'); if (fill) fill.style.width = `${mount && weapon ? Math.max(0, 1 - mount.cooldown / Math.max(.01, weapon.interval)) * 100 : 0}%`;
 			button.style.setProperty('--weapon-color', weapon?.color ?? 'var(--muted)');
@@ -627,8 +694,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		ui.coolant.textContent = `${state.coolantCharges} ${state.coolantCharges === 1 ? 'CHARGE' : 'CHARGES'}`;
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE STICKS AND TRIGGERS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
 		ui.hint.hidden = tipDismissed || state.time > 35 || navigation.screen !== 'playing';
-		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) coolantPrompt.textContent = inputMode === 'gamepad' ? padLabel(profile.settings.controller.coolant) : profile.settings.keyboard.coolant.map(keyLabel).join(' / ') || 'UNBOUND';
-		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${padLabel(profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${padLabel(profile.settings.controller.stop)} stops.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Tap the field to aim. Hold + to move; STOP sets neutral. Hold a weapon to fire.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
+		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.coolant) : html`${profile.settings.keyboard.coolant.map(keyLabel).join(' / ') || 'UNBOUND'}`, coolantPrompt);
+		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Tap the field to aim. Hold + to move; STOP sets neutral. Hold a weapon to fire.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
 		const soundState = audioState === 'unavailable' ? 'UNAVAILABLE' : needsGesture ? 'ENABLE SOUND' : muted ? 'SOUND OFF' : 'SOUND ON';
 		if (lastSoundState !== soundState) { lastSoundState = soundState; ui.sound.textContent = soundState; ui.sound.setAttribute('aria-label', needsGesture ? 'Click to enable audio' : audioState === 'unavailable' ? 'Retry audio' : muted ? 'Unmute sound' : 'Mute sound'); ui.sound.setAttribute('aria-pressed', String(muted)); }
@@ -655,25 +722,40 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!focused || document.hidden || contextLost) padInput.suspend();
 		const pad = padInput.read(pads, now, profile.settings.controller);
 		currentPad = pad;
-		if (pad.lost) { controllerLost = true; setPaused(true); }
+		if (pad.lost) { controllerLost = true; setInputMode(coarsePointer.matches ? 'touch' : 'keyboard'); setPaused(true); }
 		feedback.update(pads.find(function (candidate) { return candidate?.index === pad.index; }) ?? undefined, playing() && profile.settings.vibration && inputMode === 'gamepad');
 		if (pad.claimed) { controllerLost = false; audio.cue('confirm'); }
-		if (pad.activity && focused && !document.hidden) {
+		if (pad.promptActivity && focused && !document.hidden) {
+			controllerFamily = detectControllerFamily(pad.id ?? '');
 			if (profile.settings.controlMode === 'simulation' && pad.claimed) aimMode = 'gamepad';
 			setInputMode('gamepad');
 		}
 		container.dataset['controllerState'] = pad.connected ? 'connected' : controllerLost ? 'disconnected' : pad.available ? 'available' : 'none';
-		const controllerStatus = pad.connected ? 'CONTROLLER CONNECTED' : controllerLost ? 'CONTROLLER LOST · PRESS A / MENU TO RECONNECT, THEN RESUME' : pad.available ? 'PRESS A / MENU TO CONNECT CONTROLLER' : 'CONTROLLER OPTIONAL · CONNECT AND PRESS A / MENU';
+		const availablePad = pads.find(function (candidate) { return candidate?.connected && candidate.mapping === 'standard'; });
+		const availableFamily = detectControllerFamily(availablePad?.id ?? '');
+		const claimLabel = controllerButtonLabel(availableFamily, 0); const menuLabel = controllerButtonLabel(availableFamily, 9);
+		const controllerStatus = pad.connected ? 'CONTROLLER CONNECTED' : controllerLost ? `CONTROLLER LOST · ${claimLabel} / ${menuLabel} TO RECONNECT` : pad.available ? `PRESS ${claimLabel} / ${menuLabel} TO CONNECT` : 'CONTROLLER OPTIONAL';
 		if (element('controller-status').textContent !== controllerStatus) element('controller-status').textContent = controllerStatus;
-		if (pad.pause && focused && !document.hidden && !contextLost) { audio.cue('back'); if (navigation.auxiliary) closeAuxiliary(); else setPaused(navigation.screen === 'playing'); }
+		for (const status of container.querySelectorAll<HTMLElement>('.ship-controller-status')) {
+			status.hidden = pad.connected || !pad.available && !controllerLost;
+			if (status.textContent !== controllerStatus) status.textContent = controllerStatus;
+		}
+		if (pad.pause && focused && !document.hidden && !contextLost) { audio.cue('back'); if (navigation.auxiliary) closeAuxiliary(); else if (companyNavigationReady()) showAuxiliary('settings'); else setPaused(navigation.screen === 'playing'); }
 		const root = menu();
 		if (root && !navigation.transitioning && pad.connected && screenRevision === revisionAtFrame && focused && !document.hidden && !contextLost) {
+			if (companyNavigationReady() && isShipScreen(navigation.screen)) {
+				if (pad.department) { navigateShip(adjacentShipScreen(navigation.screen, pad.department)); return; }
+				if (pad.page) { cycleWorkspaceView(root, pad.page); padInput.requireNeutral(); return; }
+				if (pad.help) { showAuxiliary('handbook'); return; }
+				if (pad.discard && hasRefitDraft()) { discardDraft(); return; }
+			}
 			if (pad.navigate) {
 				const focusedElement = document.activeElement;
 				if (pad.adjust && focusedElement instanceof HTMLSelectElement) { focusedElement.selectedIndex = (focusedElement.selectedIndex + pad.adjust + focusedElement.options.length) % focusedElement.options.length; focusedElement.dispatchEvent(new Event('change', { bubbles: true }));
 				} else if (pad.adjust && focusedElement instanceof HTMLInputElement && focusedElement.type === 'range') {
 					focusedElement.value = String(Math.max(Number(focusedElement.min), Math.min(Number(focusedElement.max), Number(focusedElement.value) + pad.adjust * 5)));
 					focusedElement.dispatchEvent(new Event('input', { bubbles: true }));
+				} else if (root.classList.contains('workspace') && pad.direction) { moveWorkspaceFocus(root, pad.direction);
 				} else {
 					const items = focusable(root); const index = items.findIndex(function (item) { return item === focusedElement; });
 					const next = index < 0 ? (pad.navigate < 0 ? items.length - 1 : 0) : (index + pad.navigate + items.length) % items.length;
@@ -765,6 +847,19 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const now = frameTime;
 		audio.update(audioFrame(now));
 		if (navigation.screen === 'title' && !navigation.auxiliary && focused && !document.hidden) titleScene?.render(now);
+		if (navigation.screen === 'mechbay' && !navigation.auxiliary && focused && !document.hidden) {
+			const modelCanvas = element('mechbay').querySelector<HTMLCanvasElement>('[data-hangar-frame]');
+			if (modelCanvas && modelCanvas.clientWidth > 0 && modelCanvas.clientHeight > 0) {
+				if (hangar?.canvas !== modelCanvas) {
+					hangar?.view.dispose(); hangar = undefined;
+					if (modelCanvas.dataset['hangarFailed'] !== 'true') {
+						try { hangar = { canvas: modelCanvas, view: createHangarPreview(modelCanvas) }; }
+						catch (error: unknown) { modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Hangar preview unavailable', error); }
+					}
+				}
+				hangar?.view.setFrame(campaign.selectedFrame); hangar?.view.render();
+			}
+		}
 		if (battlefieldVisible()) presentation.drawOverlay();
 		if (now - lastHud > 80 || lastHud === 0) { updateHud(); lastHud = now; }
 	});
