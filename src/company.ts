@@ -1,5 +1,5 @@
 import { WEAPONS, type WeaponId } from './arsenal';
-import type { Campaign } from './campaign';
+import { MAX_CREDITS, type Campaign } from './campaign';
 import { FRAMES, getFrame, type FrameId } from './frames';
 import { createStarterLoadout, isFrameLoadout } from './hardpoints';
 
@@ -96,6 +96,9 @@ export const unlockAllRigs = function (campaign: Campaign): Campaign {
 			inventory: { ...company.inventory, [frame.starter]: Math.min(MAX_INVENTORY, company.inventory[frame.starter] + 1) },
 		};
 	}, campaign);
+};
+export const applyRigCheat = function (campaign: Campaign): Campaign {
+	return unlockAllRigs({ ...campaign, credits: Math.min(MAX_CREDITS, campaign.credits + 1_000_000) });
 };
 export const buyWeapon = function (campaign: Campaign, weapon: WeaponId): Campaign {
 	if (campaign.deployed || !isWeaponId(weapon) || campaign.credits < WEAPON_PRICES[weapon] || campaign.inventory[weapon] >= MAX_INVENTORY) return campaign;

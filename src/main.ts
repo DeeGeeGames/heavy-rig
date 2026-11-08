@@ -18,7 +18,7 @@ import { abandonContract, acceptContract, CAMPAIGN_STORAGE_KEY, getFaction, getP
 import { MISSION_NAMES, renderBridge } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
 import { missionObjective } from './missions';
-import { advanceDays, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, unlockAllRigs } from './company';
+import { advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
 import { renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import type { Campaign } from './campaign';
 import { createTitleScene } from './title-scene';
@@ -455,7 +455,7 @@ const shutdown = await mountGame('game', async function (container) {
 			rigCodeInput = [...rigCodeInput, event.code].slice(-rigCode.length);
 			if (rigCode.every(function (code, index) { return code === rigCodeInput[index]; })) {
 				rigCodeInput = [];
-				updateCompany(unlockAllRigs(campaign), 'Cheat enabled: all rigs unlocked.');
+				updateCompany(applyRigCheat(campaign), 'Cheat enabled: all rigs unlocked and 1,000,000 credits added.');
 			}
 		}
 		if (event.code === 'Escape') { event.preventDefault(); if (!event.repeat) back(); return; }

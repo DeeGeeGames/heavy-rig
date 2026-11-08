@@ -64,7 +64,7 @@ export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v3';
 const FACTION_IDS: readonly FactionId[] = ['freeholds', 'combine', 'accord'];
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance'];
 const MAX_COUNT = 1_000_000;
-const MAX_CREDITS = 1_000_000_000_000;
+export const MAX_CREDITS = 1_000_000_000_000;
 const isInteger = function (value: unknown, min: number, max: number): value is number {
 	return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
 };
