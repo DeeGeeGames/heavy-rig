@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createMount, WEAPONS } from '../src/arsenal';
 import type { Contract, MissionKind } from '../src/campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, generateMissionMap, missionHostileCount } from '../src/missions';
-import { ARENA, createMissionState, distance, step, type Controls, type State } from '../src/simulation';
+import { ARENA, createState, createMissionState, distance, step, type Controls, type State } from '../src/simulation';
 
 const contract = function (kind: MissionKind, seed = 123): Contract {
 	return { id: `test-${kind}-${seed}`, seed, planetId: 'meridian', kind, employer: 'freeholds', opponent: 'combine', title: 'Field test', briefing: 'Complete the objective and extract.', reward: 1000, favor: 8, hostility: 5, tier: 1, requiredReputation: 0 };
@@ -91,7 +91,8 @@ describe('Heavy Rig surface contracts', function () {
 
 	test('every weapon family can damage a facility and guidance locks to its target identity', function () {
 		for (const weapon of WEAPONS) {
-			const state = createMissionState(contract('demolition')); const mission = missionOf(state); const structure = mission.structure;
+			const frame = createState({ starter: weapon.id }).frame;
+			const state = createMissionState(contract('demolition'), { frame }); const mission = missionOf(state); const structure = mission.structure;
 			if (!structure) throw new Error('Missing facility');
 			state.enemies = []; state.loadout = [createMount(weapon.id)];
 			state.player.x = structure.x - 300; state.player.y = structure.y; state.player.angle = 0; state.player.turret = 0;

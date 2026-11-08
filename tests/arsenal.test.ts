@@ -14,18 +14,18 @@ const advance = function (state: State, seconds: number, input = idle) { for (le
 
 describe('Heavy Rig arsenal', function () {
 	test('deployment preserves empty mount positions, damage and supplies without mutating the saved loadout', function () {
-		const loadout = ['autocannon', null, 'ppc', null] as const;
-		const state = createMissionState(contract, { frame: 'kestrel', loadout, integrity: 46.5, coolantCharges: 1 });
+		const loadout = ['autocannon', null, 'stream-rockets', null] as const;
+		const state = createMissionState(contract, { frame: 'warden', loadout, integrity: 46.5, coolantCharges: 1 });
 		state.spawnIn = 3600;
 		expect(state.player.hp).toBe(46.5); expect(state.coolantCharges).toBe(1);
-		expect(state.loadout.map(function (mount) { return [mount.weapon, mount.slot]; })).toEqual([['autocannon', 0], ['ppc', 2]]);
+		expect(state.loadout.map(function (mount) { return [mount.weapon, mount.slot]; })).toEqual([['autocannon', 0], ['stream-rockets', 2]]);
 		step(state, { ...idle, fire: [false, true, false, true] }, 1 / 60);
 		expect(state.shots).toHaveLength(0);
 		step(state, { ...idle, fire: [false, false, true, false] }, 1 / 60);
-		expect(state.shots.map(function (shot) { return shot.kind; })).toEqual(['ppc']);
+		expect(state.shots.map(function (shot) { return shot.kind; })).toEqual(['rocket']);
 		expect(state.loadout[0]?.cooldown).toBe(0);
-		expect(loadout).toEqual(['autocannon', null, 'ppc', null]);
-		expect(createMissionState(contract, { loadout: [null, null, null, null] }).loadout).toHaveLength(0);
+		expect(loadout).toEqual(['autocannon', null, 'stream-rockets', null]);
+		expect(createMissionState(contract, { loadout: [null, null] }).loadout).toHaveLength(0);
 	});
 
 	test('deployment bounds integrity and supplies and never revives a destroyed frame', function () {
@@ -56,10 +56,10 @@ describe('Heavy Rig arsenal', function () {
 
 	test('four slots fire concurrently, keep separate cooldowns, and respect the shared heat lock', function () {
 		const state = createState(); state.spawnIn = 3600;
-		state.loadout = [createMount('laser'), createMount('autocannon'), createMount('machine-gun'), createMount('stream-rockets')];
+		state.loadout = [createMount('autocannon'), createMount('machine-gun'), createMount('stream-missiles'), createMount('stream-rockets')];
 		target(state, 900, 600);
 		step(state, { ...idle, fire: [true, true, true, true] }, 1 / 60);
-		expect(state.beam).toBeDefined(); expect(state.shots.map(function (shot) { return shot.kind; }).sort()).toEqual(['bullet', 'cannon', 'rocket']);
+		expect(state.shots.map(function (shot) { return shot.kind; }).sort()).toEqual(['bullet', 'cannon', 'missile', 'rocket']);
 		expect(state.loadout.every(function (mount) { return mount.firing; })).toBe(true);
 		const fired = state.stats.shotsFired;
 		advance(state, 0.2, { ...idle, fire: [false, true, true, true] });
@@ -73,7 +73,7 @@ describe('Heavy Rig arsenal', function () {
 	});
 
 	test('missiles steer toward the aimed target while rockets retain their launch heading', function () {
-		const state = createState(); state.spawnIn = 3600;
+		const state = createState({ frame: 'maul' }); state.spawnIn = 3600;
 		state.loadout = [createMount('stream-missiles'), createMount('stream-rockets')];
 		const enemy = target(state, 1050, 580);
 		step(state, { ...idle, aim: enemy, fire: [true, true, false, false] }, 1 / 60);
@@ -118,4 +118,16 @@ describe('Heavy Rig arsenal', function () {
 		step(state, idle, 1 / 60);
 		expect(state.kills).toBe(2); expect(state.outcome).toBe('lost'); expect(state.phase).toBe('combat');
 	});
+});
+
+test('deployment and combat reject incompatible weapons and nonexistent chassis slots', function () {
+	expect(function () { createMissionState(contract, { frame: 'kestrel', loadout: ['autocannon', null] }); }).toThrow(RangeError);
+	expect(function () { createMissionState(contract, { frame: 'longbow', loadout: ['ppc', null] }); }).toThrow(RangeError);
+	expect(function () { createState({ frame: 'maul', starter: 'machine-gun' }); }).toThrow(RangeError);
+	const state = createState({ frame: 'warden' }); state.spawnIn = 3600;
+	state.loadout = [createMount('laser'), createMount('machine-gun'), createMount('autocannon'), { ...createMount('stream-rockets'), slot: 5 }, { ...createMount('machine-gun'), slot: 1 }];
+	step(state, { ...idle, fire: [true, true, true, true] }, 1 / 60);
+	expect(state.beam).toBeUndefined();
+	expect(state.shots.map(function (shot) { return shot.kind; })).toEqual(['bullet']);
+	expect(state.loadout.map(function (mount) { return mount.firing; })).toEqual([false, true, false, false, false]);
 });

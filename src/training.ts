@@ -19,7 +19,7 @@ export interface Training {
 // the operation. It never owns or writes the player's profile.
 export const createTraining = function (): Training {
 	const state = createState({ difficulty: 'story' });
-	state.loadout = [createMount('autocannon'), createMount('laser'), createMount('cluster-missiles'), createMount('machine-gun')];
+	state.loadout = (['autocannon', 'machine-gun', 'cluster-missiles', 'stream-rockets'] as const).map(function (weapon, slot) { return { ...createMount(weapon), slot }; });
 	state.spawnIn = 3600;
 	return { state, stage: 'drive', distance: 0, turn: 0, combinedTime: 0, startedAt: 0, strikeOrigin: undefined, strikeIssued: false };
 };
@@ -36,7 +36,12 @@ const advance = function (training: Training, stage: TrainingStage) {
 	training.startedAt = training.state.time;
 	if (stage === 'cannon' || stage === 'missiles' || stage === 'combined') placeTarget(training.state);
 	if (stage === 'combined') { training.state.player.heat = 0; training.state.player.overheated = false; }
-	if (stage === 'heat') { training.state.enemies = []; training.state.player.heat = 0; }
+	if (stage === 'heat') {
+		training.state.frame = 'longbow';
+		training.state.loadout = [{ ...createMount('laser'), slot: 0 }];
+		training.state.enemies = []; training.state.shots = []; training.state.player.heat = 0;
+		training.state.player.overheated = false;
+	}
 	if (stage === 'coolant') training.state.coolantCharges = 3;
 	if (stage === 'evade') {
 		// Start the committed-strike exercise with clear runway in every direction.
@@ -55,7 +60,7 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 	const before = { x: state.player.x, y: state.player.y, angle: state.player.angle, hits: state.stats.shotsHit };
 	state.spawnIn = 3600;
 	if (training.stage === 'coolant') state.player.heat = Math.max(45, state.player.heat);
-	step(state, { ...controls, fire: training.stage === 'combined' ? controls.fire : [training.stage === 'cannon' && controls.fire[0], training.stage === 'heat' && controls.fire[1], training.stage === 'missiles' && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant }, dt);
+	step(state, { ...controls, fire: training.stage === 'combined' ? controls.fire : [(training.stage === 'cannon' || training.stage === 'heat') && controls.fire[0], false, training.stage === 'missiles' && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant }, dt);
 	// A missed drill is a retry, never a defeat or scored kill.
 	state.player.hp = 100; state.relay = 100;
 	training.distance += distance(before, state.player);
@@ -91,16 +96,16 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
 	const key = function (action: keyof KeyboardBindings) { return mappings.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
 	const controls = controller
-		? { drive: 'Push the left stick up', stop: `Hold ${padLabel(mappings.controller.stop)}`, steer: 'Move the left stick left or right', aim: 'Aim with the right stick', cannon: padLabel(mappings.controller['mount-0']), missile: padLabel(mappings.controller['mount-2']), laser: padLabel(mappings.controller['mount-1']), coolant: padLabel(mappings.controller.coolant) }
-		: { drive: `Hold ${key('forward')} or +`, stop: `Hold ${key('stop')} or STOP`, steer: `Hold ${key('left')} / ${key('right')} or a turn arrow`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-1'), coolant: key('coolant') };
+		? { drive: 'Push the left stick up', stop: `Hold ${padLabel(mappings.controller.stop)}`, steer: 'Move the left stick left or right', aim: 'Aim with the right stick', cannon: padLabel(mappings.controller['mount-0']), missile: padLabel(mappings.controller['mount-2']), laser: padLabel(mappings.controller['mount-0']), coolant: padLabel(mappings.controller.coolant) }
+		: { drive: `Hold ${key('forward')} or +`, stop: `Hold ${key('stop')} or STOP`, steer: `Hold ${key('left')} / ${key('right')} or a turn arrow`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-0'), coolant: key('coolant') };
 	const copy: Record<TrainingStage, [string, string]> = {
 		drive: ['SET THE FRAME IN MOTION', `${controls.drive} to raise throttle. Release it to cruise. Travel 100 meters.`],
 		neutral: ['BRING IT TO NEUTRAL', `${controls.stop} until the frame settles. Neutral cuts engine demand; eighty tons still need time to stop.`],
 		steer: ['TURN THE HULL', `${controls.steer}. The hull and your turret turn independently.`],
 		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; fire ${controls.cannon}. The turret needs a moment to track your aim.`],
 		missiles: ['GUIDED FIRE', `${controls.aim}; fire ${controls.missile}. Trident follows a locked target.`],
-		combined: ['COMBINE YOUR FIRE', 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. All four mounts share reactor heat.'],
-		heat: ['FEEL THE REACTOR', `Hold ${controls.laser} to build heat to 45%. Every weapon heats the same reactor.`],
+		combined: ['COMBINE YOUR FIRE', 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. Warden has two ballistic guns and two launcher pods; all share reactor heat.'],
+		heat: ['FEEL THE REACTOR', `Switched to Longbow: its energy hardpoint carries ARC. Hold ${controls.laser} to build heat to 45%. Every weapon heats the reactor.`],
 		coolant: ['VENT THE HEAT', `Press ${controls.coolant}. One charge purges 55 heat. At 100% heat, weapons lock until the reactor cools.`],
 		evade: ['CLEAR THE IMPACT ZONE', `Frame reset to the practice lane. ${controls.drive} when the orange circle appears. Leave it before impact; the strike stays where marked.`],
 		complete: ['FRAME QUALIFICATION COMPLETE', 'You are ready for the operation. Flank armored siege frames and strike while they recover from a barrage.'],

@@ -181,3 +181,7 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 	.workspace .work-order-heading>div { display: flex; align-items: baseline; gap: 10px; }
 	.workspace .work-order-dates { margin: 5px 0; }
 }
+
+.workspace .company-mount .hardpoint-location { color: var(--cyan); text-transform: uppercase; }
+.workspace .equipment-choice>span { display: grid; gap: 4px; min-width: 0; }
+.workspace .equipment-choice>small { text-align: right; align-self: center; }
