@@ -212,3 +212,15 @@ test('rig cheat adds credits on every entry while preserving deployment and vali
 	expect(capped.credits).toBe(1_000_000_000_000);
 	expect(roundTrip(capped)).toEqual(capped);
 });
+
+test('older launcher inventories migrate without losing ownership and reject invalid new counts', function () {
+	const company = buyWeapon(buyFrame(funded(), 'maul'), 'cluster-rockets-6');
+	const inventory = Object.fromEntries(Object.entries(company.inventory).filter(function ([id]) { return !id.endsWith('-4') && !id.endsWith('-6'); }));
+	const migrated = parseCampaign(JSON.stringify({ ...company, inventory }));
+	expect(migrated?.fleet).toEqual(company.fleet);
+	expect(migrated?.credits).toBe(company.credits);
+	expect(migrated?.inventory['cluster-rockets']).toBe(1);
+	expect(migrated?.inventory['cluster-rockets-6']).toBe(0);
+	expect(parseCampaign(JSON.stringify({ ...company, inventory: { ...inventory, 'cluster-rockets-6': -1 } })).inventory).toEqual(createCampaign().inventory);
+	expect(roundTrip(company)).toEqual(company);
+});

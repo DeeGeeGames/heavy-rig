@@ -1,4 +1,4 @@
-import { getWeapon, type WeaponFamily, type WeaponId } from './arsenal';
+import { WEAPONS, getWeapon, type WeaponFamily, type WeaponId } from './arsenal';
 import { getFrame, type FrameId } from './frames';
 import type { EnemyKind } from './simulation';
 
@@ -10,7 +10,7 @@ export interface Hardpoint {
 }
 
 const BALLISTIC: readonly WeaponId[] = ['machine-gun', 'autocannon'];
-const LAUNCHERS: readonly WeaponId[] = ['stream-missiles', 'cluster-missiles', 'stream-rockets', 'cluster-rockets'];
+const LAUNCHERS: readonly WeaponId[] = WEAPONS.filter(function (weapon) { return weapon.family === 'launcher'; }).map(function (weapon) { return weapon.id; });
 const gun = function (side: 'left' | 'right', light = false): Hardpoint {
 	return { id: `${side}-gun`, name: `${side === 'left' ? 'Left' : 'Right'} gun`, family: 'ballistic', weapons: light ? ['machine-gun'] : BALLISTIC };
 };
