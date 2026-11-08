@@ -46,7 +46,7 @@ export interface CampaignResult {
 }
 
 export interface Campaign extends CompanyState {
-	version: 2;
+	version: 3;
 	seed: number;
 	planetId: PlanetId;
 	day: number;
@@ -60,7 +60,7 @@ export interface Campaign extends CompanyState {
 	lastResult: CampaignResult | undefined;
 }
 
-export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v2';
+export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v3';
 const FACTION_IDS: readonly FactionId[] = ['freeholds', 'combine', 'accord'];
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance'];
 const MAX_COUNT = 1_000_000;
@@ -80,7 +80,7 @@ const freshSeed = function () {
 
 export const createCampaign = function (seed?: number): Campaign {
 	return {
-		...createCompany(), version: 2, seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
+		...createCompany(), version: 3, seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
 		credits: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 	};
 };
@@ -194,7 +194,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 	if (!raw) return createCampaign();
 	try {
 		const value: unknown = JSON.parse(raw);
-		if (!object(value) || value['version'] !== 2 || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
+		if (!object(value) || value['version'] !== 3 || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > value['boardRevision'] || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
@@ -202,7 +202,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
 		const campaign: Campaign = {
-			...company, version: 2, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
+			...company, version: 3, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 		};

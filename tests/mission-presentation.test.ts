@@ -52,7 +52,7 @@ test('mission rendering follows facility destruction and extraction, reuses a li
 });
 
 test('mission navigation follows the remaining objective and missile feedback accounts for a facility stealing the lock', function () {
-	const state = createMissionState(contract); const mission = state.mission;
+	const state = createMissionState(contract, { frame: 'morrow' }); const mission = state.mission;
 	if (!mission?.structure) throw new Error('Missing demolition mission');
 	const facility = mission.structure;
 	state.player.x = facility.x; state.player.y = facility.y + 300; state.loadout = [createMount('stream-missiles')];

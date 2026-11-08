@@ -1,5 +1,6 @@
 import { createMount, getWeapon, weaponDamage, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
-import { getFrame, type FrameId } from './frames';
+import { FRAMES, getFrame, type FrameId } from './frames';
+import { canEquipWeapon, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, FACILITY_TARGET_ID, generateMissionMap, missionHostileCount, missionSpawn } from './missions';
@@ -8,11 +9,11 @@ export interface Point { x: number; y: number }
 export type EnemyKind = 'scout' | 'striker' | 'siege';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
-export interface Unit extends Point { id: number; hp: number; maxHp: number; angle: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean }
-export interface Shot extends Point { vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[] }
+export interface Unit extends Point { id: number; hp: number; maxHp: number; angle: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number }
+export interface Shot extends Point { vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[]; weapon?: WeaponId; slot?: number; owner?: number; enemyTarget?: 'player' | 'relay' }
 export interface Effect extends Point { life: number; size: number; color: string; source?: 'muzzle' }
 export interface Warning extends Point { kind: EnemyKind; life: number; commander?: boolean }
-export interface ArtilleryStrike extends Point { id: number; life: number; duration: number; radius: number; damage: number }
+export interface ArtilleryStrike extends Point { id: number; life: number; duration: number; radius: number; damage: number; weapon?: WeaponId; slot?: number; owner?: number }
 export interface CombatStats { damageDealt: number; damageTaken: number; relayDamage: number; shotsFired: number; shotsHit: number; overheats: number; killScore: number; commanderDestroyed: boolean }
 export interface Wreck extends Point { kind: EnemyKind; angle: number }
 export interface Controls { drive: number; stop: boolean; turn: number; aim: Point; fire: FireInputs; coolant: boolean }
@@ -41,9 +42,10 @@ export interface MissionDeployment {
 }
 export const createMissionState = function (contract: Contract, options: MissionDeployment = {}): State {
 	const state = createState({ ...options, frame: options.frame ?? 'kestrel', seed: contract.seed });
-	if (options.loadout !== undefined) state.loadout = options.loadout.slice(0, 4).flatMap(function (weapon, slot) {
-		return weapon === null ? [] : [{ ...createMount(weapon), slot }];
-	});
+	if (options.loadout !== undefined) {
+		if (!isFrameLoadout(state.frame, options.loadout)) throw new RangeError(`Invalid loadout for ${state.frame}`);
+		state.loadout = options.loadout.flatMap(function (weapon, slot) { return weapon === null ? [] : [{ ...createMount(weapon), slot }]; });
+	}
 	state.player.hp = options.integrity === undefined ? 100 : Number.isFinite(options.integrity) ? Math.max(0, Math.min(100, options.integrity)) : 0;
 	if (state.player.hp === 0) state.outcome = 'lost';
 	state.coolantCharges = options.coolantCharges === undefined ? 2 : Number.isFinite(options.coolantCharges) ? Math.max(0, Math.min(3, Math.floor(options.coolantCharges))) : 0;
@@ -75,7 +77,7 @@ const relayPosition = function (state: State): Point | undefined {
 const createEnemy = function (state: State, spawn: Point & { kind: EnemyKind; commander?: boolean }): Unit {
 	const hp = Math.round((spawn.commander ? 1680 : ENEMY_STATS[spawn.kind].hp) * getDifficultyDefinition(state.difficulty).enemyArmor);
 	const target = relayPosition(state) ?? state.player;
-	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege', kind: spawn.kind, ...(spawn.commander ? { commander: true } : {}) };
+	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege', kind: spawn.kind, loadout: createEnemyLoadout(spawn.kind, spawn.commander), ...(spawn.commander ? { commander: true } : {}) };
 };
 type CombatTarget = { id: number; kind: 'enemy'; body: Unit; radius: number } | { id: number; kind: 'structure'; body: NonNullable<MissionRuntime['structure']>; radius: number };
 const combatTargets = function (state: State): CombatTarget[] {
@@ -87,9 +89,13 @@ export const distance = function (a: Point, b: Point) { return Math.hypot(a.x - 
 export const angleDelta = function (from: number, to: number) { return Math.atan2(Math.sin(to - from), Math.cos(to - from)); };
 const clamp = function (value: number, min: number, max: number) { return Math.max(min, Math.min(max, value)); };
 export const createState = function (options: { difficulty?: Difficulty; frame?: FrameId; starter?: WeaponId; seed?: number } = {}): State {
-	const frame = getFrame(options.frame ?? 'warden');
+	const inferred = options.starter ? FRAMES.find(function (candidate) { return canEquipWeapon(candidate.id, 0, options.starter ?? candidate.starter); })?.id : undefined;
+	const frame = getFrame(options.frame ?? inferred ?? 'warden');
+	const starter = options.starter ?? frame.starter;
+	const slot = getHardpoints(frame.id).findIndex(function (_hardpoint, index) { return canEquipWeapon(frame.id, index, starter); });
+	if (slot < 0) throw new RangeError(`${starter} cannot equip to ${frame.id}`);
 	return {
-		frame: frame.id, difficulty: options.difficulty ?? 'standard', phase: 'combat', loadout: [createMount(options.starter ?? frame.starter)], seed: options.seed ?? 1, strikes: [],
+		frame: frame.id, difficulty: options.difficulty ?? 'standard', phase: 'combat', loadout: [{ ...createMount(starter), slot }], seed: options.seed ?? 1, strikes: [],
 		stats: { damageDealt: 0, damageTaken: 0, relayDamage: 0, shotsFired: 0, shotsHit: 0, overheats: 0, killScore: 0, commanderDestroyed: false },
 		player: { x: 900, y: 780, angle: -Math.PI / 2, turret: -Math.PI / 2, throttle: 0, speed: 0, hp: 100, heat: 0, overheated: false },
 		relay: 100, enemies: [], shots: [], effects: [], wave: 1, spawned: 0, spawnIn: 4, intermission: 0,
@@ -98,8 +104,26 @@ export const createState = function (options: { difficulty?: Difficulty; frame?:
 	};
 };
 const burst = function (state: State, at: Point, size: number, color: string, source?: 'muzzle') { state.effects.push({ x: at.x, y: at.y, size, color, life: 0.5, ...(source ? { source } : {}) }); };
-const launchEnemy = function (state: State, origin: Point, angle: number, damage: number) {
-	state.shots.push({ x: origin.x + Math.cos(angle) * 30, y: origin.y + Math.sin(angle) * 30, vx: Math.cos(angle) * 230, vy: Math.sin(angle) * 230, life: 2.5, kind: 'enemy', target: undefined, damage });
+export const createEnemyLoadout = function (kind: EnemyKind, commander = false): WeaponMount[] {
+	return getEnemyHardpoints(kind, commander).flatMap(function (hardpoint, slot) {
+		const weapon = hardpoint.family === 'launcher' ? 'stream-missiles' : hardpoint.weapons.includes('autocannon') ? 'autocannon' : 'machine-gun';
+		return hardpoint.weapons.includes(weapon) ? [{ ...createMount(weapon), slot }] : [];
+	});
+};
+const enemyMounts = function (enemy: Unit): WeaponMount[] {
+	const hardpoints = getEnemyHardpoints(enemy.kind, enemy.commander);
+	const seen = new Set<number>();
+	return (enemy.loadout ??= createEnemyLoadout(enemy.kind, enemy.commander)).filter(function (mount, index) {
+		const slot = mount.slot ?? index; const hardpoint = hardpoints[slot];
+		if (seen.has(slot) || hardpoint?.family !== getWeapon(mount.weapon).family || !hardpoint.weapons.includes(mount.weapon)) return false;
+		seen.add(slot); mount.slot = slot; return true;
+	});
+};
+const launchEnemy = function (state: State, enemy: Unit, mount: WeaponMount, target: Point, damage: number) {
+	const angle = enemy.angle;
+	state.shots.push({ x: enemy.x + Math.cos(angle) * 30, y: enemy.y + Math.sin(angle) * 30, vx: Math.cos(angle) * 230, vy: Math.sin(angle) * 230, life: 2.5, kind: 'enemy', target: undefined, damage,
+		weapon: mount.weapon, slot: mount.slot ?? 0, owner: enemy.id, ...(getWeapon(mount.weapon).kind === 'missile' ? { enemyTarget: target === state.player ? 'player' as const : 'relay' as const } : {}) });
+	mount.firing = true;
 };
 const launchWeapon = function (state: State, weapon: WeaponDefinition, mount: WeaponMount, angle: number, target?: number) {
 	if (weapon.kind === 'laser') return;
@@ -159,7 +183,7 @@ const hurtRelay = function (state: State, damage: number) {
 	state.stats.relayDamage += Math.min(state.relay, damage);
 	state.relay = Math.max(0, state.relay - damage);
 };
-const commitBarrage = function (state: State, enemy: Unit, target: Point) {
+const commitBarrage = function (state: State, enemy: Unit, target: Point, mount: WeaponMount) {
 	const commander = Boolean(enemy.commander);
 	const enraged = getEnemyDefense(state, enemy).enraged;
 	const permissive = state.difficulty === 'story';
@@ -167,7 +191,7 @@ const commitBarrage = function (state: State, enemy: Unit, target: Point) {
 	const radius = commander ? 82 : 62;
 	const damage = (commander ? 16 : 10) * getDifficultyDefinition(state.difficulty).enemyDamage;
 	const addStrike = function (at: Point, delay: number, size = radius) {
-		state.strikes.push({ id: state.nextId++, x: at.x, y: at.y, life: delay, duration: delay, radius: size, damage });
+		state.strikes.push({ id: state.nextId++, x: at.x, y: at.y, life: delay, duration: delay, radius: size, damage, owner: enemy.id, slot: mount.slot ?? 4, weapon: mount.weapon });
 	};
 	// Every marker commits now. Neither movement nor destruction of the firing
 	// frame can move or erase incoming ordnance.
@@ -181,6 +205,7 @@ const commitBarrage = function (state: State, enemy: Unit, target: Point) {
 		}
 	}
 	enemy.attack = { phase: 'committed', remaining: duration + (pulses - 1) * 0.7, cycle: enraged ? 2 : 1 };
+	mount.firing = true;
 	state.events.push('artillery');
 };
 export interface OperationReport {
@@ -235,8 +260,12 @@ export const step = function (state: State, input: Controls, dt: number) {
 	const aimAngle = Math.atan2(input.aim.y - p.y, input.aim.x - p.x);
 	p.turret += clamp(angleDelta(p.turret, aimAngle), -dt * frame.turretRate, dt * frame.turretRate);
 	state.beam = undefined;
+	const firingSlots = new Set<number>();
 	if (!p.overheated) state.loadout.forEach(function (mount, index) {
-		if (!input.fire[mount.slot ?? index]) return;
+		const slot = mount.slot ?? index;
+		if (!canEquipWeapon(state.frame, slot, mount.weapon) || firingSlots.has(slot)) return;
+		firingSlots.add(slot);
+		if (!input.fire[slot]) return;
 		const weapon = getWeapon(mount.weapon);
 		if (weapon.kind === 'laser') {
 			const hit = combatTargets(state).map(function (target) {
@@ -284,6 +313,8 @@ export const step = function (state: State, input: Controls, dt: number) {
 	for (const enemy of state.enemies) {
 		if (enemy.hp <= 0) continue;
 		const stats = ENEMY_STATS[enemy.kind];
+		const mounts = enemyMounts(enemy);
+		for (const mount of enemy.loadout ?? []) mount.firing = false;
 		if (mission && !relay) {
 			if (distance(enemy, p) < Math.max(850, stats.aggro) || enemy.hp < enemy.maxHp) enemy.engaged = true;
 			if (!enemy.engaged) continue;
@@ -304,8 +335,13 @@ export const step = function (state: State, input: Controls, dt: number) {
 		enemy.cooldown -= dt;
 		if (enemy.cooldown <= 0 && distance(enemy, target) < range + 50 && Math.abs(angleDelta(enemy.angle, targetAngle)) < 0.3) {
 			if (enemy.kind === 'siege') {
-				commitBarrage(state, enemy, target);
-			} else launchEnemy(state, enemy, enemy.angle, stats.damage * difficulty.enemyDamage);
+				const artillery = mounts.find(function (mount) { return getEnemyHardpoints(enemy.kind, enemy.commander)[mount.slot ?? 0]?.id === 'dorsal-artillery'; });
+				if (artillery) commitBarrage(state, enemy, target, artillery);
+			} else {
+				const next = enemy.attackSlot ?? 0;
+				const mount = mounts[next % Math.max(1, mounts.length)];
+				if (mount) { launchEnemy(state, enemy, mount, target, stats.damage * difficulty.enemyDamage); enemy.attackSlot = next + 1; }
+			}
 			enemy.cooldown = stats.reload;
 		}
 	}
@@ -320,6 +356,15 @@ export const step = function (state: State, input: Controls, dt: number) {
 	for (const shot of state.shots) {
 		const travel = Math.min(dt, Math.max(0, shot.life));
 		shot.life -= dt;
+		if (shot.kind === 'enemy' && shot.enemyTarget) {
+			const target = shot.enemyTarget === 'player' ? p : relay;
+			if (target) {
+				const heading = Math.atan2(shot.vy, shot.vx);
+				const angle = heading + clamp(angleDelta(heading, Math.atan2(target.y - shot.y, target.x - shot.x)), -travel * 3, travel * 3);
+				const speed = Math.hypot(shot.vx, shot.vy);
+				shot.vx = Math.cos(angle) * speed; shot.vy = Math.sin(angle) * speed;
+			}
+		}
 		if (shot.kind === 'missile') {
 			const target = combatTargets(state).find(function (candidate) { return candidate.id === shot.target; })?.body;
 			if (target) {

@@ -8,7 +8,7 @@ const idle = function (training: Training): Controls {
 const advanceToEvasion = function (training: Training) {
 	for (let tick = 0; tick < 60 * 60 && training.stage !== 'evade'; tick++) {
 		const stage = training.stage;
-		stepTraining(training, { ...idle(training), drive: stage === 'drive' ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon', stage === 'heat' || stage === 'combined', stage === 'missiles', stage === 'combined'], coolant: stage === 'coolant' }, 1 / 60);
+		stepTraining(training, { ...idle(training), drive: stage === 'drive' ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon' || stage === 'heat', stage === 'combined', stage === 'missiles', stage === 'combined'], coolant: stage === 'coolant' }, 1 / 60);
 	}
 	expect(training.stage).toBe('evade');
 };
@@ -33,7 +33,7 @@ test('missing the artillery exercise retries safely and coolant instruction cann
 	const training = createTraining();
 	for (let tick = 0; tick < 3600 && training.stage !== 'coolant'; tick++) {
 		const stage = training.stage;
-		stepTraining(training, { ...idle(training), drive: stage === 'drive' ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon', stage === 'heat' || stage === 'combined', stage === 'missiles', stage === 'combined'] }, 1 / 60);
+		stepTraining(training, { ...idle(training), drive: stage === 'drive' ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon' || stage === 'heat', stage === 'combined', stage === 'missiles', stage === 'combined'] }, 1 / 60);
 	}
 	expect(training.stage).toBe('coolant');
 	for (let tick = 0; tick < 3600; tick++) stepTraining(training, idle(training), 1 / 60);
@@ -63,4 +63,18 @@ test('combined-fire drill rejects one mount and accepts two held mounts includin
 	expect(training.state.stats.shotsFired).toBeGreaterThan(0);
 	for (let tick = 0; tick < 49; tick++) stepTraining(training, { ...idle(training), fire: [false, true, false, true] }, 1 / 60);
 	expect(training.stage).toBe('heat');
+});
+
+test('training uses legal Warden equipment, then switches to the Longbow energy hardpoint for reactor instruction', function () {
+	const training: Training = { ...createTraining(), stage: 'combined' };
+	expect(training.state.frame).toBe('warden');
+	expect(training.state.loadout.map(function (mount) { return [mount.weapon, mount.slot]; })).toEqual([
+		['autocannon', 0], ['machine-gun', 1], ['cluster-missiles', 2], ['stream-rockets', 3],
+	]);
+	for (let tick = 0; tick < 49; tick++) stepTraining(training, { ...idle(training), fire: [false, true, false, true] }, 1 / 60);
+	expect(training.stage).toBe('heat');
+	expect(training.state.frame).toBe('longbow');
+	expect(training.state.loadout.map(function (mount) { return [mount.weapon, mount.slot]; })).toEqual([['laser', 0]]);
+	for (let tick = 0; tick < 360 && training.stage === 'heat'; tick++) stepTraining(training, { ...idle(training), fire: [true, false, false, false] }, 1 / 60);
+	expect(training.stage).toBe('coolant');
 });
