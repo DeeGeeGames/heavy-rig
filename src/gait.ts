@@ -23,6 +23,11 @@ interface Joint extends Point { z: number }
 const clamp = function (value: number, min: number, max: number) { return Math.max(min, Math.min(max, value)); };
 const mix = function (from: number, to: number, t: number) { return from + (to - from) * t; };
 const smooth = function (value: number) { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t); };
+const humanoidStancePitch = function (gait: WalkerGait, foot: Foot, size: number, rig: LegRig) {
+	const direction = clamp(-gait.motion.pitch / 0.02, -1, 1);
+	const trailing = ((gait.body.x - foot.x) * Math.cos(foot.angle) + (gait.body.y - foot.y) * Math.sin(foot.angle)) / size + rig.hipForward + 5;
+	return -direction * 0.16 * smooth((trailing * direction - 3) / 16);
+};
 const stancePitch = function (gait: WalkerGait, foot: Foot, size: number) {
 	const direction = clamp(-gait.motion.pitch / 0.02, -1, 1);
 	const trailing = ((gait.body.x - foot.x) * Math.cos(foot.angle) + (gait.body.y - foot.y) * Math.sin(foot.angle)) / size + 7;
@@ -94,7 +99,7 @@ export const advanceGait = function (gait: WalkerGait, actualBody: Body, dt: num
 		if (starting || needsStep(index)) {
 			const from = gait.feet[index]; const rest = restFoot(body, index, size, rig);
 			const direction = clamp(((rest.x - from.x) * Math.cos(from.angle) + (rest.y - from.y) * Math.sin(from.angle)) / (8 * size), -1, 1);
-			swing = { index, from, elapsed: 0, duration: settling ? 0.24 : clamp(26 * size * stepStride / speed, 0.12 * stride, 0.65 * stride), launchPitch: stancePitch(gait, from, size), direction };
+			swing = { index, from, elapsed: 0, duration: settling ? 0.24 : clamp(26 * size * stepStride / speed, 0.12 * stride, 0.65 * stride), launchPitch: humanoid ? humanoidStancePitch(gait, from, size, rig) : stancePitch(gait, from, size), direction };
 		}
 	}
 	if (!swing) return { ...gait, ...travel, body, motion: advanceBodyMotion(gait.motion, undefined, forwardSpeed, dt) };
@@ -124,7 +129,19 @@ export const advanceGait = function (gait: WalkerGait, actualBody: Body, dt: num
 // Keeping this derived from fixed-step state also freezes articulation on pause.
 export const footPose = function (gait: WalkerGait, index: FootIndex, size = 1, rig: LegRig = STANDARD_LEG_RIG, heel = -16): FootPose {
 	const foot = gait.feet[index];
-	if (rig.kneeDirection === 1) return { ...foot, pitch: 0, toePitch: 0 };
+	if (rig.kneeDirection === 1) {
+		const swing = gait.swing?.index === index ? gait.swing : undefined;
+		const progress = swing ? swing.elapsed / swing.duration : 0;
+		const direction = swing?.direction ?? clamp(-gait.motion.pitch / 0.02, -1, 1);
+		const pitch = swing
+			? (swing.launchPitch ?? 0) * (1 - smooth(progress / 0.3))
+				- direction * 0.17 * Math.sin(Math.PI * clamp(progress / 0.5, 0, 1))
+				+ direction * 0.14 * Math.sin(Math.PI * clamp((progress - 0.4) / 0.6, 0, 1))
+			: humanoidStancePitch(gait, foot, size, rig);
+		const pivot = pitch < 0 ? 26 : -16;
+		const forward = pivot * (1 - Math.cos(pitch)) * size;
+		return { ...foot, x: foot.x + Math.cos(foot.angle) * forward, y: foot.y + Math.sin(foot.angle) * forward, lift: foot.lift - pivot * Math.sin(pitch) * size, pitch, toePitch: 0 };
+	}
 	const swing = gait.swing?.index === index ? gait.swing : undefined;
 	const progress = swing ? swing.elapsed / swing.duration : 0;
 	const direction = swing?.direction ?? 0;
@@ -143,20 +160,23 @@ export const footPose = function (gait: WalkerGait, index: FootIndex, size = 1, 
 	return { ...foot, x: foot.x + Math.cos(foot.angle) * forward, y: foot.y + Math.sin(foot.angle) * forward, lift: foot.lift + lift, pitch, toePitch };
 };
 
-// Straight standing legs need a shared moving pelvis: as a planted foot falls
-// behind the body, lower the hips to keep both fixed-length limbs within reach.
-// Structural pelvis motion keeps the leg rig within its authored reach.
+// Retain a 30-degree knee bend, with extra compression on touchdown. Solve the
+// shared pelvis above the rolled ankles so neither fixed-length leg locks out.
 export const posedLegRig = function (gait: WalkerGait, size: number, rig: LegRig): LegRig {
 	if (rig.kneeDirection !== 1) return rig;
-	const reach = (rig.upper + rig.lower) * size;
-	const hipHeight = gait.feet.reduce(function (height, foot, index) {
+	const bend = (30 + gait.motion.impact * 7) * Math.PI / 180;
+	const reach = Math.sqrt(rig.upper ** 2 + rig.lower ** 2 + 2 * rig.upper * rig.lower * Math.cos(bend)) * size;
+	const hipHeight = ([0, 1] as const).reduce(function (height, index) {
+		const foot = footPose(gait, index, size, rig);
 		const side = index === 0 ? -1 : 1;
 		const hipX = gait.body.x + Math.cos(gait.body.angle) * rig.hipForward * size - Math.sin(gait.body.angle) * side * rig.hipWidth * size;
 		const hipY = gait.body.y + Math.sin(gait.body.angle) * rig.hipForward * size + Math.cos(gait.body.angle) * side * rig.hipWidth * size;
-		const dx = foot.x - Math.cos(foot.angle) * 5 * size - hipX;
-		const dy = foot.y - Math.sin(foot.angle) * 5 * size - hipY;
-		return Math.min(height, 10 + (foot.lift + Math.sqrt(Math.max(0, reach ** 2 - dx ** 2 - dy ** 2))) / size);
-	}, rig.hipHeight);
+		const ankleForward = (-5 * Math.cos(foot.pitch) - 10 * Math.sin(foot.pitch)) * size;
+		const dx = foot.x + Math.cos(foot.angle) * ankleForward - hipX;
+		const dy = foot.y + Math.sin(foot.angle) * ankleForward - hipY;
+		const ankleHeight = (10 * Math.cos(foot.pitch) - 5 * Math.sin(foot.pitch)) * size + foot.lift;
+		return Math.min(height, (ankleHeight + Math.sqrt(Math.max(0, reach ** 2 - dx ** 2 - dy ** 2))) / size);
+	}, rig.hipHeight - Math.max(0, gait.motion.lift) * 0.15);
 	return { ...rig, hipHeight };
 };
 

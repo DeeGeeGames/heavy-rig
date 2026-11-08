@@ -12,7 +12,7 @@ const find = function (root: Object3D, name: string): Object3D {
 	return part;
 };
 const configurations = [
-	...FRAMES.filter(function (frame) { return FRAME_RIGS[frame.id].kneeDirection === -1; }).map(function (frame) {
+	...FRAMES.map(function (frame) {
 		return { name: frame.id, size: frame.size, stride: frame.stride, rig: FRAME_RIGS[frame.id], create: function () { return createMech(undefined, false, frame.id); } };
 	}),
 	...(['scout', 'striker', 'siege', 'commander'] as const).map(function (name) {
@@ -21,8 +21,9 @@ const configurations = [
 	}),
 ];
 
-for (const config of configurations) test(`${config.name} rolls its ankle and toes without floor penetration or detached shins, then settles and freezes`, function () {
+for (const config of configurations) test(`${config.name} rolls its feet without floor penetration or detached shins, then settles and freezes`, function () {
 	const model = config.create();
+	const humanoid = config.rig.kneeDirection === 1;
 	let body = { x: 400, y: 300, angle: 0.6 }; let gait = createGait(body, config.size, config.rig);
 	let lowestPitch = 0; let highestPitch = 0; let toeFlex = 0; let speed = 0;
 	const vertex = new Vector3();
@@ -35,15 +36,15 @@ for (const config of configurations) test(`${config.name} rolls its ankle and to
 			gait = advanceGait(gait, body, 1 / 60, config.size, config.stride, config.rig);
 			model.root.position.set(body.x, 0, body.y); model.pose(gait, angle + 0.8);
 			for (const [index, name] of ['left-leg', 'right-leg'].entries()) {
-				const leg = find(model.root, name); const shoe = find(leg, 'ankle-roll'); const toes = find(leg, 'toe-hinge');
+				const leg = find(model.root, name); const shoe = find(leg, 'ankle-roll'); const toes = humanoid ? shoe : find(leg, 'toe-hinge');
 				lowestPitch = Math.min(lowestPitch, shoe.rotation.z); highestPitch = Math.max(highestPitch, shoe.rotation.z); toeFlex = Math.max(toeFlex, Math.abs(toes.rotation.z));
 				const contact = gait.feet[index === 0 ? 0 : 1];
 				if (gait.swing?.index !== index && contact.lift === 0) {
 					// The loaded toe (forward) or heel (reverse) must remain over
 					// the same ground point while the ankle rolls above it.
 					const toeLoaded = shoe.rotation.z < 0; const heel = config.name === 'kestrel' ? -27 : -16;
-					const forward = toeLoaded ? 21 : heel; const height = toeLoaded ? 0.1 : 0;
-					const pinned = toeLoaded ? toes.localToWorld(new Vector3(13, -2.9, 0)) : shoe.localToWorld(new Vector3(heel, 0, 0));
+					const forward = toeLoaded ? humanoid ? 26 : 21 : heel; const height = toeLoaded && !humanoid ? 0.1 : 0;
+					const pinned = toeLoaded && !humanoid ? toes.localToWorld(new Vector3(13, -2.9, 0)) : shoe.localToWorld(new Vector3(forward, 0, 0));
 					expect(pinned.distanceTo(new Vector3(contact.x + Math.cos(contact.angle) * forward * config.size, height * config.size, contact.y + Math.sin(contact.angle) * forward * config.size))).toBeLessThan(1e-7);
 				}
 				const ankle = find(leg, 'ankle').getWorldPosition(new Vector3());
@@ -51,6 +52,10 @@ for (const config of configurations) test(`${config.name} rolls its ankle and to
 				const hip = find(leg, 'hip').getWorldPosition(new Vector3()); const knee = find(leg, 'knee').getWorldPosition(new Vector3());
 				expect(hip.distanceTo(knee)).toBeCloseTo(config.rig.upper * config.size, 6);
 				expect(knee.distanceTo(ankle)).toBeCloseTo(config.rig.lower * config.size, 6);
+				if (humanoid) {
+					const bend = Math.PI - hip.clone().sub(knee).angleTo(ankle.clone().sub(knee));
+					expect(bend * 180 / Math.PI).toBeGreaterThanOrEqual(29.999);
+				}
 				let lowest = Infinity;
 				shoe.traverse(function (part) {
 					if (!(part instanceof Mesh)) return;
@@ -60,10 +65,11 @@ for (const config of configurations) test(`${config.name} rolls its ankle and to
 				expect(lowest).toBeGreaterThanOrEqual(-1e-6);
 			}
 		}
-		expect(lowestPitch).toBeLessThan(-0.15); expect(highestPitch).toBeGreaterThan(0.15); expect(toeFlex).toBeGreaterThan(0.1);
+		expect(lowestPitch).toBeLessThan(-0.15); expect(highestPitch).toBeGreaterThan(humanoid ? 0.1 : 0.15);
+		if (!humanoid) expect(toeFlex).toBeGreaterThan(0.1);
 		for (const name of ['left-leg', 'right-leg']) {
 			expect(find(find(model.root, name), 'ankle-roll').rotation.z).toBeCloseTo(0, 6);
-			expect(find(find(model.root, name), 'toe-hinge').rotation.z).toBeCloseTo(0, 6);
+			if (!humanoid) expect(find(find(model.root, name), 'toe-hinge').rotation.z).toBeCloseTo(0, 6);
 		}
 		const before: number[][] = []; model.root.traverse(function (part) { before.push(part.matrixWorld.toArray()); });
 		model.pose(advanceGait(gait, body, 0, config.size, config.stride, config.rig), body.angle + 0.8);
