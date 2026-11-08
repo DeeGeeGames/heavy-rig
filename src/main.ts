@@ -137,6 +137,7 @@ const shutdown = await mountGame('game', async function (container) {
 		inputElement('show-touch').checked = profile.settings.touchControls;
 		inputElement('large-interface').checked = profile.settings.couchUI;
 		inputElement('controller-vibration').checked = profile.settings.vibration;
+		const modeSelect = element('control-mode'); if (modeSelect instanceof HTMLSelectElement) modeSelect.value = profile.settings.controlMode;
 		setInputMode(inputMode);
 	};
 	const menu = function () { return auxiliary ? element(auxiliary) : screen === 'playing' ? undefined : element(screen); };
@@ -183,7 +184,7 @@ const shutdown = await mountGame('game', async function (container) {
 		campaign = next; if (!persistCampaign()) return;
 		presentation.resetZoom(); training = undefined;
 		state = createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: mech.frameId, loadout: mech.loadout, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges });
-		gaits = createGaits(state); screen = 'playing'; auxiliary = undefined;
+		gaits = createGaits(state); screen = 'playing'; auxiliary = undefined; aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer';
 		aim = state.mission ? { ...state.mission.map.objective } : { ...state.player };
 		pointer = undefined; message = `${getFrame(mech.frameId).name} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`; messageUntil = 5; tipDismissed = false;
 		terminalUntil = 0; audio.reset(); syncScreen(); unlockSound();
@@ -193,14 +194,14 @@ const shutdown = await mountGame('game', async function (container) {
 		if (!training) trainingOrigin = screen === 'title' ? 'title' : 'bridge';
 		presentation.resetZoom();
 		training = createTraining(); state = training.state; gaits = createGaits(state);
-		screen = 'playing'; auxiliary = undefined; pointer = undefined; aim = { x: 900, y: 450 };
+		screen = 'playing'; auxiliary = undefined; aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; pointer = undefined; aim = { x: 900, y: 450 };
 		message = ''; messageUntil = 0; tipDismissed = true; terminalUntil = 0;
 		audio.reset(); syncScreen(); unlockSound();
 	};
 	const setPaused = function (paused: boolean) {
 		if (paused) silenceAudio();
 		if (paused && screen === 'playing') { screen = 'pause-panel'; auxiliary = undefined; syncScreen(); }
-		else if (!paused && screen === 'pause-panel' && !contextLost) { screen = 'playing'; auxiliary = undefined; syncScreen(); unlockSound(); }
+		else if (!paused && screen === 'pause-panel' && !contextLost) { screen = 'playing'; auxiliary = undefined; aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; syncScreen(); unlockSound(); }
 	};
 	const showAuxiliary = function (value: Auxiliary) {
 		if (document.activeElement instanceof HTMLElement) returnFocus = document.activeElement;
@@ -382,7 +383,8 @@ const shutdown = await mountGame('game', async function (container) {
 		for (const action of ACTIONS) {
 			const button = document.createElement('button'); button.className = 'secondary'; button.type = 'button';
 			button.dataset['action'] = action;
-			button.textContent = `${LABELS[action]}: ${capture === action ? 'PRESS KEY / MOUSE · ESC CANCEL' : profile.settings.keyboard[action].map(keyLabel).join(' / ') || 'Unbound'}`;
+			const arcadeLabels: Partial<Record<Action, string>> = { forward: 'Move up', back: 'Move down', left: 'Move left', right: 'Move right' };
+			button.textContent = `${profile.settings.controlMode === 'arcade' ? arcadeLabels[action] ?? LABELS[action] : LABELS[action]}: ${capture === action ? 'PRESS KEY / MOUSE · ESC CANCEL' : profile.settings.keyboard[action].map(keyLabel).join(' / ') || 'Unbound'}`;
 			button.addEventListener('click', function () { capture = action; renderMappings(); }); root.append(button); if (capture === action || focusedAction === action) button.focus();
 		}
 	};
@@ -401,6 +403,10 @@ const shutdown = await mountGame('game', async function (container) {
 		label.append(select); element('controller-mappings').append(label);
 	}
 	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } };
+	element('control-mode').addEventListener('change', function (event) {
+		const select = event.target; if (!(select instanceof HTMLSelectElement) || (select.value !== 'simulation' && select.value !== 'arcade')) return;
+		profile.settings.controlMode = select.value; capture = undefined; resetInput(); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; save(); renderMappings(); updateSettings();
+	}, listenerOptions);
 	listen('reset-keyboard', function () { capture = undefined; profile.settings.keyboard = defaultKeyboard(); resetInput(); save(); renderMappings(); });
 	listen('reset-controller', function () { profile.settings.controller = defaultController(); resetInput(); save(); syncControllerMappings(); });
 	renderMappings();
@@ -542,7 +548,7 @@ const shutdown = await mountGame('game', async function (container) {
 		if (state.mission) { ui.phase.textContent = state.mission.stage === 'extract' ? 'OBJECTIVE COMPLETE / EXTRACT' : MISSION_NAMES[state.mission.contract.kind].toUpperCase(); ui.status.textContent = missionObjective(state); }
 		element('training-guide').hidden = !training || screen !== 'playing';
 		if (training) {
-			const copy = trainingCopy(training, inputMode === 'gamepad', profile.settings);
+			const copy = trainingCopy(training, inputMode === 'gamepad', { ...profile.settings, controlMode: inputMode === 'touch' ? 'simulation' : profile.settings.controlMode });
 			container.dataset['trainingStage'] = training.stage;
 			ui.phase.textContent = `${getFrame(state.frame).name} QUALIFICATION`; ui.status.textContent = 'LOANED TRAINING FRAME · NO SCORED RECORD';
 			element('training-progress').textContent = `DRILL ${copy.progress}`;
@@ -584,7 +590,7 @@ const shutdown = await mountGame('game', async function (container) {
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE STICKS AND TRIGGERS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
 		ui.hint.hidden = tipDismissed || state.time > 35 || screen !== 'playing';
 		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) coolantPrompt.textContent = inputMode === 'gamepad' ? padLabel(profile.settings.controller.coolant) : profile.settings.keyboard.coolant.map(keyLabel).join(' / ') || 'UNBOUND';
-		ui.hintCopy.textContent = inputMode === 'gamepad' ? `Left stick sets throttle; ${padLabel(profile.settings.controller.stop)} stops. Right stick aims. See weapon buttons for fire mappings; ${padLabel(profile.settings.controller.coolant)} vents.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Tap the field to aim. Hold + to move; STOP sets neutral. Hold a weapon to fire.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
+		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${padLabel(profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${padLabel(profile.settings.controller.stop)} stops.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Tap the field to aim. Hold + to move; STOP sets neutral. Hold a weapon to fire.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
 		const soundState = audioState === 'unavailable' ? 'UNAVAILABLE' : needsGesture ? 'ENABLE SOUND' : muted ? 'SOUND OFF' : 'SOUND ON';
 		if (lastSoundState !== soundState) { lastSoundState = soundState; ui.sound.textContent = soundState; ui.sound.setAttribute('aria-label', needsGesture ? 'Click to enable audio' : audioState === 'unavailable' ? 'Retry audio' : muted ? 'Unmute sound' : 'Mute sound'); ui.sound.setAttribute('aria-pressed', String(muted)); }
@@ -612,7 +618,10 @@ const shutdown = await mountGame('game', async function (container) {
 		if (pad.lost) { controllerLost = true; setPaused(true); }
 		feedback.update(pads.find(function (candidate) { return candidate?.index === pad.index; }) ?? undefined, playing() && profile.settings.vibration && inputMode === 'gamepad');
 		if (pad.claimed) { controllerLost = false; audio.cue('confirm'); }
-		if (pad.activity && focused && !document.hidden) setInputMode('gamepad');
+		if (pad.activity && focused && !document.hidden) {
+			if (profile.settings.controlMode === 'simulation' && pad.claimed) aimMode = 'gamepad';
+			setInputMode('gamepad');
+		}
 		container.dataset['controllerState'] = pad.connected ? 'connected' : controllerLost ? 'disconnected' : pad.available ? 'available' : 'none';
 		const controllerStatus = pad.connected ? 'CONTROLLER CONNECTED' : controllerLost ? 'CONTROLLER LOST · PRESS A / MENU TO RECONNECT, THEN RESUME' : pad.available ? 'PRESS A / MENU TO CONNECT CONTROLLER' : 'CONTROLLER OPTIONAL · CONNECT AND PRESS A / MENU';
 		if (element('controller-status').textContent !== controllerStatus) element('controller-status').textContent = controllerStatus;
@@ -636,7 +645,9 @@ const shutdown = await mountGame('game', async function (container) {
 			if (pad.back && screenRevision === revisionAtFrame) { audio.cue('back'); back(); }
 		}
 		if (playing() && screenRevision === revisionAtFrame) {
-			if (Math.hypot(pad.aimX, pad.aimY) > 0.2) {
+			if (profile.settings.controlMode === 'simulation' && pad.aimX !== 0) {
+				aimMode = 'gamepad';
+			} else if (profile.settings.controlMode === 'arcade' && Math.hypot(pad.aimX, pad.aimY) > 0.2) {
 				aimMode = 'gamepad';
 				const origin = presentation.toScreen(state.player); const length = Math.hypot(pad.aimX, pad.aimY);
 				const projected = presentation.toGround({ x: origin.x + pad.aimX / length * 380, y: origin.y + pad.aimY / length * 380 });
@@ -652,7 +663,21 @@ const shutdown = await mountGame('game', async function (container) {
 				const picked = [...state.enemies, ...(facility && facility.hp > 0 ? [facility] : [])].sort(function (a, b) { return distance(presentation.toScreen(a, 45), cursor) - distance(presentation.toScreen(b, 45), cursor); })[0];
 				if (picked && distance(presentation.toScreen(picked, 45), cursor) < 42 * viewScale(width, height)) aim = { x: picked.x, y: picked.y };
 			}
-			const makeInput = function (): Controls { return { drive: Math.max(-1, Math.min(1, Number(active('forward')) - Number(active('back')) + pad.drive)), stop: active('stop') || pad.stop, turn: Math.max(-1, Math.min(1, Number(active('right')) - Number(active('left')) + pad.turn)), aim, fire: [active('mount-0') || pad.fire[0], active('mount-1') || pad.fire[1], active('mount-2') || pad.fire[2], active('mount-3') || pad.fire[3]], coolant: active('coolant') || pad.coolant }; };
+			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') aim = { x: state.player.x + Math.cos(state.player.turret) * 600, y: state.player.y + Math.sin(state.player.turret) * 600 };
+			const makeInput = function (): Controls {
+				const arcade = profile.settings.controlMode === 'arcade' && inputMode !== 'touch';
+				const x = Math.max(-1, Math.min(1, Number(active('right')) - Number(active('left')) + pad.turn));
+				const y = Math.max(-1, Math.min(1, Number(active('back')) - Number(active('forward')) - pad.drive));
+				const length = Math.hypot(x, y);
+				const origin = presentation.toScreen(state.player);
+				const destination = arcade && length > 0 ? presentation.toGround({ x: origin.x + x / length * 380, y: origin.y + y / length * 380 }) : undefined;
+				return {
+					...(arcade ? { throttleTarget: Math.min(1, length), ...(destination ? { heading: Math.atan2(destination.y - state.player.y, destination.x - state.player.x) } : {}) } : {}),
+					...(profile.settings.controlMode === 'simulation' && aimMode === 'gamepad' ? { turretTurn: pad.aimX } : {}),
+					drive: -y, stop: active('stop') || pad.stop, turn: x, aim,
+					fire: [active('mount-0') || pad.fire[0], active('mount-1') || pad.fire[1], active('mount-2') || pad.fire[2], active('mount-3') || pad.fire[3]], coolant: active('coolant') || pad.coolant,
+				};
+			};
 			accumulator += elapsed;
 			while (accumulator >= 1 / 60 && playing()) {
 				const previousGaits = gaits;
