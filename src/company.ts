@@ -1,6 +1,7 @@
 import { WEAPONS, type WeaponId } from './arsenal';
 import type { Campaign } from './campaign';
 import { FRAMES, getFrame, type FrameId } from './frames';
+import { createStarterLoadout, isFrameLoadout } from './hardpoints';
 
 export type Loadout = readonly (WeaponId | null)[];
 export interface OwnedMech {
@@ -31,12 +32,11 @@ const isInteger = function (value: unknown, min: number, max: number): value is 
 const isIntegrity = function (value: unknown): value is number { return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100; };
 export const isFrameId = function (value: unknown): value is FrameId { return FRAMES.some(function (frame) { return frame.id === value; }); };
 export const isWeaponId = function (value: unknown): value is WeaponId { return WEAPONS.some(function (weapon) { return weapon.id === value; }); };
-const isLoadout = function (value: unknown): value is Loadout { return Array.isArray(value) && value.length === 4 && value.every(function (entry: unknown) { return entry === null || isWeaponId(entry); }); };
 const countWeapon = function (loadout: Loadout, weapon: WeaponId) { return loadout.filter(function (entry) { return entry === weapon; }).length; };
 
 export const createCompany = function (): CompanyState {
 	return {
-		fleet: [{ frameId: 'kestrel', integrity: 100, loadout: ['machine-gun', null, null, null] }], selectedFrame: 'kestrel',
+		fleet: [{ frameId: 'kestrel', integrity: 100, loadout: createStarterLoadout('kestrel') }], selectedFrame: 'kestrel',
 		inventory: { 'machine-gun': 1, autocannon: 0, laser: 0, ppc: 0, 'stream-rockets': 0, 'cluster-rockets': 0, 'stream-missiles': 0, 'cluster-missiles': 0 },
 		workOrders: [], deployed: undefined,
 	};
@@ -62,13 +62,13 @@ export const repairDays = function (integrity: number): number { return Math.max
 export const refitDays = function (current: Loadout, target: Loadout): number { return target.filter(function (weapon, index) { return current[index] !== weapon; }).length; };
 export const canRefit = function (campaign: Campaign, frameId: FrameId, target: Loadout): boolean {
 	const mech = getOwnedMech(campaign, frameId);
-	return !campaign.deployed && Boolean(mech) && !workOrderFor(campaign, frameId) && isLoadout(target)
+	return !campaign.deployed && Boolean(mech) && !workOrderFor(campaign, frameId) && isFrameLoadout(frameId, target)
 		&& Boolean(mech && refitDays(mech.loadout, target) > 0 && campaign.day + refitDays(mech.loadout, target) < MAX_DAY)
 		&& WEAPONS.every(function (weapon) { return countWeapon(target, weapon.id) <= availableWeapons(campaign, weapon.id, frameId); });
 };
 export const canDeploy = function (campaign: Campaign, frameId: FrameId = campaign.selectedFrame): boolean {
 	const mech = getOwnedMech(campaign, frameId);
-	return Boolean(campaign.active) && !campaign.deployed && Boolean(mech && mech.integrity > 0 && mech.loadout.some(function (weapon) { return weapon !== null; }))
+	return Boolean(campaign.active) && !campaign.deployed && Boolean(mech && mech.integrity > 0 && isFrameLoadout(frameId, mech.loadout) && mech.loadout.some(function (weapon) { return weapon !== null; }))
 		&& !workOrderFor(campaign, frameId) && campaign.day < MAX_DAY;
 };
 
@@ -82,7 +82,7 @@ export const buyFrame = function (campaign: Campaign, frameId: FrameId): Campaig
 	if (campaign.inventory[starter] >= MAX_INVENTORY) return campaign;
 	return {
 		...campaign, credits: campaign.credits - FRAME_PRICES[frameId],
-		fleet: [...campaign.fleet, { frameId, integrity: 100, loadout: [starter, null, null, null] }],
+		fleet: [...campaign.fleet, { frameId, integrity: 100, loadout: createStarterLoadout(frameId) }],
 		inventory: { ...campaign.inventory, [starter]: campaign.inventory[starter] + 1 },
 	};
 };
@@ -92,7 +92,7 @@ export const unlockAllRigs = function (campaign: Campaign): Campaign {
 		if (getOwnedMech(company, frame.id)) return company;
 		return {
 			...company,
-			fleet: [...company.fleet, { frameId: frame.id, integrity: 100, loadout: [frame.starter, null, null, null] }],
+			fleet: [...company.fleet, { frameId: frame.id, integrity: 100, loadout: createStarterLoadout(frame.id) }],
 			inventory: { ...company.inventory, [frame.starter]: Math.min(MAX_INVENTORY, company.inventory[frame.starter] + 1) },
 		};
 	}, campaign);
@@ -145,11 +145,11 @@ export const checkpointDeployment = function (campaign: Campaign, integrity: num
 };
 
 const isOwnedMech = function (value: unknown): value is OwnedMech {
-	return isObject(value) && isFrameId(value['frameId']) && isIntegrity(value['integrity']) && isLoadout(value['loadout']);
+	return isObject(value) && isFrameId(value['frameId']) && isIntegrity(value['integrity']) && isFrameLoadout(value['frameId'], value['loadout']);
 };
 const isWorkOrder = function (value: unknown): value is WorkOrder {
 	return isObject(value) && isFrameId(value['frameId']) && isInteger(value['startedDay'], 1, MAX_DAY) && isInteger(value['readyDay'], 2, MAX_DAY - 1)
-		&& value['readyDay'] > value['startedDay'] && (value['kind'] === 'repair' || value['kind'] === 'refit' && isLoadout(value['loadout']));
+		&& value['readyDay'] > value['startedDay'] && (value['kind'] === 'repair' || value['kind'] === 'refit' && isFrameLoadout(value['frameId'], value['loadout']));
 };
 const isDeployment = function (value: unknown): value is Deployment {
 	return isObject(value) && isFrameId(value['frameId']) && isIntegrity(value['integrity']) && isInteger(value['coolantCharges'], 0, 2);

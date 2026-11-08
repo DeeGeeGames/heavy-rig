@@ -1,5 +1,6 @@
 import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, padLabel, validKey, type Action } from './bindings';
-import { getWeapon } from './arsenal';
+import { getWeapon, WEAPON_FAMILY_LABELS } from './arsenal';
+import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getFrame } from './frames';
 import { MOUNTS, rankLabel } from './loadout-ui';
 import { mountGame } from './shared/lifecycle';
@@ -81,7 +82,7 @@ const shutdown = await mountGame('game', async function (container) {
 	let hudObstructions: ScreenRect[] = [];
 	const weaponButtons = MOUNTS.map(function (binding) {
 		const button = document.createElement('button'); button.className = 'weapon'; button.dataset['control'] = binding.action;
-		button.innerHTML = '<span class="weapon-icon" aria-hidden="true"></span><b></b><small><kbd></kbd></small><em></em><i></i>';
+		button.innerHTML = '<span class="weapon-mount"></span><span class="weapon-icon" aria-hidden="true"></span><b></b><small><kbd></kbd></small><em></em><i></i>';
 		return button;
 	});
 	element('weapon-bank').replaceChildren(...weaponButtons);
@@ -255,14 +256,20 @@ const shutdown = await mountGame('game', async function (container) {
 		renderCompany(root, campaign, screen, editor, campaignSaved, {
 			navigate: navigateShip,
 			selectFrame: function (id) { updateCompany(selectFrame(campaign, id), 'Frame selected.'); },
-			editSlot: function (slot) { editor = { ...editor, slot }; refreshCompany(); focusCompany('.equipment-choice[aria-pressed="true"]:not(:disabled)', '.equipment-choice:not(:disabled)'); },
+			editSlot: function (slot) {
+				if (!getHardpoints(campaign.selectedFrame)[slot]) return;
+				editor = { ...editor, slot }; refreshCompany(); focusCompany('.equipment-choice[aria-pressed="true"]:not(:disabled)', '.equipment-choice:not(:disabled)');
+			},
 			setWeapon: function (weapon) {
-				if (editor.slot === null) return;
+				if (editor.slot === null || !getHardpoints(campaign.selectedFrame)[editor.slot]) return;
 				const slot = editor.slot;
+				if (weapon !== null && !canEquipWeapon(campaign.selectedFrame, slot, weapon)) {
+					editor = { ...editor, notice: 'This weapon does not fit the selected hardpoint.' }; refreshCompany(); return;
+				}
 				editor = { ...editor, loadout: editor.loadout.map(function (current, index) { return index === editor.slot ? weapon : current; }), slot: null, notice: 'Refit staged. Queue the work order to fit these weapons.' }; refreshCompany();
 				focusCompany(`[data-loadout-slot="${slot}"]`);
 			},
-			closePicker: function () { editor = { ...editor, slot: null }; refreshCompany(); focusCompany('[data-loadout-slot]'); },
+			closePicker: function () { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`, '[data-loadout-slot]'); },
 			discardRefit: function () { resetEditor('Staged changes discarded.'); refreshCompany(); },
 			queueRefit: function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout), 'Refit queued. Advance the calendar to finish installation.', 'engineering'); },
 			buyFrame: function (id) { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its standard weapon. Select it in the Mech Bay.`); },
@@ -537,7 +544,7 @@ const shutdown = await mountGame('game', async function (container) {
 		if (training) {
 			const copy = trainingCopy(training, inputMode === 'gamepad', profile.settings);
 			container.dataset['trainingStage'] = training.stage;
-			ui.phase.textContent = 'WARDEN QUALIFICATION'; ui.status.textContent = 'STANDARD TRAINING FRAME · NO SCORED RECORD';
+			ui.phase.textContent = `${getFrame(state.frame).name} QUALIFICATION`; ui.status.textContent = 'LOANED TRAINING FRAME · NO SCORED RECORD';
 			element('training-progress').textContent = `DRILL ${copy.progress}`;
 			element('training-title').textContent = copy.title;
 			element('training-copy').textContent = inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'Release sticks and triggers to arm the controls, then follow the drill.' : copy.instruction;
@@ -548,18 +555,27 @@ const shutdown = await mountGame('game', async function (container) {
 		ui.drive.textContent = `${p.throttle < -0.005 ? 'REV' : p.throttle > 0.005 ? 'FWD' : 'N'} ${Math.round(Math.abs(p.throttle) * 100)}%`;
 		const definition = getFrame(state.frame);
 		ui.throttleFill.style.left = `${p.throttle < 0 ? 50 + p.throttle * 50 : 50}%`; ui.throttleFill.style.width = `${Math.abs(p.throttle) * 50}%`; ui.speed.textContent = `SPD ${Math.round(p.speed / (p.speed < 0 ? definition.reverseSpeed : definition.speed) * 100)}%`;
+		const hardpoints = getHardpoints(state.frame);
+		element('weapon-bank').style.setProperty('--hardpoint-columns', String(hardpoints.length));
+		element('weapon-bank').style.setProperty('--hardpoint-mobile-columns', String(Math.min(2, hardpoints.length)));
 		for (const [index, button] of weaponButtons.entries()) {
+			const hardpoint = hardpoints[index];
+			button.hidden = hardpoint === undefined;
+			if (!hardpoint) { button.disabled = true; continue; }
+			const family = WEAPON_FAMILY_LABELS[hardpoint.family];
 			const mount = state.loadout.find(function (entry, position) { return (entry.slot ?? position) === index; }); const binding = MOUNTS[index]; if (!binding) continue;
 			const weapon = mount ? getWeapon(mount.weapon) : undefined;
-			const drillSlot = training?.stage === 'cannon' ? 0 : training?.stage === 'missiles' ? 2 : training?.stage === 'heat' ? 1 : -1;
+			const drillSlot = training?.stage === 'cannon' ? 0 : training?.stage === 'missiles' ? 2 : training?.stage === 'heat' ? 0 : -1;
 			button.disabled = !mount || Boolean(training && training.stage !== 'combined' && index !== drillSlot);
 			const firing = Boolean(mount && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index]));
 			button.classList.toggle('empty', !mount); button.classList.toggle('firing', firing); button.classList.toggle('locked', p.overheated);
-			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${padLabel(profile.settings.controller[binding.action])}.` : `Mount ${index + 1} empty. Equip purchased weapons in the Mech Bay.`);
+			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${padLabel(profile.settings.controller[binding.action])}.` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. Equip compatible purchased weapons in the Mech Bay.`);
+			const location = button.querySelector('.weapon-mount'); if (location) location.textContent = hardpoint.name;
+			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${weapon.type}` : ' · Empty'}`;
 			const title = button.querySelector('b'); if (title) title.textContent = mount && weapon ? weapon.name : 'EMPTY';
 			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}${mount ? ` · ${rankLabel(mount.level)}` : ''}`;
 			const prompt = button.querySelector('kbd'); if (prompt) prompt.textContent = inputMode === 'gamepad' ? padLabel(profile.settings.controller[binding.action]) : inputMode === 'touch' ? `HOLD ${index + 1}` : profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'UNBOUND';
-			const label = button.querySelector('em'); if (label) label.textContent = !mount ? 'NOT FITTED' : button.disabled ? 'DRILL LOCK' : p.overheated ? 'HEAT LOCK' : firing ? 'FIRING' : mount.cooldown > 0 ? `${mount.cooldown.toFixed(1)}s` : 'READY';
+			const label = button.querySelector('em'); if (label) label.textContent = `${family.toUpperCase()} · ${!mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : p.overheated ? 'HEAT LOCK' : firing ? 'FIRING' : mount.cooldown > 0 ? `${mount.cooldown.toFixed(1)}s` : 'READY'}`;
 			const fill = button.querySelector('i'); if (fill) fill.style.width = `${mount && weapon ? Math.max(0, 1 - mount.cooldown / Math.max(.01, weapon.interval)) * 100 : 0}%`;
 			button.style.setProperty('--weapon-color', weapon?.color ?? 'var(--muted)');
 		}
@@ -641,9 +657,10 @@ const shutdown = await mountGame('game', async function (container) {
 			while (accumulator >= 1 / 60 && playing()) {
 				const previousGaits = gaits;
 				const previousStage = training?.stage;
+				const previousFrame = state.frame;
 				const previousMissionStage = state.mission?.stage;
 				if (training) stepTraining(training, makeInput(), 1 / 60); else step(state, makeInput(), 1 / 60);
-				gaits = training?.stage === 'evade' && previousStage !== 'evade' ? createGaits(state) : advanceGaits(gaits, state);
+				gaits = state.frame !== previousFrame || training?.stage === 'evade' && previousStage !== 'evade' ? createGaits(state) : advanceGaits(gaits, state);
 				pending.clear(); accumulator -= 1 / 60;
 				if (training && previousStage !== training.stage) audio.cue('confirm');
 				audio.update(audioFrame(now)); audio.play(state.events);

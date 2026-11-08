@@ -523,7 +523,7 @@ dd { margin: 0; color: var(--muted); }
 #replace-cards button { min-height: 90px; border-color: var(--amber); }
 .draft-note { font: 10px/1.5 var(--mono) !important; color: var(--muted); margin-bottom: 0 !important; }
 .weapon-console { width: 420px; }
-.weapon-bank { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.weapon-bank { grid-template-columns: repeat(var(--hardpoint-columns, 4), minmax(0, 1fr)); }
 .weapon { padding: 10px 8px; border-top: 2px solid var(--weapon-color); }
 .weapon b { font-size: 18px; letter-spacing: 0; }
 .weapon-icon { right: 8px; top: 6px; font: 12px var(--mono); color: var(--weapon-color); }
@@ -574,7 +574,7 @@ dd { margin: 0; color: var(--muted); }
 	.draft-cards .arsenal-card>p { font-size: 13px; }
 	.mount-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.weapon-console, .couch-ui .weapon-console { width: 188px; right: 14px; bottom: 14px; }
-	.weapon-bank { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+	.weapon-bank { grid-template-columns: repeat(var(--hardpoint-mobile-columns, 2), minmax(0, 1fr)); gap: 4px; }
 	.weapon, .couch-ui .weapon { height: 70px; padding: 6px; gap: 3px; }
 	.weapon b, .couch-ui .weapon b { font-size: 17px; padding-top: 5px; }
 	.weapon em, .couch-ui .weapon em { font-size: 9px; margin-top: 0; }
@@ -676,3 +676,17 @@ dd { margin: 0; color: var(--muted); }
 .mapping-list button { text-align: left; font-size: 12px; min-height: 32px; }
 .mapping-list label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .mapping-list select { color: inherit; background: #18252d; padding: 8px; max-width: 60%; }
+
+.weapon-mount { position: absolute; top: 7px; left: 8px; right: 25px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font: 8px/1.2 var(--mono); }
+.weapon em { line-height: 1.3; }
+@media (max-width: 700px) {
+	.weapon, .couch-ui .weapon { height: 86px; }
+	.weapon b, .couch-ui .weapon b { padding-top: 13px; }
+	.weapon-mount { top: 5px; left: 6px; right: 19px; font-size: 7px; }
+	.weapon em, .couch-ui .weapon em { font-size: 8px; }
+}
+@media (max-height: 540px) and (min-width: 701px) {
+	.weapon, .couch-ui .weapon { height: 88px; }
+	.weapon b, .couch-ui .weapon b { padding-top: 13px; }
+	.weapon em, .couch-ui .weapon em { font-size: 8px; }
+}

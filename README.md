@@ -6,7 +6,7 @@ refits, accept faction contracts, and extract from surface missions. Persistent
 throttle and independent turret tracking remain the combat core.
 
 A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,
-its Rattler machine gun fitted in mount 1. The other three mounts are empty.
+its Rattler machine gun fitted in mount 1. Its second machine-gun hardpoint is empty.
 Campaign missions and a separate Frame Training simulator are the playable modes.
 
 The game opens on a console-style title menu with a rendered Wayfarer hangar.
@@ -25,7 +25,7 @@ throughout:
 | Screen | Purpose |
 | --- | --- |
 | Contracts | Plot travel, review faction standings, accept work, and inspect the mission briefing. |
-| Mech Bay | Select an owned frame, inspect its condition, plan four weapon mounts, and deploy. |
+| Mech Bay | Select an owned frame, inspect its condition, plan chassis-specific weapon hardpoints, and deploy. |
 | Market | Spend contract earnings on weapon copies or additional frames with their signature weapons included. |
 | Engineering | Schedule repairs, inspect or cancel work orders, and advance calendar days. |
 
@@ -39,7 +39,7 @@ shift another weapon's keyboard, mouse, touch, or controller binding.
 Choose a mount in the Mech Bay, select an owned weapon or empty slot, then queue
 the refit. Staged changes show their duration and completion date before they
 are scheduled. Each changed mount takes **one calendar day**: moving a gun from
-mount 1 to empty mount 3 changes two mounts and takes two days. The installed
+mount 1 to empty mount 2 changes two mounts and takes two days. The installed
 loadout stays unchanged until the work finishes. Both outgoing and incoming
 hardware remain reserved during the job. Canceling restores availability of the
 incoming parts and keeps the original loadout; elapsed days are not refunded.
@@ -120,7 +120,23 @@ subsequent reloads do not duplicate rewards.
 | Morrow 52 · 70T | 6,500 CR | Missile support / Trident | 88 / 48 m/s | 12 heat/s | Guided area fire; takes 10% more damage |
 | Maul 34 · 100T | 7,500 CR | Brawler / Hailstorm | 82 / 40 m/s | 11 heat/s | Takes 22% less damage; slow hull and turret traverse |
 
-All frames have four mounts and share the same controls. Integrity is a
+Hardpoints follow the current model hardware:
+
+| Frame | Hardpoints | Accepted weapons |
+| --- | --- | --- |
+| Kestrel | Two light ballistic side guns | Rattler machine guns |
+| Warden | Two ballistic side guns, two shoulder launchers | Rattler / AC/38 in guns; missiles / rockets in pods |
+| Maul | Two forearm launchers | Missiles / rockets |
+| Longbow | One energy accelerator arm | ARC laser / Tempest PPC |
+| Morrow | Two outboard silos | Missiles / rockets |
+
+The Mech Bay names each location and its allowed weapons. The market shows weapon
+families and compatible chassis before purchase. Empty and nonexistent slots cannot
+fire; equipment positions retain their matching controls. One pod is one hardpoint,
+regardless of its launch-tube count. Geometry and mount-origin rendering are unchanged
+in this equipment-foundation pass.
+
+All frames share the same driving and aiming controls. Integrity is a
 percentage; each frame's protection changes the damage received. Kestrel uses
 an open reverse-jointed silhouette, Maul a broad humanoid stance, Longbow a tall
 asymmetric cannon arm, and Morrow an armless twin-silo carrier. Authored hip
@@ -150,6 +166,10 @@ At 100 heat, weapons lock until heat falls to 35. Frame cooling removes 10–15
 heat per second. One coolant charge purges 55 heat; holding the control spends
 only one charge, and a cold reactor consumes none. There is no combat resupply.
 
+Enemy equipment follows the same weapon-family rules: scouts carry light ballistic
+guns, strikers add shoulder launchers, and siege / command frames retain their
+dorsal artillery and existing barrage cadence.
+
 Siege enemies protect their front with a 120-degree armor arc. Flank them or
 attack the green **EXPOSED** recovery window for 135% damage. Artillery commits
 to fixed orange ground markers; it does not follow the player after firing,
@@ -160,8 +180,8 @@ fight.
 
 ## Frame Training
 
-Training uses a standardized Warden and four fixed weapons in a separate,
-unscored simulator. Nine drills cover cruise, neutral, turning, cannon aim,
+Training uses legal Warden equipment for the gun, missile, and combined-fire drills,
+then switches to a Longbow laser for heat and coolant in a separate, unscored simulator. Nine drills cover cruise, neutral, turning, cannon aim,
 guided missiles, combined fire, heat, coolant, and artillery evasion. It uses
 the same controls and simulation as missions, supports safe retries, and does
 not change company equipment, damage, credits, reputation, or calendar days.
@@ -318,10 +338,9 @@ The Pages workflow deploys `master` after the complete check. Pull requests must
 satisfy live branch protection; workflow definitions alone do not establish
 merge readiness. The custom domain is configured in `CNAME`.
 
-Company progression uses **`heavy-rig:campaign:v2`**. Version 2 deliberately
-starts a fresh company instead of migrating earlier credits, reputation, or
-contracts. The old `heavy-rig:campaign:v1` entry is left untouched and is not
-loaded. Preferences remain under `heavy-rig:profile:v1`; historical classic
+Company progression uses **`heavy-rig:campaign:v3`**. Version 3 deliberately
+starts a fresh company with chassis-specific hardpoints. Earlier company saves
+are left untouched and are not loaded; no loadout migration is provided. Preferences remain under `heavy-rig:profile:v1`; historical classic
 records in that profile are retained but the classic operation is no longer a
 playable mode.
 

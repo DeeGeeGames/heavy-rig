@@ -2,10 +2,10 @@ import { describe, expect, test } from 'bun:test';
 import { getEnemyDefense, angleDelta, createState, ENEMY_STATS, step, type Controls, type EnemyKind, type State } from '../src/simulation';
 import { getWaveDefinition, WAVES, type Difficulty } from '../src/operation';
 import { createMount } from '../src/arsenal';
-// Combat fixtures equip the training bank to exercise concurrent weapon mechanics.
+// Warden combat fixtures equip only weapons accepted by their physical hardpoints.
 const createCombatState = function (options: { difficulty?: Difficulty } = {}) {
 	const state = createState(options);
-	state.loadout = [createMount('autocannon'), createMount('laser'), createMount('cluster-missiles')];
+	state.loadout = [createMount('autocannon'), createMount('machine-gun'), createMount('cluster-missiles')];
 	return state;
 };
 const idle: Controls = { drive: 0, stop: false, turn: 0, aim: { x: 900, y: 200 }, fire: [false, false, false, false], coolant: false };
@@ -39,13 +39,13 @@ describe('Heavy Rig combat', function () {
 		expect(state.enemies[0]?.hp).toBe(62); expect(state.cannonIn).toBeGreaterThan(0);
 	});
 	test('laser hits the nearest target and overheats under sustained fire', function () {
-		const state = createCombatState(); target(state); target(state, 900, 500);
-		run(state, 0.2, { ...idle, fire: [false, true, false, false] });
+		const state = createState({ frame: 'longbow', starter: 'laser' }); target(state); target(state, 900, 500);
+		run(state, 0.2, { ...idle, fire: [true, false, false, false] });
 		expect(state.enemies[0]?.hp).toBeLessThan(100); expect(state.enemies[1]?.hp).toBe(100);
-		run(state, 8.5, { ...idle, fire: [false, true, false, false] }); expect(state.player.overheated).toBe(true);
+		run(state, 12, { ...idle, fire: [true, false, false, false] }); expect(state.player.overheated).toBe(true);
 		const heat = state.player.heat; run(state, 0.2, { ...idle, fire: [true, false, false, false] });
 		expect(state.cannonIn).toBe(0); expect(state.player.heat).toBeLessThan(heat);
-		run(state, 6); expect(state.player.overheated).toBe(false);
+		run(state, 7); expect(state.player.overheated).toBe(false);
 	});
 	test('missiles lock closest to aim and salvo cannot spam', function () {
 		const state = createCombatState(); target(state); target(state, 1000, 550);
@@ -195,4 +195,47 @@ describe('Heavy Rig combat', function () {
 		expect(story.stats.damageTaken).toBeCloseTo(5.5); expect(veteran.stats.damageTaken).toBeCloseTo(13);
 	});
 
+});
+
+test('hostile guns and launchers fire only compatible fitted slots without multiplying attack damage', function () {
+	for (const kind of ['scout', 'striker'] as const) {
+		const state = createState(); state.spawnIn = 3600;
+		state.warnings.push({ kind, x: state.player.x - 150, y: state.player.y, life: 0.001 });
+		step(state, idle, 1 / 60);
+		const enemy = state.enemies[0]; if (!enemy?.loadout) throw new Error('Missing equipped enemy');
+		const expected = kind === 'scout' ? ['machine-gun', 'machine-gun'] as const : ['autocannon', 'autocannon', 'stream-missiles', 'stream-missiles'] as const;
+		for (const [slot, weapon] of expected.entries()) {
+			state.shots = []; enemy.cooldown = 0;
+			step(state, idle, 1 / 60);
+			expect(state.shots).toHaveLength(1);
+			expect(state.shots[0]?.owner).toBe(enemy.id);
+			expect(state.shots[0]?.weapon).toBe(weapon);
+			expect(state.shots[0]?.slot).toBe(slot);
+			expect(state.shots[0]?.damage).toBe(ENEMY_STATS[kind].damage);
+		}
+		enemy.loadout = [{ ...createMount('laser'), slot: 0 }, { ...createMount('machine-gun'), slot: 2 }];
+		state.shots = []; enemy.cooldown = 0;
+		step(state, idle, 1 / 60);
+		expect(state.shots).toHaveLength(0);
+	}
+});
+
+test('siege and commander barrages require their equipped dorsal cannon and preserve warning timing', function () {
+	for (const commander of [false, true]) {
+		const state = createState(); state.spawnIn = 3600;
+		state.warnings.push({ kind: 'siege', commander, x: state.player.x - 150, y: state.player.y, life: 0.001 });
+		step(state, idle, 1 / 60);
+		const enemy = state.enemies[0]; if (!enemy?.loadout) throw new Error('Missing equipped siege');
+		enemy.cooldown = 0; enemy.angle = 0;
+		step(state, idle, 1 / 60);
+		expect(state.strikes.length).toBeGreaterThan(0);
+		for (const strike of state.strikes) {
+			expect(strike.owner).toBe(enemy.id); expect(strike.slot).toBe(4); expect(strike.weapon).toBe('autocannon');
+			expect(strike.duration).toBeGreaterThanOrEqual(commander ? 3.2 : 2.8);
+		}
+		state.strikes = []; delete enemy.attack; enemy.cooldown = 0;
+		enemy.loadout = [{ ...createMount('machine-gun'), slot: 4 }, { ...createMount('autocannon'), slot: 2 }];
+		step(state, idle, 1 / 60);
+		expect(state.strikes).toHaveLength(0); expect(state.shots).toHaveLength(0);
+	}
 });
