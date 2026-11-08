@@ -84,6 +84,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		if (!box) return;
 		bounds.push({ part: object, corners: [box.min.x, box.max.x].flatMap(function (x) { return [box.min.y, box.max.y].flatMap(function (y) { return [box.min.z, box.max.z].map(function (z) { return new Vector3(x, y, z); }); }); }) });
 	});
+	const rocketTubes = hardware.muzzles.map(function (anchor) { return anchor.children.filter(function (child) { return child.name === 'rocket-tube'; }); });
+	const rocketMuzzles = rocketTubes.map(function (tubes) { return tubes.map(function () { return new Vector3(); }); });
 	const muzzles = hardware.muzzles.map(function () { return new Vector3(); }); const exhaust = new Vector3(); let labelHeight = 0;
 	const axis = new Vector3(0, 1, 0); const start = new Vector3(); const end = new Vector3(); const direction = new Vector3();
 	const forward = new Vector3(); const lateral = new Vector3(); const basis = new Matrix4(); const inverseRoot = new Matrix4(); const relative = new Matrix4(); const vertex = new Vector3();
@@ -97,6 +99,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	let disposed = false;
 	return {
 		root,
+		get rocketMuzzles(): readonly (readonly Vector3[])[] { return rocketMuzzles; },
 		get muzzles(): readonly Vector3[] { return muzzles; },
 		get exhaust(): Vector3 | undefined { return hardware.vents.length > 0 ? exhaust : undefined; },
 		get labelHeight(): number { return labelHeight; },
@@ -135,6 +138,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			}
 			root.updateMatrixWorld(true); inverseRoot.copy(root.matrixWorld).invert();
 			for (const [index, anchor] of hardware.muzzles.entries()) muzzles[index]?.setFromMatrixPosition(anchor.matrixWorld).applyMatrix4(inverseRoot);
+			for (const [slot, tubes] of rocketTubes.entries()) for (const [index, tube] of tubes.entries()) rocketMuzzles[slot]?.[index]?.setFromMatrixPosition(tube.matrixWorld).applyMatrix4(inverseRoot);
 			exhaust.set(0, 0, 0); for (const anchor of hardware.vents) exhaust.add(vertex.setFromMatrixPosition(anchor.matrixWorld).applyMatrix4(inverseRoot));
 			if (hardware.vents.length > 0) exhaust.divideScalar(hardware.vents.length);
 			labelHeight = 0;

@@ -61,7 +61,9 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 		// Keep neighboring lips physically separate on the narrow gauntlet rack.
 		const tubeRadius = Math.min(2.3, width / 6.8 - 0.85);
 		for (const column of [-1, 0, 1]) for (let row = 0; row < rows; row++) launchTube(pod, x + 15.05, bottom + 7 + row * 8, z + column * width / 3.4, tubeRadius, 0.7);
-		muzzles.push(anchor(pod, 'weapon-muzzle', x + 15.8, bottom + 7, z));
+		const muzzle = anchor(pod, 'weapon-muzzle', x + 15.8, bottom + 7, z);
+		for (const column of [-1, 0, 1]) for (let row = 0; row < rows; row++) anchor(muzzle, 'rocket-tube', 0, row * 8, column * width / 3.4);
+		muzzles.push(muzzle);
 		const shutter = group(pod, 'salvo-shutter');
 		casting(shutter, 'shutter-armor', x + 16.5, bottom + rows * 8 + 10, z, 2, 3, width * 0.8, accent);
 		shutters.push({ part: shutter, y: 0 });
@@ -113,7 +115,9 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 				housing(turret, 'missile-pod', [{ x: -29, y: 82, height: 8, width: 10 }, { x: -19, y: 83, height: 12, width: 13 }, { x: 2, y: 82.5, height: 10.5, width: 12 }], accent, z);
 				housing(turret, 'pod-cap', [{ x: -27, y: 92.3, height: 1.4, width: 8 }, { x: -16, y: 95.6, height: 1.5, width: 11 }, { x: 1, y: 93.8, height: 1.2, width: 10.5 }], trim, z);
 				for (const row of [-1, 1]) for (const column of [-1, 0, 1]) launchTube(turret, 2.05, 82.5 + row * 4.3, z + column * 7.1, 2.5, 0.75);
-				pods.push(anchor(turret, 'weapon-muzzle', 2.8, 78.2, z));
+				const muzzle = anchor(turret, 'weapon-muzzle', 2.8, 78.2, z);
+				for (const row of [0, 1]) for (const column of [-1, 0, 1]) anchor(muzzle, 'rocket-tube', 0, row * 8.6, column * 7.1);
+				pods.push(muzzle);
 			}
 			gun(z, 55.5, kind === 'siege' ? 48 : kind === 'scout' ? 20 : 31, 3.3);
 			casting(turret, 'gun-mantlet', 6, 55.7, z, 6, 12.8, 14.8, trim);
