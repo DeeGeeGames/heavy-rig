@@ -201,7 +201,7 @@ transitions to arm combat controls.
 | Raise/lower persistent throttle | W/S or up/down | Left stick up/down | Hold +/− |
 | Neutral; momentum decays | X | X / square | STOP |
 | Turn hull | A/D or left/right | Left stick left/right | Turn arrows |
-| Aim independent turret | Mouse | Right stick, in screen direction | Tap battlefield |
+| Aim independent turret | Mouse | Right stick left/right rotates torso | Tap battlefield |
 | Camera zoom | Mouse wheel | — | — |
 | Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Hold mount 1 |
 | Fire mount 2 | Right mouse / hold 2 or E | LT / L2 | Hold mount 2 |
@@ -228,7 +228,17 @@ the tabs and page buttons; left/right adjusts a focused volume slider. Touch con
 activate on touch-first devices or through Settings. Optional recoil/damage
 vibration depends on browser and controller support.
 
-Releasing throttle keeps the engine setting. Pause preserves throttle and
+**Settings → Controls → Control Mode** selects **Simulation** (default) or
+**Arcade**, saved on this device. The table above describes Simulation. In
+Arcade, the left stick or WASD / mapped movement keys selects screen-relative
+leg facing and forward throttle demand; release returns throttle gradually to
+neutral. The right stick selects absolute torso facing, as before. Both modes
+retain each chassis’s leg and torso rotation speeds. Mouse aiming works in
+both modes, including while moving or firing with a controller. Touch controls
+retain persistent throttle and turn arrows in either mode.
+
+In Simulation, releasing throttle keeps the engine setting and releasing the
+right stick holds the torso heading. Pause preserves throttle and
 clears held inputs; deployment starts in neutral. Focus loss, hidden pages,
 controller disconnection, and WebGL context loss pause and silence combat.
 Recovery requires explicit resume.
