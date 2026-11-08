@@ -7,7 +7,7 @@ import type { MissionMap } from './campaign-types';
 import { createProjectileSmoke } from './projectile-smoke';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
-interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
+interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined; enemies?: ReadonlyMap<number, readonly Vector3[]> }
 
 // World presentation owns its meshes and GPU assets. Simulation objects never
 // retain Three.js objects; pools shrink with live state, including on restart.
@@ -223,14 +223,16 @@ export const createWorldObjects = function (scene: Scene) {
 			sync(shots, state.shots.length, createShot, function (value, index) {
 				const shot = state.shots[index]; if (!shot) return; const style = shotStyle[shot.kind];
 				from.set(shot.x - shot.vx * style.duration, 42, shot.y - shot.vy * style.duration); to.set(shot.x, 42, shot.y);
-				if (shot.kind !== 'enemy' && muzzles.length > 0) {
-					let launch = launches.get(shot);
+				const shotMuzzles = shot.kind === 'enemy' ? frameEffects?.enemies?.get(shot.owner ?? -1) ?? [] : muzzles;
+				let launch = launches.get(shot);
+				if (launch || shotMuzzles.length > 0) {
 					const speed = Math.hypot(shot.vx, shot.vy);
 					if (!launch && speed > 0) {
-						const muzzle = muzzles[nextMuzzle++ % muzzles.length];
+						const muzzle = shotMuzzles[shot.slot ?? nextMuzzle++ % shotMuzzles.length];
 						if (muzzle) {
 							const dx = shot.vx / speed; const dy = shot.vy / speed;
-							const distance = Math.max(0, (shot.x - state.player.x) * dx + (shot.y - state.player.y) * dy - 30);
+							const owner = shot.kind === 'enemy' ? state.enemies.find(function (enemy) { return enemy.id === shot.owner; }) : state.player;
+							const distance = owner ? Math.max(0, (shot.x - owner.x) * dx + (shot.y - owner.y) * dy - 30) : 0;
 							launch = { offset: muzzle.clone().sub(new Vector3(shot.x - dx * distance, 42, shot.y - dy * distance)), x: shot.x, y: shot.y, distance };
 							launches.set(shot, launch);
 						}
@@ -258,7 +260,7 @@ export const createWorldObjects = function (scene: Scene) {
 				if (effect.source === 'muzzle' && muzzles.length > 0) {
 					let origin = flashes.get(effect);
 					if (!origin) {
-						origin = muzzles[nextFlashMuzzle++ % muzzles.length]?.clone();
+						origin = muzzles[effect.slot ?? nextFlashMuzzle++ % muzzles.length]?.clone();
 						if (origin) flashes.set(effect, origin);
 					}
 					if (origin) value.root.position.copy(origin);

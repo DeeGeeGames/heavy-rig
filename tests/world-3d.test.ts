@@ -1,8 +1,10 @@
 import { expect, test } from 'bun:test';
 import { InstancedMesh, LineSegments, Mesh, Scene, Vector3, type BufferGeometry, type Material, type Object3D } from 'three';
+import { createMount } from '../src/arsenal';
+import { getHardpoints } from '../src/hardpoints';
 import { createGaits } from '../src/gait';
 import { createMech } from '../src/mech-3d';
-import { createState, step } from '../src/simulation';
+import { createState, step, weaponsStep } from '../src/simulation';
 import { createWorldObjects } from '../src/world-3d';
 
 test('world pools track live combat state and restart removes transient objects', function () {
@@ -98,9 +100,8 @@ test('all frames launch from posed weapon faces even before ECS updates a stale 
 			model.root.position.set(-700, 11, 2300); model.root.scale.setScalar(1.7);
 			model.pose(gait, state.player.turret, feedback);
 			const effects = frameEffects(model, state);
-			for (const [index, face] of faces.entries()) {
-				const anchor = model.muzzles[index]; if (!anchor) throw new Error('Missing posed muzzle');
-				expect(anchor.distanceTo(face)).toBeLessThan(0.000001);
+			for (const anchor of model.muzzles) {
+				expect(faces.some(function (face) { return anchor.distanceTo(face) < 0.000001; })).toBe(true);
 				state.shots.push({ x: state.player.x, y: state.player.y + 30, vx: 0, vy: 300, life: 2, kind: frame === 'longbow' ? 'ppc' : 'rocket', target: undefined, damage: 1 });
 			}
 			world.update(state, effects);
@@ -237,4 +238,53 @@ test('real weapon flashes anchor once to redesigned hardware without lifting coo
 			}
 		} finally { model.dispose(); world.dispose(); }
 	}
+});
+
+// Exercise real firing with sparse loadouts: rendering order and earlier volleys
+// must never choose the side or family of the next shot's hardware.
+test('isolated and clustered fire stays on its equipped hardpoint across every player frame', function () {
+	for (const frame of ['warden', 'kestrel', 'maul', 'longbow', 'morrow'] as const) {
+		for (const [slot, hardpoint] of getHardpoints(frame).entries()) {
+			const state = createState({ frame }); const scene = new Scene();
+			const world = createWorldObjects(scene); const model = createMech(undefined, false, frame);
+			const weapon = hardpoint.family === 'energy' ? 'ppc' : hardpoint.family === 'launcher' ? 'cluster-rockets' : 'machine-gun';
+			state.loadout = [{ ...createMount(weapon), slot }]; state.player.turret = 0;
+			try {
+				model.pose(createGaits(state).player, 0);
+				const anchors = frameEffects(model, state); const muzzle = anchors.muzzles[slot];
+				if (!muzzle) throw new Error(`Missing ${frame} slot ${slot}`);
+				expect(muzzle.z - state.player.y < 0).toBe(hardpoint.id.startsWith('left'));
+				if (frame === 'warden') expect(muzzle.y > (anchors.muzzles[0]?.y ?? 0)).toBe(slot >= 2);
+				for (let volley = 0; volley < 3; volley++) {
+					for (const mount of state.loadout) mount.cooldown = 0;
+					weaponsStep(state, { drive: 0, stop: false, turn: 0, aim: { x: 1500, y: 780 }, fire: [slot === 0, slot === 1, slot === 2, slot === 3], coolant: false }, 1 / 60);
+					world.update(state, anchors);
+					for (const shot of state.shots) expect(shot.slot).toBe(slot);
+					for (const projectile of projectiles(scene)) expect(meshChild(projectile, 1).position.distanceTo(muzzle)).toBeLessThan(0.000001);
+					scene.traverse(function (object) { if (object.name === 'impact-effect') expect(object.position.distanceTo(muzzle)).toBeLessThan(0.000001); });
+				}
+			} finally { model.dispose(); world.dispose(); }
+		}
+	}
+});
+
+test('enemy fire uses the owning enemy slot and freezes the airborne origin', function () {
+	const state = createState(); const scene = new Scene(); const world = createWorldObjects(scene);
+	const enemy = { id: 7, x: 500, y: 500, angle: 0, hp: 100, maxHp: 100, cooldown: 0, heavy: false, kind: 'striker' as const };
+	state.enemies.push(enemy);
+	const shot = { owner: 7, slot: 3, x: 530, y: 500, vx: 230, vy: 0, life: 2, kind: 'enemy' as const, target: undefined, damage: 1 };
+	state.shots.push(shot);
+	const muzzle = new Vector3(503, 100, 534);
+	const anchors = { muzzles: [new Vector3(-100, -100, -100)], exhaust: undefined, enemies: new Map([[7, [new Vector3(), new Vector3(), new Vector3(), muzzle]]]) };
+	try {
+		world.update(state, anchors);
+		const head = meshChild(projectiles(scene)[0], 1);
+		expect(head.position.distanceTo(muzzle)).toBeLessThan(0.000001);
+		const origin = head.position.clone(); muzzle.set(900, 200, 900); enemy.x += 100;
+		world.update(state, anchors);
+		expect(head.position.distanceTo(origin)).toBeLessThan(0.000001);
+		state.enemies = []; anchors.enemies.clear();
+		world.update(state, anchors);
+		expect(head.position.distanceTo(origin)).toBeLessThan(0.000001);
+	} finally { world.dispose(); }
 });

@@ -178,15 +178,17 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					views.pose(playerId, player, gait, heading, state.player.hp, state, weaponRecoil(state.loadout));
 					views.scale(playerId, hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1);
 				}
+				const enemyMuzzles = new Map<number, readonly Vector3[]>();
 				for (const enemy of state.enemies) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
 					const view = views.ensure(id, enemy.kind, Boolean(enemy.commander));
 					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait(enemy, mechScale(enemy.kind)), enemy.angle, enemy.hp, state);
+					enemyMuzzles.set(enemy.id, view.model.muzzles.map(function (anchor) { return new Vector3(anchor.x + enemy.x, anchor.y, anchor.z + enemy.y); }));
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
 				objects.update(state, player ? {
-					muzzles: player.model.muzzles.map(worldAnchor), exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
+					muzzles: player.model.muzzles.map(worldAnchor), enemies: enemyMuzzles, exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
 				} : undefined);
 				reticle.visible = barrel.visible = !attract;
 				reticle.position.set(aim.x, 0.25, aim.y);
