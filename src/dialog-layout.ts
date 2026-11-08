@@ -48,7 +48,7 @@ const splitText = function (source: HTMLElement, height: number): readonly HTMLE
 	return fragments;
 };
 
-const paginate = function (state: DialogState, keepFocus = false) {
+const paginate = function (state: DialogState, keepFocus = false, focusTarget?: HTMLElement) {
 	for (const button of state.root.querySelectorAll<HTMLButtonElement>('[data-dialog-tab]')) {
 		button.setAttribute('aria-pressed', String(button.dataset['dialogTab'] === state.selected));
 	}
@@ -82,7 +82,7 @@ const paginate = function (state: DialogState, keepFocus = false) {
 		page.push(item);
 	}
 	if (page.length > 0) pages.push(page);
-	const focused = document.activeElement;
+	const focused = focusTarget ?? document.activeElement;
 	const focusedPage = keepFocus && focused instanceof HTMLElement ? pages.findIndex(function (candidate) { return candidate.some(function (item) { return item.contains(focused); }); }) : -1;
 	state.page = Math.max(0, Math.min(focusedPage >= 0 ? focusedPage : state.page, pages.length - 1));
 	for (const [index, candidate] of pages.entries()) {
@@ -97,22 +97,25 @@ const paginate = function (state: DialogState, keepFocus = false) {
 	state.previous.parentElement?.classList.toggle('dialog-single-page', pages.length <= 1);
 };
 
-export const mountDialogLayout = function (container: HTMLElement, signal: AbortSignal): () => void {
+export const mountDialogLayout = function (container: HTMLElement, signal: AbortSignal): (focusTarget?: HTMLElement) => void {
 	const states: DialogState[] = [];
+	const pagers: HTMLElement[] = [];
 	let frame = 0;
 	let current: HTMLElement | undefined;
-	const update = function () {
+	const update = function (focusTarget?: HTMLElement) {
 		const controls = container.querySelector<HTMLElement>('.menu-controls');
 		const bottom = controls && isVisible(controls) ? container.getBoundingClientRect().bottom - controls.getBoundingClientRect().top + 10 : 18;
 		container.style.setProperty('--dialog-bottom-gap', `${bottom}px`);
 		const state = states.find(function (candidate) { return !candidate.root.hidden; });
 		if (!state) { current = undefined; return; }
 		if (current !== state.root) { state.selected = topicName(state.topics[0] ?? state.root); state.page = 0; current = state.root; }
-		paginate(state, true);
+		const targetTopic = focusTarget?.closest<HTMLElement>('[data-dialog-topic]');
+		if (targetTopic && state.root.contains(targetTopic)) state.selected = topicName(targetTopic);
+		paginate(state, true, focusTarget);
 	};
 	const schedule = function () {
 		cancelAnimationFrame(frame);
-		frame = requestAnimationFrame(update);
+		frame = requestAnimationFrame(function () { update(); });
 	};
 	for (const root of container.querySelectorAll<HTMLElement>('.modal')) {
 		const body = root.querySelector<HTMLElement>('.dialog-body');
@@ -120,6 +123,7 @@ export const mountDialogLayout = function (container: HTMLElement, signal: Abort
 		if (!body || !actions) continue;
 		const topics = [...body.querySelectorAll<HTMLElement>('[data-dialog-topic]')];
 		const pager = document.createElement('nav'); pager.className = 'dialog-pager'; pager.setAttribute('aria-label', 'Content pages');
+		pagers.push(pager);
 		const previous = document.createElement('button'); previous.textContent = '← PREVIOUS'; previous.type = 'button';
 		const next = document.createElement('button'); next.textContent = 'NEXT →'; next.type = 'button';
 		const counter = document.createElement('span'); counter.setAttribute('role', 'status');
@@ -139,6 +143,13 @@ export const mountDialogLayout = function (container: HTMLElement, signal: Abort
 	for (const state of states) resize.observe(state.body);
 	const appearance = new MutationObserver(schedule);
 	appearance.observe(container, { attributes: true, attributeFilter: ['class'] });
-	signal.addEventListener('abort', function () { cancelAnimationFrame(frame); resize.disconnect(); appearance.disconnect(); }, { once: true });
-	return function () { update(); schedule(); };
+	signal.addEventListener('abort', function () {
+		cancelAnimationFrame(frame); resize.disconnect(); appearance.disconnect();
+		for (const pager of pagers) pager.remove();
+		for (const fragment of container.querySelectorAll('.dialog-fragment')) fragment.remove();
+		for (const source of container.querySelectorAll<HTMLElement>('.dialog-source-split, .dialog-item-offpage')) {
+			source.classList.remove('dialog-source-split', 'dialog-item-offpage'); source.inert = false;
+		}
+	}, { once: true });
+	return function (focusTarget) { update(focusTarget); schedule(); };
 };

@@ -1,6 +1,6 @@
 import { getFrame } from './frames';
 import { FRAME_RIGS, STANDARD_LEG_RIG, type LegRig } from './frame-rig';
-import { angleDelta, distance, type EnemyKind, type Point, type State } from './simulation';
+import { angleDelta, distance, type EnemyKind, type Point, type CombatStateView } from './simulation';
 export { STANDARD_LEG_RIG, type LegRig } from './frame-rig';
 
 interface Body extends Point { angle: number }
@@ -203,10 +203,10 @@ export const legJoints = function (body: Body, foot: Foot, index: FootIndex, siz
 	return { hip, knee, ankle };
 };
 
-export const createGaits = function (state: State): Gaits {
+export const createGaits = function (state: CombatStateView): Gaits {
 	return { player: createGait(state.player, getFrame(state.frame).size, FRAME_RIGS[state.frame]), enemies: new Map(state.enemies.map(function (enemy) { return [enemy.id, createGait(enemy, mechScale(enemy.kind))]; })), time: state.time };
 };
-export const advanceGaits = function (gaits: Gaits, state: State): Gaits {
+export const advanceGaits = function (gaits: Gaits, state: CombatStateView): Gaits {
 	const dt = state.time - gaits.time;
 	if (dt < 0) return createGaits(state);
 	if (dt === 0) return gaits;
