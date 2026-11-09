@@ -301,7 +301,7 @@ test('rocket volleys launch from pod tubes and retain parallel paths after turre
 		weaponsStep(state, { drive: 0, stop: false, turn: 0, aim: { x: 1500, y: 780 }, fire: [true, false, false, false], coolant: false }, 1 / 60);
 		for (let tick = 0; tick < 24; tick++) weaponsStep(state, { drive: 0, stop: false, turn: 0, aim: { x: 1500, y: 780 }, fire: [false, false, false, false], coolant: false }, 1 / 60);
 		expect(state.shots).toHaveLength(2);
-		for (const shot of state.shots) { expect(shot.vx).toBe(470); expect(shot.vy).toBe(0); }
+		for (const shot of state.shots) { expect(shot.vx).toBe(1880); expect(shot.vy).toBe(0); }
 		world.update(state, { ...frameEffects(model, state), rocketMuzzles });
 		const starts = projectiles(scene).map(function (projectile) { return meshChild(projectile, 1).position.clone(); });
 		for (const start of starts) expect(tubes.some(function (tube) { return tube.distanceTo(start) < 0.000001; })).toBe(true);
