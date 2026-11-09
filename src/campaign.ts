@@ -32,6 +32,7 @@ export interface CampaignResult {
 
 export interface Campaign extends CompanyState {
 	version: 3;
+	introComplete: boolean;
 	universe: UniverseState;
 	seed: number;
 	planetId: PlanetId;
@@ -64,7 +65,7 @@ const freshSeed = function () {
 
 export const createCampaign = function (seed?: number): Campaign {
 	return {
-		...createCompany(), version: 3, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
+		...createCompany(), version: 3, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
 		credits: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 	};
 };
@@ -226,7 +227,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
 		const campaign: Campaign = {
-			...company, version: 3, universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
+			...company, version: 3, introComplete: value['introComplete'] !== false, universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 		};

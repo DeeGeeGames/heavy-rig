@@ -1,0 +1,36 @@
+.intro-screen { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 10%; background: #000; }
+.intro-screen p { width: min(760px, 100%); margin: 0; font: clamp(19px, 3vw, 30px)/1.7 var(--mono); color: #e9e7db; text-wrap: balance; text-align: center; }
+#game[data-screen='intro'] .menu-controls { display: none; }
+#game[data-screen='rig-bay'] .menu-controls { z-index: 5; }
+.rig-bay { position: absolute; inset: 0; z-index: 4; background: #080d0f; display: grid; align-content: center; gap: 24px; padding: 32px 8% 100px; overflow: auto; }
+.rig-bay header, .rig-choices { width: min(900px, 100%); margin-inline: auto; }
+.rig-bay h2 { font: clamp(30px, 5vw, 56px)/1 var(--display); margin: 12px 0; }
+.rig-bay p { color: var(--muted); line-height: 1.5; margin: 0; }
+.rig-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.rig-choice { display: grid; text-align: left; gap: 14px; padding: 26px; border-top: 3px solid var(--cyan); background: #122024; }
+.rig-choice:last-child { border-top-color: #b7a8ed; }
+.rig-choice strong { font: clamp(30px, 5vw, 46px)/1 var(--display); }
+.rig-choice .rig-spec { font: 12px/1.6 var(--mono); color: var(--muted); }
+.rig-choice .rig-action { color: var(--cyan); font: 13px var(--mono); margin-top: 10px; }
+#escape-guide { position: absolute; left: 50%; top: 104px; transform: translateX(-50%); width: min(620px, calc(100% - 32px)); padding: 14px 18px; background: #0b171ef2; border-left: 3px solid var(--amber); font: 14px/1.6 var(--mono); pointer-events: none; }
+#escape-guide:empty { display: none; }
+@media (max-width: 540px) {
+	.rig-bay { padding: 24px 20px 110px; gap: 18px; align-content: start; }
+	.rig-choices { grid-template-columns: 1fr; gap: 12px; }
+	.rig-choice { gap: 8px; padding: 18px; }
+	#escape-guide { top: 90px; font-size: 12px; padding: 10px 12px; }
+}
+@media (max-width: 700px) and (min-height: 501px) {
+	.touch-enabled #escape-guide { top: 240px; }
+}
+@media (max-height: 500px) {
+	.rig-bay { padding: 20px 5% 70px; gap: 12px; align-content: start; }
+	.rig-bay h2 { font-size: 28px; margin: 6px 0; }
+	.rig-choice { padding: 14px; gap: 6px; }
+	.rig-choice strong { font-size: 30px; }
+	.rig-choice .rig-action { margin-top: 0; }
+	#escape-guide { top: 76px; width: min(520px, calc(100% - 32px)); font-size: 11px; padding: 8px 12px; }
+}
+@media (min-width: 541px) and (max-height: 500px) {
+	.touch-enabled #escape-guide { top: 100px; left: 220px; right: 16px; width: auto; transform: none; }
+}

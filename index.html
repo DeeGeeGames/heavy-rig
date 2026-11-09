@@ -12,9 +12,10 @@
 	<link rel="stylesheet" href="./src/workspace.css">
 	<link rel="stylesheet" href="./src/dialog-layout.css">
 	<link rel="stylesheet" href="./src/territory-map.css">
+	<link rel="stylesheet" href="./src/intro.css">
 </head>
 <body>
-<main id="game" class="menu-open" data-screen="title">
+<main id="game" class="menu-open" data-screen="intro">
 	<canvas id="battlefield" aria-label="Heavy Rig battlefield. W and S set throttle, A and D steer, X stops. Mouse aims; wheel zooms. Left, right, middle and thumb buttons fire mounts 1 to 4. Hold 1 to 4 on the keyboard. V vents coolant. Escape pauses."></canvas>
 	<div class="screen-grain" aria-hidden="true"></div>
 	<div id="hud" inert>
@@ -24,6 +25,7 @@
 		</header>
 		<div id="training-guide" class="training-guide" hidden><span id="training-progress" class="eyebrow"></span><b id="training-title"></b><p id="training-copy"></p><small>SAFE TRAINING · PAUSE TO EXIT</small></div>
 		<div id="message" class="field-message" role="status" aria-live="polite"></div>
+		<div id="escape-guide" hidden></div>
 		<div class="left-instruments">
 			<div class="relay-readout" id="relay-readout"><span class="signal-icon" aria-hidden="true">◈</span><div><span class="eyebrow" id="relay-name">RELAY 09</span><b id="relay-value">100%</b><div class="track"><i id="relay-fill"></i></div></div></div>
 			<div class="frame-readout"><div class="readout-heading"><span class="eyebrow">FRAME INTEGRITY</span><strong id="armor-value">100%</strong></div><div class="track armor-track"><i id="armor-fill"></i></div>
@@ -39,7 +41,20 @@
 		<div id="pilot-hint" class="pilot-hint"><span id="hint-copy"></span><button id="dismiss-hint" aria-label="Dismiss piloting tip">×</button></div>
 		<nav id="touch" aria-label="Touch driving controls"><button data-control="left" aria-label="Turn hull left">↶</button><button data-control="forward" aria-label="Increase persistent throttle">＋</button><button data-control="right" aria-label="Turn hull right">↷</button><button data-control="back" aria-label="Decrease persistent throttle">−</button><button data-control="stop">STOP</button></nav>
 	</div>
-	<section id="title" class="title-screen menu-surface" aria-labelledby="title-name">
+	<section id="intro" class="intro-screen menu-surface" tabindex="-1"><p id="intro-line"></p></section>
+	<section id="rig-bay" class="rig-bay menu-surface" hidden>
+		<header><span class="eyebrow">RIG BAY / SECURITY LOCK DISENGAGED</span><h2>BORROW SOME FREEDOM.</h2><p>Two light frames. One way out. Choose your rig.</p></header>
+		<div class="rig-choices">
+			<button id="intro-kestrel" class="rig-choice" aria-label="Take Kestrel"><span class="eyebrow">21 / SKIRMISHER</span><strong>KESTREL</strong><span class="rig-spec">40 TONS · TWIN MACHINE GUNS</span><span>Fast legs and quick tracking. Keep moving and hold your fire on target.</span><span class="rig-action">TAKE KESTREL →</span></button>
+			<button id="intro-longbow" class="rig-choice" aria-label="Take Longbow"><span class="eyebrow">16 / PRECISION GUNNER</span><strong>LONGBOW</strong><span class="rig-spec">65 TONS · PARTICLE CANNON</span><span>A steadier pace and a harder hit. Give the torso time to line up each shot.</span><span class="rig-action">TAKE LONGBOW →</span></button>
+		</div>
+	</section>
+	<section id="escape-result" class="modal compact menu-surface" hidden>
+		<header class="dialog-heading"><span class="eyebrow">RIG BAY / ESCAPE INTERRUPTED</span><h2>ONE MORE TRY.</h2></header>
+		<div class="dialog-body"><div data-dialog-topic="escape"><p data-dialog-text>The guards caught up. Try the escape again, or choose the other rig. Your company is untouched.</p></div></div>
+		<footer class="dialog-actions"><button id="escape-retry" class="primary">RETRY ESCAPE →</button><button id="escape-change-rig" class="secondary">CHANGE RIG</button></footer>
+	</section>
+	<section id="title" class="title-screen menu-surface" aria-labelledby="title-name" hidden>
 		<canvas id="title-scene" aria-hidden="true"></canvas>
 		<div class="title-shade" aria-hidden="true"></div>
 		<header class="title-topline"><span class="title-studio"><span class="title-emblem" aria-hidden="true">DG</span> DEEGEE GAMES</span><span>HRV WAYFARER <i>/</i> FRONTIER SECTOR</span></header>
@@ -52,10 +67,11 @@
 				<button id="title-continue" class="title-choice" aria-describedby="title-continue-description"><span class="title-cursor" aria-hidden="true">▸</span><span id="title-company-label">ENTER COMPANY</span><span class="title-choice-end" aria-hidden="true">↗</span></button>
 				<button id="title-new-campaign" class="title-choice" aria-describedby="title-new-campaign-description"><span class="title-cursor" aria-hidden="true">▸</span>NEW CAMPAIGN</button>
 				<button id="title-training" class="title-choice" aria-describedby="title-training-description"><span class="title-cursor" aria-hidden="true">▸</span>FRAME TRAINING<span class="title-choice-end" aria-hidden="true">SIM</span></button>
+				<button id="title-intro" class="title-choice" aria-describedby="title-intro-description"><span class="title-cursor" aria-hidden="true">▸</span>REPLAY ESCAPE</button>
 				<button id="title-settings" class="title-choice" aria-describedby="title-settings-description"><span class="title-cursor" aria-hidden="true">▸</span>SETTINGS</button>
 				<button id="title-handbook" class="title-choice" aria-describedby="title-handbook-description"><span class="title-cursor" aria-hidden="true">▸</span>PILOT HANDBOOK</button>
 			</nav>
-			<div class="title-menu-description"><p id="title-continue-description">Board the Wayfarer. Choose your next contract.</p><p id="title-new-campaign-description" hidden>Start a fresh company. Replaces current campaign progress after confirmation.</p><p id="title-training-description" hidden>Learn your frame. A safe simulator; company progress is untouched.</p><p id="title-settings-description" hidden>Tune audio, difficulty, controls, and accessibility.</p><p id="title-handbook-description" hidden>Study the controls, weapons, and life on the frontier.</p></div>
+			<div class="title-menu-description"><p id="title-continue-description">Board the Wayfarer. Choose your next contract.</p><p id="title-new-campaign-description" hidden>Start a fresh company. Replaces current campaign progress after confirmation.</p><p id="title-training-description" hidden>Learn your frame. A safe simulator; company progress is untouched.</p><p id="title-intro-description" hidden>Replay the Rig Bay escape. Company progress is untouched.</p><p id="title-settings-description" hidden>Tune audio, difficulty, controls, and accessibility.</p><p id="title-handbook-description" hidden>Study the controls, weapons, and life on the frontier.</p></div>
 		</div>
 		<div class="title-hangar-label" aria-hidden="true"><span>08 <i>/</i> WARDEN</span><small>80T LINE FIGHTER · WAYFARER HANGAR</small></div>
 		<footer class="title-footer"><span id="title-save-status"></span><span>INDEPENDENT STEEL. UNSETTLED FRONTIER.</span></footer>

@@ -9,7 +9,16 @@ A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,
 its Rattler machine gun fitted in mount 1. Its second machine-gun hardpoint is empty.
 Campaign missions and a separate Frame Training simulator are the playable modes.
 
-The game opens on a console-style title menu with a rendered Wayfarer hangar.
+New companies begin with a black-screen prologue, a choice of Kestrel or Longbow,
+and a short escape from the northwest Rig Bay to a southeast evacuation point.
+Each narrative line types at five characters per second, holds for three seconds,
+and fades over two seconds. Controls appear during live play; alarms sound through
+the escape. Hold the green evacuation zone for three seconds to finish.
+The borrowed rig, combat damage, and kills do not carry into the company.
+Completion is saved per company; existing saves bypass the prologue. REPLAY ESCAPE
+on the title menu repeats the full sequence without changing company progress.
+
+After the escape, the game opens on a console-style title menu with a rendered Wayfarer hangar.
 Choose **Start Company** on a fresh device or **Continue Company** to board the
 ship with existing progress. Frame Training, Settings, and the Pilot Handbook
 are also available here. Up/down or Tab selects a menu item; Enter confirms.
