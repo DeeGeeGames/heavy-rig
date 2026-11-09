@@ -16,6 +16,7 @@
     "Keyboard department cycling includes Starmap and wraps in both directions",
     "Simulated controller shoulders switch departments and triggers switch Map/Intel",
     "Find conflict zone opens Map even after Intel was last visited",
+    "Conflict cycling buttons are removed; map markers still select remote conflict systems",
     "Selected system, arrival forecast, contract selection, zoom, and saves survive department switches",
     "Explicit Contracts shortcut restores Board after Factions",
     "Jump advances one day, arrives at the selected system, preserves forecast terms, and opens Contracts Board",
@@ -83,6 +84,8 @@
     "desktop.png",
     "portrait.png",
     "small-portrait.png",
-    "landscape.png"
-  ]
+    "landscape.png",
+    "portrait-intel.png"
+  ],
+  "conflictCyclingButtons": "Removed on both Map and Intel; conflict markers and system selection remain available"
 }

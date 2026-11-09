@@ -36,8 +36,6 @@
 .workspace .system-control { font: 12px var(--mono); color: var(--cyan); }
 .workspace .system-conflict { color: #ee8f68; font: 12px var(--mono); letter-spacing: 1px; }
 .workspace .system-quiet { color: var(--muted); font: 12px var(--mono); }
-.system-nav { display: flex; gap: 6px; flex-wrap: wrap; }
-.system-nav button { flex: 1; font: 11px var(--mono); padding: 10px 8px; }
 @media (max-width: 760px) {
 	#starmap[data-view='route'] .workspace-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
 	#starmap[data-view='route'] [data-pane='system'] { display: none; }

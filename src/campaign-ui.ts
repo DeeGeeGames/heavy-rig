@@ -1,4 +1,4 @@
-import { getSystemIntel, PLANETS } from './universe';
+import { getSystemIntel } from './universe';
 import { renderTerritoryMap } from './territory-map';
 import { selectWorkspacePane } from './workspace';
 import { html } from 'lit-html';
@@ -42,11 +42,6 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 	const planet = getPlanet(destination);
 	const forecast = destination === campaign.planetId ? campaign : travelTo(campaign, destination);
 	const intel = getSystemIntel(forecast, destination);
-	const conflicts = PLANETS.filter(function (world) { return getSystemIntel(world.id === campaign.planetId ? campaign : travelTo(campaign, world.id), world.id).conflict; });
-	const moveConflict = function (delta: number) {
-		const index = conflicts.findIndex(function (world) { return world.id === destination; });
-		const next = conflicts[(index + delta + conflicts.length) % conflicts.length]; if (next) actions.selectPlanet(next.id);
-	};
 	const local = destination === campaign.planetId;
 	const active = campaign.active;
 	const mech = getOwnedMech(campaign);
@@ -54,9 +49,9 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 	const panes: WorkspacePane[] = [
 		{ id: 'route', label: 'Starmap', items: [renderTerritoryMap(root, campaign, destination, actions.selectPlanet)], actions: html`<button @click=${function () { selectWorkspacePane(root, 'system'); }}>INTEL · ${planet.name.toUpperCase()} →</button>` },
 		{ id: 'system', label: 'System intel', items: [
-			html`<span class="eyebrow">${local ? 'WAYFARER / IN ORBIT' : `ARRIVAL FORECAST / DAY ${forecast.day}`}</span><h3>${planet.name}</h3><p class="system-control">${intel.owner ? getFaction(intel.owner).name : 'Unclaimed space'}</p><div class="system-nav"><button ?disabled=${Boolean(active) || !conflicts.length} @click=${function () { moveConflict(-1); }}>← CONFLICT</button><button ?disabled=${Boolean(active) || !conflicts.length} @click=${function () { moveConflict(1); }}>CONFLICT →</button></div>`,
+			html`<span class="eyebrow">${local ? 'WAYFARER / IN ORBIT' : `ARRIVAL FORECAST / DAY ${forecast.day}`}</span><h3>${planet.name}</h3><p class="system-control">${intel.owner ? getFaction(intel.owner).name : 'Unclaimed space'}</p>`,
 			html`<p class=${intel.conflict ? 'system-conflict' : 'system-quiet'}>${intel.conflict ? '◌ ACTIVE CONFLICT ZONE' : 'NO ACTIVE CONFLICT'}</p>`,
-			...textItems(intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No military contracts posted. Inspect another system or cycle to a conflict zone.'),
+			...textItems(intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No military contracts posted. Select a conflict zone on the Starmap.'),
 			...textItems(planet.description),
 			...textItems('Fronts move with calendar days. Victories strengthen the employer locally; defeat or abort strengthens the opposition.'),
 			...textItems(order ? `Frame in Engineering until day ${order.readyDay}.` : mech ? `${getFrame(mech.frameId).name} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Select a company frame before deployment.'),
