@@ -866,7 +866,21 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const previousNarrative = narrativeFrame(lines, narrativeElapsed);
 		narrativeElapsed += dt;
 		const narrative = narrativeFrame(lines, narrativeElapsed);
-		element('intro-line').textContent = narrative.text; element('intro-line').style.opacity = String(narrative.opacity);
+		const line = element('intro-line');
+		const fullText = lines[narrative.index] ?? '';
+		// Invisible characters reserve the final wrapping and height throughout typing.
+		if (line.textContent !== fullText) line.replaceChildren(...Array.from(fullText, function (character) {
+			const span = document.createElement('span');
+			span.textContent = character;
+			return span;
+		}));
+		let characterOffset = 0;
+		for (const span of line.children) {
+			if (!(span instanceof HTMLElement)) continue;
+			characterOffset += span.textContent.length;
+			span.style.visibility = characterOffset <= narrative.text.length ? 'visible' : 'hidden';
+		}
+		line.style.opacity = String(narrative.opacity);
 		const revealed = narrative.text.slice(previousNarrative.index === narrative.index ? previousNarrative.text.length : 0);
 		if (revealed) { audio.update(audioFrame(frameTime)); audio.typeText(revealed); }
 		if (narrative.done) {
