@@ -105,10 +105,10 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 
 export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings; controlMode?: ControlMode; touch?: boolean; buttonLabel?: (index: number) => string } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
 	const key = function (action: keyof KeyboardBindings) { return mappings.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
-	const arcade = mappings.controlMode === 'arcade';
+	const arcade = mappings.touch || mappings.controlMode === 'arcade';
 	const buttonLabel = mappings.buttonLabel ?? padLabel;
 	const controls = mappings.touch
-		? { drive: 'Drag the left stick up', stop: 'Hold STOP', steer: 'Drag the left stick left or right', aim: 'Tap the target to track it, or use NEXT', cannon: 'FIRE with mount 1 armed', missile: 'FIRE with mount 3 armed', laser: 'FIRE with mount 1 armed', coolant: 'VENT' }
+		? { drive: 'Point the left stick toward your heading; push farther for more speed', stop: 'Hold STOP', steer: 'Point the left stick toward a new direction', aim: 'Tap the target to track it, or use NEXT', cannon: 'FIRE with mount 1 armed', missile: 'FIRE with mount 3 armed', laser: 'FIRE with mount 1 armed', coolant: 'VENT' }
 		: controller
 		? { drive: 'Push the left stick up', stop: `Hold ${buttonLabel(mappings.controller.stop)}`, steer: arcade ? 'Point the left stick toward a new direction' : 'Move the left stick left or right', aim: arcade ? 'Point the right stick at the target' : 'Hold the right stick left or right to rotate the torso', cannon: buttonLabel(mappings.controller['mount-0']), missile: buttonLabel(mappings.controller['mount-2']), laser: buttonLabel(mappings.controller['mount-0']), coolant: buttonLabel(mappings.controller.coolant) }
 		: { drive: `Hold ${key('forward')}`, stop: `Hold ${key('stop')}`, steer: arcade ? `Use ${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} to choose a direction` : `Hold ${key('left')} / ${key('right')}`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-0'), coolant: key('coolant') };

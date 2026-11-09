@@ -1,4 +1,4 @@
-/* Touch cockpit: persistent cruise, target tracking, and a held trigger. */
+/* Touch cockpit: arcade movement, target tracking, and a held trigger. */
 .touch-enabled #touch { position: absolute; inset: auto 0 0; height: 225px; display: block; pointer-events: none; }
 .touch-enabled #touch button { pointer-events: auto; touch-action: none; }
 .touch-drive-cluster, .touch-fire-cluster { position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); width: 204px; height: 190px; text-align: center; }

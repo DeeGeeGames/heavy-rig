@@ -46,10 +46,25 @@ test('touch acquisition excludes dead, offscreen and HUD-obscured contacts, and 
 test('a second touch cannot take over or release the drive stick, and cancellation clears its demand', function () {
 	const drive = createTouchDrive();
 	expect(drive.start(10)).toBe(true); drive.move(10, .6, -1);
-	expect(drive.read().drive).toBe(1); expect(drive.read().turn).toBeGreaterThan(0);
+	expect(drive.read().drive).toBeGreaterThan(0); expect(drive.read().turn).toBeGreaterThan(0);
 	expect(drive.start(20)).toBe(false); drive.move(20, -1, 1); drive.release(20);
-	expect(drive.read().drive).toBe(1); expect(drive.read().turn).toBeGreaterThan(0);
+	expect(drive.read().drive).toBeGreaterThan(0); expect(drive.read().turn).toBeGreaterThan(0);
 	drive.release(10); expect(drive.read()).toEqual({ drive: 0, turn: 0 });
 	expect(drive.start(20)).toBe(true); drive.move(20, -1, 1); drive.reset();
 	drive.move(20, 1, -1); expect(drive.read()).toEqual({ drive: 0, turn: 0 });
+});
+
+test('touch stick preserves diagonal heading with a radial dead zone and proportional speed', function () {
+	const stick = createTouchDrive(); stick.start(1);
+	stick.move(1, .1, -.1); expect(stick.read()).toEqual({ drive: 0, turn: 0 });
+	stick.move(1, .3, -.4);
+	const half = stick.read();
+	expect(Math.hypot(half.turn, half.drive)).toBeCloseTo((.5 - .18) / .82);
+	expect(half.turn / half.drive).toBeCloseTo(.75);
+	stick.move(1, 3, -4);
+	const full = stick.read();
+	expect(Math.hypot(full.turn, full.drive)).toBeCloseTo(1);
+	expect(full.turn / full.drive).toBeCloseTo(.75);
+	stick.move(1, 0, 1); expect(stick.read()).toEqual({ drive: -1, turn: 0 });
+	stick.move(1, 0, 0); expect(stick.read()).toEqual({ drive: 0, turn: 0 });
 });

@@ -785,7 +785,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('escape-guide').textContent = escape ? escapeMessage(state.time, { ...profile.settings, device: inputMode, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); } }) : '';
 		element('training-guide').hidden = !training || navigation.screen !== 'playing';
 		if (training) {
-			const copy = trainingCopy(training, inputMode === 'gamepad', { ...profile.settings, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); }, touch: inputMode === 'touch', controlMode: inputMode === 'touch' ? 'simulation' : profile.settings.controlMode });
+			const copy = trainingCopy(training, inputMode === 'gamepad', { ...profile.settings, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); }, touch: inputMode === 'touch' });
 			container.dataset['trainingStage'] = training.stage;
 			ui.phase.textContent = `${getFrame(state.frame).name} QUALIFICATION`; ui.status.textContent = 'LOANED TRAINING FRAME · NO SCORED RECORD';
 			element('training-progress').textContent = `DRILL ${copy.progress}`;
@@ -798,8 +798,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		ui.drive.textContent = `${p.throttle < -0.005 ? 'REV' : p.throttle > 0.005 ? 'FWD' : 'N'} ${Math.round(Math.abs(p.throttle) * 100)}%`;
 		const definition = getFrame(state.frame);
 		element('combat-frame-name').textContent = definition.name.toUpperCase();
-		element('combat-control-mode').textContent = profile.settings.controlMode.toUpperCase();
-		element('drive-behavior').textContent = profile.settings.controlMode === 'arcade' ? 'RELEASE TO SLOW' : 'RELEASE TO CRUISE';
+		const arcadeMovement = inputMode === 'touch' || profile.settings.controlMode === 'arcade';
+		element('combat-control-mode').textContent = arcadeMovement ? 'ARCADE' : 'SIMULATION';
+		element('drive-behavior').textContent = arcadeMovement ? 'RELEASE TO SLOW' : 'RELEASE TO CRUISE';
 		render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.stop) : html`${combatKeyboardPrompt('stop')}`, element('stop-prompt'));
 		container.classList.toggle('reactor-locked', p.overheated);
 		container.classList.toggle('hull-critical', p.hp < 30);
@@ -842,7 +843,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE STICKS AND TRIGGERS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
 		ui.hint.hidden = tipDismissed || state.time > 35 || navigation.screen !== 'playing';
 		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.coolant) : html`${combatKeyboardPrompt('coolant')}`, coolantPrompt);
-		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : touchLayout ? 'Drag the left stick to set throttle and steer; release to cruise. Tap a hostile to track it, arm mounts, then hold FIRE. STOP sets neutral.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
+		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : touchLayout ? 'Point the left stick to choose heading; push farther for speed. Release to slow. Tap a hostile to track it, arm mounts, then hold FIRE. STOP sets neutral.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
 		const soundState = audioState === 'unavailable' ? 'UNAVAILABLE' : needsGesture ? 'ENABLE SOUND' : muted ? 'SOUND OFF' : 'SOUND ON';
 		if (lastSoundState !== soundState) { lastSoundState = soundState; ui.sound.textContent = soundState; ui.sound.setAttribute('aria-label', needsGesture ? 'Click to enable audio' : audioState === 'unavailable' ? 'Retry audio' : muted ? 'Unmute sound' : 'Mute sound'); ui.sound.setAttribute('aria-pressed', String(muted)); }
@@ -953,7 +954,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			}
 			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') aim = { x: state.player.x + Math.cos(state.player.turret) * 600, y: state.player.y + Math.sin(state.player.turret) * 600 };
 			makeInput = function (): Controls {
-				const arcade = profile.settings.controlMode === 'arcade' && inputMode !== 'touch';
+				const arcade = profile.settings.controlMode === 'arcade' || inputMode === 'touch';
 				const touch = touchDrive.read();
 				const touchFire = container.classList.contains('touch-enabled') && active('touch-fire');
 				const x = Math.max(-1, Math.min(1, Number(active('right')) - Number(active('left')) + pad.turn + touch.turn));
