@@ -1,0 +1,62 @@
+{
+  "productionURL": "http://localhost:3116",
+  "results": [
+    {
+      "viewport": "desktop",
+      "mapSize": {
+        "x": 25,
+        "y": 321,
+        "width": 970.703125,
+        "height": 468
+      },
+      "travelVisible": true
+    },
+    {
+      "viewport": "portrait",
+      "mapSize": {
+        "x": 11,
+        "y": 209,
+        "width": 368,
+        "height": 399.609375
+      },
+      "travelVisible": true
+    },
+    {
+      "viewport": "landscape",
+      "mapSize": {
+        "x": 13,
+        "y": 107,
+        "width": 564,
+        "height": 174
+      },
+      "travelVisible": true
+    },
+    {
+      "viewport": "smallLandscape",
+      "mapSize": {
+        "x": 13,
+        "y": 107,
+        "width": 641,
+        "height": 153
+      },
+      "travelVisible": true
+    },
+    {
+      "acceptReloadDeployAbort": true,
+      "oppositionInfluencePersisted": true
+    },
+    {
+      "arrivalForecastQuietMatchesBoard": true
+    },
+    {
+      "simulatedTouchTravel": true
+    },
+    {
+      "simulatedGamepadSelectionAndPages": true
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Automated browser inputs and domain fixtures; no physical controller/touch, audio, GPU, or campaign-balance acceptance."
+  ]
+}

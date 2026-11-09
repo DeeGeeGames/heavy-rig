@@ -1,7 +1,7 @@
 import type { Point } from './simulation';
 
 export type FactionId = 'freeholds' | 'combine' | 'accord';
-export type PlanetId = 'meridian' | 'cinder' | 'borealis';
+export type PlanetId = 'meridian' | 'cinder' | 'borealis' | `system-${number}`;
 export type Biome = 'badlands' | 'volcanic' | 'tundra';
 export type MissionKind = 'defend' | 'demolition' | 'assassination' | 'clearance';
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { abandonContract, acceptContract, createCampaign, getContracts, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
+import { abandonContract, acceptContract, createCampaign, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
 import { advanceDays, applyRigCheat, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, FRAME_PRICES, getOwnedMech, queueRefit, queueRepair, selectFrame, unlockAllRigs, WEAPON_PRICES } from '../src/company';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
@@ -111,7 +111,10 @@ describe('Company ownership and workshop transactions', function () {
 			expect(finished.lastResult?.aborted).toBe(outcome === 'abort' || outcome === 'interruption');
 			expect(recoverInterruptedDeployment(roundTrip(finished))).toEqual(finished);
 			expect(settleContract(finished, true)).toBe(finished);
-			const nextDrop = beginDeployment(accept(finished));
+			// A successful defense may quiet this front; the next job can be elsewhere.
+			const nextWorld = PLANETS.find(function (world) { return getContracts(finished, world.id).length > 0; });
+			if (!nextWorld) throw new Error('Missing conflict zone');
+			const nextDrop = beginDeployment(accept(getContracts(finished).length ? finished : travelTo(finished, nextWorld.id)));
 			expect(nextDrop.deployed?.integrity).toBe(36.25);
 		}
 	});

@@ -80,10 +80,30 @@ locked during a deployment.
 
 ## Contracts and surface missions
 
-The star map connects Meridian's dusty badlands, Cinder's volcanic flats, and
-Borealis's frozen basins. A jump takes one day, costs no fuel, and refreshes the
-contract board. Remote listings preview the postings available after arrival.
-An accepted contract must be completed or aborted before traveling.
+The Starmap charts **75 seeded systems** across the Wayfarer Reach. The Frontier
+Freeholds, Ferric Combine, and Signal Accord hold contiguous territories with
+irregular borders; outer systems can remain unclaimed. Select a star to inspect
+its controller, biome, and conflict status. Orange dashed rings mark conflict
+zones. Zoom with the controls or wheel, drag to pan, and use Intel's conflict
+buttons to cycle active fronts. Keyboard/controller focus reveals offscreen
+systems when zoomed. Phone layouts open system Intel as a separate page.
+
+Borders evolve with calendar days, including Engineering waits. A successful
+sortie adds six local influence to its employer and removes six from the opponent;
+a failure or abort applies three in the opposite direction. Influence is bounded
+to ±18 per faction per system, spreads to nearby space, and persists across reloads.
+Calendar pressure is bounded and does not erase mission influence. Repeated wins
+can change system control or quiet a front; new conflicts can open elsewhere.
+These are initial campaign rules, with balance still requiring playtesting.
+
+Only conflict zones post new missions. The two factions with competing local
+influence supply employers and opponents; briefings describe their settlement,
+industrial, or relay interests. Quiet interiors and unclaimed systems away from
+a contested front have no military work. Accepted contracts keep their factions,
+objective, and payment even as time moves the border. Unaccepted listings follow
+the current front. A jump takes one day, costs no fuel, and refreshes the board;
+remote listings preview postings after arrival. An accepted contract must be
+completed or aborted before traveling.
 
 The Frontier Freeholds, Ferric Combine, and Signal Accord post work against
 one another. The briefing shows both sides, payment, and reputation changes
@@ -364,7 +384,8 @@ bun run preview
 `check` runs the regression suite, strict TypeScript, ESLint, and a clean
 production build. `preview` serves that `dist/` build; use `bun run build` first
 when building separately. Both servers default to port 3000; set `PORT` to choose
-another. Runtime dependencies are ECSpresso, Three.js, and lit-html. The game has
+another. Runtime dependencies are ECSpresso, Three.js, lit-html, and d3-contour
+(for interpolated territory outlines). The game has
 no backend, desktop packaging, or Steam integration.
 
 TypeScript enables strict checking, checked indexed access, exact optional
@@ -411,6 +432,16 @@ simulated input, responsive captures, shutdown/remount on the same DOM, and
 partial-initialization cleanup. Same-DOM remount checks exercise the lifecycle;
 the development server's HMR transport was not separately tested.
 
+Territory-map evidence is recorded in [`docs/territory/validation.json`](./docs/territory/validation.json),
+with [desktop](./docs/territory/desktop.png), [portrait](./docs/territory/portrait.png),
+[short landscape](./docs/territory/smallLandscape.png), and
+[post-victory](./docs/territory/victory.png) captures. Domain checks cover local
+belligerents and biomes, changing control, calendar fronts, accepted terms,
+legacy v3 continuity, and invalid influence data. Browser journeys cover map
+selection/zoom/focus, arrival forecasts, acceptance/reload/deployment/abort,
+and simulated keyboard, gamepad, and touch input. Physical device feel and
+campaign balance remain owner playtest gates.
+
 ## Hosting and save compatibility
 
 Play at [heavyrig.deegeegames.com](https://heavyrig.deegeegames.com/).
@@ -422,7 +453,11 @@ The Pages workflow deploys `master` after the complete check. Pull requests must
 satisfy live branch protection; workflow definitions alone do not establish
 merge readiness. The custom domain is configured in `CNAME`.
 
-Company progression uses **`heavy-rig:campaign:v3`**. Version 3 deliberately
+Company progression uses **`heavy-rig:campaign:v3`**. The territory extension
+preserves existing v3 companies, equipment, standings, and accepted contracts.
+Their existing board remains until the next jump or settlement, when postings
+switch to the local territory rules. Territory influence is saved with the company.
+ Version 3 deliberately
 starts a fresh company with chassis-specific hardpoints. Earlier company saves
 are left untouched and are not loaded; no loadout migration is provided. Preferences remain under `heavy-rig:profile:v1`; historical classic
 records in that profile are retained but the classic operation is no longer a

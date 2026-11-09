@@ -1,4 +1,7 @@
-import type { Biome, Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
+import type { Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
+import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, PLANETS, type UniverseState } from './universe';
+export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
+
 import { advanceDays, createCompany, MAX_DAY, parseCompany, type CompanyState } from './company';
 
 export interface FactionDefinition {
@@ -9,32 +12,14 @@ export interface FactionDefinition {
 	color: string;
 }
 
-export interface PlanetDefinition {
-	id: PlanetId;
-	name: string;
-	description: string;
-	biome: Biome;
-	color: string;
-	x: number;
-	y: number;
-}
-
 const factionDefinitions: Readonly<Record<FactionId, FactionDefinition>> = {
 	freeholds: { id: 'freeholds', name: 'Frontier Freeholds', shortName: 'FREEHOLDS', description: 'Independent settlements defending water, farmland, and the right to govern themselves.', color: '#92ceb4' },
 	combine: { id: 'combine', name: 'Ferric Combine', shortName: 'COMBINE', description: 'An industrial consortium that treats every mine, transit lane, and garrison as an investment.', color: '#e4ae74' },
 	accord: { id: 'accord', name: 'Signal Accord', shortName: 'ACCORD', description: 'A network of orbital stations protecting communication routes and its own expanding influence.', color: '#a8bce8' },
 };
 
-const planetDefinitions: Readonly<Record<PlanetId, PlanetDefinition>> = {
-	meridian: { id: 'meridian', name: 'Meridian', description: 'Dust plains and abandoned relay yards. Rival settlements contest the last reliable water routes.', biome: 'badlands', color: '#d9ac78', x: 24, y: 62 },
-	cinder: { id: 'cinder', name: 'Cinder', description: 'Black volcanic flats beneath a copper sky. Ore processors feed a conflict that never cools.', biome: 'volcanic', color: '#e77b5d', x: 51, y: 27 },
-	borealis: { id: 'borealis', name: 'Borealis', description: 'Frozen basins, pale ridges, and listening posts. Whoever holds the uplinks controls the outer settlements.', biome: 'tundra', color: '#9bd6e6', x: 78, y: 58 },
-};
-
 export const FACTIONS: readonly FactionDefinition[] = Object.values(factionDefinitions);
-export const PLANETS: readonly PlanetDefinition[] = Object.values(planetDefinitions);
 export const getFaction = function (id: FactionId): FactionDefinition { return factionDefinitions[id]; };
-export const getPlanet = function (id: PlanetId): PlanetDefinition { return planetDefinitions[id]; };
 
 export interface CampaignResult {
 	contract: Contract;
@@ -47,6 +32,7 @@ export interface CampaignResult {
 
 export interface Campaign extends CompanyState {
 	version: 3;
+	universe: UniverseState;
 	seed: number;
 	planetId: PlanetId;
 	day: number;
@@ -61,7 +47,6 @@ export interface Campaign extends CompanyState {
 }
 
 export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v3';
-const FACTION_IDS: readonly FactionId[] = ['freeholds', 'combine', 'accord'];
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance'];
 const MAX_COUNT = 1_000_000;
 export const MAX_CREDITS = 1_000_000_000_000;
@@ -70,7 +55,6 @@ const isInteger = function (value: unknown, min: number, max: number): value is 
 };
 const object = function (value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); };
 const isFactionId = function (value: unknown): value is FactionId { return value === 'freeholds' || value === 'combine' || value === 'accord'; };
-const isPlanetId = function (value: unknown): value is PlanetId { return value === 'meridian' || value === 'cinder' || value === 'borealis'; };
 const isMissionKind = function (value: unknown): value is MissionKind { return value === 'defend' || value === 'demolition' || value === 'assassination' || value === 'clearance'; };
 const boundedReputation = function (value: number) { return Math.max(-100, Math.min(100, value)); };
 const zeroReputation = function (): Record<FactionId, number> { return { freeholds: 0, combine: 0, accord: 0 }; };
@@ -80,7 +64,7 @@ const freshSeed = function () {
 
 export const createCampaign = function (seed?: number): Campaign {
 	return {
-		...createCompany(), version: 3, seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
+		...createCompany(), version: 3, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
 		credits: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 	};
 };
@@ -103,8 +87,8 @@ const contractCopy: Readonly<Record<MissionKind, { title: string; briefing: stri
 
 // A board is a pure function of its campaign seed and revision. Acceptance keeps
 // its reputation snapshot, so posting terms cannot move after the pilot agrees.
-export const getContracts = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
-	const planetIndex = PLANETS.findIndex(function (planet) { return planet.id === planetId; });
+const getLegacyContracts = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
+	const planetIndex = ['meridian', 'cinder', 'borealis'].indexOf(planetId);
 	const boardSeed = mixSeed(mixSeed(campaign.seed, campaign.boardRevision + 1), planetIndex + 1);
 	return MISSION_KINDS.map(function (kind, index) {
 		const seed = mixSeed(boardSeed, index + 1);
@@ -122,6 +106,30 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 	});
 };
 
+// Accepted postings retain their front snapshot. Unaccepted work follows the
+// live front, including after Engineering advances the calendar.
+export const getContracts = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
+	if (campaign.universe.boardVersion === 1) return getLegacyContracts(campaign, planetId);
+	const intel = getSystemIntel({ ...campaign, day: campaign.active ? campaign.universe.boardDay : campaign.day }, planetId);
+	const [holder, challenger] = intel.participants;
+	if (!intel.conflict || !holder || !challenger) return [];
+	return getLegacyContracts(campaign, planetId).map(function (contract, index) {
+		const employer = contract.kind === 'defend' || index % 2 === 1 ? holder : challenger;
+		const opponent = employer === holder ? challenger : holder;
+		const faction = getFaction(employer); const rival = getFaction(opponent);
+		const asset = employer === 'freeholds' ? 'settlement water routes' : employer === 'combine' ? 'ore processing network' : 'orbital relay network';
+		const context = contract.kind === 'defend' ? `${faction.name} needs its ${asset} protected from a ${rival.name} assault.`
+			: contract.kind === 'demolition' ? `${faction.name} is disrupting ${rival.name} supply operations on this front.`
+			: contract.kind === 'assassination' ? `${faction.name} has identified a ${rival.name} commander coordinating the local offensive.`
+			: `${faction.name} needs ${rival.name} patrols cleared from the contested approaches.`;
+		return { ...contract, employer, opponent,
+			seed: mixSeed(contract.seed, PLANETS.findIndex(function (world) { return world.id === planetId; }) + 1),
+			reward: Math.round(contractCopy[contract.kind].reward * (1 + (contract.tier - 1) * .55) * (1 + campaign.boardReputation[employer] * .0025)),
+			briefing: `${context} ${contract.briefing}`,
+		};
+	});
+};
+
 export const canAcceptContract = function (campaign: Campaign, contract: Contract): boolean {
 	return !campaign.active && !campaign.deployed && campaign.boardRevision < MAX_COUNT && campaign.day < MAX_DAY
 		&& contract.planetId === campaign.planetId && campaign.reputation[contract.employer] >= contract.requiredReputation
@@ -132,14 +140,14 @@ export const acceptContract = function (campaign: Campaign, contractId: string):
 	const contract = getContracts(campaign).find(function (posted) { return posted.id === contractId; });
 	if (!contract || !canAcceptContract(campaign, contract)) return campaign;
 	return {
-		...campaign, active: contract,
+		...campaign, universe: { ...campaign.universe, boardDay: campaign.day }, active: contract,
 		reputation: { ...campaign.reputation, [contract.opponent]: boundedReputation(campaign.reputation[contract.opponent] - contract.hostility) },
 	};
 };
 
 export const travelTo = function (campaign: Campaign, planetId: PlanetId): Campaign {
 	if (campaign.active || campaign.deployed || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
-	return { ...advanceDays(campaign, 1), planetId, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation } };
+	return { ...advanceDays(campaign, 1), planetId, universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 }, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation } };
 };
 
 const finishContract = function (campaign: Campaign, won: boolean, aborted: boolean): Campaign {
@@ -150,7 +158,7 @@ const finishContract = function (campaign: Campaign, won: boolean, aborted: bool
 	const reputation = { ...campaign.reputation, [contract.employer]: boundedReputation(campaign.reputation[contract.employer] + favor) };
 	const day = campaign.day + 1;
 	return advanceDays({
-		...campaign, active: undefined, deployed: undefined, reputation, boardReputation: { ...reputation }, boardRevision: campaign.boardRevision + 1,
+		...campaign, universe: { ...applyMissionInfluence(campaign.universe, contract.planetId, contract.employer, contract.opponent, won), boardDay: day, boardVersion: 2 }, active: undefined, deployed: undefined, reputation, boardReputation: { ...reputation }, boardRevision: campaign.boardRevision + 1,
 		credits: campaign.credits + payout, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
 		lastResult: { contract, won, aborted, payout, favor, day },
 	}, 1);
@@ -188,6 +196,20 @@ const sameContract = function (saved: Contract, generated: Contract): boolean {
 		&& saved.tier === generated.tier && saved.requiredReputation === generated.requiredReputation;
 };
 
+const parseUniverse = function (value: unknown, day: number): UniverseState | undefined {
+	// Existing v3 companies keep their board until the next jump or settlement.
+	if (value === undefined) return { ...createUniverse(), boardDay: day, boardVersion: 1 };
+	if (!object(value) || !isInteger(value['boardDay'], 1, day) || (value['boardVersion'] !== 1 && value['boardVersion'] !== 2)
+		|| !Array.isArray(value['influence']) || value['influence'].length > PLANETS.length * FACTION_IDS.length) return undefined;
+	const influence: UniverseState['influence'][number][] = [];
+	for (const entry of value['influence']) {
+		if (!object(entry) || !isPlanetId(entry['planetId']) || !isFactionId(entry['factionId']) || !isInteger(entry['value'], -18, 18)
+			|| influence.some(function (prior) { return prior.planetId === entry['planetId'] && prior.factionId === entry['factionId']; })) return undefined;
+		influence.push({ planetId: entry['planetId'], factionId: entry['factionId'], value: entry['value'] });
+	}
+	return { influence, boardDay: value['boardDay'], boardVersion: value['boardVersion'] };
+};
+
 // Validate the saved transaction, including the already-paid acceptance penalty.
 // Invalid saves are reset as a unit; never restore a partly accepted contract.
 export const parseCampaign = function (raw: string | null): Campaign {
@@ -199,10 +221,12 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > value['boardRevision'] || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
 			|| value['active'] !== undefined && !isContract(value['active']) || value['lastResult'] !== undefined && !isResult(value['lastResult'])) return createCampaign();
+		const universe = parseUniverse(value['universe'], value['day']);
+		if (!universe) return createCampaign();
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
 		const campaign: Campaign = {
-			...company, version: 3, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
+			...company, version: 3, universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 		};
