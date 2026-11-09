@@ -4,13 +4,14 @@ import { canEquipWeapon, getEnemyHardpoints, getHardpoints, isFrameLoadout } fro
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, FACILITY_TARGET_ID, generateMissionMap, missionHostileCount, missionSpawn } from './missions';
+import { planSquads, squadApproach, type SquadOrder } from './enemy-squads';
 
 export interface Point { x: number; y: number }
 export type MechEnemyKind = 'scout' | 'striker' | 'siege';
 export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
-export interface Unit extends Point { id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number }
+export interface Unit extends Point { id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: SquadOrder }
 export interface Shot extends Point { vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[]; weapon?: WeaponId; slot?: number; owner?: number; enemyTarget?: 'player' | 'relay' }
 export interface Effect extends Point { life: number; size: number; color: string; elevation?: number; source?: 'muzzle'; slot?: number }
 export interface Warning extends Point { kind: EnemyKind; life: number; commander?: boolean }
@@ -366,16 +367,28 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 	const relay = relayPosition(state);
 	const bounds = mission?.map ?? ARENA;
 	const difficulty = getDifficultyDefinition(state.difficulty);
-	for (const enemy of state.enemies) {
+	const enemies = state.enemies;
+	// Wake units before planning so idle garrisons cannot be recruited remotely.
+	if (mission && !relay) for (const enemy of enemies) {
+		if (enemy.hp > 0 && (distance(enemy, p) < Math.max(850, ENEMY_STATS[enemy.kind].aggro) || enemy.hp < enemy.maxHp)) enemy.engaged = true;
+	}
+	const orders = planSquads(enemies.filter(function (enemy) {
+		return enemy.hp > 0 && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && (!mission || relay !== undefined || enemy.engaged);
+	}).map(function (enemy) { return { id: enemy.id, x: enemy.x, y: enemy.y, aggro: ENEMY_STATS[enemy.kind].aggro, ...(enemy.squad ? { order: enemy.squad } : {}) }; }), p, relay, dt);
+	for (const enemy of enemies) {
+		const order = orders.get(enemy.id);
+		if (order) enemy.squad = order;
+		else {
+			if (enemy.squad && (enemy.kind === 'scout' || enemy.kind === 'striker')) delete enemy.hullAngle;
+			delete enemy.squad;
+		}
 		if (enemy.hp <= 0) continue;
 		const stats = ENEMY_STATS[enemy.kind];
 		const mounts = enemyMounts(enemy);
 		for (const mount of enemy.loadout ?? []) { mount.firing = false; mount.cooldown = Math.max(0, mount.cooldown - dt); }
-		if (mission && !relay) {
-			if (distance(enemy, p) < Math.max(850, stats.aggro) || enemy.hp < enemy.maxHp) enemy.engaged = true;
-			if (!enemy.engaged) continue;
-		}
-		const target = !relay || enemy.commander || distance(enemy, p) < stats.aggro ? p : relay;
+		if (mission && !relay && !enemy.engaged) continue;
+		const individualTarget = !relay || enemy.commander || distance(enemy, p) < stats.aggro ? p : relay;
+		const target = order ? order.target === 'relay' && relay ? relay : p : individualTarget;
 		if (enemy.attack) {
 			enemy.attack.remaining -= dt;
 			if (enemy.attack.remaining <= 0) {
@@ -409,6 +422,16 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 				enemy.hullAngle += clamp(angleDelta(enemy.hullAngle, targetAngle), -dt * 0.5, dt * 0.5);
 				enemy.x = clamp(enemy.x + Math.cos(enemy.hullAngle) * dt * stats.speed, 35, bounds.width - 35);
 				enemy.y = clamp(enemy.y + Math.sin(enemy.hullAngle) * dt * stats.speed, 35, bounds.height - 35);
+			}
+		} else if (order) {
+			const destination = squadApproach(enemy, order, target, range, bounds);
+			const travel = distance(enemy, destination);
+			if (travel > 12) {
+				const amount = Math.min(dt * stats.speed, travel) / travel;
+				const heading = enemy.hullAngle ?? enemy.angle;
+				enemy.hullAngle = heading + clamp(angleDelta(heading, Math.atan2(destination.y - enemy.y, destination.x - enemy.x)), -dt * 2, dt * 2);
+				enemy.x = clamp(enemy.x + (destination.x - enemy.x) * amount, 35, bounds.width - 35);
+				enemy.y = clamp(enemy.y + (destination.y - enemy.y) * amount, 35, bounds.height - 35);
 			}
 		} else if (separation > range) { enemy.x = clamp(enemy.x + Math.cos(enemy.angle) * dt * stats.speed, 35, bounds.width - 35); enemy.y = clamp(enemy.y + Math.sin(enemy.angle) * dt * stats.speed, 35, bounds.height - 35); }
 		enemy.cooldown -= dt;
