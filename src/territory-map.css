@@ -1,9 +1,9 @@
-#bridge[data-view='route'] .workspace-body { grid-template-columns: minmax(0, 2.4fr) minmax(240px, 1fr); gap: 14px; }
-#bridge[data-view='route'] [data-pane='route'] { padding: 0; background: #071219; }
-#bridge[data-view='route'] [data-pane='route']>.pane-heading,
-#bridge[data-view='route'] [data-pane='route']>.page-controls { display: none; }
-#bridge[data-view='route'] [data-pane='route']>.paged-content { display: block; overflow: hidden; }
-#bridge[data-view='route'] [data-pane='route'] .page-item { height: 100%; }
+#starmap[data-view='route'] .workspace-body { grid-template-columns: minmax(0, 2.4fr) minmax(240px, 1fr); gap: 14px; }
+#starmap[data-view='route'] [data-pane='route'] { padding: 0; background: #071219; }
+#starmap[data-view='route'] [data-pane='route']>.pane-heading,
+#starmap[data-view='route'] [data-pane='route']>.page-controls { display: none; }
+#starmap[data-view='route'] [data-pane='route']>.paged-content { display: block; overflow: hidden; }
+#starmap[data-view='route'] [data-pane='route'] .page-item { height: 100%; }
 .territory-chart { --map-alert: #ee8f68; position: relative; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .chart-caption { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; font: 12px var(--mono); letter-spacing: 2px; color: var(--paper); border-bottom: 1px solid #88b3bd25; }
 .chart-caption small { font-size: 9px; letter-spacing: 1px; color: var(--cyan); }
@@ -36,11 +36,9 @@
 .workspace .system-control { font: 12px var(--mono); color: var(--cyan); }
 .workspace .system-conflict { color: #ee8f68; font: 12px var(--mono); letter-spacing: 1px; }
 .workspace .system-quiet { color: var(--muted); font: 12px var(--mono); }
-.system-nav { display: flex; gap: 6px; flex-wrap: wrap; }
-.system-nav button { flex: 1; font: 11px var(--mono); padding: 10px 8px; }
 @media (max-width: 760px) {
-	#bridge[data-view='route'] .workspace-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
-	#bridge[data-view='route'] [data-pane='system'] { display: none; }
+	#starmap[data-view='route'] .workspace-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+	#starmap[data-view='route'] [data-pane='system'] { display: none; }
 	.chart-caption { padding: 9px 10px; font-size: 10px; letter-spacing: 1px; }
 	.chart-caption small { font-size: 8px; }
 	.territory-name { font-size: 13px; letter-spacing: 1px; width: 100px; }

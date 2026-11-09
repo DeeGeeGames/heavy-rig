@@ -8,7 +8,7 @@ import { FRAMES, getFrame, type FrameDefinition, type FrameId } from './frames';
 import { hardpointSummary } from './loadout-ui';
 
 export type CompanyScreen = 'mechbay' | 'market' | 'engineering';
-export type ShipScreen = 'bridge' | CompanyScreen;
+export type ShipScreen = 'starmap' | 'bridge' | CompanyScreen;
 export interface CompanyEditor {
 	loadout: readonly (WeaponId | null)[];
 	slot: number | null;
@@ -33,10 +33,11 @@ export interface CompanyActions {
 }
 
 export const SHIP_SECTIONS: readonly { id: ShipScreen; label: string; number: string }[] = [
-	{ id: 'bridge', label: 'Contracts', number: '01' },
-	{ id: 'mechbay', label: 'Mech Bay', number: '02' },
-	{ id: 'market', label: 'Market', number: '03' },
-	{ id: 'engineering', label: 'Engineering', number: '04' },
+	{ id: 'starmap', label: 'Starmap', number: '01' },
+	{ id: 'bridge', label: 'Contracts', number: '02' },
+	{ id: 'mechbay', label: 'Mech Bay', number: '03' },
+	{ id: 'market', label: 'Market', number: '04' },
+	{ id: 'engineering', label: 'Engineering', number: '05' },
 ];
 const daysLabel = function (days: number) { return `${days} ${days === 1 ? 'DAY' : 'DAYS'}`; };
 const creditsLabel = function (credits: number) { return `${credits.toLocaleString()} CR`; };
@@ -50,7 +51,7 @@ const renderHullIntegrity = function (integrity: number) {
 	</span>`;
 };
 
-export const isShipScreen = function (value: string): value is ShipScreen { return value === 'bridge' || value === 'mechbay' || value === 'market' || value === 'engineering'; };
+export const isShipScreen = function (value: string): value is ShipScreen { return SHIP_SECTIONS.some(function (section) { return section.id === value; }); };
 export const adjacentShipScreen = function (screen: ShipScreen, delta: number): ShipScreen {
 	const index = SHIP_SECTIONS.findIndex(function (section) { return section.id === screen; });
 	return SHIP_SECTIONS[(index + delta + SHIP_SECTIONS.length) % SHIP_SECTIONS.length]?.id ?? screen;
