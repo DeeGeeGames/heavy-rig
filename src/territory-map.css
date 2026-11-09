@@ -7,9 +7,10 @@
 .territory-chart { --map-alert: #ee8f68; position: relative; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .chart-caption { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; font: 12px var(--mono); letter-spacing: 2px; color: var(--paper); border-bottom: 1px solid #88b3bd25; }
 .chart-caption small { font-size: 9px; letter-spacing: 1px; color: var(--cyan); }
-.territory-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; cursor: grab; background: radial-gradient(ellipse at 28% 30%, #223c4a66, transparent 60%), radial-gradient(ellipse at 65% 75%, #35304d44, transparent 60%), #071117; }
+.territory-viewport { position: relative; flex: 1; min-height: 0; container-type: size; overflow: hidden; touch-action: none; cursor: grab; background: radial-gradient(ellipse at 28% 30%, #223c4a66, transparent 60%), radial-gradient(ellipse at 65% 75%, #35304d44, transparent 60%), #071117; }
 .territory-viewport:active { cursor: grabbing; }
-.territory-stage { position: absolute; inset: 0; transform-origin: center; }
+/* Fit the chart's coordinate space uniformly, including its HTML markers. */
+.territory-stage { position: absolute; left: 50%; top: 50%; width: min(100cqw, calc(100cqh * 1000 / 660)); aspect-ratio: 1000 / 660; translate: -50% -50%; transform-origin: center; }
 .territory-field { position: absolute; width: 100%; height: 100%; inset: 0; }
 .territory-border { fill: var(--territory-color); fill-opacity: .12; stroke: var(--territory-color); stroke-width: 1.2; vector-effect: non-scaling-stroke; fill-rule: evenodd; }
 .territory-glow { fill: none; stroke: var(--territory-color); stroke-width: 6; opacity: .12; vector-effect: non-scaling-stroke; }
