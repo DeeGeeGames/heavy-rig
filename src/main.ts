@@ -101,6 +101,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const updateDialogLayout = mountDialogLayout(container, abort.signal);
 	const keys = new Set<string>(); const pending = new Set<string>(); const held = new Map<number, string>();
 	const coarsePointer = window.matchMedia('(any-pointer: coarse)');
+	const primaryPointer = window.matchMedia('(pointer: coarse)');
 	const hasTouch = function () { return coarsePointer.matches || navigator.maxTouchPoints > 0; };
 	const fullscreenButton = element('mobile-fullscreen');
 	if (!(fullscreenButton instanceof HTMLButtonElement)) throw new Error('Missing fullscreen button');
@@ -143,7 +144,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	onCleanup(function () { cancelAnimationFrame(frame); });
 	let message = ''; let messageUntil = 0; let terminalUntil = 0; let contextLost = false; let focused = true;
 	let returnFocus: HTMLElement | undefined; let confirmedAction: (() => void) | undefined; let tipDismissed = false;
-	let inputMode: 'keyboard' | 'gamepad' | 'touch' = hasTouch() ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
+	let inputMode: 'keyboard' | 'gamepad' | 'touch' = primaryPointer.matches ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
 	let currentPad: PadInput | undefined;
 	let controllerFamily: ControllerFamily = 'generic';
 	let lastMenuTarget: HTMLElement | undefined;
@@ -198,16 +199,19 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		`, element('menu-input-hint'));
 	};
 	const setInputMode = function (value: typeof inputMode) {
-		if (inputMode === value && container.dataset['input'] === value && container.dataset['promptDevice'] === promptDevice() && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
+		const touchLayout = value === 'touch' || value === 'keyboard' && profile.settings.touchControls;
+		if (container.classList.contains('touch-enabled') === touchLayout && inputMode === value && container.dataset['input'] === value && container.dataset['promptDevice'] === promptDevice() && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
 		if (value !== 'touch') { touchTargeting.clear(); touchDrive.reset(); held.forEach(function (action, id) { if (action === 'touch-fire') held.delete(id); }); pending.delete('touch-fire'); }
-		container.classList.toggle('touch-enabled', value !== 'gamepad' && (hasTouch() || profile.settings.touchControls));
+		if (container.classList.contains('touch-enabled') !== touchLayout) { held.clear(); pending.clear(); }
+		container.classList.toggle('touch-enabled', touchLayout);
+		lastHud = 0;
 		inputMode = value; container.dataset['input'] = value; container.dataset['promptDevice'] = promptDevice();
 		container.classList.toggle('using-gamepad', value === 'gamepad');
 		container.classList.toggle('couch-ui', value === 'gamepad' || profile.settings.couchUI);
 		ui.inputMode.textContent = value === 'gamepad' ? 'GAMEPAD' : value === 'touch' ? 'TOUCH' : 'KB / MOUSE';
 		const pausePrompt = element('pause').querySelector('kbd');
 		if (pausePrompt) render(renderGlyph(promptDevice(), inputMode === 'keyboard' ? 'back' : 'settings'), pausePrompt);
-		element('weapon-hint').textContent = value === 'gamepad' ? 'HOLD TRIGGERS + BUMPERS' : value === 'touch' ? 'TAP TO ARM / HOLD FIRE' : 'HOLD MOUSE BUTTONS / 1–4';
+		element('weapon-hint').textContent = touchLayout ? 'TAP TO ARM / HOLD FIRE' : 'HOLD TO FIRE · COMBINE MOUNTS';
 		for (const select of container.querySelectorAll<HTMLSelectElement>('#controller-mappings select')) for (const option of select.options) option.textContent = controllerButtonLabel(controllerFamily, Number(option.value));
 		updateMenuHint();
 		updateWorkspaceLayout(); updateDialogLayout();
@@ -217,7 +221,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const updateSettings = function () {
 		audio.setMix(profile.settings);
-		container.classList.toggle('touch-enabled', inputMode !== 'gamepad' && (hasTouch() || profile.settings.touchControls));
 		for (const name of ['master', 'music', 'effects'] as const) {
 			inputElement(`${name}-volume`).value = String(Math.round(profile.settings[name] * 100));
 			element(`${name}-output`).textContent = `${Math.round(profile.settings[name] * 100)}%`;
@@ -673,7 +676,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		event.preventDefault(); if (event.repeat && !keys.has(event.code)) return; keys.add(event.code); if (!event.repeat) pending.add(action);
 	}, listenerOptions);
 	window.addEventListener('keyup', function (event) { const action = keyboardAction(event.code); if (action) keys.delete(event.code); }, listenerOptions);
-	container.addEventListener('pointerdown', function (event) { const touchControl = event.target instanceof Element && event.target.closest('#touch, .weapon-console') && container.classList.contains('touch-enabled'); setInputMode(event.pointerType === 'touch' || touchControl ? 'touch' : 'keyboard'); if (event.isTrusted) unlockSound(); }, listenerOptions);
+	container.addEventListener('pointerdown', function (event) {
+		if (event.isTrusted) unlockSound();
+		// The battlefield picks the displayed scene before a touch reveals its dock.
+		if (event.target === canvas && event.pointerType === 'touch') return;
+		const touchControl = event.target instanceof Element && event.target.closest('#touch');
+		setInputMode(event.pointerType === 'touch' || touchControl ? 'touch' : 'keyboard');
+	}, { ...listenerOptions, capture: true });
 	container.addEventListener('click', function (event) {
 		if (!(event.target instanceof Element) || !event.target.closest('button') || !menu()) return;
 		audio.cue(event.target.closest('#close-settings, #close-handbook, #confirm-cancel') ? 'back' : 'confirm');
@@ -702,7 +711,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			aim = locked ? { ...locked.point } : ground ?? aim;
 			return;
 		}
-		pointer = point; aimMode = 'pointer'; setInputMode('keyboard');
+		setInputMode('keyboard');
+		const field = canvas.getBoundingClientRect();
+		pointer = { x: event.clientX - field.left, y: event.clientY - field.top }; aimMode = 'pointer';
 	};
 	canvas.addEventListener('pointermove', updatePointer, listenerOptions);
 	canvas.addEventListener('wheel', function (event) {
@@ -749,6 +760,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		} }, listenerOptions);
 		button.addEventListener('lostpointercapture', release, listenerOptions);
 	}
+	const combatKeyboardPrompt = function (action: Action) {
+		const bindings = profile.settings.keyboard[action];
+		const mouse = bindings.find(function (code) { return code.startsWith('Mouse'); });
+		const key = bindings.find(function (code) { return code.startsWith('Digit'); }) ?? bindings.find(function (code) { return !code.startsWith('Mouse'); });
+		const mouseNames: Readonly<Record<string, string>> = { Mouse0: 'LMB', Mouse1: 'MMB', Mouse2: 'RMB', Mouse3: 'M4', Mouse4: 'M5' };
+		return [mouse ? mouseNames[mouse] ?? keyLabel(mouse) : undefined, key ? keyLabel(key) : undefined].filter(Boolean).join(' / ') || 'UNBOUND';
+	};
 	const updateHud = function () {
 		refreshHudObstructions();
 		const p = state.player;
@@ -756,7 +774,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (touchLoadout !== state.loadout) { armedTouchMounts.clear(); state.loadout.forEach(function (mount, index) { armedTouchMounts.add(mount.slot ?? index); }); touchLoadout = state.loadout; }
 		ui.phase.textContent = 'FRAME TRAINING'; ui.status.textContent = 'SIMULATOR';
 		element('mission-name').textContent = state.mission ? `${getPlanet(state.mission.contract.planetId).name.toUpperCase()} / ${getFaction(state.mission.contract.employer).shortName}` : 'WAYFARER TRAINING';
-		element('relay-readout').hidden = Boolean(state.mission && state.mission.contract.kind !== 'defend');
+		element('relay-readout').hidden = Boolean(training || state.mission && state.mission.contract.kind !== 'defend');
 		element('relay-name').textContent = state.mission ? 'CONTRACT RELAY' : 'RELAY 09';
 		if (state.mission) { ui.phase.textContent = state.mission.stage === 'extract' ? 'OBJECTIVE COMPLETE / EXTRACT' : MISSION_NAMES[state.mission.contract.kind].toUpperCase(); ui.status.textContent = missionObjective(state); }
 		if (escape) {
@@ -779,6 +797,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		ui.heat.textContent = p.overheated ? 'LOCKOUT' : `${Math.ceil(p.heat)}%`; ui.heatFill.style.width = `${p.heat}%`; ui.heatFill.style.background = p.heat > 80 ? 'var(--danger)' : 'var(--amber)';
 		ui.drive.textContent = `${p.throttle < -0.005 ? 'REV' : p.throttle > 0.005 ? 'FWD' : 'N'} ${Math.round(Math.abs(p.throttle) * 100)}%`;
 		const definition = getFrame(state.frame);
+		element('combat-frame-name').textContent = definition.name.toUpperCase();
+		element('combat-control-mode').textContent = profile.settings.controlMode.toUpperCase();
+		element('drive-behavior').textContent = profile.settings.controlMode === 'arcade' ? 'RELEASE TO SLOW' : 'RELEASE TO CRUISE';
+		render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.stop) : html`${combatKeyboardPrompt('stop')}`, element('stop-prompt'));
+		container.classList.toggle('reactor-locked', p.overheated);
+		container.classList.toggle('hull-critical', p.hp < 30);
 		ui.throttleFill.style.left = `${p.throttle < 0 ? 50 + p.throttle * 50 : 50}%`; ui.throttleFill.style.width = `${Math.abs(p.throttle) * 50}%`; ui.speed.textContent = `SPD ${Math.round(p.speed / (p.speed < 0 ? definition.reverseSpeed : definition.speed) * 100)}%`;
 		const hardpoints = getHardpoints(state.frame);
 		element('weapon-bank').style.setProperty('--hardpoint-columns', String(hardpoints.length));
@@ -799,16 +823,16 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const firing = Boolean(mount && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index] || touchFiring));
 			button.classList.toggle('empty', !mount); button.classList.toggle('firing', firing); button.classList.toggle('locked', p.overheated);
 			button.setAttribute('aria-label', mount && weapon ? `${touchLayout ? 'Arm' : 'Fire'} mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${controllerButtonLabel(controllerFamily, profile.settings.controller[binding.action])}.` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. Equip compatible purchased weapons in the Mech Bay.`);
-			const location = button.querySelector('.weapon-mount'); if (location) location.textContent = hardpoint.name;
+			const location = button.querySelector('.weapon-mount'); if (location) location.textContent = `${hardpoint.name}${!touchLayout && mount ? ` · ${rankLabel(mount.level)}` : ''}`;
 			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${weapon.type}` : ' · Empty'}`;
 			const title = button.querySelector('b'); if (title) title.textContent = mount && weapon ? weapon.name : 'EMPTY';
-			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}${mount ? ` · ${rankLabel(mount.level)}` : ''}`;
-			const prompt = button.querySelector('kbd'); if (prompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[binding.action]) : html`${touchLayout ? `${armedTouchMounts.has(index) ? 'ARMED' : 'OFF'} ${index + 1}` : profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'UNBOUND'}`, prompt);
-			const label = button.querySelector('em'); if (label) label.textContent = `${family.toUpperCase()} · ${!mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : p.overheated ? 'HEAT LOCK' : firing ? 'FIRING' : mount.cooldown > 0 ? `${mount.cooldown.toFixed(1)}s` : 'READY'}`;
+			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}${touchLayout && mount ? ` · ${rankLabel(mount.level)}` : ''}`;
+			const prompt = button.querySelector('kbd'); if (prompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[binding.action]) : html`${touchLayout ? `${armedTouchMounts.has(index) ? 'ARMED' : 'OFF'} ${index + 1}` : combatKeyboardPrompt(binding.action)}`, prompt);
+			const label = button.querySelector('em'); if (label) label.textContent = !mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : p.overheated ? 'HEAT LOCK' : firing ? 'FIRING' : mount.cooldown > 0 ? `RELOAD ${mount.cooldown.toFixed(1)}s` : 'READY';
 			const fill = button.querySelector('i'); if (fill) fill.style.width = `${mount && weapon ? Math.max(0, 1 - mount.cooldown / Math.max(.01, weapon.interval)) * 100 : 0}%`;
 			button.style.setProperty('--weapon-color', weapon?.color ?? 'var(--muted)');
 		}
-		element('coolant').toggleAttribute('disabled', Boolean(training && training.stage !== 'coolant'));
+		element('coolant').toggleAttribute('disabled', state.coolantCharges <= 0 || Boolean(training && training.stage !== 'coolant'));
 		element('touch-coolant').toggleAttribute('disabled', state.coolantCharges <= 0 || Boolean(training && training.stage !== 'coolant'));
 		element('touch-coolant-value').textContent = `${state.coolantCharges} LEFT`;
 		const touchFiring = touchLayout && active('touch-fire') && !p.overheated;
@@ -817,8 +841,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		ui.coolant.textContent = `${state.coolantCharges} ${state.coolantCharges === 1 ? 'CHARGE' : 'CHARGES'}`;
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE STICKS AND TRIGGERS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
 		ui.hint.hidden = tipDismissed || state.time > 35 || navigation.screen !== 'playing';
-		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.coolant) : html`${profile.settings.keyboard.coolant.map(keyLabel).join(' / ') || 'UNBOUND'}`, coolantPrompt);
-		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Drag the left stick to set throttle and steer; release to cruise. Tap a hostile to track it, arm mounts, then hold FIRE. STOP sets neutral.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
+		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.coolant) : html`${combatKeyboardPrompt('coolant')}`, coolantPrompt);
+		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : touchLayout ? 'Drag the left stick to set throttle and steer; release to cruise. Tap a hostile to track it, arm mounts, then hold FIRE. STOP sets neutral.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
 		const soundState = audioState === 'unavailable' ? 'UNAVAILABLE' : needsGesture ? 'ENABLE SOUND' : muted ? 'SOUND OFF' : 'SOUND ON';
 		if (lastSoundState !== soundState) { lastSoundState = soundState; ui.sound.textContent = soundState; ui.sound.setAttribute('aria-label', needsGesture ? 'Click to enable audio' : audioState === 'unavailable' ? 'Retry audio' : muted ? 'Unmute sound' : 'Mute sound'); ui.sound.setAttribute('aria-pressed', String(muted)); }
@@ -860,8 +884,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!focused || document.hidden || contextLost) padInput.suspend();
 		const pad = padInput.read(pads, now, profile.settings.controller);
 		currentPad = pad;
-		mobileFullscreen.update(hasTouch(), pads.some(function (candidate) { return Boolean(candidate?.connected); }));
-		if (pad.lost) { controllerLost = true; setInputMode(hasTouch() ? 'touch' : 'keyboard'); setPaused(true); }
+		mobileFullscreen.update(container.classList.contains('touch-enabled') && hasTouch(), pads.some(function (candidate) { return Boolean(candidate?.connected); }));
+		if (pad.lost) { controllerLost = true; setInputMode(primaryPointer.matches ? 'touch' : 'keyboard'); setPaused(true); }
 		feedback.update(pads.find(function (candidate) { return candidate?.index === pad.index; }) ?? undefined, playing() && profile.settings.vibration && inputMode === 'gamepad');
 		if (pad.claimed) { controllerLost = false; audio.cue('confirm'); }
 		if (pad.promptActivity && focused && !document.hidden) {
