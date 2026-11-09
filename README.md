@@ -400,47 +400,13 @@ missions and extraction, stable weapon-slot inputs, heat, projectile behavior,
 artillery, movement, rendering disposal, and controller recovery. Training
 coverage includes completion, safe retries, combined fire, and artillery escape.
 
-The production-browser evidence in [`docs/company-validation.json`](./docs/company-validation.json)
-covers purchases, refits, calendar completion, deployment, damage, abort/reload
-recovery, zero-credit repairs, concurrent-tab conflicts, responsive screens,
-and simulated keyboard/controller/touch input. The `docs/company-*.png` captures
-show the new screens; older captures predate this progression. Funded and
-destroyed-company scenarios use explicit domain fixtures, and real combat
-damage was separately exercised through browser inputs. Automated inputs and passing
-checks do not establish physical controller/touch feel, audio listening quality,
-GPU performance, combat balance, or owner acceptance.
+Store generated screenshots, recordings, and browser-validation reports in the
+local `docs/` directory. Git ignores this directory, so fresh clones do not
+include it. Attach relevant evidence to pull requests instead of committing it.
 
-Title-menu and settings verification is recorded in
-[`docs/title-validation.json`](./docs/title-validation.json), with production
-captures in `docs/title-*.png` and `docs/settings-desktop.png`. It covers first
-load and continue, focus restoration, training return, preserved preferences
-and company progress, and simulated keyboard/controller/touch input.
-
-Viewport validation is recorded in [`docs/viewport-validation.json`](./docs/viewport-validation.json).
-It covers every department pane/page with a full fleet and work orders, large
-interface mode, simulated controller loss, and long status messages. It also
-covers purchase/refit/deploy/abort/travel journeys, focus restoration, all
-Settings/Handbook pages, and dialog geometry. End-report and save-conflict layout
-checks use fixtures. Screenshots: [`desktop`](./docs/viewport-desktop.png),
-[`portrait`](./docs/viewport-portrait.png), and
-[`landscape`](./docs/viewport-landscape.png).
-
-Runtime migration evidence is recorded in
-[`docs/runtime-validation.json`](./docs/runtime-validation.json), including
-original-baseline simulation comparisons, production company/combat journeys,
-simulated input, responsive captures, shutdown/remount on the same DOM, and
-partial-initialization cleanup. Same-DOM remount checks exercise the lifecycle;
-the development server's HMR transport was not separately tested.
-
-Territory-map evidence is recorded in [`docs/territory/validation.json`](./docs/territory/validation.json),
-with [desktop](./docs/territory/desktop.png), [portrait](./docs/territory/portrait.png),
-[short landscape](./docs/territory/smallLandscape.png), and
-[post-victory](./docs/territory/victory.png) captures. Domain checks cover local
-belligerents and biomes, changing control, calendar fronts, accepted terms,
-legacy v3 continuity, and invalid influence data. Browser journeys cover map
-selection/zoom/focus, arrival forecasts, acceptance/reload/deployment/abort,
-and simulated keyboard, gamepad, and touch input. Physical device feel and
-campaign balance remain owner playtest gates.
+Automated inputs and passing checks do not establish physical controller/touch
+feel, audio listening quality, GPU performance, combat balance, or owner
+acceptance.
 
 ## Hosting and save compatibility
 
