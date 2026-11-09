@@ -415,7 +415,22 @@ bun run dev
 ```
 
 Bun's native HTML development server bundles TypeScript, CSS, and fonts with
-hot reload. Production validation uses:
+hot reload. To inspect model animations without starting a campaign:
+
+```sh
+bun run dev:models
+```
+
+Open **http://localhost:3001/**. This local tool loads all twelve production
+models with the game's shared pose and gait code. Select a model and motion,
+adjust throttle or playback speed, and drag to orbit or scroll to zoom. Pause
+freezes the pose; **Step 1/60 s** pauses and advances exactly one simulation
+frame, independent of playback speed. **Restart motion** resets the pose and
+clock while preserving the model, camera, throttle, playback speed, and pause
+state. Changing the model or motion also starts its animation from zero.
+The viewer uses no campaign saves. Set `PORT` to override its default port.
+
+Production validation uses:
 
 ```sh
 bun run check
@@ -424,8 +439,9 @@ bun run preview
 
 `check` runs the regression suite, strict TypeScript, ESLint, and a clean
 production build. `preview` serves that `dist/` build; use `bun run build` first
-when building separately. Both servers default to port 3000; set `PORT` to choose
-another. Runtime dependencies are ECSpresso, Three.js, lit-html, and d3-contour
+when building separately. The game dev server and production preview default
+to port 3000; set `PORT` to choose another. Runtime dependencies are ECSpresso,
+Three.js, lit-html, and d3-contour
 (for interpolated territory outlines). The game has
 no backend, desktop packaging, or Steam integration.
 
