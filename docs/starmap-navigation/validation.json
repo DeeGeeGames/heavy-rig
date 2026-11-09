@@ -1,0 +1,88 @@
+{
+  "build": "Bun 1.3.14 production bundle",
+  "browser": "Headless Chromium; isolated browser contexts",
+  "checks": {
+    "tests": {
+      "passed": 230,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "independentReview": "Routing import and explicit-shortcut destinations repaired and revalidated"
+  },
+  "journey": [
+    "Contracts opens its board and Starmap appears once at the top level",
+    "Keyboard department cycling includes Starmap and wraps in both directions",
+    "Simulated controller shoulders switch departments and triggers switch Map/Intel",
+    "Find conflict zone opens Map even after Intel was last visited",
+    "Selected system, arrival forecast, contract selection, zoom, and saves survive department switches",
+    "Explicit Contracts shortcut restores Board after Factions",
+    "Jump advances one day, arrives at the selected system, preserves forecast terms, and opens Contracts Board",
+    "Active contracts continue to lock system selection and travel",
+    "Settings and handbook return to Starmap Intel with valid focus",
+    "Reload retains the accepted contract and location without a save migration",
+    "Accepted contract still leads to a deployable Mech Bay"
+  ],
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "allDepartmentButtonsInsideViewport": true,
+      "allDepartmentsReachable": true,
+      "pageErrors": []
+    },
+    {
+      "name": "portrait",
+      "width": 390,
+      "height": 844,
+      "allDepartmentButtonsInsideViewport": true,
+      "allDepartmentsReachable": true,
+      "pageErrors": []
+    },
+    {
+      "name": "small-portrait",
+      "width": 320,
+      "height": 568,
+      "allDepartmentButtonsInsideViewport": true,
+      "allDepartmentsReachable": true,
+      "pageErrors": []
+    },
+    {
+      "name": "landscape",
+      "width": 844,
+      "height": 390,
+      "allDepartmentButtonsInsideViewport": true,
+      "allDepartmentsReachable": true,
+      "pageErrors": []
+    },
+    {
+      "name": "small-landscape",
+      "width": 568,
+      "height": 320,
+      "allDepartmentButtonsInsideViewport": true,
+      "allDepartmentsReachable": true,
+      "pageErrors": []
+    }
+  ],
+  "simulatedInputs": [
+    "keyboard",
+    "mouse",
+    "Gamepad API controller",
+    "touch taps"
+  ],
+  "notMeasured": [
+    "physical controller feel",
+    "physical touch feel",
+    "audio output",
+    "GPU performance",
+    "game balance"
+  ],
+  "screenshots": [
+    "desktop.png",
+    "portrait.png",
+    "small-portrait.png",
+    "landscape.png"
+  ]
+}
