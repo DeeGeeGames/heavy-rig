@@ -41,6 +41,14 @@ export const SHIP_SECTIONS: readonly { id: ShipScreen; label: string; number: st
 const daysLabel = function (days: number) { return `${days} ${days === 1 ? 'DAY' : 'DAYS'}`; };
 const creditsLabel = function (credits: number) { return `${credits.toLocaleString()} CR`; };
 const integrityLabel = function (integrity: number) { return `${Math.ceil(integrity)}%`; };
+const renderHullIntegrity = function (integrity: number) {
+	const condition = integrity <= 0 ? 'disabled' : integrity < 35 ? 'critical' : integrity < 100 ? 'damaged' : 'intact';
+	return html`<span class="hull-integrity" data-hull-condition=${condition}>
+		<span class="hull-integrity-heading"><span>HULL INTEGRITY</span><strong>${integrityLabel(integrity)}</strong></span>
+		<span class="hull-integrity-track"><i style="width:${integrity}%"></i></span>
+		<span class="hull-condition">${condition === 'disabled' ? 'DISABLED · REPAIRS REQUIRED' : condition === 'critical' ? 'CRITICAL DAMAGE' : condition === 'damaged' ? 'HULL DAMAGED' : 'HULL INTACT'}</span>
+	</span>`;
+};
 
 export const isShipScreen = function (value: string): value is ShipScreen { return value === 'bridge' || value === 'mechbay' || value === 'market' || value === 'engineering'; };
 export const adjacentShipScreen = function (screen: ShipScreen, delta: number): ShipScreen {
@@ -114,15 +122,15 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 	return [
 		{ id: 'fleet', label: 'Fleet', items: [
 			html`<span class="eyebrow">${campaign.fleet.length} / ${FRAMES.length} FRAMES OWNED</span>`,
-			...campaign.fleet.map(function (owned) { const definition = getFrame(owned.frameId); const job = workOrderFor(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${definition.name}</b><small>${integrityLabel(owned.integrity)} INTEGRITY · ${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
+			...campaign.fleet.map(function (owned) { const definition = getFrame(owned.frameId); const job = workOrderFor(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${definition.name}</b>${renderHullIntegrity(owned.integrity)}<small>${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
 			...textItems('Each chassis is purchased once and includes its signature weapon. Equipment stays with its frame between sorties.'),
 		], actions: html`<button class="secondary" @click=${function () { actions.navigate('market'); }}>ACQUIRE FRAME →</button>` },
 		{ id: 'condition', label: 'Condition', items: [
 			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${frame.name}</h2></div>`,
-			html`<div class="company-integrity"><span>FRAME INTEGRITY</span><b class=${mech.integrity < 35 ? 'negative' : ''}>${integrityLabel(mech.integrity)}</b><div class="track"><i style="width:${mech.integrity}%"></i></div></div>`,
+			renderHullIntegrity(mech.integrity),
 			html`<dl class="frame-specifications"><dt>CRUISE</dt><dd>${frame.speed} m/s</dd><dt>COOLING</dt><dd>${frame.cooling} heat/s</dd><dt>MASS</dt><dd>${frame.mass} tonnes</dd></dl>`,
 			...textItems(hardpointSummary(frame.id)), ...textItems(frame.tradeoff),
-		], ...(mech.integrity < 100 ? { actions: html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>${mech.integrity <= 0 ? 'RECOVER FRAME' : 'SCHEDULE REPAIRS'} →</button>` } : {}) },
+		] },
 		{ id: 'loadout', label: equipment && slot !== null ? `Mount ${slot + 1}` : 'Loadout', items: equipment ? choices : [
 			...mounts,
 			...textItems(order ? `${order.kind === 'repair' ? 'Repairs' : 'Refit'} underway. Ready day ${order.readyDay} · ${daysLabel(order.readyDay - campaign.day)} remaining.` : changed > 0 ? `Fitting estimate: ${daysLabel(changed)}. Ready day ${campaign.day + changed}. Parts are reserved when queued. Installed weapons stay in place until work finishes.` : `${hardpointSummary(frame.id)} Select a mount to fit a compatible owned weapon. Each changed mount takes one calendar day.`),
@@ -177,7 +185,7 @@ const engineeringPanes = function (campaign: Campaign, actions: CompanyActions):
 		{ id: 'condition', label: 'Condition', items: [
 			...campaign.fleet.flatMap(function (mech) {
 				const frame = getFrame(mech.frameId); const order = workOrderFor(campaign, mech.frameId); const days = repairDays(mech.integrity);
-				return [html`<article class="maintenance-frame" data-maintenance-frame=${mech.frameId}><div><b>${frame.name}</b><strong class=${mech.integrity < 35 ? 'negative' : ''}>${integrityLabel(mech.integrity)}</strong></div><div class="track"><i style="width:${mech.integrity}%"></i></div><p>${order ? `${order.kind === 'repair' ? 'Repair' : 'Refit'} underway · ready day ${order.readyDay}` : mech.integrity >= 100 ? 'Fully serviced.' : `${daysLabel(days)} to restore · ready day ${campaign.day + days}`}</p></article>`, html`<button class="secondary" data-repair-frame=${mech.frameId} ?disabled=${Boolean(order) || mech.integrity >= 100 || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>${frame.name} · ${order ? 'WORK IN PROGRESS' : mech.integrity >= 100 ? 'FRAME INTACT' : `REPAIR · ${daysLabel(days)}`}</button>`];
+				return [html`<article class="maintenance-frame" data-maintenance-frame=${mech.frameId}><div><b>${frame.name}</b></div>${renderHullIntegrity(mech.integrity)}<p>${order ? `${order.kind === 'repair' ? 'Repair' : 'Refit'} underway · ready day ${order.readyDay}` : mech.integrity >= 100 ? 'Fully serviced.' : `${daysLabel(days)} to restore · ready day ${campaign.day + days}`}</p></article>`, html`<button class="secondary" data-repair-frame=${mech.frameId} ?disabled=${Boolean(order) || mech.integrity >= 100 || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>${frame.name} · ${order ? 'WORK IN PROGRESS' : mech.integrity >= 100 ? 'FRAME INTACT' : `REPAIR · ${daysLabel(days)}`}</button>`];
 			}), ...textItems('Your own crews repair without a credit fee. Every 20 missing integrity takes one day; a wrecked frame needs five days.'),
 		], actions: html`<button class="secondary" @click=${function () { actions.navigate('mechbay'); }}>MECH BAY →</button>` },
 	];
@@ -194,10 +202,15 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 	root.dataset['picker'] = String(locked);
 	const footer = html`<footer class="bridge-footer"><div><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class="company-notice" role="status">${editor.notice}</span><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'}>${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span></footer>`;
 	const mech = getOwnedMech(campaign); const frame = mech ? getFrame(mech.frameId) : undefined;
+	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	const hero = screen === 'mechbay' && mech && frame ? html`
 		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.role}</span><h2>${frame.name} <small>/ ${frame.designation}</small></h2></div><span class="eyebrow">ACTIVE FRAME</span></div>
 		<div class="hangar-model"><canvas data-hangar-frame=${frame.id} aria-label=${`${frame.name} frame preview`}></canvas><span class="hangar-fallback">${frame.name} / ${frame.role}</span></div>
-		<div class="hangar-specs"><div><small>INTEGRITY</small><b>${Math.ceil(mech.integrity)}<em>%</em></b></div><div><small>CRUISE</small><b>${frame.speed}<em>m/s</em></b></div><div><small>COOLING</small><b>${frame.cooling}<em>heat/s</em></b></div></div>
+		<div class="hangar-service">
+			${renderHullIntegrity(mech.integrity)}
+			${order ? html`<button class="secondary hull-repair" ?disabled=${locked} @click=${function () { actions.navigate('engineering'); }}>VIEW ${order.kind === 'repair' ? 'REPAIRS' : 'REFIT'}<small>READY DAY ${order.readyDay}</small></button>` : mech.integrity < 100 ? html`<button class="secondary hull-repair" data-quick-repair=${mech.frameId} ?disabled=${locked || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>REPAIR · ${daysLabel(repairDays(mech.integrity))}<small>0 CR</small></button>` : html``}
+		</div>
+		<div class="hangar-specs"><div><small>CRUISE</small><b>${frame.speed}<em>m/s</em></b></div><div><small>COOLING</small><b>${frame.cooling}<em>heat/s</em></b></div></div>
 	` : undefined;
 	const departmentViews = screen === 'market' ? [
 		{ id: 'weapons', label: 'Weapons', panes: ['catalogue', 'details'], select: function () { view.kind = 'weapons'; refresh(); } },

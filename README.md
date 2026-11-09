@@ -60,6 +60,11 @@ a destroyed frame needs five. Repairs have no credit fee, so a damaged starting
 Kestrel can recover even when the company has no money. Repair completion is
 applied on the due day, rather than healing a little each real-time second.
 
+The Mech Bay keeps a color-coded hull gauge visible on every page, including
+phones: green for intact, amber for damaged, and red for critical or disabled
+frames. Use **Repair** beside the gauge to queue work directly; its button shows
+the required days and zero-credit cost before the usual confirmation.
+
 A frame can have one repair or refit order at a time and cannot deploy while
 that work is underway. Different frames have separate crews and work in
 parallel. A damaged frame above 0% can deploy if it has at least one installed
