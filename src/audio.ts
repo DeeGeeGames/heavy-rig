@@ -13,11 +13,12 @@ export interface AudioFrame {
 	intensity?: number;
 	danger?: number;
 	victory?: boolean;
+	alarm?: boolean;
 }
 export interface AudioMix { master: number; music: number; effects: number }
 export const DEFAULT_AUDIO_MIX: Readonly<AudioMix> = { master: 0.8, music: 0.55, effects: 0.85 };
 
-type Bus = 'music' | 'effects' | 'ui';
+type Bus = 'music' | 'effects' | 'ui' | 'alarm';
 interface Voice {
 	source: OscillatorNode | AudioBufferSourceNode;
 	nodes: AudioNode[];
@@ -93,6 +94,7 @@ export const createAudio = function () {
 	let phase: AudioPhase = 'combat';
 	let intensity = 0;
 	let nextWarning = 0;
+	let nextAlarm = 0;
 	let nextMusic = 0;
 	let musicStep = 0;
 	let musicDuckUntil = 0;
@@ -179,7 +181,7 @@ export const createAudio = function () {
 	const setMix = function (value: AudioMix) {
 		mix = { master: clamp(value.master), music: clamp(value.music), effects: clamp(value.effects) };
 		if (mix.music === 0) clearVoices('music');
-		if (mix.effects === 0) { clearVoices('effects'); clearVoices('ui'); }
+		if (mix.effects === 0) { clearVoices('effects'); clearVoices('ui'); clearVoices('alarm'); }
 		mixLevels();
 	};
 	const setMuted = function (value: boolean) {
@@ -189,7 +191,7 @@ export const createAudio = function () {
 	};
 	const reset = function () {
 		clearVoices(); lastEvent.clear();
-		nextWarning = 0; nextMusic = 0; musicStep = 0; intensity = 0; musicDuckUntil = 0; lastCue = -10;
+		nextWarning = 0; nextAlarm = 0; nextMusic = 0; musicStep = 0; intensity = 0; musicDuckUntil = 0; lastCue = -10;
 	};
 
 	const unlock = async function (): Promise<boolean> {
@@ -324,6 +326,15 @@ export const createAudio = function () {
 		if (phase !== nextPhase) { phase = nextPhase; clearVoices('music'); nextMusic = 0; musicStep = 0; }
 		mixLevels();
 		const driving = audible && phase === 'combat';
+		const alarm = driving && frame.alarm && mix.effects > 0;
+		if (!alarm) { clearVoices('alarm'); nextAlarm = 0; }
+		else if (at >= nextAlarm) {
+			// A rising/falling facility siren and a short two-tone security bell.
+			tone({ at, frequency: 360, endFrequency: 780, duration: 1.25, volume: 0.095, type: 'sawtooth', attack: 0.12, cutoff: 1200, pan: -0.35, bus: 'alarm' });
+			tone({ at: at + 1.2, frequency: 780, endFrequency: 360, duration: 1.25, volume: 0.095, type: 'sawtooth', attack: 0.1, cutoff: 1200, pan: -0.35, bus: 'alarm' });
+			for (const offset of [0, 0.3]) tone({ at: at + offset, frequency: offset === 0 ? 1040 : 820, duration: 0.18, volume: 0.075, type: 'square', cutoff: 1800, pan: 0.4, bus: 'alarm' });
+			nextAlarm = at + 2.6;
+		}
 		const speed = clamp(Math.abs(frame.speed) / 90);
 		engine.frequency.setTargetAtTime(34 + speed * 31, at, 0.1);
 		engineFilter.frequency.setTargetAtTime(95 + speed * 105, at, 0.1);
