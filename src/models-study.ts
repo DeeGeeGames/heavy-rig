@@ -40,6 +40,7 @@ if (!(canvasElement instanceof HTMLCanvasElement)) throw new Error('Missing mode
 const canvas = canvasElement;
 const stage = requireElement('stage'); const label = requireElement('motion-name'); const description = requireElement('motion-description');
 const pauseButton = requireElement('pause'); const orbitButton = requireElement('orbit'); const throttleOutput = requireElement('throttle-value');
+const stepButton = requireElement('step'); const restartButton = requireElement('restart'); const timeOutput = requireElement('animation-time');
 const throttleInput = requireElement('throttle'); const playbackInput = requireElement('playback'); const viewInput = requireElement('view'); const modelInput = requireElement('model');
 if (!(throttleInput instanceof HTMLInputElement) || !(playbackInput instanceof HTMLSelectElement) || !(viewInput instanceof HTMLSelectElement) || !(modelInput instanceof HTMLSelectElement)) throw new Error('Invalid model study controls');
 
@@ -98,15 +99,24 @@ const startStudy = function () {
 		if (width <= 0 || height <= 0) return;
 		renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix(); frameModel();
 	};
+	const resetMotion = function () {
+		body = { x: 0, y: 0, angle: 0 }; gait = createGait(body, sizeForChoice(), rigForChoice());
+		speed = 0; aim = 0; time = 0; phaseTime = 0; accumulator = 0; previous = 0; ticks = 0;
+		phase = motion === 'showcase' ? 'walk' : motion;
+		grid.position.set(0, -0.25, 0); deck.position.set(0, 0, 0); model.pose(gait, aim);
+	};
 	const selectMotion = function (selected: Motion) {
-		motion = selected; time = 0; phaseTime = 0; accumulator = 0;
+		motion = selected; resetMotion();
 		for (const button of modeButtons) button.setAttribute('aria-pressed', String(button.dataset['motion'] === motion));
 	};
-	const setPaused = function (value: boolean) { paused = value; pauseButton.textContent = paused ? 'Resume' : 'Pause'; pauseButton.setAttribute('aria-pressed', String(paused)); };
+	const setPaused = function (value: boolean) {
+		paused = value; previous = 0; accumulator = 0;
+		pauseButton.textContent = paused ? 'Resume' : 'Pause'; pauseButton.setAttribute('aria-pressed', String(paused));
+	};
 	const selectModel = function (selected: ModelChoice) {
-		model.dispose(); choice = selected; model = createMech(choice.kind, choice.commander ?? false, choice.frame); scene.add(model.root);
-		body = { x: 0, y: 0, angle: 0 }; gait = createGait(body, sizeForChoice(), rigForChoice()); speed = 0; aim = 0; time = 0; phaseTime = 0; accumulator = 0;
-		grid.position.set(0, -0.25, 0); deck.position.set(0, 0, 0); model.pose(gait, aim); frameModel();
+		const next = createMech(selected.kind, selected.commander ?? false, selected.frame);
+		model.dispose(); choice = selected; model = next; scene.add(model.root);
+		resetMotion(); frameModel();
 	};
 	const step = function () {
 		const dt = 1 / 60; time += dt; ticks++;
@@ -132,8 +142,10 @@ const startStudy = function () {
 	for (const button of modeButtons) button.addEventListener('click', function () { const value = button.dataset['motion']; if (isMotion(value)) selectMotion(value); }, { signal: abort.signal });
 	modelInput.addEventListener('change', function () { selectModel(getChoice(modelInput.value)); }, { signal: abort.signal });
 	pauseButton.addEventListener('click', function () { setPaused(!paused); }, { signal: abort.signal });
+	stepButton.addEventListener('click', function () { if (contextLost) return; setPaused(true); step(); }, { signal: abort.signal });
+	restartButton.addEventListener('click', resetMotion, { signal: abort.signal });
 	orbitButton.addEventListener('click', function () { controls.autoRotate = !controls.autoRotate; orbitButton.setAttribute('aria-pressed', String(controls.autoRotate)); }, { signal: abort.signal });
-	throttleInput.addEventListener('input', function () { const value = Number(throttleInput.value); if (!Number.isFinite(value)) return; throttle = Math.max(0.25, Math.min(1, value / 100)); throttleOutput.textContent = `${Math.round(throttle * 100)}%`; }, { signal: abort.signal });
+	throttleInput.addEventListener('input', function () { const value = Number(throttleInput.value); if (!Number.isFinite(value)) return; throttle = Math.max(0, Math.min(1, value / 100)); throttleOutput.textContent = `${Math.round(throttle * 100)}%`; }, { signal: abort.signal });
 	playbackInput.addEventListener('change', function () { const value = Number(playbackInput.value); if (value === 1 || value === 0.5 || value === 0.25) playback = value; }, { signal: abort.signal });
 	viewInput.addEventListener('change', function () { const value = viewInput.value; if (value === 'side' || value === 'game' || value === 'three-quarter') { view = value; frameModel(); } }, { signal: abort.signal });
 	window.addEventListener('keydown', function (event) { if (event.code === 'Space' && (event.target === document.body || event.target === canvas)) { event.preventDefault(); setPaused(!paused); } }, { signal: abort.signal });
@@ -149,9 +161,11 @@ const startStudy = function () {
 			if (!paused) { accumulator += elapsed * playback; while (accumulator >= 1 / 60) { step(); accumulator -= 1 / 60; } }
 			controls.update(paused ? 0 : elapsed); renderer.render(scene, camera); rendered++;
 			label.textContent = phase;
+			timeOutput.textContent = `${time.toFixed(3)} s · frame ${ticks}`;
 			description.textContent = choice.kind === 'helicopter' ? 'Circling gunship with main and tail rotors, landing skids, and a tracking chin gun.' : choice.kind === 'vtol' ? 'Twin tilt-fan aircraft with independently aimed wing missile pods.' : choice.kind === 'tank' ? 'Tracked armor with a rotating cannon turret and vulnerable flanks.' : descriptions[phase];
 			stage.dataset['model'] = choice.id; stage.dataset['motion'] = motion; stage.dataset['phase'] = phase;
 			stage.dataset['ticks'] = String(ticks); stage.dataset['frames'] = String(rendered);
+			stage.dataset['time'] = String(time); stage.dataset['paused'] = String(paused);
 			stage.dataset['triangles'] = String(renderer.info.render.triangles); stage.dataset['calls'] = String(renderer.info.render.calls);
 		}
 		frame = requestAnimationFrame(tick);

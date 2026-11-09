@@ -16,6 +16,7 @@
 		.readout { position: absolute; inset: 14px auto auto 16px; pointer-events: none; }
 		.readout strong { display: block; color: #e2ba7c; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
 		.readout small { display: block; max-width: 240px; margin-top: 5px; color: #9eb4b3; font-size: 11px; line-height: 1.5; }
+		.readout output { display: block; margin-top: 8px; font: 11px ui-monospace, monospace; }
 		.drag-hint { position: absolute; bottom: 12px; right: 16px; color: #89a3a1; font-size: 10px; pointer-events: none; }
 		.controls { padding: 12px 16px 16px; }
 		.motion-bank, .secondary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
@@ -37,19 +38,21 @@
 	<header><h1>HEAVY RIG / MODEL STUDY</h1><label>Model <select id="model"><optgroup label="Company frames"><option value="warden">Warden 08</option><option value="kestrel">Kestrel 21</option><option value="maul">Maul 34</option><option value="longbow">Longbow 16</option><option value="morrow">Morrow 52</option></optgroup><optgroup label="Hostile frames"><option value="scout">Scout</option><option value="striker">Striker</option><option value="siege">Siege</option><option value="commander">Crown commander</option></optgroup><optgroup label="Hostile vehicles"><option value="helicopter">Helicopter</option><option value="vtol">VTOL</option><option value="tank">Tank</option></optgroup></select></label></header>
 	<div class="stage" id="stage">
 		<canvas id="model-canvas"></canvas>
-		<div class="readout"><strong id="motion-name">Walk</strong><small id="motion-description">Planted feet, loaded suspension, and working pistons.</small></div>
+		<div class="readout"><strong id="motion-name">Walk</strong><small id="motion-description">Planted feet, loaded suspension, and working pistons.</small><output id="animation-time">0.000 s · frame 0</output></div>
 		<span class="drag-hint">Drag to orbit · Scroll to zoom</span>
 	</div>
 	<div class="controls">
 		<div class="motion-bank"><button data-motion="showcase" aria-pressed="true">Showcase</button><button data-motion="walk" aria-pressed="false">Walk</button><button data-motion="reverse" aria-pressed="false">Reverse</button><button data-motion="turn" aria-pressed="false">Turn</button><button data-motion="aim" aria-pressed="false">Aim</button><button data-motion="fire" aria-pressed="false">Fire</button><button data-motion="rest" aria-pressed="false">Rest</button></div>
 		<div class="secondary">
 			<button id="pause" aria-pressed="false">Pause</button>
+			<button id="step">Step 1/60 s</button>
+			<button id="restart">Restart motion</button>
 			<label>Playback <select id="playback"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select></label>
-			<label>Throttle <input id="throttle" type="range" min="25" max="100" value="65"><output id="throttle-value">65%</output></label>
+			<label>Throttle <input id="throttle" type="range" min="0" max="100" value="65"><output id="throttle-value">65%</output></label>
 			<label>View <select id="view"><option value="three-quarter">Three quarter</option><option value="side">Side</option><option value="game">Game angle</option></select></label>
 			<button id="orbit" aria-pressed="false">Orbit camera</button>
 		</div>
-		<p class="note">All twelve production models, with their own locomotion and proportions. Showcase cycles through walking, reversing, turning, aiming, and firing.</p>
+		<p class="note">All twelve production models, with their own locomotion and proportions. Showcase cycles through walking, reversing, turning, aiming, and firing. Step pauses playback and advances one simulation frame. Restart returns the selected motion to its starting pose. Space pauses or resumes.</p>
 		<p id="error" hidden></p>
 	</div>
 </main>
