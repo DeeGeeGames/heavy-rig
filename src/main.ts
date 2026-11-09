@@ -389,10 +389,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					const next = acceptContract(campaign, contract.id); if (next === campaign) return;
 					if (!replaceCampaign(next)) return; refreshBridge(); syncScreen();
 					selectWorkspacePane(element('bridge'), 'briefing'); element('bridge-deploy').focus({ preventScroll: true });
-				}, 'ACCEPT CONTRACT', `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction.`, 'ACCEPT THIS CONTRACT?');
+				}, 'ACCEPT CONTRACT', `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction. Success strengthens the employer on this front; failure or abort strengthens the opposition.`, 'ACCEPT THIS CONTRACT?');
 			},
 			deploy: function () { navigateShip('mechbay'); },
-			abandon: function () { confirm(function () { if (replaceCampaign(abandonContract(campaign))) toBridge(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains.', 'ABORT THIS CONTRACT?'); },
+			abandon: function () { confirm(function () { if (replaceCampaign(abandonContract(campaign))) toBridge(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
 			training: startTraining,
 			title: back,
 			settings: function () { showAuxiliary('settings'); },
@@ -449,7 +449,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('pause', function () { setPaused(true); });
 	listen('reset', function () { if (training) confirm(startTraining, 'RESTART TRAINING'); });
 	listen('leave', function () {
-		if (state.mission && !training) confirm(function () { checkpoint(); if (replaceCampaign(abandonContract(campaign))) toBridge(); }, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains. Recovery takes one day.', 'ABORT THIS CONTRACT?');
+		if (state.mission && !training) confirm(function () { checkpoint(); if (replaceCampaign(abandonContract(campaign))) toBridge(); }, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
 		else confirm(trainingOrigin === 'title' ? toTitle : toBridge, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
 	});
 	listen('result-briefing', toBridge);
@@ -525,7 +525,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!replaceCampaign(settleContract(campaign, won))) return;
 		terminalUntil = now + 1600;
 		element('result-title').textContent = won ? 'CONTRACT COMPLETE.' : 'CONTRACT FAILED.';
-		element('result-copy').textContent = won ? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} has confirmed the objective and released payment.` : `The sortie was lost. Your frame was recovered with ${report.armor}% integrity. No payment or employer favor was earned. Repair it in Engineering before its next deployment.`;
+		element('result-copy').textContent = won ? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} has confirmed the objective, released payment, and strengthened its influence around this system.` : `The sortie was lost. Your frame was recovered with ${report.armor}% integrity. No payment or employer favor was earned. ${getFaction(contract.opponent).name} gained local influence. Repair it in Engineering before its next deployment.`;
 		element('result-difficulty').textContent = `${getFrame(state.frame).name} · ${state.difficulty.toUpperCase()}`;
 		element('result-score').textContent = `${campaign.lastResult?.payout.toLocaleString() ?? '0'} CR`;
 		element('result-rank').textContent = won ? '✓' : '×';

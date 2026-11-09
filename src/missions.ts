@@ -1,4 +1,5 @@
-import type { Biome, Contract, Landmark, MissionMap } from './campaign-types';
+import { getPlanet } from './universe';
+import type { Contract, Landmark, MissionMap } from './campaign-types';
 import type { EnemyKind, Point, CombatStateView } from './simulation';
 
 export const EXTRACTION_RADIUS = 150;
@@ -6,7 +7,6 @@ export const EXTRACTION_SECONDS = 3;
 export const FACILITY_RADIUS = 65;
 export const FACILITY_TARGET_ID = -1;
 
-const biomes: Readonly<Record<Contract['planetId'], Biome>> = { meridian: 'badlands', cinder: 'volcanic', borealis: 'tundra' };
 const randomSource = function (seed: number) {
 	let value = seed >>> 0;
 	return function () { value = (Math.imul(value, 1664525) + 1013904223) >>> 0; return value / 4294967296; };
@@ -39,7 +39,7 @@ export const generateMissionMap = function (contract: Contract): MissionMap {
 		if (reserved.some(function (site) { return separation(site, at) < 260 + radius; })) continue;
 		landmarks.push({ ...at, radius, rotation: random() * Math.PI * 2, kind: attempt % 7 === 0 ? 'depot' : attempt % 3 === 0 ? 'crater' : 'rocks' });
 	}
-	return { seed: contract.seed, biome: biomes[contract.planetId], width, height, drop, objective, extraction, sites, landmarks };
+	return { seed: contract.seed, biome: getPlanet(contract.planetId).biome, width, height, drop, objective, extraction, sites, landmarks };
 };
 
 export interface MissionSpawn extends Point { kind: EnemyKind; commander?: boolean }

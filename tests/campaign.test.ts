@@ -17,7 +17,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(new Set(contracts.map(function (entry) { return entry.kind; }))).toEqual(new Set(['defend', 'demolition', 'assassination', 'clearance']));
 		expect(contracts.every(function (entry) { return entry.employer !== entry.opponent && canAcceptContract(campaign, entry); })).toBe(true);
 		const otherWorld = getContracts(campaign, 'borealis');
-		expect(canAcceptContract(campaign, otherWorld[0] ?? posted(campaign))).toBe(false);
+		expect(otherWorld.every(function (contract) { return !canAcceptContract(campaign, contract); })).toBe(true);
 		expect(travelTo(campaign, 'meridian')).toBe(campaign);
 		const returned = travelTo(travelTo(campaign, 'borealis'), 'meridian');
 		expect(returned.credits).toBe(0);
