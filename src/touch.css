@@ -106,7 +106,7 @@
 	.touch-drive-cluster>.touch-control-label { width: 112px; }
 	.touch-enabled .weapon-console { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 177px); }
 	.touch-enabled .weapon { height: 48px; min-height: 48px; width: 52px; }
-	.touch-enabled .left-instruments, .training-active.touch-enabled .left-instruments { top: 64px; }
+	.touch-enabled .left-instruments, .training-active.touch-enabled .left-instruments { top: 90px; }
 	.touch-enabled .frame-readout { padding: 4px 7px; }
 	.touch-enabled .training-guide, .touch-enabled #escape-guide { top: 60px; font-size: 10px; }
 	.touch-enabled .training-guide b { font-size: 16px; }.touch-enabled .training-guide p { font-size: 10px; line-height: 1.4; }
