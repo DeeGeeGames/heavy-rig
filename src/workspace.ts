@@ -162,7 +162,7 @@ export const renderWorkspace = function (root: HTMLElement, header: TemplateResu
 			${views.map(function (view) { return html`<button data-pane-target=${view.id} aria-pressed=${state.active === view.id} ?disabled=${locked} @click=${function () { selectWorkspacePane(root, view.id); }}>${view.label}</button>`; })}
 			<button class="nav-step" data-view-step="1" ?disabled=${locked} aria-label="Next department page" @click=${function () { cycleWorkspaceView(root, 1); }}><span data-menu-glyph="nextPage"></span></button>
 		</nav>
-		<div class="command-heading"><div><span class="eyebrow">WAYFARER / COMPANY OPERATIONS</span><h2>${root.id === 'mechbay' ? 'Ready your rig.' : root.id === 'bridge' ? 'Your next sortie.' : root.id === 'market' ? 'Stock the company.' : 'Keep the company running.'}</h2></div><span class="command-location" data-view-label></span></div>
+		<div class="command-heading"><div><span class="eyebrow">WAYFARER / COMPANY OPERATIONS</span><h2>${root.id === 'mechbay' ? 'Ready your rig.' : root.id === 'starmap' ? 'Chart your next jump.' : root.id === 'bridge' ? 'Your next sortie.' : root.id === 'market' ? 'Stock the company.' : 'Keep the company running.'}</h2></div><span class="command-location" data-view-label></span></div>
 		<div class="workspace-body">${hero ? html`<aside class="hangar-inspection">${hero}</aside>` : ''}${panes.map(function (pane) { return html`
 			<section class="workspace-pane" data-pane=${pane.id} aria-label=${pane.label}>
 				<h2 class="pane-heading">${pane.label}</h2>

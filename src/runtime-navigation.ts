@@ -25,6 +25,7 @@ const screens: ScreenConfiguratorFn<RuntimeScreens> = function (configurator) {
 	return configurator
 		.add('title', definition)
 		.add('bridge', definition)
+		.add('starmap', definition)
 		.add('mechbay', definition)
 		.add('market', definition)
 		.add('engineering', definition)

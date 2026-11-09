@@ -29,12 +29,16 @@ export interface BridgeActions {
 	abandon: () => void;
 	training: () => void;
 	title: () => void;
-	navigate: (screen: ShipScreen) => void;
+	navigate: (screen: ShipScreen, view?: 'board' | 'route' | 'system') => void;
 	settings: () => void;
 	handbook: () => void;
 }
 
-export const renderBridge = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, selection: string | undefined, saved: boolean, actions: BridgeActions) {
+const renderCampaignFooter = function (saved: boolean, actions: BridgeActions) {
+	return html`<footer class="bridge-footer"><div><button @click=${actions.training}>TRAINING</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>`;
+};
+
+export const renderStarmap = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, saved: boolean, actions: BridgeActions) {
 	const planet = getPlanet(destination);
 	const forecast = destination === campaign.planetId ? campaign : travelTo(campaign, destination);
 	const intel = getSystemIntel(forecast, destination);
@@ -43,8 +47,6 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 		const index = conflicts.findIndex(function (world) { return world.id === destination; });
 		const next = conflicts[(index + delta + conflicts.length) % conflicts.length]; if (next) actions.selectPlanet(next.id);
 	};
-	const contracts = getContracts(forecast, destination);
-	const selected = campaign.active ?? contracts.find(function (contract) { return contract.id === selection; }) ?? contracts.find(function (contract) { return canAcceptContract(campaign, contract); }) ?? contracts[0];
 	const local = destination === campaign.planetId;
 	const active = campaign.active;
 	const mech = getOwnedMech(campaign);
@@ -58,7 +60,22 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			...textItems(planet.description),
 			...textItems('Fronts move with calendar days. Victories strengthen the employer locally; defeat or abort strengthens the opposition.'),
 			...textItems(order ? `Frame in Engineering until day ${order.readyDay}.` : mech ? `${getFrame(mech.frameId).name} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Select a company frame before deployment.'),
-		], actions: html`<button id="bridge-travel" class="primary" ?disabled=${local || Boolean(active)} @click=${actions.travel}>${local ? 'ORBIT ESTABLISHED' : active ? 'CONTRACT ACTIVE' : `JUMP TO ${planet.name.toUpperCase()} →`}</button><button @click=${function () { selectWorkspacePane(root, 'board'); }}>CONTRACTS →</button>` },
+		], actions: html`<button id="bridge-travel" class="primary" ?disabled=${local || Boolean(active)} @click=${actions.travel}>${local ? 'ORBIT ESTABLISHED' : active ? 'CONTRACT ACTIVE' : `JUMP TO ${planet.name.toUpperCase()} →`}</button><button @click=${function () { actions.navigate('bridge', 'board'); }}>CONTRACTS →</button>` },
+	];
+	renderWorkspace(root, renderShipHeader(campaign, 'starmap', actions.navigate), panes, renderCampaignFooter(saved, actions), 'route', [
+		{ id: 'route', label: 'Map', panes: ['route', 'system'] },
+		{ id: 'system', label: 'Intel', panes: ['system'] },
+	]);
+};
+
+export const renderBridge = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, selection: string | undefined, saved: boolean, actions: BridgeActions) {
+	const planet = getPlanet(destination);
+	const forecast = destination === campaign.planetId ? campaign : travelTo(campaign, destination);
+	const contracts = getContracts(forecast, destination);
+	const selected = campaign.active ?? contracts.find(function (contract) { return contract.id === selection; }) ?? contracts.find(function (contract) { return canAcceptContract(campaign, contract); }) ?? contracts[0];
+	const local = destination === campaign.planetId;
+	const active = campaign.active;
+	const panes: WorkspacePane[] = [
 		{ id: 'board', label: 'Contracts', items: [
 			...(!active && !contracts.length ? textItems(`No contracts at ${planet.name}. Use the Starmap to find a conflict zone and travel there for work.`) : []),
 			...(active ? [active] : contracts).map(function (contract) {
@@ -67,7 +84,7 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			}),
 			...textItems(active ? `${getFaction(active.opponent).name}: −${active.hostility} reputation applied on acceptance. Review your owned frame and equipment before deployment.` : `Current postings on ${planet.name}. ${local ? 'Local uplink.' : `Arrival-day ${forecast.day} forecast; travel here to accept work.`}`),
 			...textItems('Postings follow the factions on the local front and change after a contract or jump. Favor unlocks higher-tier work and better rates; entry contracts stay available.'),
-		], actions: !active && !contracts.length ? html`<button @click=${function () { selectWorkspacePane(root, 'route'); }}>FIND CONFLICT ZONE →</button>` : html`` },
+		], actions: !active && !contracts.length ? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` : html`` },
 		{ id: 'briefing', label: 'Briefing', items: selected ? [
 			html`<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span><h2>${selected.title}</h2>`,
 			...textItems(selected.briefing),
@@ -77,17 +94,14 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			html`<p class="stake-line"><small>OPPOSITION</small>${getFaction(selected.opponent).name}<br><strong class="negative">−${selected.hostility} ${active ? 'applied on acceptance' : 'on acceptance'}</strong></p>`,
 			html`<p class="stake-line"><small>PAYMENT AFTER EXTRACTION</small>${selected.reward.toLocaleString()} CR</p>`,
 			...textItems('Persistent frame damage · installed company loadout. Failure or abort keeps the opposition penalty. Leaving or reloading a deployed sortie records an abort and retains damage.'),
-		] : textItems('Select a contract to review its briefing, or find an active conflict zone on the Starmap.'), actions: selected ? active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE MECH ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>` : html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canAcceptContract(campaign, selected)} @click=${function () { actions.accept(selected); }}>${!local ? 'TRAVEL HERE TO ACCEPT' : campaign.reputation[selected.employer] < selected.requiredReputation ? `NEEDS ${signed(selected.requiredReputation)} REP` : `ACCEPT · −${selected.hostility} OPPOSITION`} →</button>` : html`` },
+		] : textItems('Select a contract to review its briefing, or find an active conflict zone on the Starmap.'), actions: selected ? active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE MECH ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>` : html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canAcceptContract(campaign, selected)} @click=${function () { actions.accept(selected); }}>${!local ? 'TRAVEL HERE TO ACCEPT' : campaign.reputation[selected.employer] < selected.requiredReputation ? `NEEDS ${signed(selected.requiredReputation)} REP` : `ACCEPT · −${selected.hostility} OPPOSITION`} →</button>${!local ? html`<button @click=${function () { actions.navigate('starmap', 'system'); }}>STARMAP / JUMP →</button>` : ''}` : html`` },
 		{ id: 'factions', label: 'Factions', secondary: true, items: [
 			...FACTIONS.map(function (faction) { const value = campaign.reputation[faction.id]; return html`<div class="faction-standing" style="--faction-color:${faction.color}"><div><b>${faction.name}</b><strong>${signed(value)}</strong></div><span>${reputationLabel(value)}</span><div class="reputation-track"><i style="left:${value < 0 ? 50 + value / 2 : 50}%;width:${Math.abs(value) / 2}%"></i></div></div>`; }),
 			...(campaign.lastResult ? textItems(`${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}: ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor`) : []),
 		] },
 	];
-	const footer = html`<footer class="bridge-footer"><div><button @click=${actions.training}>TRAINING</button><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'} role="status">${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span><a href="https://deegeegames.com/">← DEEGEE GAMES</a></footer>`;
-	renderWorkspace(root, renderShipHeader(campaign, 'bridge', actions.navigate), panes, footer, 'route', [
+	renderWorkspace(root, renderShipHeader(campaign, 'bridge', actions.navigate), panes, renderCampaignFooter(saved, actions), 'board', [
 		{ id: 'board', label: 'Board', panes: ['board', 'briefing'] },
-		{ id: 'route', label: 'Starmap', panes: ['route', 'system'] },
-		{ id: 'system', label: 'Intel', panes: ['system'] },
 		{ id: 'factions', label: 'Factions', panes: ['factions'] },
 	]);
 };

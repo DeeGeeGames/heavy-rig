@@ -129,7 +129,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 .menu-key .key-label { max-width: 230px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #controller-status { color: var(--muted); font-size: 9px; }
 #game[data-controller-state='connected'] #controller-status { display: none; }
-#game[data-screen='bridge'] .menu-controls, #game[data-screen='mechbay'] .menu-controls, #game[data-screen='market'] .menu-controls, #game[data-screen='engineering'] .menu-controls { border-top: 1px solid var(--border); padding-top: 8px; background: #0b151b; }
+#game[data-screen='starmap'] .menu-controls, #game[data-screen='bridge'] .menu-controls, #game[data-screen='mechbay'] .menu-controls, #game[data-screen='market'] .menu-controls, #game[data-screen='engineering'] .menu-controls { border-top: 1px solid var(--border); padding-top: 8px; background: #0b151b; }
 #game #audio-status { font-size: 9px; color: var(--muted); }
 .couch-ui .workspace .workspace-copy, .couch-ui .workspace .page-item>p { font-size: 16px; }
 .couch-ui .workspace .company-mount .hardpoint-location, .couch-ui .workspace .catalogue-item small { font-size: 12px; }
@@ -325,7 +325,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 .workspace .ship-controller-status { font: 9px var(--mono); color: var(--muted); }
 .workspace .bridge-footer:has(.ship-controller-status:not([hidden])) .save-notice,
 .workspace .bridge-footer:has(.ship-controller-status:not([hidden])) .company-notice { display: none; }
-#game[data-screen='bridge'] #controller-status, #game[data-screen='mechbay'] #controller-status,
+#game[data-screen='starmap'] #controller-status, #game[data-screen='bridge'] #controller-status, #game[data-screen='mechbay'] #controller-status,
 #game[data-screen='market'] #controller-status, #game[data-screen='engineering'] #controller-status { display: none; }
 @media (max-width: 560px), (max-height: 360px) {
 	.workspace .ship-controller-status { font-size: 7px; }

@@ -24,7 +24,7 @@ import { createControllerFeedback } from './controller-feedback';
 import { createTraining, trainingCopy, type Training } from './training';
 import { isDifficulty, readProfile, saveProfile } from './profile';
 import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, readCampaign, saveCampaign, settleContract, travelTo } from './campaign';
-import { MISSION_NAMES, renderBridge } from './campaign-ui';
+import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
 import { missionObjective } from './missions';
 import { FRAME_PRICES, WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
@@ -207,7 +207,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('training-deploy').textContent = campaign.active ? 'REVIEW CONTRACT LOADOUT →' : 'RETURN TO SHIP →';
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('pause-copy').textContent = training ? 'Training is paused. The simulator does not affect your company.' : 'Your throttle and mission are preserved. Aborting or reloading returns the mech with its current damage.';
-		for (const id of ['title', 'bridge', 'mechbay', 'market', 'engineering', 'jump', 'pause-panel', 'result', 'training-result', 'settings', 'handbook', 'confirm', 'save-conflict']) {
+		for (const id of ['title', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'jump', 'pause-panel', 'result', 'training-result', 'settings', 'handbook', 'confirm', 'save-conflict']) {
 			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
@@ -320,7 +320,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const discardDraft = function () {
 		if (!hasRefitDraft()) return;
-		confirm(function () { resetEditor('Staged changes discarded.'); if (navigation.screen === 'bridge') refreshBridge(); else refreshCompany(); }, 'DISCARD DRAFT', 'Installed equipment stays unchanged. No work order is queued and no calendar time passes.', 'DISCARD REFIT DRAFT?');
+		confirm(function () { resetEditor('Staged changes discarded.'); if (navigation.screen === 'bridge' || navigation.screen === 'starmap') refreshCampaign(); else refreshCompany(); }, 'DISCARD DRAFT', 'Installed equipment stays unchanged. No work order is queued and no calendar time passes.', 'DISCARD REFIT DRAFT?');
 	};
 	const focusCompany = function (selector: string, fallback?: string) {
 		const target = element('mechbay').querySelector<HTMLElement>(selector) ?? (fallback ? element('mechbay').querySelector<HTMLElement>(fallback) : null);
@@ -368,13 +368,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const items = focusable(root); items[Math.min(focusIndex, items.length - 1)]?.focus({ preventScroll: true });
 		}
 	};
-	const refreshBridge = function () {
-		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, {
+	const refreshCampaign = function () {
+		const actions: BridgeActions = {
 			navigate: navigateShip,
-			selectPlanet: function (id) { if (campaign.active) return; destination = id; selectedContract = undefined; refreshBridge(); },
-			selectContract: function (id) { selectedContract = id; refreshBridge(); selectWorkspacePane(element('bridge'), 'briefing', true); const target = element('bridge').querySelector<HTMLElement>('[data-pane="briefing"] .pane-actions button:not(:disabled), [data-pane="briefing"] .paged-content'); target?.focus({ preventScroll: true }); },
+			selectPlanet: function (id) { if (campaign.active) return; destination = id; selectedContract = undefined; refreshCampaign(); },
+			selectContract: function (id) { selectedContract = id; refreshCampaign(); selectWorkspacePane(element('bridge'), 'briefing', true); const target = element('bridge').querySelector<HTMLElement>('[data-pane="briefing"] .pane-actions button:not(:disabled), [data-pane="briefing"] .paged-content'); target?.focus({ preventScroll: true }); },
 			travel: function () {
-				if (navigation.screen !== 'bridge' || navigation.auxiliary || contextLost) return;
+				if (navigation.screen !== 'starmap' || navigation.auxiliary || contextLost) return;
 				confirm(function () {
 					const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, destination); if (next === campaign) return;
 					if (!replaceCampaign(next)) return;
@@ -387,7 +387,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (navigation.screen !== 'bridge' || navigation.auxiliary || destination !== campaign.planetId) return;
 				confirm(function () {
 					const next = acceptContract(campaign, contract.id); if (next === campaign) return;
-					if (!replaceCampaign(next)) return; refreshBridge(); syncScreen();
+					if (!replaceCampaign(next)) return; refreshCampaign(); syncScreen();
 					selectWorkspacePane(element('bridge'), 'briefing'); element('bridge-deploy').focus({ preventScroll: true });
 				}, 'ACCEPT CONTRACT', `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction. Success strengthens the employer on this front; failure or abort strengthens the opposition.`, 'ACCEPT THIS CONTRACT?');
 			},
@@ -397,21 +397,24 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			title: back,
 			settings: function () { showAuxiliary('settings'); },
 			handbook: function () { showAuxiliary('handbook'); },
-		});
+		};
+		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, actions);
+		renderStarmap(element('starmap'), campaign, destination, campaignSaved, actions);
 	};
-	const navigateShip = function (target: ShipScreen) {
+	const navigateShip = function (target: ShipScreen, view?: 'board' | 'route' | 'system') {
 		if (campaignConflict || navigation.auxiliary || navigation.transitioning || editor.slot !== null) return;
 		if (isShipScreen(navigation.screen)) rememberWorkspaceFocus(element(navigation.screen));
 		training = undefined; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state);
 		editor = { ...editor, slot: null };
 		pointer = undefined; presentation.resetZoom(); audio.reset();
 		transition(navigation.setScreen(target), function () {
-			if (target === 'bridge') refreshBridge();
+			if (target === 'bridge' || target === 'starmap') refreshCampaign();
 			else refreshCompany();
 			syncScreen();
+			if (view) selectWorkspacePane(element(target), view);
 		});
 	};
-	const toBridge = function () { navigateShip('bridge'); };
+	const toBridge = function () { navigateShip('bridge', 'board'); };
 	const toTitle = function () {
 		element('title-company-label').textContent = 'CONTINUE COMPANY';
 		training = undefined; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state); audio.reset(); transition(navigation.setScreen('title'));
@@ -712,10 +715,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (element('audio-status').textContent !== audioStatus) element('audio-status').textContent = audioStatus;
 	};
 	const audioFrame = function (now: number) {
-		const combat = playing(); const audibleMenu = navigation.screen === 'title' || navigation.screen === 'jump' || navigation.screen === 'bridge' || navigation.screen === 'mechbay' || navigation.screen === 'market' || navigation.screen === 'engineering' || navigation.screen === 'training-result' || (navigation.screen === 'result' && now < terminalUntil + 30000);
+		const combat = playing(); const audibleMenu = navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) || navigation.screen === 'training-result' || (navigation.screen === 'result' && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			active: !contextLost && focused && !document.hidden && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
-			phase: navigation.screen === 'title' || navigation.screen === 'jump' || navigation.screen === 'bridge' || navigation.screen === 'mechbay' || navigation.screen === 'market' || navigation.screen === 'engineering' ? 'briefing' as const : navigation.screen === 'training-result' ? 'refit' as const : navigation.screen === 'result' ? 'result' as const : 'combat' as const,
+			phase: navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) ? 'briefing' as const : navigation.screen === 'training-result' ? 'refit' as const : navigation.screen === 'result' ? 'result' as const : 'combat' as const,
 			intensity: Math.min(1, state.enemies.length / 5 + (state.wave - 1) * 0.08), danger: Math.max(0, 1 - Math.min(state.player.hp, state.relay) / 50), victory: state.outcome === 'won' };
 	};
 	let frameTime = 0;
@@ -881,7 +884,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		world.update(elapsed);
 		frame = requestAnimationFrame(tick);
 	};
-	updateSettings(); updateDifficulty(); refreshBridge(); persistCampaign(); syncScreen(); frame = requestAnimationFrame(tick);
+	updateSettings(); updateDifficulty(); refreshCampaign(); persistCampaign(); syncScreen(); frame = requestAnimationFrame(tick);
 	return function () {
 		if (stopped) return; stopped = true;
 		checkpoint(); cancelAnimationFrame(frame); abort.abort(); resetInput();
