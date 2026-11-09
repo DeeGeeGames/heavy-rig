@@ -14,6 +14,7 @@
 	<link rel="stylesheet" href="./src/territory-map.css">
 	<link rel="stylesheet" href="./src/intro.css">
 	<link rel="stylesheet" href="./src/touch.css">
+	<link rel="stylesheet" href="./src/cockpit.css">
 </head>
 <body>
 <main id="game" class="menu-open" data-screen="intro">
@@ -23,22 +24,23 @@
 	<div id="hud" inert>
 		<header class="mission-bar">
 			<div class="mission-heading"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow" id="mission-name">LAST TRANSMISSION</span><b id="phase">01 / FIRST CONTACT</b><span id="status">Protect Relay 09</span></div></div>
-			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="pause">PAUSE <kbd>Esc</kbd></button></div>
+			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="pause">PAUSE <kbd></kbd></button></div>
 		</header>
 		<div id="training-guide" class="training-guide" hidden><span id="training-progress" class="eyebrow"></span><b id="training-title"></b><p id="training-copy"></p><small>SAFE TRAINING · PAUSE TO EXIT</small></div>
 		<div id="message" class="field-message" role="status" aria-live="polite"></div>
 		<div id="escape-guide" hidden></div>
 		<div class="left-instruments">
 			<div class="relay-readout" id="relay-readout"><span class="signal-icon" aria-hidden="true">◈</span><div><span class="eyebrow" id="relay-name">RELAY 09</span><b id="relay-value">100%</b><div class="track"><i id="relay-fill"></i></div></div></div>
-			<div class="frame-readout"><div class="readout-heading"><span class="eyebrow">FRAME INTEGRITY</span><strong id="armor-value">100%</strong></div><div class="track armor-track"><i id="armor-fill"></i></div>
+			<div class="frame-readout"><div class="cockpit-frame"><b id="combat-frame-name">WARDEN</b><span id="combat-control-mode">SIMULATION</span></div><div class="readout-heading"><span class="eyebrow">FRAME INTEGRITY</span><strong id="armor-value">100%</strong></div><div class="track armor-track"><i id="armor-fill"></i></div>
 				<div class="heat-heading"><span>REACTOR</span><b id="heat-value">0%</b></div><div class="track heat-track"><i id="heat-fill"></i></div>
 				<div class="drive-heading"><span>DRIVE <b id="drive-value">NEUTRAL</b></span><span id="speed-value">SPD 0%</span></div><div class="throttle-track"><span></span><i id="throttle-fill"></i></div>
+				<div class="drive-assist"><span id="drive-behavior">RELEASE TO CRUISE</span><span>STOP <kbd id="stop-prompt"></kbd></span></div>
 			</div>
 		</div>
 		<div class="weapon-console">
 			<div class="weapon-console-heading"><span class="eyebrow">FIRE CONTROL</span><span id="weapon-hint">HOLD ANY MOUNT TO FIRE</span></div>
 			<div class="weapon-bank" id="weapon-bank"></div>
-			<button id="coolant" class="coolant-button" data-control="coolant"><span>VENT COOLANT <kbd>V</kbd></span><b id="coolant-value">2 CHARGES</b></button>
+			<button id="coolant" class="coolant-button" data-control="coolant"><span>VENT COOLANT <kbd></kbd></span><b id="coolant-value">2 CHARGES</b></button>
 		</div>
 		<div id="pilot-hint" class="pilot-hint"><span id="hint-copy"></span><button id="dismiss-hint" aria-label="Dismiss piloting tip">×</button></div>
 		<div id="touch-lock-marker" hidden><span>TRACKING</span></div>
@@ -104,7 +106,7 @@
 		<div class="dialog-body">
 			<div data-dialog-topic="audio"><div class="slider-setting"><label for="master-volume">MASTER VOLUME</label><output id="master-output" for="master-volume">80%</output><input id="master-volume" type="range" min="0" max="100" value="80"></div><div class="slider-setting"><label for="music-volume">MUSIC</label><output id="music-output" for="music-volume">55%</output><input id="music-volume" type="range" min="0" max="100" value="55"></div><div class="slider-setting"><label for="effects-volume">EFFECTS</label><output id="effects-output" for="effects-volume">85%</output><input id="effects-volume" type="range" min="0" max="100" value="85"></div></div>
 			<div data-dialog-topic="sortie" hidden><fieldset class="difficulty-picker"><legend>NEXT SORTIE DIFFICULTY</legend><label><input type="radio" name="settings-difficulty" data-difficulty value="story"><span>STORY</span></label><label><input type="radio" name="settings-difficulty" data-difficulty value="standard" checked><span>STANDARD</span></label><label><input type="radio" name="settings-difficulty" data-difficulty value="veteran"><span>VETERAN</span></label></fieldset><p class="muted" data-dialog-text>Difficulty changes apply to the next deployment.</p><p id="storage-status" class="muted" data-dialog-text>Preferences are saved on this device.</p></div>
-			<div data-dialog-topic="keyboard" hidden><p>KEYBOARD / MOUSE · Select an action, then press a key or click its row with a mouse button. Assigning replaces its aliases and moves that input from any other action. Escape cancels.</p><div id="keyboard-mappings" class="mapping-list"></div><button id="reset-keyboard" class="secondary">RESET KEYBOARD / MOUSE</button></div><div data-dialog-topic="controller" hidden><p>CONTROLLER · Choose Simulation or Arcade in the Controls tab. The south face button and Menu / Options retain menu control. Duplicate assignments swap buttons.</p><div id="controller-mappings" class="mapping-list"></div><button id="reset-controller" class="secondary">RESET CONTROLLER</button></div><div data-dialog-topic="controls" hidden><label>CONTROL MODE <select id="control-mode"><option value="simulation">Simulation</option><option value="arcade">Arcade</option></select></label><p>SIMULATION · Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates the torso. Keyboard uses throttle and steering.</p><p>ARCADE · Left stick or WASD chooses leg direction and speed. Release to slow. Right stick chooses torso facing. Mouse aim works in both modes.</p><label class="toggle-setting"><input id="controller-vibration" type="checkbox" checked><span>CONTROLLER VIBRATION<small>Weapon recoil and damage feedback, where supported.</small></span></label><label class="toggle-setting"><input id="large-interface" type="checkbox"><span>LARGE INTERFACE<small>Larger readouts and safe margins. Automatic while using a controller.</small></span></label><label class="toggle-setting"><input id="show-touch" type="checkbox"><span>SHOW TOUCH CONTROLS<small>Automatic on touch-capable devices; hidden while using a controller.</small></span></label></div>
+			<div data-dialog-topic="keyboard" hidden><p>KEYBOARD / MOUSE · Select an action, then press a key or click its row with a mouse button. Assigning replaces its aliases and moves that input from any other action. Escape cancels.</p><div id="keyboard-mappings" class="mapping-list"></div><button id="reset-keyboard" class="secondary">RESET KEYBOARD / MOUSE</button></div><div data-dialog-topic="controller" hidden><p>CONTROLLER · Choose Simulation or Arcade in the Controls tab. The south face button and Menu / Options retain menu control. Duplicate assignments swap buttons.</p><div id="controller-mappings" class="mapping-list"></div><button id="reset-controller" class="secondary">RESET CONTROLLER</button></div><div data-dialog-topic="controls" hidden><label>CONTROL MODE <select id="control-mode"><option value="simulation">Simulation</option><option value="arcade">Arcade</option></select></label><p>SIMULATION · Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates the torso. Keyboard uses throttle and steering.</p><p>ARCADE · Left stick or WASD chooses leg direction and speed. Release to slow. Right stick chooses torso facing. Mouse aim works in both modes.</p><label class="toggle-setting"><input id="controller-vibration" type="checkbox" checked><span>CONTROLLER VIBRATION<small>Weapon recoil and damage feedback, where supported.</small></span></label><label class="toggle-setting"><input id="large-interface" type="checkbox"><span>LARGE INTERFACE<small>Larger readouts and safe margins. Automatic while using a controller.</small></span></label><label class="toggle-setting"><input id="show-touch" type="checkbox"><span>SHOW TOUCH CONTROLS<small>Automatic while using touch; hidden while using a controller.</small></span></label></div>
 		</div>
 		<footer class="dialog-actions"><button id="close-settings" class="primary">DONE <span>→</span></button></footer>
 	</section>

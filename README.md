@@ -305,6 +305,19 @@ clears held inputs; deployment starts in neutral. Focus loss, hidden pages,
 controller disconnection, and WebGL context loss pause and silence combat.
 Recovery requires explicit resume.
 
+Keyboard/mouse and controller share a direct-fire cockpit. Frame integrity, reactor
+heat, throttle, and the mapped stop input sit at the lower left; hardpoints, fitted
+weapons, live fire bindings, readiness/reload/heat lock, and coolant sit at the
+lower right. Controller use enlarges the same layout and changes the prompts to
+the detected controller family. Combined fire uses independent mapped inputs;
+there is no mount arming step or touch target tracking in these modes. Simulation
+and Arcade keep their existing movement and aiming behavior.
+
+The cockpit follows active input, including on touchscreen laptops: a key press
+or mouse use restores the direct-fire layout; touch reveals the mobile controls.
+The Show touch controls preference can keep the touch dock visible for mouse use,
+and controller use hides it. Narrow windows alone do not enable touch controls.
+
 Touch combat uses two thumbs: the left stick adjusts throttle and hull turn;
 the right FIRE trigger fires the armed mount chips. Releasing the drive stick
 keeps throttle; releasing FIRE ceases new shots. Tap a visible hostile (including
