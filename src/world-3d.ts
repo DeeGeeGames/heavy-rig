@@ -1,5 +1,6 @@
 import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, Group, InstancedMesh, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector3 } from 'three';
-import { ARENA, getEnemyDefense, type Effect, type Shot, type CombatStateView } from './simulation';
+import { ARENA, distance, ENEMY_STATS, getEnemyDefense, type Effect, type Shot, type CombatStateView, type Point, type Unit } from './simulation';
+import { FACILITY_RADIUS, FACILITY_TARGET_ID } from './missions';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
 import { createMissionEnvironment } from './mission-environment';
@@ -189,11 +190,11 @@ export const createWorldObjects = function (scene: Scene) {
 			const muzzles = frameEffects?.muzzles ?? [];
 			beaconSurface.color.set(state.relay < 30 ? '#ff865e' : '#b9fff0');
 			beacon.scale.setScalar(4 + Math.sin(state.time * 2.4) * 0.6);
-			const siege = state.enemies.filter(function (enemy) { return enemy.kind === 'siege'; });
+			const siege = state.enemies.filter(function (enemy) { return enemy.kind === 'siege' || enemy.kind === 'tank'; });
 			sync(defenses, siege.length, createDefense, function (value, index) {
 				const enemy = siege[index]; if (!enemy) return;
 				const defense = getEnemyDefense(state, enemy); const radius = (enemy.commander ? 67 : 56) * mechScale(enemy.kind);
-				value.root.position.set(enemy.x, 0, enemy.y); value.root.rotation.y = -enemy.angle;
+				value.root.position.set(enemy.x, 0, enemy.y); value.root.rotation.y = -(enemy.kind === 'tank' ? enemy.hullAngle ?? enemy.angle : enemy.angle);
 				value.shield.scale.setScalar(radius); value.shield.visible = !defense.exposed;
 				value.exposed.scale.setScalar(radius); value.exposed.visible = defense.exposed;
 				value.commitment.scale.setScalar(radius + 8); value.commitment.visible = enemy.attack?.phase === 'committed';
@@ -220,6 +221,27 @@ export const createWorldObjects = function (scene: Scene) {
 				value.root.position.set(unit.x, 0.05, unit.y); value.root.scale.setScalar('kind' in unit ? mechScale(unit.kind) : 1);
 			});
 			const smokePositions = new Map<Shot, Vector3>();
+			// Collision and guidance keep the established ground-plane rules. Lift
+			// only the trajectory's next contact, so nearby aircraft cannot pull
+			// fire away from a ground target or an intervening facility.
+			const airLift = function (point: Point, target: Unit | undefined): number {
+				return target && (target.kind === 'helicopter' || target.kind === 'vtol') ? (ENEMY_STATS[target.kind].elevation - 42) * Math.max(0, 1 - distance(point, target) / 180) : 0;
+			};
+			const shotTarget = function (shot: Shot): Unit | undefined {
+				const speed = Math.hypot(shot.vx, shot.vy); if (speed === 0) return undefined;
+				const facility = state.mission?.structure;
+				const targets = [
+					...state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, point: enemy, radius: 25, enemy }; }),
+					...(facility && facility.hp > 0 ? [{ id: FACILITY_TARGET_ID, point: facility, radius: FACILITY_RADIUS, enemy: undefined }] : []),
+				];
+				const contact = targets.filter(function (target) { return !shot.hitIds?.includes(target.id); }).map(function (target) {
+					const dx = target.point.x - shot.x; const dy = target.point.y - shot.y;
+					const along = (dx * shot.vx + dy * shot.vy) / speed; const across = (dx * shot.vy - dy * shot.vx) / speed;
+					return { target, entry: along - Math.sqrt(Math.max(0, target.radius ** 2 - across ** 2)), inPath: Math.abs(across) <= target.radius && along >= -target.radius && along <= speed * shot.life + target.radius };
+				}).filter(function (candidate) { return candidate.inPath; }).sort(function (a, b) { return a.entry - b.entry || a.target.id - b.target.id; })[0];
+				if (contact) return contact.target.enemy;
+				return shot.kind === 'missile' ? state.enemies.find(function (enemy) { return enemy.id === shot.target; }) : undefined;
+			};
 			sync(shots, state.shots.length, createShot, function (value, index) {
 				const shot = state.shots[index]; if (!shot) return; const style = shotStyle[shot.kind];
 				from.set(shot.x - shot.vx * style.duration, 42, shot.y - shot.vy * style.duration); to.set(shot.x, 42, shot.y);
@@ -247,6 +269,10 @@ export const createWorldObjects = function (scene: Scene) {
 						to.addScaledVector(launch.offset, shot.kind === 'rocket' ? 1 : launchWeight(launch.distance));
 					}
 				}
+				if (shot.kind !== 'enemy') {
+					const target = shotTarget(shot);
+					from.y += airLift({ x: from.x, y: from.z }, target); to.y += airLift(shot, target);
+				}
 				value.trail.material = style.trail; value.head.material = style.surface;
 				value.head.geometry = shot.kind === 'ppc' ? sphere : cube;
 				value.head.position.copy(to); value.head.rotation.y = -Math.atan2(shot.vy, shot.vx);
@@ -257,7 +283,7 @@ export const createWorldObjects = function (scene: Scene) {
 			projectileSmoke.update(state, smokePositions);
 			sync(effects, state.effects.length, createEffect, function (value, index) {
 				const effect = state.effects[index]; if (!effect) return; const progress = Math.max(0, 1 - effect.life * 2); const radius = Math.max(1, effect.size * progress) / Math.sqrt(1.5);
-				value.root.position.set(effect.x, 36, effect.y); value.halo.scale.setScalar(radius);
+				value.root.position.set(effect.x, effect.elevation ?? 36, effect.y); value.halo.scale.setScalar(radius);
 				if (effect.source === 'muzzle' && muzzles.length > 0) {
 					let origin = flashes.get(effect);
 					if (!origin) {
@@ -277,7 +303,8 @@ export const createWorldObjects = function (scene: Scene) {
 			});
 			beam.visible = !!state.beam;
 			if (state.beam) {
-				from.set(state.player.x, 42, state.player.y); to.set(state.beam.x, 42, state.beam.y);
+				const endpoint = state.beam;
+				from.set(state.player.x, 42, state.player.y); to.set(endpoint.x, endpoint.elevation ?? 42, endpoint.y);
 				if (muzzles[0]) from.copy(muzzles[0]);
 				segment(beamGlow, 4.5); segment(beamCore, 1.25); beamImpact.position.copy(to);
 			}

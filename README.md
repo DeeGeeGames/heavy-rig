@@ -101,6 +101,15 @@ remain within 150 meters for three uninterrupted seconds. Combat and incoming
 ordnance continue; frame destruction or loss of a defended relay still fails the
 contract. Every weapon family can damage facilities.
 
+Hostile forces combine Scout, Striker, and Siege mechs with helicopters, missile
+VTOLs, and tanks. Helicopters circle at gun range; VTOLs strafe at standoff range
+and fire guided missiles. Tanks advance slowly and track targets with a separate
+cannon turret. Their frontal hull armor rewards flanking, even while the turret
+turns. Aircraft remain targetable with every weapon family; aim at their visible
+bodies or lead their movement. Air contacts use hollow cyan radar markers. The
+priority command target remains a Siege mech. Seeded mission layouts and hostile
+counts are unchanged; each roster now includes ground and air vehicles.
+
 Contract seeds generate bounded fields 4,200–4,800 by 3,000–3,600 meters. Drop
 side, objective and patrol sites, extraction point, and low terrain landmarks
 vary. Scenery is traversable; it provides no collision cover. Radar and edge

@@ -14,6 +14,7 @@ const choices: readonly ModelChoice[] = [
 	...FRAMES.map(function (frame) { return { id: frame.id, frame: frame.id }; }),
 	{ id: 'scout', frame: 'warden', kind: 'scout' }, { id: 'striker', frame: 'warden', kind: 'striker' },
 	{ id: 'siege', frame: 'warden', kind: 'siege' }, { id: 'commander', frame: 'warden', kind: 'siege', commander: true },
+	{ id: 'helicopter', frame: 'warden', kind: 'helicopter' }, { id: 'vtol', frame: 'warden', kind: 'vtol' }, { id: 'tank', frame: 'warden', kind: 'tank' },
 ];
 const getChoice = function (id: string) {
 	const choice = choices.find(function (candidate) { return candidate.id === id; });
@@ -147,7 +148,8 @@ const startStudy = function () {
 		if (!document.hidden && !contextLost) {
 			if (!paused) { accumulator += elapsed * playback; while (accumulator >= 1 / 60) { step(); accumulator -= 1 / 60; } }
 			controls.update(paused ? 0 : elapsed); renderer.render(scene, camera); rendered++;
-			label.textContent = phase; description.textContent = descriptions[phase];
+			label.textContent = phase;
+			description.textContent = choice.kind === 'helicopter' ? 'Circling gunship with main and tail rotors, landing skids, and a tracking chin gun.' : choice.kind === 'vtol' ? 'Twin tilt-fan aircraft with independently aimed wing missile pods.' : choice.kind === 'tank' ? 'Tracked armor with a rotating cannon turret and vulnerable flanks.' : descriptions[phase];
 			stage.dataset['model'] = choice.id; stage.dataset['motion'] = motion; stage.dataset['phase'] = phase;
 			stage.dataset['ticks'] = String(ticks); stage.dataset['frames'] = String(rendered);
 			stage.dataset['triangles'] = String(renderer.info.render.triangles); stage.dataset['calls'] = String(renderer.info.render.calls);

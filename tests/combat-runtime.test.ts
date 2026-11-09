@@ -24,6 +24,22 @@ const scenario = function () {
 	return state;
 };
 
+test('mixed vehicle combat stays authoritative in ECS through movement, pause, and mission replacement', async function () {
+	const initial = createState(); initial.spawnIn = 3600;
+	for (const [index, kind] of (['helicopter', 'vtol', 'tank'] as const).entries()) initial.warnings.push({ kind, x: initial.player.x - 250 - index * 60, y: initial.player.y, life: 0.001 });
+	const expected = structuredClone(initial); const { world, combat, state } = await harness(initial);
+	try {
+		for (let tick = 0; tick < 180; tick++) {
+			step(expected, idle, 1 / 60); world.update(1 / 60); expect(state).toEqual(expected);
+		}
+		for (const enemy of state.enemies) expect(combat.entityForEnemy(enemy.id)).toBeDefined();
+		const snapshot = JSON.stringify(state); combat.setEnabled(false);
+		for (let tick = 0; tick < 60; tick++) world.update(1 / 60);
+		expect(JSON.stringify(state)).toBe(snapshot);
+		combat.attach(createState()); expect(world.getEntitiesWithQuery(['enemy'])).toHaveLength(0);
+	} finally { await world.dispose(); }
+});
+
 test('ECS combat preserves same-tick spawn, firing, piercing, committed artillery and death order', async function () {
 	const expected = scenario(); const { world, combat, state } = await harness(scenario());
 	try {

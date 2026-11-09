@@ -204,7 +204,7 @@ export const legJoints = function (body: Body, foot: Foot, index: FootIndex, siz
 };
 
 export const createGaits = function (state: CombatStateView): Gaits {
-	return { player: createGait(state.player, getFrame(state.frame).size, FRAME_RIGS[state.frame]), enemies: new Map(state.enemies.map(function (enemy) { return [enemy.id, createGait(enemy, mechScale(enemy.kind))]; })), time: state.time };
+	return { player: createGait(state.player, getFrame(state.frame).size, FRAME_RIGS[state.frame]), enemies: new Map(state.enemies.map(function (enemy) { return [enemy.id, createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind))]; })), time: state.time };
 };
 export const advanceGaits = function (gaits: Gaits, state: CombatStateView): Gaits {
 	const dt = state.time - gaits.time;
@@ -214,7 +214,13 @@ export const advanceGaits = function (gaits: Gaits, state: CombatStateView): Gai
 		player: advanceGait(gaits.player, state.player, dt, getFrame(state.frame).size, getFrame(state.frame).stride, FRAME_RIGS[state.frame]), time: state.time,
 		enemies: new Map(state.enemies.map(function (enemy) {
 			const size = mechScale(enemy.kind);
-			return [enemy.id, advanceGait(gaits.enemies.get(enemy.id) ?? createGait(enemy, size), enemy, dt, size)];
+			const body = { x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle };
+			const previous = gaits.enemies.get(enemy.id) ?? createGait(body, size);
+			if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') {
+				const forward = (body.x - previous.body.x) * Math.cos(body.angle) + (body.y - previous.body.y) * Math.sin(body.angle);
+				return [enemy.id, { ...previous, body, travelSpeed: forward / dt }];
+			}
+			return [enemy.id, advanceGait(previous, body, dt, size)];
 		})),
 	};
 };
