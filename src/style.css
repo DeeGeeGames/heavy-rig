@@ -179,9 +179,6 @@ dd { margin: 0; color: var(--muted); }
 @media (pointer: coarse) {
 	#game { --touch: 1; }
 }
-.touch-enabled #touch { position: absolute; bottom: max(20px, env(safe-area-inset-bottom)); left: max(20px, env(safe-area-inset-left)); display: grid; grid-template-columns: repeat(3, 52px); gap: 5px; }
-.touch-enabled #touch button { min-height: 46px; background: #102029e8; touch-action: none; font: 23px var(--mono); }
-.touch-enabled #touch button:last-child { grid-column: span 2; font: 11px var(--mono); }
 .touch-enabled .left-instruments { bottom: 140px; }
 .touch-enabled .frame-readout { padding: 10px; }
 .touch-enabled .drive-heading { margin-top: 10px; }
@@ -228,8 +225,6 @@ dd { margin: 0; color: var(--muted); }
 	.coolant-button { font-size: 8px; min-height: 42px; align-items: center; padding: 8px; }
 	.coolant-button kbd { display: none; }
 	.pilot-hint { bottom: 225px; max-width: calc(100% - 40px); width: max-content; font-size: 9px; }
-	.touch-enabled #touch { bottom: 16px; left: 14px; grid-template-columns: repeat(3, 44px); gap: 5px; }
-	.touch-enabled #touch button { min-height: 44px; }
 	.touch-enabled .left-instruments { bottom: 120px; }
 	.touch-enabled .relay-readout { margin-bottom: 6px; }
 	.touch-enabled .pilot-hint { bottom: auto; top: 150px; }
@@ -275,8 +270,6 @@ dd { margin: 0; color: var(--muted); }
 	.touch-enabled .heat-track { width: 100%; margin: 0; }
 	.touch-enabled .drive-heading { width: 100%; margin-top: 4px; }
 	.touch-enabled .throttle-track { width: 100%; margin-top: 2px; }
-	.touch-enabled #touch { grid-template-columns: repeat(3, 46px); bottom: 14px; }
-	.touch-enabled #touch button { min-height: 42px; }
 	.touch-enabled .pilot-hint { top: 96px; bottom: auto; }
 }
 
@@ -287,7 +280,6 @@ dd { margin: 0; color: var(--muted); }
 	.weapon b { font-size: 13px; }
 	.weapon small { font-size: 6.5px; }
 	.coolant-button { font-size: 7px; padding: 7px 5px; }
-	.touch-enabled #touch { grid-template-columns: repeat(3, 44px); }
 	.readout-heading { gap: 5px; }
 }
 @media (max-width: 700px) {
@@ -594,7 +586,6 @@ dd { margin: 0; color: var(--muted); }
 	.weapon-console, .couch-ui .weapon-console { width: 152px; }
 	.weapon b, .couch-ui .weapon b { font-size: 15px; }
 	.weapon small kbd { font-size: 7px; }
-	.touch-enabled #touch { grid-template-columns: repeat(3, 40px); gap: 3px; }
 	.left-instruments { width: 138px; }
 }
 @media (max-height: 540px) and (min-width: 701px) {

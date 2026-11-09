@@ -1,0 +1,80 @@
+import type { CombatStateView, Point } from './simulation';
+import { distance } from './simulation';
+import { FACILITY_TARGET_ID } from './missions';
+import { targetElevation, type ScreenRect } from './overlay';
+
+export interface TouchContact { id: number; point: Point; screen: Point; label: string }
+export const visibleTouchContacts = function (state: CombatStateView, project: (point: Point, elevation: number) => Point, width: number, height: number, obstructions: readonly ScreenRect[]): TouchContact[] {
+	const contacts: TouchContact[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) {
+		return { id: enemy.id, point: enemy, screen: project(enemy, targetElevation(enemy)), label: enemy.commander ? 'PRIORITY TARGET' : enemy.kind.toUpperCase() };
+	});
+	const facility = state.mission?.structure;
+	if (facility && facility.hp > 0) contacts.push({ id: FACILITY_TARGET_ID, point: facility, screen: project(facility, 45), label: 'FACILITY' });
+	return contacts.filter(function (contact) {
+		const { x, y } = contact.screen;
+		return Number.isFinite(x) && Number.isFinite(y) && x >= 16 && x <= width - 16 && y >= 16 && y <= height - 16
+			&& !obstructions.some(function (rect) { return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom; });
+	}).sort(function (a, b) { return a.id - b.id; });
+};
+
+// Keep identity, rather than a screen coordinate: movement and camera changes
+// must not silently transfer a lock to another contact.
+export const createTouchTargeting = function () {
+	let id: number | undefined;
+	const clear = function () { id = undefined; };
+	return {
+		clear,
+		select: function (point: Point, contacts: readonly TouchContact[]) {
+			const nearest = contacts.reduce<TouchContact | undefined>(function (best, contact) { return !best || distance(contact.screen, point) < distance(best.screen, point) ? contact : best; }, undefined);
+			id = nearest && distance(nearest.screen, point) <= 44 ? nearest.id : undefined;
+		},
+		cycle: function (contacts: readonly TouchContact[]) {
+			const index = contacts.findIndex(function (contact) { return contact.id === id; });
+			id = contacts[(index + 1) % contacts.length]?.id;
+		},
+		resolve: function (contacts: readonly TouchContact[]) {
+			const contact = contacts.find(function (candidate) { return candidate.id === id; });
+			if (!contact) clear();
+			return contact;
+		},
+	};
+};
+
+export const createTouchDrive = function () {
+	let owner: number | undefined;
+	let drive = 0; let turn = 0;
+	const reset = function () { owner = undefined; drive = 0; turn = 0; };
+	return {
+		reset,
+		start: function (id: number) { if (owner !== undefined) return false; owner = id; return true; },
+		move: function (id: number, x: number, y: number) {
+			if (id !== owner) return;
+			const axis = function (value: number) { return Math.abs(value) <= .18 ? 0 : Math.sign(value) * Math.min(1, (Math.abs(value) - .18) / .82); };
+			turn = axis(x); drive = -axis(y);
+		},
+		release: function (id: number) { if (id === owner) reset(); },
+		read: function () { return { drive, turn }; },
+	};
+};
+
+export const mountTouchDrive = function (button: HTMLElement, knob: HTMLElement, signal: AbortSignal, enabled: () => boolean) {
+	const input = createTouchDrive();
+	const reset = function () { input.reset(); knob.style.transform = ''; };
+	const move = function (event: PointerEvent) {
+		const rect = button.getBoundingClientRect(); const radius = rect.width / 2;
+		const x = (event.clientX - rect.left - radius) / radius; const y = (event.clientY - rect.top - rect.height / 2) / radius;
+		input.move(event.pointerId, x, y);
+		const value = input.read();
+		knob.style.transform = `translate(${value.turn * 30}px, ${-value.drive * 30}px)`;
+	};
+	button.addEventListener('pointerdown', function (event) {
+		if (!enabled() || event.button !== 0 || !input.start(event.pointerId)) return;
+		event.preventDefault(); button.setPointerCapture(event.pointerId); move(event);
+	}, { signal });
+	button.addEventListener('pointermove', function (event) { if (button.hasPointerCapture(event.pointerId)) move(event); }, { signal });
+	const release = function (event: PointerEvent) { input.release(event.pointerId); const value = input.read(); knob.style.transform = `translate(${value.turn * 30}px, ${-value.drive * 30}px)`; };
+	for (const name of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) button.addEventListener(name, release, { signal });
+	window.addEventListener('resize', reset, { signal });
+	signal.addEventListener('abort', reset, { once: true });
+	return { read: input.read, reset };
+};

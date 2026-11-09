@@ -256,15 +256,15 @@ transitions to arm combat controls.
 
 | Action | Keyboard / mouse | Standard gamepad | Touch |
 | --- | --- | --- | --- |
-| Raise/lower persistent throttle | W/S or up/down | Left stick up/down | Hold +/− |
+| Raise/lower persistent throttle | W/S or up/down | Left stick up/down | Drag left stick up/down |
 | Neutral; momentum decays | X | X / square | STOP |
-| Turn hull | A/D or left/right | Left stick left/right | Turn arrows |
-| Aim independent turret | Mouse | Right stick left/right rotates torso | Tap battlefield |
+| Turn hull | A/D or left/right | Left stick left/right | Drag left stick left/right |
+| Aim independent turret | Mouse | Right stick left/right rotates torso | Tap a hostile or NEXT to track; empty ground aims manually |
 | Camera zoom | Mouse wheel | — | — |
-| Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Hold mount 1 |
-| Fire mount 2 | Right mouse / hold 2 or E | LT / L2 | Hold mount 2 |
-| Fire mount 3 | Middle mouse / hold 3 or Q | RB / R1 | Hold mount 3 |
-| Fire mount 4 | Back/thumb mouse / hold 4 or F | LB / L1 | Hold mount 4 |
+| Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Arm mount 1; hold FIRE |
+| Fire mount 2 | Right mouse / hold 2 or E | LT / L2 | Arm mount 2; hold FIRE |
+| Fire mount 3 | Middle mouse / hold 3 or Q | RB / R1 | Arm mount 3; hold FIRE |
+| Fire mount 4 | Back/thumb mouse / hold 4 or F | LB / L1 | Arm mount 4; hold FIRE |
 | Coolant purge | V | B / circle | Vent coolant |
 | Pause / resume | Escape | Menu | Pause |
 | Menus | Tab / Shift+Tab / Enter | D-pad or stick, A/cross confirm, B/circle back | Tap |
@@ -297,13 +297,28 @@ leg facing and forward throttle demand; release returns throttle gradually to
 neutral. The right stick selects absolute torso facing, as before. Both modes
 retain each chassis’s leg and torso rotation speeds. Mouse aiming works in
 both modes, including while moving or firing with a controller. Touch controls
-retain persistent throttle and turn arrows in either mode.
+retain persistent throttle and a cruise/steer stick in either mode. Touch targeting is independent of the desktop/controller control-mode preference.
 
 In Simulation, releasing throttle keeps the engine setting and releasing the
 right stick holds the torso heading. Pause preserves throttle and
 clears held inputs; deployment starts in neutral. Focus loss, hidden pages,
 controller disconnection, and WebGL context loss pause and silence combat.
 Recovery requires explicit resume.
+
+Touch combat uses two thumbs: the left stick adjusts throttle and hull turn;
+the right FIRE trigger fires the armed mount chips. Releasing the drive stick
+keeps throttle; releasing FIRE ceases new shots. Tap a visible hostile (including
+aircraft or a facility) to track its position with the existing turret turn rate.
+NEXT cycles visible, unobscured contacts; destroyed, offscreen, or obscured
+contacts lose their lock. There is no automatic retargeting, shot leading, or
+automatic firing. Tap empty ground to clear the lock and aim manually.
+Portrait reserves a control dock below the battlefield; landscape puts controls
+at the lower edges. Training and the escape use the same controls.
+
+The FULL button is available on touch-capable devices without a detected
+controller when the browser allows element fullscreen. It requests fullscreen
+on a tap and becomes EXIT while active. Unsupported browsers and standalone
+home-screen launches omit it; a rejected request leaves a retry message.
 
 ## Presentation and audio
 

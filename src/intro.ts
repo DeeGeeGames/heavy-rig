@@ -89,16 +89,16 @@ export const escapeMessage = function (time: number, prompts: EscapePrompts): st
 	const key = function (action: keyof KeyboardBindings) { return prompts.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
 	const button = prompts.buttonLabel ?? padLabel;
 	const arcade = prompts.controlMode === 'arcade' && prompts.device !== 'touch';
-	const drive = prompts.device === 'touch' ? 'Hold + to raise throttle; release to cruise.'
+	const drive = prompts.device === 'touch' ? 'Drag the left stick up to raise throttle; release to cruise.'
 		: prompts.device === 'gamepad' ? arcade ? 'Point the left stick to move; release to slow.' : 'Left stick up/down sets throttle; release to cruise.'
 			: arcade ? `${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} move; release to slow.` : `${key('forward')} raises throttle; ${key('back')} lowers it. Release to cruise.`;
-	const steer = prompts.device === 'touch' ? 'Hold the turn arrows to steer. STOP brings you to neutral.'
+	const steer = prompts.device === 'touch' ? 'Drag the left stick sideways to steer. STOP brings you to neutral.'
 		: prompts.device === 'gamepad' ? `${arcade ? 'Left stick chooses your direction.' : 'Left stick left/right turns your legs.'} ${button(prompts.controller.stop)} stops.`
 			: `${arcade ? 'Movement keys choose your direction.' : `${key('left')} / ${key('right')} turn your legs.`} ${key('stop')} stops.`;
-	const aim = prompts.device === 'touch' ? 'Tap the field to aim. Hold a weapon button to fire.'
+	const aim = prompts.device === 'touch' ? 'Tap a guard to track it, or use NEXT. Arm mount chips, then hold FIRE.'
 		: prompts.device === 'gamepad' ? `${arcade ? 'Right stick aims.' : 'Right stick left/right turns your torso.'} Hold ${button(prompts.controller['mount-0'])} to fire.`
 			: `Mouse aims independently of your legs. Hold ${key('mount-0')} to fire.`;
-	const coolant = prompts.device === 'touch' ? 'VENT COOLANT' : prompts.device === 'gamepad' ? button(prompts.controller.coolant) : key('coolant');
+	const coolant = prompts.device === 'touch' ? 'VENT' : prompts.device === 'gamepad' ? button(prompts.controller.coolant) : key('coolant');
 	if (time < 7) return `ALARMS ARE UP. Head southeast to the green evacuation point. ${drive}`;
 	if (time < 9) return '';
 	if (time < 16) return steer;
