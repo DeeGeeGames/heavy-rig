@@ -119,6 +119,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let introFrame: IntroFrame = 'kestrel';
 	let narrativePart: 'before' | 'after' = 'before';
 	let narrativeElapsed = 0;
+	let narrativeWaiting = false;
 	let trainingOrigin: 'title' | 'bridge' = 'bridge';
 	let editor: CompanyEditor = { loadout: [...(getOwnedMech(campaign)?.loadout ?? [])], slot: null, notice: '' };
 	const mouseButtons = new Set<number>();
@@ -135,6 +136,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let lastMenuTarget: HTMLElement | undefined;
 	let hangar: { canvas: HTMLCanvasElement; view: ReturnType<typeof createHangarPreview> } | undefined;
 	onCleanup(function () { hangar?.view.dispose(); });
+	const rigPreviews = new Map<IntroFrame, ReturnType<typeof createHangarPreview>>();
+	const clearRigPreviews = function () { for (const view of rigPreviews.values()) view.dispose(); rigPreviews.clear(); };
+	onCleanup(clearRigPreviews);
 	const promptDevice = function (): PromptDevice { return inputMode === 'gamepad' ? controllerFamily : inputMode; };
 	const hasRefitDraft = function () { const mech = getOwnedMech(campaign); return Boolean(mech && editor.loadout.some(function (weapon, index) { return weapon !== mech.loadout[index]; })); };
 	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
@@ -216,6 +220,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
+		if (navigation.screen !== 'rig-bay') clearRigPreviews();
 		const modal = navigation.screen !== 'playing' || Boolean(navigation.auxiliary);
 		container.classList.toggle('training-active', Boolean(training));
 		container.classList.toggle('menu-open', modal); container.dataset['screen'] = navigation.auxiliary ?? navigation.screen;
@@ -227,7 +232,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		updateWorkspaceLayout(); updateDialogLayout();
 		if (!focus) return;
 		const root = menu();
-		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? element('handbook') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'intro' ? element('intro') : navigation.screen === 'escape-result' ? element('escape-retry') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
+		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? element('handbook') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'intro' ? element(narrativeWaiting ? 'intro-begin' : 'intro') : navigation.screen === 'escape-result' ? element('escape-retry') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
 		if (root?.classList.contains('workspace')) focusWorkspace(root);
 		else (initial ?? canvas).focus({ preventScroll: true });
 		updateMenuHint(); updateDialogLayout();
@@ -268,6 +273,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const startIntro = function () {
 		training = undefined; escape = false; narrativePart = 'before'; narrativeElapsed = 0;
+		narrativeWaiting = audio.status() === 'locked' || audio.status() === 'unavailable';
+		element('intro-begin').hidden = !narrativeWaiting; element('intro-line').hidden = narrativeWaiting;
 		element('intro-line').textContent = ''; element('intro-line').style.opacity = '1';
 		audio.reset(); transition(navigation.setScreen('intro'));
 	};
@@ -466,10 +473,16 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	});
 	listen('title-training', startTraining);
 	listen('title-intro', startIntro);
+	listen('intro-begin', function () {
+		unlockSound(); narrativeWaiting = false;
+		element('intro-begin').hidden = true; element('intro-line').hidden = false;
+		element('intro').focus({ preventScroll: true });
+	});
 	listen('escape-retry', startEscape);
 	listen('escape-change-rig', function () { audio.reset(); transition(navigation.setScreen('rig-bay')); });
 	for (const id of INTRO_FRAMES) listen(`intro-${id}`, function () {
 		introFrame = id; narrativePart = 'after'; narrativeElapsed = 0;
+		narrativeWaiting = false; element('intro-begin').hidden = true; element('intro-line').hidden = false;
 		element('intro-line').textContent = ''; element('intro-line').style.opacity = '1';
 		transition(navigation.setScreen('intro'));
 	});
@@ -765,10 +778,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let frameTime = 0;
 	let makeInput = function (): Controls { return { drive: 0, stop: false, turn: 0, aim, fire: [false, false, false, false], coolant: false }; };
 	world.addSystem('intro-narrative').inScreens(['intro']).inPhase('preUpdate').setProcess(function ({ dt }) {
-		if (navigation.transitioning || navigation.auxiliary || !focused || document.hidden || contextLost) return;
+		if (narrativeWaiting || navigation.transitioning || navigation.auxiliary || !focused || document.hidden || contextLost) return;
+		const lines = narrativePart === 'before' ? INTRO_LINES : SADDLE_LINES;
+		const previousNarrative = narrativeFrame(lines, narrativeElapsed);
 		narrativeElapsed += dt;
-		const narrative = narrativeFrame(narrativePart === 'before' ? INTRO_LINES : SADDLE_LINES, narrativeElapsed);
+		const narrative = narrativeFrame(lines, narrativeElapsed);
 		element('intro-line').textContent = narrative.text; element('intro-line').style.opacity = String(narrative.opacity);
+		const revealed = narrative.text.slice(previousNarrative.index === narrative.index ? previousNarrative.text.length : 0);
+		if (revealed) { audio.update(audioFrame(frameTime)); audio.typeText(revealed); }
 		if (narrative.done) {
 			if (narrativePart === 'before') transition(navigation.setScreen('rig-bay'));
 			else startEscape();
@@ -917,6 +934,18 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const now = frameTime;
 		audio.update(audioFrame(now));
 		if (navigation.screen === 'title' && !navigation.auxiliary && focused && !document.hidden) titleScene?.render(now);
+		if (navigation.screen === 'rig-bay' && !navigation.auxiliary && focused && !document.hidden) {
+			for (const id of INTRO_FRAMES) {
+				const modelCanvas = element(`intro-${id}`).querySelector('canvas');
+				if (!modelCanvas || modelCanvas.dataset['hangarFailed'] === 'true') continue;
+				let view = rigPreviews.get(id);
+				if (!view) {
+					try { view = createHangarPreview(modelCanvas); view.setFrame(id); rigPreviews.set(id, view); }
+					catch (error: unknown) { view?.dispose(); view = undefined; modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Rig preview unavailable', error); }
+				}
+				view?.render();
+			}
+		}
 		if (navigation.screen === 'mechbay' && !navigation.auxiliary && focused && !document.hidden) {
 			const modelCanvas = element('mechbay').querySelector<HTMLCanvasElement>('[data-hangar-frame]');
 			if (modelCanvas && modelCanvas.clientWidth > 0 && modelCanvas.clientHeight > 0) {

@@ -7,13 +7,13 @@ import { distance } from '../src/simulation';
 
 test('narrative finishes typing before its full hold and fade, then starts the next line empty', function () {
 	const first = INTRO_LINES[0];
-	const typedAt = first.length / 5;
+	const typedAt = first.length / 10;
 	expect(narrativeFrame(INTRO_LINES, 0).text).toBe('');
-	expect(narrativeFrame(INTRO_LINES, 1).text).toBe(first.slice(0, 5));
-	expect(narrativeFrame(INTRO_LINES, typedAt + 2.99)).toMatchObject({ text: first, opacity: 1, done: false });
-	expect(narrativeFrame(INTRO_LINES, typedAt + 4)).toMatchObject({ text: first, opacity: 0.5 });
-	expect(narrativeFrame(INTRO_LINES, typedAt + 5)).toMatchObject({ index: 1, text: '', opacity: 1 });
-	const duration = INTRO_LINES.reduce(function (sum, line) { return sum + line.length / 5 + 5; }, 0);
+	expect(narrativeFrame(INTRO_LINES, 1).text).toBe(first.slice(0, 10));
+	expect(narrativeFrame(INTRO_LINES, typedAt + 1.99)).toMatchObject({ text: first, opacity: 1, done: false });
+	expect(narrativeFrame(INTRO_LINES, typedAt + 2.5)).toMatchObject({ text: first, opacity: 0.5 });
+	expect(narrativeFrame(INTRO_LINES, typedAt + 3)).toMatchObject({ index: 1, text: '', opacity: 1 });
+	const duration = INTRO_LINES.reduce(function (sum, line) { return sum + line.length / 10 + 3; }, 0);
 	expect(narrativeFrame(INTRO_LINES, duration + 0.01).done).toBe(true);
 });
 
@@ -36,6 +36,7 @@ for (const frame of INTRO_FRAMES) test(`${frame} can escape through real ECS com
 		const state = combat.attach(createEscape(frame));
 		const mission = state.mission;
 		if (!mission) throw new Error('Escape must have an evacuation point');
+		expect(mission.map.width * mission.map.height).toBeCloseTo(2600 * 2000 * 3, 5);
 		expect(state.player.x).toBeLessThan(mission.map.width / 4);
 		expect(state.player.y).toBeLessThan(mission.map.height / 4);
 		expect(mission.map.extraction.x).toBeGreaterThan(mission.map.width * 0.75);

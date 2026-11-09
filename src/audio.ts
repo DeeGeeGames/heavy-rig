@@ -273,6 +273,16 @@ export const createAudio = function () {
 		noise({ at, duration: 0.16, volume: 0.12 * weight, frequency: 560, pan: side * 0.16 });
 		tone({ at: at + 0.055, frequency: 230, endFrequency: 150, duration: 0.07, volume: 0.045 * weight, type: 'triangle', pan: side * 0.16 });
 	};
+	const typeText = function (text: string) {
+		if (!synth || disposed || !uiActive || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
+		const at = synth.context.currentTime;
+		for (const [index, character] of [...text].filter(function (value) { return !/\s/u.test(value); }).entries()) {
+			const pitch = 1100 + character.charCodeAt(0) % 5 * 110;
+			// A short data-terminal chirp with a mechanical edge, under effects volume.
+			tone({ at: at + index * 0.04, frequency: pitch, endFrequency: pitch * 0.68, duration: 0.028, volume: 0.045, type: 'square', attack: 0.002, cutoff: 2600, bus: 'ui' });
+			noise({ at: at + index * 0.04, duration: 0.018, volume: 0.025, frequency: 4200, type: 'bandpass', bus: 'ui' });
+		}
+	};
 
 	const scoreStep = function (at: number, frame: AudioFrame) {
 		const bar = Math.floor(musicStep / 16); const beat = musicStep % 16;
@@ -456,5 +466,5 @@ export const createAudio = function () {
 		for (const node of current.nodes) node.disconnect();
 		if (current.context.state !== 'closed') await current.context.close();
 	};
-	return { unlock, status, cue, footstep, setMuted, setMix, reset, update, play, dispose };
+	return { unlock, status, cue, footstep, typeText, setMuted, setMix, reset, update, play, dispose };
 };

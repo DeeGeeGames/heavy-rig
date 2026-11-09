@@ -1,5 +1,7 @@
 .intro-screen { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 10%; background: #000; }
 .intro-screen p { width: min(760px, 100%); margin: 0; font: clamp(19px, 3vw, 30px)/1.7 var(--mono); color: #e9e7db; text-wrap: balance; text-align: center; }
+#intro-begin { padding: 22px 28px; background: #000; font: 16px/1.6 var(--mono); letter-spacing: 2px; }
+#intro-begin small { display: block; margin-top: 12px; color: var(--muted); font: 12px/1.5 var(--mono); letter-spacing: 0; }
 #game[data-screen='intro'] .menu-controls { display: none; }
 #game[data-screen='rig-bay'] .menu-controls { z-index: 5; }
 .rig-bay { position: absolute; inset: 0; z-index: 4; background: #080d0f; display: grid; align-content: center; gap: 24px; padding: 32px 8% 100px; overflow: auto; }
@@ -12,12 +14,21 @@
 .rig-choice strong { font: clamp(30px, 5vw, 46px)/1 var(--display); }
 .rig-choice .rig-spec { font: 12px/1.6 var(--mono); color: var(--muted); }
 .rig-choice .rig-action { color: var(--cyan); font: 13px var(--mono); margin-top: 10px; }
+.rig-preview { position: relative; display: block; height: 200px; min-width: 0; background: #102027; pointer-events: none; }
+.rig-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rig-preview-status { display: none; position: absolute; inset: 0; place-items: center; padding: 12px; color: var(--muted); font: 10px/1.5 var(--mono); text-align: center; }
+.rig-preview:has(canvas[data-hangar-state='unavailable'], canvas[data-hangar-state='context-lost'], canvas[data-hangar-failed='true']) .rig-preview-status { display: grid; background: #102027; }
 #escape-guide { position: absolute; left: 50%; top: 104px; transform: translateX(-50%); width: min(620px, calc(100% - 32px)); padding: 14px 18px; background: #0b171ef2; border-left: 3px solid var(--amber); font: 14px/1.6 var(--mono); pointer-events: none; }
 #escape-guide:empty { display: none; }
 @media (max-width: 540px) {
 	.rig-bay { padding: 24px 20px 110px; gap: 18px; align-content: start; }
 	.rig-choices { grid-template-columns: 1fr; gap: 12px; }
-	.rig-choice { gap: 8px; padding: 18px; }
+	.rig-choice { grid-template-columns: 110px minmax(0, 1fr); gap: 8px 12px; padding: 14px; }
+	.rig-choice > :not(.rig-preview) { grid-column: 2; }
+	.rig-choice .rig-preview { grid-column: 1; grid-row: 1 / 6; height: 100%; min-height: 170px; }
+	.rig-choice strong { font-size: 30px; }
+	.rig-choice .rig-spec { font-size: 10px; }
+	.rig-choice > span:not([class]) { font-size: 12px; line-height: 1.4; }
 	#escape-guide { top: 90px; font-size: 12px; padding: 10px 12px; }
 }
 @media (max-width: 700px) and (min-height: 501px) {
@@ -26,11 +37,25 @@
 @media (max-height: 500px) {
 	.rig-bay { padding: 20px 5% 70px; gap: 12px; align-content: start; }
 	.rig-bay h2 { font-size: 28px; margin: 6px 0; }
-	.rig-choice { padding: 14px; gap: 6px; }
+	.rig-bay header > p { display: none; }
+	.rig-choice { grid-template-columns: 110px minmax(0, 1fr); padding: 12px; gap: 6px 12px; }
+	.rig-choice > :not(.rig-preview) { grid-column: 2; }
+	.rig-choice .rig-preview { grid-column: 1; grid-row: 1 / 6; height: 100%; min-height: 140px; }
 	.rig-choice strong { font-size: 30px; }
+	.rig-choice .rig-spec { font-size: 10px; }
+	.rig-choice > span:not([class]) { font-size: 12px; line-height: 1.4; }
 	.rig-choice .rig-action { margin-top: 0; }
 	#escape-guide { top: 76px; width: min(520px, calc(100% - 32px)); font-size: 11px; padding: 8px 12px; }
 }
 @media (min-width: 541px) and (max-height: 500px) {
 	.touch-enabled #escape-guide { top: 100px; left: 220px; right: 16px; width: auto; transform: none; }
+}
+@media (max-width: 540px) and (max-height: 700px) {
+	.rig-bay { padding: 18px 20px 90px; gap: 12px; }
+	.rig-bay header > p, .rig-choice > span:not([class]) { display: none; }
+	.rig-bay h2 { font-size: 26px; margin-block: 8px; }
+	.rig-choice { grid-template-columns: 84px minmax(0, 1fr); gap: 5px 10px; padding: 12px; }
+	.rig-choice .rig-preview { grid-row: 1 / 5; min-height: 130px; }
+	.rig-choice strong { font-size: 28px; }
+	.rig-choice .rig-action { margin-top: 0; font-size: 11px; }
 }
