@@ -7,6 +7,7 @@ import { FRAME_RIGS } from './frame-rig';
 import { createLowPolyParts } from './low-poly-parts';
 import { buildLowPolyChassis } from './low-poly-chassis';
 import type { EnemyKind } from './simulation';
+import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 
 export interface MechFeedback { recoil: number; hit: number; heat: number; time: number }
 
@@ -26,6 +27,7 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[]): number {
 // Model anatomy is presentation data. The simulation and its collision sizes
 // keep their existing contracts; every view uses this same production factory.
 export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden') {
+	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind);
 	const definition = getFrame(frame); const size = kind ? mechScale(kind) : definition.size;
 	const rig = kind ? STANDARD_LEG_RIG : FRAME_RIGS[frame]; const suspension = kind ? 1 : definition.suspension;
 	const root = new Group(); root.name = kind ? `${commander ? 'commander' : kind}-frame` : `${frame}-frame`;

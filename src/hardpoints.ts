@@ -29,9 +29,15 @@ const SCOUT_HARDPOINTS: readonly Hardpoint[] = [gun('left', true), gun('right', 
 const SIEGE_HARDPOINTS: readonly Hardpoint[] = [...LINE_HARDPOINTS,
 	{ id: 'dorsal-artillery', name: 'Dorsal artillery', family: 'ballistic', weapons: ['autocannon'] },
 ];
+const HELICOPTER_HARDPOINTS: readonly Hardpoint[] = [{ id: 'chin-gun', name: 'Chin machine gun', family: 'ballistic', weapons: ['machine-gun'] }];
+const VTOL_HARDPOINTS: readonly Hardpoint[] = [launcher('left', 'wing pod'), launcher('right', 'wing pod')];
+const TANK_HARDPOINTS: readonly Hardpoint[] = [{ id: 'turret-cannon', name: 'Turret cannon', family: 'ballistic', weapons: ['autocannon'] }];
 
 export const getHardpoints = function (frame: FrameId): readonly Hardpoint[] { return FRAME_HARDPOINTS[frame]; };
 export const getEnemyHardpoints = function (kind: EnemyKind, commander = false): readonly Hardpoint[] {
+	if (kind === 'helicopter') return HELICOPTER_HARDPOINTS;
+	if (kind === 'vtol') return VTOL_HARDPOINTS;
+	if (kind === 'tank') return TANK_HARDPOINTS;
 	return kind === 'siege' || commander ? SIEGE_HARDPOINTS : kind === 'scout' ? SCOUT_HARDPOINTS : LINE_HARDPOINTS;
 };
 export const canEquipWeapon = function (frame: FrameId, slot: number, weapon: WeaponId): boolean {

@@ -2,11 +2,17 @@ import type { OrthographicCamera } from 'three';
 import { getWeapon } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
-import { ARENA, distance, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
+import { ARENA, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
 import { FACILITY_TARGET_ID, EXTRACTION_SECONDS } from './missions';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
+export const targetElevation = function (target: Point): number {
+	if (!('kind' in target)) return 45;
+	const kind = target.kind;
+	return kind === 'helicopter' || kind === 'vtol' || kind === 'tank' ? ENEMY_STATS[kind].elevation : 45;
+};
 export interface OverlayOptions {
+	enemyLabelHeights?: ReadonlyMap<number, number>;
 	obstructions?: readonly ScreenRect[];
 	showRadar: boolean;
 	gaits: Gaits;
@@ -132,7 +138,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const remaining = Math.max(0, EXTRACTION_SECONDS - mission.extractTime);
 		text(mission.extractTime > 0 ? `LIFT IN ${remaining.toFixed(1)}s · HOLD POSITION` : 'EXTRACTION / ENTER THE GREEN ZONE', mission.map.extraction, 40, '#b9f5ca', 12);
 	}
-	for (const warning of state.warnings) text(warning.commander ? 'COMMAND SIGNAL' : 'INBOUND', warning, 10, '#f3bd80', 10, -20);
+	for (const warning of state.warnings) text(warning.commander ? 'COMMAND SIGNAL' : `INBOUND ${warning.kind.toUpperCase()}`, warning, 10, '#f3bd80', 10, -20);
 	for (const [index, strike] of state.strikes.entries()) {
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		text(`IMPACT ${strike.life.toFixed(1)}`, strike, 8, '#ffd2a6', 11, -14);
@@ -145,7 +151,8 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	for (const enemy of state.enemies) {
 		const defense = getEnemyDefense(state, enemy);
 		if (enemy.hp >= enemy.maxHp && enemy !== selected && !enemy.commander && !defense.exposed) continue;
-		const labelHeight = (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind);
+		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol';
+		const labelHeight = options.enemyLabelHeights?.get(enemy.id) ?? (vehicle ? ENEMY_STATS[enemy.kind].elevation + 38 : (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind));
 		const anchor = at(enemy, labelHeight);
 		const barWidth = enemy.commander ? options.couchMode ? 100 : 76 : options.couchMode ? 56 : 42;
 		ctx.fillStyle = '#0a151be6'; ctx.fillRect(anchor.x - barWidth / 2 - 1, anchor.y - 1, barWidth + 2, 5);
@@ -157,15 +164,16 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		}
 	}
 	if (selected) {
-		const anchor = at(selected, 50 * mechScale(selected.kind));
+		const elevation = ENEMY_STATS[selected.kind].elevation;
+		const anchor = at(selected, elevation);
 		const size = (selected.commander ? 90 : 74) * scale;
 		ctx.strokeStyle = '#f3c37d'; ctx.lineWidth = 1.5;
 		bracket(ctx, anchor.x, anchor.y, size, size, 10);
 		const solution = targetSolution(state, selected, aim);
 		const defense = getEnemyDefense(state, selected);
-		const role = selected.commander ? 'COMMAND FRAME' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
-		text(role, selected, 42, '#ffe1aa', 10, 48);
-		text(`${Math.round(distance(selected, state.player))} M / ${solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selected, 42, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
+		const role = selected.commander ? 'COMMAND FRAME' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
+		text(role, selected, elevation, '#ffe1aa', 10, 48);
+		text(`${Math.round(distance(selected, state.player))} M / ${solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selected, elevation, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
 	}
 	if (selectedFacility) {
 		const anchor = at(selectedFacility, 45); ctx.strokeStyle = '#f3c37d'; ctx.lineWidth = 1.5;
@@ -221,7 +229,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.strokeStyle = '#c9d9c04d'; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(a.x, a.y); ctx.stroke();
 		ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(state.player.angle);
 		ctx.fillStyle = '#f1e4b9'; ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-3, -3); ctx.lineTo(-1, 0); ctx.lineTo(-3, 3); ctx.closePath(); ctx.fill(); ctx.restore();
-		for (const enemy of state.enemies) dot(enemy, enemy.commander ? '#ffd6a7' : '#f2a571', enemy.commander ? 4 : enemy.kind === 'siege' ? 3 : 2);
+		for (const enemy of state.enemies) dot(enemy, enemy.commander ? '#ffd6a7' : ENEMY_STATS[enemy.kind].elevation > 42 ? '#8fd6da' : '#f2a571', enemy.commander ? 4 : enemy.heavy ? 3 : 2, ENEMY_STATS[enemy.kind].elevation > 42);
 		for (const warning of state.warnings) dot(warning, '#e5a46f', 4, true);
 		for (const strike of state.strikes) dot(strike, '#ff8154', strike.radius / bounds.width * w, true);
 		ctx.restore();

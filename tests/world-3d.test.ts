@@ -79,6 +79,24 @@ const frameEffects = function (model: ReturnType<typeof createMech>, state: Retu
 	const offset = new Vector3(state.player.x, 0, state.player.y);
 	return { muzzles: model.muzzles.map(function (point) { return point.clone().add(offset); }), exhaust: model.exhaust?.clone().add(offset) };
 };
+
+test('aircraft lift only shots on their collision path and cannot lift ground-target fire', function () {
+	const state = createState(); const scene = new Scene(); const world = createWorldObjects(scene);
+	state.enemies = [
+		{ id: 1, x: 800, y: 500, kind: 'tank', hp: 900, maxHp: 900, angle: 0, cooldown: 100, heavy: true },
+		{ id: 2, x: 800, y: 560, kind: 'helicopter', hp: 220, maxHp: 220, angle: 0, cooldown: 100, heavy: false },
+	];
+	state.shots = [{ x: 760, y: 500, vx: 500, vy: 0, life: 1, kind: 'cannon', target: undefined, damage: 38 }];
+	try {
+		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBe(42);
+		const aircraft = state.enemies[1]; if (!aircraft) throw new Error('Missing gunship');
+		aircraft.y = 500; // Same firing line, with the nearer armored contact still blocking it.
+		aircraft.x = 850;
+		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBe(42);
+		state.enemies = [aircraft];
+		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBeGreaterThan(42);
+	} finally { world.dispose(); }
+});
 const segmentEnds = function (mesh: Mesh) {
 	return [mesh.localToWorld(new Vector3(0, -0.5, 0)), mesh.localToWorld(new Vector3(0, 0.5, 0))] as const;
 };

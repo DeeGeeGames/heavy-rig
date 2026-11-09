@@ -17,7 +17,7 @@ import { createMissionState, createState, distance, getOperationReport, type Con
 import { createPresentation } from './presentation';
 import { advanceGaits, createGaits } from './gait';
 import { viewScale } from './projection-3d';
-import type { ScreenRect } from './overlay';
+import { targetElevation, type ScreenRect } from './overlay';
 import { createAudio } from './audio';
 import { createGamepadInput, type PadInput } from './gamepad';
 import { createControllerFeedback } from './controller-feedback';
@@ -776,14 +776,16 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (projected) aim = projected;
 				const facility = state.mission?.structure;
 				const aimTargets = [...state.enemies, ...(facility && facility.hp > 0 ? [facility] : [])];
-				const targets = aimTargets.map(function (enemy) { const at = presentation.toScreen(enemy); const dx = at.x - origin.x; const dy = at.y - origin.y; return { enemy, alignment: (dx * pad.aimX + dy * pad.aimY) / Math.max(1, Math.hypot(dx, dy) * length) }; }).filter(function (target) { return target.alignment > 0.975 && distance(target.enemy, state.player) < 850; }).sort(function (a, b) { return b.alignment - a.alignment; });
+				const targets = aimTargets.map(function (enemy) { const at = presentation.toScreen(enemy, targetElevation(enemy)); const dx = at.x - origin.x; const dy = at.y - origin.y; return { enemy, alignment: (dx * pad.aimX + dy * pad.aimY) / Math.max(1, Math.hypot(dx, dy) * length) }; }).filter(function (target) { return target.alignment > 0.975 && distance(target.enemy, state.player) < 850; }).sort(function (a, b) { return b.alignment - a.alignment; });
 				const target = targets[0]; if (target) aim = { x: target.enemy.x, y: target.enemy.y };
 			} else if (pointer && aimMode === 'pointer') {
 				aim = presentation.toGround(pointer) ?? aim;
 				const cursor = pointer;
 				const facility = state.mission?.structure;
-				const picked = [...state.enemies, ...(facility && facility.hp > 0 ? [facility] : [])].sort(function (a, b) { return distance(presentation.toScreen(a, 45), cursor) - distance(presentation.toScreen(b, 45), cursor); })[0];
-				if (picked && distance(presentation.toScreen(picked, 45), cursor) < 42 * viewScale(width, height)) aim = { x: picked.x, y: picked.y };
+				const targetScreen = function (target: Point) { return presentation.toScreen(target, targetElevation(target)); };
+				const aimTargets = [...state.enemies, ...(facility && facility.hp > 0 ? [facility] : [])];
+				const picked = aimTargets.sort(function (a, b) { return distance(targetScreen(a), cursor) - distance(targetScreen(b), cursor); })[0];
+				if (picked && distance(targetScreen(picked), cursor) < 42 * viewScale(width, height)) aim = { x: picked.x, y: picked.y };
 			}
 			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') aim = { x: state.player.x + Math.cos(state.player.turret) * 600, y: state.player.y + Math.sin(state.player.turret) * 600 };
 			makeInput = function (): Controls {
