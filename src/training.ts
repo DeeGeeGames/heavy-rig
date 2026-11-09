@@ -103,20 +103,22 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 	finishTraining(training, controls, dt, before);
 };
 
-export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings; controlMode?: ControlMode; buttonLabel?: (index: number) => string } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
+export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings; controlMode?: ControlMode; touch?: boolean; buttonLabel?: (index: number) => string } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
 	const key = function (action: keyof KeyboardBindings) { return mappings.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
 	const arcade = mappings.controlMode === 'arcade';
 	const buttonLabel = mappings.buttonLabel ?? padLabel;
-	const controls = controller
+	const controls = mappings.touch
+		? { drive: 'Drag the left stick up', stop: 'Hold STOP', steer: 'Drag the left stick left or right', aim: 'Tap the target to track it, or use NEXT', cannon: 'FIRE with mount 1 armed', missile: 'FIRE with mount 3 armed', laser: 'FIRE with mount 1 armed', coolant: 'VENT' }
+		: controller
 		? { drive: 'Push the left stick up', stop: `Hold ${buttonLabel(mappings.controller.stop)}`, steer: arcade ? 'Point the left stick toward a new direction' : 'Move the left stick left or right', aim: arcade ? 'Point the right stick at the target' : 'Hold the right stick left or right to rotate the torso', cannon: buttonLabel(mappings.controller['mount-0']), missile: buttonLabel(mappings.controller['mount-2']), laser: buttonLabel(mappings.controller['mount-0']), coolant: buttonLabel(mappings.controller.coolant) }
-		: { drive: `Hold ${key('forward')} or +`, stop: `Hold ${key('stop')} or STOP`, steer: arcade ? `Use ${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} to choose a direction` : `Hold ${key('left')} / ${key('right')} or a turn arrow`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-0'), coolant: key('coolant') };
+		: { drive: `Hold ${key('forward')}`, stop: `Hold ${key('stop')}`, steer: arcade ? `Use ${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} to choose a direction` : `Hold ${key('left')} / ${key('right')}`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-0'), coolant: key('coolant') };
 	const copy: Record<TrainingStage, [string, string]> = {
 		drive: ['SET THE FRAME IN MOTION', `${controls.drive} to move. ${arcade ? 'Keep holding to travel; release to slow.' : 'Release it to cruise.'} Travel 100 meters.`],
 		neutral: ['BRING IT TO NEUTRAL', `${controls.stop} until the frame settles. Neutral cuts engine demand; eighty tons still need time to stop.`],
 		steer: ['TURN THE HULL', `${controls.steer}. The hull and your turret turn independently.`],
-		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; fire ${controls.cannon}. The turret needs a moment to track your aim.`],
-		missiles: ['GUIDED FIRE', `${controls.aim}; fire ${controls.missile}. Trident follows a locked target.`],
-		combined: ['COMBINE YOUR FIRE', 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. Warden has two ballistic guns and two launcher pods; all share reactor heat.'],
+		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; use ${controls.cannon}. The turret needs a moment to track your aim.`],
+		missiles: ['GUIDED FIRE', `${controls.aim}; use ${controls.missile}. Trident follows a locked target.`],
+		combined: ['COMBINE YOUR FIRE', mappings.touch ? 'Tap at least two mount chips to arm them, then hold FIRE. All mounts share reactor heat.' : 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. Warden has two ballistic guns and two launcher pods; all share reactor heat.'],
 		heat: ['FEEL THE REACTOR', `Switched to Longbow: its energy hardpoint carries ARC. Hold ${controls.laser} to build heat to 45%. Every weapon heats the reactor.`],
 		coolant: ['VENT THE HEAT', `Press ${controls.coolant}. One charge purges 55 heat. At 100% heat, weapons lock until the reactor cools.`],
 		evade: ['CLEAR THE IMPACT ZONE', `Frame reset to the practice lane. ${controls.drive} when the orange circle appears. Leave it before impact; the strike stays where marked.`],

@@ -7,6 +7,8 @@ import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
 import { createCombatRuntime } from './combat-runtime';
 import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-navigation';
 import { createRuntimeInput } from './runtime-input';
+import { createTouchTargeting, mountTouchDrive, visibleTouchContacts } from './touch-controls';
+import { mountMobileFullscreen } from './mobile-fullscreen';
 import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey, type Action } from './bindings';
 import { getWeapon, WEAPON_FAMILY_LABELS } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
@@ -98,7 +100,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const updateWorkspaceLayout = mountWorkspaceLayout(container, abort.signal);
 	const updateDialogLayout = mountDialogLayout(container, abort.signal);
 	const keys = new Set<string>(); const pending = new Set<string>(); const held = new Map<number, string>();
-	const coarsePointer = window.matchMedia('(pointer: coarse)');
+	const coarsePointer = window.matchMedia('(any-pointer: coarse)');
+	const hasTouch = function () { return coarsePointer.matches || navigator.maxTouchPoints > 0; };
+	const fullscreenButton = element('mobile-fullscreen');
+	if (!(fullscreenButton instanceof HTMLButtonElement)) throw new Error('Missing fullscreen button');
+	const mobileFullscreen = mountMobileFullscreen(container, fullscreenButton, element('fullscreen-status'), abort.signal);
 	const ui = {
 		phase: element('phase'), status: element('status'), armor: element('armor-value'), armorFill: element('armor-fill'),
 		relay: element('relay-value'), relayFill: element('relay-fill'), heat: element('heat-value'), heatFill: element('heat-fill'),
@@ -106,8 +112,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		coolant: element('coolant-value'), message: element('message'),
 		sound: element('sound'), hint: element('pilot-hint'), hintCopy: element('hint-copy'), inputMode: element('input-mode'),
 	};
-	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.left-instruments, .weapon-console, #touch, #training-guide, #escape-guide')];
+	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.mission-bar, .left-instruments, .weapon-console, .touch-drive-cluster, .touch-fire-cluster, #training-guide, #escape-guide')];
 	let hudObstructions: ScreenRect[] = [];
+	const refreshHudObstructions = function () {
+		const field = canvas.getBoundingClientRect();
+		hudObstructions = cockpitElements.filter(function (node) { return node.offsetWidth > 0; }).map(function (node) { const rect = node.getBoundingClientRect(); return { left: rect.left - field.left, right: rect.right - field.left, top: rect.top - field.top, bottom: rect.bottom - field.top }; });
+	};
 	const weaponButtons = MOUNTS.map(function (binding) {
 		const button = document.createElement('button'); button.className = 'weapon'; button.dataset['control'] = binding.action;
 		button.innerHTML = '<span class="weapon-mount"></span><span class="weapon-icon" aria-hidden="true"></span><b></b><small><kbd></kbd></small><em></em><i></i>';
@@ -125,12 +135,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
 	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
-	let aim: Point = { x: 900, y: 450 }; let pointer: Point | undefined; let aimMode: 'pointer' | 'gamepad' = 'pointer';
+	let aim: Point = { x: 900, y: 450 }; let pointer: Point | undefined; let aimMode: 'pointer' | 'gamepad' | 'touch' = 'pointer';
+	const touchTargeting = createTouchTargeting();
+	const armedTouchMounts = new Set([0, 1, 2, 3]);
+	let touchLoadout = state.loadout;
 	let frame = 0; let previous = 0; let lastHud = 0;
 	onCleanup(function () { cancelAnimationFrame(frame); });
 	let message = ''; let messageUntil = 0; let terminalUntil = 0; let contextLost = false; let focused = true;
 	let returnFocus: HTMLElement | undefined; let confirmedAction: (() => void) | undefined; let tipDismissed = false;
-	let inputMode: 'keyboard' | 'gamepad' | 'touch' = coarsePointer.matches ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
+	let inputMode: 'keyboard' | 'gamepad' | 'touch' = hasTouch() ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
 	let currentPad: PadInput | undefined;
 	let controllerFamily: ControllerFamily = 'generic';
 	let lastMenuTarget: HTMLElement | undefined;
@@ -144,8 +157,17 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
 	const companyNavigationReady = function () { return companyOpen() && !navigation.transitioning && editor.slot === null && !campaignConflict && !contextLost; };
 	let lastSoundState = '';
-	const resetInput = function () { keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
+	const resetInput = function () { touchDrive.reset(); touchTargeting.clear(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const playing = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
+	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing);
+	const touchContacts = function () {
+		const rect = canvas.getBoundingClientRect();
+		return visibleTouchContacts(state, presentation.toScreen, rect.width, rect.height, hudObstructions);
+	};
+	element('touch-next').addEventListener('click', function () {
+		if (!playing()) return;
+		setInputMode('touch'); aimMode = 'touch'; pointer = undefined; touchTargeting.cycle(touchContacts());
+	}, listenerOptions);
 	const keyboardAction = function (code: string) { return ACTIONS.find(function (action) { return profile.settings.keyboard[action].includes(code); }); };
 	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
 	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false }); };
@@ -177,13 +199,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const setInputMode = function (value: typeof inputMode) {
 		if (inputMode === value && container.dataset['input'] === value && container.dataset['promptDevice'] === promptDevice() && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
+		if (value !== 'touch') { touchTargeting.clear(); touchDrive.reset(); held.forEach(function (action, id) { if (action === 'touch-fire') held.delete(id); }); pending.delete('touch-fire'); }
+		container.classList.toggle('touch-enabled', value !== 'gamepad' && (hasTouch() || profile.settings.touchControls));
 		inputMode = value; container.dataset['input'] = value; container.dataset['promptDevice'] = promptDevice();
 		container.classList.toggle('using-gamepad', value === 'gamepad');
 		container.classList.toggle('couch-ui', value === 'gamepad' || profile.settings.couchUI);
 		ui.inputMode.textContent = value === 'gamepad' ? 'GAMEPAD' : value === 'touch' ? 'TOUCH' : 'KB / MOUSE';
 		const pausePrompt = element('pause').querySelector('kbd');
 		if (pausePrompt) render(renderGlyph(promptDevice(), inputMode === 'keyboard' ? 'back' : 'settings'), pausePrompt);
-		element('weapon-hint').textContent = value === 'gamepad' ? 'HOLD TRIGGERS + BUMPERS' : value === 'touch' ? 'HOLD TOGETHER TO COMBINE' : 'HOLD MOUSE BUTTONS / 1–4';
+		element('weapon-hint').textContent = value === 'gamepad' ? 'HOLD TRIGGERS + BUMPERS' : value === 'touch' ? 'TAP TO ARM / HOLD FIRE' : 'HOLD MOUSE BUTTONS / 1–4';
 		for (const select of container.querySelectorAll<HTMLSelectElement>('#controller-mappings select')) for (const option of select.options) option.textContent = controllerButtonLabel(controllerFamily, Number(option.value));
 		updateMenuHint();
 		updateWorkspaceLayout(); updateDialogLayout();
@@ -193,7 +217,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const updateSettings = function () {
 		audio.setMix(profile.settings);
-		container.classList.toggle('touch-enabled', coarsePointer.matches || profile.settings.touchControls);
+		container.classList.toggle('touch-enabled', inputMode !== 'gamepad' && (hasTouch() || profile.settings.touchControls));
 		for (const name of ['master', 'music', 'effects'] as const) {
 			inputElement(`${name}-volume`).value = String(Math.round(profile.settings[name] * 100));
 			element(`${name}-output`).textContent = `${Math.round(profile.settings[name] * 100)}%`;
@@ -577,6 +601,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	inputElement('controller-vibration').addEventListener('change', function () { profile.settings.vibration = inputElement('controller-vibration').checked; updateSettings(); save(); if (!profile.settings.vibration) void feedback.stop(); }, listenerOptions);
 	element('handbook').tabIndex = -1;
 	coarsePointer.addEventListener('change', updateSettings, listenerOptions);
+	window.addEventListener('resize', function () { if (inputMode === 'touch') resetInput(); }, listenerOptions);
 	const showResult = function (now: number) {
 		if (training || escape || !state.mission) return;
 		checkpoint();
@@ -648,7 +673,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		event.preventDefault(); if (event.repeat && !keys.has(event.code)) return; keys.add(event.code); if (!event.repeat) pending.add(action);
 	}, listenerOptions);
 	window.addEventListener('keyup', function (event) { const action = keyboardAction(event.code); if (action) keys.delete(event.code); }, listenerOptions);
-	container.addEventListener('pointerdown', function (event) { setInputMode(event.pointerType === 'touch' ? 'touch' : 'keyboard'); if (event.isTrusted) unlockSound(); }, listenerOptions);
+	container.addEventListener('pointerdown', function (event) { const touchControl = event.target instanceof Element && event.target.closest('#touch, .weapon-console') && container.classList.contains('touch-enabled'); setInputMode(event.pointerType === 'touch' || touchControl ? 'touch' : 'keyboard'); if (event.isTrusted) unlockSound(); }, listenerOptions);
 	container.addEventListener('click', function (event) {
 		if (!(event.target instanceof Element) || !event.target.closest('button') || !menu()) return;
 		audio.cue(event.target.closest('#close-settings, #close-handbook, #confirm-cancel') ? 'back' : 'confirm');
@@ -664,8 +689,20 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	canvas.addEventListener('webglcontextrestored', function () { contextLost = false; padInput.suspend(); element('error').hidden = true; previous = 0; }, listenerOptions);
 	const updatePointer = function (event: PointerEvent) {
 		if (!playing()) return;
-		const rect = canvas.getBoundingClientRect(); pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top }; aimMode = 'pointer';
-		setInputMode(event.pointerType === 'touch' ? 'touch' : 'keyboard');
+		const rect = canvas.getBoundingClientRect(); const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+		if (event.pointerType === 'touch') {
+			// Pick the scene the player actually tapped before revealing the dock
+			// changes its viewport. Carry world position/identity across takeover.
+			const contacts = touchContacts(); const ground = presentation.toGround(point);
+			if (event.type === 'pointerdown') touchTargeting.select(point, contacts);
+			const revealingDock = !container.classList.contains('touch-enabled');
+			setInputMode('touch'); aimMode = 'touch'; pointer = undefined;
+			if (revealingDock) { const next = canvas.getBoundingClientRect(); refreshHudObstructions(); presentation.resize(state, next.width, next.height); }
+			const locked = touchTargeting.resolve(contacts);
+			aim = locked ? { ...locked.point } : ground ?? aim;
+			return;
+		}
+		pointer = point; aimMode = 'pointer'; setInputMode('keyboard');
 	};
 	canvas.addEventListener('pointermove', updatePointer, listenerOptions);
 	canvas.addEventListener('wheel', function (event) {
@@ -677,7 +714,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	canvas.addEventListener('pointerdown', function (event) {
 		if (!playing()) return;
 		updatePointer(event); canvas.focus({ preventScroll: true });
-		if (event.pointerType === 'touch') canvas.setPointerCapture(event.pointerId);
+		if (event.pointerType === 'touch') { event.preventDefault(); canvas.setPointerCapture(event.pointerId); }
 	}, listenerOptions);
 	// Pointerdown only fires for the first mouse button in a chord. Mouse events
 	// report every press/release, so all four mounts remain independent.
@@ -691,20 +728,32 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (consumedMouseButtons.has(event.button) || event.target === canvas) event.preventDefault();
 		mouseButtons.delete(event.button); consumedMouseButtons.delete(event.button);
 	}, listenerOptions);
-	const release = function (event: PointerEvent) { held.delete(event.pointerId); if (event.type === 'pointercancel') mouseButtons.clear(); };
+	const release = function (event: PointerEvent) { const action = held.get(event.pointerId); held.delete(event.pointerId); if (event.type === 'pointercancel') { mouseButtons.clear(); if (action) pending.delete(action); } };
 	window.addEventListener('pointerup', release, listenerOptions); window.addEventListener('pointercancel', release, listenerOptions);
 	for (const button of container.querySelectorAll<HTMLButtonElement>('[data-control]')) {
 		const action = button.dataset['control']; if (!action) continue;
 		button.addEventListener('pointerdown', function (event) {
 			if (!playing() || event.button !== 0) return;
-			event.preventDefault(); button.setPointerCapture(event.pointerId); held.set(event.pointerId, action); pending.add(action);
+			event.preventDefault();
+			const slot = weaponButtons.indexOf(button);
+			if (slot >= 0 && container.classList.contains('touch-enabled')) {
+				if (armedTouchMounts.has(slot)) armedTouchMounts.delete(slot); else armedTouchMounts.add(slot);
+				lastHud = 0; return;
+			}
+			button.setPointerCapture(event.pointerId); held.set(event.pointerId, action); pending.add(action);
 		}, listenerOptions);
-		button.addEventListener('click', function (event) { if (event.detail === 0 && playing()) { pending.add(action); canvas.focus({ preventScroll: true }); } }, listenerOptions);
+		button.addEventListener('click', function (event) { if (event.detail === 0 && playing()) {
+			const slot = weaponButtons.indexOf(button);
+			if (slot >= 0 && container.classList.contains('touch-enabled')) { if (armedTouchMounts.has(slot)) armedTouchMounts.delete(slot); else armedTouchMounts.add(slot); lastHud = 0; return; }
+			pending.add(action); canvas.focus({ preventScroll: true });
+		} }, listenerOptions);
 		button.addEventListener('lostpointercapture', release, listenerOptions);
 	}
 	const updateHud = function () {
-		hudObstructions = cockpitElements.filter(function (node) { return node.offsetWidth > 0; }).map(function (node) { const rect = node.getBoundingClientRect(); return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }; });
+		refreshHudObstructions();
 		const p = state.player;
+		const touchLayout = container.classList.contains('touch-enabled');
+		if (touchLoadout !== state.loadout) { armedTouchMounts.clear(); state.loadout.forEach(function (mount, index) { armedTouchMounts.add(mount.slot ?? index); }); touchLoadout = state.loadout; }
 		ui.phase.textContent = 'FRAME TRAINING'; ui.status.textContent = 'SIMULATOR';
 		element('mission-name').textContent = state.mission ? `${getPlanet(state.mission.contract.planetId).name.toUpperCase()} / ${getFaction(state.mission.contract.employer).shortName}` : 'WAYFARER TRAINING';
 		element('relay-readout').hidden = Boolean(state.mission && state.mission.contract.kind !== 'defend');
@@ -718,7 +767,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('escape-guide').textContent = escape ? escapeMessage(state.time, { ...profile.settings, device: inputMode, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); } }) : '';
 		element('training-guide').hidden = !training || navigation.screen !== 'playing';
 		if (training) {
-			const copy = trainingCopy(training, inputMode === 'gamepad', { ...profile.settings, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); }, controlMode: inputMode === 'touch' ? 'simulation' : profile.settings.controlMode });
+			const copy = trainingCopy(training, inputMode === 'gamepad', { ...profile.settings, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); }, touch: inputMode === 'touch', controlMode: inputMode === 'touch' ? 'simulation' : profile.settings.controlMode });
 			container.dataset['trainingStage'] = training.stage;
 			ui.phase.textContent = `${getFrame(state.frame).name} QUALIFICATION`; ui.status.textContent = 'LOANED TRAINING FRAME · NO SCORED RECORD';
 			element('training-progress').textContent = `DRILL ${copy.progress}`;
@@ -741,26 +790,35 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const family = WEAPON_FAMILY_LABELS[hardpoint.family];
 			const mount = state.loadout.find(function (entry, position) { return (entry.slot ?? position) === index; }); const binding = MOUNTS[index]; if (!binding) continue;
 			const weapon = mount ? getWeapon(mount.weapon) : undefined;
+			button.hidden = !hardpoint || touchLayout && !mount;
+			button.classList.toggle('armed', touchLayout && armedTouchMounts.has(index));
+			button.setAttribute('aria-pressed', String(touchLayout && armedTouchMounts.has(index)));
+			const touchFiring = touchLayout && armedTouchMounts.has(index) && active('touch-fire');
 			const drillSlot = training?.stage === 'cannon' ? 0 : training?.stage === 'missiles' ? 2 : training?.stage === 'heat' ? 0 : -1;
 			button.disabled = !mount || Boolean(training && training.stage !== 'combined' && index !== drillSlot);
-			const firing = Boolean(mount && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index]));
+			const firing = Boolean(mount && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index] || touchFiring));
 			button.classList.toggle('empty', !mount); button.classList.toggle('firing', firing); button.classList.toggle('locked', p.overheated);
-			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${controllerButtonLabel(controllerFamily, profile.settings.controller[binding.action])}.` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. Equip compatible purchased weapons in the Mech Bay.`);
+			button.setAttribute('aria-label', mount && weapon ? `${touchLayout ? 'Arm' : 'Fire'} mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, rank ${rankLabel(mount.level)}. ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${controllerButtonLabel(controllerFamily, profile.settings.controller[binding.action])}.` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. Equip compatible purchased weapons in the Mech Bay.`);
 			const location = button.querySelector('.weapon-mount'); if (location) location.textContent = hardpoint.name;
 			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${weapon.type}` : ' · Empty'}`;
 			const title = button.querySelector('b'); if (title) title.textContent = mount && weapon ? weapon.name : 'EMPTY';
 			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}${mount ? ` · ${rankLabel(mount.level)}` : ''}`;
-			const prompt = button.querySelector('kbd'); if (prompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[binding.action]) : html`${inputMode === 'touch' ? `HOLD ${index + 1}` : profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'UNBOUND'}`, prompt);
+			const prompt = button.querySelector('kbd'); if (prompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[binding.action]) : html`${touchLayout ? `${armedTouchMounts.has(index) ? 'ARMED' : 'OFF'} ${index + 1}` : profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'UNBOUND'}`, prompt);
 			const label = button.querySelector('em'); if (label) label.textContent = `${family.toUpperCase()} · ${!mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : p.overheated ? 'HEAT LOCK' : firing ? 'FIRING' : mount.cooldown > 0 ? `${mount.cooldown.toFixed(1)}s` : 'READY'}`;
 			const fill = button.querySelector('i'); if (fill) fill.style.width = `${mount && weapon ? Math.max(0, 1 - mount.cooldown / Math.max(.01, weapon.interval)) * 100 : 0}%`;
 			button.style.setProperty('--weapon-color', weapon?.color ?? 'var(--muted)');
 		}
 		element('coolant').toggleAttribute('disabled', Boolean(training && training.stage !== 'coolant'));
+		element('touch-coolant').toggleAttribute('disabled', state.coolantCharges <= 0 || Boolean(training && training.stage !== 'coolant'));
+		element('touch-coolant-value').textContent = `${state.coolantCharges} LEFT`;
+		const touchFiring = touchLayout && active('touch-fire') && !p.overheated;
+		element('touch-fire').classList.toggle('firing', touchFiring);
+		element('touch-fire').toggleAttribute('disabled', p.overheated || !weaponButtons.some(function (button, index) { return !button.hidden && !button.disabled && armedTouchMounts.has(index); }));
 		ui.coolant.textContent = `${state.coolantCharges} ${state.coolantCharges === 1 ? 'CHARGE' : 'CHARGES'}`;
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE STICKS AND TRIGGERS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
 		ui.hint.hidden = tipDismissed || state.time > 35 || navigation.screen !== 'playing';
 		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.coolant) : html`${profile.settings.keyboard.coolant.map(keyLabel).join(' / ') || 'UNBOUND'}`, coolantPrompt);
-		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Tap the field to aim. Hold + to move; STOP sets neutral. Hold a weapon to fire.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
+		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `Left stick moves toward its direction; release to slow. Right stick aims. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : `Left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : inputMode === 'touch' || coarsePointer.matches || profile.settings.touchControls ? 'Drag the left stick to set throttle and steer; release to cruise. Tap a hostile to track it, arm mounts, then hold FIRE. STOP sets neutral.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
 		const soundState = audioState === 'unavailable' ? 'UNAVAILABLE' : needsGesture ? 'ENABLE SOUND' : muted ? 'SOUND OFF' : 'SOUND ON';
 		if (lastSoundState !== soundState) { lastSoundState = soundState; ui.sound.textContent = soundState; ui.sound.setAttribute('aria-label', needsGesture ? 'Click to enable audio' : audioState === 'unavailable' ? 'Retry audio' : muted ? 'Unmute sound' : 'Mute sound'); ui.sound.setAttribute('aria-pressed', String(muted)); }
@@ -802,7 +860,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!focused || document.hidden || contextLost) padInput.suspend();
 		const pad = padInput.read(pads, now, profile.settings.controller);
 		currentPad = pad;
-		if (pad.lost) { controllerLost = true; setInputMode(coarsePointer.matches ? 'touch' : 'keyboard'); setPaused(true); }
+		mobileFullscreen.update(hasTouch(), pads.some(function (candidate) { return Boolean(candidate?.connected); }));
+		if (pad.lost) { controllerLost = true; setInputMode(hasTouch() ? 'touch' : 'keyboard'); setPaused(true); }
 		feedback.update(pads.find(function (candidate) { return candidate?.index === pad.index; }) ?? undefined, playing() && profile.settings.vibration && inputMode === 'gamepad');
 		if (pad.claimed) { controllerLost = false; audio.cue('confirm'); }
 		if (pad.promptActivity && focused && !document.hidden) {
@@ -847,6 +906,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (pad.back && screenRevision === revisionAtFrame) { audio.cue('back'); back(); }
 		}
 		if (playing() && screenRevision === revisionAtFrame) {
+			if (aimMode === 'touch') { const locked = touchTargeting.resolve(touchContacts()); if (locked) aim = { ...locked.point }; }
 			if (profile.settings.controlMode === 'simulation' && pad.aimX !== 0) {
 				aimMode = 'gamepad';
 			} else if (profile.settings.controlMode === 'arcade' && Math.hypot(pad.aimX, pad.aimY) > 0.2) {
@@ -870,8 +930,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') aim = { x: state.player.x + Math.cos(state.player.turret) * 600, y: state.player.y + Math.sin(state.player.turret) * 600 };
 			makeInput = function (): Controls {
 				const arcade = profile.settings.controlMode === 'arcade' && inputMode !== 'touch';
-				const x = Math.max(-1, Math.min(1, Number(active('right')) - Number(active('left')) + pad.turn));
-				const y = Math.max(-1, Math.min(1, Number(active('back')) - Number(active('forward')) - pad.drive));
+				const touch = touchDrive.read();
+				const touchFire = container.classList.contains('touch-enabled') && active('touch-fire');
+				const x = Math.max(-1, Math.min(1, Number(active('right')) - Number(active('left')) + pad.turn + touch.turn));
+				const y = Math.max(-1, Math.min(1, Number(active('back')) - Number(active('forward')) - pad.drive - touch.drive));
 				const length = Math.hypot(x, y);
 				const origin = presentation.toScreen(state.player);
 				const destination = arcade && length > 0 ? presentation.toGround({ x: origin.x + x / length * 380, y: origin.y + y / length * 380 }) : undefined;
@@ -879,7 +941,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					...(arcade ? { throttleTarget: Math.min(1, length), ...(destination ? { heading: Math.atan2(destination.y - state.player.y, destination.x - state.player.x) } : {}) } : {}),
 					...(profile.settings.controlMode === 'simulation' && aimMode === 'gamepad' ? { turretTurn: pad.aimX } : {}),
 					drive: -y, stop: active('stop') || pad.stop, turn: x, aim,
-					fire: [active('mount-0') || pad.fire[0], active('mount-1') || pad.fire[1], active('mount-2') || pad.fire[2], active('mount-3') || pad.fire[3]], coolant: active('coolant') || pad.coolant,
+					fire: [active('mount-0') || pad.fire[0] || touchFire && armedTouchMounts.has(0), active('mount-1') || pad.fire[1] || touchFire && armedTouchMounts.has(1), active('mount-2') || pad.fire[2] || touchFire && armedTouchMounts.has(2), active('mount-3') || pad.fire[3] || touchFire && armedTouchMounts.has(3)], coolant: active('coolant') || pad.coolant,
 				};
 			};
 			runtimeInput.sample(makeInput());
@@ -906,7 +968,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const now = frameTime;
 			gaits = state.frame !== previousFrame || training?.stage === 'evade' && previousStage !== 'evade' ? createGaits(state) : advanceGaits(gaits, state);
 			pending.clear();
-			if (training && previousStage !== training.stage) audio.cue('confirm');
+			if (training && previousStage !== training.stage) {
+				audio.cue('confirm');
+				// A drill can unlock a different armed mount; require a fresh trigger
+				// press so a held touch cannot fire through the next instruction.
+				held.forEach(function (action, id) { if (action === 'touch-fire') held.delete(id); });
+				pending.delete('touch-fire'); runtimeInput.clear();
+			}
 
 			for (const index of [0, 1] as const) if (previousGaits.player.feet[index].lift > 0 && gaits.player.feet[index].lift === 0) audio.footstep(index === 0 ? -1 : 1);
 			if (state.mission?.stage === 'extract' && previousMissionStage !== 'extract') { message = 'OBJECTIVE COMPLETE · REACH EXTRACTION AND HOLD FOR 3 SECONDS'; messageUntil = state.time + 7; }
@@ -928,6 +996,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (battlefieldVisible()) {
 			world.enableSystemGroup('renderer3d');
 			presentation.prepare(state, aim, gaits, false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI);
+			const contacts = container.classList.contains('touch-enabled') ? touchContacts() : [];
+			const locked = aimMode === 'touch' ? touchTargeting.resolve(contacts) : undefined;
+			const marker = element('touch-lock-marker'); marker.hidden = !locked || !playing();
+			if (locked) { const rect = canvas.getBoundingClientRect(); marker.style.left = `${rect.left - container.getBoundingClientRect().left + locked.screen.x}px`; marker.style.top = `${rect.top - container.getBoundingClientRect().top + locked.screen.y}px`; }
+			element('touch-target-status').textContent = locked ? `TRACKING / ${locked.label}` : 'MANUAL / TAP A HOSTILE';
+			element('touch-next').toggleAttribute('disabled', contacts.length === 0);
 		} else world.disableSystemGroup('renderer3d');
 	});
 	world.addSystem('browser-feedback').inPhase('render').setPriority(-100).setProcess(function () {
