@@ -1,5 +1,5 @@
 .intro-screen { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 10%; background: #000; }
-.intro-screen p { width: min(760px, 100%); margin: 0; font: clamp(19px, 3vw, 30px)/1.7 var(--mono); color: #e9e7db; text-align: left; }
+.intro-screen p { width: min(760px, 100%); margin: 0; font: clamp(19px, 3vw, 30px)/1.7 var(--mono); color: #e9e7db; text-align: center; }
 #intro-begin { padding: 22px 28px; background: #000; font: 16px/1.6 var(--mono); letter-spacing: 2px; }
 #intro-begin small { display: block; margin-top: 12px; color: var(--muted); font: 12px/1.5 var(--mono); letter-spacing: 0; }
 #game[data-screen='intro'] .menu-controls { display: none; }
