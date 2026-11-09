@@ -23,7 +23,7 @@ import { createGamepadInput, type PadInput } from './gamepad';
 import { createControllerFeedback } from './controller-feedback';
 import { createTraining, trainingCopy, type Training } from './training';
 import { isDifficulty, readProfile, saveProfile } from './profile';
-import { abandonContract, acceptContract, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, readCampaign, saveCampaign, settleContract, travelTo } from './campaign';
+import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, readCampaign, saveCampaign, settleContract, travelTo } from './campaign';
 import { MISSION_NAMES, renderBridge } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
 import { missionObjective } from './missions';
@@ -427,10 +427,19 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
 	listen('title-continue', toBridge);
+	listen('title-new-campaign', function () {
+		confirm(function () {
+			if (!replaceCampaign(createCampaign())) return;
+			destination = campaign.planetId; selectedContract = undefined;
+			resetEditor();
+			element('title-company-label').textContent = 'CONTINUE COMPANY';
+			toBridge();
+		}, 'START NEW CAMPAIGN', 'This replaces your current company on this device, including its contracts, fleet, credits, reputation, and progress. This cannot be undone. Your settings are kept.', 'START A NEW CAMPAIGN?');
+	});
 	listen('title-training', startTraining);
 	listen('title-settings', function () { showAuxiliary('settings'); });
 	listen('title-handbook', function () { showAuxiliary('handbook'); });
-	const titleChoices = ['title-continue', 'title-training', 'title-settings', 'title-handbook'];
+	const titleChoices = ['title-continue', 'title-new-campaign', 'title-training', 'title-settings', 'title-handbook'];
 	const describeTitleChoice = function (selected: string) {
 		for (const id of titleChoices) element(`${id}-description`).hidden = id !== selected;
 	};
