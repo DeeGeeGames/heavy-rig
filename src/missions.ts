@@ -53,7 +53,8 @@ export const missionSpawn = function (contract: Contract, map: MissionMap, index
 	const site = contract.kind === 'clearance' ? map.sites[Math.floor(index / 4) % map.sites.length] ?? map.objective : map.objective;
 	const angle = index * 2.399963 + random() * 0.6;
 	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 : 180 + random() * 250;
-	const kind: EnemyKind = commander || index > 3 && index % 5 === 0 ? 'siege' : index % 3 === 2 ? 'striker' : 'scout';
+	const roster: readonly EnemyKind[] = ['scout', 'helicopter', 'striker', 'tank', 'vtol', 'siege'];
+	const kind: EnemyKind = commander ? 'siege' : roster[index % roster.length] ?? 'scout';
 	return { x: Math.max(100, Math.min(map.width - 100, site.x + Math.cos(angle) * radius)), y: Math.max(100, Math.min(map.height - 100, site.y + Math.sin(angle) * radius)), kind, ...(commander ? { commander: true } : {}) };
 };
 

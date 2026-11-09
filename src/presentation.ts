@@ -32,6 +32,7 @@ interface ViewBindings {
 interface OverlayFrame {
 	state: CombatStateView; aim: Point; gaits: Gaits; obstructions: readonly ScreenRect[]; couchMode: boolean;
 	player: MechView | undefined;
+	enemyLabelHeights: ReadonlyMap<number, number>;
 }
 
 // This adapter contributes renderer/view components to the application world.
@@ -179,12 +180,14 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					views.scale(playerId, hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1);
 				}
 				const enemyMuzzles = new Map<number, readonly Vector3[]>();
+				const enemyLabelHeights = new Map<number, number>();
 				for (const enemy of state.enemies) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
 					const view = views.ensure(id, enemy.kind, Boolean(enemy.commander));
-					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait(enemy, mechScale(enemy.kind)), enemy.angle, enemy.hp, state);
+					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind)), enemy.angle, enemy.hp, state, weaponRecoil(enemy.loadout ?? []));
 					enemyMuzzles.set(enemy.id, view.model.muzzles.map(function (anchor) { return new Vector3(anchor.x + enemy.x, anchor.y, anchor.z + enemy.y); }));
+					if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
 				objects.update(state, player ? {
@@ -194,12 +197,12 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				reticle.position.set(aim.x, 0.25, aim.y);
 				const positions = barrelGeometry.getAttribute('position'); const p = state.player;
 				positions.setXYZ(0, p.x, 0.25, p.y); positions.setXYZ(1, p.x + Math.cos(p.turret) * 110, 0.25, p.y + Math.sin(p.turret) * 110); positions.needsUpdate = true;
-				overlay = { state, aim, gaits, obstructions, couchMode, player };
+				overlay = { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights };
 			},
 			drawOverlay: function () {
 				if (disposed || !overlay || width <= 0 || height <= 0) return;
-				const { state, aim, gaits, obstructions, couchMode, player } = overlay;
-				drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode,
+				const { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights } = overlay;
+				drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode, enemyLabelHeights,
 					armorHit: Math.max(0, 1 - (state.time - (player?.damage.hitAt ?? -10)) / 0.9),
 					...(player && state.frame !== 'warden' ? { armorHitHeight: player.model.labelHeight + 20 } : {}),
 					relayHit: Math.max(0, 1 - (state.time - relayHitAt) / 1.6) });
