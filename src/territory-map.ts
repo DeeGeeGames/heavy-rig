@@ -32,8 +32,8 @@ const viewFor = function (root: HTMLElement) {
 const updateTransform = function (root: HTMLElement) {
 	const view = viewFor(root); const stage = root.querySelector<HTMLElement>('.territory-stage');
 	const viewport = root.querySelector<HTMLElement>('.territory-viewport');
-	const limitX = (viewport?.clientWidth ?? 0) * (view.zoom - 1) / 2;
-	const limitY = (viewport?.clientHeight ?? 0) * (view.zoom - 1) / 2;
+	const limitX = Math.max(0, ((stage?.clientWidth ?? 0) * view.zoom - (viewport?.clientWidth ?? 0)) / 2);
+	const limitY = Math.max(0, ((stage?.clientHeight ?? 0) * view.zoom - (viewport?.clientHeight ?? 0)) / 2);
 	view.x = Math.max(-limitX, Math.min(limitX, view.x)); view.y = Math.max(-limitY, Math.min(limitY, view.y));
 	if (stage) stage.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
 	const reset = root.querySelector<HTMLElement>('[data-chart-reset]'); if (reset) reset.dataset['zoom'] = String(Math.round(view.zoom * 100));
@@ -58,7 +58,7 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 					view.y += marker.top < bounds.top + margin ? bounds.top + margin - marker.top : marker.bottom > bounds.bottom - margin ? bounds.bottom - margin - marker.bottom : 0;
 					updateTransform(root);
 				}} style="transform:translate(${view.x}px,${view.y}px) scale(${view.zoom})">
-				<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" preserveAspectRatio="none" class="territory-field" aria-hidden="true">
+				<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" class="territory-field" aria-hidden="true">
 					<defs><pattern id="chart-grid" width="100" height="66" patternUnits="userSpaceOnUse"><path d="M100 0H0V66" fill="none" stroke="#b4d4dd" stroke-opacity=".07"/></pattern></defs>
 					<rect width="1000" height="660" fill="url(#chart-grid)"/>
 					${FACTIONS.map(function (faction) { return svg`<path class="territory-glow" d=${paths.get(faction.id) ?? ''} style="--territory-color:${faction.color}"/><path class="territory-border" d=${paths.get(faction.id) ?? ''} style="--territory-color:${faction.color}"/>`; })}
