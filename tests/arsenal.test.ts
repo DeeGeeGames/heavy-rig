@@ -104,7 +104,7 @@ describe('Heavy Rig arsenal', function () {
 			const state = createState({ starter: weapon }); state.spawnIn = 3600;
 			const direct = target(state, 900, 700); const neighbor = target(state, 950, 700);
 			step(state, { ...idle, aim: direct, fire: [true, false, false, false] }, 1 / 60);
-			expect(state.shots).toHaveLength(weapon === 'cluster-rockets' ? 1 : getWeapon(weapon).projectiles);
+			expect(state.stats.shotsFired).toBe(weapon === 'cluster-rockets' ? 1 : getWeapon(weapon).projectiles);
 			advance(state, 0.4);
 			expect(direct.hp).toBeLessThan(1000); expect(neighbor.hp).toBeLessThan(1000);
 			expect(state.stats.shotsHit).toBeLessThanOrEqual(state.stats.shotsFired);
