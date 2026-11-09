@@ -49,8 +49,10 @@ export const createTouchDrive = function () {
 		start: function (id: number) { if (owner !== undefined) return false; owner = id; return true; },
 		move: function (id: number, x: number, y: number) {
 			if (id !== owner) return;
-			const axis = function (value: number) { return Math.abs(value) <= .18 ? 0 : Math.sign(value) * Math.min(1, (Math.abs(value) - .18) / .82); };
-			turn = axis(x); drive = -axis(y);
+			const length = Math.hypot(x, y);
+			const demand = Math.min(1, Math.max(0, (length - .18) / .82));
+			turn = length > 0 ? x / length * demand : 0;
+			drive = length > 0 ? -y / length * demand : 0;
 		},
 		release: function (id: number) { if (id === owner) reset(); },
 		read: function () { return { drive, turn }; },
