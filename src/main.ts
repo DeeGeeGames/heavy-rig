@@ -913,7 +913,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (state.events.includes('coolant')) { message = 'COOLANT PURGE / REACTOR STABILIZING'; messageUntil = state.time + 2; }
 			if (escape && state.outcome === 'won') {
 				if (!campaign.introComplete && !replaceCampaign({ ...campaign, introComplete: true })) return;
-				toTitle();
+				toBridge();
 			}
 			else if (escape && state.outcome === 'lost') { audio.reset(); transition(navigation.setScreen('escape-result')); }
 			else if (training?.stage === 'complete') transition(navigation.setScreen('training-result'));

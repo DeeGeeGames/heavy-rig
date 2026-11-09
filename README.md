@@ -21,9 +21,10 @@ The borrowed rig, combat damage, and kills do not carry into the company.
 Completion is saved per company; existing saves bypass the prologue. REPLAY ESCAPE
 on the title menu repeats the full sequence without changing company progress.
 
-After the escape, the game opens on a console-style title menu with a rendered Wayfarer hangar.
-Choose **Start Company** on a fresh device or **Continue Company** to board the
-ship with existing progress. Frame Training, Settings, and the Pilot Handbook
+Completing the escape boards the Wayfarer directly at the company bridge and
+contract board. On later launches, the game opens on a console-style title menu
+with a rendered Wayfarer hangar. Choose **Continue Company** to board the ship
+with existing progress. Frame Training, Settings, and the Pilot Handbook
 are also available here. Up/down or Tab selects a menu item; Enter confirms.
 Controller and touch prompts follow the active input device. Escape or the
 controller's east face button opens a confirmation to return to the title from
