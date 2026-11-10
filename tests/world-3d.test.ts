@@ -4,7 +4,7 @@ import { createMount } from '../src/arsenal';
 import { getHardpoints } from '../src/hardpoints';
 import { createGaits } from '../src/gait';
 import { createMech } from '../src/mech-3d';
-import { createState, step, weaponsStep } from '../src/simulation';
+import { createState, projectilesStep, step, weaponsStep } from '../src/simulation';
 import { createWorldObjects } from '../src/world-3d';
 
 test('world pools track live combat state and restart removes transient objects', function () {
@@ -146,13 +146,41 @@ test('projectile heads and tracers follow the same straight 3D trajectory throug
 			expect(head.position.distanceTo(expected)).toBeLessThan(0.000001);
 			const [tail, tip] = segmentEnds(trail);
 			expect(tip.distanceTo(expected)).toBeLessThan(0.000001);
-			const tailAge = Math.max(0, age - 0.09);
+			const tailAge = Math.max(0, age - 0.28);
 			expect(tail.distanceTo(launch.clone().addScaledVector(new Vector3(shot.vx, shot.vElevation, shot.vy), tailAge))).toBeLessThan(0.000001);
 			const direction = new Vector3(1, 0, 0).applyQuaternion(head.quaternion);
 			expect(direction.distanceTo(new Vector3(shot.vx, shot.vElevation, shot.vy).normalize())).toBeLessThan(0.000001);
 			const pausedHead = head.position.clone(); const pausedTrail = trail.matrix.clone();
 			for (let i = 0; i < 4; i++) world.update(state, effects);
 			expect(head.position.equals(pausedHead)).toBe(true); trail.updateMatrix(); expect(trail.matrix.equals(pausedTrail)).toBe(true);
+		}
+	} finally { world.dispose(); }
+});
+
+test('expired particle bolts leave a frozen wake that fades, clears on restart, and releases its material', function () {
+	const scene = new Scene(); const world = createWorldObjects(scene); const state = createState({ frame: 'longbow' });
+	const shot = { x: 800, y: 600, elevation: 40, vx: 2200, vy: 0, vElevation: -400, age: 0.09, life: 0.04, kind: 'ppc' as const, target: undefined, damage: 1 };
+	state.shots.push(shot); state.time = 0.09;
+	try {
+		world.update(state);
+		projectilesStep(state, 0.2); state.time += 0.2;
+		expect(state.shots).toHaveLength(0); world.update(state); scene.updateMatrixWorld(true);
+		const wake = scene.getObjectByName('particle-wake'); if (!(wake instanceof Mesh)) throw new Error('Missing particle afterglow');
+		let released = 0;
+		if (Array.isArray(wake.material)) throw new Error('Unexpected wake material array');
+		wake.material.addEventListener('dispose', function () { released++; });
+		const [tail, tip] = segmentEnds(wake);
+		expect(tip.distanceTo(new Vector3(shot.x, shot.elevation, shot.y))).toBeLessThan(0.000001);
+		expect(tail.x).toBeGreaterThanOrEqual(800 - 2200 * 0.09 - 0.000001);
+		const pausedMatrix = wake.matrix.clone();
+		for (let i = 0; i < 3; i++) world.update(state);
+		wake.updateMatrix(); expect(wake.matrix.equals(pausedMatrix)).toBe(true); expect(released).toBe(0);
+		state.time += 0.13; world.update(state);
+		expect(scene.getObjectByName('particle-wake')).toBeUndefined(); expect(released).toBe(1);
+		for (const reset of [function () { state.time = 0; world.update(state); }, function () { world.update(createState()); }]) {
+			state.shots = [{ ...shot, life: 0.04 }]; world.update(state); state.shots = []; state.time += 1 / 60; world.update(state);
+			expect(scene.getObjectByName('particle-wake')).toBeDefined(); reset();
+			expect(scene.getObjectByName('particle-wake')).toBeUndefined();
 		}
 	} finally { world.dispose(); }
 });
