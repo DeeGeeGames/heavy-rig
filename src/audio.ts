@@ -14,11 +14,13 @@ export interface AudioFrame {
 	danger?: number;
 	victory?: boolean;
 	alarm?: boolean;
+	/** Seconds into the Rig Bay line; undefined stops the recorded footsteps. */
+	jogTime?: number | undefined;
 }
 export interface AudioMix { master: number; music: number; effects: number }
 export const DEFAULT_AUDIO_MIX: Readonly<AudioMix> = { master: 0.8, music: 0.55, effects: 0.85 };
 
-type Bus = 'music' | 'effects' | 'ui' | 'alarm';
+type Bus = 'music' | 'effects' | 'ui' | 'alarm' | 'narrative';
 interface Voice {
 	source: OscillatorNode | AudioBufferSourceNode;
 	nodes: AudioNode[];
@@ -99,6 +101,10 @@ export const createAudio = function () {
 	let musicStep = 0;
 	let musicDuckUntil = 0;
 	let lastCue = -10;
+	let jogBuffer: AudioBuffer | undefined;
+	let jogLoad: Promise<void> | undefined;
+	let jogVoice: Voice | undefined;
+	const jogRequest = new AbortController();
 	const voices = new Set<Voice>();
 	const lastEvent = new Map<CombatEvent, number>();
 
@@ -107,6 +113,7 @@ export const createAudio = function () {
 		voice.source.disconnect();
 		for (const node of voice.nodes) node.disconnect();
 		voices.delete(voice);
+		if (jogVoice === voice) jogVoice = undefined;
 	};
 	const stopVoice = function (voice: Voice) {
 		try { voice.source.stop(); } catch { /* A scheduled source can already have ended. */ }
@@ -115,7 +122,7 @@ export const createAudio = function () {
 	const clearVoices = function (bus?: Bus) {
 		for (const voice of voices) if (!bus || voice.bus === bus) stopVoice(voice);
 	};
-	const register = function (voice: Voice, at: number, duration: number) {
+	const register = function (voice: Voice, at: number, duration: number, offset = 0) {
 		// Dense battles cannot steal pad voices, and pads cannot steal gun reports.
 		const sameBus = [...voices].filter(function (entry) { return entry.bus === voice.bus; });
 		if (sameBus.length >= (voice.bus === 'music' ? 48 : voice.bus === 'ui' ? 8 : 40)) {
@@ -123,7 +130,8 @@ export const createAudio = function () {
 		}
 		voices.add(voice);
 		voice.source.onended = function () { finish(voice); };
-		voice.source.start(at);
+		if ('buffer' in voice.source) voice.source.start(at, offset);
+		else voice.source.start(at);
 		voice.source.stop(at + duration + 0.025);
 	};
 	const envelope = function (gain: GainNode, at: number, duration: number, volume: number, attack = 0.006, hold = 0) {
@@ -181,7 +189,7 @@ export const createAudio = function () {
 	const setMix = function (value: AudioMix) {
 		mix = { master: clamp(value.master), music: clamp(value.music), effects: clamp(value.effects) };
 		if (mix.music === 0) clearVoices('music');
-		if (mix.effects === 0) { clearVoices('effects'); clearVoices('ui'); clearVoices('alarm'); }
+		if (mix.effects === 0) { clearVoices('effects'); clearVoices('ui'); clearVoices('alarm'); clearVoices('narrative'); }
 		mixLevels();
 	};
 	const setMuted = function (value: boolean) {
@@ -194,6 +202,16 @@ export const createAudio = function () {
 		nextWarning = 0; nextAlarm = 0; nextMusic = 0; musicStep = 0; intensity = 0; musicDuckUntil = 0; lastCue = -10;
 	};
 
+	const loadJog = async function (context: AudioContext) {
+		try {
+			const response = await fetch('./audio/boots-concrete-cleaned.wav', { signal: jogRequest.signal });
+			if (!response.ok) throw new Error(`Footsteps returned HTTP ${response.status}`);
+			const buffer = await context.decodeAudioData(await response.arrayBuffer());
+			if (!disposed) jogBuffer = buffer;
+		} catch (error) {
+			if (!disposed) console.warn('Could not load intro footsteps.', error);
+		} finally { jogLoad = undefined; }
+	};
 	const unlock = async function (): Promise<boolean> {
 		if (disposed || typeof globalThis.AudioContext !== 'function') { unavailable = true; return false; }
 		let opening: AudioContext | undefined;
@@ -242,6 +260,7 @@ export const createAudio = function () {
 				engine.start(); mechanical.start(); laser.start();
 			}
 			const current = synth;
+			if (!jogBuffer && !jogLoad) jogLoad = loadJog(current.context);
 			await current.context.resume();
 			return !disposed && current.context.state === 'running';
 		} catch {
@@ -273,14 +292,18 @@ export const createAudio = function () {
 		noise({ at, duration: 0.16, volume: 0.12 * weight, frequency: 560, pan: side * 0.16 });
 		tone({ at: at + 0.055, frequency: 230, endFrequency: 150, duration: 0.07, volume: 0.045 * weight, type: 'triangle', pan: side * 0.16 });
 	};
-	const jogStep = function (side: -1 | 1) {
-		if (!synth || disposed || !uiActive || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
-		const at = synth.context.currentTime;
-		// A boot heel, sole slap, and short scuff on the bay's hard floor.
-		// Keep this lighter and shorter than the combat rig's heavy gait.
-		tone({ at, frequency: 145, endFrequency: 65, duration: 0.09, volume: 0.12, pan: side * 0.12, bus: 'ui' });
-		noise({ at, duration: 0.045, volume: 0.09, frequency: 1400, type: 'bandpass', pan: side * 0.12, bus: 'ui' });
-		noise({ at: at + 0.035, duration: 0.075, volume: 0.035, frequency: 2400, type: 'highpass', pan: side * 0.12, bus: 'ui' });
+	const updateJog = function (time: number | undefined) {
+		const enabled = time !== undefined && Number.isFinite(time) && time >= 0 && synth && jogBuffer && uiActive && !muted && mix.effects > 0 && mix.master > 0 && synth.context.state === 'running';
+		if (!enabled) { clearVoices('narrative'); return; }
+		if (jogVoice || !synth || !jogBuffer || time === undefined) return;
+		const offset = time * 1.5;
+		if (offset >= jogBuffer.duration) return;
+		const source = synth.context.createBufferSource(); source.buffer = jogBuffer;
+		source.playbackRate.value = 1.5;
+		const gain = synth.context.createGain(); gain.gain.value = 0.5;
+		source.connect(gain).connect(synth.ui);
+		jogVoice = { source, nodes: [gain], bus: 'narrative' };
+		register(jogVoice, synth.context.currentTime, (jogBuffer.duration - offset) / 1.5, offset);
 	};
 	const typeText = function (text: string) {
 		if (!synth || disposed || !uiActive || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
@@ -344,6 +367,7 @@ export const createAudio = function () {
 		const nextPhase = frame.phase ?? 'combat';
 		if (phase !== nextPhase) { phase = nextPhase; clearVoices('music'); nextMusic = 0; musicStep = 0; }
 		mixLevels();
+		updateJog(frame.jogTime);
 		const driving = audible && phase === 'combat';
 		const alarm = driving && frame.alarm && mix.effects > 0;
 		if (!alarm) { clearVoices('alarm'); nextAlarm = 0; }
@@ -467,6 +491,7 @@ export const createAudio = function () {
 	const dispose = async function () {
 		if (disposed) return;
 		disposed = true; active = false; clearVoices();
+		jogRequest.abort(); jogBuffer = undefined;
 		if (!synth) return;
 		const current = synth; synth = undefined;
 		for (const source of [current.engine, current.mechanical, current.laser]) {
@@ -475,5 +500,5 @@ export const createAudio = function () {
 		for (const node of current.nodes) node.disconnect();
 		if (current.context.state !== 'closed') await current.context.close();
 	};
-	return { unlock, status, cue, footstep, jogStep, typeText, setMuted, setMix, reset, update, play, dispose };
+	return { unlock, status, cue, footstep, typeText, setMuted, setMix, reset, update, play, dispose };
 };

@@ -864,6 +864,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const combat = playing(); const audibleMenu = navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) || navigation.screen === 'training-result' || (navigation.screen === 'result' && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			alarm: combat && escape,
+			jogTime: navigation.screen === 'intro' && narrativePart === 'before' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary && narrativeFrame(INTRO_LINES, narrativeElapsed).index === 1
+				? narrativeElapsed - (INTRO_LINES[0].length / 10 + 3) : undefined,
 			active: !contextLost && focused && !document.hidden && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
 			phase: navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) ? 'briefing' as const : navigation.screen === 'training-result' ? 'refit' as const : navigation.screen === 'result' ? 'result' as const : 'combat' as const,
 			intensity: Math.min(1, state.enemies.length / 5 + (state.wave - 1) * 0.08), danger: Math.max(0, 1 - Math.min(state.player.hp, state.relay) / 50), victory: state.outcome === 'won' };
@@ -874,7 +876,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (narrativeWaiting || navigation.transitioning || navigation.auxiliary || !focused || document.hidden || contextLost) return;
 		const lines = narrativePart === 'before' ? INTRO_LINES : SADDLE_LINES;
 		const previousNarrative = narrativeFrame(lines, narrativeElapsed);
-		const previousElapsed = narrativeElapsed;
 		narrativeElapsed += dt;
 		const narrative = narrativeFrame(lines, narrativeElapsed);
 		const line = element('intro-line');
@@ -894,13 +895,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		line.style.opacity = String(narrative.opacity);
 		const revealed = narrative.text.slice(previousNarrative.index === narrative.index ? previousNarrative.text.length : 0);
 		if (revealed) { audio.update(audioFrame(frameTime)); audio.typeText(revealed); }
-		// Follow narrative time, so focus loss and overlays pause the jog too.
-		// Emit at most one step per frame; slow frames never produce a burst.
-		const stride = Math.floor(narrativeElapsed / 0.34);
-		if (narrativePart === 'before' && narrative.index === 1 && (previousNarrative.index !== 1 || stride !== Math.floor(previousElapsed / 0.34))) {
-			audio.update(audioFrame(frameTime));
-			audio.jogStep(stride % 2 === 0 ? -1 : 1);
-		}
 		if (narrative.done) {
 			if (narrativePart === 'before') transition(navigation.setScreen('rig-bay'));
 			else startEscape();
