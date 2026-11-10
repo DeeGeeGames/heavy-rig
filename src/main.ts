@@ -864,8 +864,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const combat = playing(); const audibleMenu = navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) || navigation.screen === 'training-result' || (navigation.screen === 'result' && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			alarm: combat && escape,
-			jogTime: navigation.screen === 'intro' && narrativePart === 'before' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary && narrativeFrame(INTRO_LINES, narrativeElapsed).index === 1
+			jogTime: navigation.screen === 'intro' && narrativePart === 'before' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary && [1, 2].includes(narrativeFrame(INTRO_LINES, narrativeElapsed).index)
 				? narrativeElapsed - (INTRO_LINES[0].length / 10 + 3) : undefined,
+			jogDuration: INTRO_LINES.slice(1, 3).reduce(function (sum, line) { return sum + line.length / 10 + 3; }, 0) - 0.05,
 			active: !contextLost && focused && !document.hidden && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
 			phase: navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) ? 'briefing' as const : navigation.screen === 'training-result' ? 'refit' as const : navigation.screen === 'result' ? 'result' as const : 'combat' as const,
 			intensity: Math.min(1, state.enemies.length / 5 + (state.wave - 1) * 0.08), danger: Math.max(0, 1 - Math.min(state.player.hp, state.relay) / 50), victory: state.outcome === 'won' };
