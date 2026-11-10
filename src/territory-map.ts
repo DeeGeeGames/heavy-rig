@@ -1,4 +1,5 @@
-import { html, svg } from 'lit-html';
+import { html, svg, type TemplateResult } from 'lit-html';
+import { ref } from 'lit-html/directives/ref.js';
 import { contours } from 'd3-contour';
 import { FACTIONS, getFaction, type Campaign } from './campaign';
 import type { FactionId, PlanetId } from './campaign-types';
@@ -30,6 +31,21 @@ const viewFor = function (root: HTMLElement) {
 	const existing = views.get(root); if (existing) return existing;
 	const view: ChartView = { zoom: 1, x: 0, y: 0, pointers: new Map(), suppressClick: false }; views.set(root, view); return view;
 };
+const positionPlanetPopover = function (root: HTMLElement) {
+	const popover = root.querySelector<HTMLElement>('.planet-popover');
+	const viewport = root.querySelector<HTMLElement>('.territory-viewport');
+	const marker = root.querySelector<HTMLElement>('.system-marker[aria-pressed="true"]');
+	if (!popover?.matches(':popover-open') || !viewport || !marker) return;
+	const bounds = viewport.getBoundingClientRect();
+	if (!bounds.width || !bounds.height) { popover.hidePopover(); return; }
+	const point = marker.getBoundingClientRect();
+	popover.style.maxHeight = `${Math.max(0, bounds.height - 16)}px`;
+	const width = popover.offsetWidth; const height = popover.offsetHeight;
+	const x = point.left + point.width / 2; const y = point.top + point.height / 2;
+	const left = x + 24 + width < bounds.right - 8 ? x + 24 : x - width - 24;
+	popover.style.left = `${Math.max(bounds.left + 8, Math.min(bounds.right - width - 8, left))}px`;
+	popover.style.top = `${Math.max(bounds.top + 8, Math.min(bounds.bottom - height - 8, y - height / 2))}px`;
+};
 const updateTransform = function (root: HTMLElement) {
 	const view = viewFor(root); const stage = root.querySelector<HTMLElement>('.territory-stage');
 	const viewport = root.querySelector<HTMLElement>('.territory-viewport');
@@ -37,6 +53,7 @@ const updateTransform = function (root: HTMLElement) {
 	const limitY = Math.max(0, ((stage?.clientHeight ?? 0) * view.zoom - (viewport?.clientHeight ?? 0)) / 2);
 	view.x = Math.max(-limitX, Math.min(limitX, view.x)); view.y = Math.max(-limitY, Math.min(limitY, view.y));
 	if (stage) stage.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
+	positionPlanetPopover(root);
 	const reset = root.querySelector<HTMLElement>('[data-chart-reset]'); if (reset) reset.dataset['zoom'] = String(Math.round(view.zoom * 100));
 };
 export const focusTerritoryMap = function (root: HTMLElement, planetId: PlanetId) {
@@ -49,13 +66,20 @@ export const focusTerritoryMap = function (root: HTMLElement, planetId: PlanetId
 	view.pointers.clear();
 	updateTransform(root);
 };
-export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, select: (id: PlanetId) => void) {
+export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, select: (id: PlanetId) => void, details: TemplateResult) {
 	const paths = territoryPaths(campaign); const selected = getPlanet(destination); const current = getPlanet(campaign.planetId);
 	const view = viewFor(root);
+	let observer: ResizeObserver | undefined;
+	const observe = function (element: Element | undefined) {
+		observer?.disconnect();
+		if (!element) return;
+		observer = new ResizeObserver(function () { updateTransform(root); });
+		observer.observe(element);
+	};
 	const zoom = function (delta: number) { view.zoom = Math.max(1, Math.min(3, view.zoom + delta)); updateTransform(root); };
 	return html`<div class="territory-chart">
 		<div class="chart-caption"><span>THE WAYFARER REACH</span><small>LIVE FRONT / DAY ${String(campaign.day).padStart(3, '0')}</small></div>
-		<div class="territory-viewport"
+		<div class="territory-viewport" ${ref(observe)}
 			@pointerdown=${function (event: PointerEvent) {
 				if (event.button !== 0 || view.pointers.size >= 2) return;
 				const target = event.target; if (!(target instanceof Element)) return;
@@ -115,10 +139,14 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 				${PLANETS.map(function (world) {
 					const intel = getSystemIntel(campaign, world.id); const faction = intel.owner ? getFaction(intel.owner) : undefined;
 					const label = world.id === destination || world.id === campaign.planetId || !world.id.startsWith('system-');
-					return html`<button class="system-marker ${intel.conflict ? 'conflict-system' : ''} ${world.id === campaign.planetId ? 'current-system' : ''}" style="left:${world.x}%;top:${world.y}%;--system-color:${faction?.color ?? '#7c96a0'}" data-system=${world.id} aria-label="${world.name} · ${faction?.name ?? 'Unclaimed'} · ${intel.conflict ? 'Conflict zone' : 'No conflict'}" aria-pressed=${world.id === destination} ?disabled=${Boolean(campaign.active)} title="${world.name} · ${intel.conflict ? 'CONFLICT ZONE' : faction?.shortName ?? 'UNCLAIMED'}" @click=${function (event: MouseEvent) { if (event.detail > 0 && view.suppressClick) return; select(world.id); }}><i></i>${label ? html`<span>${world.name}${world.id === campaign.planetId ? html`<small>WAYFARER</small>` : ''}</span>` : ''}</button>`;
+					return html`<button class="system-marker ${intel.conflict ? 'conflict-system' : ''} ${world.id === campaign.planetId ? 'current-system' : ''}" style="left:${world.x}%;top:${world.y}%;--system-color:${faction?.color ?? '#7c96a0'}" data-system=${world.id} aria-label="${world.name} · ${faction?.name ?? 'Unclaimed'} · ${intel.conflict ? 'Conflict zone' : 'No conflict'}" aria-pressed=${world.id === destination} ?disabled=${Boolean(campaign.active)} title="${world.name} · ${intel.conflict ? 'CONFLICT ZONE' : faction?.shortName ?? 'UNCLAIMED'}" @click=${function (event: MouseEvent) { if (event.detail > 0 && view.suppressClick) return; select(world.id); const popover = root.querySelector<HTMLElement>('.planet-popover'); if (popover) { popover.showPopover(); positionPlanetPopover(root); } }}><i></i>${label ? html`<span>${world.name}${world.id === campaign.planetId ? html`<small>WAYFARER</small>` : ''}</span>` : ''}</button>`;
 				})}
 			</div>
 		</div>
+		<aside class="planet-popover" popover="auto" aria-label="Selected planet" @toggle=${function () { positionPlanetPopover(root); }}>
+			<button class="planet-popover-close" aria-label="Close planet details" @click=${function () { root.querySelector<HTMLElement>('.planet-popover')?.hidePopover(); }}>×</button>
+			${details}
+		</aside>
 		<div class="chart-tools"><button aria-label="Zoom out" @click=${function () { zoom(-.5); }}>−</button><button data-chart-reset data-zoom=${Math.round(view.zoom * 100)} @click=${function () { view.zoom = 1; view.x = 0; view.y = 0; updateTransform(root); }}>RESET</button><button aria-label="Zoom in" @click=${function () { zoom(.5); }}>+</button><span>PINCH / SCROLL TO ZOOM · DRAG TO PAN</span></div>
 		<div class="chart-legend">${FACTIONS.map(function (faction) { return html`<span style="--legend-color:${faction.color}"><i></i>${faction.shortName}</span>`; })}<span style="--legend-color:#718792"><i></i>UNCLAIMED</span><span class="conflict-key">◌ CONFLICT</span></div>
 	</div>`;

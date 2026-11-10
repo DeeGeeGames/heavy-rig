@@ -503,6 +503,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const back = function () {
 		if (navigation.transitioning) return;
 		if (navigation.auxiliary) { closeAuxiliary(); return; }
+		const planetPopover = element('starmap').querySelector<HTMLElement>('.planet-popover:popover-open');
+		if (navigation.screen === 'starmap' && planetPopover) {
+			planetPopover.hidePopover();
+			element('starmap').querySelector<HTMLElement>('.system-marker[aria-pressed="true"]')?.focus({ preventScroll: true });
+			return;
+		}
 		if (navigation.screen === 'intro' || navigation.screen === 'rig-bay' || navigation.screen === 'escape-result') { confirm(toTitle, 'RETURN TO TITLE', 'The escape will restart from the beginning when you return. Company progress is untouched.', 'LEAVE THE ESCAPE?'); return; }
 		if (navigation.screen === 'mechbay' && editor.slot !== null) { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`); return; }
 		if (navigation.screen === 'training-result' && trainingOrigin === 'title') { toTitle(); return; }
