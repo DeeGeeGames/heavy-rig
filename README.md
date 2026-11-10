@@ -483,7 +483,10 @@ as the approved design reference. Crowd profiling and shared model resources
 remain tracked in [performance issue #10](https://github.com/DeeGeeGames/heavy-rig/issues/10).
 
 An original locally synthesized 96-BPM score changes its layers with combat
-intensity and uses quieter ship arrangements. Weapon, mechanical, damage,
+intensity and uses quieter ship arrangements. The playable intro escape selects the
+144-BPM Pursuit theme with a running bass pulse, tense brass-like phrases, and
+industrial percussion, alongside the facility alarms. Set `AudioFrame.theme` to
+`pursuit` to reuse it independently of facility alarms. Weapon, mechanical, damage,
 coolant, artillery, and outcome effects have separate mix controls. Audio starts
 after browser activation and reports when a click or key press is required.
 Settings include master/music/effects levels, controller vibration, a larger

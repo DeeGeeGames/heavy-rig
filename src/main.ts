@@ -180,7 +180,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	for (const action of ['nearest', 'cycle'] as const) element(action === 'nearest' ? 'target-nearest' : 'target-next').addEventListener('click', function () { selectTarget(action); }, listenerOptions);
 	const keyboardAction = function (code: string) { return ACTIONS.find(function (action) { return profile.settings.keyboard[action].includes(code); }); };
 	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
-	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false }); };
+	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false, theme: escape ? 'pursuit' : 'standard' }); };
 	const unlockSound = function () { void audio.unlock(); };
 	const updateMenuHint = function () {
 		const device = promptDevice();
@@ -888,6 +888,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const audioFrame = function (now: number) {
 		const combat = playing(); const audibleMenu = navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) || navigation.screen === 'training-result' || (navigation.screen === 'result' && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
+			theme: escape ? 'pursuit' as const : 'standard' as const,
 			alarm: combat && escape,
 			jogTime: navigation.screen === 'intro' && narrativePart === 'before' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary && [1, 2].includes(narrativeFrame(INTRO_LINES, narrativeElapsed).index)
 				? narrativeElapsed - (INTRO_LINES[0].length / 10 + 3) : undefined,

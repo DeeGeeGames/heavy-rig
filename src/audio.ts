@@ -1,6 +1,7 @@
 import type { CombatEvent } from './simulation';
 
 export type AudioPhase = 'briefing' | 'combat' | 'refit' | 'result';
+export type AudioTheme = 'standard' | 'pursuit';
 export type AudioCue = 'focus' | 'confirm' | 'back' | 'unavailable';
 export type AudioStatus = 'locked' | 'pending' | 'running' | 'unavailable';
 export interface AudioFrame {
@@ -14,6 +15,7 @@ export interface AudioFrame {
 	danger?: number;
 	victory?: boolean;
 	alarm?: boolean;
+	theme?: AudioTheme;
 	/** Seconds since the Rig Bay line started; undefined stops the recorded footsteps. */
 	jogTime?: number | undefined;
 	/** Total narrative footstep window, including its two-second fades. */
@@ -37,6 +39,7 @@ interface Synth {
 	effects: GainNode;
 	ui: GainNode;
 	musicInput: GainNode;
+	musicEcho: DelayNode;
 	effectsInput: GainNode;
 	engine: OscillatorNode;
 	engineFilter: BiquadFilterNode;
@@ -85,6 +88,20 @@ const CHORDS = [
 	{ root: 36, notes: [48, 55, 62, 64] }, // C suspended / added ninth
 ];
 const FIGURE = [0, 2, 1, 3, 2, 1, 3, 2];
+const PURSUIT_SIXTEENTH = 60 / 144 / 4;
+const PURSUIT_CHORDS = [
+	{ root: 38, notes: [50, 57, 62, 65] }, // D minor, held over the running bass
+	{ root: 34, notes: [50, 58, 62, 65] }, // B-flat / D
+	{ root: 39, notes: [51, 58, 62, 67] }, // E-flat major seventh: the flat second adds pressure
+	{ root: 33, notes: [49, 57, 58, 64] }, // A with a flat ninth, pulling back into D minor
+];
+const PURSUIT_PULSE = [0, 12, 0, 0, 7, 0, 12, 0, 0, 12, 0, 7, 0, 12, 7, 12];
+const PURSUIT_MOTIF = [
+	[62, 0, 62, 65, 0, 63, 62, 0],
+	[0, 57, 60, 62, 0, 60, 57, 0],
+	[62, 0, 65, 67, 0, 65, 63, 0],
+	[64, 0, 61, 64, 0, 70, 69, 61],
+];
 
 // An original, locally synthesized score. The game frame schedules a short
 // look-ahead against the audio clock; no timers survive a paused or closed game.
@@ -98,6 +115,7 @@ export const createAudio = function () {
 	let unavailable = false;
 	let mix: AudioMix = { ...DEFAULT_AUDIO_MIX };
 	let phase: AudioPhase = 'combat';
+	let theme: AudioTheme = 'standard';
 	let intensity = 0;
 	let nextWarning = 0;
 	let nextAlarm = 0;
@@ -279,7 +297,7 @@ export const createAudio = function () {
 				const laserGain = context.createGain(); laserGain.gain.value = 0;
 				laser.connect(laserFilter).connect(laserGain).connect(effectsInput);
 				const nodes = [master, compressor, music, effects, ui, musicInput, effectsInput, echoSend, echo, echoFilter, feedback, engineFilter, engineGain, mechanicalFilter, mechanicalGain, laserFilter, laserGain];
-				synth = { context, master, music, effects, ui, musicInput, effectsInput, engine, engineFilter, engineGain, mechanical, mechanicalGain, laser, laserFilter, laserGain, noise: buffer, nodes };
+				synth = { context, master, music, effects, ui, musicInput, musicEcho: echo, effectsInput, engine, engineFilter, engineGain, mechanical, mechanicalGain, laser, laserFilter, laserGain, noise: buffer, nodes };
 				engine.start(); mechanical.start(); laser.start();
 			}
 			const current = synth;
@@ -399,6 +417,47 @@ export const createAudio = function () {
 		if (beat % 2 === 0 || energy > 0.72) noise({ at, duration: beat === 10 ? 0.17 : 0.045, volume: beat % 4 === 2 ? 0.075 : 0.035, frequency: 6700, type: 'highpass', pan: beat % 4 < 2 ? -0.3 : 0.3, bus: 'music' });
 		if (bar % 4 === 3 && beat >= 13 && energy > 0.4) tone({ at, frequency: 130 - (beat - 13) * 18, endFrequency: 55, duration: 0.18, volume: 0.15, type: 'triangle', pan: (beat - 14) * 0.25, bus: 'music' });
 	};
+	const pursuitStep = function (at: number) {
+		const bar = Math.floor(musicStep / 16) % 16; const beat = musicStep % 16;
+		const section = Math.floor(bar / 4);
+		const chord = PURSUIT_CHORDS[section]; if (!chord) return;
+		// The chase keeps moving even before the guards engage. Combat opens the
+		// filter slightly, while the sixteen-bar phrase supplies its own build.
+		const energy = 0.65 + intensity * 0.35;
+		const secondHalf = bar % 4 >= 2;
+		const offset = PURSUIT_PULSE[beat] ?? 0;
+		tone({ at, frequency: frequency(chord.root + offset), duration: PURSUIT_SIXTEENTH * 0.85, volume: beat % 4 === 0 ? 0.16 : 0.105, type: 'sawtooth', attack: 0.003, cutoff: (beat % 4 === 0 ? 1000 : 650) * energy, endCutoff: 160, bus: 'music' });
+		if (beat % 4 === 0) tone({ at, frequency: frequency(chord.root - 12), duration: 0.19, volume: 0.13, bus: 'music' });
+		// Short, low brass-like chord strikes replace the regular score's soft pads.
+		if (beat === 0 || beat === 10 && secondHalf) {
+			for (const [index, note] of chord.notes.entries()) {
+				tone({ at, frequency: frequency(note), duration: beat === 0 ? 0.72 : 0.35, volume: 0.038, type: 'sawtooth', attack: 0.035, cutoff: 1050, endCutoff: 320, detune: index % 2 ? 6 : -6, pan: (index - 1.5) * 0.28, bus: 'music' });
+			}
+		}
+		// The call and answer gains a high octave late in each four-bar section.
+		if (beat % 2 === 0) {
+			const note = PURSUIT_MOTIF[section]?.[(beat / 2 + (bar % 2) * 4) % 8] ?? 0;
+			if (note > 0) {
+				tone({ at, frequency: frequency(note), duration: PURSUIT_SIXTEENTH * 2.7, volume: 0.065, type: 'sawtooth', attack: 0.012, cutoff: 1600, endCutoff: 650, pan: -0.18, bus: 'music' });
+				if (secondHalf) tone({ at, frequency: frequency(note + 12), duration: PURSUIT_SIXTEENTH * 1.6, volume: 0.023, type: 'triangle', cutoff: 2100, pan: 0.24, bus: 'music' });
+			}
+		}
+		// Heavy downbeats, a syncopated pickup and a dry industrial backbeat.
+		if (beat === 0 || beat === 6 || beat === 8 || beat === 14 && secondHalf) {
+			tone({ at, frequency: 138, endFrequency: 36, duration: 0.23, volume: 0.32, bus: 'music' });
+			noise({ at, duration: 0.025, volume: 0.075, frequency: 2100, bus: 'music' });
+		}
+		if (beat === 4 || beat === 12) {
+			noise({ at, duration: 0.13, volume: 0.19, frequency: 1850, type: 'highpass', pan: 0.1, bus: 'music' });
+			tone({ at, frequency: 188, endFrequency: 112, duration: 0.14, volume: 0.11, type: 'triangle', bus: 'music' });
+			for (const partial of [437, 701]) tone({ at, frequency: partial, duration: 0.065, volume: 0.025, type: 'square', cutoff: 1800, pan: -0.12, bus: 'music' });
+		}
+		if (beat % 2 === 0 || secondHalf) noise({ at, duration: beat === 10 ? 0.1 : 0.028, volume: beat % 4 === 2 ? 0.052 : 0.025, frequency: 6200, type: 'highpass', pan: beat % 4 < 2 ? -0.35 : 0.35, bus: 'music' });
+		if (bar % 4 === 3 && beat >= 13) {
+			tone({ at, frequency: 165 - (beat - 13) * 25, endFrequency: 55, duration: 0.14, volume: 0.13, type: 'triangle', pan: (beat - 14) * 0.25, bus: 'music' });
+			noise({ at, duration: 0.055, volume: 0.06, frequency: 2100, type: 'bandpass', bus: 'music' });
+		}
+	};
 
 	const update = function (frame: AudioFrame) {
 		active = frame.active;
@@ -408,7 +467,11 @@ export const createAudio = function () {
 		const at = context.currentTime;
 		const audible = active && !muted && mix.master > 0 && context.state === 'running';
 		const nextPhase = frame.phase ?? 'combat';
-		if (phase !== nextPhase) { phase = nextPhase; clearVoices('music'); nextMusic = 0; musicStep = 0; }
+		const nextTheme = frame.theme ?? 'standard';
+		if (phase !== nextPhase || theme !== nextTheme) {
+			phase = nextPhase; theme = nextTheme; clearVoices('music'); nextMusic = 0; musicStep = 0;
+			synth.musicEcho.delayTime.setValueAtTime((theme === 'pursuit' ? PURSUIT_SIXTEENTH : SIXTEENTH) * 3, at);
+		}
 		mixLevels();
 		updateJog(frame.jogTime, frame.jogDuration);
 		updateHatch(frame.hatchTime);
@@ -436,8 +499,8 @@ export const createAudio = function () {
 		if (nextMusic < at - 0.2 || nextMusic === 0) nextMusic = at + 0.035;
 		// Bound catch-up work after a slow frame; normal frames schedule 0–2 notes.
 		for (let scheduled = 0; nextMusic < at + 0.16 && scheduled < 4; scheduled++) {
-			if (mix.music > 0) scoreStep(nextMusic, frame);
-			nextMusic += SIXTEENTH; musicStep++;
+			if (mix.music > 0) { if (theme === 'pursuit') pursuitStep(nextMusic); else scoreStep(nextMusic, frame); }
+			nextMusic += theme === 'pursuit' ? PURSUIT_SIXTEENTH : SIXTEENTH; musicStep++;
 		}
 		if (driving && mix.effects > 0 && (frame.danger ?? 0) > 0.4 && at >= nextWarning) {
 			tone({ at, frequency: 440, duration: 0.13, volume: 0.07, type: 'triangle' });
