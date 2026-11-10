@@ -46,8 +46,18 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 	const active = campaign.active;
 	const mech = getOwnedMech(campaign);
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
+	const details = html`
+		<span class="eyebrow">${local ? 'WAYFARER / IN ORBIT' : `ARRIVAL / DAY ${forecast.day}`}</span>
+		<h3>${planet.name}</h3>
+		<p class="system-control">${intel.owner ? getFaction(intel.owner).name : 'Unclaimed space'}</p>
+		<p class=${intel.conflict ? 'system-conflict' : 'system-quiet'}>${intel.conflict ? '◌ ACTIVE CONFLICT ZONE' : 'NO ACTIVE CONFLICT'}</p>
+		<p class="planet-summary">${intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No military contracts posted.'}</p>
+		<p class="planet-summary">${planet.description}</p>
+		<div class="planet-transit">${local ? 'Current location' : 'TRANSIT · 1 DAY · 0 CR'}</div>
+		<div class="planet-actions"><button class="primary" ?disabled=${local || Boolean(active)} @click=${function () { root.querySelector<HTMLElement>('.planet-popover')?.hidePopover(); actions.travel(); }}>${local ? 'ORBIT ESTABLISHED' : active ? 'CONTRACT ACTIVE' : 'JUMP HERE →'}</button><button @click=${function () { root.querySelector<HTMLElement>('.planet-popover')?.hidePopover(); actions.navigate('bridge', 'board'); }}>CONTRACTS →</button></div>
+		<button class="planet-full-intel" @click=${function () { root.querySelector<HTMLElement>('.planet-popover')?.hidePopover(); selectWorkspacePane(root, 'system'); }}>FULL SYSTEM INTEL →</button>`;
 	const panes: WorkspacePane[] = [
-		{ id: 'route', label: 'Starmap', items: [renderTerritoryMap(root, campaign, destination, actions.selectPlanet)], actions: html`<button @click=${function () { selectWorkspacePane(root, 'system'); }}>INTEL · ${planet.name.toUpperCase()} →</button>` },
+		{ id: 'route', label: 'Starmap', items: [renderTerritoryMap(root, campaign, destination, actions.selectPlanet, details)] },
 		{ id: 'system', label: 'System intel', items: [
 			html`<span class="eyebrow">${local ? 'WAYFARER / IN ORBIT' : `ARRIVAL FORECAST / DAY ${forecast.day}`}</span><h3>${planet.name}</h3><p class="system-control">${intel.owner ? getFaction(intel.owner).name : 'Unclaimed space'}</p>`,
 			html`<p class=${intel.conflict ? 'system-conflict' : 'system-quiet'}>${intel.conflict ? '◌ ACTIVE CONFLICT ZONE' : 'NO ACTIVE CONFLICT'}</p>`,
@@ -58,7 +68,7 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 		], actions: html`<button id="bridge-travel" class="primary" ?disabled=${local || Boolean(active)} @click=${actions.travel}>${local ? 'ORBIT ESTABLISHED' : active ? 'CONTRACT ACTIVE' : `JUMP TO ${planet.name.toUpperCase()} →`}</button><button @click=${function () { actions.navigate('bridge', 'board'); }}>CONTRACTS →</button>` },
 	];
 	renderWorkspace(root, renderShipHeader(campaign, 'starmap', actions.navigate), panes, renderCampaignFooter(saved, actions), 'route', [
-		{ id: 'route', label: 'Map', panes: ['route', 'system'] },
+		{ id: 'route', label: 'Map', panes: ['route'] },
 		{ id: 'system', label: 'Intel', panes: ['system'] },
 	]);
 };
