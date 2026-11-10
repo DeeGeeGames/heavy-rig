@@ -26,6 +26,7 @@ import { createControllerFeedback } from './controller-feedback';
 import { createTraining, trainingCopy, type Training } from './training';
 import { isDifficulty, readProfile, saveProfile } from './profile';
 import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, readCampaign, saveCampaign, settleContract, travelTo } from './campaign';
+import { focusTerritoryMap } from './territory-map';
 import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
 import { missionObjective } from './missions';
@@ -452,7 +453,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				}, 'ACCEPT CONTRACT', `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction. Success strengthens the employer on this front; failure or abort strengthens the opposition.`, 'ACCEPT THIS CONTRACT?');
 			},
 			deploy: function () { navigateShip('mechbay'); },
-			abandon: function () { confirm(function () { if (replaceCampaign(abandonContract(campaign))) toBridge(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
+			abandon: function () { confirm(function () { if (replaceCampaign(abandonContract(campaign))) toShip(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
 			training: startTraining,
 			title: back,
 			settings: function () { showAuxiliary('settings'); },
@@ -461,7 +462,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, actions);
 		renderStarmap(element('starmap'), campaign, destination, campaignSaved, actions);
 	};
-	const navigateShip = function (target: ShipScreen, view?: 'board' | 'route' | 'system') {
+	const navigateShip = function (target: ShipScreen, view?: 'board' | 'route' | 'system', focusCurrent = false) {
 		if (campaignConflict || navigation.auxiliary || navigation.transitioning || editor.slot !== null) return;
 		if (isShipScreen(navigation.screen)) rememberWorkspaceFocus(element(navigation.screen));
 		training = undefined; escape = false; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state);
@@ -472,9 +473,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			else refreshCompany();
 			syncScreen();
 			if (view) selectWorkspacePane(element(target), view);
+			if (focusCurrent) focusTerritoryMap(element('starmap'), campaign.planetId);
 		});
 	};
-	const toBridge = function () { navigateShip('bridge', 'board'); };
+	const toShip = function () { destination = campaign.planetId; selectedContract = undefined; navigateShip('starmap', 'route', true); };
 	const toTitle = function () {
 		element('title-company-label').textContent = campaign.introComplete ? 'CONTINUE COMPANY' : 'CONTINUE ESCAPE';
 		training = undefined; escape = false; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state); audio.reset(); transition(navigation.setScreen('title'));
@@ -486,11 +488,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (navigation.screen === 'mechbay' && editor.slot !== null) { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`); return; }
 		if (navigation.screen === 'training-result' && trainingOrigin === 'title') { toTitle(); return; }
 		if (isShipScreen(navigation.screen)) { confirm(toTitle, 'RETURN TO TITLE', hasRefitDraft() ? 'Company progress is saved. Your unqueued refit draft is kept while this session remains open.' : 'Company progress is saved on this device.', 'RETURN TO TITLE?'); return; }
-		if (navigation.screen === 'training-result') { toBridge(); return; }
+		if (navigation.screen === 'training-result') { toShip(); return; }
 		setPaused(navigation.screen === 'playing');
 	};
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
-	listen('title-continue', function () { if (campaign.introComplete) toBridge(); else startIntro(); });
+	listen('title-continue', function () { if (campaign.introComplete) toShip(); else startIntro(); });
 	listen('title-new-campaign', function () {
 		confirm(function () {
 			if (!replaceCampaign(createCampaign())) return;
@@ -530,17 +532,17 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		}, listenerOptions);
 	}
 	element('title-company-label').textContent = returningCompany ? 'CONTINUE COMPANY' : 'START COMPANY';
-	listen('training-deploy', function () { if (campaign.active) navigateShip('mechbay'); else toBridge(); });
-	listen('training-briefing', function () { if (trainingOrigin === 'title') toTitle(); else toBridge(); }); listen('restart', toBridge);
+	listen('training-deploy', function () { if (campaign.active) navigateShip('mechbay'); else toShip(); });
+	listen('training-briefing', function () { if (trainingOrigin === 'title') toTitle(); else toShip(); }); listen('restart', toShip);
 	listen('resume', function () { setPaused(false); });
 	listen('pause', function () { setPaused(true); });
 	listen('reset', function () { if (escape) confirm(startEscape, 'RESTART ESCAPE'); else if (training) confirm(startTraining, 'RESTART TRAINING'); });
 	listen('leave', function () {
 		if (escape) confirm(toTitle, 'RETURN TO TITLE', 'The escape can be restarted from the title screen. Company progress is untouched.', 'LEAVE THE ESCAPE?');
-		else if (state.mission && !training) confirm(function () { checkpoint(); if (replaceCampaign(abandonContract(campaign))) toBridge(); }, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
-		else confirm(trainingOrigin === 'title' ? toTitle : toBridge, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
+		else if (state.mission && !training) confirm(function () { checkpoint(); if (replaceCampaign(abandonContract(campaign))) toShip(); }, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
+		else confirm(trainingOrigin === 'title' ? toTitle : toShip, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
 	});
-	listen('result-briefing', toBridge);
+	listen('result-briefing', toShip);
 	listen('confirm-action', function () {
 		const action = confirmedAction; confirmedAction = undefined;
 		transition(navigation.closeAuxiliary(), function () { syncScreen(false); action?.(); if (!navigation.transitioning) { const root = menu(); if (root?.classList.contains('workspace')) focusWorkspace(root); updateMenuHint(); } });
@@ -906,7 +908,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	});
 	world.addSystem('browser-input').inPhase('preUpdate').setProcess(function () {
 		const now = frameTime;
-		if (!navigation.transitioning && navigation.screen === 'jump' && focused && !document.hidden && now >= jumpUntil) toBridge();
+		if (!navigation.transitioning && navigation.screen === 'jump' && focused && !document.hidden && now >= jumpUntil) toShip();
 		const revisionAtFrame = screenRevision;
 		const rect = canvas.getBoundingClientRect(); const width = rect.width; const height = rect.height;
 		presentation.resize(state, width, height);
@@ -1037,7 +1039,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (state.events.includes('coolant')) { message = 'COOLANT PURGE / REACTOR STABILIZING'; messageUntil = state.time + 2; }
 			if (escape && state.outcome === 'won') {
 				if (!campaign.introComplete && !replaceCampaign({ ...campaign, introComplete: true })) return;
-				toBridge();
+				toShip();
 			}
 			else if (escape && state.outcome === 'lost') { audio.reset(); transition(navigation.setScreen('escape-result')); }
 			else if (training?.stage === 'complete') transition(navigation.setScreen('training-result'));
