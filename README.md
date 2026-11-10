@@ -221,6 +221,12 @@ asymmetric cannon arm, and Morrow an armless twin-silo carrier. Authored hip
 heights, knee directions, and planted-foot animation distinguish their motion.
 These presentation differences do not change collision shapes.
 
+Select the closest visible hostile with **T / right-stick click**, or cycle visible
+hostiles with **Tab / Y (Triangle)**. The fire-control buttons offer the same
+actions. A selected target is tracked until it leaves view or is destroyed;
+move the mouse or aim stick to resume manual aiming. Both bindings can be
+changed in Settings. Touch retains its existing closest/next controls.
+
 ## Weapons and heat
 
 | Weapon | Price | Base behavior |

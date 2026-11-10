@@ -139,3 +139,8 @@
 	#game:not(.touch-enabled) .training-guide p, #game:not(.touch-enabled) #escape-guide { font-size: 11px; line-height: 1.45; margin-block: 5px; }
 	#game:not(.touch-enabled) .training-guide small { display: none; }
 }
+
+.target-controls { display: flex; gap: 6px; margin-bottom: 6px; }
+.target-controls button { flex: 1; min-height: 32px; padding: 5px; font: 10px var(--mono); }
+.target-controls kbd { margin-left: 6px; }
+.touch-enabled .target-controls { display: none; }

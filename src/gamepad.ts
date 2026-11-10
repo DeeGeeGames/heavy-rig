@@ -19,6 +19,8 @@ export interface PadInput {
 	fire: FireInputs;
 	coolant: boolean;
 	stop: boolean;
+	targetNearest: boolean;
+	targetNext: boolean;
 	pause: boolean;
 	confirm: boolean;
 	back: boolean;
@@ -113,6 +115,8 @@ export const createGamepadInput = function () {
 			drive: ready ? -y : 0, turn: ready ? x : 0, aimX: ready ? aimX : 0, aimY: ready ? aimY : 0,
 			fire: [ready && pressed(bindings['mount-0']), ready && pressed(bindings['mount-1']), ready && pressed(bindings['mount-2']), ready && pressed(bindings['mount-3'])],
 			coolant: ready && pressed(bindings.coolant), stop: ready && pressed(bindings.stop),
+			targetNearest: ready && before !== undefined && pressed(bindings['target-nearest']) && !before.has(bindings['target-nearest']),
+			targetNext: ready && before !== undefined && pressed(bindings['target-next']) && !before.has(bindings['target-next']),
 			pause: edge(9), confirm: edge(0), back: edge(1), navigate,
 			department: edge(4) === edge(5) ? 0 : edge(4) ? -1 : 1,
 			page: edge(6) === edge(7) ? 0 : edge(6) ? -1 : 1,
