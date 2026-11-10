@@ -23,11 +23,12 @@ const stars = function () {
 	const random = randomSource(0x53544152);
 	return Array.from({ length: 540 }, function () { return { x: random() * WIDTH, y: random() * HEIGHT, radius: .3 + random() * 1.05, opacity: .2 + random() * .55 }; });
 }();
-interface ChartView { zoom: number; x: number; y: number; drag: { id: number; x: number; y: number } | undefined }
+interface ChartPointer { x: number; y: number; startX: number; startY: number }
+interface ChartView { zoom: number; x: number; y: number; pointers: Map<number, ChartPointer>; suppressClick: boolean }
 const views = new WeakMap<HTMLElement, ChartView>();
 const viewFor = function (root: HTMLElement) {
 	const existing = views.get(root); if (existing) return existing;
-	const view: ChartView = { zoom: 1, x: 0, y: 0, drag: undefined }; views.set(root, view); return view;
+	const view: ChartView = { zoom: 1, x: 0, y: 0, pointers: new Map(), suppressClick: false }; views.set(root, view); return view;
 };
 const updateTransform = function (root: HTMLElement) {
 	const view = viewFor(root); const stage = root.querySelector<HTMLElement>('.territory-stage');
@@ -45,7 +46,7 @@ export const focusTerritoryMap = function (root: HTMLElement, planetId: PlanetId
 	view.zoom = 3;
 	view.x = (.5 - planet.x / 100) * stage.clientWidth * view.zoom;
 	view.y = (.5 - planet.y / 100) * stage.clientHeight * view.zoom;
-	view.drag = undefined;
+	view.pointers.clear();
 	updateTransform(root);
 };
 export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, select: (id: PlanetId) => void) {
@@ -55,12 +56,46 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 	return html`<div class="territory-chart">
 		<div class="chart-caption"><span>THE WAYFARER REACH</span><small>LIVE FRONT / DAY ${String(campaign.day).padStart(3, '0')}</small></div>
 		<div class="territory-viewport"
-			@pointerdown=${function (event: PointerEvent) { if (event.target instanceof Element && event.target.closest('button')) return; const target = event.currentTarget; if (!(target instanceof HTMLElement)) return; view.drag = { id: event.pointerId, x: event.clientX, y: event.clientY }; target.setPointerCapture(event.pointerId); }}
-			@pointermove=${function (event: PointerEvent) { if (view.drag?.id !== event.pointerId) return; view.x += event.clientX - view.drag.x; view.y += event.clientY - view.drag.y; view.drag = { id: event.pointerId, x: event.clientX, y: event.clientY }; updateTransform(root); }}
-			@pointerup=${function () { view.drag = undefined; }} @pointercancel=${function () { view.drag = undefined; }}
+			@pointerdown=${function (event: PointerEvent) {
+				if (event.button !== 0 || view.pointers.size >= 2) return;
+				const target = event.target; if (!(target instanceof Element)) return;
+				if (view.pointers.size === 0) view.suppressClick = false;
+				view.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY });
+				if (view.pointers.size > 1) view.suppressClick = true;
+				// Keep marker taps targeted at the marker while capturing drags outside it.
+				target.setPointerCapture(event.pointerId);
+			}}
+			@pointermove=${function (event: PointerEvent) {
+				const previous = view.pointers.get(event.pointerId); if (!previous) return;
+				const next = { ...previous, x: event.clientX, y: event.clientY };
+				const other = Array.from(view.pointers.entries()).find(function ([id]) { return id !== event.pointerId; })?.[1];
+				view.pointers.set(event.pointerId, next);
+				if (Math.hypot(next.x - next.startX, next.y - next.startY) > 5) view.suppressClick = true;
+				if (other) {
+					const viewport = event.currentTarget; if (!(viewport instanceof HTMLElement)) return;
+					const bounds = viewport.getBoundingClientRect();
+					const oldX = (previous.x + other.x) / 2 - bounds.left - bounds.width / 2;
+					const oldY = (previous.y + other.y) / 2 - bounds.top - bounds.height / 2;
+					const newX = (next.x + other.x) / 2 - bounds.left - bounds.width / 2;
+					const newY = (next.y + other.y) / 2 - bounds.top - bounds.height / 2;
+					const distance = Math.hypot(previous.x - other.x, previous.y - other.y);
+					const nextDistance = Math.hypot(next.x - other.x, next.y - other.y);
+					const nextZoom = Math.max(1, Math.min(3, view.zoom * (distance > 0 ? nextDistance / distance : 1)));
+					const ratio = nextZoom / view.zoom;
+					view.x = newX - (oldX - view.x) * ratio;
+					view.y = newY - (oldY - view.y) * ratio;
+					view.zoom = nextZoom;
+				} else if (view.suppressClick) {
+					view.x += next.x - previous.x; view.y += next.y - previous.y;
+				}
+				updateTransform(root);
+			}}
+			@pointerup=${function (event: PointerEvent) { view.pointers.delete(event.pointerId); }}
+			@pointercancel=${function (event: PointerEvent) { view.pointers.delete(event.pointerId); view.suppressClick = true; }}
+			@lostpointercapture=${function (event: PointerEvent) { view.pointers.delete(event.pointerId); }}
 			@wheel=${function (event: WheelEvent) { event.preventDefault(); zoom(event.deltaY < 0 ? .2 : -.2); }}>
 			<div class="territory-stage" @focusin=${function (event: FocusEvent) {
-					if (!(event.target instanceof HTMLElement) || !event.target.matches('.system-marker')) return;
+					if (view.pointers.size > 0 || !(event.target instanceof HTMLElement) || !event.target.matches('.system-marker')) return;
 					const viewport = root.querySelector<HTMLElement>('.territory-viewport'); if (!viewport) return;
 					const bounds = viewport.getBoundingClientRect(); const marker = event.target.getBoundingClientRect();
 					const margin = 20;
@@ -80,11 +115,11 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 				${PLANETS.map(function (world) {
 					const intel = getSystemIntel(campaign, world.id); const faction = intel.owner ? getFaction(intel.owner) : undefined;
 					const label = world.id === destination || world.id === campaign.planetId || !world.id.startsWith('system-');
-					return html`<button class="system-marker ${intel.conflict ? 'conflict-system' : ''} ${world.id === campaign.planetId ? 'current-system' : ''}" style="left:${world.x}%;top:${world.y}%;--system-color:${faction?.color ?? '#7c96a0'}" data-system=${world.id} aria-label="${world.name} · ${faction?.name ?? 'Unclaimed'} · ${intel.conflict ? 'Conflict zone' : 'No conflict'}" aria-pressed=${world.id === destination} ?disabled=${Boolean(campaign.active)} title="${world.name} · ${intel.conflict ? 'CONFLICT ZONE' : faction?.shortName ?? 'UNCLAIMED'}" @click=${function () { select(world.id); }}><i></i>${label ? html`<span>${world.name}${world.id === campaign.planetId ? html`<small>WAYFARER</small>` : ''}</span>` : ''}</button>`;
+					return html`<button class="system-marker ${intel.conflict ? 'conflict-system' : ''} ${world.id === campaign.planetId ? 'current-system' : ''}" style="left:${world.x}%;top:${world.y}%;--system-color:${faction?.color ?? '#7c96a0'}" data-system=${world.id} aria-label="${world.name} · ${faction?.name ?? 'Unclaimed'} · ${intel.conflict ? 'Conflict zone' : 'No conflict'}" aria-pressed=${world.id === destination} ?disabled=${Boolean(campaign.active)} title="${world.name} · ${intel.conflict ? 'CONFLICT ZONE' : faction?.shortName ?? 'UNCLAIMED'}" @click=${function (event: MouseEvent) { if (event.detail > 0 && view.suppressClick) return; select(world.id); }}><i></i>${label ? html`<span>${world.name}${world.id === campaign.planetId ? html`<small>WAYFARER</small>` : ''}</span>` : ''}</button>`;
 				})}
 			</div>
 		</div>
-		<div class="chart-tools"><button aria-label="Zoom out" @click=${function () { zoom(-.5); }}>−</button><button data-chart-reset data-zoom=${Math.round(view.zoom * 100)} @click=${function () { view.zoom = 1; view.x = 0; view.y = 0; updateTransform(root); }}>RESET</button><button aria-label="Zoom in" @click=${function () { zoom(.5); }}>+</button><span>SCROLL TO ZOOM · DRAG TO PAN</span></div>
+		<div class="chart-tools"><button aria-label="Zoom out" @click=${function () { zoom(-.5); }}>−</button><button data-chart-reset data-zoom=${Math.round(view.zoom * 100)} @click=${function () { view.zoom = 1; view.x = 0; view.y = 0; updateTransform(root); }}>RESET</button><button aria-label="Zoom in" @click=${function () { zoom(.5); }}>+</button><span>PINCH / SCROLL TO ZOOM · DRAG TO PAN</span></div>
 		<div class="chart-legend">${FACTIONS.map(function (faction) { return html`<span style="--legend-color:${faction.color}"><i></i>${faction.shortName}</span>`; })}<span style="--legend-color:#718792"><i></i>UNCLAIMED</span><span class="conflict-key">◌ CONFLICT</span></div>
 	</div>`;
 };
