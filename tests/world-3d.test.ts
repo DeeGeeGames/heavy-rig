@@ -80,21 +80,17 @@ const frameEffects = function (model: ReturnType<typeof createMech>, state: Retu
 	return { muzzles: model.muzzles.map(function (point) { return point.clone().add(offset); }), exhaust: model.exhaust?.clone().add(offset) };
 };
 
-test('aircraft lift only shots on their collision path and cannot lift ground-target fire', function () {
+test('aircraft proximity never changes an unguided projectile simulation height', function () {
 	const state = createState(); const scene = new Scene(); const world = createWorldObjects(scene);
-	state.enemies = [
-		{ id: 1, x: 800, y: 500, kind: 'tank', hp: 900, maxHp: 900, angle: 0, cooldown: 100, heavy: true },
-		{ id: 2, x: 800, y: 560, kind: 'helicopter', hp: 220, maxHp: 220, angle: 0, cooldown: 100, heavy: false },
-	];
-	state.shots = [{ x: 760, y: 500, vx: 500, vy: 0, life: 1, kind: 'cannon', target: undefined, damage: 38 }];
+	const aircraft = { id: 2, x: 850, y: 500, kind: 'helicopter' as const, hp: 220, maxHp: 220, angle: 0, cooldown: 100, heavy: false };
+	const shot = { x: 760, y: 500, elevation: 68, vx: 500, vy: 0, vElevation: 0, life: 1, kind: 'cannon' as const, target: undefined, damage: 38 };
+	state.shots = [shot]; state.enemies = [aircraft];
 	try {
-		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBe(42);
-		const aircraft = state.enemies[1]; if (!aircraft) throw new Error('Missing gunship');
-		aircraft.y = 500; // Same firing line, with the nearer armored contact still blocking it.
-		aircraft.x = 850;
-		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBe(42);
-		state.enemies = [aircraft];
-		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBeGreaterThan(42);
+		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBe(68);
+		aircraft.x = 765; aircraft.y = 500;
+		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBe(68);
+		state.enemies = [];
+		world.update(state); expect(meshChild(projectiles(scene)[0], 1).position.y).toBe(68);
 	} finally { world.dispose(); }
 });
 const segmentEnds = function (mesh: Mesh) {
@@ -120,7 +116,7 @@ test('all frames launch from posed weapon faces even before ECS updates a stale 
 			const effects = frameEffects(model, state);
 			for (const anchor of model.muzzles) {
 				expect(faces.some(function (face) { return anchor.distanceTo(face) < 0.000001; })).toBe(true);
-				state.shots.push({ x: state.player.x, y: state.player.y + 30, vx: 0, vy: 300, life: 2, kind: frame === 'longbow' ? 'ppc' : 'rocket', target: undefined, damage: 1 });
+				state.shots.push({ x: state.player.x + anchor.x, y: state.player.y + anchor.z, elevation: anchor.y, vx: 0, vy: 300, vElevation: 0, age: 0, life: 2, kind: frame === 'longbow' ? 'ppc' : 'rocket', target: undefined, damage: 1 });
 			}
 			world.update(state, effects);
 			for (const [index, projectile] of projectiles(scene).entries()) {
@@ -132,52 +128,36 @@ test('all frames launch from posed weapon faces even before ECS updates a stale 
 	}
 });
 
-test('airborne shots keep their launch origin across later aim and movement, pause, and convergence to the collision path', function () {
+test('projectile heads and tracers follow the same straight 3D trajectory through movement and pause', function () {
 	const scene = new Scene(); const world = createWorldObjects(scene); const state = createState({ frame: 'longbow' });
-	const model = createMech(undefined, false, 'longbow');
-	state.player.angle = state.player.turret = 0;
-	const shot = { x: state.player.x + 30, y: state.player.y, vx: 300, vy: 0, life: 2, kind: 'ppc' as const, target: undefined, damage: 1 };
+	const launch = new Vector3(950, 95, 760);
+	const shot = { x: launch.x, y: launch.z, elevation: launch.y, vx: 300, vy: 50, vElevation: -40, age: 0, life: 2, kind: 'ppc' as const, target: undefined, damage: 1 };
 	state.shots.push(shot);
+	const muzzle = launch.clone(); const effects = { muzzles: [muzzle], exhaust: undefined };
 	try {
-		model.pose(createGaits(state).player, 0);
-		const effects = frameEffects(model, state); const muzzle = effects.muzzles[0];
-		if (!muzzle) throw new Error('Missing Longbow muzzle');
 		world.update(state, effects);
 		const projectile = projectiles(scene)[0]; const head = meshChild(projectile, 1); const trail = meshChild(projectile, 0);
-		const launch = head.position.clone();
-		expect(launch.distanceTo(muzzle)).toBeLessThan(0.000001);
-		expect(launch.y).toBeGreaterThan(80);
-		// A retained reference to the live muzzle would pull an old shot along
-		// with the mech, even though its simulation position has not changed.
-		muzzle.set(-500, 400, -800);
-		state.player.x += 350; state.player.y -= 240; state.player.turret = Math.PI;
-		model.pose(createGaits(state).player, state.player.turret);
-		for (let i = 0; i < 3; i++) {
-			world.update(state, effects);
-			expect(head.position.distanceTo(launch)).toBeLessThan(0.000001);
-			world.update(state, frameEffects(model, state));
-			expect(head.position.distanceTo(launch)).toBeLessThan(0.000001);
+		expect(head.position.distanceTo(launch)).toBeLessThan(0.000001); expect(trail.visible).toBe(false);
+		muzzle.set(-500, 400, -800); state.player.x += 350; state.player.y -= 240; state.player.turret = Math.PI;
+		for (const age of [0.04, 0.08, 0.5]) {
+			shot.age = age; shot.x = launch.x + shot.vx * age; shot.y = launch.z + shot.vy * age; shot.elevation = launch.y + shot.vElevation * age;
+			state.time = age; world.update(state, effects); scene.updateMatrixWorld(true);
+			const expected = launch.clone().addScaledVector(new Vector3(shot.vx, shot.vElevation, shot.vy), age);
+			expect(head.position.distanceTo(expected)).toBeLessThan(0.000001);
+			const [tail, tip] = segmentEnds(trail);
+			expect(tip.distanceTo(expected)).toBeLessThan(0.000001);
+			const tailAge = Math.max(0, age - 0.09);
+			expect(tail.distanceTo(launch.clone().addScaledVector(new Vector3(shot.vx, shot.vElevation, shot.vy), tailAge))).toBeLessThan(0.000001);
+			const direction = new Vector3(1, 0, 0).applyQuaternion(head.quaternion);
+			expect(direction.distanceTo(new Vector3(shot.vx, shot.vElevation, shot.vy).normalize())).toBeLessThan(0.000001);
+			const pausedHead = head.position.clone(); const pausedTrail = trail.matrix.clone();
+			for (let i = 0; i < 4; i++) world.update(state, effects);
+			expect(head.position.equals(pausedHead)).toBe(true); trail.updateMatrix(); expect(trail.matrix.equals(pausedTrail)).toBe(true);
 		}
-		const launchDistance = launch.distanceTo(new Vector3(shot.x, 42, shot.y));
-		shot.x += 12; state.time += 0.04;
-		world.update(state, frameEffects(model, state)); scene.updateMatrixWorld(true);
-		expect(head.position.y).toBeGreaterThan(42); expect(head.position.y).toBeLessThan(launch.y);
-		expect(head.position.distanceTo(new Vector3(shot.x, 42, shot.y))).toBeLessThan(launchDistance);
-		const [tail, tip] = segmentEnds(trail);
-		expect(tail.distanceTo(launch)).toBeLessThan(0.000001);
-		expect(tip.distanceTo(head.position)).toBeLessThan(0.000001);
-		const pausedHead = head.position.clone(); const pausedTrail = trail.matrix.clone();
-		for (let i = 0; i < 4; i++) world.update(state, frameEffects(model, state));
-		expect(head.position.equals(pausedHead)).toBe(true);
-		trail.updateMatrix(); expect(trail.matrix.equals(pausedTrail)).toBe(true);
-		shot.x += 300; state.time += 1;
-		world.update(state, frameEffects(model, state)); scene.updateMatrixWorld(true);
-		expect(head.position.distanceTo(new Vector3(shot.x, 42, shot.y))).toBeLessThan(0.000001);
-		for (const point of segmentEnds(trail)) expect(point.y).toBeCloseTo(42, 6);
-	} finally { model.dispose(); world.dispose(); }
+	} finally { world.dispose(); }
 });
 
-test('all frame lasers and heat exhaust follow live posed hardware while impact coordinates stay unchanged', function () {
+test('lasers retain simulation endpoints while heat exhaust follows live posed hardware', function () {
 	for (const frame of ['warden', 'kestrel', 'maul', 'longbow', 'morrow'] as const) {
 		const scene = new Scene(); const world = createWorldObjects(scene); const state = createState({ frame });
 		const model = createMech(undefined, false, frame);
@@ -188,10 +168,13 @@ test('all frame lasers and heat exhaust follow live posed hardware while impact 
 				model.pose(createGaits(state).player, heading, { recoil: 0.5, heat: 90, hit: 0, time: state.time });
 				const effects = frameEffects(model, state); const muzzle = effects.muzzles[0];
 				if (!muzzle || !effects.exhaust) throw new Error('Missing frame effects anchors');
+				const originPoint = muzzle.clone();
+				state.beams = [{ slot: 0, x: 1250, y: 500, elevation: 147, origin: { x: muzzle.x, y: muzzle.z, elevation: muzzle.y } }];
+				muzzle.set(-400, 600, -800);
 				world.update(state, effects); scene.updateMatrixWorld(true);
 				const laser = scene.getObjectByName('laser'); const [origin, impact] = segmentEnds(meshChild(laser, 0));
-				expect(origin.distanceTo(muzzle)).toBeLessThan(0.000001);
-				expect(impact.distanceTo(new Vector3(state.beam.x, 42, state.beam.y))).toBeLessThan(0.000001);
+				expect(origin.distanceTo(originPoint)).toBeLessThan(0.000001);
+				expect(impact.distanceTo(new Vector3(1250, 147, 500))).toBeLessThan(0.000001);
 				const exhaust = scene.getObjectByName('reactor-vent'); if (!exhaust) throw new Error('Missing vent effect');
 				expect(exhaust.position.x).toBe(effects.exhaust.x); expect(exhaust.position.z).toBe(effects.exhaust.z);
 				expect(exhaust.position.y).toBeCloseTo(effects.exhaust.y + state.time * 25 % 24, 6);
@@ -229,8 +212,8 @@ test('real weapon flashes anchor once to redesigned hardware without lifting coo
 		try {
 			step(state, { drive: 0, stop: false, turn: 0, aim: { x: state.player.x, y: 200 }, fire: [true, false, false, false], coolant: true }, 1 / 60);
 			expect(state.events).toContain('coolant'); expect(state.events).toContain('impact');
-			expect(state.effects).toHaveLength(3);
-			expect(state.effects.filter(function (effect) { return effect.source === 'muzzle'; })).toHaveLength(1);
+			expect(state.effects).toHaveLength(state.stats.shotsFired + 2);
+			expect(state.effects.filter(function (effect) { return effect.source === 'muzzle'; })).toHaveLength(state.stats.shotsFired);
 			model.pose(createGaits(state).player, state.player.turret);
 			const anchors = frameEffects(model, state);
 			world.update(state, anchors);
@@ -239,7 +222,7 @@ test('real weapon flashes anchor once to redesigned hardware without lifting coo
 			expect(rendered).toHaveLength(state.effects.length);
 			for (const [index, effect] of state.effects.entries()) {
 				const visual = rendered[index]; if (!visual) throw new Error('Missing simulated effect');
-				const expected = effect.source === 'muzzle' ? anchors.muzzles[0] : new Vector3(effect.x, 36, effect.y);
+				const expected = new Vector3(effect.x, effect.elevation ?? 36, effect.y);
 				if (!expected) throw new Error('Missing frame muzzle');
 				expect(visual.position.distanceTo(expected)).toBeLessThan(0.000001);
 			}
@@ -278,8 +261,12 @@ test('isolated and clustered fire stays on its equipped hardpoint across every p
 					weaponsStep(state, { drive: 0, stop: false, turn: 0, aim: { x: 1500, y: 780 }, fire: [slot === 0, slot === 1, slot === 2, slot === 3], coolant: false }, 1 / 60);
 					world.update(state, anchors);
 					for (const shot of state.shots) expect(shot.slot).toBe(slot);
-					for (const projectile of projectiles(scene)) expect(meshChild(projectile, 1).position.distanceTo(muzzle)).toBeLessThan(0.000001);
-					scene.traverse(function (object) { if (object.name === 'impact-effect') expect(object.position.distanceTo(muzzle)).toBeLessThan(0.000001); });
+					for (const [index, projectile] of projectiles(scene).entries()) {
+						const shot = state.shots[index]; if (!shot) throw new Error('Missing simulated round');
+						expect(meshChild(projectile, 1).position.distanceTo(new Vector3(shot.x, shot.elevation ?? 42, shot.y))).toBeLessThan(0.000001);
+					}
+					const effects: Object3D[] = []; scene.traverse(function (object) { if (object.name === 'impact-effect') effects.push(object); });
+					for (const [index, effect] of state.effects.entries()) expect(effects[index]?.position.distanceTo(new Vector3(effect.x, effect.elevation ?? 36, effect.y))).toBeLessThan(0.000001);
 				}
 			} finally { model.dispose(); world.dispose(); }
 		}
@@ -290,7 +277,7 @@ test('enemy fire uses the owning enemy slot and freezes the airborne origin', fu
 	const state = createState(); const scene = new Scene(); const world = createWorldObjects(scene);
 	const enemy = { id: 7, x: 500, y: 500, angle: 0, hp: 100, maxHp: 100, cooldown: 0, heavy: false, kind: 'striker' as const };
 	state.enemies.push(enemy);
-	const shot = { owner: 7, slot: 3, x: 530, y: 500, vx: 230, vy: 0, life: 2, kind: 'enemy' as const, target: undefined, damage: 1 };
+	const shot = { owner: 7, slot: 3, x: 503, y: 534, elevation: 100, vx: 230, vy: 0, life: 2, kind: 'enemy' as const, target: undefined, damage: 1 };
 	state.shots.push(shot);
 	const muzzle = new Vector3(503, 100, 534);
 	const anchors = { muzzles: [new Vector3(-100, -100, -100)], exhaust: undefined, enemies: new Map([[7, [new Vector3(), new Vector3(), new Vector3(), muzzle]]]) };
@@ -320,7 +307,7 @@ test('rocket volleys launch from pod tubes and retain parallel paths after turre
 		for (let tick = 0; tick < 24; tick++) weaponsStep(state, { drive: 0, stop: false, turn: 0, aim: { x: 1500, y: 780 }, fire: [false, false, false, false], coolant: false }, 1 / 60);
 		expect(state.shots).toHaveLength(2);
 		for (const shot of state.shots) { expect(shot.vx).toBe(1880); expect(shot.vy).toBe(0); }
-		world.update(state, { ...frameEffects(model, state), rocketMuzzles });
+		world.update(state, frameEffects(model, state));
 		const starts = projectiles(scene).map(function (projectile) { return meshChild(projectile, 1).position.clone(); });
 		for (const start of starts) expect(tubes.some(function (tube) { return tube.distanceTo(start) < 0.000001; })).toBe(true);
 		for (const shot of state.shots) shot.x += 200;

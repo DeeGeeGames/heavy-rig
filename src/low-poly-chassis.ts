@@ -1,4 +1,4 @@
-import type { Group, MeshStandardMaterial, Object3D } from 'three';
+import { Group, type MeshStandardMaterial, type Object3D } from 'three';
 import { getFrame, type FrameId } from './frames';
 import { getHardpoints } from './hardpoints';
 import type { WeaponFamily } from './arsenal';
@@ -40,9 +40,10 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 	};
 	const gun = function (z: number, y: number, length: number, radius: number, center = 21) {
 		casting(turret, 'gun-cradle', center - length * 0.4, y, z, 24, radius * 4.3, radius * 4.7, steel);
-		const slide = group(turret, z < 0 ? 'left-gun-slide' : 'right-gun-slide'); slides.push(slide);
+		const slide = group(turret, z < 0 ? 'left-gun-slide' : 'right-gun-slide');
+		const sleeve = group(slide, 'recoil-sleeve'); slides.push(sleeve);
 		cylinder(slide, 'octagonal-barrel', radius, length, dark, center, y, z, 'x');
-		cylinder(slide, 'barrel-collar', radius * 1.36, 3.5, accent, center - length * 0.32, y, z, 'x');
+		cylinder(sleeve, 'barrel-collar', radius * 1.36, 3.5, accent, center - length * 0.32, y, z, 'x');
 		const tip = center + length * 0.5 + 5;
 		housing(slide, 'muzzle-brake', [
 			{ x: tip - 9.5, y, height: radius * 1.2, width: radius * 1.35 },
@@ -72,24 +73,28 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 	const energyGun = function (z: number, y: number, compact = false, center = 20) {
 		const radius = compact ? 3.4 : 5;
 		casting(turret, 'energy-cradle', center - 11, y, z, 25, radius * 3, radius * 3, steel);
-		const slide = group(turret, z < 0 ? 'left-energy-slide' : 'right-energy-slide'); slides.push(slide);
-		cylinder(slide, 'accelerator-body', radius, compact ? 25 : 37, dark, center, y, z, 'x');
+		const slide = group(turret, z < 0 ? 'left-energy-slide' : 'right-energy-slide');
+		const sleeve = group(slide, 'recoil-sleeve'); slides.push(sleeve);
+		cylinder(sleeve, 'accelerator-body', radius, compact ? 25 : 37, dark, center, y, z, 'x');
 		muzzles.push(moduleFace(slide, 'energy', center + (compact ? 10 : 16), y, z, radius * 2));
 		return slide;
 	};
 	const compactLauncher = function (z: number, y: number, center = 14) {
-		const pod = group(turret, 'compact-launcher'); slides.push(pod);
+		const pod = group(turret, 'compact-launcher');
 		casting(pod, 'compact-pod-casing', center, y, z, 29, 13, 17, steel);
 		casting(pod, 'compact-pod-cap', center - 1, y + 7, z, 24, 2.2, 14, accent);
 		const front = center + 14.6;
 		for (const side of [-1, 1]) launchTube(pod, front, y, z + side * 3.7, 2.5, 0.65);
 		const muzzle = anchor(pod, 'weapon-muzzle', front + 0.7, y, z);
 		for (const side of [-1, 1]) anchor(muzzle, 'rocket-tube', 0, 0, side * 3.7);
+		const shutter = group(pod, 'compact-shutter');
+		casting(shutter, 'shutter-armor', center + 14.6, y + 8, z, 2, 2, 12, accent);
+		shutters.push({ part: shutter, y: 0 });
 		muzzles.push(muzzle);
 		return pod;
 	};
 	const rack = function (z: number, bottom: number, width: number, rows: number, x = -12, family: WeaponFamily = 'launcher') {
-		const pod = group(turret, 'salvo-pod'); slides.push(pod);
+		const pod = group(turret, 'salvo-pod');
 		const y = bottom + rows * 4 + 5;
 		housing(pod, 'salvo-casing', [
 			{ x: x - 17, y: y - 1, height: rows * 4 + 2, width: width * 0.38 },
@@ -157,15 +162,21 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 				casting(turret, 'sensor-head', -14, 94, z, 8, 3, 5, glass);
 			} else {
 				housing(turret, 'pod-support', [{ x: -23, y: 66, height: 7, width: 6 }, { x: -7, y: 71, height: 10, width: 7 }], dark, z);
-				housing(turret, 'missile-pod', [{ x: -29, y: 82, height: 8, width: 10 }, { x: -19, y: 83, height: 12, width: 13 }, { x: 2, y: 82.5, height: 10.5, width: 12 }], accent, z);
-				housing(turret, 'pod-cap', [{ x: -27, y: 92.3, height: 1.4, width: 8 }, { x: -16, y: 95.6, height: 1.5, width: 11 }, { x: 1, y: 93.8, height: 1.2, width: 10.5 }], trim, z);
+				const pod = group(turret, 'shoulder-pod');
+				housing(pod, 'missile-pod', [{ x: -29, y: 82, height: 8, width: 10 }, { x: -19, y: 83, height: 12, width: 13 }, { x: 2, y: 82.5, height: 10.5, width: 12 }], accent, z);
+				housing(pod, 'pod-cap', [{ x: -27, y: 92.3, height: 1.4, width: 8 }, { x: -16, y: 95.6, height: 1.5, width: 11 }, { x: 1, y: 93.8, height: 1.2, width: 10.5 }], trim, z);
 				if (kind || familyAt(side < 0 ? 2 : 3) === 'launcher') {
-					for (const row of [-1, 1]) for (const column of [-1, 0, 1]) launchTube(turret, 2.05, 82.5 + row * 4.3, z + column * 7.1, 2.5, 0.75);
-					const muzzle = anchor(turret, 'weapon-muzzle', 2.8, 78.2, z);
+					for (const row of [-1, 1]) for (const column of [-1, 0, 1]) launchTube(pod, 2.05, 82.5 + row * 4.3, z + column * 7.1, 2.5, 0.75);
+					const muzzle = anchor(pod, 'weapon-muzzle', 2.8, 78.2, z);
 					for (const row of [0, 1]) for (const column of [-1, 0, 1]) anchor(muzzle, 'rocket-tube', 0, row * 8.6, column * 7.1);
+					const shutter = group(pod, 'pod-shutter');
+					casting(shutter, 'pod-shutter-armor', 2, 94, z, 2, 2, 18, trim);
+					shutters.push({ part: shutter, y: 0 });
 					pods.push(muzzle);
 				} else {
-					const emitter = group(turret, 'shoulder-energy-slide'); slides.push(emitter);
+					const emitter = group(pod, 'shoulder-energy-slide');
+					const sleeve = group(emitter, 'recoil-sleeve'); slides.push(sleeve);
+					cylinder(sleeve, 'emitter-recoil-collar', 8, 3, accent, 2, 82.5, z, 'x');
 					pods.push(moduleFace(emitter, 'energy', 2, 82.5, z, 19));
 				}
 			}
@@ -295,5 +306,9 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 	}
 	// Slot order is left gun, right gun, left pod, right pod, dorsal gun.
 	if (pods.length > 0) muzzles.splice(2, 0, ...pods);
-	return { slides, muzzles, vents, shutters };
+	const assemblies = muzzles.map(function (muzzle) {
+		const part = muzzle.parent; if (!(part instanceof Group)) throw new Error('Weapon muzzle must belong to an articulated assembly');
+		return { part, muzzle };
+	});
+	return { slides, muzzles, vents, shutters, assemblies };
 };

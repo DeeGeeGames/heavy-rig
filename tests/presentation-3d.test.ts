@@ -132,9 +132,13 @@ for (const config of configurations) {
 			model.pose(createGait(gait.body, config.size, rig), Math.PI / 2); const rest = turret.matrix.clone();
 			model.pose(gait, Math.PI / 2); const walking = turret.matrix.clone(); const planted = feet(model.root); const footTransforms = planted.map(function (foot) { return foot.matrix.clone(); });
 			expect(walking.equals(rest)).toBe(false); expect(turret.rotation.y).toBe(-Math.PI / 2);
-			const hardware = renderedParts(turret); const before = hardware.map(function (part) { return part.matrixWorld.clone(); });
+			const hardware = model.root.children.filter(function (part) { return part.name.startsWith('weapon-gimbal-'); }).flatMap(renderedParts);
+			expect(hardware.length).toBeGreaterThan(0);
+			const before = hardware.map(function (part) { return part.matrixWorld.clone(); });
+			const muzzles = model.muzzles.map(function (muzzle) { return muzzle.clone(); });
 			model.pose(gait, Math.PI / 2, { recoil: 1, hit: 0, heat: 0, time: 0 });
 			expect(turret.matrix.equals(walking)).toBe(true); expect(planted.map(function (foot) { return foot.matrix; })).toEqual(footTransforms);
+			expect(model.muzzles).toEqual(muzzles);
 			expect(hardware.some(function (part, index) { return !part.matrixWorld.equals(before[index] ?? part.matrixWorld); })).toBe(true);
 			model.pose(gait, Math.PI / 2);
 			expect(turret.matrix.equals(walking)).toBe(true); expect(hardware.map(function (part) { return part.matrixWorld; })).toEqual(before);

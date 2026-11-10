@@ -1,6 +1,5 @@
 import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, Group, InstancedMesh, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector3 } from 'three';
-import { ARENA, distance, ENEMY_STATS, getEnemyDefense, type Effect, type Shot, type CombatStateView, type Point, type Unit } from './simulation';
-import { FACILITY_RADIUS, FACILITY_TARGET_ID } from './missions';
+import { ARENA, getEnemyDefense, type Effect, type Shot, type CombatStateView } from './simulation';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
 import { createMissionEnvironment } from './mission-environment';
@@ -8,7 +7,7 @@ import type { MissionMap } from './campaign-types';
 import { createProjectileSmoke } from './projectile-smoke';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
-interface FrameEffects { rocketMuzzles?: readonly (readonly Vector3[])[]; muzzles: readonly Vector3[]; exhaust: Vector3 | undefined; enemies?: ReadonlyMap<number, readonly Vector3[]> }
+interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
 
 // World presentation owns its meshes and GPU assets. Simulation objects never
 // retain Three.js objects; pools shrink with live state, including on restart.
@@ -166,15 +165,9 @@ export const createWorldObjects = function (scene: Scene) {
 		return { root: value, halo, core, impact };
 	});
 	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); root.add(smoke);
-	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0);
-	const launches = new WeakMap<Shot, { offset: Vector3; x: number; y: number; distance: number }>();
+	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0); const forward = new Vector3(1, 0, 0);
 	const flashes = new WeakMap<Effect, Vector3>();
-	let nextMuzzle = 0;
 	let nextFlashMuzzle = 0;
-	const launchWeight = function (distance: number) {
-		const t = Math.max(0, Math.min(1, distance / 180));
-		return 1 - t * t * (3 - 2 * t);
-	};
 	const segment = function (mesh: Mesh, width: number) {
 		delta.subVectors(to, from); const length = delta.length();
 		mesh.visible = length > 0.0001; if (!mesh.visible) return;
@@ -227,61 +220,19 @@ export const createWorldObjects = function (scene: Scene) {
 				value.root.position.set(unit.x, 0.05, unit.y); value.root.scale.setScalar('kind' in unit ? mechScale(unit.kind) : 1);
 			});
 			const smokePositions = new Map<Shot, Vector3>();
-			// Collision and guidance keep the established ground-plane rules. Lift
-			// only the trajectory's next contact, so nearby aircraft cannot pull
-			// fire away from a ground target or an intervening facility.
-			const airLift = function (point: Point, target: Unit | undefined): number {
-				return target && (target.kind === 'helicopter' || target.kind === 'vtol') ? (ENEMY_STATS[target.kind].elevation - 42) * Math.max(0, 1 - distance(point, target) / 180) : 0;
-			};
-			const shotTarget = function (shot: Shot): Unit | undefined {
-				const speed = Math.hypot(shot.vx, shot.vy); if (speed === 0) return undefined;
-				const facility = state.mission?.structure;
-				const targets = [
-					...state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, point: enemy, radius: 25, enemy }; }),
-					...(facility && facility.hp > 0 ? [{ id: FACILITY_TARGET_ID, point: facility, radius: FACILITY_RADIUS, enemy: undefined }] : []),
-				];
-				const contact = targets.filter(function (target) { return !shot.hitIds?.includes(target.id); }).map(function (target) {
-					const dx = target.point.x - shot.x; const dy = target.point.y - shot.y;
-					const along = (dx * shot.vx + dy * shot.vy) / speed; const across = (dx * shot.vy - dy * shot.vx) / speed;
-					return { target, entry: along - Math.sqrt(Math.max(0, target.radius ** 2 - across ** 2)), inPath: Math.abs(across) <= target.radius && along >= -target.radius && along <= speed * shot.life + target.radius };
-				}).filter(function (candidate) { return candidate.inPath; }).sort(function (a, b) { return a.entry - b.entry || a.target.id - b.target.id; })[0];
-				if (contact) return contact.target.enemy;
-				return shot.kind === 'missile' ? state.enemies.find(function (enemy) { return enemy.id === shot.target; }) : undefined;
-			};
 			sync(shots, state.shots.length, createShot, function (value, index) {
 				const shot = state.shots[index]; if (!shot) return; const style = shotStyle[shot.kind];
-				from.set(shot.x - shot.vx * style.duration, 42, shot.y - shot.vy * style.duration); to.set(shot.x, 42, shot.y);
-				const shotMuzzles = shot.kind === 'enemy' ? frameEffects?.enemies?.get(shot.owner ?? -1) ?? [] : muzzles;
-				let launch = launches.get(shot);
-				if (launch || shotMuzzles.length > 0) {
-					const speed = Math.hypot(shot.vx, shot.vy);
-					if (!launch && speed > 0) {
-						const tubes = shot.kind === 'rocket' ? frameEffects?.rocketMuzzles?.[shot.slot ?? 0] : undefined;
-						const muzzle = tubes?.[Math.floor(Math.random() * tubes.length)] ?? shotMuzzles[shot.slot ?? nextMuzzle++ % shotMuzzles.length];
-						if (muzzle) {
-							const dx = shot.vx / speed; const dy = shot.vy / speed;
-							const owner = shot.kind === 'enemy' ? state.enemies.find(function (enemy) { return enemy.id === shot.owner; }) : state.player;
-							const distance = owner ? Math.max(0, (shot.x - owner.x) * dx + (shot.y - owner.y) * dy - 30) : 0;
-							launch = { offset: muzzle.clone().sub(new Vector3(shot.x - dx * distance, 42, shot.y - dy * distance)), x: shot.x, y: shot.y, distance };
-							launches.set(shot, launch);
-						}
-					}
-					if (launch) {
-						// Freeze launch offsets so turning cannot drag airborne shots.
-						// Rockets retain parallel paths; other projectiles converge.
-						launch.distance += Math.hypot(shot.x - launch.x, shot.y - launch.y); launch.x = shot.x; launch.y = shot.y;
-						const trailTime = speed > 0 ? Math.min(style.duration, launch.distance / speed) : 0;
-						from.set(shot.x - shot.vx * trailTime, 42, shot.y - shot.vy * trailTime).addScaledVector(launch.offset, shot.kind === 'rocket' ? 1 : launchWeight(launch.distance - speed * trailTime));
-						to.addScaledVector(launch.offset, shot.kind === 'rocket' ? 1 : launchWeight(launch.distance));
-					}
-				}
-				if (shot.kind !== 'enemy') {
-					const target = shotTarget(shot);
-					from.y += airLift({ x: from.x, y: from.z }, target); to.y += airLift(shot, target);
-				}
+				// Simulation owns the complete trajectory. Clamping the tracer to
+				// flight age prevents a new round extending behind its muzzle.
+				const trailTime = Math.min(style.duration, Math.max(0, shot.age ?? style.duration));
+				const elevation = shot.elevation ?? 42; const verticalSpeed = shot.vElevation ?? 0;
+				from.set(shot.x - shot.vx * trailTime, elevation - verticalSpeed * trailTime, shot.y - shot.vy * trailTime);
+				to.set(shot.x, elevation, shot.y);
 				value.trail.material = style.trail; value.head.material = style.surface;
 				value.head.geometry = shot.kind === 'ppc' ? sphere : cube;
-				value.head.position.copy(to); value.head.rotation.y = -Math.atan2(shot.vy, shot.vx);
+				value.head.position.copy(to);
+				delta.set(shot.vx, verticalSpeed, shot.vy);
+				if (delta.lengthSq() > 0) value.head.quaternion.setFromUnitVectors(forward, delta.normalize());
 				value.head.scale.set(style.length, style.radius, style.radius); segment(value.trail, style.width);
 				value.halo.visible = shot.kind === 'ppc'; value.halo.position.copy(to); value.halo.scale.setScalar(12);
 				if (shot.kind === 'missile' || shot.kind === 'rocket') smokePositions.set(shot, to.clone());
@@ -290,7 +241,7 @@ export const createWorldObjects = function (scene: Scene) {
 			sync(effects, state.effects.length, createEffect, function (value, index) {
 				const effect = state.effects[index]; if (!effect) return; const progress = Math.max(0, 1 - effect.life * 2); const radius = Math.max(1, effect.size * progress) / Math.sqrt(1.5);
 				value.root.position.set(effect.x, effect.elevation ?? 36, effect.y); value.halo.scale.setScalar(radius);
-				if (effect.source === 'muzzle' && muzzles.length > 0) {
+				if (effect.source === 'muzzle' && effect.elevation === undefined && muzzles.length > 0) {
 					let origin = flashes.get(effect);
 					if (!origin) {
 						origin = muzzles[effect.slot ?? nextFlashMuzzle++ % muzzles.length]?.clone();
@@ -312,7 +263,8 @@ export const createWorldObjects = function (scene: Scene) {
 				beam.root.visible = endpoint !== undefined;
 				if (!endpoint) return;
 				from.set(state.player.x, 42, state.player.y); to.set(endpoint.x, endpoint.elevation ?? 42, endpoint.y);
-				const muzzle = muzzles[slot]; if (muzzle) from.copy(muzzle);
+				if (endpoint.origin) from.set(endpoint.origin.x, endpoint.origin.elevation, endpoint.origin.y);
+				else { const muzzle = muzzles[slot]; if (muzzle) from.copy(muzzle); }
 				segment(beam.halo, 4.5); segment(beam.core, 1.25); beam.impact.position.copy(to);
 			});
 			smoke.visible = state.player.heat > 60;

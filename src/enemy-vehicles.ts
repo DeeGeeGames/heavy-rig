@@ -2,14 +2,16 @@ import { Box3, Group, Matrix4, Mesh, Object3D, TorusGeometry, Vector3 } from 'th
 import type { WalkerGait } from './gait';
 import { createLowPolyParts } from './low-poly-parts';
 import type { MechFeedback } from './mech-3d';
+import { articulateWeapons } from './weapon-articulation';
+import { getEnemyWeaponRig } from './weapon-rig';
 
 export type VehicleKind = 'helicopter' | 'vtol' | 'tank';
 export const isVehicleKind = function (kind: string): kind is VehicleKind {
 	return kind === 'helicopter' || kind === 'vtol' || kind === 'tank';
 };
 
-// Vehicles share the mech view contract. Their flight height and moving parts
-// remain presentation data, driven by combat time so pausing freezes them.
+// Vehicles share the mech view contract and combat weapon geometry. Cosmetic
+// motion follows combat time so pausing freezes moving parts.
 export const createEnemyVehicle = function (kind: VehicleKind) {
 	const root = new Group(); root.name = `${kind}-vehicle`;
 	const anatomy = new Group(); anatomy.name = 'anatomy'; root.add(anatomy);
@@ -21,7 +23,7 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 	const muzzles: Object3D[] = []; const vents: Object3D[] = [];
 	const rotors: { part: Group; axis: 'y' | 'z'; rate: number }[] = [];
 	const nacelles: Group[] = []; const wheels: Group[] = [];
-	const pods: { part: Group; position: Vector3 }[] = [];
+	const recoilSleeves: Group[] = [];
 	const anchor = function (parent: Object3D, name: string, x: number, y: number, z: number) {
 		const value = new Object3D(); value.name = name; value.position.set(x, y, z); parent.add(value); return value;
 	};
@@ -33,13 +35,13 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 	const barrel = function (parent: Group, length: number, y: number, radius: number) {
 		const slide = group(parent, 'weapon-slide');
 		cylinder(slide, 'cannon-barrel', radius, length, dark, length / 2 + 8, y, 0, 'x');
-		cylinder(slide, 'barrel-sleeve', radius * 1.5, length * 0.38, steel, 10 + length * 0.2, y, 0, 'x');
+		const sleeve = group(slide, 'recoil-sleeve'); recoilSleeves.push(sleeve);
+		cylinder(sleeve, 'barrel-sleeve', radius * 1.5, length * 0.38, steel, 10 + length * 0.2, y, 0, 'x');
 		cylinder(slide, 'muzzle-brake', radius * 1.6, 5, trim, length + 8, y, 0, 'x');
 		parts.aperture(slide, 'cannon-aperture', length + 10.6, y, 0, radius * 0.8, 0.7);
 		muzzles.push(anchor(slide, 'weapon-muzzle', length + 12, y, 0));
 		return slide;
 	};
-	let slide: Group | undefined;
 	if (kind === 'helicopter') {
 		housing(hull, 'fuselage', [{ x: -24, y: 0, height: 9, width: 9 }, { x: -6, y: 2, height: 14, width: 13 }, { x: 17, y: 0, height: 11, width: 10 }, { x: 30, y: -3, height: 5, width: 5 }], steel);
 		housing(hull, 'cockpit', [{ x: 0, y: 10, height: 6, width: 10 }, { x: 14, y: 7, height: 7, width: 9 }, { x: 24, y: 1, height: 4, width: 5 }], glass);
@@ -64,7 +66,7 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 		rotors.push({ part: tail, axis: 'z', rate: 43 });
 		turret.position.set(15, -12, 0);
 		cylinder(turret, 'chin-gun-bearing', 5, 7, dark, 0, 0, 0);
-		slide = barrel(turret, 17, -4, 1.5);
+		barrel(turret, 17, -4, 1.5);
 	} else if (kind === 'vtol') {
 		housing(hull, 'fuselage', [{ x: -30, y: 1, height: 8, width: 9 }, { x: -12, y: 1, height: 12, width: 13 }, { x: 16, y: 0, height: 9, width: 9 }, { x: 32, y: -3, height: 4, width: 4 }], steel);
 		housing(hull, 'cockpit', [{ x: 0, y: 10, height: 4, width: 9 }, { x: 15, y: 7, height: 5, width: 7 }, { x: 27, y: 0, height: 3, width: 3 }], glass);
@@ -83,7 +85,6 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 			const fin = group(hull, 'tailplane'); fin.position.set(-27, 8, side * 11); fin.rotation.x = side * 0.5;
 			housing(fin, 'tail-fin', [{ x: -7, y: 4, height: 9, width: 2 }, { x: 8, y: 1, height: 5, width: 2 }], accent);
 			const pod = group(turret, side === -1 ? 'left-missile-pod' : 'right-missile-pod'); pod.position.set(3, -8, side * 19);
-			pods.push({ part: pod, position: pod.position.clone() });
 			housing(pod, 'pod-shell', [{ x: -16, y: 0, height: 6, width: 6 }, { x: 13, y: 0, height: 6, width: 6 }], dark);
 			housing(pod, 'pod-armor', [{ x: -15, y: 4, height: 3, width: 7 }, { x: 11, y: 4, height: 3, width: 7 }], steel);
 			const muzzle = anchor(pod, 'weapon-muzzle', 15, 0, 0);
@@ -115,11 +116,17 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 		housing(turret, 'mantlet', [{ x: 14, y: 7, height: 6, width: 7 }, { x: 22, y: 7, height: 5, width: 6 }], accent);
 		cylinder(turret, 'commander-hatch', 6, 2, trim, -6, 21, 0);
 		cylinder(turret, 'radio-aerial', 0.7, 22, dark, -15, 23, -8);
-		slide = barrel(turret, 45, 7, 2.3);
+		barrel(turret, 45, 7, 2.3);
 	}
-	parts.batch(anatomy);
+	anatomy.position.y = kind === 'helicopter' ? 100 : kind === 'vtol' ? 135 : 0;
+	const assemblies = muzzles.map(function (muzzle) {
+		const part = muzzle.parent; if (!(part instanceof Group)) throw new Error('Vehicle muzzle must belong to an articulated assembly');
+		return { part, muzzle };
+	});
+	const poseWeapons = articulateWeapons(root, assemblies, getEnemyWeaponRig(kind));
+	parts.batch(root);
 	const bounds: { part: Mesh; corners: Vector3[] }[] = [];
-	anatomy.traverse(function (object) {
+	root.traverse(function (object) {
 		if (!(object instanceof Mesh)) return;
 		object.geometry.computeBoundingBox(); const box: Box3 | null = object.geometry.boundingBox;
 		if (!box) return;
@@ -148,7 +155,7 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 			turret.rotation.y = -heading;
 			turret.position.copy(turretPosition);
 			if (kind === 'helicopter') turret.position.applyAxisAngle(up, -gait.body.angle);
-			for (const pod of pods) pod.part.position.copy(pod.position).applyAxisAngle(up, heading - gait.body.angle);
+			poseWeapons(gait.body, heading, feedback?.target);
 			for (const rotor of rotors) rotor.part.rotation[rotor.axis] = time * rotor.rate;
 			for (const nacelle of nacelles) nacelle.rotation.z = -0.15 + Math.sin(time * 0.8) * 0.045;
 			if (kind === 'tank' && previousPose && time > previousPose.time) {
@@ -158,7 +165,7 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 			} else if (previousPose && time < previousPose.time) wheelPhase = 0;
 			previousPose = { time, x: gait.body.x, y: gait.body.y };
 			for (const wheel of wheels) wheel.rotation.z = wheelPhase;
-			if (slide) slide.position.x = -(feedback?.recoil ?? 0) * (kind === 'tank' ? 6 : 2);
+			for (const sleeve of recoilSleeves) sleeve.position.x = -(feedback?.recoil ?? 0) * (kind === 'tank' ? 6 : 2);
 			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = (feedback?.hit ?? 0) * 0.8;
 			root.updateMatrixWorld(true); inverseRoot.copy(root.matrixWorld).invert();
 			for (const [index, muzzle] of muzzles.entries()) muzzlePositions[index]?.setFromMatrixPosition(muzzle.matrixWorld).applyMatrix4(inverseRoot);

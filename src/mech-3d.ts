@@ -7,9 +7,11 @@ import { FRAME_RIGS } from './frame-rig';
 import { createLowPolyParts } from './low-poly-parts';
 import { buildLowPolyChassis } from './low-poly-chassis';
 import type { EnemyKind } from './simulation';
+import { articulateWeapons } from './weapon-articulation';
+import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
@@ -24,8 +26,8 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[]): number {
 	}, 0);
 };
 
-// Model anatomy is presentation data. The simulation and its collision sizes
-// keep their existing contracts; every view uses this same production factory.
+// Weapon geometry shares its stable rig with combat. Suspension and leg motion
+// remain presentation data; every view uses this same production factory.
 export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden') {
 	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind);
 	const definition = getFrame(frame); const chassis = definition.chassisId; const size = kind ? mechScale(kind) : definition.size;
@@ -78,9 +80,11 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		if (!kind && chassis === 'kestrel') housing(foot, 'rear-talon', [{ x: -27, y: 1.5, height: 1.4, width: 2 }, { x: -12, y: 4, height: 3, width: 3 }], steel);
 		return { index, upper, lower, hip, knee, ankle, sleeve, rod, contact, foot, toes };
 	});
-	parts.batch(anatomy);
+	turret.position.y = rig.hipHeight;
+	const poseWeapons = articulateWeapons(root, hardware.assemblies, kind ? getEnemyWeaponRig(kind, commander) : getPlayerWeaponRig(frame));
+	parts.batch(root);
 	const bounds: { part: Mesh; corners: Vector3[] }[] = [];
-	anatomy.traverse(function (object) {
+	root.traverse(function (object) {
 		if (!(object instanceof Mesh)) return;
 		object.geometry.computeBoundingBox(); const box: Box3 | null = object.geometry.boundingBox;
 		if (!box) return;
@@ -114,6 +118,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			turret.rotation.x = (Math.cos(relativeHeading) * roll - Math.sin(relativeHeading) * pitch) * suspension;
 			turret.rotation.z = (Math.sin(relativeHeading) * roll + Math.cos(relativeHeading) * pitch) * suspension;
 			const recoil = feedback?.recoil ?? 0;
+			poseWeapons(gait.body, heading, feedback?.target);
 			for (const slide of hardware.slides) slide.position.x = -recoil * 5 * (kind ? 1 : definition.recoil);
 			for (const shutter of hardware.shutters) shutter.part.position.y = shutter.y + recoil * 5;
 			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = (feedback?.hit ?? 0) * 0.8;

@@ -91,7 +91,7 @@ test('ECS training uses the same combat systems through every qualification stag
 	try {
 		for (let tick = 0; tick < 3600 && expected.stage !== 'complete'; tick++) {
 			const stage = expected.stage;
-			const controls: Controls = { ...idle, aim: expected.state.enemies[0] ?? expected.state.player, drive: stage === 'drive' || stage === 'evade' && expected.strikeIssued ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon' || stage === 'heat', stage === 'combined', stage === 'missiles', stage === 'combined'], coolant: stage === 'coolant' };
+			const controls: Controls = { ...idle, ...(expected.state.enemies[0] ? { targetId: expected.state.enemies[0].id } : {}), aim: expected.state.enemies[0] ?? expected.state.player, drive: stage === 'drive' || stage === 'evade' && expected.strikeIssued ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon' || stage === 'heat', stage === 'combined', stage === 'missiles', stage === 'combined'], coolant: stage === 'coolant' };
 			combat.setControls(function () { return controls; }); stepTraining(expected, controls, 1 / 60); world.update(1 / 60);
 			expect(training).toEqual(expected);
 		}

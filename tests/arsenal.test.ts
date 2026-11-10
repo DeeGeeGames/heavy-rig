@@ -92,9 +92,9 @@ describe('Heavy Rig arsenal', function () {
 
 	test('particle bolts pierce multiple targets once each without inflating projectile hit rate', function () {
 		const state = createState({ starter: 'ppc' }); state.spawnIn = 3600;
-		const enemies = [target(state, 900, 690), target(state, 900, 630), target(state, 900, 570)];
-		step(state, { ...idle, fire: [true, false, false, false] }, 1 / 60);
-		advance(state, 0.5);
+		const enemies = [target(state, 900, 480), target(state, 900, 420), target(state, 900, 360)];
+		step(state, { ...idle, targetId: 3, aim: { x: 900, y: 360 }, fire: [true, false, false, false] }, 1 / 60);
+		advance(state, 1);
 		for (const enemy of enemies) expect(enemy.hp).toBe(1000 - getWeapon('ppc').damage);
 		expect(state.stats.shotsFired).toBe(1); expect(state.stats.shotsHit).toBe(1);
 	});
@@ -102,10 +102,10 @@ describe('Heavy Rig arsenal', function () {
 	test('cluster volleys apply area damage beyond the directly struck frame', function () {
 		for (const weapon of ['cluster-rockets', 'cluster-missiles'] as const) {
 			const state = createState({ starter: weapon }); state.spawnIn = 3600;
-			const direct = target(state, 900, 700); const neighbor = target(state, 950, 700);
-			step(state, { ...idle, aim: direct, fire: [true, false, false, false] }, 1 / 60);
+			const direct = target(state, 900, 700); const neighbor = target(state, 930, 700);
+			step(state, { ...idle, targetId: direct.id, aim: direct, fire: [true, false, false, false] }, 1 / 60);
 			expect(state.stats.shotsFired).toBe(weapon === 'cluster-rockets' ? 1 : getWeapon(weapon).projectiles);
-			advance(state, 0.4);
+			advance(state, 0.4, { ...idle, targetId: direct.id, aim: direct });
 			expect(direct.hp).toBeLessThan(1000); expect(neighbor.hp).toBeLessThan(1000);
 			expect(state.stats.shotsHit).toBeLessThanOrEqual(state.stats.shotsFired);
 		}

@@ -37,15 +37,15 @@ describe('Heavy Rig combat', function () {
 		expect(createState().player.throttle).toBe(0);
 	});
 	test('cannon shell damages a target and has a reload interval', function () {
-		const state = createCombatState(); target(state); run(state, 0.4, { ...idle, fire: [true, false, false, false] });
+		const state = createCombatState(); target(state); run(state, 0.4, { ...idle, targetId: 1, fire: [true, false, false, false] });
 		expect(state.enemies[0]?.hp).toBe(62); expect(state.cannonIn).toBeGreaterThan(0);
 	});
 	test('laser hits the nearest target and overheats under sustained fire', function () {
 		const state = createState({ frame: 'longbow', starter: 'laser' }); target(state); target(state, 900, 500);
-		run(state, 0.2, { ...idle, fire: [true, false, false, false] });
+		run(state, 0.2, { ...idle, targetId: 1, fire: [true, false, false, false] });
 		expect(state.enemies[0]?.hp).toBeLessThan(100); expect(state.enemies[1]?.hp).toBe(100);
-		run(state, 12, { ...idle, fire: [true, false, false, false] }); expect(state.player.overheated).toBe(true);
-		const heat = state.player.heat; run(state, 0.2, { ...idle, fire: [true, false, false, false] });
+		run(state, 12, { ...idle, targetId: 1, fire: [true, false, false, false] }); expect(state.player.overheated).toBe(true);
+		const heat = state.player.heat; run(state, 0.2, { ...idle, targetId: 1, fire: [true, false, false, false] });
 		expect(state.cannonIn).toBe(0); expect(state.player.heat).toBeLessThan(heat);
 		run(state, 7); expect(state.player.overheated).toBe(false);
 	});
