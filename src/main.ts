@@ -160,15 +160,17 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let lastSoundState = '';
 	const resetInput = function () { touchDrive.reset(); touchTargeting.clear(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const playing = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
-	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing);
+	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing, element('touch-cruise'), element('touch-drive-hint'));
 	const touchContacts = function () {
 		const rect = canvas.getBoundingClientRect();
 		return visibleTouchContacts(state, presentation.toScreen, rect.width, rect.height, hudObstructions);
 	};
-	element('touch-next').addEventListener('click', function () {
-		if (!playing()) return;
-		setInputMode('touch'); aimMode = 'touch'; pointer = undefined; touchTargeting.cycle(touchContacts());
-	}, listenerOptions);
+	for (const action of ['nearest', 'cycle'] as const) {
+		element(action === 'nearest' ? 'touch-nearest' : 'touch-next').addEventListener('click', function () {
+			if (!playing()) return;
+			setInputMode('touch'); aimMode = 'touch'; pointer = undefined; touchTargeting[action](touchContacts(), state.player);
+		}, listenerOptions);
+	}
 	const keyboardAction = function (code: string) { return ACTIONS.find(function (action) { return profile.settings.keyboard[action].includes(code); }); };
 	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
 	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false }); };
@@ -969,6 +971,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') aim = { x: state.player.x + Math.cos(state.player.turret) * 600, y: state.player.y + Math.sin(state.player.turret) * 600 };
 			makeInput = function (): Controls {
 				const arcade = profile.settings.controlMode === 'arcade' || inputMode === 'touch';
+				if (active('stop') || pad.stop) touchDrive.stop();
 				const touch = touchDrive.read();
 				const touchFire = container.classList.contains('touch-enabled') && active('touch-fire');
 				const x = Math.max(-1, Math.min(1, Number(active('right')) - Number(active('left')) + pad.turn + touch.turn));
@@ -1041,6 +1044,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (locked) { const rect = canvas.getBoundingClientRect(); marker.style.left = `${rect.left - container.getBoundingClientRect().left + locked.screen.x}px`; marker.style.top = `${rect.top - container.getBoundingClientRect().top + locked.screen.y}px`; }
 			element('touch-target-status').textContent = locked ? `TRACKING / ${locked.label}` : 'MANUAL / TAP A HOSTILE';
 			element('touch-next').toggleAttribute('disabled', contacts.length === 0);
+			element('touch-nearest').toggleAttribute('disabled', contacts.length === 0);
 		} else world.disableSystemGroup('renderer3d');
 	});
 	world.addSystem('browser-feedback').inPhase('render').setPriority(-100).setProcess(function () {

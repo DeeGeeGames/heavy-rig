@@ -11,13 +11,13 @@ test('touch lock follows identity, clears on empty ground or contact loss, and n
 	expect(targeting.resolve([contact(1, 140), contact(2, 100)])?.point.x).toBe(140);
 	expect(targeting.resolve([contact(2, 100)])).toBeUndefined();
 	expect(targeting.resolve([contact(1, 100), contact(2, 150)])).toBeUndefined();
-	targeting.cycle([contact(1, 100), contact(2, 150)]);
+	targeting.cycle([contact(1, 100), contact(2, 150)], { x: 0, y: 100 });
 	expect(targeting.resolve([contact(1, 100), contact(2, 150)])?.id).toBe(1);
-	targeting.cycle([contact(1, 100), contact(2, 150)]);
+	targeting.cycle([contact(1, 100), contact(2, 150)], { x: 0, y: 100 });
 	expect(targeting.resolve([contact(1, 100), contact(2, 150)])?.id).toBe(2);
 	targeting.select({ x: 350, y: 350 }, [contact(1, 100)]);
 	expect(targeting.resolve([contact(1, 100)])).toBeUndefined();
-	targeting.cycle([]);
+	targeting.cycle([], { x: 0, y: 0 });
 	expect(targeting.resolve([])).toBeUndefined();
 });
 
@@ -67,4 +67,36 @@ test('touch stick preserves diagonal heading with a radial dead zone and proport
 	expect(full.turn / full.drive).toBeCloseTo(.75);
 	stick.move(1, 0, 1); expect(stick.read()).toEqual({ drive: -1, turn: 0 });
 	stick.move(1, 0, 0); expect(stick.read()).toEqual({ drive: 0, turn: 0 });
+});
+
+// Distance ordering must ignore spawn IDs and screen projection, and refresh as contacts move.
+test('nearest and next use current world distance with wraparound and stable ties', function () {
+	const targeting = createTouchTargeting(); const origin = { x: 0, y: 100 };
+	const contacts = [contact(1, 300), contact(9, 100), contact(3, 200)];
+	targeting.nearest(contacts, origin); expect(targeting.resolve(contacts)?.id).toBe(9);
+	targeting.cycle(contacts, origin); expect(targeting.resolve(contacts)?.id).toBe(3);
+	targeting.cycle(contacts, origin); expect(targeting.resolve(contacts)?.id).toBe(1);
+	targeting.cycle(contacts, origin); expect(targeting.resolve(contacts)?.id).toBe(9);
+	const moved = [contact(1, 50), contact(9, 250), contact(3, 200)];
+	targeting.cycle(moved, origin); expect(targeting.resolve(moved)?.id).toBe(1);
+	targeting.cycle([contact(9, 100), contact(3, 100)], origin); expect(targeting.resolve(contacts)?.id).toBe(3);
+	targeting.nearest([], origin); expect(targeting.resolve(contacts)).toBeUndefined();
+});
+
+test('cruise retains demand after release, supports adjustment, and stop prevents resuming stale movement', function () {
+	const stick = createTouchDrive(); stick.start(1); stick.move(1, .6, -.8);
+	stick.toggleCruise(); const held = stick.read(); stick.release(1); expect(stick.read()).toEqual(held);
+	stick.release(2); expect(stick.read()).toEqual(held);
+	stick.start(2); stick.move(2, -1, 0); stick.release(2); expect(stick.read().turn).toBe(-1); expect(stick.read().drive).toBeCloseTo(0);
+	stick.stop(); expect(stick.read()).toEqual({ turn: 0, drive: 0 }); expect(stick.isCruising()).toBe(true);
+	stick.move(2, 0, -1); expect(stick.read()).toEqual({ turn: 0, drive: 0 });
+	stick.start(3); stick.move(3, 0, -1); stick.release(3); stick.toggleCruise(); expect(stick.read()).toEqual({ turn: 0, drive: 0 });
+	stick.start(4); stick.move(4, 0, -1); stick.toggleCruise(); stick.reset();
+	expect(stick.isCruising()).toBe(false); expect(stick.read()).toEqual({ turn: 0, drive: 0 });
+});
+
+test('only the owning pointer can cancel Cruise while driving', function () {
+	const stick = createTouchDrive(); stick.start(1); stick.move(1, 0, -1); stick.toggleCruise();
+	stick.cancel(2); expect(stick.isCruising()).toBe(true); expect(stick.read().drive).toBe(1);
+	stick.cancel(1); expect(stick.isCruising()).toBe(false); expect(stick.read()).toEqual({ drive: 0, turn: 0 });
 });

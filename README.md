@@ -318,12 +318,16 @@ or mouse use restores the direct-fire layout; touch reveals the mobile controls.
 The Show touch controls preference can keep the touch dock visible for mouse use,
 and controller use hides it. Narrow windows alone do not enable touch controls.
 
-Touch combat uses two thumbs: the left stick adjusts throttle and hull turn;
+Touch combat uses two thumbs: the left stick sets heading and speed;
 the right FIRE trigger fires the armed mount chips. Releasing the drive stick
-keeps throttle; releasing FIRE ceases new shots. Tap a visible hostile (including
-aircraft or a facility) to track its position with the existing turret turn rate.
-NEXT cycles visible, unobscured contacts; destroyed, offscreen, or obscured
-contacts lose their lock. There is no automatic retargeting, shot leading, or
+slows the rig to zero. CRUISE retains the stick position after release; adjust
+the stick to change course or speed. Turning Cruise off restores release-to-slow;
+STOP centers the stick while leaving Cruise enabled. Pause, focus loss, resize,
+and input-mode changes clear Cruise. Releasing FIRE ceases new shots.
+Tap a visible hostile (including aircraft or a facility) to track its position with the existing turret turn rate.
+NEAREST selects the closest visible, unobscured contact to the rig. NEXT cycles
+those contacts in increasing distance from the rig, wrapping to the nearest.
+Destroyed, offscreen, or obscured contacts lose their lock. There is no automatic retargeting, shot leading, or
 automatic firing. Tap empty ground to clear the lock and aim manually.
 Portrait reserves a control dock below the battlefield; landscape puts controls
 at the lower edges. Training and the escape use the same controls.

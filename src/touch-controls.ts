@@ -22,15 +22,20 @@ export const visibleTouchContacts = function (state: CombatStateView, project: (
 export const createTouchTargeting = function () {
 	let id: number | undefined;
 	const clear = function () { id = undefined; };
+	const ordered = function (contacts: readonly TouchContact[], origin: Point) {
+		return [...contacts].sort(function (a, b) { return distance(a.point, origin) - distance(b.point, origin) || a.id - b.id; });
+	};
 	return {
 		clear,
 		select: function (point: Point, contacts: readonly TouchContact[]) {
 			const nearest = contacts.reduce<TouchContact | undefined>(function (best, contact) { return !best || distance(contact.screen, point) < distance(best.screen, point) ? contact : best; }, undefined);
 			id = nearest && distance(nearest.screen, point) <= 44 ? nearest.id : undefined;
 		},
-		cycle: function (contacts: readonly TouchContact[]) {
-			const index = contacts.findIndex(function (contact) { return contact.id === id; });
-			id = contacts[(index + 1) % contacts.length]?.id;
+		nearest: function (contacts: readonly TouchContact[], origin: Point) { id = ordered(contacts, origin)[0]?.id; },
+		cycle: function (contacts: readonly TouchContact[], origin: Point) {
+			const sorted = ordered(contacts, origin);
+			const index = sorted.findIndex(function (contact) { return contact.id === id; });
+			id = sorted[(index + 1) % sorted.length]?.id;
 		},
 		resolve: function (contacts: readonly TouchContact[]) {
 			const contact = contacts.find(function (candidate) { return candidate.id === id; });
@@ -42,10 +47,14 @@ export const createTouchTargeting = function () {
 
 export const createTouchDrive = function () {
 	let owner: number | undefined;
-	let drive = 0; let turn = 0;
-	const reset = function () { owner = undefined; drive = 0; turn = 0; };
+	let drive = 0; let turn = 0; let cruise = false;
+	const stop = function () { owner = undefined; drive = 0; turn = 0; };
+	const reset = function () { stop(); cruise = false; };
 	return {
-		reset,
+		reset, stop,
+		cancel: function (id: number) { if (id === owner) reset(); },
+		isCruising: function () { return cruise; },
+		toggleCruise: function () { cruise = !cruise; if (!cruise && owner === undefined) stop(); },
 		start: function (id: number) { if (owner !== undefined) return false; owner = id; return true; },
 		move: function (id: number, x: number, y: number) {
 			if (id !== owner) return;
@@ -54,29 +63,39 @@ export const createTouchDrive = function () {
 			turn = length > 0 ? x / length * demand : 0;
 			drive = length > 0 ? -y / length * demand : 0;
 		},
-		release: function (id: number) { if (id === owner) reset(); },
+		release: function (id: number) { if (id !== owner) return; owner = undefined; if (!cruise) stop(); },
 		read: function () { return { drive, turn }; },
 	};
 };
 
-export const mountTouchDrive = function (button: HTMLElement, knob: HTMLElement, signal: AbortSignal, enabled: () => boolean) {
+export const mountTouchDrive = function (button: HTMLElement, knob: HTMLElement, signal: AbortSignal, enabled: () => boolean, cruiseButton: HTMLElement, hint: HTMLElement) {
 	const input = createTouchDrive();
-	const reset = function () { input.reset(); knob.style.transform = ''; };
+	const refresh = function () {
+		const value = input.read();
+		knob.style.transform = `translate(${value.turn * 30}px, ${-value.drive * 30}px)`;
+		cruiseButton.setAttribute('aria-pressed', String(input.isCruising()));
+		const status = cruiseButton.querySelector('small');
+		if (status) status.textContent = input.isCruising() ? 'ON' : 'OFF';
+		hint.textContent = input.isCruising() ? 'CRUISE / STICK HELD' : 'RELEASE TO SLOW';
+	};
+	const reset = function () { input.reset(); refresh(); };
+	const stop = function () { input.stop(); refresh(); };
+	cruiseButton.addEventListener('click', function () { if (!enabled()) return; input.toggleCruise(); refresh(); }, { signal });
 	const move = function (event: PointerEvent) {
 		const rect = button.getBoundingClientRect(); const radius = rect.width / 2;
 		const x = (event.clientX - rect.left - radius) / radius; const y = (event.clientY - rect.top - rect.height / 2) / radius;
 		input.move(event.pointerId, x, y);
-		const value = input.read();
-		knob.style.transform = `translate(${value.turn * 30}px, ${-value.drive * 30}px)`;
+		refresh();
 	};
 	button.addEventListener('pointerdown', function (event) {
 		if (!enabled() || event.button !== 0 || !input.start(event.pointerId)) return;
 		event.preventDefault(); button.setPointerCapture(event.pointerId); move(event);
 	}, { signal });
 	button.addEventListener('pointermove', function (event) { if (button.hasPointerCapture(event.pointerId)) move(event); }, { signal });
-	const release = function (event: PointerEvent) { input.release(event.pointerId); const value = input.read(); knob.style.transform = `translate(${value.turn * 30}px, ${-value.drive * 30}px)`; };
-	for (const name of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) button.addEventListener(name, release, { signal });
+	const release = function (event: PointerEvent) { input.release(event.pointerId); refresh(); };
+	button.addEventListener('pointercancel', function (event) { input.cancel(event.pointerId); refresh(); }, { signal });
+	for (const name of ['pointerup', 'lostpointercapture'] as const) button.addEventListener(name, release, { signal });
 	window.addEventListener('resize', reset, { signal });
 	signal.addEventListener('abort', reset, { once: true });
-	return { read: input.read, reset };
+	return { read: input.read, reset, stop };
 };
