@@ -16,6 +16,8 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; overflow: hidden; }
+main, main * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; }
+main input, main textarea, main [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 button, input, a { -webkit-tap-highlight-color: transparent; }
 button { font: inherit; color: inherit; cursor: pointer; border: 1px solid var(--border); background: #152329; touch-action: manipulation; }
 button:hover { border-color: var(--amber); background-color: #253037; }

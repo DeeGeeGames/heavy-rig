@@ -722,7 +722,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!playing() || event.ctrlKey || event.metaKey) return;
 		event.preventDefault(); presentation.zoomWithWheel(event); setInputMode('keyboard');
 	}, { ...listenerOptions, passive: false });
-	canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); }, listenerOptions);
+	// Keep native long-press menus, selection, and dragging off the game UI.
+	for (const type of ['contextmenu', 'selectstart', 'dragstart']) {
+		container.addEventListener(type, function (event) {
+			if (event.target instanceof Element && event.target.closest('input, textarea, [contenteditable="true"]')) return;
+			event.preventDefault();
+		}, listenerOptions);
+	}
 	canvas.addEventListener('auxclick', function (event) { event.preventDefault(); }, listenerOptions);
 	canvas.addEventListener('pointerdown', function (event) {
 		if (!playing()) return;
