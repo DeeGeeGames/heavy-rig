@@ -18,6 +18,8 @@ export interface AudioFrame {
 	jogTime?: number | undefined;
 	/** Total narrative footstep window, including its one-second fades. */
 	jogDuration?: number;
+	/** Seconds since the saddle narrative started; undefined stops the hatch. */
+	hatchTime?: number | undefined;
 }
 export interface AudioMix { master: number; music: number; effects: number }
 export const DEFAULT_AUDIO_MIX: Readonly<AudioMix> = { master: 0.8, music: 0.55, effects: 0.85 };
@@ -106,7 +108,11 @@ export const createAudio = function () {
 	let jogBuffer: AudioBuffer | undefined;
 	let jogLoad: Promise<void> | undefined;
 	let jogVoice: Voice | undefined;
-	const jogRequest = new AbortController();
+	let hatchBuffer: AudioBuffer | undefined;
+	let hatchLoad: Promise<void> | undefined;
+	let hatchVoice: Voice | undefined;
+	let hatchComplete = false;
+	const narrativeRequest = new AbortController();
 	const voices = new Set<Voice>();
 	const lastEvent = new Map<CombatEvent, number>();
 
@@ -116,6 +122,7 @@ export const createAudio = function () {
 		for (const node of voice.nodes) node.disconnect();
 		voices.delete(voice);
 		if (jogVoice === voice) jogVoice = undefined;
+		if (hatchVoice === voice) hatchVoice = undefined;
 	};
 	const stopVoice = function (voice: Voice) {
 		try { voice.source.stop(); } catch { /* A scheduled source can already have ended. */ }
@@ -131,7 +138,10 @@ export const createAudio = function () {
 			const oldest = sameBus[0]; if (oldest) stopVoice(oldest);
 		}
 		voices.add(voice);
-		voice.source.onended = function () { finish(voice); };
+		voice.source.onended = function () {
+			if (hatchVoice === voice) hatchComplete = true;
+			finish(voice);
+		};
 		if ('buffer' in voice.source) voice.source.start(at, offset);
 		else voice.source.start(at);
 		voice.source.stop(at + duration + 0.025);
@@ -201,18 +211,29 @@ export const createAudio = function () {
 	};
 	const reset = function () {
 		clearVoices(); lastEvent.clear();
+		hatchComplete = false;
 		nextWarning = 0; nextAlarm = 0; nextMusic = 0; musicStep = 0; intensity = 0; musicDuckUntil = 0; lastCue = -10;
 	};
 
 	const loadJog = async function (context: AudioContext) {
 		try {
-			const response = await fetch('./audio/boots-concrete-cleaned.wav', { signal: jogRequest.signal });
+			const response = await fetch('./audio/boots-concrete-cleaned.wav', { signal: narrativeRequest.signal });
 			if (!response.ok) throw new Error(`Footsteps returned HTTP ${response.status}`);
 			const buffer = await context.decodeAudioData(await response.arrayBuffer());
 			if (!disposed) jogBuffer = buffer;
 		} catch (error) {
 			if (!disposed) console.warn('Could not load intro footsteps.', error);
 		} finally { jogLoad = undefined; }
+	};
+	const loadHatch = async function (context: AudioContext) {
+		try {
+			const response = await fetch('./audio/mech-hatch-close.wav', { signal: narrativeRequest.signal });
+			if (!response.ok) throw new Error(`Hatch returned HTTP ${response.status}`);
+			const buffer = await context.decodeAudioData(await response.arrayBuffer());
+			if (!disposed) hatchBuffer = buffer;
+		} catch (error) {
+			if (!disposed) console.warn('Could not load intro hatch.', error);
+		} finally { hatchLoad = undefined; }
 	};
 	const unlock = async function (): Promise<boolean> {
 		if (disposed || typeof globalThis.AudioContext !== 'function') { unavailable = true; return false; }
@@ -263,6 +284,7 @@ export const createAudio = function () {
 			}
 			const current = synth;
 			if (!jogBuffer && !jogLoad) jogLoad = loadJog(current.context);
+			if (!hatchBuffer && !hatchLoad) hatchLoad = loadHatch(current.context);
 			await current.context.resume();
 			return !disposed && current.context.state === 'running';
 		} catch {
@@ -296,7 +318,7 @@ export const createAudio = function () {
 	};
 	const updateJog = function (time: number | undefined, duration: number | undefined) {
 		const enabled = time !== undefined && Number.isFinite(time) && time >= 0 && synth && jogBuffer && uiActive && !muted && mix.effects > 0 && mix.master > 0 && synth.context.state === 'running';
-		if (!enabled) { clearVoices('narrative'); return; }
+		if (!enabled) { if (jogVoice) stopVoice(jogVoice); return; }
 		if (jogVoice || !synth || !jogBuffer || time === undefined) return;
 		const end = duration ?? jogBuffer.duration / 1.5;
 		if (!Number.isFinite(end) || time >= end) return;
@@ -315,6 +337,16 @@ export const createAudio = function () {
 		source.connect(gain).connect(synth.ui);
 		jogVoice = { source, nodes: [gain], bus: 'narrative' };
 		register(jogVoice, at, end - time, offset);
+	};
+	const updateHatch = function (time: number | undefined) {
+		if (time === undefined) hatchComplete = false;
+		const enabled = time !== undefined && Number.isFinite(time) && time >= 0 && synth && hatchBuffer && uiActive && !muted && mix.effects > 0 && mix.master > 0 && synth.context.state === 'running';
+		if (!enabled) { if (hatchVoice) stopVoice(hatchVoice); return; }
+		if (hatchComplete || hatchVoice || !synth || !hatchBuffer || time === undefined || time >= hatchBuffer.duration) return;
+		const source = synth.context.createBufferSource(); source.buffer = hatchBuffer;
+		source.connect(synth.ui);
+		hatchVoice = { source, nodes: [], bus: 'narrative' };
+		register(hatchVoice, synth.context.currentTime, hatchBuffer.duration - time, time);
 	};
 	const typeText = function (text: string) {
 		if (!synth || disposed || !uiActive || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
@@ -379,6 +411,7 @@ export const createAudio = function () {
 		if (phase !== nextPhase) { phase = nextPhase; clearVoices('music'); nextMusic = 0; musicStep = 0; }
 		mixLevels();
 		updateJog(frame.jogTime, frame.jogDuration);
+		updateHatch(frame.hatchTime);
 		const driving = audible && phase === 'combat';
 		const alarm = driving && frame.alarm && mix.effects > 0;
 		if (!alarm) { clearVoices('alarm'); nextAlarm = 0; }
@@ -502,7 +535,7 @@ export const createAudio = function () {
 	const dispose = async function () {
 		if (disposed) return;
 		disposed = true; active = false; clearVoices();
-		jogRequest.abort(); jogBuffer = undefined;
+		narrativeRequest.abort(); jogBuffer = undefined; hatchBuffer = undefined;
 		if (!synth) return;
 		const current = synth; synth = undefined;
 		for (const source of [current.engine, current.mechanical, current.laser]) {
