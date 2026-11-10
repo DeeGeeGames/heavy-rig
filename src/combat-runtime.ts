@@ -14,7 +14,7 @@ export interface CombatComponents {
 	position: Point;
 	heading: { angle: number };
 	drive: Pick<Player, 'throttle' | 'speed'>;
-	aim: { turret: number };
+	aim: { turret: number; targetId: number | undefined };
 	health: { hp: number; maxHp: number };
 	reactor: Reactor;
 	weaponBank: { mounts: WeaponMount[] };
@@ -146,7 +146,7 @@ export const createCombatRuntime = function () {
 				world.addResource('combatConfig', config); world.addResource('combatProgress', progress); world.addResource('combatFeedback', feedback); world.addResource('combatStats', snapshot.stats);
 				bindMission(snapshot.mission);
 				const position = { x: snapshot.player.x, y: snapshot.player.y }; const heading = { angle: snapshot.player.angle };
-				const drive = { throttle: snapshot.player.throttle, speed: snapshot.player.speed }; const aim = { turret: snapshot.player.turret };
+				const drive = { throttle: snapshot.player.throttle, speed: snapshot.player.speed }; const aim = { turret: snapshot.player.turret, targetId: snapshot.player.targetId };
 				const health = { hp: snapshot.player.hp, maxHp: 100 }; const reactor = { heat: snapshot.player.heat, overheated: snapshot.player.overheated, coolantCharges: snapshot.coolantCharges, coolantHeld: snapshot.coolantHeld };
 				const weaponBank = { mounts: snapshot.loadout };
 				const playerEntity = world.spawn({ combatOwned: true, player: true, position, heading, drive, aim, health, reactor, weaponBank });
@@ -157,6 +157,7 @@ export const createCombatRuntime = function () {
 					get throttle() { return component(playerEntity.id, 'drive').throttle; }, set throttle(value) { writeField(playerEntity.id, 'drive', 'throttle', value); },
 					get speed() { return component(playerEntity.id, 'drive').speed; }, set speed(value) { writeField(playerEntity.id, 'drive', 'speed', value); },
 					get turret() { return component(playerEntity.id, 'aim').turret; }, set turret(value) { writeField(playerEntity.id, 'aim', 'turret', value); },
+					get targetId() { return component(playerEntity.id, 'aim').targetId; }, set targetId(value) { writeField(playerEntity.id, 'aim', 'targetId', value); },
 					get hp() { return component(playerEntity.id, 'health').hp; }, set hp(value) { writeField(playerEntity.id, 'health', 'hp', value); },
 					get heat() { return component(playerEntity.id, 'reactor').heat; }, set heat(value) { writeField(playerEntity.id, 'reactor', 'heat', value); },
 					get overheated() { return component(playerEntity.id, 'reactor').overheated; }, set overheated(value) { writeField(playerEntity.id, 'reactor', 'overheated', value); },

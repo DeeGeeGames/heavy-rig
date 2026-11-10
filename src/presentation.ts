@@ -9,7 +9,8 @@ import { createMech, weaponRecoil } from './mech-3d';
 import { drawOverlay, type ScreenRect } from './overlay';
 import { alignCamera, toGround, toScreen, viewScale } from './projection-3d';
 import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset } from './camera-follow';
-import type { EnemyKind, Point, CombatStateView } from './simulation';
+import { playerAimPoint, enemyAimPoint, type EnemyKind, type Point, type CombatStateView } from './simulation';
+import type { SpatialPoint } from './weapon-rig';
 import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
@@ -27,7 +28,7 @@ interface MechView {
 }
 interface ViewBindings {
 	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId) => MechView;
-	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, state: CombatStateView, recoil?: number) => void;
+	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, state: CombatStateView, recoil?: number, target?: SpatialPoint) => void;
 	scale: (id: number, scale: number) => void;
 }
 interface OverlayFrame {
@@ -102,14 +103,14 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
-					pose: function (id, view, gait, heading, hp, state, recoil = 0) {
+					pose: function (id, view, gait, heading, hp, state, recoil = 0, target) {
 						if (view.damage.hp !== undefined && hp < view.damage.hp) view.damage.hitAt = state.time;
 						view.damage.hp = hp;
 						const transform = world.getComponent(id, 'localTransform3D');
 						if (!transform) return;
 						transform.x = gait.body.x; transform.z = gait.body.y;
 						world.markChanged(id, 'localTransform3D');
-						view.model.pose(gait, heading, { hit: Math.max(0, 1 - (state.time - view.damage.hitAt) / 0.16), recoil, heat: view.kind ? 0 : state.player.heat, time: state.time });
+						view.model.pose(gait, heading, { hit: Math.max(0, 1 - (state.time - view.damage.hitAt) / 0.16), recoil, heat: view.kind ? 0 : state.player.heat, time: state.time, ...(target ? { target } : {}) });
 					},
 					scale: function (id, scale) {
 						const transform = world.getComponent(id, 'localTransform3D');
@@ -199,22 +200,20 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				if (player && playerId !== undefined) {
 					const heading = attract ? Math.PI / 4 - 0.22 : state.player.turret;
 					const gait = attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player;
-					views.pose(playerId, player, gait, heading, state.player.hp, state, weaponRecoil(state.loadout));
+					views.pose(playerId, player, gait, heading, state.player.hp, state, weaponRecoil(state.loadout), attract || hangar ? undefined : playerAimPoint(state));
 					views.scale(playerId, hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1);
 				}
-				const enemyMuzzles = new Map<number, readonly Vector3[]>();
 				const enemyLabelHeights = new Map<number, number>();
 				for (const enemy of state.enemies) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
 					const view = views.ensure(id, enemy.kind, Boolean(enemy.commander));
-					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind)), enemy.angle, enemy.hp, state, weaponRecoil(enemy.loadout ?? []));
-					enemyMuzzles.set(enemy.id, view.model.muzzles.map(function (anchor) { return new Vector3(anchor.x + enemy.x, anchor.y, anchor.z + enemy.y); }));
+					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind)), enemy.angle, enemy.hp, state, weaponRecoil(enemy.loadout ?? []), enemyAimPoint(state, enemy));
 					if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
 				objects.update(state, player ? {
-					muzzles: player.model.muzzles.map(worldAnchor), rocketMuzzles: player.model.rocketMuzzles.map(function (tubes) { return tubes.map(worldAnchor); }), enemies: enemyMuzzles, exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
+					muzzles: player.model.muzzles.map(worldAnchor), exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
 				} : undefined);
 				reticle.visible = barrel.visible = !attract;
 				reticle.position.set(aim.x, 0.25, aim.y);

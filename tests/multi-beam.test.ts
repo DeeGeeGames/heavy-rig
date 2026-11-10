@@ -8,7 +8,7 @@ import { createState, weaponsStep, type Controls } from '../src/simulation';
 import { createWorldObjects } from '../src/world-3d';
 
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 1100, y: 780 }, fire: [false, false, false, false], coolant: false };
-const fire: Controls = { ...idle, fire: [false, false, true, true] };
+const fire: Controls = { ...idle, targetId: 1, fire: [false, false, true, true] };
 const scenario = function () {
 	const state = createState({ frame: 'warden-b' }); state.spawnIn = 3600; state.player.turret = 0;
 	state.loadout = loadedMounts([null, null, 'laser', 'laser']);

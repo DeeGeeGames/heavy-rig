@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 import { Mesh, Vector3, type BufferGeometry, type Material } from 'three';
 import { createMount, WEAPONS } from '../src/arsenal';
 import type { Contract } from '../src/campaign-types';
+import { enemyVolume } from '../src/combat-spatial';
 import { createGait } from '../src/gait';
 import { createMech } from '../src/mech-3d';
 import { missionHostileCount } from '../src/missions';
@@ -94,15 +95,21 @@ test('every player weapon can damage ground and air vehicles with guidance and e
 	for (const kind of kinds) for (const weapon of WEAPONS) {
 		const state = createState({ starter: weapon.id }); const enemy = vehicle(state, kind, 150);
 		state.loadout = [createMount(weapon.id)]; state.player.turret = Math.PI; enemy.angle = Math.PI / 2; enemy.hullAngle = Math.PI / 2;
-		const controls: Controls = { ...idle, aim: enemy, fire: [true, false, false, false] };
+		const controls: Controls = { ...idle, aim: enemy, targetId: enemy.id, fire: [true, false, false, false] };
 		for (let tick = 0; tick < 120 && enemy.hp === enemy.maxHp; tick++) {
 			coolingStep(state, controls, 1 / 60); weaponsStep(state, controls, 1 / 60);
 			if (weapon.kind === 'missile') expect(state.shots.every(function (shot) { return shot.target === enemy.id; })).toBe(true);
 			projectilesStep(state, 1 / 60);
 		}
 		expect(enemy.hp).toBeLessThan(enemy.maxHp);
-		if (weapon.kind !== 'laser') expect(state.effects.some(function (effect) { return effect.elevation === ENEMY_STATS[kind].elevation; })).toBe(true);
-		else expect(state.beam?.elevation).toBe(kind === 'tank' ? undefined : ENEMY_STATS[kind].elevation);
+		const volume = enemyVolume(enemy);
+		const impacts = weapon.kind === 'laser' ? state.beams : state.effects.filter(function (effect) { return effect.source !== 'muzzle'; });
+		expect(impacts.length).toBeGreaterThan(0);
+		for (const impact of impacts) {
+			if (impact.elevation === undefined) throw new Error('An impact must retain its simulated height');
+			const normalizedDistance = ((impact.x - volume.x) / volume.radius) ** 2 + ((impact.y - volume.y) / volume.radius) ** 2 + ((impact.elevation - volume.elevation) / volume.halfHeight) ** 2;
+			expect(normalizedDistance).toBeLessThanOrEqual(1.000001);
+		}
 	}
 });
 

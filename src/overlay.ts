@@ -61,7 +61,7 @@ const solutionFor = function (state: CombatStateView, target: Point, id: number,
 	if (structure && structure.hp > 0) candidates.push({ point: structure, id: FACILITY_TARGET_ID });
 	const guided = weapons.some(function (weapon) {
 		if (weapon.kind !== 'missile' || range > weapon.range) return false;
-		const lock = candidates.filter(function (candidate) { return distance(candidate.point, state.player) <= weapon.range; })
+		const lock = candidates.filter(function (candidate) { return distance(candidate.point, state.player) <= weapon.range && (state.player.targetId === undefined || candidate.id === state.player.targetId); })
 			.reduce<{ point: Point; id: number } | undefined>(function (nearest, candidate) { return !nearest || distance(candidate.point, aim) < distance(nearest.point, aim) ? candidate : nearest; }, undefined);
 		return lock?.id === id;
 	});
@@ -143,11 +143,8 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		text(`IMPACT ${strike.life.toFixed(1)}`, strike, 8, '#ffd2a6', 11, -14);
 	}
-	const target = state.enemies.reduce<CombatStateView['enemies'][number] | undefined>(function (nearest, enemy) {
-		return !nearest || distance(enemy, aim) < distance(nearest, aim) ? enemy : nearest;
-	}, undefined);
-	const selectedFacility = facility && facility.hp > 0 && distance(facility, aim) < 100 && (!target || distance(facility, aim) < distance(target, aim)) ? facility : undefined;
-	const selected = !selectedFacility && target && distance(target, aim) < 80 ? target : undefined;
+	const selectedFacility = facility && facility.hp > 0 && state.player.targetId === FACILITY_TARGET_ID ? facility : undefined;
+	const selected = state.enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
 	for (const enemy of state.enemies) {
 		const defense = getEnemyDefense(state, enemy);
 		if (enemy.hp >= enemy.maxHp && enemy !== selected && !enemy.commander && !defense.exposed) continue;

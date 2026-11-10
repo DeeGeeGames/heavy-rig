@@ -4,7 +4,7 @@ import { createMount, getWeapon } from '../src/arsenal';
 import { createState, step, type Controls } from '../src/simulation';
 
 const idle = function (training: Training): Controls {
-	return { aim: training.state.enemies[0] ?? training.state.player, drive: 0, turn: 0, stop: false, fire: [false, false, false, false], coolant: false };
+	return { ...(training.state.enemies[0] ? { targetId: training.state.enemies[0].id } : {}), aim: training.state.enemies[0] ?? training.state.player, drive: 0, turn: 0, stop: false, fire: [false, false, false, false], coolant: false };
 };
 const advanceToEvasion = function (training: Training) {
 	for (let tick = 0; tick < 60 * 60 && training.stage !== 'evade'; tick++) {

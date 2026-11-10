@@ -31,7 +31,7 @@ import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, 
 import { focusTerritoryMap } from './territory-map';
 import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
-import { missionObjective } from './missions';
+import { FACILITY_TARGET_ID, missionObjective } from './missions';
 import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import type { Campaign } from './campaign';
@@ -142,6 +142,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
 	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
+	let acquiredTargetId: number | undefined;
 	let aim: Point = { x: 900, y: 450 }; let pointer: Point | undefined; let aimMode: 'pointer' | 'gamepad' | 'touch' | 'target' = 'pointer';
 	const touchTargeting = createTouchTargeting();
 	const armedTouchMounts = new Set([0, 1, 2, 3]);
@@ -164,7 +165,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
 	const companyNavigationReady = function () { return companyOpen() && !navigation.transitioning && editor.slot === null && !campaignConflict && !contextLost; };
 	let lastSoundState = '';
-	const resetInput = function () { touchDrive.reset(); touchTargeting.clear(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
+	const resetInput = function () { acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const playing = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
 	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing, element('touch-cruise'), element('touch-drive-hint'));
 	const touchContacts = function () {
@@ -1002,7 +1003,16 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (playing() && screenRevision === revisionAtFrame) {
 			if (pad.targetNearest) selectTarget('nearest');
 			if (pad.targetNext) selectTarget('cycle');
-			if (aimMode === 'touch' || aimMode === 'target') { const locked = touchTargeting.resolve(touchContacts()); if (locked) aim = { ...locked.point }; }
+			const facility = state.mission?.structure;
+			const aimTargets = [
+				...state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, point: enemy }; }),
+				...(facility && facility.hp > 0 ? [{ id: FACILITY_TARGET_ID, point: facility }] : []),
+			];
+			if (!aimTargets.some(function (target) { return target.id === acquiredTargetId; })) acquiredTargetId = undefined;
+			if (aimMode === 'touch' || aimMode === 'target') {
+				const locked = touchTargeting.resolve(touchContacts()); acquiredTargetId = locked?.id;
+				if (locked) aim = { ...locked.point };
+			}
 			if (profile.settings.controlMode === 'simulation' && pad.aimX !== 0) {
 				aimMode = 'gamepad';
 			} else if (profile.settings.controlMode === 'arcade' && Math.hypot(pad.aimX, pad.aimY) > 0.2) {
@@ -1010,20 +1020,30 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const origin = presentation.toScreen(state.player); const length = Math.hypot(pad.aimX, pad.aimY);
 				const projected = presentation.toGround({ x: origin.x + pad.aimX / length * 380, y: origin.y + pad.aimY / length * 380 });
 				if (projected) aim = projected;
-				const facility = state.mission?.structure;
-				const aimTargets = [...state.enemies, ...(facility && facility.hp > 0 ? [facility] : [])];
-				const targets = aimTargets.map(function (enemy) { const at = presentation.toScreen(enemy, targetElevation(enemy)); const dx = at.x - origin.x; const dy = at.y - origin.y; return { enemy, alignment: (dx * pad.aimX + dy * pad.aimY) / Math.max(1, Math.hypot(dx, dy) * length) }; }).filter(function (target) { return target.alignment > 0.975 && distance(target.enemy, state.player) < 850; }).sort(function (a, b) { return b.alignment - a.alignment; });
-				const target = targets[0]; if (target) aim = { x: target.enemy.x, y: target.enemy.y };
+				const targets = aimTargets.map(function (target) { const at = presentation.toScreen(target.point, targetElevation(target.point)); const dx = at.x - origin.x; const dy = at.y - origin.y; return { ...target, alignment: (dx * pad.aimX + dy * pad.aimY) / Math.max(1, Math.hypot(dx, dy) * length) }; }).filter(function (target) { return target.alignment > 0.975 && distance(target.point, state.player) < 850; }).sort(function (a, b) { return b.alignment - a.alignment; });
+				const target = targets[0]; acquiredTargetId = target?.id;
+				if (target) aim = { x: target.point.x, y: target.point.y };
 			} else if (pointer && aimMode === 'pointer') {
 				aim = presentation.toGround(pointer) ?? aim;
 				const cursor = pointer;
-				const facility = state.mission?.structure;
 				const targetScreen = function (target: Point) { return presentation.toScreen(target, targetElevation(target)); };
-				const aimTargets = [...state.enemies, ...(facility && facility.hp > 0 ? [facility] : [])];
-				const picked = aimTargets.sort(function (a, b) { return distance(targetScreen(a), cursor) - distance(targetScreen(b), cursor); })[0];
-				if (picked && distance(targetScreen(picked), cursor) < 42 * viewScale(width, height)) aim = { x: picked.x, y: picked.y };
+				const picked = aimTargets.sort(function (a, b) { return distance(targetScreen(a.point), cursor) - distance(targetScreen(b.point), cursor); })[0];
+				const target = picked && distance(targetScreen(picked.point), cursor) < 42 * viewScale(width, height) ? picked : undefined;
+				acquiredTargetId = target?.id;
+				if (target) aim = { x: target.point.x, y: target.point.y };
 			}
-			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') aim = { x: state.player.x + Math.cos(state.player.turret) * 600, y: state.player.y + Math.sin(state.player.turret) * 600 };
+			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') {
+				const forwardX = Math.cos(state.player.turret); const forwardY = Math.sin(state.player.turret);
+				aim = { x: state.player.x + forwardX * 600, y: state.player.y + forwardY * 600 };
+				const target = aimTargets.map(function (candidate) {
+					const dx = candidate.point.x - state.player.x; const dy = candidate.point.y - state.player.y;
+					return { ...candidate, along: dx * forwardX + dy * forwardY, across: Math.abs(dx * forwardY - dy * forwardX) };
+				}).filter(function (candidate) { return candidate.along > 0 && candidate.along < 850 && candidate.across <= 25; }).sort(function (a, b) { return a.along - b.along; })[0];
+				acquiredTargetId = target?.id;
+			} else if (aimMode === 'gamepad' && acquiredTargetId !== undefined) {
+				const target = aimTargets.find(function (candidate) { return candidate.id === acquiredTargetId; });
+				if (target) aim = { x: target.point.x, y: target.point.y };
+			}
 			makeInput = function (): Controls {
 				const arcade = profile.settings.controlMode === 'arcade' || inputMode === 'touch';
 				if (active('stop') || pad.stop) touchDrive.stop();
@@ -1037,7 +1057,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				return {
 					...(arcade ? { throttleTarget: Math.min(1, length), ...(destination ? { heading: Math.atan2(destination.y - state.player.y, destination.x - state.player.x) } : {}) } : {}),
 					...(profile.settings.controlMode === 'simulation' && aimMode === 'gamepad' ? { turretTurn: pad.aimX } : {}),
-					drive: -y, stop: active('stop') || pad.stop, turn: x, aim,
+					drive: -y, stop: active('stop') || pad.stop, turn: x, aim, ...(acquiredTargetId !== undefined ? { targetId: acquiredTargetId } : {}),
 					fire: [active('mount-0') || pad.fire[0] || touchFire && armedTouchMounts.has(0), active('mount-1') || pad.fire[1] || touchFire && armedTouchMounts.has(1), active('mount-2') || pad.fire[2] || touchFire && armedTouchMounts.has(2), active('mount-3') || pad.fire[3] || touchFire && armedTouchMounts.has(3)], coolant: active('coolant') || pad.coolant,
 				};
 			};
