@@ -1,3 +1,4 @@
+import { consumeFire, coolReactor, frameWeight, loadedMounts, usableMount, weightMetrics, type ReactorState } from './combat-resources';
 import { createMount, getWeapon, weaponDamage, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
 import { FRAMES, getFrame, type FrameId } from './frames';
 import { canEquipWeapon, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
@@ -11,7 +12,7 @@ export type MechEnemyKind = 'scout' | 'striker' | 'siege';
 export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
-export interface Unit extends Point { id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: SquadOrder }
+export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: SquadOrder }
 export interface Shot extends Point { vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[]; weapon?: WeaponId; slot?: number; owner?: number; enemyTarget?: 'player' | 'relay' }
 export interface Effect extends Point { life: number; size: number; color: string; elevation?: number; source?: 'muzzle'; slot?: number }
 export interface Warning extends Point { kind: EnemyKind; life: number; commander?: boolean }
@@ -39,19 +40,20 @@ export interface State extends CombatStateView {
 }
 
 export const ARENA = { width: 1800, height: 1200, relayX: 900, relayY: 600 };
-interface EnemyStats { hp: number; speed: number; range: number; reload: number; damage: number; aggro: number; elevation: number; score: number }
+interface EnemyStats { mass: number; recommendedMass: number; cooling: number; hp: number; speed: number; range: number; reload: number; damage: number; aggro: number; elevation: number; score: number }
 export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
-	scout: { hp: 480, speed: 66, range: 170, reload: 2, damage: 5, aggro: 650, elevation: 42, score: 200 },
-	striker: { hp: 760, speed: 44, range: 240, reload: 2.5, damage: 7, aggro: 440, elevation: 42, score: 300 },
-	siege: { hp: 500, speed: 28, range: 550, reload: 1.8, damage: 10, aggro: 650, elevation: 42, score: 500 },
-	helicopter: { hp: 220, speed: 105, range: 310, reload: 0.75, damage: 3, aggro: 800, elevation: 112, score: 250 },
-	vtol: { hp: 360, speed: 82, range: 440, reload: 2.8, damage: 9, aggro: 850, elevation: 147, score: 400 },
-	tank: { hp: 900, speed: 32, range: 390, reload: 3.4, damage: 14, aggro: 600, elevation: 30, score: 450 },
+	scout: { mass: 35, recommendedMass: 42, cooling: 10, hp: 480, speed: 66, range: 170, reload: 2, damage: 5, aggro: 650, elevation: 42, score: 200 },
+	striker: { mass: 70, recommendedMass: 112, cooling: 12, hp: 760, speed: 44, range: 240, reload: 2.5, damage: 7, aggro: 440, elevation: 42, score: 300 },
+	siege: { mass: 105, recommendedMass: 158, cooling: 11, hp: 500, speed: 28, range: 550, reload: 1.8, damage: 10, aggro: 650, elevation: 42, score: 500 },
+	helicopter: { mass: 18, recommendedMass: 22, cooling: 9, hp: 220, speed: 105, range: 310, reload: 0.75, damage: 3, aggro: 800, elevation: 112, score: 250 },
+	vtol: { mass: 30, recommendedMass: 62, cooling: 10, hp: 360, speed: 82, range: 440, reload: 2.8, damage: 9, aggro: 850, elevation: 147, score: 400 },
+	tank: { mass: 60, recommendedMass: 72, cooling: 11, hp: 900, speed: 32, range: 390, reload: 3.4, damage: 14, aggro: 600, elevation: 30, score: 450 },
 };
 export interface MissionDeployment {
 	difficulty?: Difficulty;
 	frame?: FrameId;
 	loadout?: readonly (WeaponId | null)[];
+	reserves?: readonly number[];
 	integrity?: number;
 	coolantCharges?: number;
 }
@@ -59,7 +61,10 @@ export const createMissionState = function (contract: Contract, options: Mission
 	const state = createState({ ...options, frame: options.frame ?? 'kestrel', seed: contract.seed });
 	if (options.loadout !== undefined) {
 		if (!isFrameLoadout(state.frame, options.loadout)) throw new RangeError(`Invalid loadout for ${state.frame}`);
-		state.loadout = options.loadout.flatMap(function (weapon, slot) { return weapon === null ? [] : [{ ...createMount(weapon), slot }]; });
+		state.loadout = loadedMounts(options.loadout, options.reserves);
+	} else if (options.reserves !== undefined) {
+		const loadout = getHardpoints(state.frame).map(function (_hardpoint, slot) { return state.loadout.find(function (mount) { return mount.slot === slot; })?.weapon ?? null; });
+		state.loadout = loadedMounts(loadout, options.reserves);
 	}
 	state.player.hp = options.integrity === undefined ? 100 : Number.isFinite(options.integrity) ? Math.max(0, Math.min(100, options.integrity)) : 0;
 	if (state.player.hp === 0) state.outcome = 'lost';
@@ -92,7 +97,7 @@ const relayPosition = function (state: CombatStateView): Point | undefined {
 const createEnemy = function (state: CombatStateView, spawn: Point & { kind: EnemyKind; commander?: boolean }): Unit {
 	const hp = Math.round((spawn.commander ? 1680 : ENEMY_STATS[spawn.kind].hp) * getDifficultyDefinition(state.difficulty).enemyArmor);
 	const target = relayPosition(state) ?? state.player;
-	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege' || spawn.kind === 'tank', kind: spawn.kind, loadout: createEnemyLoadout(spawn.kind, spawn.commander), ...(spawn.commander ? { commander: true } : {}) };
+	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege' || spawn.kind === 'tank', kind: spawn.kind, reactor: { heat: 0, overheated: false }, loadout: createEnemyLoadout(spawn.kind, spawn.commander), ...(spawn.commander ? { commander: true } : {}) };
 };
 type CombatTarget = { id: number; kind: 'enemy'; body: Unit; radius: number } | { id: number; kind: 'structure'; body: NonNullable<MissionRuntime['structure']>; radius: number };
 const combatTargets = function (state: CombatStateView): CombatTarget[] {
@@ -137,13 +142,31 @@ const enemyMounts = function (enemy: Unit): WeaponMount[] {
 		seen.add(slot); mount.slot = slot; return true;
 	});
 };
-const launchEnemy = function (state: CombatStateView, enemy: Unit, mount: WeaponMount, target: Point, damage: number) {
+export const enemyReactor = function (enemy: Unit): ReactorState { return enemy.reactor ??= { heat: 0, overheated: false }; };
+export const enemyWeight = function (enemy: Unit) {
+	const stats = ENEMY_STATS[enemy.kind];
+	return weightMetrics(stats.mass, stats.recommendedMass, enemyMounts(enemy));
+};
+const launchEnemy = function (state: CombatStateView, enemy: Unit, mount: WeaponMount, target: Point, damage: number): boolean {
+	if (!consumeFire(mount, enemyReactor(enemy))) return false;
 	const angle = enemy.angle;
 	const speed = enemy.kind === 'tank' ? 330 : 230;
-	state.shots.push({ x: enemy.x + Math.cos(angle) * 30, y: enemy.y + Math.sin(angle) * 30, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 2.5, kind: 'enemy', target: undefined, damage,
+	state.shots.push({ x: enemy.x + Math.cos(angle) * 30, y: enemy.y + Math.sin(angle) * 30, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 2.5, kind: 'enemy', target: undefined, damage: damage / getWeapon(mount.weapon).projectiles,
 		weapon: mount.weapon, slot: mount.slot ?? 0, owner: enemy.id, ...(getWeapon(mount.weapon).kind === 'missile' ? { enemyTarget: target === state.player ? 'player' as const : 'relay' as const } : {}) });
-	mount.cooldown = getWeapon(mount.weapon).interval;
 	mount.firing = true;
+	return true;
+};
+const fireEnemyMount = function (state: CombatStateView, enemy: Unit, mount: WeaponMount, target: Point, damage: number) {
+	const weapon = getWeapon(mount.weapon);
+	const delayed = weapon.kind === 'rocket' || weapon.stream;
+	let emitted = 0;
+	for (let round = 0; round < (delayed ? 1 : weapon.projectiles); round++) {
+		if (!launchEnemy(state, enemy, mount, target, damage)) break;
+		emitted++;
+	}
+	if (emitted === 0) return;
+	mount.cooldown = weapon.interval;
+	if (delayed && weapon.projectiles > 1 && usableMount(mount) && !enemyReactor(enemy).overheated) mount.rocketVolley = { remaining: Math.min(weapon.projectiles - 1, mount.rounds), nextIn: 0.1 };
 };
 const launchWeapon = function (state: CombatStateView, weapon: WeaponDefinition, mount: WeaponMount, angle: number, slot: number, target?: number) {
 	if (weapon.kind === 'laser') return;
@@ -211,6 +234,7 @@ const commitBarrage = function (state: CombatStateView, enemy: Unit, target: Poi
 	const radius = commander ? 82 : 62;
 	const damage = (commander ? 16 : 10) * getDifficultyDefinition(state.difficulty).enemyDamage;
 	const addStrike = function (at: Point, delay: number, size = radius) {
+		if (!consumeFire(mount, enemyReactor(enemy))) return;
 		state.strikes.push({ id: state.nextId++, x: at.x, y: at.y, life: delay, duration: delay, radius: size, damage, owner: enemy.id, slot: mount.slot ?? 4, weapon: mount.weapon });
 	};
 	// Every marker commits now. Neither movement nor destruction of the firing
@@ -224,6 +248,7 @@ const commitBarrage = function (state: CombatStateView, enemy: Unit, target: Poi
 			addStrike({ x: target.x + Math.cos(heading) * 175, y: target.y + Math.sin(heading) * 175 }, duration + 1.4, 58);
 		}
 	}
+	mount.cooldown = getWeapon(mount.weapon).interval;
 	enemy.attack = { phase: 'committed', remaining: duration + (pulses - 1) * 0.7, cycle: enraged ? 2 : 1 };
 	mount.firing = true;
 	state.events.push('artillery');
@@ -256,7 +281,7 @@ export const coolingStep = function (state: CombatStateView, input: Controls, dt
 	state.cannonIn = Math.max(0, state.cannonIn - dt);
 	for (const mount of state.loadout) { mount.cooldown = Math.max(0, mount.cooldown - dt); mount.firing = false; }
 	state.shake = Math.max(0, state.shake - dt * 15);
-	p.heat = Math.max(0, p.heat - dt * frame.cooling);
+	coolReactor(p, frame.cooling, dt);
 	if (input.coolant && !state.coolantHeld && state.coolantCharges > 0 && p.heat > 0) {
 		state.coolantCharges--; p.heat = Math.max(0, p.heat - 55);
 		state.events.push('coolant'); burst(state, p, 80, '#93e9e1');
@@ -276,7 +301,8 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 	p.throttle = input.stop ? 0 : input.throttleTarget === undefined
 		? clamp(p.throttle + input.drive * throttleChange, -1, 1)
 		: p.throttle + clamp(clamp(input.throttleTarget, 0, 1) - p.throttle, -throttleChange, throttleChange);
-	p.speed += (p.throttle * (p.throttle < 0 ? frame.reverseSpeed : frame.speed) - p.speed) * Math.min(1, dt * frame.acceleration);
+	const modifier = frameWeight(state.frame, state.loadout).modifier;
+	p.speed += (p.throttle * (p.throttle < 0 ? frame.reverseSpeed : frame.speed) * modifier - p.speed) * Math.min(1, dt * frame.acceleration);
 	p.x = clamp(p.x + Math.cos(p.angle) * p.speed * dt, 35, bounds.width - 35);
 	p.y = clamp(p.y + Math.sin(p.angle) * p.speed * dt, 35, bounds.height - 35);
 	const aimAngle = Math.atan2(input.aim.y - p.y, input.aim.x - p.x);
@@ -286,6 +312,7 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 
 export const weaponsStep = function (state: CombatStateView, input: Controls, dt: number) {
 	const p = state.player;
+	const wasOverheated = p.overheated;
 	state.beam = undefined;
 	const firingSlots = new Set<number>();
 	state.loadout.forEach(function (mount, index) {
@@ -297,6 +324,7 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 		if (volley && (weapon.kind === 'rocket' || weapon.stream)) {
 			volley.nextIn -= dt;
 			while (volley.remaining > 0 && volley.nextIn <= 1e-9) {
+				if (!consumeFire(mount, p)) { volley.remaining = 0; break; }
 				const target = weapon.kind === 'missile' ? combatTargets(state).filter(function (candidate) { return distance(candidate.body, p) <= weapon.range; }).reduce<CombatTarget | undefined>(function (best, candidate) { return !best || distance(candidate.body, input.aim) < distance(best.body, input.aim) ? candidate : best; }, undefined) : undefined;
 				launchWeapon(state, weapon, mount, p.turret, slot, target?.id);
 				volley.remaining--; volley.nextIn += 0.1; mount.firing = true;
@@ -306,8 +334,9 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 			if (volley.remaining === 0) delete mount.rocketVolley;
 			return;
 		}
-		if (p.overheated || !input.fire[slot]) return;
+		if (p.overheated || !usableMount(mount) || !input.fire[slot]) return;
 		if (weapon.kind === 'laser') {
+			if (!consumeFire(mount, p, dt)) return;
 			const hit = combatTargets(state).map(function (target) {
 				const dx = target.body.x - p.x; const dy = target.body.y - p.y;
 				return { target, along: dx * Math.cos(p.turret) + dy * Math.sin(p.turret), across: Math.abs(dx * Math.sin(p.turret) - dy * Math.cos(p.turret)) };
@@ -316,22 +345,23 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 			state.beam = { x: p.x + Math.cos(p.turret) * length, y: p.y + Math.sin(p.turret) * length };
 			if (hit?.target.kind === 'enemy' && ENEMY_STATS[hit.target.body.kind].elevation > 42) state.beam.elevation = ENEMY_STATS[hit.target.body.kind].elevation;
 			if (hit) hurtTarget(state, hit.target, weaponDamage(weapon, mount.level) * dt, p);
-			p.heat += weapon.heat * dt; mount.firing = true;
+			mount.firing = true;
 			return;
 		}
 		if (mount.cooldown > 0) return;
 		const target = weapon.kind === 'missile' ? combatTargets(state).filter(function (candidate) { return distance(candidate.body, p) <= weapon.range; }).reduce<CombatTarget | undefined>(function (best, candidate) { return !best || distance(candidate.body, input.aim) < distance(best.body, input.aim) ? candidate : best; }, undefined) : undefined;
 		for (let projectile = 0; projectile < (weapon.kind === 'rocket' || weapon.stream ? 1 : weapon.projectiles); projectile++) {
+			if (!consumeFire(mount, p)) break;
 			const spread = weapon.projectiles === 1 ? Math.sin(state.stats.shotsFired * 2.4) * weapon.spread : (projectile - (weapon.projectiles - 1) / 2) * weapon.spread;
 			launchWeapon(state, weapon, mount, p.turret + spread, slot, target?.id);
 		}
-		if ((weapon.kind === 'rocket' || weapon.stream) && weapon.projectiles > 1) mount.rocketVolley = { remaining: weapon.projectiles - 1, nextIn: 0.1 };
-		mount.cooldown = weapon.interval; mount.firing = true; p.heat += weapon.heat;
+		if ((weapon.kind === 'rocket' || weapon.stream) && weapon.projectiles > 1 && usableMount(mount) && !p.overheated) mount.rocketVolley = { remaining: Math.min(weapon.projectiles - 1, mount.rounds), nextIn: 0.1 };
+		mount.cooldown = weapon.interval; mount.firing = true;
 		if (weapon.kind === 'cannon' || weapon.kind === 'ppc') { state.cannonIn = 0.65; state.shake = weapon.kind === 'ppc' ? 4 : 3; }
 		state.events.push(weapon.kind === 'bullet' ? 'machine-gun' : weapon.kind);
 		burst(state, { x: p.x + Math.cos(p.turret) * 36, y: p.y + Math.sin(p.turret) * 36 }, weapon.kind === 'bullet' ? 9 : 20, weapon.color, 'muzzle', slot);
 	});
-	if (p.heat >= 100) { p.heat = 100; p.overheated = true; state.stats.overheats++; state.events.push('overheat'); }
+	if (!wasOverheated && p.overheated) { state.stats.overheats++; state.events.push('overheat'); }
 
 };
 
@@ -373,7 +403,7 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 		if (enemy.hp > 0 && (distance(enemy, p) < Math.max(850, ENEMY_STATS[enemy.kind].aggro) || enemy.hp < enemy.maxHp)) enemy.engaged = true;
 	}
 	const orders = planSquads(enemies.filter(function (enemy) {
-		return enemy.hp > 0 && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && (!mission || relay !== undefined || enemy.engaged);
+		return enemy.hp > 0 && enemyMounts(enemy).some(usableMount) && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && (!mission || relay !== undefined || enemy.engaged);
 	}).map(function (enemy) { return { id: enemy.id, x: enemy.x, y: enemy.y, aggro: ENEMY_STATS[enemy.kind].aggro, ...(enemy.squad ? { order: enemy.squad } : {}) }; }), p, relay, dt);
 	for (const enemy of enemies) {
 		const order = orders.get(enemy.id);
@@ -385,16 +415,39 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 		if (enemy.hp <= 0) continue;
 		const stats = ENEMY_STATS[enemy.kind];
 		const mounts = enemyMounts(enemy);
+		const reactor = enemyReactor(enemy);
+		coolReactor(reactor, stats.cooling, dt);
+		const speed = stats.speed * enemyWeight(enemy).modifier;
 		for (const mount of enemy.loadout ?? []) { mount.firing = false; mount.cooldown = Math.max(0, mount.cooldown - dt); }
 		if (mission && !relay && !enemy.engaged) continue;
 		const individualTarget = !relay || enemy.commander || distance(enemy, p) < stats.aggro ? p : relay;
 		const target = order ? order.target === 'relay' && relay ? relay : p : individualTarget;
+		for (const mount of mounts) {
+			const volley = mount.rocketVolley;
+			if (!volley) continue;
+			volley.nextIn -= dt;
+			while (volley.remaining > 0 && volley.nextIn <= 1e-9) {
+				if (!launchEnemy(state, enemy, mount, target, stats.damage * difficulty.enemyDamage)) { volley.remaining = 0; break; }
+				volley.remaining--; volley.nextIn += 0.1;
+			}
+			if (volley.remaining === 0) delete mount.rocketVolley;
+		}
 		if (enemy.attack) {
 			enemy.attack.remaining -= dt;
 			if (enemy.attack.remaining <= 0) {
 				if (enemy.attack.phase === 'committed') { enemy.attack.phase = 'recovery'; enemy.attack.remaining = enemy.commander ? 4.2 : 3.2; }
 				else { delete enemy.attack; enemy.cooldown = enemy.commander ? getEnemyDefense(state, enemy).enraged ? 1.2 : 2.2 : stats.reload; }
 			}
+			continue;
+		}
+		if (!mounts.some(usableMount)) {
+			// Local disengagement keeps dry units inside the map and targetable.
+			const away = Math.atan2(enemy.y - target.y, enemy.x - target.x);
+			const heading = enemy.hullAngle ?? enemy.angle;
+			const turnRate = enemy.kind === 'tank' ? 0.5 : enemy.kind === 'siege' ? 0.65 : 2;
+			enemy.hullAngle = heading + clamp(angleDelta(heading, away), -dt * turnRate, dt * turnRate);
+			enemy.x = clamp(enemy.x + Math.cos(enemy.hullAngle) * speed * dt, 35, bounds.width - 35);
+			enemy.y = clamp(enemy.y + Math.sin(enemy.hullAngle) * speed * dt, 35, bounds.height - 35);
 			continue;
 		}
 		const targetAngle = Math.atan2(target.y - enemy.y, target.x - enemy.x);
@@ -410,8 +463,8 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 			const vx = Math.cos(targetAngle) * radial - Math.sin(targetAngle) * lateral;
 			const vy = Math.sin(targetAngle) * radial + Math.cos(targetAngle) * lateral;
 			const magnitude = Math.max(1, Math.hypot(vx, vy));
-			enemy.x = clamp(enemy.x + vx / magnitude * dt * stats.speed, 35, bounds.width - 35);
-			enemy.y = clamp(enemy.y + vy / magnitude * dt * stats.speed, 35, bounds.height - 35);
+			enemy.x = clamp(enemy.x + vx / magnitude * dt * speed, 35, bounds.width - 35);
+			enemy.y = clamp(enemy.y + vy / magnitude * dt * speed, 35, bounds.height - 35);
 			if (Math.hypot(vx, vy) > 0.05) {
 				const heading = enemy.hullAngle ?? enemy.angle;
 				enemy.hullAngle = heading + clamp(angleDelta(heading, Math.atan2(vy, vx)), -dt * 2, dt * 2);
@@ -420,29 +473,29 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 			enemy.hullAngle ??= enemy.angle;
 			if (separation > range) {
 				enemy.hullAngle += clamp(angleDelta(enemy.hullAngle, targetAngle), -dt * 0.5, dt * 0.5);
-				enemy.x = clamp(enemy.x + Math.cos(enemy.hullAngle) * dt * stats.speed, 35, bounds.width - 35);
-				enemy.y = clamp(enemy.y + Math.sin(enemy.hullAngle) * dt * stats.speed, 35, bounds.height - 35);
+				enemy.x = clamp(enemy.x + Math.cos(enemy.hullAngle) * dt * speed, 35, bounds.width - 35);
+				enemy.y = clamp(enemy.y + Math.sin(enemy.hullAngle) * dt * speed, 35, bounds.height - 35);
 			}
 		} else if (order) {
 			const destination = squadApproach(enemy, order, target, range, bounds);
 			const travel = distance(enemy, destination);
 			if (travel > 12) {
-				const amount = Math.min(dt * stats.speed, travel) / travel;
+				const amount = Math.min(dt * speed, travel) / travel;
 				const heading = enemy.hullAngle ?? enemy.angle;
 				enemy.hullAngle = heading + clamp(angleDelta(heading, Math.atan2(destination.y - enemy.y, destination.x - enemy.x)), -dt * 2, dt * 2);
 				enemy.x = clamp(enemy.x + (destination.x - enemy.x) * amount, 35, bounds.width - 35);
 				enemy.y = clamp(enemy.y + (destination.y - enemy.y) * amount, 35, bounds.height - 35);
 			}
-		} else if (separation > range) { enemy.x = clamp(enemy.x + Math.cos(enemy.angle) * dt * stats.speed, 35, bounds.width - 35); enemy.y = clamp(enemy.y + Math.sin(enemy.angle) * dt * stats.speed, 35, bounds.height - 35); }
+		} else if (separation > range) { enemy.x = clamp(enemy.x + Math.cos(enemy.angle) * dt * speed, 35, bounds.width - 35); enemy.y = clamp(enemy.y + Math.sin(enemy.angle) * dt * speed, 35, bounds.height - 35); }
 		enemy.cooldown -= dt;
-		if (enemy.cooldown <= 0 && distance(enemy, target) < range + 50 && Math.abs(angleDelta(enemy.angle, targetAngle)) < 0.3) {
-			if (enemy.kind === 'siege') {
-				const artillery = mounts.find(function (mount) { return getEnemyHardpoints(enemy.kind, enemy.commander)[mount.slot ?? 0]?.id === 'dorsal-artillery'; });
-				if (artillery) commitBarrage(state, enemy, target, artillery);
-			} else {
+		if (!reactor.overheated && enemy.cooldown <= 0 && distance(enemy, target) < range + 50 && Math.abs(angleDelta(enemy.angle, targetAngle)) < 0.3) {
+			const ready = mounts.filter(function (mount) { return usableMount(mount) && mount.cooldown <= 0 && !mount.rocketVolley; });
+			const artillery = enemy.kind === 'siege' || enemy.commander ? ready.find(function (mount) { return getEnemyHardpoints(enemy.kind, enemy.commander)[mount.slot ?? 0]?.id === 'dorsal-artillery'; }) : undefined;
+			if (artillery) commitBarrage(state, enemy, target, artillery);
+			else {
 				const next = enemy.attackSlot ?? 0;
-				const mount = mounts[next % Math.max(1, mounts.length)];
-				if (mount) { launchEnemy(state, enemy, mount, target, stats.damage * difficulty.enemyDamage); enemy.attackSlot = next + 1; }
+				const mount = Array.from({ length: mounts.length }, function (_unused, offset) { return mounts[(next + offset) % mounts.length]; }).find(function (candidate) { return candidate !== undefined && ready.includes(candidate); });
+				if (mount) { fireEnemyMount(state, enemy, mount, target, stats.damage * difficulty.enemyDamage); enemy.attackSlot = mounts.indexOf(mount) + 1; }
 			}
 			enemy.cooldown = stats.reload;
 		}

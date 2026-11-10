@@ -18,7 +18,7 @@ Controls appear during live play; alarms sound through the escape, whose map now
 covers three times the original area with six guards along the route. Hold the
 green evacuation zone for three seconds to finish.
 The borrowed rig, combat damage, and kills do not carry into the company.
-Completion is saved per company; existing saves bypass the prologue. REPLAY ESCAPE
+Completion is saved per company; completed v4 companies bypass the prologue. REPLAY ESCAPE
 on the title menu repeats the full sequence without changing company progress.
 
 Completing the escape boards the Wayfarer directly at the company bridge and
@@ -81,8 +81,8 @@ the required days and zero-credit cost before the usual confirmation.
 A frame can have one repair or refit order at a time and cannot deploy while
 that work is underway. Different frames have separate crews and work in
 parallel. A damaged frame above 0% can deploy if it has at least one installed
-weapon. A destroyed or unarmed frame cannot deploy. The Mech Bay requires staged
-loadout edits to be queued or discarded before launch.
+usable weapon with ammunition, or an energy weapon. A destroyed, unarmed, or completely dry frame cannot deploy. The Mech Bay requires staged
+loadout edits to be applied, queued, or discarded before launch.
 
 Engineering can advance one day or wait until the next scheduled completion.
 Travel and mission settlement also advance work by one day. Waiting does not
@@ -90,6 +90,14 @@ charge credits or refresh contract postings. Calendar time does not advance
 while the browser is idle. An accepted but undeployed contract can remain open
 while the crew finishes work; company changes and calendar advancement are
 locked during a deployment.
+
+Ammunition reserves are selected per mount in the Mech Bay. Ammunition-only
+changes take **zero credits and zero days**; changes to fitted hardware retain
+the refit timing above. Pending refits keep their own desired reserves until
+completion. Every new sortie loads the selected quantities for free, including
+after failure, abort, or interrupted deployment. Remaining battlefield rounds
+are runtime state and never replace the ship's desired load. No ordinary sortie
+replenishes ammunition in combat.
 
 ## Contracts and surface missions
 
@@ -177,6 +185,19 @@ subsequent reloads do not duplicate rewards.
 | Morrow 52 · 70T | 6,500 CR | Missile support / Trident | 88 / 48 m/s | 12 heat/s | Guided area fire; takes 10% more damage |
 | Maul 34 · 100T | 7,500 CR | Brawler / Hailstorm | 82 / 40 m/s | 11 heat/s | Takes 22% less damage; slow hull and turret traverse |
 
+Frame tonnage above is **base chassis mass**, including fixed equipment.
+Recommended operating weights are Kestrel **44T**, Warden **92T**, Longbow **73T**,
+Morrow **86T**, and Maul **114T**. Installed weapons and remaining ammunition add
+to base mass. At the recommendation, cruise and reverse use the listed speed.
+Underweight speed receives a modest bonus capped at 15%; overload is steeper:
+150% of recommended weight gives 50% speed, with a 35% minimum. Overweight
+deployment is allowed. Expending rounds reduces weight and updates both forward
+and reverse top speed; player acceleration still smooths velocity changes.
+These are first-version balance values. The default 240-shell AC reserve was
+raised after an ideal-hit tier-one clearance check exhausted the initial
+160-shell load; the 92T Warden recommendation keeps its starter load at baseline
+speed. Real combat accuracy and owner balance playtesting remain separate checks.
+
 Hardpoints follow the current model hardware:
 
 | Frame | Hardpoints | Accepted weapons |
@@ -207,11 +228,33 @@ These presentation differences do not change collision shapes.
 | Rattler | 500 CR | 8-damage machine-gun tracer every 0.105s; low heat, narrow spread |
 | AC/38 | 750 CR | 38-damage cannon shell every 0.65s; precise impact |
 | ARC | 800 CR | 56 damage/second laser; continuous first-target beam |
-| Lance | 850 CR | 31-damage unguided rocket every 0.42s |
-| Needle | 1,000 CR | 25-damage guided missile every 0.48s |
-| Hailstorm | 1,200 CR | Five unguided 24-damage rockets every 1.8s; area burst |
-| Trident | 1,400 CR | Three guided 30-damage warheads every 2.1s; area burst |
+| Lance /2 | 850 CR | Two 31-damage unguided rockets, staggered, every 0.42s |
+| Needle /2 | 1,000 CR | Two 25-damage guided missiles, staggered, every 0.48s |
+| Hailstorm /2 | 1,200 CR | Two unguided 24-damage rockets every 1.8s; area burst |
+| Trident /2 | 1,400 CR | Two guided 30-damage warheads every 2.1s; area burst |
 | Tempest | 1,500 CR | 82-damage piercing particle bolt every 1.6s; high heat |
+
+Launchers also have /4 and /6 variants. Each emitted bullet, shell, rocket, or
+missile consumes one round. A partly loaded launcher fires only its remaining
+rounds; staggered rounds obey heat lock at emission. Already launched ordnance
+continues to resolve.
+
+Initial ammunition and hardware tuning, in tonnes:
+
+| Equipment | Hardware | Per round | Default / maximum rounds | Sustained heat before cooling |
+| --- | --- | --- | --- | --- |
+| Rattler | 2T | 0.001T | 1,200 / 2,400 | 6.7/s |
+| AC/38 | 6T | 0.025T | 240 / 480 | 9.2/s |
+| ARC | 5T | — | No ammunition | 40/s |
+| Tempest | 8T | — | No ammunition | 37.5/s |
+| Rocket launchers /2, /4, /6 | 5 / 8 / 11T | 0.018T | 360 / 720 | 1.2 per emitted rocket |
+| Missile launchers /2, /4, /6 | 6 / 9 / 12T | 0.025T | 360 / 720 | 1.6 per emitted missile |
+
+Launcher heat rate is heat per round × salvo size ÷ firing interval, with stream
+intervals bounded below by 0.1s per round. Even the fastest /6 stream launcher
+stays below 17 heat/s; energy weapons trade ammunition independence for much
+higher sustained reactor demand. All reserve quantities must be whole rounds
+within the displayed mount limit; energy and empty slots carry zero reserves.
 
 Each mount has its own cooldown. All installed weapons track the same turret
 and share reactor heat. Missiles acquire the live target nearest the aim point
@@ -225,7 +268,11 @@ only one charge, and a cold reactor consumes none. There is no combat resupply.
 
 Enemy equipment follows the same weapon-family rules: scouts carry light ballistic
 guns, strikers add shoulder launchers, and siege / command frames retain their
-dorsal artillery and existing barrage cadence.
+dorsal artillery and existing barrage cadence. Mechs, aircraft, tanks, siege
+units, and commanders obey the same weight curve and reactor thresholds.
+Artillery pays for every committed shell. Enemies skip dry mounts, pause to cool,
+and disengage locally when all mounts are dry. They stay on the map and remain
+targetable; exhaustion never awards a kill or completes an objective.
 
 Siege enemies protect their front with a 120-degree armor arc. Flank them or
 attack the green **EXPOSED** recovery window for 135% damage. Artillery commits
@@ -242,6 +289,10 @@ then switches to a Longbow laser for heat and coolant in a separate, unscored si
 guided missiles, combined fire, heat, coolant, and artillery evasion. It uses
 the same controls and simulation as missions, supports safe retries, and does
 not change company equipment, damage, credits, reputation, or calendar days.
+The simulator alone reloads dry drill weapons once launched ordnance resolves,
+clears heat, and places a fresh target so repeated misses cannot strand a drill.
+Both borrowed escape rigs can reach evacuation without firing or killing guards;
+Kestrel starts with finite machine-gun reserves, while Longbow uses energy heat.
 Pause can restart or leave training. Completion returns to the ship or the
 accepted contract's loadout review.
 
@@ -307,7 +358,7 @@ Recovery requires explicit resume.
 
 Keyboard/mouse and controller share a direct-fire cockpit. Frame integrity, reactor
 heat, throttle, and the mapped stop input sit at the lower left; hardpoints, fitted
-weapons, live fire bindings, readiness/reload/heat lock, and coolant sit at the
+weapons, live fire bindings, remaining ammunition, readiness/reload/heat lock, and coolant sit at the
 lower right. Controller use enlarges the same layout and changes the prompts to
 the detected controller family. Combined fire uses independent mapped inputs;
 there is no mount arming step or touch target tracking in these modes. Simulation
@@ -366,8 +417,8 @@ overlay stack. Pause and auxiliary dialogs retain the underlying combat entities
 simulation systems stop while browser input and permitted presentation continue.
 Transitions clear pending input and require controller neutral before resuming.
 Save conflicts remain locked to reload. Company transactions, save validation,
-and serialization remain ordinary domain functions, with unchanged v3 company
-and v1 preference formats. Mission replacement removes the previous entities;
+and serialization remain ordinary domain functions, using the fresh v4 company
+and unchanged v1 preference formats. Mission replacement removes the previous entities;
 their view components release models. The application cleanup owner stops
 listeners and adapters, disposes the shared world, then releases its supplied
 renderer, including after partial initialization failure.
@@ -480,15 +531,12 @@ The Pages workflow deploys `master` after the complete check. Pull requests must
 satisfy live branch protection; workflow definitions alone do not establish
 merge readiness. The custom domain is configured in `CNAME`.
 
-Company progression uses **`heavy-rig:campaign:v3`**. The territory extension
-preserves existing v3 companies, equipment, standings, and accepted contracts.
-Their existing board remains until the next jump or settlement, when postings
-switch to the local territory rules. Territory influence is saved with the company.
- Version 3 deliberately
-starts a fresh company with chassis-specific hardpoints. Earlier company saves
-are left untouched and are not loaded; no loadout migration is provided. Preferences remain under `heavy-rig:profile:v1`; historical classic
-records in that profile are retained but the classic operation is no longer a
-playable mode.
+Company progression uses **`heavy-rig:campaign:v4`**. Version 4 starts a fresh
+company with saved per-mount ammunition selections and strict loadout validation.
+Earlier campaigns, including v3, are left untouched and are not loaded; no
+migration is provided. Territory influence remains part of the company save.
+Preferences remain under `heavy-rig:profile:v1`; historical classic records in
+that profile are retained but the classic operation is no longer a playable mode.
 
 Saves are browser-local and scoped to the origin. If another tab changes the
 company save, the stale tab stops play and requires reloading before it can

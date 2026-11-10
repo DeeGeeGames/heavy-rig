@@ -17,15 +17,16 @@ test('narrative finishes typing before its full hold and fade, then starts the n
 	expect(narrativeFrame(INTRO_LINES, duration + 0.01).done).toBe(true);
 });
 
-test('new companies require the escape, while existing v3 saves keep their company and bypass it', function () {
+test('v4 companies preserve escape completion and earlier campaign versions are ignored', function () {
 	const fresh = createCampaign(123);
 	expect(fresh.introComplete).toBe(false);
 	expect(parseCampaign(JSON.stringify(fresh)).introComplete).toBe(false);
-	const { introComplete, ...legacy } = fresh;
-	expect(introComplete).toBe(false);
-	expect(parseCampaign(JSON.stringify(legacy))).toEqual({ ...fresh, introComplete: true });
 	const completed = { ...fresh, introComplete: true };
 	expect(parseCampaign(JSON.stringify(completed))).toEqual(completed);
+	const oldCompany = parseCampaign(JSON.stringify({ ...completed, version: 3, credits: 9000 }));
+	expect(oldCompany.version).toBe(4);
+	expect(oldCompany.introComplete).toBe(false);
+	expect(oldCompany.credits).toBe(0);
 });
 
 for (const frame of INTRO_FRAMES) test(`${frame} can escape through real ECS combat without killing the guards`, async function () {

@@ -1,6 +1,7 @@
 import { definePlugin, defineSystemRef } from 'ecspresso';
 import { artilleryStep, coolingStep, createState, deathsStep, effectsStep, enemiesStep, movementStep, outcomeStep, projectilesStep, spawningStep, weaponsStep, type ArtilleryStrike, type CombatCollection, type CombatStateView, type CombatEvent, type CombatStats, type Controls, type Effect, type Point, type Shot, type State, type Unit, type Warning, type Wreck } from './simulation';
 import { finishTraining, prepareTraining, type Training, type TrainingBefore } from './training';
+import type { ReactorState } from './combat-resources';
 import type { WeaponMount } from './arsenal';
 import type { MissionRuntime } from './campaign-types';
 
@@ -19,6 +20,7 @@ export interface CombatComponents {
 	weaponBank: { mounts: WeaponMount[] };
 	enemy: Unit;
 	enemyWeapons: { mounts: WeaponMount[] | undefined };
+	enemyReactor: ReactorState;
 	projectile: Shot;
 	effect: Effect;
 	warning: Warning;
@@ -102,8 +104,8 @@ export const createCombatRuntime = function () {
 			// Unit is the domain-facing enemy view. Rebind it whenever callers replace
 			// the component so its capability fields continue to have one ECS owner.
 			onCleanup(world.onComponentAdded('enemy', function ({ entity, value: enemy }) {
-				const position = { x: enemy.x, y: enemy.y }; const heading = { angle: enemy.angle }; const health = { hp: enemy.hp, maxHp: enemy.maxHp }; const enemyWeapons = { mounts: enemy.loadout };
-				world.addComponents(entity.id, { position, heading, health, enemyWeapons });
+				const position = { x: enemy.x, y: enemy.y }; const heading = { angle: enemy.angle }; const health = { hp: enemy.hp, maxHp: enemy.maxHp }; const enemyWeapons = { mounts: enemy.loadout }; const enemyReactor = { ...(enemy.reactor ?? { heat: 0, overheated: false }) };
+				world.addComponents(entity.id, { position, heading, health, enemyWeapons, enemyReactor });
 				Object.defineProperties(enemy, {
 					x: { configurable: true, enumerable: true, get: function () { return component(entity.id, 'position').x; }, set: function (value: number) { writeField(entity.id, 'position', 'x', value); } },
 					y: { configurable: true, enumerable: true, get: function () { return component(entity.id, 'position').y; }, set: function (value: number) { writeField(entity.id, 'position', 'y', value); } },
@@ -111,6 +113,7 @@ export const createCombatRuntime = function () {
 					hp: { configurable: true, enumerable: true, get: function () { return component(entity.id, 'health').hp; }, set: function (value: number) { writeField(entity.id, 'health', 'hp', value); } },
 					maxHp: { configurable: true, enumerable: true, get: function () { return component(entity.id, 'health').maxHp; }, set: function (value: number) { writeField(entity.id, 'health', 'maxHp', value); } },
 					loadout: { configurable: true, enumerable: true, get: function () { return component(entity.id, 'enemyWeapons').mounts; }, set: function (value: WeaponMount[] | undefined) { writeField(entity.id, 'enemyWeapons', 'mounts', value); } },
+					reactor: { configurable: true, enumerable: true, get: function () { return component(entity.id, 'enemyReactor'); }, set: function (value: ReactorState | undefined) { world.addComponent(entity.id, 'enemyReactor', value ?? { heat: 0, overheated: false }); } },
 				});
 			}));
 			const enemyCollection = collection<Unit>({
@@ -229,7 +232,7 @@ export const createCombatRuntime = function () {
 			world.addSystem('combat:spawning').withRef(refs.spawning).inPhase('fixedUpdate').inGroup('combat').after(refs.weapons).withResources(['combatSession', 'combatOrdering', 'combatProgress', 'combatMission', 'combatConfig', 'combatFeedback'])
 				.setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; spawningStep(state, dt); markAll('warning'); });
 			world.addSystem('combat:enemies').withRef(refs.enemies).inPhase('fixedUpdate').inGroup('combat').after(refs.spawning).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatFeedback', 'combatProgress'])
-				.addQuery('enemies', { with: ['enemy', 'position', 'heading', 'health', 'enemyWeapons'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; enemiesStep(state, dt); markAll('enemy'); markAll('enemyWeapons'); });
+				.addQuery('enemies', { with: ['enemy', 'position', 'heading', 'health', 'enemyWeapons', 'enemyReactor'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; enemiesStep(state, dt); markAll('enemy'); markAll('enemyWeapons'); markAll('enemyReactor'); });
 			world.addSystem('combat:artillery').withRef(refs.artillery).inPhase('fixedUpdate').inGroup('combat').after(refs.enemies).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatStats', 'combatFeedback', 'combatProgress'])
 				.addQuery('victims', { with: ['health'] }).addQuery('strikes', { with: ['artillery'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; artilleryStep(state, dt); markAll('artillery'); });
 			world.addSystem('combat:projectiles').withRef(refs.projectiles).inPhase('fixedUpdate').inGroup('combat').after(refs.artillery).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatStats', 'combatFeedback', 'combatProgress'])

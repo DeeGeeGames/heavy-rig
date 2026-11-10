@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
+import { getWeapon } from '../src/arsenal';
+import { defaultReserves, loadedMounts } from '../src/combat-resources';
+import { createMissionState } from '../src/simulation';
 import { abandonContract, acceptContract, createCampaign, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
-import { advanceDays, applyRigCheat, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, FRAME_PRICES, getOwnedMech, queueRefit, queueRepair, selectFrame, unlockAllRigs, WEAPON_PRICES } from '../src/company';
+import { advanceDays, applyRigCheat, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, FRAME_PRICES, getOwnedMech, queueRefit, queueRepair, selectFrame, setAmmunition, unlockAllRigs, WEAPON_PRICES } from '../src/company';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
 const accept = function (campaign: Campaign): Campaign {
@@ -14,7 +17,7 @@ describe('Company ownership and workshop transactions', function () {
 	test('starts with only Kestrel and requires affordable purchases without duplicate chassis or free armaments', function () {
 		const fresh = createCampaign(23);
 		expect(fresh.selectedFrame).toBe('kestrel');
-		expect(fresh.fleet).toEqual([{ frameId: 'kestrel', integrity: 100, loadout: ['machine-gun', null] }]);
+		expect(fresh.fleet).toEqual([{ frameId: 'kestrel', integrity: 100, loadout: ['machine-gun', null], reserves: defaultReserves(['machine-gun', null]) }]);
 		expect(availableWeapons(fresh, 'machine-gun')).toBe(0);
 		expect(selectFrame(fresh, 'warden')).toBe(fresh);
 		expect(buyFrame(fresh, 'warden')).toBe(fresh);
@@ -34,7 +37,7 @@ describe('Company ownership and workshop transactions', function () {
 		const company = buyWeapon(buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun'), 'stream-rockets');
 		const target = [null, 'machine-gun', 'stream-rockets', null] as const;
 		const queued = queueRefit(company, 'warden', target);
-		expect(queued.workOrders[0]).toEqual({ kind: 'refit', frameId: 'warden', startedDay: 1, readyDay: 4, loadout: target });
+		expect(queued.workOrders[0]).toEqual({ kind: 'refit', frameId: 'warden', startedDay: 1, readyDay: 4, loadout: target, reserves: defaultReserves(target) });
 		expect(getOwnedMech(queued, 'warden')?.loadout).toEqual(['autocannon', null, null, null]);
 		expect(availableWeapons(queued, 'machine-gun')).toBe(0);
 		expect(queueRefit(queued, 'kestrel', ['machine-gun', 'machine-gun'])).toBe(queued);
@@ -162,6 +165,7 @@ describe('Company ownership and workshop transactions', function () {
 		const malformed: unknown[] = [
 			{ ...company, version: 1 },
 			{ ...company, version: 2 },
+			{ ...company, version: 3 },
 			{ ...company, selectedFrame: 'maul' },
 			{ ...company, fleet: [] },
 			{ ...company, fleet: [...company.fleet, company.fleet[0]] },
@@ -216,14 +220,85 @@ test('rig cheat adds credits on every entry while preserving deployment and vali
 	expect(roundTrip(capped)).toEqual(capped);
 });
 
-test('older launcher inventories migrate without losing ownership and reject invalid new counts', function () {
+test('fresh campaign saves require every weapon inventory entry', function () {
 	const company = buyWeapon(buyFrame(funded(), 'maul'), 'cluster-rockets-6');
 	const inventory = Object.fromEntries(Object.entries(company.inventory).filter(function ([id]) { return !id.endsWith('-4') && !id.endsWith('-6'); }));
-	const migrated = parseCampaign(JSON.stringify({ ...company, inventory }));
-	expect(migrated?.fleet).toEqual(company.fleet);
-	expect(migrated?.credits).toBe(company.credits);
-	expect(migrated?.inventory['cluster-rockets']).toBe(1);
-	expect(migrated?.inventory['cluster-rockets-6']).toBe(0);
-	expect(parseCampaign(JSON.stringify({ ...company, inventory: { ...inventory, 'cluster-rockets-6': -1 } })).inventory).toEqual(createCampaign().inventory);
+	const restored = parseCampaign(JSON.stringify({ ...company, inventory }));
+	expect(restored.fleet).toEqual(createCampaign().fleet);
+	expect(restored.credits).toBe(0);
 	expect(roundTrip(company)).toEqual(company);
+});
+
+test('ammunition-only changes are immediate, free, immutable and locked during deployment or work', function () {
+	const company = createCampaign(113);
+	const reserves = [42, 0];
+	const adjusted = queueRefit(company, 'kestrel', ['machine-gun', null], reserves);
+	reserves[0] = 1;
+	expect(getOwnedMech(adjusted)?.reserves).toEqual([42, 0]);
+	expect(getOwnedMech(company)?.reserves).toEqual(defaultReserves(['machine-gun', null]));
+	expect(adjusted.day).toBe(company.day);
+	expect(adjusted.credits).toBe(company.credits);
+	expect(adjusted.inventory).toEqual(company.inventory);
+	expect(adjusted.workOrders).toEqual([]);
+	expect(roundTrip(adjusted)).toEqual(adjusted);
+	expect(canDeploy(accept(adjusted))).toBe(true);
+	expect(canDeploy(accept(setAmmunition(adjusted, 'kestrel', [0, 0])))).toBe(false);
+	const deployed = beginDeployment(accept(adjusted));
+	expect(setAmmunition(deployed, 'kestrel', [1, 0])).toBe(deployed);
+	expect(queueRefit(deployed, 'kestrel', ['machine-gun', null], [1, 0])).toBe(deployed);
+	const pending = queueRefit(adjusted, 'kestrel', [null, 'machine-gun'], [0, 13]);
+	expect(pending.workOrders[0]?.readyDay).toBe(company.day + 2);
+	expect(getOwnedMech(pending)?.reserves).toEqual([42, 0]);
+	expect(setAmmunition(pending, 'kestrel', [1, 0])).toBe(pending);
+	expect(getOwnedMech(cancelWorkOrder(roundTrip(pending), 'kestrel'))?.reserves).toEqual([42, 0]);
+	expect(getOwnedMech(advanceDays(roundTrip(pending), 2))?.reserves).toEqual([0, 13]);
+});
+
+test('new-format saves reject invalid ammunition counts and loadout mismatches', function () {
+	const company = createCampaign(118);
+	const mech = getOwnedMech(company);
+	if (!mech) throw new Error('Missing starter mech');
+	const capacity = getWeapon('machine-gun').ammunition?.capacity;
+	if (capacity === undefined) throw new Error('Missing machine-gun ammunition');
+	for (const rounds of [-1, 0.5, Number.NaN, Number.POSITIVE_INFINITY, capacity + 1]) {
+		expect(setAmmunition(company, 'kestrel', [rounds, 0])).toBe(company);
+		expect(queueRefit(company, 'kestrel', [null, 'machine-gun'], [0, rounds])).toBe(company);
+		const corrupt = { ...company, credits: 77, fleet: [{ ...mech, reserves: [rounds, 0] }] };
+		expect(parseCampaign(JSON.stringify(corrupt)).credits).toBe(0);
+	}
+	for (const reserves of [[], [1], [1, 1], [1, 0, 0]]) {
+		expect(setAmmunition(company, 'kestrel', reserves)).toBe(company);
+		expect(parseCampaign(JSON.stringify({ ...company, credits: 77, fleet: [{ ...mech, reserves }] })).credits).toBe(0);
+	}
+	const energy = buyFrame(funded(), 'longbow');
+	expect(setAmmunition(energy, 'longbow', [1])).toBe(energy);
+	expect(canDeploy(accept(selectFrame(energy, 'longbow')))).toBe(true);
+	const pending = queueRefit(company, 'kestrel', [null, 'machine-gun'], [0, 23]);
+	const order = pending.workOrders[0];
+	if (!order || order.kind !== 'refit') throw new Error('Missing refit');
+	expect(parseCampaign(JSON.stringify({ ...pending, credits: 77, workOrders: [{ ...order, reserves: [23, 0] }] })).credits).toBe(0);
+});
+
+test('sorties consume independent runtime supplies and replenish selected reserves after every settlement path', function () {
+	for (const outcome of ['success', 'failure', 'abort', 'interruption']) {
+		const prepared = setAmmunition(createCampaign(191), 'kestrel', [37, 0]);
+		const deployed = beginDeployment(accept(prepared));
+		const mech = getOwnedMech(deployed); const contract = deployed.active;
+		if (!mech || !contract) throw new Error('Missing deployment');
+		const mounts = loadedMounts(mech.loadout, mech.reserves);
+		const mount = mounts[0];
+		if (!mount) throw new Error('Missing runtime mount');
+		mount.rounds = 0;
+		expect(getOwnedMech(deployed)?.reserves).toEqual([37, 0]);
+		const damaged = checkpointDeployment(deployed, 80, 1);
+		const finished = outcome === 'interruption' ? recoverInterruptedDeployment(roundTrip(damaged))
+			: outcome === 'abort' ? abandonContract(damaged) : settleContract(damaged, outcome === 'success');
+		const nextMech = getOwnedMech(finished);
+		if (!nextMech) throw new Error('Missing settled mech');
+		const state = createMissionState(contract, { frame: nextMech.frameId, loadout: nextMech.loadout, reserves: nextMech.reserves });
+		expect(state.loadout[0]?.rounds).toBe(37);
+		expect(getOwnedMech(roundTrip(finished))?.reserves).toEqual([37, 0]);
+		expect(finished.credits).toBe(outcome === 'success' ? contract.reward : 0);
+		expect(recoverInterruptedDeployment(roundTrip(finished))).toEqual(finished);
+	}
 });

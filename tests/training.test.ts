@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
-import { createTraining, stepTraining, type Training } from '../src/training';
-import type { Controls } from '../src/simulation';
+import { createTraining, prepareTraining, stepTraining, type Training } from '../src/training';
+import { createMount, getWeapon } from '../src/arsenal';
+import { createState, step, type Controls } from '../src/simulation';
 
 const idle = function (training: Training): Controls {
 	return { aim: training.state.enemies[0] ?? training.state.player, drive: 0, turn: 0, stop: false, fire: [false, false, false, false], coolant: false };
@@ -77,4 +78,29 @@ test('training uses legal Warden equipment, then switches to the Longbow energy 
 	expect(training.state.loadout.map(function (mount) { return [mount.weapon, mount.slot]; })).toEqual([['laser', 0]]);
 	for (let tick = 0; tick < 360 && training.stage === 'heat'; tick++) stepTraining(training, { ...idle(training), fire: [true, false, false, false] }, 1 / 60);
 	expect(training.stage).toBe('coolant');
+});
+
+test('dry drills reload only in the simulator after launched rounds resolve, and can be retried repeatedly', function () {
+	const training: Training = { ...createTraining(), stage: 'cannon' };
+	training.state.loadout = [{ ...createMount('autocannon', 0), slot: 0 }];
+	training.state.shots = [{ x: 500, y: 500, vx: 650, vy: 0, life: 0.5, kind: 'cannon', damage: 38, target: undefined }];
+	prepareTraining(training, idle(training));
+	expect(training.state.loadout[0]?.rounds).toBe(0);
+	training.state.shots = [];
+	for (let retry = 0; retry < 3; retry++) {
+		const mount = training.state.loadout[0];
+		if (!mount) throw new Error('Training cannon is required');
+		mount.rounds = 0;
+		training.state.player.heat = 100; training.state.player.overheated = true;
+		prepareTraining(training, idle(training));
+		expect(training.state.loadout[0]?.rounds).toBe(getWeapon('autocannon').ammunition?.defaultLoad);
+		expect(training.state.player.overheated).toBe(false);
+		expect(training.state.enemies).toHaveLength(1);
+		expect(training.stage).toBe('cannon');
+	}
+	const sortie = createState();
+	sortie.loadout = [{ ...createMount('autocannon', 0), slot: 0 }];
+	step(sortie, { ...idle(training), fire: [true, false, false, false] }, 1 / 60);
+	expect(sortie.loadout[0]?.rounds).toBe(0);
+	expect(sortie.stats.shotsFired).toBe(0);
 });
