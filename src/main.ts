@@ -872,6 +872,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (narrativeWaiting || navigation.transitioning || navigation.auxiliary || !focused || document.hidden || contextLost) return;
 		const lines = narrativePart === 'before' ? INTRO_LINES : SADDLE_LINES;
 		const previousNarrative = narrativeFrame(lines, narrativeElapsed);
+		const previousElapsed = narrativeElapsed;
 		narrativeElapsed += dt;
 		const narrative = narrativeFrame(lines, narrativeElapsed);
 		const line = element('intro-line');
@@ -891,6 +892,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		line.style.opacity = String(narrative.opacity);
 		const revealed = narrative.text.slice(previousNarrative.index === narrative.index ? previousNarrative.text.length : 0);
 		if (revealed) { audio.update(audioFrame(frameTime)); audio.typeText(revealed); }
+		// Follow narrative time, so focus loss and overlays pause the jog too.
+		// Emit at most one step per frame; slow frames never produce a burst.
+		const stride = Math.floor(narrativeElapsed / 0.34);
+		if (narrativePart === 'before' && narrative.index === 1 && (previousNarrative.index !== 1 || stride !== Math.floor(previousElapsed / 0.34))) {
+			audio.update(audioFrame(frameTime));
+			audio.jogStep(stride % 2 === 0 ? -1 : 1);
+		}
 		if (narrative.done) {
 			if (narrativePart === 'before') transition(navigation.setScreen('rig-bay'));
 			else startEscape();
