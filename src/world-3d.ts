@@ -157,8 +157,14 @@ export const createWorldObjects = function (scene: Scene) {
 		return { root: value, fill, boundary, countdown, shell, surface, dispose: function () { surface.dispose(); } };
 	};
 	const warningMaterial = glow('#f3a16c');
-	const beam = group('laser'); const beamGlow = new Mesh(cylinder, glow('#5de9e5', 0.6)); const beamCore = new Mesh(cylinder, glow('#dbffff'));
-	const beamImpact = new Mesh(sphere, glow('#b1ffff')); beam.add(beamGlow, beamCore, beamImpact); beamImpact.scale.setScalar(5);
+	const beamGlowSurface = glow('#5de9e5', 0.6); const beamCoreSurface = glow('#dbffff'); const beamImpactSurface = glow('#b1ffff');
+	// Four independently fired slots share materials but retain their own origins.
+	const beams = Array.from({ length: 4 }, function (_unused, slot) {
+		const value = group(slot === 0 ? 'laser' : `laser-${slot}`); value.visible = false;
+		const halo = new Mesh(cylinder, beamGlowSurface); const core = new Mesh(cylinder, beamCoreSurface);
+		const impact = new Mesh(sphere, beamImpactSurface); impact.scale.setScalar(5); value.add(halo, core, impact);
+		return { root: value, halo, core, impact };
+	});
 	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); root.add(smoke);
 	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0);
 	const launches = new WeakMap<Shot, { offset: Vector3; x: number; y: number; distance: number }>();
@@ -301,13 +307,14 @@ export const createWorldObjects = function (scene: Scene) {
 				}
 				value.sparks.instanceMatrix.needsUpdate = true;
 			});
-			beam.visible = !!state.beam;
-			if (state.beam) {
-				const endpoint = state.beam;
+			beams.forEach(function (beam, slot) {
+				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot; });
+				beam.root.visible = endpoint !== undefined;
+				if (!endpoint) return;
 				from.set(state.player.x, 42, state.player.y); to.set(endpoint.x, endpoint.elevation ?? 42, endpoint.y);
-				if (muzzles[0]) from.copy(muzzles[0]);
-				segment(beamGlow, 4.5); segment(beamCore, 1.25); beamImpact.position.copy(to);
-			}
+				const muzzle = muzzles[slot]; if (muzzle) from.copy(muzzle);
+				segment(beam.halo, 4.5); segment(beam.core, 1.25); beam.impact.position.copy(to);
+			});
 			smoke.visible = state.player.heat > 60;
 			if (smoke.visible) {
 				smoke.position.set(state.player.x - Math.cos(state.player.angle) * 23, 70 + state.time * 25 % 24, state.player.y - Math.sin(state.player.angle) * 23);

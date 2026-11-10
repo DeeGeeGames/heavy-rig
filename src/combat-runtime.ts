@@ -33,7 +33,7 @@ export interface CombatResources {
 	combatConfig: Pick<State, 'frame' | 'difficulty' | 'phase' | 'seed'>;
 	combatMission: { value: MissionRuntime | undefined };
 	combatProgress: Pick<State, 'relay' | 'wave' | 'spawned' | 'spawnIn' | 'intermission' | 'time' | 'kills' | 'outcome' | 'nextId'>;
-	combatFeedback: Pick<State, 'beam' | 'shake' | 'cannonIn' | 'events'>;
+	combatFeedback: Pick<State, 'beams' | 'shake' | 'cannonIn' | 'events'>;
 	combatStats: CombatStats;
 	combatControls: { raw: Controls; current: Controls };
 	combatSession: { enabled: boolean; active: boolean; training: Training | undefined; before: TrainingBefore | undefined };
@@ -82,7 +82,7 @@ export const createCombatRuntime = function () {
 			world.addResource('combatConfig', { frame: empty.frame, difficulty: empty.difficulty, phase: empty.phase, seed: empty.seed });
 			world.addResource('combatMission', { value: undefined });
 			world.addResource('combatProgress', { relay: empty.relay, wave: empty.wave, spawned: empty.spawned, spawnIn: empty.spawnIn, intermission: empty.intermission, time: empty.time, kills: empty.kills, outcome: empty.outcome, nextId: empty.nextId });
-			world.addResource('combatFeedback', { beam: undefined, shake: 0, cannonIn: 0, events: [] });
+			world.addResource('combatFeedback', { beams: [], shake: 0, cannonIn: 0, events: [] });
 			world.addResource('combatStats', empty.stats);
 			world.addResource('combatControls', { raw: controls(), current: controls() });
 			world.addResource('combatSession', { enabled: false, active: false, training: undefined, before: undefined });
@@ -142,7 +142,7 @@ export const createCombatRuntime = function () {
 				for (const entity of world.getEntitiesWithQuery(['combatOwned'])) remove(entity.id);
 				const config = { frame: snapshot.frame, difficulty: snapshot.difficulty, phase: snapshot.phase, seed: snapshot.seed };
 				const progress = { relay: snapshot.relay, wave: snapshot.wave, spawned: snapshot.spawned, spawnIn: snapshot.spawnIn, intermission: snapshot.intermission, time: snapshot.time, kills: snapshot.kills, outcome: snapshot.outcome, nextId: snapshot.nextId };
-				const feedback = { beam: snapshot.beam, shake: snapshot.shake, cannonIn: snapshot.cannonIn, events: snapshot.events };
+				const feedback = { beams: snapshot.beams.map(function (beam) { return { ...beam }; }), shake: snapshot.shake, cannonIn: snapshot.cannonIn, events: snapshot.events };
 				world.addResource('combatConfig', config); world.addResource('combatProgress', progress); world.addResource('combatFeedback', feedback); world.addResource('combatStats', snapshot.stats);
 				bindMission(snapshot.mission);
 				const position = { x: snapshot.player.x, y: snapshot.player.y }; const heading = { angle: snapshot.player.angle };
@@ -176,7 +176,9 @@ export const createCombatRuntime = function () {
 					get kills() { return world.getResource('combatProgress').kills; }, set kills(value) { world.getResource('combatProgress').kills = value; },
 					get outcome() { return world.getResource('combatProgress').outcome; }, set outcome(value) { world.getResource('combatProgress').outcome = value; },
 					get nextId() { return world.getResource('combatProgress').nextId; }, set nextId(value) { world.getResource('combatProgress').nextId = value; },
-					get beam() { return world.getResource('combatFeedback').beam; }, set beam(value) { world.getResource('combatFeedback').beam = value; },
+					get beams() { return world.getResource('combatFeedback').beams; }, set beams(value) { world.getResource('combatFeedback').beams = value; },
+					get beam() { return world.getResource('combatFeedback').beams[0]; },
+					set beam(value) { world.getResource('combatFeedback').beams = value ? [{ ...value, slot: value.slot ?? 0 }] : []; },
 					get shake() { return world.getResource('combatFeedback').shake; }, set shake(value) { world.getResource('combatFeedback').shake = value; },
 					get cannonIn() { return world.getResource('combatFeedback').cannonIn; }, set cannonIn(value) { world.getResource('combatFeedback').cannonIn = value; },
 					get events() { return world.getResource('combatFeedback').events; }, set events(value) { world.getResource('combatFeedback').events = value; },

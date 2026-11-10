@@ -3,7 +3,7 @@ import { renderWorkspace, selectWorkspacePane, textItems, type WorkspacePane } f
 import { getWeapon, WEAPONS, WEAPON_FAMILY_LABELS, type WeaponId } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getPlanet, type Campaign } from './campaign';
-import { availableWeapons, canDeploy, canRefit, FRAME_PRICES, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
+import { availableWeapons, canDeploy, canRefit, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
 import { FRAMES, getFrame, type FrameDefinition, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary } from './loadout-ui';
 import { frameWeight, loadedMounts, usableMount } from './combat-resources';
@@ -134,12 +134,12 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 	];
 	return [
 		{ id: 'fleet', label: 'Fleet', items: [
-			html`<span class="eyebrow">${campaign.fleet.length} / ${FRAMES.length} FRAMES OWNED</span>`,
-			...campaign.fleet.map(function (owned) { const definition = getFrame(owned.frameId); const job = workOrderFor(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${definition.name}</b>${renderHullIntegrity(owned.integrity)}<small>${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
-			...textItems('Each chassis is purchased once and includes its signature weapon. Equipment stays with its frame between sorties.'),
+			html`<span class="eyebrow">${campaign.fleet.length} / ${FRAMES.length} VARIANTS OWNED</span>`,
+			...campaign.fleet.map(function (owned) { const definition = getFrame(owned.frameId); const job = workOrderFor(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${definition.chassisName} ${definition.variant}</b><small>${definition.variantName}</small>${renderHullIntegrity(owned.integrity)}<small>${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
+			...textItems('Each variant is a separate purchase with its own equipment, condition, ammunition settings, and workshop crew. Includes one signature weapon.'),
 		], actions: html`<button class="secondary" @click=${function () { actions.navigate('market'); }}>ACQUIRE FRAME →</button>` },
 		{ id: 'condition', label: 'Condition', items: [
-			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${frame.name}</h2></div>`,
+			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName}</p></div>`,
 			renderHullIntegrity(mech.integrity),
 			html`<dl class="frame-specifications"><dt>CRUISE</dt><dd>${frame.speed} m/s</dd><dt>COOLING</dt><dd>${frame.cooling} heat/s</dd><dt>BASE MASS</dt><dd>${massLabel(frame.mass)} incl. fixed equipment</dd><dt>RECOMMENDED</dt><dd>${massLabel(frame.recommendedMass)}</dd></dl>`,
 			...textItems(`INSTALLED: ${loadSummary(frame.id, mech.loadout, mech.reserves)}`),
@@ -161,25 +161,28 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 const marketPanes = function (root: HTMLElement, campaign: Campaign, view: CompanyView, actions: CompanyActions, refresh: () => void): WorkspacePane[] {
 	const weapon = getWeapon(view.weapon); const frame = getFrame(view.frame);
 	const weaponMarket = view.kind === 'weapons';
-	const price = weaponMarket ? WEAPON_PRICES[weapon.id] : FRAME_PRICES[frame.id];
+	const price = weaponMarket ? WEAPON_PRICES[weapon.id] : frame.price;
 	const owned = !weaponMarket && Boolean(getOwnedMech(campaign, frame.id));
 	const affordable = campaign.credits >= price;
 	const select = function () { refresh(); selectWorkspacePane(root, 'details', true); };
 	return [
 		{ id: 'catalogue', label: 'Catalogue', items: [
-			...(weaponMarket ? WEAPONS.map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.id; select(); }}><span><b>${item.name}</b><small>${WEAPON_FAMILY_LABELS[item.family]} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.name}</b><small>${item.mass}T / ${item.role}</small></span><span>${getOwnedMech(campaign, item.id) ? 'OWNED' : creditsLabel(FRAME_PRICES[item.id])}</span></button>`; })),
-			...textItems('Purchases arrive immediately. Installing weapons requires a refit in the Mech Bay. Each chassis can be purchased once and includes its signature weapon.'),
+			...(weaponMarket ? WEAPONS.map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.id; select(); }}><span><b>${item.name}</b><small>${WEAPON_FAMILY_LABELS[item.family]} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${getOwnedMech(campaign, item.id) ? 'OWNED' : creditsLabel(item.price)}</span></button>`; })),
+			...textItems('Purchases arrive immediately. Installing weapons requires a refit in the Mech Bay. Each variant can be purchased once and includes one signature weapon. Different variants of the same chassis can be owned together.'),
 		], actions: html`<button class="secondary" @click=${function () { actions.navigate('mechbay'); }}>EQUIP PURCHASES →</button>` },
 		{ id: 'details', label: 'Item details', items: weaponMarket ? [
 			html`<span class="eyebrow">${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
 			...textItems(`${WEAPON_FAMILY_LABELS[weapon.family]} weapon. ${weapon.description}`),
-			...textItems(`Compatible frames: ${FRAMES.filter(function (definition) { return getHardpoints(definition.id).some(function (_hardpoint, slot) { return canEquipWeapon(definition.id, slot, weapon.id); }); }).map(function (definition) { return definition.name; }).join(', ')}.`),
+			...FRAMES.filter(function (definition) { return definition.variant === 'A'; }).flatMap(function (chassis) {
+				const compatible = FRAMES.filter(function (definition) { return definition.chassisId === chassis.chassisId && getHardpoints(definition.id).some(function (_hardpoint, slot) { return canEquipWeapon(definition.id, slot, weapon.id); }); });
+				return compatible.length ? textItems(`Compatible: ${chassis.chassisName} ${compatible.map(function (definition) { return definition.variant; }).join(' / ')}.`) : [];
+			}),
 			html`<dl class="frame-specifications"><dt>RANGE</dt><dd>${weapon.range} m</dd><dt>HEAT / SUSTAINED</dt><dd>${sustainedHeat(weapon).toFixed(1)} / second</dd><dt>HARDWARE</dt><dd>${massLabel(weapon.mass)}</dd></dl>`,
 			...textItems(weapon.ammunition ? `AMMUNITION: ${weapon.ammunition.defaultLoad} standard / ${weapon.ammunition.capacity} maximum rounds per mount. ${massLabel(weapon.ammunition.mass)} per round; ${massLabel(weapon.ammunition.defaultLoad * weapon.ammunition.mass)} standard reserve. Free replenishment between sorties.` : 'AMMUNITION INDEPENDENT: no rounds required. Higher sustained reactor demand; weapons lock at 100 heat and recover at 35.'),
 			html`<dl class="frame-specifications"><dt>OWNED</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
 			...textItems(affordable ? `${creditsLabel(price)}. Buy another copy to equip the same weapon on another mount or frame.` : `Price ${creditsLabel(price)}. Need ${creditsLabel(price - campaign.credits)} more.`),
 		] : [
-			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.name}</h2></div>`, frameSchematic(frame),
+			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName}</p></div>`, frameSchematic(frame),
 			...textItems(frame.description), ...textItems(`BASE MASS: ${massLabel(frame.mass)} including fixed equipment. RECOMMENDED OPERATING WEIGHT: ${massLabel(frame.recommendedMass)}. Weapons and ammunition add to base mass.`), ...textItems(hardpointSummary(frame.id)), ...textItems(frame.tradeoff),
 			...getHardpoints(frame.id).flatMap(function (hardpoint, index) { return textItems(`${index + 1}. ${hardpoint.name} · ${WEAPON_FAMILY_LABELS[hardpoint.family]}: ${hardpoint.weapons.map(function (id) { return getWeapon(id).type; }).join(' / ')}.`); }),
 			html`<p class="workspace-copy">INCLUDES ${getWeapon(frame.starter).name} · ${owned ? 'ALREADY IN YOUR HANGAR' : creditsLabel(price)}</p>`,
@@ -225,7 +228,7 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	const installedWeight = mech && frame ? frameWeight(frame.id, loadedMounts(mech.loadout, mech.reserves)) : undefined;
 	const hero = screen === 'mechbay' && mech && frame ? html`
-		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.role}</span><h2>${frame.name} <small>/ ${frame.designation}</small></h2></div><span class="eyebrow">ACTIVE FRAME</span></div>
+		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${frame.chassisName} ${frame.variant} <small>/ ${frame.designation}</small></h2></div><span class="eyebrow">ACTIVE FRAME</span></div>
 		<div class="hangar-model"><canvas data-hangar-frame=${frame.id} aria-label=${`${frame.name} frame preview`}></canvas><span class="hangar-fallback">${frame.name} / ${frame.role}</span></div>
 		<div class="hangar-service">
 			${renderHullIntegrity(mech.integrity)}

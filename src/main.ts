@@ -31,7 +31,7 @@ import { focusTerritoryMap } from './territory-map';
 import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
 import { missionObjective } from './missions';
-import { FRAME_PRICES, WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
+import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import type { Campaign } from './campaign';
 import { createTitleScene } from './title-scene';
@@ -429,7 +429,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (days === 0) { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Ammunition load saved. 0 CR · no calendar time.', undefined, true); return; }
 				confirm(function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Refit queued. Advance the calendar to finish installation.', 'engineering', true); }, 'QUEUE REFIT', `${days} calendar days. Ready day ${campaign.day + days}. ${loadSummary(campaign.selectedFrame, editor.loadout, editor.reserves)} The frame cannot deploy until work finishes.`, 'QUEUE THIS REFIT?');
 			},
-			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its standard weapon. Select it in the Mech Bay.`); }, 'BUY FRAME', `${FRAME_PRICES[id].toLocaleString()} CR. Includes its signature weapon; arrives immediately.`, `BUY ${getFrame(id).name}?`); },
+			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its standard weapon. Select it in the Mech Bay.`); }, 'BUY FRAME', `${getFrame(id).price.toLocaleString()} CR. Includes its signature weapon; arrives immediately.`, `BUY ${getFrame(id).name}?`); },
 			buyWeapon: function (id) { confirm(function () { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); }, 'BUY WEAPON', `${WEAPON_PRICES[id].toLocaleString()} CR. Delivered to stores. Installation requires a separate refit.`, `BUY ${getWeapon(id).name}?`); },
 			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${getFrame(id).name}?`); },
 			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${getFrame(id).name} WORK?`); },
@@ -827,7 +827,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		ui.drive.textContent = `${p.throttle < -0.005 ? 'REV' : p.throttle > 0.005 ? 'FWD' : 'N'} ${Math.round(Math.abs(p.throttle) * 100)}%`;
 		const definition = getFrame(state.frame);
 		const weight = frameWeight(state.frame, state.loadout);
-		element('combat-frame-name').textContent = definition.name.toUpperCase();
+		element('combat-frame-name').textContent = `${definition.chassisName} ${definition.variant}`;
 		const arcadeMovement = inputMode === 'touch' || profile.settings.controlMode === 'arcade';
 		element('combat-control-mode').textContent = arcadeMovement ? 'ARCADE' : 'SIMULATION';
 		element('drive-behavior').textContent = arcadeMovement ? 'RELEASE TO SLOW' : 'RELEASE TO CRUISE';

@@ -52,7 +52,7 @@ Pages remember their focus and refit drafts survive department changes.
 Purchases, work orders, calendar advances, travel, contract acceptance, and
 deployment show a confirmation with their cost or consequences first.
 
-Each chassis can be purchased once. Purchases arrive immediately; installing or
+Each variant can be purchased once; multiple variants of a chassis can be owned together. Purchases arrive immediately; installing or
 moving weapons requires a refit. Weapons are physical inventory copies shared
 across the fleet: a fitted or reserved copy cannot also be installed on another
 frame. Buying a second copy permits fitting the same weapon family twice.
@@ -175,7 +175,36 @@ the battlefield or grant a fresh frame. Accepted contracts that have not yet
 deployed survive reload without a second acceptance penalty. Success pays once;
 subsequent reloads do not duplicate rewards.
 
-## Frames
+## Frames and variants
+
+The fleet contains six chassis with three separately purchasable variants each.
+Existing rigs are A variants and retain their saved IDs, equipment, reserves,
+condition, and workshop orders in campaign v4. Each variant has its own crew and
+condition; shared weapon inventory still prevents double allocation. Purchases
+include one signature weapon, not a fully fitted example loadout.
+
+| Chassis | A | B | C |
+| --- | --- | --- | --- |
+| Kestrel | Skirmisher: 2 light B | Spark: light B + compact E | Harrier: light B + compact L |
+| Warden | Line: 2B + 2L | Battery: 2B + 2E | Combined: 2B + E + L |
+| Maul | Breacher: 2L | Breaker: 2B | Furnace: B + E |
+| Longbow | Marksman: E | Rifleman: B + compact E | Overwatch: E + compact L |
+| Morrow | Salvo: 2L | Prism: 2E | Convergence: E + L |
+| Rook | Raider: 2B + compact L | Flare: 2E + compact L | Ranger: B + E + compact L |
+
+B means ballistic, E energy, and L launcher. Light ballistic mounts accept only
+Rattler; compact energy mounts accept only ARC; compact launchers accept only
+two-round rocket/missile weapons. Full mounts retain their family weapon choices.
+Longbow B/C include 3T of permanent auxiliary structure, even with an empty
+secondary mount. They ship with a Rattler and ARC respectively to keep their
+starter loads mobile; fitting a cannon or particle gun adds its full weight.
+Rook is a medium three-mount chassis with two underslung arms
+and a central dorsal pod: 55T base, 66T recommended operating weight, 95/52 m/s
+forward/reverse baseline, 12 heat/s cooling, and 20% increased incoming damage.
+These are initial tuning values; weapon mass, reserves, and shared heat determine
+the effective mobility and endurance of each fitted variant.
+
+Original A-variant specifications:
 
 | Frame | Ownership / price | Role / included weapon | Cruise / reverse | Cooling | Tradeoff |
 | --- | --- | --- | --- | --- | --- |
@@ -198,7 +227,7 @@ raised after an ideal-hit tier-one clearance check exhausted the initial
 160-shell load; the 92T Warden recommendation keeps its starter load at baseline
 speed. Real combat accuracy and owner balance playtesting remain separate checks.
 
-Hardpoints follow the current model hardware:
+Original A-variant hardpoints:
 
 | Frame | Hardpoints | Accepted weapons |
 | --- | --- | --- |
@@ -440,7 +469,7 @@ and effect pools, synthesized audio, haptics, and DOM rendering remain explicit
 presentation adapters consuming the authoritative runtime view and feedback.
 Rendering optimization remains separate work under issue #10.
 
-All five company frames and the scout, striker, siege, and Crown commander now
+All company chassis and the scout, striker, siege, and Crown commander now
 use shaped low-poly armor, octagonal hardware, and articulated legs in gameplay.
 The title scene uses the same redesigned Warden. Existing frame proportions,
 gait rigs, and combat handling are preserved. Rigid surfaces use vertex colors and are combined

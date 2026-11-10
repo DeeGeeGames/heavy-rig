@@ -8,6 +8,7 @@ import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, FACILITY_TARGET
 import { planSquads, squadApproach, type SquadOrder } from './enemy-squads';
 
 export interface Point { x: number; y: number }
+export interface Beam extends Point { slot: number; elevation?: number }
 export type MechEnemyKind = 'scout' | 'striker' | 'siege';
 export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
@@ -29,7 +30,7 @@ export interface CombatStateView {
 	player: Point & { angle: number; turret: number; throttle: number; speed: number; hp: number; heat: number; overheated: boolean };
 	relay: number; enemies: CombatCollection<Unit>; shots: CombatCollection<Shot>; effects: CombatCollection<Effect>; wave: number; spawned: number; spawnIn: number;
 	intermission: number; cannonIn: number; time: number; kills: number; shake: number;
-	beam: (Point & { elevation?: number }) | undefined; outcome: 'playing' | 'won' | 'lost'; nextId: number;
+	beams: Beam[]; beam: (Point & { slot?: number; elevation?: number }) | undefined; outcome: 'playing' | 'won' | 'lost'; nextId: number;
 	coolantCharges: number; coolantHeld: boolean; warnings: CombatCollection<Warning>; wrecks: CombatCollection<Wreck>; events: CombatEvent[];
 }
 // Plain domain callers retain ordinary mutable arrays. The live runtime exposes
@@ -119,7 +120,11 @@ export const createState = function (options: { difficulty?: Difficulty; frame?:
 		stats: { damageDealt: 0, damageTaken: 0, relayDamage: 0, shotsFired: 0, shotsHit: 0, overheats: 0, killScore: 0, commanderDestroyed: false },
 		player: { x: 900, y: 780, angle: -Math.PI / 2, turret: -Math.PI / 2, throttle: 0, speed: 0, hp: 100, heat: 0, overheated: false },
 		relay: 100, enemies: [], shots: [], effects: [], wave: 1, spawned: 0, spawnIn: 4, intermission: 0,
-		cannonIn: 0, time: 0, kills: 0, shake: 0, beam: undefined, outcome: 'playing', nextId: 1,
+		cannonIn: 0, time: 0, kills: 0, shake: 0, beams: [],
+		// The legacy single-beam view is derived from the authoritative slot list.
+		get beam() { return this.beams[0]; },
+		set beam(value) { this.beams = value ? [{ ...value, slot: value.slot ?? 0 }] : []; },
+		outcome: 'playing', nextId: 1,
 		coolantCharges: 2, coolantHeld: false, warnings: [], wrecks: [], events: [],
 	};
 };
@@ -313,7 +318,7 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 export const weaponsStep = function (state: CombatStateView, input: Controls, dt: number) {
 	const p = state.player;
 	const wasOverheated = p.overheated;
-	state.beam = undefined;
+	state.beams = [];
 	const firingSlots = new Set<number>();
 	state.loadout.forEach(function (mount, index) {
 		const slot = mount.slot ?? index;
@@ -342,8 +347,9 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 				return { target, along: dx * Math.cos(p.turret) + dy * Math.sin(p.turret), across: Math.abs(dx * Math.sin(p.turret) - dy * Math.cos(p.turret)) };
 			}).filter(function (candidate) { return candidate.along > 0 && candidate.along < weapon.range && candidate.across < (candidate.target.kind === 'enemy' ? 24 : candidate.target.radius); }).sort(function (a, b) { return a.along - b.along; })[0];
 			const length = hit?.along ?? weapon.range;
-			state.beam = { x: p.x + Math.cos(p.turret) * length, y: p.y + Math.sin(p.turret) * length };
-			if (hit?.target.kind === 'enemy' && ENEMY_STATS[hit.target.body.kind].elevation > 42) state.beam.elevation = ENEMY_STATS[hit.target.body.kind].elevation;
+			const beam: Beam = { slot, x: p.x + Math.cos(p.turret) * length, y: p.y + Math.sin(p.turret) * length };
+			if (hit?.target.kind === 'enemy' && ENEMY_STATS[hit.target.body.kind].elevation > 42) beam.elevation = ENEMY_STATS[hit.target.body.kind].elevation;
+			state.beams.push(beam);
 			if (hit) hurtTarget(state, hit.target, weaponDamage(weapon, mount.level) * dt, p);
 			mount.firing = true;
 			return;
