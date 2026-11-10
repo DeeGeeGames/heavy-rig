@@ -13,11 +13,11 @@ const find = function (root: Object3D, name: string): Object3D {
 };
 const configurations = [
 	...FRAMES.map(function (frame) {
-		return { name: frame.id, size: frame.size, stride: frame.stride, rig: FRAME_RIGS[frame.id], create: function () { return createMech(undefined, false, frame.id); } };
+		return { name: frame.id, heel: frame.chassisId === 'kestrel' ? -27 : -16, size: frame.size, stride: frame.stride, rig: FRAME_RIGS[frame.id], create: function () { return createMech(undefined, false, frame.id); } };
 	}),
 	...(['scout', 'striker', 'siege', 'commander'] as const).map(function (name) {
 		const kind: EnemyKind = name === 'commander' ? 'siege' : name;
-		return { name, size: mechScale(kind), stride: 1, rig: STANDARD_LEG_RIG, create: function () { return createMech(kind, name === 'commander'); } };
+		return { name, heel: -16, size: mechScale(kind), stride: 1, rig: STANDARD_LEG_RIG, create: function () { return createMech(kind, name === 'commander'); } };
 	}),
 ];
 
@@ -42,8 +42,8 @@ for (const config of configurations) test(`${config.name} rolls its feet without
 				if (gait.swing?.index !== index && contact.lift === 0) {
 					// The loaded toe (forward) or heel (reverse) must remain over
 					// the same ground point while the ankle rolls above it.
-					const toeLoaded = shoe.rotation.z < 0; const heel = config.name === 'kestrel' ? -27 : -16;
-					const forward = toeLoaded ? humanoid ? 26 : 21 : heel; const height = toeLoaded && !humanoid ? 0.1 : 0;
+					const toeLoaded = shoe.rotation.z < 0;
+					const forward = toeLoaded ? humanoid ? 26 : 21 : config.heel; const height = toeLoaded && !humanoid ? 0.1 : 0;
 					const pinned = toeLoaded && !humanoid ? toes.localToWorld(new Vector3(13, -2.9, 0)) : shoe.localToWorld(new Vector3(forward, 0, 0));
 					expect(pinned.distanceTo(new Vector3(contact.x + Math.cos(contact.angle) * forward * config.size, height * config.size, contact.y + Math.sin(contact.angle) * forward * config.size))).toBeLessThan(1e-7);
 				}

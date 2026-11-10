@@ -24,7 +24,6 @@ export interface CompanyState {
 
 export const MAX_DAY = 1_000_000_000;
 const MAX_INVENTORY = 1000;
-export const FRAME_PRICES: Readonly<Record<FrameId, number>> = { kestrel: 4000, warden: 5000, longbow: 6000, morrow: 6500, maul: 7500 };
 export const WEAPON_PRICES: Readonly<Record<WeaponId, number>> = {
 	'machine-gun': 500, autocannon: 750, laser: 800, 'stream-rockets': 850,
 	'stream-rockets-4': 1700, 'stream-rockets-6': 2550, 'stream-missiles-4': 2000, 'stream-missiles-6': 3000,
@@ -91,11 +90,11 @@ export const selectFrame = function (campaign: Campaign, frameId: FrameId): Camp
 	return { ...campaign, selectedFrame: frameId };
 };
 export const buyFrame = function (campaign: Campaign, frameId: FrameId): Campaign {
-	if (campaign.deployed || !isFrameId(frameId) || getOwnedMech(campaign, frameId) || campaign.credits < FRAME_PRICES[frameId]) return campaign;
+	if (campaign.deployed || !isFrameId(frameId) || getOwnedMech(campaign, frameId) || campaign.credits < getFrame(frameId).price) return campaign;
 	const starter = getFrame(frameId).starter;
 	if (campaign.inventory[starter] >= MAX_INVENTORY) return campaign;
 	return {
-		...campaign, credits: campaign.credits - FRAME_PRICES[frameId],
+		...campaign, credits: campaign.credits - getFrame(frameId).price,
 		fleet: [...campaign.fleet, createOwnedMech(frameId)],
 		inventory: { ...campaign.inventory, [starter]: campaign.inventory[starter] + 1 },
 	};

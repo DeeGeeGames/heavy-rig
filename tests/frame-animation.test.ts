@@ -4,6 +4,7 @@ import { FRAMES } from '../src/frames';
 import { FRAME_RIGS } from '../src/frame-rig';
 import { advanceGaits, createGaits, footPose, legJoints, posedLegRig } from '../src/gait';
 import { createMech, weaponRecoil } from '../src/mech-3d';
+import { frameWeight } from '../src/combat-resources';
 import { createState, step, type Controls } from '../src/simulation';
 
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 900, y: 0 }, fire: [false, false, false, false], coolant: false };
@@ -54,8 +55,9 @@ for (const frame of FRAMES) {
 				expect(Math.hypot(knee.x - ankle.x, knee.y - ankle.y, knee.z - ankle.z)).toBeCloseTo(rig.lower * frame.size, 6);
 			}
 		}
-		expect(highestSpeed).toBeGreaterThan(frame.speed * 0.97);
-		expect(-reverseSpeed).toBeGreaterThan(frame.reverseSpeed * 0.97);
+		const modifier = frameWeight(frame.id, state.loadout).modifier;
+		expect(highestSpeed).toBeGreaterThan(frame.speed * modifier * 0.97);
+		expect(-reverseSpeed).toBeGreaterThan(frame.reverseSpeed * modifier * 0.97);
 		expect(touchdowns).toBeGreaterThan(15);
 		expect(gaits.player.swing).toBeUndefined();
 		expect(gaits.player.feet.every(function (foot) { return foot.lift === 0; })).toBe(true);

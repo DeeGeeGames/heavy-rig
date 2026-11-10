@@ -45,6 +45,10 @@ const throttleInput = requireElement('throttle'); const playbackInput = requireE
 if (!(throttleInput instanceof HTMLInputElement) || !(playbackInput instanceof HTMLSelectElement) || !(viewInput instanceof HTMLSelectElement) || !(modelInput instanceof HTMLSelectElement)) throw new Error('Invalid model study controls');
 
 const startStudy = function () {
+	modelInput.replaceChildren(...choices.map(function (choice) {
+		return new Option(choice.kind ? choice.id.toUpperCase() : getFrame(choice.frame).name, choice.id);
+	}));
+	modelInput.value = 'warden';
 	const renderer = new WebGLRenderer({ canvas, antialias: true });
 	renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap;
 	renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;

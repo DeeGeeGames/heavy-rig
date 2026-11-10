@@ -1,11 +1,19 @@
 import type { Group, MeshStandardMaterial, Object3D } from 'three';
-import type { FrameId } from './frames';
+import { getFrame, type FrameId } from './frames';
+import { getHardpoints } from './hardpoints';
+import type { WeaponFamily } from './arsenal';
 import type { LowPolyParts } from './low-poly-parts';
 import type { EnemyKind } from './simulation';
 
 // Armor sections describe actual slopes and clipped silhouettes. All positions
 // are in chassis units; the production adapter owns scale and articulation.
 export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group, frame: FrameId, kind?: EnemyKind, commander = false) {
+	const chassis = getFrame(frame).chassisId;
+	const familyAt = function (slot: number): WeaponFamily {
+		const hardpoint = getHardpoints(frame)[slot];
+		if (!hardpoint) throw new RangeError(`Missing model hardpoint ${frame}/${slot}`);
+		return hardpoint.family;
+	};
 	const { housing, cylinder, aperture, group, steel, accent, dark, trim, recess, glass } = parts;
 	const slides: Group[] = []; const muzzles: Object3D[] = []; const pods: Object3D[] = []; const vents: Object3D[] = [];
 	const shutters: { part: Group; y: number }[] = [];
@@ -45,7 +53,42 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 		muzzles.push(anchor(slide, 'weapon-muzzle', tip + 0.7, y, z));
 		return slide;
 	};
-	const rack = function (z: number, bottom: number, width: number, rows: number, x = -12) {
+	const moduleFace = function (parent: Group, family: 'ballistic' | 'energy', x: number, y: number, z: number, width: number) {
+		if (family === 'energy') {
+			cylinder(parent, 'emitter-collar', width * 0.4, 8, dark, x + 1, y, z, 'x');
+			for (const offset of [-2, 2, 6]) cylinder(parent, 'emitter-coil', width * 0.46, 1.6, accent, x + offset, y, z, 'x');
+			cylinder(parent, 'emitter-face', width * 0.34, 1, recess, x + 7, y, z, 'x');
+			cylinder(parent, 'emitter-lens', width * 0.25, 0.5, glass, x + 7.8, y, z, 'x');
+			return anchor(parent, 'weapon-muzzle', x + 8.2, y, z);
+		}
+		for (const offset of [-1, 0, 1]) {
+			const lateral = z + offset * width * 0.29;
+			cylinder(parent, 'array-barrel', width * 0.095, 19, dark, x + 6, y, lateral, 'x');
+			cylinder(parent, 'array-collar', width * 0.135, 2, trim, x + 12, y, lateral, 'x');
+			aperture(parent, 'array-bore', x + 15.6, y, lateral, width * 0.075, 0.35);
+		}
+		return anchor(parent, 'weapon-muzzle', x + 16.1, y, z);
+	};
+	const energyGun = function (z: number, y: number, compact = false, center = 20) {
+		const radius = compact ? 3.4 : 5;
+		casting(turret, 'energy-cradle', center - 11, y, z, 25, radius * 3, radius * 3, steel);
+		const slide = group(turret, z < 0 ? 'left-energy-slide' : 'right-energy-slide'); slides.push(slide);
+		cylinder(slide, 'accelerator-body', radius, compact ? 25 : 37, dark, center, y, z, 'x');
+		muzzles.push(moduleFace(slide, 'energy', center + (compact ? 10 : 16), y, z, radius * 2));
+		return slide;
+	};
+	const compactLauncher = function (z: number, y: number, center = 14) {
+		const pod = group(turret, 'compact-launcher'); slides.push(pod);
+		casting(pod, 'compact-pod-casing', center, y, z, 29, 13, 17, steel);
+		casting(pod, 'compact-pod-cap', center - 1, y + 7, z, 24, 2.2, 14, accent);
+		const front = center + 14.6;
+		for (const side of [-1, 1]) launchTube(pod, front, y, z + side * 3.7, 2.5, 0.65);
+		const muzzle = anchor(pod, 'weapon-muzzle', front + 0.7, y, z);
+		for (const side of [-1, 1]) anchor(muzzle, 'rocket-tube', 0, 0, side * 3.7);
+		muzzles.push(muzzle);
+		return pod;
+	};
+	const rack = function (z: number, bottom: number, width: number, rows: number, x = -12, family: WeaponFamily = 'launcher') {
 		const pod = group(turret, 'salvo-pod'); slides.push(pod);
 		const y = bottom + rows * 4 + 5;
 		housing(pod, 'salvo-casing', [
@@ -60,10 +103,12 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 		], accent, z);
 		// Keep neighboring lips physically separate on the narrow gauntlet rack.
 		const tubeRadius = Math.min(2.3, width / 6.8 - 0.85);
-		for (const column of [-1, 0, 1]) for (let row = 0; row < rows; row++) launchTube(pod, x + 15.05, bottom + 7 + row * 8, z + column * width / 3.4, tubeRadius, 0.7);
-		const muzzle = anchor(pod, 'weapon-muzzle', x + 15.8, bottom + 7, z);
-		for (const column of [-1, 0, 1]) for (let row = 0; row < rows; row++) anchor(muzzle, 'rocket-tube', 0, row * 8, column * width / 3.4);
-		muzzles.push(muzzle);
+		if (family === 'launcher') {
+			for (const column of [-1, 0, 1]) for (let row = 0; row < rows; row++) launchTube(pod, x + 15.05, bottom + 7 + row * 8, z + column * width / 3.4, tubeRadius, 0.7);
+			const muzzle = anchor(pod, 'weapon-muzzle', x + 15.8, bottom + 7, z);
+			for (const column of [-1, 0, 1]) for (let row = 0; row < rows; row++) anchor(muzzle, 'rocket-tube', 0, row * 8, column * width / 3.4);
+			muzzles.push(muzzle);
+		} else muzzles.push(moduleFace(pod, family, x + 15, y, z, width));
 		const shutter = group(pod, 'salvo-shutter');
 		casting(shutter, 'shutter-armor', x + 16.5, bottom + rows * 8 + 10, z, 2, 3, width * 0.8, accent);
 		shutters.push({ part: shutter, y: 0 });
@@ -90,7 +135,7 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 		cylinder(turret, 'antenna-tip', 1.1, 1.5, trim, x, y + length + 2, z);
 	};
 
-	if (kind || frame === 'warden') {
+	if (kind || chassis === 'warden') {
 		// The approved Warden study is the common line-frame language. Hostile
 		// variants change hardware as well as palette and presentation scale.
 		housing(turret, 'torso-shell', [
@@ -114,10 +159,15 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 				housing(turret, 'pod-support', [{ x: -23, y: 66, height: 7, width: 6 }, { x: -7, y: 71, height: 10, width: 7 }], dark, z);
 				housing(turret, 'missile-pod', [{ x: -29, y: 82, height: 8, width: 10 }, { x: -19, y: 83, height: 12, width: 13 }, { x: 2, y: 82.5, height: 10.5, width: 12 }], accent, z);
 				housing(turret, 'pod-cap', [{ x: -27, y: 92.3, height: 1.4, width: 8 }, { x: -16, y: 95.6, height: 1.5, width: 11 }, { x: 1, y: 93.8, height: 1.2, width: 10.5 }], trim, z);
-				for (const row of [-1, 1]) for (const column of [-1, 0, 1]) launchTube(turret, 2.05, 82.5 + row * 4.3, z + column * 7.1, 2.5, 0.75);
-				const muzzle = anchor(turret, 'weapon-muzzle', 2.8, 78.2, z);
-				for (const row of [0, 1]) for (const column of [-1, 0, 1]) anchor(muzzle, 'rocket-tube', 0, row * 8.6, column * 7.1);
-				pods.push(muzzle);
+				if (kind || familyAt(side < 0 ? 2 : 3) === 'launcher') {
+					for (const row of [-1, 1]) for (const column of [-1, 0, 1]) launchTube(turret, 2.05, 82.5 + row * 4.3, z + column * 7.1, 2.5, 0.75);
+					const muzzle = anchor(turret, 'weapon-muzzle', 2.8, 78.2, z);
+					for (const row of [0, 1]) for (const column of [-1, 0, 1]) anchor(muzzle, 'rocket-tube', 0, row * 8.6, column * 7.1);
+					pods.push(muzzle);
+				} else {
+					const emitter = group(turret, 'shoulder-energy-slide'); slides.push(emitter);
+					pods.push(moduleFace(emitter, 'energy', 2, 82.5, z, 19));
+				}
 			}
 			gun(z, 55.5, kind === 'siege' ? 48 : kind === 'scout' ? 20 : 31, 3.3);
 			casting(turret, 'gun-mantlet', 6, 55.7, z, 6, 12.8, 14.8, trim);
@@ -137,7 +187,7 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 				aerial(-24, 94, side * 24, side < 0 ? 25 : 19);
 			}
 		}
-	} else if (frame === 'kestrel') {
+	} else if (chassis === 'kestrel') {
 		// Narrow beak and a raised counterweight tail over the avian legs.
 		casting(turret, 'keel', -6, 59, 0, 30, 13, 21, dark);
 		cockpit(12, 65, 22, 45, 12);
@@ -145,12 +195,15 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 		housing(turret, 'beak-inlay', [{ x: 32, y: 64.3, height: 1.1, width: 6 }, { x: 44, y: 61.9, height: 0.8, width: 3.5 }], accent);
 		housing(turret, 'counterweight-tail', [{ x: -39, y: 71, height: 3, width: 4 }, { x: -23, y: 68, height: 7, width: 8 }, { x: -8, y: 65, height: 5, width: 8 }], steel);
 		for (const side of [-1, 1]) {
-			gun(side * 20, 59, 25, 2, 19);
+			const family = familyAt(side < 0 ? 0 : 1);
+			if (family === 'ballistic') gun(side * 20, 59, 25, 2, 19);
+			else if (family === 'energy') energyGun(side * 20, 59, true, 19);
+			else compactLauncher(side * 20, 59, 19);
 			casting(turret, 'wing-root', -9, 69, side * 14, 18, 9, 5, accent);
 			housing(turret, 'tail-fin', [{ x: -39, y: 73, height: 2, width: 1 }, { x: -28, y: 80, height: 7, width: 1.5 }, { x: -17, y: 72, height: 2, width: 1 }], steel, side * 9);
 			vent(-35.5, 64, side * 5, 2);
 		}
-	} else if (frame === 'maul') {
+	} else if (chassis === 'maul') {
 		// Separate head, broad chest, and hanging gauntlets retain the brawler's
 		// humanoid mass without reproducing the Warden's shoulder missile towers.
 		casting(turret, 'abdomen', -3, 66, 0, 24, 18, 27, dark);
@@ -164,7 +217,7 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 			casting(turret, 'upper-arm', -2, 75, side * 39, 17, 25, 13, dark);
 			casting(turret, 'arm-armor', 2, 76, side * 42, 18, 17, 11, steel);
 			cylinder(turret, 'elbow-bearing', 5, 16, dark, 3, 62, side * 41, 'z');
-			rack(side * 41, 39, 19, 2, 10);
+			rack(side * 41, 39, 19, 2, 10, familyAt(side < 0 ? 0 : 1));
 			housing(turret, 'gauntlet-shield', [{ x: -2, y: 52, height: 8, width: 2 }, { x: 11, y: 54, height: 13, width: 3.5 }, { x: 25, y: 50, height: 9, width: 2 }], steel, side * 55);
 			casting(turret, 'rear-reactor', -24, 81, side * 14, 15, 26, 14, dark);
 			vent(-32.2, 73, side * 14, 4);
@@ -172,7 +225,7 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 		cylinder(turret, 'neck-bearing', 6, 6, dark, -2, 97, 0);
 		cockpit(0, 101, 19, 22, 13);
 		housing(turret, 'jaw-guard', [{ x: 8, y: 102, height: 2, width: 10 }, { x: 14, y: 102, height: 2, width: 8 }], accent);
-	} else if (frame === 'longbow') {
+	} else if (chassis === 'longbow') {
 		// A narrow torso and one long accelerator arm, balanced by the cooling
 		// pack and compact offhand rather than a matching second cannon.
 		casting(turret, 'abdomen', -3, 78, 0, 20, 18, 20, dark);
@@ -190,14 +243,20 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 			cylinder(turret, 'elbow-bearing', 4.2, 12, dark, 3, 75, side * 26, 'z');
 		}
 		const accelerator = gun(-27, 72, 81, 3.5, 25);
-		for (const x of [4, 15, 26, 37]) cylinder(accelerator, 'accelerator-coil', 5.5, 3.2, accent, x, 72, -27, 'x');
-		casting(turret, 'offhand-gauntlet', 5, 66, 27, 18, 22, 15, steel);
-		casting(turret, 'offhand-palm', 9, 58, 27, 14, 6, 11, dark);
+		if (familyAt(0) === 'energy') for (const x of [4, 15, 26, 37]) cylinder(accelerator, 'accelerator-coil', 5.5, 3.2, accent, x, 72, -27, 'x');
+		if (getHardpoints(frame).length === 1) {
+			casting(turret, 'offhand-gauntlet', 5, 66, 27, 18, 22, 15, steel);
+			casting(turret, 'offhand-palm', 9, 58, 27, 14, 6, 11, dark);
+		} else {
+			casting(turret, 'auxiliary-brace', -2, 74, 27, 22, 13, 17, dark);
+			if (familyAt(1) === 'energy') energyGun(27, 65, true, 13);
+			else compactLauncher(27, 65, 13);
+		}
 		housing(turret, 'cooling-pack', [{ x: -33, y: 99, height: 11, width: 6 }, { x: -23, y: 100, height: 17, width: 10 }, { x: -13, y: 100, height: 12, width: 7 }], dark, 15);
 		for (const z of [9, 15, 21]) housing(turret, 'radiator-fin', [{ x: -35, y: 100, height: 12, width: 0.8 }, { x: -23, y: 101, height: 16, width: 0.8 }, { x: -12, y: 101, height: 11, width: 0.8 }], trim, z);
 		casting(turret, 'radiator-cap', -23, 117.8, 15, 23, 3, 18, accent);
 		vent(-16, 91, -6, 4);
-	} else {
+	} else if (chassis === 'morrow') {
 		// The low bridge remains visibly below the twin outboard silos, leaving
 		// open space above its center instead of a humanoid head or arms.
 		housing(turret, 'carrier-keel', [{ x: -30, y: 50, height: 4, width: 15 }, { x: -10, y: 50, height: 7, width: 23 }, { x: 16, y: 49, height: 5, width: 16 }], dark);
@@ -205,7 +264,7 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 		housing(turret, 'bridge-chin', [{ x: 24, y: 48, height: 3, width: 13 }, { x: 36, y: 48, height: 2, width: 9 }], accent);
 		for (const side of [-1, 1]) {
 			casting(turret, 'silo-bearing', -15, 60, side * 25, 25, 18, 15, steel);
-			rack(side * 36, 66, 22, 4, -17);
+			rack(side * 36, 66, 22, 4, -17, familyAt(side < 0 ? 0 : 1));
 			casting(turret, 'silo-counterweight', -32, 62, side * 36, 14, 15, 27, dark);
 			housing(turret, 'silo-brace', [{ x: -33, y: 58, height: 4, width: 4 }, { x: -25, y: 65, height: 13, width: 5 }, { x: -20, y: 59, height: 4, width: 3 }], steel, side * 28);
 			housing(turret, 'silo-rear-armor', [{ x: -40, y: 84, height: 9, width: 6 }, { x: -35, y: 84, height: 15, width: 9 }, { x: -31, y: 84, height: 11, width: 7 }], trim, side * 36);
@@ -213,6 +272,26 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 			vent(-29, 49, side * 12, 3);
 		}
 		aerial(-30, 102, -47, 15);
+	} else {
+		// Rook: a compact forward cockpit over two low arms, with a single
+		// central dorsal pod. Its narrow waist and forward knees separate its
+		// silhouette from the broad four-mount Warden and twin-silo Morrow.
+		casting(turret, 'rook-waist', -2, 59, 0, 26, 16, 27, dark);
+		housing(turret, 'rook-torso', [{ x: -27.5, y: 74, height: 10, width: 15 }, { x: -8, y: 78, height: 14, width: 19 }, { x: 20, y: 72, height: 8, width: 13 }], steel);
+		cockpit(12, 79, 23, 33, 14);
+		housing(turret, 'rook-breastplate', [{ x: 16, y: 69, height: 5, width: 12 }, { x: 29, y: 64, height: 4, width: 9 }], trim);
+		for (const side of [-1, 1]) {
+			casting(turret, 'rook-shoulder', -6, 77, side * 27, 23, 14, 15, accent);
+			cylinder(turret, 'rook-shoulder-bearing', 5, 11, dark, -4, 72, side * 26, 'z');
+			casting(turret, 'rook-arm', 1, 62, side * 29, 16, 18, 12, steel);
+			if (familyAt(side < 0 ? 0 : 1) === 'ballistic') gun(side * 29, 53, 39, 3, 23);
+			else energyGun(side * 29, 53, false, 23);
+			casting(turret, 'rook-reactor', -28, 74, side * 12, 15, 22, 10, dark);
+			vent(-35, 66, side * 12, 3);
+		}
+		casting(turret, 'dorsal-pod-pedestal', -17, 91, 0, 22, 18, 16, dark);
+		compactLauncher(0, 104, -12);
+		aerial(-22, 91, -19, 19);
 	}
 	// Slot order is left gun, right gun, left pod, right pod, dorsal gun.
 	if (pods.length > 0) muzzles.splice(2, 0, ...pods);

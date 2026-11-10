@@ -204,7 +204,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				const { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights } = overlay;
 				drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode, enemyLabelHeights,
 					armorHit: Math.max(0, 1 - (state.time - (player?.damage.hitAt ?? -10)) / 0.9),
-					...(player && state.frame !== 'warden' ? { armorHitHeight: player.model.labelHeight + 20 } : {}),
+					...(player && getFrame(state.frame).chassisId !== 'warden' ? { armorHitHeight: player.model.labelHeight + 20 } : {}),
 					relayHit: Math.max(0, 1 - (state.time - relayHitAt) / 1.6) });
 			},
 			diagnostics: function () { return { calls: renderer.info.render.calls, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }; },

@@ -28,13 +28,13 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[]): number {
 // keep their existing contracts; every view uses this same production factory.
 export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden') {
 	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind);
-	const definition = getFrame(frame); const size = kind ? mechScale(kind) : definition.size;
+	const definition = getFrame(frame); const chassis = definition.chassisId; const size = kind ? mechScale(kind) : definition.size;
 	const rig = kind ? STANDARD_LEG_RIG : FRAME_RIGS[frame]; const suspension = kind ? 1 : definition.suspension;
 	const root = new Group(); root.name = kind ? `${commander ? 'commander' : kind}-frame` : `${frame}-frame`;
 	const anatomy = new Group(); anatomy.name = 'anatomy'; anatomy.scale.setScalar(size); root.add(anatomy);
 	const enemyColors = { scout: '#9c6f4e', striker: '#8d5350', siege: '#6b5f60' };
-	const frameColors = { warden: '#738986', kestrel: '#597a73', maul: '#896650', longbow: '#6b6b89', morrow: '#6a7961' };
-	const parts = createLowPolyParts({ steel: commander ? '#772f2d' : kind ? enemyColors[kind] : frameColors[frame], accent: commander ? '#bdb6a0' : kind ? '#aa7454' : definition.color, trim: kind ? '#c3b6a0' : '#c8cec0', glass: kind ? '#ffae7e' : '#9fe5e7' });
+	const frameColors = { warden: '#738986', kestrel: '#597a73', maul: '#896650', longbow: '#6b6b89', morrow: '#6a7961', rook: '#667a8a' };
+	const parts = createLowPolyParts({ steel: commander ? '#772f2d' : kind ? enemyColors[kind] : frameColors[chassis], accent: commander ? '#bdb6a0' : kind ? '#aa7454' : definition.color, trim: kind ? '#c3b6a0' : '#c8cec0', glass: kind ? '#ffae7e' : '#9fe5e7' });
 	const { group, housing, cylinder, steel, dark, trim, accent, piston } = parts;
 	const hull = group(anatomy, 'hull'); const turret = group(anatomy, 'turret');
 	cylinder(hull, 'waist-bearing', rig.hipWidth, 8, dark, rig.hipForward, rig.hipHeight - 2, 0);
@@ -43,8 +43,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	const hardware = buildLowPolyChassis(parts, turret, frame, kind, commander);
 	for (const part of turret.children) part.position.y -= rig.hipHeight - (rig.torsoRise ?? 0);
 	turret.rotation.order = 'YXZ';
-	const slender = !kind && (frame === 'kestrel' || frame === 'longbow');
-	const broad = !kind && (frame === 'maul' || frame === 'morrow');
+	const slender = !kind && (chassis === 'kestrel' || chassis === 'longbow');
+	const broad = !kind && (chassis === 'maul' || chassis === 'morrow');
 	const legArmor = function (parent: Group, name: string, length: number, upper: boolean) {
 		const assembly = group(parent, name); const width = slender ? 4.7 : broad ? 8.5 : 7;
 		cylinder(assembly, 'load-bearing-strut', slender ? 2.3 : 3.3, length, dark, 0, 0, 0);
@@ -75,7 +75,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		if (articulated) toes.position.set(8, 3, 0);
 		for (const side of [-1, 1]) housing(toes, 'split-toe', [{ x: 9 - toes.position.x, y: 3.5 - toes.position.y, height: 3.4, width: width * 0.46 }, { x: 21 - toes.position.x, y: 3.1 - toes.position.y, height: 3, width: width * 0.46 }, { x: 26 - toes.position.x, y: 1.8 - toes.position.y, height: 1.7, width: width * 0.4 }], trim, side * width * 0.59);
 		if (articulated) cylinder(foot, 'toe-bearing', 2, width * 1.9, dark, 8, 3, 0, 'z');
-		if (!kind && frame === 'kestrel') housing(foot, 'rear-talon', [{ x: -27, y: 1.5, height: 1.4, width: 2 }, { x: -12, y: 4, height: 3, width: 3 }], steel);
+		if (!kind && chassis === 'kestrel') housing(foot, 'rear-talon', [{ x: -27, y: 1.5, height: 1.4, width: 2 }, { x: -12, y: 4, height: 3, width: 3 }], steel);
 		return { index, upper, lower, hip, knee, ankle, sleeve, rod, contact, foot, toes };
 	});
 	parts.batch(anatomy);
@@ -119,7 +119,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = (feedback?.hit ?? 0) * 0.8;
 			parts.glass.emissiveIntensity = 0.6 + (feedback?.heat ?? 0) / 170;
 			for (const leg of legs) {
-				const foot = footPose(gait, leg.index, size, rig, !kind && frame === 'kestrel' ? -27 : -16);
+				const foot = footPose(gait, leg.index, size, rig, !kind && chassis === 'kestrel' ? -27 : -16);
 				const joints = legJoints(gait.body, foot, leg.index, size, poseRig, foot.pitch);
 				const x = gait.body.x; const z = gait.body.y;
 				start.set((joints.hip.x - x) / size, joints.hip.z / size, (joints.hip.y - z) / size);
