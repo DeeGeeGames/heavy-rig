@@ -31,7 +31,7 @@ export interface CampaignResult {
 }
 
 export interface Campaign extends CompanyState {
-	version: 3;
+	version: 4;
 	introComplete: boolean;
 	universe: UniverseState;
 	seed: number;
@@ -47,7 +47,7 @@ export interface Campaign extends CompanyState {
 	lastResult: CampaignResult | undefined;
 }
 
-export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v3';
+export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v4';
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance'];
 const MAX_COUNT = 1_000_000;
 export const MAX_CREDITS = 1_000_000_000_000;
@@ -65,7 +65,7 @@ const freshSeed = function () {
 
 export const createCampaign = function (seed?: number): Campaign {
 	return {
-		...createCompany(), version: 3, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
+		...createCompany(), version: 4, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
 		credits: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 	};
 };
@@ -198,8 +198,6 @@ const sameContract = function (saved: Contract, generated: Contract): boolean {
 };
 
 const parseUniverse = function (value: unknown, day: number): UniverseState | undefined {
-	// Existing v3 companies keep their board until the next jump or settlement.
-	if (value === undefined) return { ...createUniverse(), boardDay: day, boardVersion: 1 };
 	if (!object(value) || !isInteger(value['boardDay'], 1, day) || (value['boardVersion'] !== 1 && value['boardVersion'] !== 2)
 		|| !Array.isArray(value['influence']) || value['influence'].length > PLANETS.length * FACTION_IDS.length) return undefined;
 	const influence: UniverseState['influence'][number][] = [];
@@ -217,7 +215,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 	if (!raw) return createCampaign();
 	try {
 		const value: unknown = JSON.parse(raw);
-		if (!object(value) || value['version'] !== 3 || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
+		if (!object(value) || value['version'] !== 4 || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > value['boardRevision'] || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
@@ -227,7 +225,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
 		const campaign: Campaign = {
-			...company, version: 3, introComplete: value['introComplete'] !== false, universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
+			...company, version: 4, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 		};

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { acceptContract, createCampaign, getContracts, parseCampaign, settleContract, travelTo, type Campaign } from '../src/campaign';
+import { acceptContract, createCampaign, getContracts, parseCampaign, settleContract, travelTo } from '../src/campaign';
 import { advanceDays } from '../src/company';
 import { applyMissionInfluence, FACTION_IDS, getPlanet, getSystemIntel, PLANETS, territoryScores } from '../src/universe';
 import { generateMissionMap } from '../src/missions';
@@ -71,20 +71,15 @@ describe('territory campaign', function () {
 		expect(parseCampaign(JSON.stringify(traveled))).toEqual(traveled);
 	});
 
-	test('old v3 companies preserve accepted transactions until the next board refresh', function () {
-		const campaign: Campaign = { ...createCampaign(41), universe: { influence: [], boardVersion: 1, boardDay: 1 } };
-		const offer = getContracts(campaign)[0]; if (!offer) throw new Error('Missing legacy offer');
+	test('older campaign versions and missing universe snapshots start a fresh company', function () {
+		const campaign = createCampaign(41);
+		const offer = getContracts(campaign)[0]; if (!offer) throw new Error('Missing offer');
 		const accepted = acceptContract(campaign, offer.id);
-		const { universe: omitted, ...legacy } = accepted; void omitted;
-		const restored = parseCampaign(JSON.stringify(legacy));
-		expect(restored.seed).toBe(41);
-		expect(restored.active).toEqual(accepted.active);
-		expect(restored.reputation).toEqual(accepted.reputation);
-		expect(parseCampaign(JSON.stringify(restored))).toEqual(restored);
-		const settled = settleContract(restored, true);
-		expect(settled.universe.boardVersion).toBe(2);
-		expect(settled.credits).toBe(offer.reward);
-		expect(parseCampaign(JSON.stringify(settled))).toEqual(settled);
+		for (const invalid of [{ ...accepted, version: 3 }, { ...accepted, universe: undefined }]) {
+			const restored = parseCampaign(JSON.stringify(invalid));
+			expect(restored.version).toBe(4); expect(restored.active).toBeUndefined();
+			expect(restored.completed).toBe(0); expect(restored.day).toBe(1);
+		}
 	});
 
 	test('malformed influence and front snapshots cannot restore a partial campaign', function () {

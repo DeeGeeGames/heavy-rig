@@ -1,7 +1,7 @@
 import { defaultKeyboard, defaultController, keyLabel, padLabel, type KeyboardBindings, type ControllerBindings } from './bindings';
 import type { ControlMode } from './profile';
-import { createMount } from './arsenal';
-import { angleDelta, createState, distance, step, type Controls, type Point, type CombatStateView } from './simulation';
+import { createMount, getWeapon } from './arsenal';
+import { angleDelta, createEnemyLoadout, createState, distance, step, type Controls, type Point, type CombatStateView } from './simulation';
 
 export const TRAINING_STAGES = ['drive', 'neutral', 'steer', 'cannon', 'missiles', 'combined', 'heat', 'coolant', 'evade', 'complete'] as const;
 export type TrainingStage = typeof TRAINING_STAGES[number];
@@ -29,7 +29,7 @@ const placeTarget = function (state: CombatStateView) {
 	const p = state.player;
 	const x = Math.max(80, Math.min(1720, p.x + Math.cos(p.turret) * 140));
 	const y = Math.max(80, Math.min(1120, p.y + Math.sin(p.turret) * 140));
-	state.enemies = [{ id: state.nextId++, x, y, angle: Math.atan2(p.y - y, p.x - x), hp: 150, maxHp: 150, cooldown: 3600, heavy: false, kind: 'scout' }];
+	state.enemies = [{ id: state.nextId++, x, y, angle: Math.atan2(p.y - y, p.x - x), hp: 150, maxHp: 150, cooldown: 3600, heavy: false, kind: 'scout', loadout: createEnemyLoadout('scout'), reactor: { heat: 0, overheated: false } }];
 };
 
 const advance = function (training: Training, stage: TrainingStage) {
@@ -55,10 +55,26 @@ const advance = function (training: Training, stage: TrainingStage) {
 	}
 };
 
+const retryDryDrill = function (training: Training) {
+	const state = training.state;
+	const slots = training.stage === 'cannon' ? [0] : training.stage === 'missiles' ? [2] : training.stage === 'combined' ? [0, 1, 2, 3] : [];
+	const dry = state.loadout.some(function (mount, index) {
+		return slots.includes(mount.slot ?? index) && getWeapon(mount.weapon).ammunition !== null && mount.rounds === 0;
+	});
+	// Simulator retries wait for launched rounds and staggered volleys. Normal
+	// missions never call this hook, so expended combat supplies stay expended.
+	if (!dry || state.shots.length > 0 || state.loadout.some(function (mount) { return mount.rocketVolley !== undefined; })) return;
+	state.loadout = state.loadout.map(function (mount) { return { ...createMount(mount.weapon), level: mount.level, ...(mount.slot === undefined ? {} : { slot: mount.slot }) }; });
+	state.player.heat = 0; state.player.overheated = false;
+	training.combinedTime = 0;
+	placeTarget(state);
+};
+
 export interface TrainingBefore { x: number; y: number; angle: number; hits: number }
 export const prepareTraining = function (training: Training, controls: Controls): Controls {
 	const state = training.state;
 	state.spawnIn = 3600;
+	retryDryDrill(training);
 	if (training.stage === 'coolant') state.player.heat = Math.max(45, state.player.heat);
 	return { ...controls, fire: training.stage === 'combined' ? controls.fire : [(training.stage === 'cannon' || training.stage === 'heat') && controls.fire[0], false, training.stage === 'missiles' && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant };
 };
@@ -116,11 +132,11 @@ export const trainingCopy = function (training: Training, controller: boolean, m
 		drive: ['SET THE FRAME IN MOTION', `${controls.drive} to move. ${arcade ? 'Keep holding to travel; release to slow.' : 'Release it to cruise.'} Travel 100 meters.`],
 		neutral: ['BRING IT TO NEUTRAL', `${controls.stop} until the frame settles. Neutral cuts engine demand; eighty tons still need time to stop.`],
 		steer: ['TURN THE HULL', `${controls.steer}. The hull and your turret turn independently.`],
-		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; use ${controls.cannon}. The turret needs a moment to track your aim.`],
-		missiles: ['GUIDED FIRE', `${controls.aim}; use ${controls.missile}. Trident follows a locked target.`],
+		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; use ${controls.cannon}. Ammunition is finite; this simulator reloads dry weapons for retries.`],
+		missiles: ['GUIDED FIRE', `${controls.aim}; use ${controls.missile}. Trident follows a locked target. Firing ammunition sheds weight and improves speed.`],
 		combined: ['COMBINE YOUR FIRE', mappings.touch ? 'Tap at least two mount chips to arm them, then hold FIRE. All mounts share reactor heat.' : 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. Warden has two ballistic guns and two launcher pods; all share reactor heat.'],
-		heat: ['FEEL THE REACTOR', `Switched to Longbow: its energy hardpoint carries ARC. Hold ${controls.laser} to build heat to 45%. Every weapon heats the reactor.`],
-		coolant: ['VENT THE HEAT', `Press ${controls.coolant}. One charge purges 55 heat. At 100% heat, weapons lock until the reactor cools.`],
+		heat: ['FEEL THE REACTOR', `Switched to Longbow: ARC needs no ammunition but produces much more heat. Hold ${controls.laser} to build heat to 45%.`],
+		coolant: ['VENT THE HEAT', `Press ${controls.coolant}. One charge purges 55 heat. At 100% heat, weapons lock until heat falls to 35%.`],
 		evade: ['CLEAR THE IMPACT ZONE', `Frame reset to the practice lane. ${controls.drive} when the orange circle appears. Leave it before impact; the strike stays where marked.`],
 		complete: ['FRAME QUALIFICATION COMPLETE', 'You are ready for the operation. Flank armored siege frames and strike while they recover from a barrage.'],
 	};

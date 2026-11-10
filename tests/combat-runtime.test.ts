@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
-import { createMount } from '../src/arsenal';
+import { createMount, getWeapon } from '../src/arsenal';
 import { createCombatRuntime } from '../src/combat-runtime';
 import type { Contract } from '../src/campaign-types';
 import { createMissionState, createState, step, type CombatStateView, type Controls } from '../src/simulation';
@@ -198,7 +198,7 @@ test('rocket volleys stagger by 0.1 seconds, finish on release, and freeze durin
 	try {
 		combat.setControls(function () { return { ...idle, fire: [true, false, false, false] }; });
 		world.update(1 / 60);
-		expect(state.stats.shotsFired).toBe(1); expect(state.player.heat).toBe(4.8);
+		expect(state.stats.shotsFired).toBe(1); expect(state.player.heat).toBe(getWeapon('cluster-rockets').heat / getWeapon('cluster-rockets').projectiles);
 		combat.setControls(function () { return idle; });
 		for (let rocket = 2; rocket <= 2; rocket++) {
 			for (let tick = 0; tick < 5; tick++) world.update(1 / 60);

@@ -45,7 +45,7 @@ export const canEquipWeapon = function (frame: FrameId, slot: number, weapon: We
 	return Boolean(hardpoint && hardpoint.family === getWeapon(weapon).family && hardpoint.weapons.includes(weapon));
 };
 export const isFrameLoadout = function (frame: FrameId, value: unknown): value is readonly (WeaponId | null)[] {
-	return Array.isArray(value) && value.length === getHardpoints(frame).length && value.every(function (weapon: unknown, slot) {
+	return Array.isArray(value) && value.length === getHardpoints(frame).length && Array.from(value).every(function (weapon: unknown, slot) {
 		return weapon === null || typeof weapon === 'string' && getHardpoints(frame)[slot]?.weapons.some(function (allowed) { return allowed === weapon; });
 	});
 };

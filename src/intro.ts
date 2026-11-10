@@ -2,7 +2,7 @@ import { createMount } from './arsenal';
 import { keyLabel, padLabel, type ControllerBindings, type KeyboardBindings } from './bindings';
 import { getFrame, type FrameId } from './frames';
 import type { ControlMode } from './profile';
-import { createState, type State } from './simulation';
+import { createEnemyLoadout, createState, type State } from './simulation';
 
 export const INTRO_LINES = [
 	"They haven't seen me yet.",
@@ -74,7 +74,7 @@ export const createEscape = function (frame: IntroFrame): State {
 		{ x: 3370, y: 2500 },
 		{ x: 3800, y: 2780 },
 		{ x: 4110, y: 3020 },
-	].map(function (point) { return { ...point, id: state.nextId++, angle: heading + Math.PI, hp: 120, maxHp: 120, cooldown: 5, heavy: false, kind: 'scout' as const, engaged: false }; });
+	].map(function (point) { return { ...point, id: state.nextId++, angle: heading + Math.PI, hp: 120, maxHp: 120, cooldown: 5, heavy: false, kind: 'scout' as const, engaged: false, loadout: createEnemyLoadout('scout'), reactor: { heat: 0, overheated: false } }; });
 	return state;
 };
 
@@ -105,7 +105,7 @@ export const escapeMessage = function (time: number, prompts: EscapePrompts): st
 	if (time < 18) return '';
 	if (time < 26) return `Security ahead. ${aim} Fight or keep moving.`;
 	if (time < 28) return '';
-	if (time < 35) return `Weapons build heat. ${coolant} vents it. You don't have to destroy every guard.`;
+	if (time < 35) return `Ammunition is finite; energy weapons run hotter. ${coolant} vents heat. Keep moving; no kills are required.`;
 	if (time < 38) return '';
 	return 'Reach the green evacuation point in the bottom-right of the map. Hold inside it for 3 seconds.';
 };

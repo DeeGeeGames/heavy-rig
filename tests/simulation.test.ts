@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { getEnemyDefense, angleDelta, createState, ENEMY_STATS, step, type Controls, type EnemyKind, type State } from '../src/simulation';
 import { getWaveDefinition, WAVES, type Difficulty } from '../src/operation';
-import { createMount } from '../src/arsenal';
+import { frameWeight } from '../src/combat-resources';
+import { createMount, getWeapon } from '../src/arsenal';
 // Warden combat fixtures equip only weapons accepted by their physical hardpoints.
 const createCombatState = function (options: { difficulty?: Difficulty } = {}) {
 	const state = createState(options);
@@ -24,7 +25,8 @@ describe('Heavy Rig combat', function () {
 		expect(state.player.throttle).toBeCloseTo(0.75); expect(state.player.speed).toBeGreaterThan(speed);
 		run(state, 2, { ...idle, drive: 1 }); expect(state.player.throttle).toBe(1);
 		run(state, 4, { ...idle, drive: -1 }); expect(state.player.throttle).toBe(-1);
-		run(state, 2); expect(state.player.speed).toBeLessThan(-40); expect(state.player.speed).toBeGreaterThanOrEqual(-48);
+		run(state, 2); const reverseLimit = 48 * frameWeight(state.frame, state.loadout).modifier;
+		expect(state.player.speed).toBeLessThan(-reverseLimit * 0.95); expect(state.player.speed).toBeGreaterThanOrEqual(-reverseLimit);
 	});
 	test('neutral stops engine demand immediately while momentum decays', function () {
 		const state = createCombatState(); run(state, 1.5, { ...idle, drive: 1 });
@@ -115,7 +117,7 @@ describe('Heavy Rig combat', function () {
 	});
 
 	test('artillery announces a fixed impact point and gives a neutral mech time to escape', function () {
-		const state = createCombatState(); state.spawnIn = 100;
+		const state = createState(); state.spawnIn = 100;
 		state.enemies.push({ id: 1, x: 850, y: 800, hp: 125, maxHp: 125, angle: Math.atan2(-20, 50), cooldown: 0, heavy: true, kind: 'siege' });
 		step(state, idle, 1 / 60);
 		const strike = state.strikes[0]; if (!strike) throw new Error('Missing artillery warning');
@@ -161,7 +163,7 @@ describe('Heavy Rig combat', function () {
 
 	test('both commander patterns allow a neutral frame to escape after reaction time and then expose armor', function () {
 		for (const enraged of [false, true]) for (let direction = 0; direction < 8; direction++) {
-			const state = createCombatState(); state.spawnIn = 100; state.player.y = 600; state.player.angle = direction * Math.PI / 4;
+			const state = createState(); state.spawnIn = 100; state.player.y = 600; state.player.angle = direction * Math.PI / 4;
 			state.enemies.push({ id: 1, x: 400, y: 600, hp: enraged ? 200 : 420, maxHp: 420, angle: 0, cooldown: 0, heavy: true, kind: 'siege', commander: true });
 			step(state, idle, 1 / 60);
 			const enemy = state.enemies[0]; if (!enemy) throw new Error('Missing commander');
@@ -211,7 +213,7 @@ test('hostile guns and launchers fire only compatible fitted slots without multi
 			expect(state.shots[0]?.owner).toBe(enemy.id);
 			expect(state.shots[0]?.weapon).toBe(weapon);
 			expect(state.shots[0]?.slot).toBe(slot);
-			expect(state.shots[0]?.damage).toBe(ENEMY_STATS[kind].damage);
+			expect(state.shots[0]?.damage).toBe(ENEMY_STATS[kind].damage / getWeapon(weapon).projectiles);
 		}
 		enemy.loadout = [{ ...createMount('laser'), slot: 0 }, { ...createMount('machine-gun'), slot: 2 }];
 		state.shots = []; enemy.cooldown = 0;

@@ -323,6 +323,20 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 }
 
 .workspace .ship-controller-status { font: 9px var(--mono); color: var(--muted); }
+.ammunition-control { border-left: 2px solid var(--amber); padding: 8px 10px; background: #16282d; }
+.ammunition-control>div:first-child { display: grid; gap: 4px; }
+.ammunition-control b { font: 18px var(--display); text-transform: uppercase; }
+.ammunition-control span, .ammunition-control>small { font: 10px/1.4 var(--mono); color: var(--muted); }
+.ammunition-buttons { display: flex; gap: 5px; margin: 8px 0; }
+.ammunition-buttons button { flex: 1; min-width: 0; min-height: 34px; padding: 5px; font: 12px var(--mono); }
+.ammunition-buttons button:disabled { opacity: .35; }
+.couch-ui .ammunition-buttons button { min-height: 42px; font-size: 14px; }
+@media (max-height: 500px) {
+	.ammunition-control { padding: 5px 8px; }
+	.ammunition-control b { font-size: 16px; }
+	.ammunition-buttons { margin: 5px 0; }
+	.ammunition-buttons button, .couch-ui .ammunition-buttons button { min-height: 28px; }
+}
 .workspace .bridge-footer:has(.ship-controller-status:not([hidden])) .save-notice,
 .workspace .bridge-footer:has(.ship-controller-status:not([hidden])) .company-notice { display: none; }
 #game[data-screen='starmap'] #controller-status, #game[data-screen='bridge'] #controller-status, #game[data-screen='mechbay'] #controller-status,

@@ -1,6 +1,9 @@
 /* Direct-fire cockpit. Input changes its prompts and scale, never its geometry.
    Keep this separate from the touch dock and the company/menu surfaces. */
 .cockpit-frame, .drive-assist { display: none; }
+.weapon-ammo { display: none; }
+.load-heading { margin-top: 6px; font: 8px/1.4 var(--mono); color: var(--muted); }
+.weapon[data-resource-state='dry'] em { color: var(--amber); }
 #game:not(.touch-enabled) {
 	--cockpit-edge: clamp(14px, 2vw, 32px);
 	--cockpit-label: 10px;
