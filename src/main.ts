@@ -986,6 +986,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (pad.confirm && document.activeElement instanceof HTMLElement && root.contains(document.activeElement)) document.activeElement.click();
 			if (pad.back && screenRevision === revisionAtFrame) { audio.cue('back'); back(); }
 		}
+		// Apply drift before all mouse, touch and controller ground picking.
+		presentation.updateCamera(state, aimMode === 'pointer' ? pointer : undefined, hudObstructions);
 		if (playing() && screenRevision === revisionAtFrame) {
 			if (pad.targetNearest) selectTarget('nearest');
 			if (pad.targetNext) selectTarget('cycle');

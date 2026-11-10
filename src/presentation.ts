@@ -7,7 +7,8 @@ import { getFrame, type FrameId } from './frames';
 import { FRAME_RIGS } from './frame-rig';
 import { createMech, weaponRecoil } from './mech-3d';
 import { drawOverlay, type ScreenRect } from './overlay';
-import { alignCamera, toGround, toScreen } from './projection-3d';
+import { alignCamera, toGround, toScreen, viewScale } from './projection-3d';
+import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset } from './camera-follow';
 import type { EnemyKind, Point, CombatStateView } from './simulation';
 import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
@@ -78,6 +79,9 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let overlay: OverlayFrame | undefined;
 		let width = 1; let height = 1; let disposed = false; let previousState: CombatStateView | undefined; let previousStateTime = 0;
 		let zoom = 1;
+		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
+		let cameraOffset: Point = { x: 0, y: 0 };
+		let cameraSample: { state: CombatStateView; time: number; position: Point } | undefined;
 		let biome: Biome | undefined;
 		let relayHp: number | undefined; let relayHitAt = -10;
 		const plugin = definePlugin('heavy-rig-presentation')
@@ -131,12 +135,30 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				renderer.setPixelRatio(dpr); renderer.setSize(width, height, false);
 			}
 			if (labels.width !== canvas.width || labels.height !== canvas.height) { labels.width = canvas.width; labels.height = canvas.height; }
-			camera.clearViewOffset(); camera.zoom = 1; alignCamera(camera, width, height, state, zoom);
+			camera.clearViewOffset(); camera.zoom = 1; alignCamera(centeredCamera, width, height, state, zoom);
+			const focus = toGround({ x: width * (0.5 + cameraOffset.x), y: height * (0.52 + cameraOffset.y) }, centeredCamera, width, height) ?? state.player;
+			alignCamera(camera, width, height, state, zoom, focus);
 			if (state.shake > 0) camera.setViewOffset(width, height, -Math.sin(state.time * 79) * state.shake, -Math.cos(state.time * 91) * state.shake, width, height);
 			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		};
+		const updateCamera = function (state: CombatStateView, pointer: Point | undefined, obstructions: readonly ScreenRect[]) {
+			const elapsed = cameraSample ? state.time - cameraSample.time : 0;
+			const distance = cameraSample ? Math.hypot(state.player.x - cameraSample.position.x, state.player.y - cameraSample.position.y) : 0;
+			const frame = getFrame(state.frame);
+			if (!cameraSample || cameraSample.state !== state || elapsed < 0 || distance > frame.speed * Math.max(0, elapsed) + 80) {
+				cameraOffset = { x: 0, y: 0 };
+			} else if (elapsed > 0) {
+				const velocity = { x: (state.player.x - cameraSample.position.x) / elapsed, y: (state.player.y - cameraSample.position.y) / elapsed };
+				cameraOffset = smoothCameraOffset(cameraOffset, cameraLookAhead({ width, height, velocity, maxSpeed: frame.speed, turret: state.player.turret, pointer }), elapsed);
+			}
+			cameraSample = { state, time: state.time, position: { x: state.player.x, y: state.player.y } };
+			const clearance = viewScale(width, height) * zoom * frame.size;
+			cameraOffset = constrainCameraOffset(cameraOffset, width, height, { x: 55 * clearance, y: 100 * clearance }, obstructions);
+			resize(state, width, height);
+		};
 		return {
 			plugin,
+			updateCamera,
 			bind: function (entities: CombatEntities) { combat = entities; },
 			resize,
 			zoomWithWheel: function (event: Pick<WheelEvent, 'deltaY' | 'deltaMode'>) { zoom = zoomForWheel(zoom, event, height); },
@@ -161,6 +183,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				if (relayHp !== undefined && state.relay < relayHp) relayHitAt = state.time;
 				relayHp = state.relay;
 				previousState = state; previousStateTime = state.time;
+				if (attract || hangar) cameraOffset = { x: 0, y: 0 };
 				resize(state, width, height);
 				sun.position.set(state.player.x - 420, 900, state.player.y - 500); sun.target.position.set(state.player.x, 0, state.player.y);
 				fill.position.set(state.player.x + 700, 450, state.player.y + 600); fill.target.position.set(state.player.x, 50, state.player.y);
