@@ -38,6 +38,16 @@ const updateTransform = function (root: HTMLElement) {
 	if (stage) stage.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
 	const reset = root.querySelector<HTMLElement>('[data-chart-reset]'); if (reset) reset.dataset['zoom'] = String(Math.round(view.zoom * 100));
 };
+export const focusTerritoryMap = function (root: HTMLElement, planetId: PlanetId) {
+	const stage = root.querySelector<HTMLElement>('.territory-stage');
+	if (!stage) return;
+	const planet = getPlanet(planetId); const view = viewFor(root);
+	view.zoom = 3;
+	view.x = (.5 - planet.x / 100) * stage.clientWidth * view.zoom;
+	view.y = (.5 - planet.y / 100) * stage.clientHeight * view.zoom;
+	view.drag = undefined;
+	updateTransform(root);
+};
 export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, select: (id: PlanetId) => void) {
 	const paths = territoryPaths(campaign); const selected = getPlanet(destination); const current = getPlanet(campaign.planetId);
 	const view = viewFor(root);
