@@ -9,6 +9,7 @@ import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-naviga
 import { createRuntimeInput } from './runtime-input';
 import { createTouchTargeting, mountTouchDrive, visibleTouchContacts } from './touch-controls';
 import { mountMobileFullscreen } from './mobile-fullscreen';
+import { mountFullscreenViewport } from './fullscreen-viewport';
 import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey, type Action } from './bindings';
 import { getWeapon, isReserve, WEAPON_FAMILY_LABELS } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
@@ -51,6 +52,9 @@ const inputElement = function (id: string): HTMLInputElement {
 };
 const formatTime = function (time: number) { return `${Math.floor(time / 60)}:${Math.floor(time % 60).toString().padStart(2, '0')}`; };
 const shutdown = await mountGame('game', async function (container, onCleanup) {
+	const viewportAbort = new AbortController();
+	onCleanup(function () { viewportAbort.abort(); });
+	mountFullscreenViewport(viewportAbort.signal);
 	const canvas = container.querySelector('canvas');
 	if (!canvas) throw new Error('Missing battlefield');
 	canvas.tabIndex = 0;
