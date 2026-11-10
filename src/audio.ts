@@ -16,7 +16,7 @@ export interface AudioFrame {
 	alarm?: boolean;
 	/** Seconds since the Rig Bay line started; undefined stops the recorded footsteps. */
 	jogTime?: number | undefined;
-	/** Total narrative footstep window, including its one-second fades. */
+	/** Total narrative footstep window, including its two-second fades. */
 	jogDuration?: number;
 	/** Seconds since the saddle narrative started; undefined stops the hatch. */
 	hatchTime?: number | undefined;
@@ -327,8 +327,8 @@ export const createAudio = function () {
 		const source = synth.context.createBufferSource(); source.buffer = jogBuffer;
 		source.playbackRate.value = 1.5;
 		const at = synth.context.currentTime;
-		const fade = Math.min(1, end / 2);
-		const volume = 0.375;
+		const fade = Math.min(2, end / 2);
+		const volume = 0.1875;
 		const gain = synth.context.createGain();
 		gain.gain.setValueAtTime(volume * Math.max(0, Math.min(1, time / fade, (end - time) / fade)), at);
 		if (time < fade) gain.gain.linearRampToValueAtTime(volume, at + fade - time);
