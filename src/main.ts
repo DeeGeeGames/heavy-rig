@@ -138,7 +138,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
 	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
-	let aim: Point = { x: 900, y: 450 }; let pointer: Point | undefined; let aimMode: 'pointer' | 'gamepad' | 'touch' = 'pointer';
+	let aim: Point = { x: 900, y: 450 }; let pointer: Point | undefined; let aimMode: 'pointer' | 'gamepad' | 'touch' | 'target' = 'pointer';
 	const touchTargeting = createTouchTargeting();
 	const armedTouchMounts = new Set([0, 1, 2, 3]);
 	let touchLoadout = state.loadout;
@@ -173,6 +173,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			setInputMode('touch'); aimMode = 'touch'; pointer = undefined; touchTargeting[action](touchContacts(), state.player);
 		}, listenerOptions);
 	}
+	const selectTarget = function (action: 'nearest' | 'cycle') {
+		if (!playing()) return;
+		aimMode = 'target'; pointer = undefined; touchTargeting[action](touchContacts(), state.player);
+	};
+	for (const action of ['nearest', 'cycle'] as const) element(action === 'nearest' ? 'target-nearest' : 'target-next').addEventListener('click', function () { selectTarget(action); }, listenerOptions);
 	const keyboardAction = function (code: string) { return ACTIONS.find(function (action) { return profile.settings.keyboard[action].includes(code); }); };
 	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
 	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false }); };
@@ -183,7 +188,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		for (const node of container.querySelectorAll<HTMLElement>('[data-controller-bindings]')) {
 			const names = node.dataset['controllerBindings']?.split(' ') ?? [];
 			const bindings = names.flatMap(function (name) {
-				switch (name) { case 'stop': case 'coolant': case 'mount-0': case 'mount-1': case 'mount-2': case 'mount-3': return [profile.settings.controller[name]]; default: return []; }
+				switch (name) { case 'target-nearest': case 'target-next': case 'stop': case 'coolant': case 'mount-0': case 'mount-1': case 'mount-2': case 'mount-3': return [profile.settings.controller[name]]; default: return []; }
 			});
 			render(html`${bindings.map(function (index) { return renderControllerButton(controllerFamily, index); })}`, node);
 		}
@@ -586,15 +591,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	element('keyboard-mappings').addEventListener('mousedown', function (event) { if (capture && navigation.auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); event.stopPropagation(); consumedMouseButtons.add(event.button); assignKey(`Mouse${event.button}`); } }, listenerOptions);
 	element('controller-mappings').replaceChildren();
-	for (const action of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) {
+	for (const action of ['target-nearest', 'target-next', 'stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) {
 		const label = document.createElement('label'); label.textContent = `${LABELS[action]} `;
 		const select = document.createElement('select'); select.dataset['mapping'] = action;
 		for (let index = 1; index <= 17; index++) { if (index === 9) continue; const option = document.createElement('option'); option.value = String(index); option.textContent = controllerButtonLabel(controllerFamily, index); select.append(option); }
 		select.value = String(profile.settings.controller[action]);
-		select.addEventListener('change', function () { const previous = profile.settings.controller[action]; const next = Number(select.value); for (const other of ['stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) if (other !== action && profile.settings.controller[other] === next) profile.settings.controller[other] = previous; profile.settings.controller[action] = next; resetInput(); save(); syncControllerMappings(); }, listenerOptions);
+		select.addEventListener('change', function () { const previous = profile.settings.controller[action]; const next = Number(select.value); for (const other of ['target-nearest', 'target-next', 'stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) if (other !== action && profile.settings.controller[other] === next) profile.settings.controller[other] = previous; profile.settings.controller[action] = next; resetInput(); save(); syncControllerMappings(); }, listenerOptions);
 		label.append(select); element('controller-mappings').append(label);
 	}
-	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } updateMenuHint(); };
+	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'target-nearest' || action === 'target-next' || action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } updateMenuHint(); };
 	element('control-mode').addEventListener('change', function (event) {
 		const select = event.target; if (!(select instanceof HTMLSelectElement) || (select.value !== 'simulation' && select.value !== 'arcade')) return;
 		profile.settings.controlMode = select.value; capture = undefined; resetInput(); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; save(); renderMappings(); updateSettings();
@@ -689,9 +694,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			return;
 		}
 		if (!playing()) return;
-		if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLInputElement) return;
+		if (event.target instanceof HTMLInputElement) return;
 		const action = keyboardAction(event.code); if (!action) return;
-		event.preventDefault(); if (event.repeat && !keys.has(event.code)) return; keys.add(event.code); if (!event.repeat) pending.add(action);
+		event.preventDefault(); if (action === 'target-nearest' || action === 'target-next') { if (!event.repeat) selectTarget(action === 'target-nearest' ? 'nearest' : 'cycle'); return; } if (event.repeat && !keys.has(event.code)) return; keys.add(event.code); if (!event.repeat) pending.add(action);
 	}, listenerOptions);
 	window.addEventListener('keyup', function (event) { const action = keyboardAction(event.code); if (action) keys.delete(event.code); }, listenerOptions);
 	container.addEventListener('pointerdown', function (event) {
@@ -756,7 +761,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	canvas.addEventListener('mousedown', function (event) {
 		const binding = keyboardAction(`Mouse${event.button}`);
 		if (!binding || !playing()) return;
-		event.preventDefault(); mouseButtons.add(event.button); consumedMouseButtons.add(event.button); pending.add(binding);
+		event.preventDefault(); if (binding === 'target-nearest' || binding === 'target-next') { selectTarget(binding === 'target-nearest' ? 'nearest' : 'cycle'); return; } mouseButtons.add(event.button); consumedMouseButtons.add(event.button); pending.add(binding);
 	}, listenerOptions);
 	window.addEventListener('mouseup', function (event) {
 		// Chromium handles side-button history on mouseup, before auxclick.
@@ -982,7 +987,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (pad.back && screenRevision === revisionAtFrame) { audio.cue('back'); back(); }
 		}
 		if (playing() && screenRevision === revisionAtFrame) {
-			if (aimMode === 'touch') { const locked = touchTargeting.resolve(touchContacts()); if (locked) aim = { ...locked.point }; }
+			if (pad.targetNearest) selectTarget('nearest');
+			if (pad.targetNext) selectTarget('cycle');
+			if (aimMode === 'touch' || aimMode === 'target') { const locked = touchTargeting.resolve(touchContacts()); if (locked) aim = { ...locked.point }; }
 			if (profile.settings.controlMode === 'simulation' && pad.aimX !== 0) {
 				aimMode = 'gamepad';
 			} else if (profile.settings.controlMode === 'arcade' && Math.hypot(pad.aimX, pad.aimY) > 0.2) {
@@ -1073,11 +1080,16 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (battlefieldVisible()) {
 			world.enableSystemGroup('renderer3d');
 			presentation.prepare(state, aim, gaits, false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI);
-			const contacts = container.classList.contains('touch-enabled') ? touchContacts() : [];
-			const locked = aimMode === 'touch' ? touchTargeting.resolve(contacts) : undefined;
+			const contacts = touchContacts();
+			const locked = aimMode === 'touch' || aimMode === 'target' ? touchTargeting.resolve(contacts) : undefined;
 			const marker = element('touch-lock-marker'); marker.hidden = !locked || !playing();
 			if (locked) { const rect = canvas.getBoundingClientRect(); marker.style.left = `${rect.left - container.getBoundingClientRect().left + locked.screen.x}px`; marker.style.top = `${rect.top - container.getBoundingClientRect().top + locked.screen.y}px`; }
 			element('touch-target-status').textContent = locked ? `TRACKING / ${locked.label}` : 'MANUAL / TAP A HOSTILE';
+			for (const action of ['target-nearest', 'target-next'] as const) {
+				element(action).toggleAttribute('disabled', contacts.length === 0);
+				const prompt = element(action).querySelector('kbd');
+				if (prompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[action]) : html`${combatKeyboardPrompt(action)}`, prompt);
+			}
 			element('touch-next').toggleAttribute('disabled', contacts.length === 0);
 			element('touch-nearest').toggleAttribute('disabled', contacts.length === 0);
 		} else world.disableSystemGroup('renderer3d');
