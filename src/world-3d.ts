@@ -5,6 +5,8 @@ import { createEnvironment } from './environment-3d';
 import { createMissionEnvironment } from './mission-environment';
 import type { MissionMap } from './campaign-types';
 import { createProjectileSmoke } from './projectile-smoke';
+import { createWeaponVfx } from './weapon-vfx';
+import { getWeapon } from './arsenal';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
 interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
@@ -14,6 +16,8 @@ interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefin
 export const createWorldObjects = function (scene: Scene) {
 	const root = new Group(); root.name = 'heavy-rig-world'; scene.add(root);
 	const projectileSmoke = createProjectileSmoke(); root.add(projectileSmoke.root);
+	const weaponVfx = createWeaponVfx(); root.add(weaponVfx.afterglowRoot);
+	const { createShot, createEffect } = weaponVfx;
 	const yard = new Group(); yard.name = 'legacy-terrain'; root.add(yard);
 	const environment = createEnvironment(); yard.add(environment.root);
 	let missionMap: MissionMap | undefined;
@@ -119,33 +123,7 @@ export const createWorldObjects = function (scene: Scene) {
 		value.add(shield);
 		return { root: value, shield, exposed, commitment };
 	};
-	const enemyTrail = glow('#ff8866'); const playerTrail = glow('#ffd290');
-	const shotStyle: Record<Shot['kind'], { surface: MeshBasicMaterial; trail: MeshBasicMaterial; duration: number; width: number; length: number; radius: number }> = {
-		bullet: { surface: glow('#fff3bd'), trail: glow('#f8dc87', 0.75), duration: 0.022, width: 0.8, length: 4, radius: 1.5 },
-		cannon: { surface: playerTrail, trail: glow('#eebf70', 0.85), duration: 0.05, width: 2.4, length: 8, radius: 3 },
-		ppc: { surface: glow('#e6e2ff'), trail: glow('#ae9aff', 0.62), duration: 0.09, width: 4, length: 11, radius: 6 },
-		missile: { surface: glow('#b7f4ec'), trail: playerTrail, duration: 0, width: 1.5, length: 10, radius: 2.5 },
-		rocket: { surface: glow('#ffd3a3'), trail: playerTrail, duration: 0, width: 2, length: 12, radius: 2.5 },
-		enemy: { surface: enemyTrail, trail: enemyTrail, duration: 0.04, width: 1, length: 4, radius: 2 },
-	};
-	const plasmaGlow = glow('#b196ff', 0.24);
-	const createShot = function () {
-		const value = new Group(); value.name = 'projectile';
-		const trail = new Mesh(cylinder, playerTrail); const head = new Mesh<BufferGeometry, MeshBasicMaterial>(cube, playerTrail);
-		const halo = new Mesh(sphere, plasmaGlow); value.add(trail, head, halo);
-		return { root: value, trail, head, halo };
-	};
 	const normal = new Vector3(1, 1, 1).normalize(); const zAxis = new Vector3(0, 0, 1);
-	const effectRight = new Vector3(Math.SQRT1_2, 0, -Math.SQRT1_2); const effectUp = new Vector3(-1, 2, -1).normalize();
-	const createEffect = function () {
-		const value = new Group(); value.name = 'impact-effect';
-		const surface = new MeshBasicMaterial({ color: '#ffffff', transparent: true, depthWrite: false });
-		const sparkSurface = new MeshBasicMaterial({ color: '#edf3d4', transparent: true, depthWrite: false });
-		const halo = new Mesh(ring, surface); halo.quaternion.setFromUnitVectors(zAxis, normal); value.add(halo);
-		const sparks = new InstancedMesh(cube, sparkSurface, 12); sparks.frustumCulled = false; value.add(sparks);
-		const flash = new Mesh(sphere, surface); value.add(flash);
-		return { root: value, halo, sparks, flash, surface, sparkSurface, dispose: function () { sparks.dispose(); surface.dispose(); sparkSurface.dispose(); } };
-	};
 	const createStrike = function () {
 		const value = new Group(); value.name = 'artillery-warning';
 		const surface = new MeshBasicMaterial({ color: '#ff793b', transparent: true, opacity: 0.2, depthWrite: false });
@@ -156,16 +134,12 @@ export const createWorldObjects = function (scene: Scene) {
 		return { root: value, fill, boundary, countdown, shell, surface, dispose: function () { surface.dispose(); } };
 	};
 	const warningMaterial = glow('#f3a16c');
-	const beamGlowSurface = glow('#5de9e5', 0.6); const beamCoreSurface = glow('#dbffff'); const beamImpactSurface = glow('#b1ffff');
 	// Four independently fired slots share materials but retain their own origins.
 	const beams = Array.from({ length: 4 }, function (_unused, slot) {
-		const value = group(slot === 0 ? 'laser' : `laser-${slot}`); value.visible = false;
-		const halo = new Mesh(cylinder, beamGlowSurface); const core = new Mesh(cylinder, beamCoreSurface);
-		const impact = new Mesh(sphere, beamImpactSurface); impact.scale.setScalar(5); value.add(halo, core, impact);
-		return { root: value, halo, core, impact };
+		const beam = weaponVfx.createBeam(slot); root.add(beam.root); return beam;
 	});
 	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); root.add(smoke);
-	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0); const forward = new Vector3(1, 0, 0);
+	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0);
 	const flashes = new WeakMap<Effect, Vector3>();
 	let nextFlashMuzzle = 0;
 	const segment = function (mesh: Mesh, width: number) {
@@ -177,6 +151,8 @@ export const createWorldObjects = function (scene: Scene) {
 	return {
 		update: function (state: CombatStateView, frameEffects?: FrameEffects) {
 			if (disposed) return;
+			weaponVfx.updateTime(state.time);
+			weaponVfx.updateAfterglows(state);
 			if (missionMap !== state.mission?.map) {
 				missionEnvironment?.dispose(); missionEnvironment = undefined;
 				missionMap = state.mission?.map;
@@ -221,26 +197,20 @@ export const createWorldObjects = function (scene: Scene) {
 			});
 			const smokePositions = new Map<Shot, Vector3>();
 			sync(shots, state.shots.length, createShot, function (value, index) {
-				const shot = state.shots[index]; if (!shot) return; const style = shotStyle[shot.kind];
+				const shot = state.shots[index]; if (!shot) return; const style = weaponVfx.styles[shot.kind];
 				// Simulation owns the complete trajectory. Clamping the tracer to
 				// flight age prevents a new round extending behind its muzzle.
 				const trailTime = Math.min(style.duration, Math.max(0, shot.age ?? style.duration));
 				const elevation = shot.elevation ?? 42; const verticalSpeed = shot.vElevation ?? 0;
 				from.set(shot.x - shot.vx * trailTime, elevation - verticalSpeed * trailTime, shot.y - shot.vy * trailTime);
 				to.set(shot.x, elevation, shot.y);
-				value.trail.material = style.trail; value.head.material = style.surface;
-				value.head.geometry = shot.kind === 'ppc' ? sphere : cube;
-				value.head.position.copy(to);
-				delta.set(shot.vx, verticalSpeed, shot.vy);
-				if (delta.lengthSq() > 0) value.head.quaternion.setFromUnitVectors(forward, delta.normalize());
-				value.head.scale.set(style.length, style.radius, style.radius); segment(value.trail, style.width);
-				value.halo.visible = shot.kind === 'ppc'; value.halo.position.copy(to); value.halo.scale.setScalar(12);
+				weaponVfx.updateShot(value, shot, state.time); segment(value.trail, style.width);
 				if (shot.kind === 'missile' || shot.kind === 'rocket') smokePositions.set(shot, to.clone());
 			});
 			projectileSmoke.update(state, smokePositions);
 			sync(effects, state.effects.length, createEffect, function (value, index) {
-				const effect = state.effects[index]; if (!effect) return; const progress = Math.max(0, 1 - effect.life * 2); const radius = Math.max(1, effect.size * progress) / Math.sqrt(1.5);
-				value.root.position.set(effect.x, effect.elevation ?? 36, effect.y); value.halo.scale.setScalar(radius);
+				const effect = state.effects[index]; if (!effect) return;
+				value.root.position.set(effect.x, effect.elevation ?? 36, effect.y);
 				if (effect.source === 'muzzle' && effect.elevation === undefined && muzzles.length > 0) {
 					let origin = flashes.get(effect);
 					if (!origin) {
@@ -249,14 +219,7 @@ export const createWorldObjects = function (scene: Scene) {
 					}
 					if (origin) value.root.position.copy(origin);
 				}
-				value.surface.color.set(effect.color); value.surface.opacity = value.sparkSurface.opacity = Math.min(1, effect.life * 2);
-				value.flash.scale.setScalar(Math.max(0.1, effect.size * (1 - progress) * 0.2));
-				for (let i = 0; i < value.sparks.count; i++) {
-					const angle = i * 2.4 + effect.x;
-					scratch.position.copy(effectRight).multiplyScalar(Math.cos(angle) * radius).addScaledVector(effectUp, Math.sin(angle) * radius + progress * 15 / Math.sqrt(1.5));
-					scratch.scale.set(2.2, 2.2 + progress * 5, 2.2); scratch.rotation.set(0, 0, -angle); scratch.updateMatrix(); value.sparks.setMatrixAt(i, scratch.matrix);
-				}
-				value.sparks.instanceMatrix.needsUpdate = true;
+				weaponVfx.updateEffect(value, effect);
 			});
 			beams.forEach(function (beam, slot) {
 				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot; });
@@ -265,7 +228,8 @@ export const createWorldObjects = function (scene: Scene) {
 				from.set(state.player.x, 42, state.player.y); to.set(endpoint.x, endpoint.elevation ?? 42, endpoint.y);
 				if (endpoint.origin) from.set(endpoint.origin.x, endpoint.origin.elevation, endpoint.origin.y);
 				else { const muzzle = muzzles[slot]; if (muzzle) from.copy(muzzle); }
-				segment(beam.halo, 4.5); segment(beam.core, 1.25); beam.impact.position.copy(to);
+				segment(beam.halo, 7); segment(beam.core, 0.75);
+				weaponVfx.updateBeam(beam, from, to, state.time, from.distanceTo(to) < getWeapon('laser').range - 0.5);
 			});
 			smoke.visible = state.player.heat > 60;
 			if (smoke.visible) {
@@ -279,6 +243,9 @@ export const createWorldObjects = function (scene: Scene) {
 		dispose: function () {
 			if (disposed) return; disposed = true;
 			for (const effect of effects) effect.dispose();
+			for (const shot of shots) shot.dispose();
+			for (const beam of beams) beam.dispose();
+			weaponVfx.dispose();
 			for (const strike of strikes) strike.dispose();
 			for (const batch of relayBatches) batch.dispose();
 			missionEnvironment?.dispose();
