@@ -14,8 +14,10 @@ export interface AudioFrame {
 	danger?: number;
 	victory?: boolean;
 	alarm?: boolean;
-	/** Seconds into the Rig Bay line; undefined stops the recorded footsteps. */
+	/** Seconds since the Rig Bay line started; undefined stops the recorded footsteps. */
 	jogTime?: number | undefined;
+	/** Total narrative footstep window, including its one-second fades. */
+	jogDuration?: number;
 }
 export interface AudioMix { master: number; music: number; effects: number }
 export const DEFAULT_AUDIO_MIX: Readonly<AudioMix> = { master: 0.8, music: 0.55, effects: 0.85 };
@@ -292,18 +294,27 @@ export const createAudio = function () {
 		noise({ at, duration: 0.16, volume: 0.12 * weight, frequency: 560, pan: side * 0.16 });
 		tone({ at: at + 0.055, frequency: 230, endFrequency: 150, duration: 0.07, volume: 0.045 * weight, type: 'triangle', pan: side * 0.16 });
 	};
-	const updateJog = function (time: number | undefined) {
+	const updateJog = function (time: number | undefined, duration: number | undefined) {
 		const enabled = time !== undefined && Number.isFinite(time) && time >= 0 && synth && jogBuffer && uiActive && !muted && mix.effects > 0 && mix.master > 0 && synth.context.state === 'running';
 		if (!enabled) { clearVoices('narrative'); return; }
 		if (jogVoice || !synth || !jogBuffer || time === undefined) return;
+		const end = duration ?? jogBuffer.duration / 1.5;
+		if (!Number.isFinite(end) || time >= end) return;
 		const offset = time * 1.5;
 		if (offset >= jogBuffer.duration) return;
 		const source = synth.context.createBufferSource(); source.buffer = jogBuffer;
 		source.playbackRate.value = 1.5;
-		const gain = synth.context.createGain(); gain.gain.value = 0.5;
+		const at = synth.context.currentTime;
+		const fade = Math.min(1, end / 2);
+		const volume = 0.375;
+		const gain = synth.context.createGain();
+		gain.gain.setValueAtTime(volume * Math.max(0, Math.min(1, time / fade, (end - time) / fade)), at);
+		if (time < fade) gain.gain.linearRampToValueAtTime(volume, at + fade - time);
+		if (time < end - fade) gain.gain.setValueAtTime(volume, at + end - fade - time);
+		gain.gain.linearRampToValueAtTime(0, at + end - time);
 		source.connect(gain).connect(synth.ui);
 		jogVoice = { source, nodes: [gain], bus: 'narrative' };
-		register(jogVoice, synth.context.currentTime, (jogBuffer.duration - offset) / 1.5, offset);
+		register(jogVoice, at, end - time, offset);
 	};
 	const typeText = function (text: string) {
 		if (!synth || disposed || !uiActive || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
@@ -367,7 +378,7 @@ export const createAudio = function () {
 		const nextPhase = frame.phase ?? 'combat';
 		if (phase !== nextPhase) { phase = nextPhase; clearVoices('music'); nextMusic = 0; musicStep = 0; }
 		mixLevels();
-		updateJog(frame.jogTime);
+		updateJog(frame.jogTime, frame.jogDuration);
 		const driving = audible && phase === 'combat';
 		const alarm = driving && frame.alarm && mix.effects > 0;
 		if (!alarm) { clearVoices('alarm'); nextAlarm = 0; }
