@@ -273,6 +273,15 @@ export const createAudio = function () {
 		noise({ at, duration: 0.16, volume: 0.12 * weight, frequency: 560, pan: side * 0.16 });
 		tone({ at: at + 0.055, frequency: 230, endFrequency: 150, duration: 0.07, volume: 0.045 * weight, type: 'triangle', pan: side * 0.16 });
 	};
+	const jogStep = function (side: -1 | 1) {
+		if (!synth || disposed || !uiActive || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
+		const at = synth.context.currentTime;
+		// A boot heel, sole slap, and short scuff on the bay's hard floor.
+		// Keep this lighter and shorter than the combat rig's heavy gait.
+		tone({ at, frequency: 145, endFrequency: 65, duration: 0.09, volume: 0.12, pan: side * 0.12, bus: 'ui' });
+		noise({ at, duration: 0.045, volume: 0.09, frequency: 1400, type: 'bandpass', pan: side * 0.12, bus: 'ui' });
+		noise({ at: at + 0.035, duration: 0.075, volume: 0.035, frequency: 2400, type: 'highpass', pan: side * 0.12, bus: 'ui' });
+	};
 	const typeText = function (text: string) {
 		if (!synth || disposed || !uiActive || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
 		const at = synth.context.currentTime;
@@ -466,5 +475,5 @@ export const createAudio = function () {
 		for (const node of current.nodes) node.disconnect();
 		if (current.context.state !== 'closed') await current.context.close();
 	};
-	return { unlock, status, cue, footstep, typeText, setMuted, setMix, reset, update, play, dispose };
+	return { unlock, status, cue, footstep, jogStep, typeText, setMuted, setMix, reset, update, play, dispose };
 };
