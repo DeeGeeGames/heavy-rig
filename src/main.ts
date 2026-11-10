@@ -882,8 +882,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const line = element('intro-line');
 		const fullText = lines[narrative.index] ?? '';
 		// Invisible characters reserve the final wrapping and height throughout typing.
-		if (line.textContent !== fullText) line.replaceChildren(...Array.from(fullText, function (character) {
-			const span = document.createElement('span');
+		if (line.textContent !== fullText) line.replaceChildren(...Array.from(fullText, function (character, index) {
+			const sarcasmStart = fullText.indexOf('gracious');
+			const sarcastic = sarcasmStart >= 0 && index >= sarcasmStart && index < sarcasmStart + 'gracious'.length;
+			const span = document.createElement(sarcastic ? 'em' : 'span');
 			span.textContent = character;
 			return span;
 		}));

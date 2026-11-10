@@ -8,7 +8,7 @@ export const INTRO_LINES = [
 	"They haven't seen me yet.",
 	'Just a little more to the Rig Bay.',
 	"Then I'm finally free...",
-	"Made it. Now, let's see what my terrible hosts will be lending me.",
+	"Made it. Now, let's see what my gracious hosts will be lending me.",
 ] as const;
 export const SADDLE_LINES = [
 	"It's good to be back in the saddle.",
