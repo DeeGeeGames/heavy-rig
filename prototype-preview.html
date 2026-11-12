@@ -8,6 +8,7 @@
 		* { box-sizing: border-box; } body { margin: 0; } main { max-width: 1100px; margin: auto; }
 		header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; } h1 { font-size: 16px; color: #d9b36e; margin: 0; } a { color: #d9b36e; font-size: 12px; }
 		.stage { position: relative; } canvas { display: block; width: 100%; aspect-ratio: 16/10; touch-action: none; border-radius: 8px; }
+		.comparison-labels { position:absolute; top:12px; left:0; right:0; display:flex; pointer-events:none; font-size:12px; text-align:center; color:#e2ba7c; } .comparison-labels span { width:50%; }
 		.controls { padding: 14px 16px; } .row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
 		button,select { background: #16282e; color: #dce5df; border: 1px solid #49605e; border-radius: 5px; padding: 8px 12px; font: inherit; font-size: 12px; cursor: pointer; } button:disabled { opacity: .45; cursor: default; }
 		label { display: flex; align-items: center; gap: 7px; font-size: 12px; } input { accent-color: #d9b36e; } input[type=range] { width: 110px; } #timeline { flex: 1; min-width: 130px; } output { font: 12px ui-monospace,monospace; } p { color: #9eb4b3; font-size: 12px; line-height: 1.5; } #status { margin-top: 0; } #status[data-error=true] { color: #ffb5a4; }
@@ -15,15 +16,16 @@
 		@media(max-height:500px) and (min-width:650px) { canvas { aspect-ratio: 3/1; } }
 	</style>
 </head>
-<body data-model-url="./models/heavy-prototype.glb"><main>
+<body data-model-url="./models/heavy-prototype.glb" data-candidate-url="./models/heavy-prototype-reduced.glb"><main>
 	<header><h1>HEAVY RIG / HEAVY PROTOTYPE</h1><a href="./models-preview.html">Production models</a></header>
-	<div class="stage"><canvas id="prototype-canvas"></canvas></div>
+	<div class="stage"><canvas id="prototype-canvas"></canvas><div class="comparison-labels"><span id="left-label">Approved master</span><span id="right-label">Reduced candidate</span></div></div>
 	<div class="controls">
-		<p id="status">Loading approved mech…</p>
+		<p id="status">Loading master and reduced candidate…</p>
+		<div class="row"><label>Compare <select id="comparison"><option value="both">Side by side</option><option value="candidate">Reduced candidate</option><option value="master">Approved master</option></select></label><label><input id="wireframe" type="checkbox">Wireframe</label></div>
 		<div class="row"><button id="play" disabled>Play walk</button><button id="restart" disabled>Restart</button><button id="step" disabled>Step 1/60 s</button><label>Speed <select id="speed"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select></label></div>
 		<div class="row"><label for="timeline">Walk</label><input id="timeline" type="range" min="0" max="8" step="0.001" value="0" disabled><output id="time">0.00 / 8.00 s</output></div>
 		<div class="row"><label>Hull <input id="heading" type="range" min="-180" max="180" value="0"><output id="heading-value">0°</output></label><label>Torso aim <input id="aim" type="range" min="-45" max="45" value="0"><output id="aim-value">0°</output></label><label><input id="guides" type="checkbox">Launcher guides</label></div>
-		<div class="row"><label>View <select id="view"><option value="three-quarter">Three quarter</option><option value="side">Side</option><option value="rear">Rear</option><option value="game">Game angle</option></select></label><button id="reset-view">Reset view</button><output id="stats"></output></div>
-		<p>Drag to orbit · Scroll to zoom. The approved eight-second walk plays once and holds its final pose. Hull rotation is an inspection control; torso aim and launcher guides are prototype checks, not combat or a turning gait. No production chassis is replaced.</p>
+		<div class="row"><label>View <select id="view"><option value="three-quarter">Three quarter</option><option value="side">Side</option><option value="rear">Rear</option><option value="game">Game angle</option><option value="game-small">Small gameplay view</option></select></label><button id="reset-view">Reset view</button><output id="stats"></output></div>
+		<p>Both versions share the same camera, scale, walk time, and aim. Drag to orbit · Scroll to zoom. The approved eight-second walk plays once and holds its final pose. Hull rotation is an inspection control; torso aim and launcher guides are prototype checks, not combat or a turning gait. No production chassis is replaced.</p>
 	</div>
 </main><script type="module" src="./src/mech-prototype-study.ts"></script></body></html>

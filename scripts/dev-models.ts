@@ -11,6 +11,9 @@ const server = Bun.serve({
 		'/': models,
 		'/models-preview.html': models,
 		'/prototype-preview.html': prototype,
+		'/models/heavy-prototype-reduced.glb': function () {
+			return new Response(Bun.file(join(import.meta.dir, '../public/models/heavy-prototype-reduced.glb')), { headers: { 'Content-Type': 'model/gltf-binary' } });
+		},
 		'/models/heavy-prototype.glb': function () {
 			return new Response(Bun.file(join(import.meta.dir, '../public/models/heavy-prototype.glb')), { headers: { 'Content-Type': 'model/gltf-binary' } });
 		},

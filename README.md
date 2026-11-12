@@ -592,7 +592,9 @@ Heavy Rig was extracted from DeeGeeGames/playground at commit
 Run `bun run dev:models` for development, or build with `bun run build`,
 then run `bun run preview` and open
 `/prototype-preview.html` (also linked from the model study). The separate viewer
-loads the approved GLB with walk playback, seeking, single-frame stepping, hull
+compares the approved master with a separate 18,974-triangle candidate using
+synchronized side-by-side or individual views, wireframe, walk playback, seeking,
+single-frame stepping, hull
 orientation, torso aim, launcher guides, and side/rear/game-angle views. The
 self-contained `dist/prototype-study.html` can also be opened from disk.
 
@@ -600,3 +602,7 @@ The walk plays once and holds its final pose. Hull orientation is an inspection
 control, not a planted turning animation. Launcher guides do not fire weapons.
 This study does not change production frames, combat, saves, or controls. Its
 high-detail asset is not yet a performance budget for multiple on-screen mechs.
+
+Rebuild the reduced candidate with `bun run reduce:prototype`. This preserves the
+master, materials, and walk data; close-up surface detail is reduced. Mesh draw
+counts remain unchanged. The comparison uses the master scale for both assets.

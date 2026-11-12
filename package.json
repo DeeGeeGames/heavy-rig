@@ -10,6 +10,7 @@
 		"dev": "bun --port ${PORT:-3000} --console index.html",
 		"dev:models": "bun run scripts/dev-models.ts",
 		"build": "bun run scripts/build.ts",
+		"reduce:prototype": "bun run scripts/reduce-prototype.ts",
 		"preview": "bun run scripts/preview.ts",
 		"test": "bun test",
 		"typecheck": "tsc --noEmit",
@@ -24,10 +25,14 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.1",
+		"@gltf-transform/core": "4.5.1",
+		"@gltf-transform/extensions": "4.5.1",
+		"@gltf-transform/functions": "4.5.1",
 		"@types/bun": "1.4.4",
 		"@types/d3-contour": "3.0.6",
 		"@types/three": "0.186.0",
 		"eslint": "^9.39.1",
+		"meshoptimizer": "1.2.0",
 		"typescript": "6.0.3",
 		"typescript-eslint": "^8.46.2"
 	},
