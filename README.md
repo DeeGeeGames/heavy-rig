@@ -586,3 +586,17 @@ experiments.deegeegames.com are not transferred automatically.
 
 Heavy Rig was extracted from DeeGeeGames/playground at commit
 `7e255d2b0676c80a79206f0a55c492d4b83cc692`, where it was named Iron Wake.
+
+## Heavy mech prototype
+
+Run `bun run dev:models` for development, or build with `bun run build`,
+then run `bun run preview` and open
+`/prototype-preview.html` (also linked from the model study). The separate viewer
+loads the approved GLB with walk playback, seeking, single-frame stepping, hull
+orientation, torso aim, launcher guides, and side/rear/game-angle views. The
+self-contained `dist/prototype-study.html` can also be opened from disk.
+
+The walk plays once and holds its final pose. Hull orientation is an inspection
+control, not a planted turning animation. Launcher guides do not fire weapons.
+This study does not change production frames, combat, saves, or controls. Its
+high-detail asset is not yet a performance budget for multiple on-screen mechs.
