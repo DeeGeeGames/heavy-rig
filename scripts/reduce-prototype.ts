@@ -30,9 +30,27 @@ for (const mesh of document.getRoot().listMeshes()) {
 		const before = indices.getCount() / 3;
 		// Keep small accent primitives; retain at least 60 triangles in larger ones.
 		const target = before < 200 ? indices.getCount() : Math.max(180, Math.floor(indices.getCount() * 0.10 / 3) * 3);
+		// Protect the chest launcher faces and their rims in source GLB bind space.
+		// These repeated small tubes distort under permissive seam simplification.
+		const locked = new Uint8Array(positionArray.length / 3);
+		for (let index = 0; index < locked.length; index++) {
+			const x = positionArray[index * 3]; const y = positionArray[index * 3 + 1]; const z = positionArray[index * 3 + 2];
+			if (x === undefined || y === undefined || z === undefined) throw new Error('Incomplete position');
+			const frontRack = Math.abs(x) >= 0.038 && Math.abs(x) <= 0.16 && y >= 0.60 && y <= 0.80 && z >= 0.12;
+			const upperRack = Math.abs(x) >= 0.055 && Math.abs(x) <= 0.106 && y >= 0.753 && y <= 0.813 && z >= -0.030 && z <= 0.066;
+			if (frontRack || upperRack) locked[index] = 1;
+		}
+		// Add a budget for restored detail so locked racks do not force extra
+		// simplification of unrelated surfaces sharing the same material.
+		let protectedTriangles = 0;
+		for (let index = 0; index < indexArray.length; index += 3) {
+			const a = indexArray[index]; const b = indexArray[index + 1]; const c = indexArray[index + 2];
+			if (a !== undefined && b !== undefined && c !== undefined && locked[a] && locked[b] && locked[c]) protectedTriangles++;
+		}
+		const protectedTarget = Math.min(indices.getCount(), target + Math.ceil(protectedTriangles * 0.9) * 3);
 		const [reduced] = MeshoptSimplifier.simplifyWithAttributes(
 			new Uint32Array(indexArray), positionArray, 3, normalArray, 3,
-			[0.1, 0.1, 0.1], null, target, 0.02, ['Permissive'],
+			[0.1, 0.1, 0.1], locked, protectedTarget, 0.02, ['Permissive'],
 		);
 		primitive.setIndices(document.createAccessor().setType('SCALAR').setArray(new Uint32Array(reduced)).setBuffer(indices.getBuffer()));
 		compactPrimitive(primitive); triangles += reduced.length / 3;

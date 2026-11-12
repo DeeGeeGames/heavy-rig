@@ -48,9 +48,9 @@ const start = async function () {
 	const mixers: AnimationMixer[] = []; let duration = 8;
 	const setPlaying = function (value: boolean) { playing = value; previous = 0; accumulator = 0; play.textContent = value ? 'Pause' : time >= duration ? 'Replay walk' : 'Play walk'; };
 	const frameView = function () {
-		const direction = view.value === 'side' ? new Vector3(0, 0.16, 1) : view.value === 'rear' ? new Vector3(-1, 0.4, -1) : view.value.startsWith('game') ? new Vector3(1, 1, 1) : new Vector3(1.2, 0.5, 1);
-		const distance = (view.value === 'game-small' ? 250 : 110) / Math.tan(camera.fov * Math.PI / 360) / Math.min(1, camera.aspect);
-		orbit.target.set(0, 80, 0); camera.position.copy(direction.normalize().multiplyScalar(distance)).add(orbit.target); orbit.update();
+		const direction = view.value === 'chest' ? new Vector3(1, 0.06, 0) : view.value === 'side' ? new Vector3(0, 0.16, 1) : view.value === 'rear' ? new Vector3(-1, 0.4, -1) : view.value.startsWith('game') ? new Vector3(1, 1, 1) : new Vector3(1.2, 0.5, 1);
+		const distance = (view.value === 'chest' ? 40 : view.value === 'game-small' ? 250 : 110) / Math.tan(camera.fov * Math.PI / 360) / Math.min(1, camera.aspect);
+		orbit.target.set(0, view.value === 'chest' ? 112 : 80, 0); camera.position.copy(direction.normalize().multiplyScalar(distance)).add(orbit.target); orbit.update();
 	};
 	const resize = function () {
 		if (!canvas.clientWidth || !canvas.clientHeight) return;

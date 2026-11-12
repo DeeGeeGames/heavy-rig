@@ -592,7 +592,7 @@ Heavy Rig was extracted from DeeGeeGames/playground at commit
 Run `bun run dev:models` for development, or build with `bun run build`,
 then run `bun run preview` and open
 `/prototype-preview.html` (also linked from the model study). The separate viewer
-compares the approved master with a separate 18,974-triangle candidate using
+compares the approved master with a separate 27,134-triangle candidate using
 synchronized side-by-side or individual views, wireframe, walk playback, seeking,
 single-frame stepping, hull
 orientation, torso aim, launcher guides, and side/rear/game-angle views. The
