@@ -1,11 +1,12 @@
 {
   "status": "approved",
   "ownerApproval": "2026-11-13: owner said \"This is good. Stage this.\" for option 2 with enlarged guns (baseline-v4).",
-  "selectedDirection": "Owner selected option 2 and requested slightly larger guns. Revised image approval pending.",
-  "sourceImage": "design/mechs/chassis/kestrel/drafts/baseline-v2/kestrel-a.png",
+  "selectedDirection": "Owner approved option 2 with enlarged guns (baseline-v4).",
   "sourceImageSha256": "e2aae9c8861213e48898b25f85057aac29c18e7dc54791e7c9c4e0d6c14a7490",
   "image": "kestrel-a.png",
   "imageSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4",
   "generator": "built-in imagegen edit",
-  "prompt": "imagegen-prompt.txt"
+  "prompt": "imagegen-prompt.txt",
+  "sourceImageRetained": false,
+  "sourceImageNote": "Unapproved option 2 edit source removed at owner request; hash retained as provenance only."
 }
