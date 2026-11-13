@@ -1,0 +1,8 @@
+{
+  "status": "approved",
+  "ownerApproval": "2026-11-13: owner selected Maul option 1: \"Add option 1. Then push these to the PR.\" Concept approval only; hidden surfaces and production model remain separate.",
+  "image": "maul-a.png",
+  "imageSha256": "9549c80c62be16566eae62b558203dc09b0c7015a9cf919759299099365e9d84",
+  "generator": "built-in imagegen",
+  "prompt": "prompt.txt"
+}

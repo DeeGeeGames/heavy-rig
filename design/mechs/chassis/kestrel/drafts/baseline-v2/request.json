@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "kestrel",
+  "background": "Transparent",
+  "details": "Explore a low, lean dart-shaped torso with a long narrow armored beak, compact high rear counterweight and widely separated slender industrial reverse-jointed legs. Use broad simple armor plates and restrained surface detailing. Keep the two small lateral machine-gun assemblies clearly visible, attached close to the torso on reinforced lateral brackets, with enclosed ammunition feeds. Rear talons and all physical joints must be clear. Compact mobile scout, not an assault chassis.",
+  "loadout": [
+    {
+      "weaponId": "machine-gun",
+      "rounds": 600
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 600
+    }
+  ]
+}

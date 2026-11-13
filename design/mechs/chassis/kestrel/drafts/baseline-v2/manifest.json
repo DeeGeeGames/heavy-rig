@@ -1,0 +1,8 @@
+{
+  "status": "draft",
+  "ownerApproval": null,
+  "image": "kestrel-a.png",
+  "imageSha256": "e2aae9c8861213e48898b25f85057aac29c18e7dc54791e7c9c4e0d6c14a7490",
+  "generator": "built-in imagegen",
+  "prompt": "prompt.txt"
+}

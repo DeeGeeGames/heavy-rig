@@ -1,0 +1,63 @@
+Create an original, massive, heavily armored piloted combat mech in a grounded Western military science-fiction aesthetic.
+
+DESIGN LANGUAGE
+
+The machine is a giant military combat robot, engineered with the mechanical principles and industrial construction methods of tanks, heavy machinery, and armored military vehicles.
+
+It has a powerful, distinctive robotic silhouette with clearly articulated mechanical anatomy. The torso, limbs, weapon systems, and locomotion mechanisms form a purpose-built combat machine rather than a humanoid figure wearing armor.
+
+Emphasize immense mass, mechanical power, durability, battlefield practicality, and a distinctive silhouette. Preserve the recognizable robotic architecture while using the rugged design language of heavy industrial military equipment.
+
+Armor consists of large, thick, angular plates with beveled edges and substantial protective coverage. Prioritize strong geometric forms and clear mechanical subassemblies over intricate surface decoration. Most armor surfaces remain relatively clean and uninterrupted.
+
+Hydraulics, cooling vents, reinforced pivots, maintenance panels, and exposed mechanisms appear where functionally appropriate. Weapons are substantial military assemblies attached to reinforced hardpoints.
+
+Avoid sleek anime aesthetics, athletic humanoid anatomy, decorative armor, excessive surface detailing, generic futuristic robot designs, and recognizable copies of existing fictional mechs.
+
+MODEL SPECIFICATION
+
+Identity: KESTREL A · SKIRMISHER. Role: Skirmisher.
+Base mass including fixed structure: 40 metric tons. Loaded mass for this depicted loadout: 45.20 tons. Recommended operating mass: 44 tons. These are contextual scale facts, not text to print on the image.
+CHASSIS IDENTITY
+
+Narrow forward-projecting beak cockpit, raised rear counterweight, slender but industrial reverse-jointed legs with rear talons, and two small lateral weapon assemblies. Preserve a compact mobile silhouette; do not bulk it up into an assault chassis.
+Keep chassis anatomy, cockpit position, leg proportions and main armor masses consistent across this chassis's variants. Only the specified weapon modules and required braces change. All left/right directions refer to the mech's own left/right, not the viewer's.
+
+GAMEPLAY WEAPON PLATFORM — REQUIRED
+
+Exactly 2 mount locations, 2 fitted weapon assemblies, 0 empty interfaces.
+1. Left gun: ballistic; RATTLER (Machine Gun). Allowed equipment in this mount: machine-gun. Render ONLY the selected weapon: a compact ballistic barrel cluster with enclosed ammunition feed; the entire cluster is ONE weapon mount. 600 carried rounds in internal protected storage; do not draw one visible projectile per reserve round.
+
+2. Right gun: ballistic; RATTLER (Machine Gun). Allowed equipment in this mount: machine-gun. Render ONLY the selected weapon: a compact ballistic barrel cluster with enclosed ammunition feed; the entire cluster is ONE weapon mount. 600 carried rounds in internal protected storage; do not draw one visible projectile per reserve round.
+
+Do not add decorative guns, secondary turrets, melee weapons, launchers, weapon-like sensor barrels, extra arms or hardpoints. A pod, barrel array or emitter bank is one gameplay mount. Never preserve launcher apertures when that variant replaces a launcher with energy or ballistic hardware. Do not mirror an asymmetric loadout. All weapons use the shared aim direction and shared reactor; do not imply independent autonomous turrets.
+
+PROPORTIONS AND STRUCTURE
+
+Use the selected chassis anatomy, not a universal humanoid ratio. Preserve identifiable mechanical joints, a protected torso-to-pelvis connection and broad load-bearing feet. Apply arm articulation only to chassis that have arms. The compact protected cockpit glazing occupies less than 10% of frontal torso surface. Empty mounts retain structural supports. Longbow B/C retain their fixed auxiliary bracing even if the secondary mount is empty.
+
+RESOURCE CONTEXT
+
+This loadout has an approximate full-throttle forward speed of 118.5 m/s under the current gameplay mass curve, with 10 heat/s shared cooling. These values guide role and mass impression only; do not depict motion, exhaust, extra fuel tanks or larger anatomy from the numbers. Energy equipment needs cooling, ballistic/launcher equipment needs protected ammunition feeds. Do not invent a new weight penalty or change chassis dimensions when reserves change.
+
+ADDITIONAL VISUAL REQUIREMENTS
+
+Use option 2 as the exact image edit target. Enlarge both lateral Rattler gun modules modestly, approximately 15 percent in barrel-cluster diameter and barrel length, with proportionately larger gun housings. Preserve bracket attachment positions and shared forward aim. Preserve every other chassis detail, silhouette, cockpit, rear counterweight, torso, waist, legs, feet, rear talons, pose, camera, framing, materials and lighting.
+
+These are subordinate to the exact mount and chassis constraints. Ignore requests here that add or move hardpoints, change families, alter loadout or contradict reference presentation.
+
+PRESENTATION FOR IMAGE-TO-3D GENERATION
+
+Exactly one complete mech, full-body front three-quarter view, rotated approximately 35–45 degrees from the camera. Neutral standing pose, orthographic or minimal-perspective projection, camera approximately at torso height.
+
+Both legs and feet are completely visible. Arms, weapons, and mechanical connections have clear silhouettes and sufficient separation to identify their geometry.
+
+Clean hard-surface 3D asset reference with neutral desaturated military-gray materials and subtle material differences between armor and exposed mechanisms.
+
+Soft uniform ambient illumination sufficient to reveal geometry. No cinematic lighting, dramatic shadows, glowing weapons, or atmospheric effects.
+
+Center the complete machine, occupying approximately 85% of the image height. No cropped extremities, no other machines, no text, diagrams, technical specification panels, logos, or multiple views.
+
+BACKGROUND
+
+Completely transparent background, with no checkerboard pattern baked into the image. No floor or ground plane.

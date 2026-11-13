@@ -1,0 +1,48 @@
+{
+  "chassisId": "maul",
+  "variantId": "maul",
+  "contractSignature": "f5ff61ae5df9f6e2e835bc61ef028a4ad6cf1c618e216e62578cc14d23d53210",
+  "mounts": [
+    {
+      "id": "left-forearm pod",
+      "name": "Left forearm pod",
+      "family": "launcher",
+      "weapons": [
+        "stream-missiles",
+        "stream-missiles-4",
+        "stream-missiles-6",
+        "cluster-missiles",
+        "cluster-missiles-4",
+        "cluster-missiles-6",
+        "stream-rockets",
+        "stream-rockets-4",
+        "stream-rockets-6",
+        "cluster-rockets",
+        "cluster-rockets-4",
+        "cluster-rockets-6"
+      ]
+    },
+    {
+      "id": "right-forearm pod",
+      "name": "Right forearm pod",
+      "family": "launcher",
+      "weapons": [
+        "stream-missiles",
+        "stream-missiles-4",
+        "stream-missiles-6",
+        "cluster-missiles",
+        "cluster-missiles-4",
+        "cluster-missiles-6",
+        "stream-rockets",
+        "stream-rockets-4",
+        "stream-rockets-6",
+        "cluster-rockets",
+        "cluster-rockets-4",
+        "cluster-rockets-6"
+      ]
+    }
+  ],
+  "baseline": null,
+  "reviewStatus": "pending",
+  "ownerApproval": "2026-11-13: owner selected Maul option 1: \"Add option 1. Then push these to the PR.\" Concept approval only; hidden surfaces and production model remain separate."
+}
