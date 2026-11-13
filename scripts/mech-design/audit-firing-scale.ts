@@ -48,5 +48,5 @@ for (const [variant, families] of Object.entries({ A: ['launcher', 'launcher'], 
 	results.push({ variant, raySamples: 364, obstructions, sourceSize: size.toArray(), sourceBottom: bottom, productionSize: productionSize.toArray(), heightMatchScale: productionSize.y / size.y });
 	mixer.stopAllAction(); mixer.uncacheRoot(model.scene);
 }
-await Bun.write(join(folder, 'firing-scale-audit.json'), JSON.stringify({ status: results.some(function (result) { return result.obstructions.length > 0; }) ? 'obstructions-found' : 'straight-rays-clear', scope: 'Straight muzzle rays over walk only; no aim sweep or per-tube validation. Scale matches standing render height, not physical meters.', results }, null, 2) + '\n');
+if (process.argv[3]) await Bun.write(process.argv[3], JSON.stringify({ status: results.some(function (result) { return result.obstructions.length > 0; }) ? 'obstructions-found' : 'straight-rays-clear', scope: 'Straight muzzle rays over walk only; no aim sweep or per-tube validation. Scale matches standing render height, not physical meters.', results }, null, 2) + '\n');
 console.log(JSON.stringify(results, null, 2));

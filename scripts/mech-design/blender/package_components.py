@@ -4,7 +4,7 @@ from pathlib import Path
 from mathutils import Matrix
 root=Path(REPO_ROOT)
 decimate_ratio=globals().get('DECIMATE_RATIO')
-out=root/'design/mechs/generated'/globals().get('OUTPUT_FOLDER','warden-components-v2')
+out=root/'design/mechs/generated'/globals().get('OUTPUT_FOLDER','components-candidate')
 record=globals().get('SOURCE_OVERRIDE') or json.loads((root/'design/mechs/chassis/warden/approved-interfaces.json').read_text())['artifacts']['interfaces.blend']
 source=root/record['path']
 assert hashlib.sha256(source.read_bytes()).hexdigest()==record['sha256']

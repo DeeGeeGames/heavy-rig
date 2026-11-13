@@ -111,5 +111,5 @@ for (const [variant, families] of Object.entries({ A: ['launcher', 'launcher'], 
 	mixer.stopAllAction();
 	mixer.uncacheRoot(chassis.scene);
 }
-await Bun.write(join(folder, 'runtime-validation.json'), JSON.stringify({ status: 'passed', results }, null, 2) + '\n');
+if (process.argv[3]) await Bun.write(process.argv[3], JSON.stringify({ status: 'passed', results }, null, 2) + '\n');
 console.log(JSON.stringify(results, null, 2));

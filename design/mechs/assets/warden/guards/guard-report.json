@@ -1,0 +1,16 @@
+{
+  "status": "visual-review-pending",
+  "sourceSha256": "a4005e454d2ac52313653e497acf6f283ec0773722b583763622548cdc975802",
+  "changes": [
+    {
+      "part": 51,
+      "rigidAssembly": "left shin/front guard"
+    },
+    {
+      "part": 44,
+      "rigidAssembly": "right shin/front guard"
+    }
+  ],
+  "geometry": "No mesh vertices or topology changed; original larger axle retained.",
+  "intent": "Keep upper guard pieces on the shin and attach the lower front plate to that shin; the foot articulates beneath it. No visible split seams. Intersections are not claimed eliminated."
+}

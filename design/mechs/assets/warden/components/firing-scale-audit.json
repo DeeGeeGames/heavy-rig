@@ -1,0 +1,57 @@
+{
+  "status": "straight-rays-clear",
+  "scope": "Straight muzzle rays over walk only; no aim sweep or per-tube validation. Scale matches standing render height, not physical meters.",
+  "results": [
+    {
+      "variant": "A",
+      "raySamples": 364,
+      "obstructions": [],
+      "sourceSize": [
+        0.9495230444268749,
+        0.9748121928497044,
+        0.7188235588412695
+      ],
+      "sourceBottom": -6.424855731860058e-8,
+      "productionSize": [
+        79.9000015258789,
+        101.75,
+        94
+      ],
+      "heightMatchScale": 104.37908014111977
+    },
+    {
+      "variant": "B",
+      "raySamples": 364,
+      "obstructions": [],
+      "sourceSize": [
+        0.9495230444268749,
+        0.9748121928497044,
+        0.7188235588412695
+      ],
+      "sourceBottom": -6.424855731860058e-8,
+      "productionSize": [
+        79.9000015258789,
+        101.75,
+        94
+      ],
+      "heightMatchScale": 104.37908014111977
+    },
+    {
+      "variant": "C",
+      "raySamples": 364,
+      "obstructions": [],
+      "sourceSize": [
+        0.9495230444268749,
+        0.9748121928497044,
+        0.7188235588412695
+      ],
+      "sourceBottom": -6.424855731860058e-8,
+      "productionSize": [
+        79.9000015258789,
+        101.75,
+        94
+      ],
+      "heightMatchScale": 104.37908014111977
+    }
+  ]
+}

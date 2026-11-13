@@ -3,10 +3,11 @@ import hashlib,json
 from pathlib import Path
 import bpy
 from mathutils import Vector,Matrix
-repo=Path(REPO_ROOT);out=repo/'design/mechs/generated/warden-interfaces-v1'
+repo=Path(REPO_ROOT);out=repo/'design/mechs/generated'/globals().get('OUTPUT_FOLDER', 'interfaces-candidate')
 record=json.loads((repo/'design/mechs/chassis/warden/approved-front-guard.json').read_text())['artifacts']['guard-candidate.blend']
 if hashlib.sha256((repo/record['path']).read_bytes()).hexdigest()!=record['sha256']:raise RuntimeError('Approved guard source changed.')
 if (out/'interfaces.blend').exists():raise RuntimeError('Output exists.')
+out.mkdir(parents=True,exist_ok=True)
 previous=bpy.context.window.scene
 with bpy.data.libraries.load(str(repo/record['path']),link=False) as (available,loaded):loaded.scenes=['Warden guard trial v10']
 s=loaded.scenes[0];s.name='Warden interface trial v1';bpy.context.window.scene=s

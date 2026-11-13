@@ -11,15 +11,15 @@
   ],
   "artifacts": {
     "guard-candidate.blend": {
-      "path": "design/mechs/generated/warden-guard-v10/guard-candidate.blend",
+      "path": "design/mechs/assets/warden/guards/guard-candidate.blend",
       "sha256": "071548b628e81ad1cef414c486bcaa639fee8c7a57e18ae2758f9167e2713a9d"
     },
     "guard-report.json": {
-      "path": "design/mechs/generated/warden-guard-v10/guard-report.json",
+      "path": "design/mechs/assets/warden/guards/guard-report.json",
       "sha256": "df2d8e3f992c8b284124f7432ad6924f721a2a8af7efcd953344fd89fabb077b"
     },
     "after.gif": {
-      "path": "design/mechs/generated/warden-guard-v10/after.gif",
+      "path": "design/mechs/assets/warden/guards/after.gif",
       "sha256": "c66f0e7f7abe3cd6237c9586d3286c264512a34c50e4365168b756a1e1381e4f"
     }
   },

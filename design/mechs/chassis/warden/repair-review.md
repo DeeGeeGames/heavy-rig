@@ -27,14 +27,14 @@ All 117 shared exported meshes are checked across A/B/C for matching geometry at
 
 [repair-draft.json](repair-draft.json) records the exact modular `.blend` hash, source-part map/hash and output directory. With those local sources available, set `REPO_ROOT` in Blender's Python environment and execute `scripts/mech-design/blender/repair_shared_chassis.py`. The script verifies inputs, copies meshes into its own candidate scene, renders checks, verifies the exported variants and saves a separate library. It restores the previously active scene. This approved recipe is now frozen: the script refuses to overwrite it. To derive or reproduce a candidate, copy the recipe to a new manifest, set its status to `repair-candidate-unapproved`, choose a new output directory and pass its repository-relative path as `REPAIR_MANIFEST`. Use a fresh session.
 
-Local ignored outputs under `design/mechs/generated/warden-repair-v1/` include:
+Retained checkpoint outputs under `design/mechs/assets/warden/repaired-chassis/` include:
 
 - `warden-repair.blend`: editable candidate with shared geometry, hierarchy and live actuator constraints. It contains both cartridge families; B is visible initially.
 - `warden-repair.glb`, `warden-b-repair.glb`, `warden-c-repair.glb`: neutral review exports.
 - `repair-report.json`: caps, changed source pieces, sampled poses/strokes and export verification.
 - Neutral, individual joint and combined-pose PNGs; ankle details include front/rear angles.
 
-Changing the modular source or part map requires reviewing the repair recipe and explicitly updating the input hashes. Generated source/intermediate files remain local and ignored; they must accompany the recipe to reproduce it elsewhere.
+Changing the modular source or part map requires reviewing the repair recipe and explicitly updating the input hashes. Required source/intermediate files are retained through Git LFS; restore and verify the asset manifest before deriving a candidate.
 
 ## Next gate
 

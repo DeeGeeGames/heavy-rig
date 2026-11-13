@@ -1,7 +1,5 @@
 # Mech asset production
 
-This is the evolving production procedure. Keep observations separate from defaults: a successful generator job, high part count or exported GLB does not establish a usable game asset.
-
 ## Stages and acceptance
 
 1. **Concept:** validate current gameplay mounts, approve a 3/4 baseline, retain prompt, request and image hashes.
@@ -14,23 +12,65 @@ This is the evolving production procedure. Keep observations separate from defau
 8. **In-game acceptance:** validate independent torso aim, gait, muzzle origins, equipped/empty variants, lighting and silhouette in the real runtime. Report measured performance separately from owner acceptance. Do not replace production models until the agreed preview gate passes.
 9. **Repeatability:** run the documented procedure on another chassis before calling it general. Record special cases, repair steps and automation gaps; revise this document and the skill as evidence changes.
 
-## Source and derivative conventions
+## Checkpoints and storage
 
-Keep approved reference art in `chassis/<id>/drafts/`. Keep large experimental exports, audit renders and `.blend` files in ignored `generated/` until an asset-storage policy is selected. Record durable findings and reusable scripts in version control. Never overwrite a provider export. A derivative manifest should identify source hashes, axis/scale conventions, source-part-to-assembly mapping, pivot coordinates, repair operations, unresolved findings and acceptance state. Unknown or unassigned pieces must fail review rather than silently disappear.
+Keep one approved advancing result per named step. Concepts and turnarounds live
+under `chassis/<id>/concept/` and `chassis/<id>/turnaround/`. Required 3D source
+inputs and accepted intermediate checkpoints live under `assets/<id>/`.
+Blender and GLB files use Git LFS; manifests, recipes and approval records use
+ordinary Git. Candidates and generated previews stay ignored under `generated/`.
+Use Git history for previous accepted states rather than retaining v1/v2/v3
+folders. A necessary donor or intermediate remains even if it is not itself the
+final production model. Never overwrite the raw provider inputs.
 
-Suggested rigid names: `pelvis`, `torso`, `leg_left_thigh`, `leg_left_shin`, `leg_left_foot` (and right counterparts), `mount_<gameplay-id>`, plus explicit muzzle anchors. Read actual mount IDs from the generated gameplay contract. Choose the hierarchy from intended motion, not arbitrary provider mesh names. Parent stationary armor to its moving assembly; avoid permanent welding until boundaries are verified. Pistons spanning joints may need independent linkage handling rather than rigid attachment to one segment.
+Run `git lfs pull` and `python3 scripts/mech-design/verify-assets.py` after cloning.
+The [asset manifest](assets/manifest.json) records exact paths, sizes and hashes.
+See [checkpoint roles](assets/README.md) and
+[authoring commands](../../scripts/mech-design/blender/README.md).
 
-## Current Warden evidence
+## Current Warden acceptance
 
-- Single-view A: exported 12 meshes, 192,430 triangles; feet remain fused with shins and arm connection concerns prompted the turnaround stage.
-- Four-view A / Balanced: preview listed 14 parts; saved export has 13 meshes and 189,164 triangles. Preserve the distinction between preview and exported counts. Owner screenshot shows some foot/shin fusion.
-- Four-view B / Detailed: exported 107 meshes and 189,050 triangles. No skeleton or animation in either four-view export. Detailed may make grouping easier, but has not yet been proven to split every necessary joint.
-- Settings tested: H3.1 HD, 200k polygon target, geometry only, Generate in Parts; 60 Studio credits per run at trial time. These are recorded observations, not stable prices or recommended defaults.
-- Local audit and the first B motion probe are recorded in [Warden articulation review](chassis/warden/articulation-review.md). All 107 pieces have a provisional assignment to 12 rigid assemblies. Ankle openings and unresolved joint-spanning pistons fail articulation acceptance. Next evidence needed: repaired joint coverage, accurate pivots and bilateral motion sweeps. Do not label Detailed segmentation the default until its repair effort and boundaries have been assessed. A/B are different generations, so their comparison is not a controlled same-mesh segmentation test.
+Stages 1–4 have approved references, original generated inputs, a source-part
+map and repaired shared chassis. Stage 5 is accepted for the reviewed motion
+envelope: current walk, suspended run and dedicated backward gait. The owner
+accepted the visible geometry with remaining fine-tuning deferred. Preserve the
+original large axles, unsplit exterior and shin-owned front guards. This does
+not establish exhaustive joint limits or zero mesh intersections.
 
-## Definition of done for this process
+Stage 6 retains accepted shared module design and empty covers, plus verified
+unoptimized component exports. Exact firing exits, aim-range clearance and
+refreshing all A/B/C/empty exports with the current motions remain work.
+Stage 7 has no accepted optimized derivative. Previous reduction/baking trials
+were rejected and are excluded from this deliverable. Establish a measured
+budget, preserve silhouette/openings, consolidate materials and normalize common
+scale/orientation. The owner's MW5 Atlas/Stalker reference counts still need
+verification of triangle/polygon, LOD and equipment context.
 
-A second agent or human can find the approved inputs, reproduce the documented transformations, inspect explicit acceptance evidence, and identify remaining manual work without reading the originating chat. At least one mech must complete the path into a reviewed game derivative, and another chassis must exercise the instructions before the process is considered broadly validated.
+Stages 8 and 9 remain outstanding: runtime combat/aim/movement integration and
+performance acceptance, then exercising the complete workflow on another
+chassis. Kestrel and Maul currently have approved concepts only. No production
+game assets are replaced by these authoring checkpoints.
+
+## Reproduction and acceptance
+
+Retain named checkpoint hashes separately from candidate reports. Reports can
+retain their historical trial IDs and measurements; acceptance lives in the
+approval records. Derive into a fresh ignored candidate directory, verify its
+export, obtain review, then replace the corresponding accepted step and refresh
+all dependent hashes in one commit.
+
+The retained checkpoint chain lets a fresh worker resume at any saved step.
+Re-running every historical Blender transformation from raw generation is a
+separate validation claim; file restoration alone does not prove it. Original
+provider outputs are kept because external generation cannot be assumed to
+produce the same mesh again.
+
+Check actual GLBs in Three.js as well as Blender. Verify planted contacts, ankle
+pitch, body/guard transforms, actuator endpoints/stroke and signed root travel.
+Transforms alone do not validate material appearance or geometry. Apply evaluated
+modifiers when exporting components; compare evaluated triangle counts so bevels
+cannot silently disappear. Straight firing rays do not establish full aim arcs,
+projectile clearance or per-tube origins.
 
 ## Modular consistency rules
 
@@ -45,42 +85,9 @@ The default after a usable 3D chassis exists is **assemble variants, do not rege
 7. Verify shared mesh geometry, transforms and rig bindings are identical across variants, preferably by machine-readable fingerprints. Check actual exports as well as the DCC scene. Shared chassis changes invalidate affected variant approvals; module-only changes require review of affected variants and interaction checks, not regeneration of the body.
 8. Optimize the accepted shared body and each module once, with compatible materials and LOD interfaces. Separately purchasable gameplay rigs can reference the same body assets. No game/save-system changes are implied by this authoring policy.
 
-The first [Warden modular trial](chassis/warden/modular-review.md) demonstrates identical bodies and shared rear pod housings with extracted front cartridges. It does not yet pass mechanical, seam or runtime acceptance.
+## Definition of done
 
-## Mechanical repair lessons from Warden
-
-The [shared repair candidate](chassis/warden/repair-review.md) adds a second lesson to the modular trial: generator segmentation can produce disconnected fragments of armor and piston surfaces instead of complete mechanical components. Audit individual pieces before assigning them to moving assemblies.
-
-Repair the shared master once. Preserve useful exterior surfaces, rebuild simple joint internals where needed, attach actuator endpoints to the actual moving assemblies, and test both direction and stroke. Local cap checks should follow connected boundary loops when a cut intersects an existing segmentation hole. State precisely what was closed; do not equate one repaired interface with a watertight whole model.
-
-Validate three layers separately: visible shape/clearance, mechanical hierarchy/constraints, and exported geometry. Blender constraints require an explicit runtime equivalent or baked animation; a neutral GLB export does not preserve their behavior automatically. Keep the source master, recipe, part-map hash and exported consistency evidence together. Reuse acceptance of unchanged shared geometry while reviewing changes that affect joint motion or module clearance.
-
-## Approval and animation transfer
-
-Freeze accepted shared-master artifact hashes separately from the original candidate reports, which retain their historical status. Guard repair scripts against overwriting an approved revision; derive further work into a new output revision.
-
-The [Warden gait trial](chassis/warden/gait-review.md) demonstrates the next validation layer: bake DCC-only constraints into animation and load the actual exported clip in the intended runtime library. Compare sample times, planted contact positions, foot orientation and actuator endpoints. An animation export can be visually plausible yet shifted by one frame. Keep observed joint excursions separate from validated limits, and keep overlap candidates separate from confirmed armor collisions. Neither a planted-foot check nor a neutral visual approval completes the clearance gate.
-
-Motion review must include weight transfer through the pelvis and upper body, not just correctly planted feet. In [Warden gait v2](chassis/warden/gait-v2-review.md), moving hips required a 3D leg solve to retain the accepted world-space contact paths. Validate the exported body transforms as well as the feet, and re-audit waist/hip clearances when body motion changes. Keep motion feedback and acceptance distinct from approval of the static shared master.
-
-Warden guard decision: retain the approved unsplit exterior on both front and rear ankles. The visible split experiments were superseded by the owner. Investigate concealed surface trimming or joint ownership before proposing exterior seams; crossing counts alone did not establish a need for those seams. See `chassis/warden/clearance-review.md`.
-
-The [Warden interface trial](chassis/warden/interfaces-review.md) separates stable shoulder sockets from module-specific muzzle origins and an empty-mount cover. Verify unchanged mesh transforms over the full walk cycle after reparenting. A bank-level origin is provisional until actual firing exits and runtime axes are checked. Empty covers require visual approval but do not create new gameplay variants.
-
-For component export, explicitly apply evaluated modifiers and compare exported mesh counts with evaluated source geometry. Warden component v1 preserved animation transforms but silently omitted cover bevels; v2 corrected this. Transform validation alone cannot establish appearance fidelity.
-
-The [Warden optimization trial](chassis/warden/optimization-review.md) demonstrates error-limited component simplification with locked borders, actual-export comparisons, and separate source-transform/derivative-geometry checks. Preserve a source geometry record when a derivative intentionally changes triangle counts. Straight firing rays during a walk do not establish aim-sweep clearance or per-tube muzzle accuracy. Record game-scale comparisons before changing physical dimensions.
-
-The [Warden baked-detail trial](chassis/warden/baked-detail-review.md) transfers shallow detail to tangent-space normal maps while retaining geometry for openings and silhouettes. Use shared chassis UVs across variants, bake matching part pairs to avoid cross-projection, and validate exported texture payloads and tangent attributes. Review with a material-aware renderer; clay previews cannot establish normal-map quality.
-
-## Current direction: targeted surface replacement
-
-Owner direction supersedes the whole-model reduction experiment: restart from the unreduced approved master and replace selected shallow relief with clean surfaces and local texture bakes. Preserve rims, openings, silhouettes, moving assemblies, and unrelated mesh data. Review one isolated surface group in front and oblique views before expanding. Track net triangle savings after boundary closure, not just polygons deleted. See [Warden targeted surface review](chassis/warden/targeted-surface-review.md).
-
-## Draft checkpoint: optimization unresolved
-
-Owner stopped the optimization experiments because their visual quality was insufficient. No reduced or texture-baked derivative is approved for production. Preserve the original approved high-detail master and the prior approved articulation/guard decisions. Targeted trial v11 may contain the last interrupted attempt; it is not reviewed or accepted. Earlier trial comparisons likewise do not establish acceptance.
-
-Before selecting a production budget, investigate the owner's reference figures for MechWarrior 5: Atlas approximately 47k polygons and Stalker approximately 12k. These are user-provided, unverified figures. Establish whether each count means triangles or polygons, which LOD is measured, whether weapons/equipment are included, and how materials, textures and draw calls contribute. Do not treat either figure as a project requirement without that context.
-
-This draft checkpoints the workflow, images, approval records, validation tools, and experimental recipes. Large generated 3D artifacts remain ignored/local. Source hashes are provenance, not a distributable artifact archive; storage and fresh-clone reproducibility remain open work.
+A fresh worker can restore approved inputs, reproduce documented transformations,
+inspect acceptance evidence and identify remaining manual work without reading
+chat history. At least one mech must reach a reviewed in-game derivative, and
+another chassis must exercise the procedure before calling it broadly validated.

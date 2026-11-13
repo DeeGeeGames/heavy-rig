@@ -1,0 +1,26 @@
+{
+  "id": "warden-suspended-run-v2",
+  "status": "visual-motion-approved",
+  "approval": "Owner said \"This is good.\" after the longer-stride run comparison, then requested a backward gait.",
+  "recordedAt": "2026-11-13T22:37:20.158740+00:00",
+  "scope": "Visual running motion in the preview: longer stride with brief suspension. Does not approve unresolved mechanical clearance, live transitions, optimization or game integration.",
+  "sourceApproval": "warden-interfaces-v1",
+  "artifacts": {
+    "motion.blend": {
+      "path": "design/mechs/assets/warden/motions/run/motion.blend",
+      "sha256": "7df87f756087f1abbbcdb36d5dbf963c52bf517079d1a24a1d1dc5236a70b76b"
+    },
+    "motion.glb": {
+      "path": "design/mechs/assets/warden/motions/run/motion.glb",
+      "sha256": "205ba4015d0bf05fcd8cea1dd65d38d57e8952d0da5b2641d6c2adf6bece11ac"
+    },
+    "gait-report.json": {
+      "path": "design/mechs/assets/warden/motions/run/gait-report.json",
+      "sha256": "cd086e43b81b5a82923f708355e6ae00912d5dce47d20253a51d12d51f62831f"
+    },
+    "three-verification.json": {
+      "path": "design/mechs/assets/warden/motions/run/three-verification.json",
+      "sha256": "d4cea456c29a2365f765f04f1e514fa4d74676826d2569050653287178f2bbba"
+    }
+  }
+}

@@ -18,7 +18,7 @@ if master['status'] != 'approved-for-rigging' or hashlib.sha256(source.read_byte
     raise RuntimeError('Approved master missing or changed.')
 if any(o.name.startswith(('rig_', 'repair_')) for o in bpy.data.objects):
     raise RuntimeError('Rig object names already exist; use a fresh session.')
-out = repo / 'design/mechs/generated/warden-gait-v2'
+out = repo / 'design/mechs/generated' / globals().get('OUTPUT_FOLDER', 'articulation-base-candidate')
 if (out / 'gait-report.json').exists():
     raise RuntimeError('Gait trial output exists; preserve it and use a new revision.')
 out.mkdir(parents=True, exist_ok=True)

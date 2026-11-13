@@ -1,0 +1,1412 @@
+{
+  "status": "repair-candidate-unapproved",
+  "sourceSha256": "e3e579ed3fde210dd2c8c1219f9fabc11bf690ba282c9dd9a6d3c9742e7f7427",
+  "seamCaps": {
+    "shared_tripo_part_1": {
+      "filledFaces": 1,
+      "remainingPlaneBoundaryEdges": 0
+    },
+    "shared_tripo_part_2": {
+      "filledFaces": 1,
+      "remainingPlaneBoundaryEdges": 0
+    },
+    "left_energy_face": {
+      "filledFaces": 1,
+      "remainingPlaneBoundaryEdges": 0
+    },
+    "left_launcher_face": {
+      "filledFaces": 1,
+      "remainingPlaneBoundaryEdges": 0
+    },
+    "right_energy_face": {
+      "filledFaces": 1,
+      "remainingPlaneBoundaryEdges": 0
+    },
+    "right_launcher_face": {
+      "filledFaces": 1,
+      "remainingPlaneBoundaryEdges": 0
+    }
+  },
+  "trimmedPistonParts": {
+    "shared_tripo_part_73": 46,
+    "shared_tripo_part_70": 550,
+    "shared_tripo_part_71": 261,
+    "shared_tripo_part_34": 116,
+    "shared_tripo_part_53": 66,
+    "shared_tripo_part_99": 226,
+    "shared_tripo_part_39": 34,
+    "shared_tripo_part_55": 531,
+    "shared_tripo_part_60": 16,
+    "shared_tripo_part_92": 464,
+    "shared_tripo_part_13": 323,
+    "shared_tripo_part_63": 455,
+    "shared_tripo_part_96": 201,
+    "shared_tripo_part_88": 73,
+    "shared_tripo_part_50": 72,
+    "shared_tripo_part_85": 3,
+    "shared_tripo_part_97": 389,
+    "shared_tripo_part_29": 255,
+    "shared_tripo_part_62": 788,
+    "shared_tripo_part_38": 27,
+    "shared_tripo_part_94": 58
+  },
+  "poses": {
+    "neutral": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot--20": {
+      "left-front": {
+        "endpointDistance": 0.09423050866136597,
+        "overlap": 0.055769491338634056
+      },
+      "left-rear": {
+        "endpointDistance": 0.1735466559705188,
+        "overlap": 0.026453344029481213
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot-20": {
+      "left-front": {
+        "endpointDistance": 0.13382347211647685,
+        "overlap": 0.016176527883523167
+      },
+      "left-rear": {
+        "endpointDistance": 0.12733674267556583,
+        "overlap": 0.07266325732443418
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin--25": {
+      "left-front": {
+        "endpointDistance": 0.11048077996855168,
+        "overlap": 0.03951922003144834
+      },
+      "left-rear": {
+        "endpointDistance": 0.1480303744768255,
+        "overlap": 0.05196962552317452
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin-25": {
+      "left-front": {
+        "endpointDistance": 0.11048077101196868,
+        "overlap": 0.03951922898803134
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803037998182567,
+        "overlap": 0.051969620018174345
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh--20": {
+      "left-front": {
+        "endpointDistance": 0.11048077153882653,
+        "overlap": 0.03951922846117349
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803039335111096,
+        "overlap": 0.051969606648889055
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh-20": {
+      "left-front": {
+        "endpointDistance": 0.11048077469997354,
+        "overlap": 0.03951922530002648
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803040121539587,
+        "overlap": 0.05196959878460414
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "right-foot--20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.09423050866136597,
+        "overlap": 0.055769491338634056
+      },
+      "right-rear": {
+        "endpointDistance": 0.1735466559705188,
+        "overlap": 0.026453344029481213
+      }
+    },
+    "right-foot-20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.13382347211647685,
+        "overlap": 0.016176527883523167
+      },
+      "right-rear": {
+        "endpointDistance": 0.12733674267556583,
+        "overlap": 0.07266325732443418
+      }
+    },
+    "right-shin--25": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077996855168,
+        "overlap": 0.03951922003144834
+      },
+      "right-rear": {
+        "endpointDistance": 0.1480303744768255,
+        "overlap": 0.05196962552317452
+      }
+    },
+    "right-shin-25": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077101196868,
+        "overlap": 0.03951922898803134
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803037998182567,
+        "overlap": 0.051969620018174345
+      }
+    },
+    "right-thigh--20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077153882653,
+        "overlap": 0.03951922846117349
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803039335111096,
+        "overlap": 0.051969606648889055
+      }
+    },
+    "right-thigh-20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077469997354,
+        "overlap": 0.03951922530002648
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803040121539587,
+        "overlap": 0.05196959878460414
+      }
+    },
+    "waist--25": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "waist-25": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "combined": {
+      "left-front": {
+        "endpointDistance": 0.10106002245336854,
+        "overlap": 0.048939977546631486
+      },
+      "left-rear": {
+        "endpointDistance": 0.16049409659247446,
+        "overlap": 0.03950590340752555
+      },
+      "right-front": {
+        "endpointDistance": 0.12164472859587293,
+        "overlap": 0.028355271404127094
+      },
+      "right-rear": {
+        "endpointDistance": 0.13674503509733707,
+        "overlap": 0.06325496490266294
+      }
+    }
+  },
+  "actuatorSweeps": {
+    "left-foot--20": {
+      "left-front": {
+        "endpointDistance": 0.09423050866136597,
+        "overlap": 0.055769491338634056
+      },
+      "left-rear": {
+        "endpointDistance": 0.1735466559705188,
+        "overlap": 0.026453344029481213
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot--15": {
+      "left-front": {
+        "endpointDistance": 0.09726690137033599,
+        "overlap": 0.052733098629664035
+      },
+      "left-rear": {
+        "endpointDistance": 0.16697910949790964,
+        "overlap": 0.033020890502090366
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot--10": {
+      "left-front": {
+        "endpointDistance": 0.10106005009548187,
+        "overlap": 0.04893994990451815
+      },
+      "left-rear": {
+        "endpointDistance": 0.1604940929543618,
+        "overlap": 0.03950590704563822
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot--5": {
+      "left-front": {
+        "endpointDistance": 0.105501213659856,
+        "overlap": 0.04449878634014402
+      },
+      "left-rear": {
+        "endpointDistance": 0.1541545186133505,
+        "overlap": 0.04584548138664951
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot-0": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot-5": {
+      "left-front": {
+        "endpointDistance": 0.1158940082733133,
+        "overlap": 0.03410599172668673
+      },
+      "left-rear": {
+        "endpointDistance": 0.14219903040428175,
+        "overlap": 0.05780096959571826
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot-10": {
+      "left-front": {
+        "endpointDistance": 0.12164474390804514,
+        "overlap": 0.028355256091954884
+      },
+      "left-rear": {
+        "endpointDistance": 0.13674505552928556,
+        "overlap": 0.06325494447071445
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot-15": {
+      "left-front": {
+        "endpointDistance": 0.12764666946815015,
+        "overlap": 0.022353330531849874
+      },
+      "left-rear": {
+        "endpointDistance": 0.13175927768451054,
+        "overlap": 0.06824072231548947
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-foot-20": {
+      "left-front": {
+        "endpointDistance": 0.13382347211647685,
+        "overlap": 0.016176527883523167
+      },
+      "left-rear": {
+        "endpointDistance": 0.12733674267556583,
+        "overlap": 0.07266325732443418
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin--25": {
+      "left-front": {
+        "endpointDistance": 0.11048077996855168,
+        "overlap": 0.03951922003144834
+      },
+      "left-rear": {
+        "endpointDistance": 0.1480303744768255,
+        "overlap": 0.05196962552317452
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin--20": {
+      "left-front": {
+        "endpointDistance": 0.11048077311940005,
+        "overlap": 0.03951922688059997
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803039335111096,
+        "overlap": 0.051969606648889055
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin--15": {
+      "left-front": {
+        "endpointDistance": 0.11048076679710585,
+        "overlap": 0.039519233202894175
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038941896837,
+        "overlap": 0.05196961058103164
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin--10": {
+      "left-front": {
+        "endpointDistance": 0.11048076205538496,
+        "overlap": 0.039519237944615065
+      },
+      "left-rear": {
+        "endpointDistance": 0.1480303907952183,
+        "overlap": 0.05196960920478172
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin--5": {
+      "left-front": {
+        "endpointDistance": 0.11048075731366387,
+        "overlap": 0.03951924268633615
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803040001117726,
+        "overlap": 0.05196959998882275
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin-0": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin-5": {
+      "left-front": {
+        "endpointDistance": 0.1104807829485911,
+        "overlap": 0.03951921705140893
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038411057567,
+        "overlap": 0.051969615889424337
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin-10": {
+      "left-front": {
+        "endpointDistance": 0.11048076706053478,
+        "overlap": 0.03951923293946524
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803039315450384,
+        "overlap": 0.051969606845496175
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin-15": {
+      "left-front": {
+        "endpointDistance": 0.11048075863080864,
+        "overlap": 0.03951924136919138
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803039767646772,
+        "overlap": 0.05196960232353229
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin-20": {
+      "left-front": {
+        "endpointDistance": 0.11048077575368918,
+        "overlap": 0.03951922424631084
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803039571039647,
+        "overlap": 0.05196960428960354
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-shin-25": {
+      "left-front": {
+        "endpointDistance": 0.11048077101196868,
+        "overlap": 0.03951922898803134
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803037998182567,
+        "overlap": 0.051969620018174345
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh--20": {
+      "left-front": {
+        "endpointDistance": 0.11048077153882653,
+        "overlap": 0.03951922846117349
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803039335111096,
+        "overlap": 0.051969606648889055
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh--15": {
+      "left-front": {
+        "endpointDistance": 0.11048077048511085,
+        "overlap": 0.039519229514889176
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038941896837,
+        "overlap": 0.05196961058103164
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh--10": {
+      "left-front": {
+        "endpointDistance": 0.11048076179195603,
+        "overlap": 0.039519238208044
+      },
+      "left-rear": {
+        "endpointDistance": 0.1480303907952183,
+        "overlap": 0.05196960920478172
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh--5": {
+      "left-front": {
+        "endpointDistance": 0.11048075784052178,
+        "overlap": 0.039519242159478246
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803040001117726,
+        "overlap": 0.05196959998882275
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh-0": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh-5": {
+      "left-front": {
+        "endpointDistance": 0.1104807829485911,
+        "overlap": 0.03951921705140893
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038411057567,
+        "overlap": 0.051969615889424337
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh-10": {
+      "left-front": {
+        "endpointDistance": 0.11048076686296308,
+        "overlap": 0.03951923313703694
+      },
+      "left-rear": {
+        "endpointDistance": 0.1480303915816468,
+        "overlap": 0.051969608418353214
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh-15": {
+      "left-front": {
+        "endpointDistance": 0.11048075863080864,
+        "overlap": 0.03951924136919138
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803039767646772,
+        "overlap": 0.05196960232353229
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "left-thigh-20": {
+      "left-front": {
+        "endpointDistance": 0.11048077469997354,
+        "overlap": 0.03951922530002648
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803040121539587,
+        "overlap": 0.05196959878460414
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "right-foot--20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.09423050866136597,
+        "overlap": 0.055769491338634056
+      },
+      "right-rear": {
+        "endpointDistance": 0.1735466559705188,
+        "overlap": 0.026453344029481213
+      }
+    },
+    "right-foot--15": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.09726690137033599,
+        "overlap": 0.052733098629664035
+      },
+      "right-rear": {
+        "endpointDistance": 0.16697910949790964,
+        "overlap": 0.033020890502090366
+      }
+    },
+    "right-foot--10": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.10106005009548187,
+        "overlap": 0.04893994990451815
+      },
+      "right-rear": {
+        "endpointDistance": 0.1604940929543618,
+        "overlap": 0.03950590704563822
+      }
+    },
+    "right-foot--5": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.105501213659856,
+        "overlap": 0.04449878634014402
+      },
+      "right-rear": {
+        "endpointDistance": 0.1541545186133505,
+        "overlap": 0.04584548138664951
+      }
+    },
+    "right-foot-0": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "right-foot-5": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.1158940082733133,
+        "overlap": 0.03410599172668673
+      },
+      "right-rear": {
+        "endpointDistance": 0.14219903040428175,
+        "overlap": 0.05780096959571826
+      }
+    },
+    "right-foot-10": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.12164474390804514,
+        "overlap": 0.028355256091954884
+      },
+      "right-rear": {
+        "endpointDistance": 0.13674505552928556,
+        "overlap": 0.06325494447071445
+      }
+    },
+    "right-foot-15": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.12764666946815015,
+        "overlap": 0.022353330531849874
+      },
+      "right-rear": {
+        "endpointDistance": 0.13175927768451054,
+        "overlap": 0.06824072231548947
+      }
+    },
+    "right-foot-20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.13382347211647685,
+        "overlap": 0.016176527883523167
+      },
+      "right-rear": {
+        "endpointDistance": 0.12733674267556583,
+        "overlap": 0.07266325732443418
+      }
+    },
+    "right-shin--25": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077996855168,
+        "overlap": 0.03951922003144834
+      },
+      "right-rear": {
+        "endpointDistance": 0.1480303744768255,
+        "overlap": 0.05196962552317452
+      }
+    },
+    "right-shin--20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077311940005,
+        "overlap": 0.03951922688059997
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803039335111096,
+        "overlap": 0.051969606648889055
+      }
+    },
+    "right-shin--15": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076679710585,
+        "overlap": 0.039519233202894175
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038941896837,
+        "overlap": 0.05196961058103164
+      }
+    },
+    "right-shin--10": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076205538496,
+        "overlap": 0.039519237944615065
+      },
+      "right-rear": {
+        "endpointDistance": 0.1480303907952183,
+        "overlap": 0.05196960920478172
+      }
+    },
+    "right-shin--5": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048075731366387,
+        "overlap": 0.03951924268633615
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803040001117726,
+        "overlap": 0.05196959998882275
+      }
+    },
+    "right-shin-0": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "right-shin-5": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.1104807829485911,
+        "overlap": 0.03951921705140893
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038411057567,
+        "overlap": 0.051969615889424337
+      }
+    },
+    "right-shin-10": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076706053478,
+        "overlap": 0.03951923293946524
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803039315450384,
+        "overlap": 0.051969606845496175
+      }
+    },
+    "right-shin-15": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048075863080864,
+        "overlap": 0.03951924136919138
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803039767646772,
+        "overlap": 0.05196960232353229
+      }
+    },
+    "right-shin-20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077575368918,
+        "overlap": 0.03951922424631084
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803039571039647,
+        "overlap": 0.05196960428960354
+      }
+    },
+    "right-shin-25": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077101196868,
+        "overlap": 0.03951922898803134
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803037998182567,
+        "overlap": 0.051969620018174345
+      }
+    },
+    "right-thigh--20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077153882653,
+        "overlap": 0.03951922846117349
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803039335111096,
+        "overlap": 0.051969606648889055
+      }
+    },
+    "right-thigh--15": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077048511085,
+        "overlap": 0.039519229514889176
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038941896837,
+        "overlap": 0.05196961058103164
+      }
+    },
+    "right-thigh--10": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076179195603,
+        "overlap": 0.039519238208044
+      },
+      "right-rear": {
+        "endpointDistance": 0.1480303907952183,
+        "overlap": 0.05196960920478172
+      }
+    },
+    "right-thigh--5": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048075784052178,
+        "overlap": 0.039519242159478246
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803040001117726,
+        "overlap": 0.05196959998882275
+      }
+    },
+    "right-thigh-0": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      }
+    },
+    "right-thigh-5": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.1104807829485911,
+        "overlap": 0.03951921705140893
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803038411057567,
+        "overlap": 0.051969615889424337
+      }
+    },
+    "right-thigh-10": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048076686296308,
+        "overlap": 0.03951923313703694
+      },
+      "right-rear": {
+        "endpointDistance": 0.1480303915816468,
+        "overlap": 0.051969608418353214
+      }
+    },
+    "right-thigh-15": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048075863080864,
+        "overlap": 0.03951924136919138
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803039767646772,
+        "overlap": 0.05196960232353229
+      }
+    },
+    "right-thigh-20": {
+      "left-front": {
+        "endpointDistance": 0.11048076763678556,
+        "overlap": 0.03951923236321446
+      },
+      "left-rear": {
+        "endpointDistance": 0.14803038695216322,
+        "overlap": 0.05196961304783679
+      },
+      "right-front": {
+        "endpointDistance": 0.11048077469997354,
+        "overlap": 0.03951922530002648
+      },
+      "right-rear": {
+        "endpointDistance": 0.14803040121539587,
+        "overlap": 0.05196959878460414
+      }
+    }
+  },
+  "exportVerification": {
+    "warden": {
+      "meshes": 119,
+      "triangles": 192883
+    },
+    "warden-b": {
+      "meshes": 121,
+      "triangles": 190240
+    },
+    "warden-c": {
+      "meshes": 120,
+      "triangles": 191504
+    }
+  },
+  "sharedExportSha256": "6d2217f276a52f9fdcc638c402f537b8aa60426b8631561623a5c169cb86bc41",
+  "sharedMeshes": 117,
+  "limitations": [
+    "Estimated pivots remain",
+    "No collision or gait solver",
+    "Front/rear ankle actuators rebuilt; other joint surfaces remain provisional",
+    "No production muzzle or empty mount interfaces",
+    "GLB snapshots do not carry Blender tracking constraints"
+  ]
+}

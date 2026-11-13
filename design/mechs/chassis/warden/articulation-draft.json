@@ -1,6 +1,6 @@
 {
   "status": "diagnostic-unapproved",
-  "source": "design/mechs/generated/tripo-warden-b-01/warden-b-multiview-detailed.glb",
+  "source": "design/mechs/assets/warden/generated-source/body/warden-b-multiview-detailed.glb",
   "coordinates": "Blender import: Z up, -Y forward, +X mech own-left; source scale unnormalized",
   "pivotStatus": "Estimated from mesh bounds and neutral renders; not mechanically validated",
   "groups": [

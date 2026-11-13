@@ -14,7 +14,7 @@ from mathutils import Vector
 
 repo = Path(REPO_ROOT)
 config = json.loads((repo / 'design/mechs/chassis/warden/modular-draft.json').read_text())
-out = repo / 'design/mechs/generated/warden-modular-v1'
+out = repo / 'design/mechs/generated' / globals().get('OUTPUT_FOLDER', 'modular-assembly-candidate')
 contract = json.loads((out / 'gameplay-contract.json').read_text())
 for variant, families in config['variants'].items():
     expected = [('left-gun', 'ballistic'), ('right-gun', 'ballistic')]

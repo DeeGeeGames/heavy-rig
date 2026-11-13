@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "scope": "Retained Warden production lineage checkpoints; temporary candidates excluded.",
+  "files": [
+    {
+      "path": "design/mechs/assets/warden/articulation-base/clearance-report.json",
+      "bytes": 97037,
+      "sha256": "bb24a9ad14341d2c96fa6025ce9da03a286c373a42677debdfb1fb7923a1c8b2"
+    },
+    {
+      "path": "design/mechs/assets/warden/articulation-base/gait-report.json",
+      "bytes": 132572,
+      "sha256": "b36fd376699727b71059ad45672aca737259bef99322287cd76c7e85ada2012e"
+    },
+    {
+      "path": "design/mechs/assets/warden/articulation-base/three-verification.json",
+      "bytes": 404,
+      "sha256": "2eeea85c330bd5c65567c6717dbc2c28001239f1880e5480bc29aaed289b02cf"
+    },
+    {
+      "path": "design/mechs/assets/warden/articulation-base/walk.gif",
+      "bytes": 4890794,
+      "sha256": "a6c431901115c89f81df8a60be78fc35ce98843d94488b2378245f9c6ae91394"
+    },
+    {
+      "path": "design/mechs/assets/warden/articulation-base/warden-b-walk.glb",
+      "bytes": 4829368,
+      "sha256": "0dbab34957a1059dd7da081ea7c5ae0886dac7f83affd0a56e5365281993c013"
+    },
+    {
+      "path": "design/mechs/assets/warden/articulation-base/warden-walk.blend",
+      "bytes": 14802159,
+      "sha256": "a4005e454d2ac52313653e497acf6f283ec0773722b583763622548cdc975802"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/chassis.glb",
+      "bytes": 4678056,
+      "sha256": "d8d818f998b42931ce504f28008a83870ffcdcb608291d06d9764b4d993559f5"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/firing-scale-audit.json",
+      "bytes": 1338,
+      "sha256": "ac5c34adb8c9a7942fba2e3f7da726a660de59a968f3889f3c4f53b64075b6ce"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/left-empty.glb",
+      "bytes": 12612,
+      "sha256": "f443f1caa7d54a340f5d72d60a37ce0e9f44307ad73e53a89fc039f98adf731d"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/left-energy.glb",
+      "bytes": 75468,
+      "sha256": "b9c157ec3996dcd86e74067640fa0dcf31cb0dfa105e2d6f34bb4e3dcecd62bd"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/left-launcher.glb",
+      "bytes": 98424,
+      "sha256": "51c982bdc490aac505ebe1ad25a3cc07c1a461a29aacc3d7b23e95cd883fc068"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/package.json",
+      "bytes": 3721897,
+      "sha256": "b224306ed3f399789ee2d79ccb660cdf1fc4b45ddc1b56c050bedfcfa8df7e5f"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/right-empty.glb",
+      "bytes": 12616,
+      "sha256": "ac9b30a19bdc54e3d51aab73a0f107a3099ac5ab7020a76167b4e7e445c64914"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/right-energy.glb",
+      "bytes": 77068,
+      "sha256": "343cac0e35033d442b29dbe57da25809eab18c012bc6d112039d619d60649bb8"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/right-launcher.glb",
+      "bytes": 97960,
+      "sha256": "87c9a8499f141688f4c37d78624d14c535857eff816316728c508ab34204c169"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/runtime-validation.json",
+      "bytes": 608,
+      "sha256": "c799ed5007e1e236958f855246c6d8487595a16ce23dbd3999bd050b29b18d94"
+    },
+    {
+      "path": "design/mechs/assets/warden/generated-source/body/gltf-metadata.json",
+      "bytes": 165931,
+      "sha256": "300a5e5707dedb11c247e7c7a15e1184831abe1ac80396c689fe0e92a2f0c4f2"
+    },
+    {
+      "path": "design/mechs/assets/warden/generated-source/body/trial.json",
+      "bytes": 1011,
+      "sha256": "c90a9ae6872c9f50ffb8e06b9d3050243ddacdcb100cb1b6dfa6e3e3e191b88a"
+    },
+    {
+      "path": "design/mechs/assets/warden/generated-source/body/warden-b-multiview-detailed.glb",
+      "bytes": 4783328,
+      "sha256": "c4b8771f6c31e81475b75dcef3bee57f38e4ec9d0949ac16d0983c9d31543763"
+    },
+    {
+      "path": "design/mechs/assets/warden/generated-source/launcher-donor/trial.json",
+      "bytes": 1169,
+      "sha256": "a7a06bc94bd9e8d708baac76f8295abd9d83dfff3a866478ff7d32bd65d985c9"
+    },
+    {
+      "path": "design/mechs/assets/warden/generated-source/launcher-donor/warden-a-multiview-balanced.glb",
+      "bytes": 4581444,
+      "sha256": "d79f7955e53f892768370c58b903285890dbc5c0b355a8399ef5f41837470189"
+    },
+    {
+      "path": "design/mechs/assets/warden/guards/after.gif",
+      "bytes": 6262941,
+      "sha256": "c66f0e7f7abe3cd6237c9586d3286c264512a34c50e4365168b756a1e1381e4f"
+    },
+    {
+      "path": "design/mechs/assets/warden/guards/guard-candidate.blend",
+      "bytes": 14802159,
+      "sha256": "071548b628e81ad1cef414c486bcaa639fee8c7a57e18ae2758f9167e2713a9d"
+    },
+    {
+      "path": "design/mechs/assets/warden/guards/guard-report.json",
+      "bytes": 585,
+      "sha256": "df2d8e3f992c8b284124f7432ad6924f721a2a8af7efcd953344fd89fabb077b"
+    },
+    {
+      "path": "design/mechs/assets/warden/interfaces/empty.png",
+      "bytes": 719950,
+      "sha256": "b927ccb9250557a062a5ef30c9d42dc1d167622e617ef0650cbea7e937a10591"
+    },
+    {
+      "path": "design/mechs/assets/warden/interfaces/interfaces.blend",
+      "bytes": 14826531,
+      "sha256": "01f1ef4a71437ae96319346203f31e4c4ff21fa6dbc7a1e6271d9bdc57bbd7c4"
+    },
+    {
+      "path": "design/mechs/assets/warden/interfaces/interfaces.json",
+      "bytes": 2323,
+      "sha256": "350539685f3b7c697b413a733657a8bdb1ab82d1f8cc2d516ceccf147e695eb2"
+    },
+    {
+      "path": "design/mechs/assets/warden/interfaces/motion-validation.json",
+      "bytes": 126,
+      "sha256": "440022f6ca97981057b2bf8c6fe2c74f3cf97a8629ca540dc8608ec65528750b"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/assembly-report.json",
+      "bytes": 2834,
+      "sha256": "064fca21fdf86ddd545d5b8f47ca52968fe9287de99b34a07060df8164859bb1"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/export-verification.json",
+      "bytes": 545,
+      "sha256": "debda9eb225a41d21fe31ccdf971719afa441c52ca5f35c22cc885a304ee9d85"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/gameplay-contract.json",
+      "bytes": 2977,
+      "sha256": "6c85abfce993d70b2824e255b9c35f55edffa20859525faf8219614e73c55e7e"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-assembled.glb",
+      "bytes": 3698060,
+      "sha256": "677b041c8d75f95bae39e34cdde1d2278f1c05ec27b136a526d9e1c22f637e4d"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-b-assembled.glb",
+      "bytes": 3654228,
+      "sha256": "df44afbf2d5c0583074edf84b9b76a39b5efcbec789c41a6695bcfa0c860d1bd"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-c-assembled.glb",
+      "bytes": 3675168,
+      "sha256": "3da780703ce3f53461022cc095c840c13129527eb64037255a786b93c951bc43"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-left-energy.glb",
+      "bytes": 73996,
+      "sha256": "383e02c83177b6378d996ff3223e5ea1cc8ed1ee2c5181c43b24c0c1de039008"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-left-launcher.glb",
+      "bytes": 96908,
+      "sha256": "94b290a22a308fe7aba517d6aea5451e417e0ae27a10f68552661d32715c331f"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-modular-library.blend",
+      "bytes": 14116367,
+      "sha256": "e3e579ed3fde210dd2c8c1219f9fabc11bf690ba282c9dd9a6d3c9742e7f7427"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-right-energy.glb",
+      "bytes": 75564,
+      "sha256": "3a7798ccf00bccf24b11a473dbaff58f22938bb50815eab2ba37a38995cfe7d4"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-right-launcher.glb",
+      "bytes": 96496,
+      "sha256": "fbad844e62698c92b31aa7bb8b78a1bb8008af46c218df0a2d320dad0de7a9f4"
+    },
+    {
+      "path": "design/mechs/assets/warden/modular-assembly/warden-shared-chassis.glb",
+      "bytes": 3504980,
+      "sha256": "6abff917d1678bb2102f8b6efab71da179ecb59574db8e4829dfff84318864f8"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/backward/gait-report.json",
+      "bytes": 555750,
+      "sha256": "1e5cfd7f662babfb4da33fe0338c9e464adc93f77c3a95f0575239f506990e33"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/backward/motion.blend",
+      "bytes": 15006885,
+      "sha256": "3b4b39cc19001cd9531d7010a4a2ffb47f7d2bd87a072fd08911e8b8432593f9"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/backward/motion.glb",
+      "bytes": 4838512,
+      "sha256": "f51a5be76251509c04d95070f995f8083a761b9e226a4b7b9a266d8fd79a28ba"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/backward/three-verification.json",
+      "bytes": 807,
+      "sha256": "16a40c9ab4267fca1b412782b608b6d780b581cda53371d34f2d7feeea94ed0c"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/run/gait-report.json",
+      "bytes": 498821,
+      "sha256": "cd086e43b81b5a82923f708355e6ae00912d5dce47d20253a51d12d51f62831f"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/run/motion.blend",
+      "bytes": 14885925,
+      "sha256": "7df87f756087f1abbbcdb36d5dbf963c52bf517079d1a24a1d1dc5236a70b76b"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/run/motion.glb",
+      "bytes": 4835220,
+      "sha256": "205ba4015d0bf05fcd8cea1dd65d38d57e8952d0da5b2641d6c2adf6bece11ac"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/run/three-verification.json",
+      "bytes": 740,
+      "sha256": "d4cea456c29a2365f765f04f1e514fa4d74676826d2569050653287178f2bbba"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/walk/gait-report.json",
+      "bytes": 253621,
+      "sha256": "87c1612bccbdeb7925aeca32754b047fa14317cc64ac96155ebc0563a1f29652"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/walk/motion.blend",
+      "bytes": 14341605,
+      "sha256": "287ac990c50c386c124d649086dcc7d8f07e453437ed2ce53b37273d7982992b"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/walk/motion.glb",
+      "bytes": 4820480,
+      "sha256": "af469b17a447755c07882654ee9af2f34becee957bc9462f2331747506c8d712"
+    },
+    {
+      "path": "design/mechs/assets/warden/motions/walk/three-verification.json",
+      "bytes": 567,
+      "sha256": "5457b4c6e9815aaec32e443fe2973cccf5d25566e676fc944440ce5b6ef3a407"
+    },
+    {
+      "path": "design/mechs/assets/warden/repaired-chassis/neutral.png",
+      "bytes": 845375,
+      "sha256": "36bc51093827175115e3c116d269f1178e774ac0bf3259f2e34f74fa03578b05"
+    },
+    {
+      "path": "design/mechs/assets/warden/repaired-chassis/repair-report.json",
+      "bytes": 39511,
+      "sha256": "cf1770825cbeb868282a963540ec0f1509bf9418958a313d56dd1451bc40bf51"
+    },
+    {
+      "path": "design/mechs/assets/warden/repaired-chassis/warden-b-repair.glb",
+      "bytes": 4799664,
+      "sha256": "300263a03aa40e3be98bf61610629e347a622f0fe9c5500869050698ab06087a"
+    },
+    {
+      "path": "design/mechs/assets/warden/repaired-chassis/warden-c-repair.glb",
+      "bytes": 4820560,
+      "sha256": "5cd6617be3a01bdfcd11c3fa4c2490b6405a6109b5be0c69fae6d8ee5ba3810c"
+    },
+    {
+      "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.blend",
+      "bytes": 13684885,
+      "sha256": "af8df2f7e839f2b1eb46b2cfc927ace98c7fa0293356ed84746209e1164c1761"
+    },
+    {
+      "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.glb",
+      "bytes": 4843496,
+      "sha256": "a29d7f5990ff7f46a4f031c2c244a0ef0421dde0e45f774503cf9851d9a36d95"
+    }
+  ]
+}

@@ -26,24 +26,24 @@ This trial exports components in common chassis coordinates, not a finalized soc
 
 ## Reproduce
 
-Use Blender 5.2.0 LTS with access to this checkout and both exact source GLBs. Generated GLBs, renders and Blender files are local ignored artifacts, so the recipe alone cannot reproduce the trial without those source files.
+Use Blender 5.2.0 LTS with access to this checkout and both exact source GLBs. Run `git lfs pull` and the asset verifier first. Required original GLBs and the retained assembly checkpoint are stored under `design/mechs/assets/warden/`. New runs write ignored candidates.
 
 First refresh the contract from the current checkout:
 
 ```sh
-mkdir -p design/mechs/generated/warden-modular-v1
-bun -e "import {getHardpoints} from './src/hardpoints'; await Bun.write('design/mechs/generated/warden-modular-v1/gameplay-contract.json', JSON.stringify(Object.fromEntries(['warden','warden-b','warden-c'].map(id => [id,getHardpoints(id)])),null,2)+'\n')"
+mkdir -p design/mechs/generated/modular-assembly-candidate
+bun -e "import {getHardpoints} from './src/hardpoints'; await Bun.write('design/mechs/generated/modular-assembly-candidate/gameplay-contract.json', JSON.stringify(Object.fromEntries(['warden','warden-b','warden-c'].map(id => [id,getHardpoints(id)])),null,2)+'\n')"
 ```
 
-In Blender's Python environment, set `REPO_ROOT` to the absolute repository path and execute `scripts/mech-design/blender/modular_assembly.py`. It verifies source hashes and the supplied current contract, preserves source exports, creates isolated scenes, and restores the previously active scene. It refuses colliding scene or stable assembly object names. Preserve accepted outputs and change the revision/output path before making a new revision; current trial outputs may be regenerated.
+In Blender's Python environment, set `REPO_ROOT` to the absolute repository path and execute `scripts/mech-design/blender/modular_assembly.py`. It verifies source hashes and the supplied current contract, preserves source exports, creates isolated scenes, and restores the previously active scene. It refuses colliding scene or stable assembly object names. The default output is `generated/modular-assembly-candidate`; set `OUTPUT_FOLDER` for a different fresh candidate. Never regenerate over the retained checkpoint.
 
-Outputs under `design/mechs/generated/warden-modular-v1/`:
+Retained checkpoint outputs under `design/mechs/assets/warden/modular-assembly/`:
 
 - `warden-modular-library.blend`: linked shared objects, component library and A/B/C scenes.
 - `warden-shared-chassis.glb` and four side/family cartridge GLBs: component extracts.
 - `warden-assembled.glb`, `warden-b-assembled.glb`, `warden-c-assembled.glb`: standalone review snapshots, not independent masters or shipping assets.
-- Matching three-quarter, front, rear and pod-detail renders; `assembly-report.json` includes source hashes, fitting transforms and limitations.
-- `gameplay-contract.json`: generated current mount snapshot; refresh every run.
+- `assembly-report.json` includes source hashes, fitting transforms and limitations. Preview renders are disposable.
+- `gameplay-contract.json`: recorded mount snapshot. Generate a fresh contract in the candidate directory for each run.
 
 ## Validation and remaining gates
 

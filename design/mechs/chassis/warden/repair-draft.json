@@ -1,9 +1,9 @@
 {
   "status": "approved-shared-master",
-  "source": "design/mechs/generated/warden-modular-v1/warden-modular-library.blend",
+  "source": "design/mechs/assets/warden/modular-assembly/warden-modular-library.blend",
   "sourceSha256": "e3e579ed3fde210dd2c8c1219f9fabc11bf690ba282c9dd9a6d3c9742e7f7427",
-  "output": "design/mechs/generated/warden-repair-v1",
+  "output": "design/mechs/generated/repaired-chassis-candidate",
   "partMap": "design/mechs/chassis/warden/articulation-draft.json",
-  "partMapSha256": "5bd8a43a72a30d94718a3f1d94753d2ec3a50ce8557dc0325767c7a4e0cb9e61",
+  "partMapSha256": "4a6156105ff64b3153be5115567b4254e47e751423a4f471e385a7d2f74c0f79",
   "approvalRecord": "design/mechs/chassis/warden/shared-master.json"
 }

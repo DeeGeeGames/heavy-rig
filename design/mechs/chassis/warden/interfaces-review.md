@@ -2,7 +2,7 @@
 
 Status: empty shoulder cover approved by owner; frozen in `approved-interfaces.json`. No production asset replacement.
 
-Source: `approved-front-guard.json` (approved v10 shin-owned lower front guard). Recipe: `scripts/mech-design/blender/weapon_interfaces.py`. Local artifacts: `design/mechs/generated/warden-interfaces-v1/` (`interfaces.blend`, `interfaces.json`, `motion-validation.json`, A/B/C/empty PNGs).
+Source: `approved-front-guard.json` (approved v10 shin-owned lower front guard). Recipe: `scripts/mech-design/blender/weapon_interfaces.py`. Local artifacts: `design/mechs/assets/warden/interfaces/` (`interfaces.blend`, `interfaces.json`, `motion-validation.json`, A/B/C/empty PNGs).
 
 The same shoulder socket accepts a launcher cartridge, energy cartridge, or blank cover. Rear housings, supports, guns, and chassis remain shared. Coordinates are Blender Z-up, -Y forward, +X own-left; source scale is not yet normalized to game units. Socket origins are neutral source coordinates `(±0.251, 0.12, 0.89)` under shoulder pivots `(±0.22, 0.18, 0.76)`.
 
@@ -21,13 +21,13 @@ Validation: all 123 original meshes retain their world transforms across 91 walk
 
 Muzzle anchors are provisional: gun origins estimate terminal barrel-rim centers; shoulder origins represent a whole bank. Individual launcher tube exits, exact firing clearance, runtime axis conversion, physical dimensions, and exported component consistency remain unverified. Do not treat these anchors as production firing origins yet.
 
-Next after cover review: package socket-local components, validate actual exports and muzzle placement, then optimize the shared body and each module once. Preserve the approved gait and guard ownership throughout.
+After the accepted cover and component export checks below, finalize muzzle placement and update the motion package, then optimize the shared body and each module once. Preserve the approved gait and guard ownership throughout.
 
 ## Component export validation
 
-`package_components.py` exports one animated `chassis.glb` and six rigid, socket-local GLBs (left/right energy, launcher, and empty covers) to `design/mechs/generated/warden-components-v2/`. The chassis keeps the common guns, housings, body, and walking rig. Shoulder muzzle anchors travel with their respective modules. Export helper names end in `__export`; consumers restore the names listed in `package.json` when attaching modules to named sockets.
+`package_components.py` exports one animated `chassis.glb` and six rigid, socket-local GLBs (left/right energy, launcher, and empty covers) to an ignored candidate directory; the retained validated checkpoint is `design/mechs/assets/warden/components/`. The chassis keeps the common guns, housings, body, and walking rig. Shoulder muzzle anchors travel with their respective modules. Export helper names end in `__export`; consumers restore the names listed in `package.json` when attaching modules to named sockets.
 
-Run `bun scripts/mech-design/verify-components.ts design/mechs/generated/warden-components-v2`. The verifier loads the actual GLBs with Three.js, assembles A/B/C/empty states, checks the live gameplay mount IDs/families, and compares source world matrices over all 91 frames. All four states passed; maximum matrix-component error was 1.51e-6. It also rejects absent modules, missing sockets, leaked selected-module nodes, unexpected module animations, and incorrect clip duration/timing.
+Run `bun scripts/mech-design/verify-components.ts design/mechs/assets/warden/components`. The verifier loads the actual GLBs with Three.js, assembles A/B/C/empty states, checks the live gameplay mount IDs/families, and compares source world matrices over all 91 frames. All four states passed; maximum matrix-component error was 1.51e-6. It also rejects absent modules, missing sockets, leaked selected-module nodes, unexpected module animations, and incorrect clip duration/timing.
 
 These are unoptimized authoring exports: the chassis is approximately 4.5 MiB and cartridges approximately 2–100 KiB each. No production game integration or performance claim is implied. The check establishes transform/animation fidelity and evaluated triangle counts, not exact topology identity, material appearance, muzzle clearance, physical scale, or optimized visual acceptance. The original cover approval and shin-owned guard remain unchanged.
 

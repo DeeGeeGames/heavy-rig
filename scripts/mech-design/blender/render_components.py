@@ -2,13 +2,13 @@
 import bpy,json
 from pathlib import Path
 from mathutils import Vector
-candidate=globals().get('CANDIDATE_FOLDER','warden-optimized-v1')
+candidate=globals().get('CANDIDATE_FOLDER','components-candidate')
 root=Path(REPO_ROOT);out=root/'design/mechs/generated'/candidate;previous=bpy.context.window.scene
 owned=[]
 try:
-    with bpy.data.libraries.load(str(root/'design/mechs/generated/warden-interfaces-v1/interfaces.blend'),link=False) as (available,loaded):loaded.scenes=['Warden interface trial v1']
+    with bpy.data.libraries.load(str(root/'design/mechs/assets/warden/interfaces/interfaces.blend'),link=False) as (available,loaded):loaded.scenes=['Warden interface trial v1']
     reference=loaded.scenes[0];owned.append(reference)
-    for revision,folder in [('source','warden-components-v2'),('optimized',candidate)]:
+    for revision,folder in [('source','assets/warden/components'),('candidate','generated/'+candidate)]:
         for view,families,location,target,scale in [('front',['energy','energy'],(1.6,-2.8,1.4),(0,0,.5),1.22),('rear',['energy','energy'],(-1.6,2.8,1.4),(0,0,.5),1.22),('weapons',['launcher','launcher'],(1.4,-2.4,1.4),(0,.08,.82),1.08)]:
             scene=bpy.data.scenes.new('Render '+revision+' '+view);owned.append(scene);bpy.context.window.scene=scene
             scene.world=reference.world;scene.render.engine='BLENDER_WORKBENCH';scene.display.shading.light='STUDIO';scene.display.shading.color_type='SINGLE';scene.display.shading.single_color=(.55,.60,.62);scene.display.shading.show_cavity=True;scene.display.shading.cavity_type='BOTH'
@@ -16,10 +16,10 @@ try:
                 if o.type not in ['LIGHT','CAMERA']:continue
                 clone=o.copy();clone.data=o.data.copy();scene.collection.objects.link(clone)
                 if o==reference.camera:scene.camera=clone
-            bpy.ops.import_scene.gltf(filepath=str(root/'design/mechs/generated'/folder/'chassis.glb'))
+            bpy.ops.import_scene.gltf(filepath=str(root/'design/mechs'/folder/'chassis.glb'))
             for side,family in zip(['left','right'],families):
                 socket=next(o for o in scene.objects if o.name.split('.')[0]=='socket_'+side+'_shoulder')
-                before=set(scene.objects);bpy.ops.import_scene.gltf(filepath=str(root/'design/mechs/generated'/folder/(side+'-'+family+'.glb')))
+                before=set(scene.objects);bpy.ops.import_scene.gltf(filepath=str(root/'design/mechs'/folder/(side+'-'+family+'.glb')))
                 for o in set(scene.objects)-before:
                     if o.parent is None:o.parent=socket
             scene.frame_set(1);bpy.context.view_layer.update()
