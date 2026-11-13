@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "results": [
+    {
+      "variant": "A",
+      "frames": 55,
+      "comparedMatrices": 7865,
+      "maximumMatrixError": 0.0000023798783698181225
+    },
+    {
+      "variant": "B",
+      "frames": 55,
+      "comparedMatrices": 7205,
+      "maximumMatrixError": 0.0000023798783698181225
+    },
+    {
+      "variant": "C",
+      "frames": 55,
+      "comparedMatrices": 7535,
+      "maximumMatrixError": 0.0000023798783698181225
+    },
+    {
+      "variant": "empty",
+      "frames": 55,
+      "comparedMatrices": 6875,
+      "maximumMatrixError": 0.0000023798783698181225
+    }
+  ]
+}

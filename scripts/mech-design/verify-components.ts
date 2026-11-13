@@ -27,7 +27,10 @@ const load = async function (file: string) {
 	return new GLTFLoader().register(function () { return { name: 'HEADLESS_TEXTURE_PLACEHOLDER', loadTexture: async function () { return new Texture(); } }; }).parseAsync(await Bun.file(join(folder, file)).arrayBuffer(), '');
 };
 const sourceSamples = list(manifest['samples']);
-if (sourceSamples.length !== 91) throw new Error('Expected full 91-frame walk');
+const fps = manifest['fps'] === undefined ? 60 : number(manifest['fps']);
+const frameCount = manifest['frameCount'] === undefined ? 91 : number(manifest['frameCount']);
+const duration = manifest['duration'] === undefined ? 1.5 : number(manifest['duration']);
+if (fps <= 0 || frameCount < 2 || !Number.isInteger(frameCount) || sourceSamples.length !== frameCount || Math.abs(duration - (frameCount - 1) / fps) > 1e-8) throw new Error('Invalid full-cycle timing');
 const moduleSpecs = list(manifest['modules']).map(record);
 // Fail if the gameplay contract changes underneath this assembly recipe.
 for (const [frame, families] of [
@@ -81,7 +84,7 @@ for (const [variant, families] of Object.entries({ A: ['launcher', 'launcher'], 
 		if (node instanceof Mesh && !accountedMeshes.has(node.uuid)) throw new Error(`Unexpected exported mesh ${node.name}`);
 	});
 	const clip = chassis.animations[0];
-	if (!clip || chassis.animations.length !== 1 || Math.abs(clip.duration - 1.5) > 1e-6) throw new Error('Invalid animation');
+	if (!clip || chassis.animations.length !== 1 || Math.abs(clip.duration - duration) > 1e-6) throw new Error('Invalid animation');
 	const mixer = new AnimationMixer(chassis.scene);
 	const action = mixer.clipAction(clip).setLoop(LoopOnce, 1);
 	action.clampWhenFinished = true;
@@ -91,7 +94,7 @@ for (const [variant, families] of Object.entries({ A: ['launcher', 'launcher'], 
 	for (const [index, raw] of sourceSamples.entries()) {
 		const sample = record(raw);
 		const time = number(sample['time']);
-		if (Math.abs(time - index / 60) > 1e-8) throw new Error('Invalid sample timing');
+		if (Math.abs(time - index / fps) > 1e-8) throw new Error('Invalid sample timing');
 		mixer.setTime(time);
 		chassis.scene.updateMatrixWorld(true);
 		for (const [name, rawMatrix] of Object.entries(record(sample['matrices']))) {

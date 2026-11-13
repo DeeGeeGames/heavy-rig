@@ -8,7 +8,7 @@ owned=[]
 try:
     with bpy.data.libraries.load(str(root/'design/mechs/assets/warden/interfaces/interfaces.blend'),link=False) as (available,loaded):loaded.scenes=['Warden interface trial v1']
     reference=loaded.scenes[0];owned.append(reference)
-    for revision,folder in [('source','assets/warden/components'),('candidate','generated/'+candidate)]:
+    for revision,folder in [('source','assets/warden/components/walk'),('candidate','generated/'+candidate)]:
         for view,families,location,target,scale in [('front',['energy','energy'],(1.6,-2.8,1.4),(0,0,.5),1.22),('rear',['energy','energy'],(-1.6,2.8,1.4),(0,0,.5),1.22),('weapons',['launcher','launcher'],(1.4,-2.4,1.4),(0,.08,.82),1.08)]:
             scene=bpy.data.scenes.new('Render '+revision+' '+view);owned.append(scene);bpy.context.window.scene=scene
             scene.world=reference.world;scene.render.engine='BLENDER_WORKBENCH';scene.display.shading.light='STUDIO';scene.display.shading.color_type='SINGLE';scene.display.shading.single_color=(.55,.60,.62);scene.display.shading.show_cavity=True;scene.display.shading.cavity_type='BOTH'

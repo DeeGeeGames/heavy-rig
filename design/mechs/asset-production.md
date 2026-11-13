@@ -37,9 +37,20 @@ accepted the visible geometry with remaining fine-tuning deferred. Preserve the
 original large axles, unsplit exterior and shin-owned front guards. This does
 not establish exhaustive joint limits or zero mesh intersections.
 
-Stage 6 retains accepted shared module design and empty covers, plus verified
-unoptimized component exports. Exact firing exits, aim-range clearance and
-refreshing all A/B/C/empty exports with the current motions remain work.
+Stage 6 is complete for the usable draft pass, recorded in
+`chassis/warden/approved-stage6.json`. A/B/C and empty-shoulder configurations
+use the shared chassis and interchangeable cartridges with all three current
+motions. Twenty geometry-measured physical exit definitions are retained;
+9,975 center-ray checks across the actual GLB assemblies pass. Empty shoulders
+retain the two ballistic guns. Logical bank anchors are preserved separately.
+
+The owner accepted the demonstrated run/swivel gun-detail-to-leg contact and
+independent gun-aim contacts as-is. These are recorded draft limitations, not
+claims of collision-free or exhaustive aiming. The process goal is a usable
+full-roster result with polish allowed later; this step addresses Warden only.
+Physical launcher cartridges have eight exits each, while current production
+rigs use six. Resolve that mapping during runtime integration without silently
+changing gameplay salvo size.
 Stage 7 has no accepted optimized derivative. Previous reduction/baking trials
 were rejected and are excluded from this deliverable. Establish a measured
 budget, preserve silhouette/openings, consolidate materials and normalize common

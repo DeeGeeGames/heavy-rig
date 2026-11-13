@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "scope": "Physical exit center rays across original approved motion clips, in source units. Separate weapon aim articulation and finite projectile volume are not modeled.",
+  "results": [
+    {
+      "variant": "A",
+      "frames": 55,
+      "exits": 18,
+      "rays": 990,
+      "hits": []
+    },
+    {
+      "variant": "B",
+      "frames": 55,
+      "exits": 4,
+      "rays": 220,
+      "hits": []
+    },
+    {
+      "variant": "C",
+      "frames": 55,
+      "exits": 11,
+      "rays": 605,
+      "hits": []
+    },
+    {
+      "variant": "empty-shoulders",
+      "frames": 55,
+      "exits": 2,
+      "rays": 110,
+      "hits": []
+    }
+  ]
+}

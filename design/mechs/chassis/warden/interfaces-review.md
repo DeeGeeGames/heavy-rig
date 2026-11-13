@@ -1,3 +1,7 @@
+> Historical interface checkpoint review. Current stage 6 acceptance is in
+> [approved-stage6.json](approved-stage6.json); current packages live under
+> `design/mechs/assets/warden/components/{walk,run,backward}/`.
+
 # Warden weapon interfaces v1
 
 Status: empty shoulder cover approved by owner; frozen in `approved-interfaces.json`. No production asset replacement.
@@ -27,7 +31,7 @@ After the accepted cover and component export checks below, finalize muzzle plac
 
 `package_components.py` exports one animated `chassis.glb` and six rigid, socket-local GLBs (left/right energy, launcher, and empty covers) to an ignored candidate directory; the retained validated checkpoint is `design/mechs/assets/warden/components/`. The chassis keeps the common guns, housings, body, and walking rig. Shoulder muzzle anchors travel with their respective modules. Export helper names end in `__export`; consumers restore the names listed in `package.json` when attaching modules to named sockets.
 
-Run `bun scripts/mech-design/verify-components.ts design/mechs/assets/warden/components`. The verifier loads the actual GLBs with Three.js, assembles A/B/C/empty states, checks the live gameplay mount IDs/families, and compares source world matrices over all 91 frames. All four states passed; maximum matrix-component error was 1.51e-6. It also rejects absent modules, missing sockets, leaked selected-module nodes, unexpected module animations, and incorrect clip duration/timing.
+Run `bun scripts/mech-design/verify-components.ts design/mechs/assets/warden/components/walk`. The current verifier loads the actual GLBs with Three.js, assembles A/B/C/empty states, checks the live gameplay mount IDs/families, and compares source world matrices over the package frame range. The historical 91-frame interface package passed all four states; maximum matrix-component error was 1.51e-6. It also rejects absent modules, missing sockets, leaked selected-module nodes, unexpected module animations, and incorrect clip duration/timing.
 
 These are unoptimized authoring exports: the chassis is approximately 4.5 MiB and cartridges approximately 2–100 KiB each. No production game integration or performance claim is implied. The check establishes transform/animation fidelity and evaluated triangle counts, not exact topology identity, material appearance, muzzle clearance, physical scale, or optimized visual acceptance. The original cover approval and shin-owned guard remain unchanged.
 

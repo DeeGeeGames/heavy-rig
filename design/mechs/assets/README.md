@@ -22,8 +22,13 @@ byte count and SHA-256. Approval records live in `../chassis/warden/`.
 - `guards`: final approved shin-owned guards and original axles.
 - `interfaces`: shared sockets, cartridges and approved empty covers.
 - `motions/walk`, `motions/run`, `motions/backward`: selected current motions.
-- `components`: validated unoptimized chassis and socket-local module exports;
-  these use the older base motion and still need the current motion package.
+- `components/walk`, `components/run`, `components/backward`: current validated
+  unoptimized shared chassis and socket-local module packages, each supporting
+  A/B/C and empty shoulders with measured physical exit anchors.
+- `components/physical-origins.json`: frozen measured anchor definitions; its
+  historical measurement status is superseded by `approved-stage6.json`.
+- `components/review`: retained firing-origin overlays and owner-accepted
+  clearance-contact evidence.
 
 Stable step paths hold one advancing result per step. Temporary candidates,
 render sequences, rejected reductions and competing animation trials stay out

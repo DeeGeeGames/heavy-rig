@@ -1,0 +1,353 @@
+{
+  "source": {
+    "path": "design/mechs/assets/warden/interfaces/interfaces.blend",
+    "sha256": "01f1ef4a71437ae96319346203f31e4c4ff21fa6dbc7a1e6271d9bdc57bbd7c4"
+  },
+  "scene": "Warden interface trial v1",
+  "coordinates": "Blender parent-local Z up, -Y forward; source scale unchanged",
+  "seedProvenance": "Initial launcher/energy centers from 200x200 front-depth recess segmentation; gun centers from least-squares terminal 0.002-depth vertex-slice circle fit. These locate measured features; the recipe refines each surrounding lip.",
+  "radialStart": 0.002,
+  "radialSamples": 128,
+  "depthSamples": 160,
+  "surfaceOffset": 0.0001,
+  "origins": [
+    {
+      "id": "left-launcher-upper-4",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_launcher_face"
+      ],
+      "seedLocal": [
+        0.060518124449666644,
+        -0.053175946867465976,
+        0.014630233513302088
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 4
+      }
+    },
+    {
+      "id": "left-launcher-upper-3",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_launcher_face"
+      ],
+      "seedLocal": [
+        0.020501955031391572,
+        -0.053810572421550754,
+        0.014627426894589887
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 3
+      }
+    },
+    {
+      "id": "left-launcher-upper-2",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_launcher_face"
+      ],
+      "seedLocal": [
+        -0.020586959323615733,
+        -0.05369311401844025,
+        0.014589446481869023
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 2
+      }
+    },
+    {
+      "id": "left-launcher-upper-1",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_launcher_face"
+      ],
+      "seedLocal": [
+        -0.062233985099148736,
+        -0.053136443889141086,
+        0.0145619026903136
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 1
+      }
+    },
+    {
+      "id": "left-launcher-lower-3",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_launcher_face"
+      ],
+      "seedLocal": [
+        0.02045557988338284,
+        -0.053103169596195224,
+        -0.028746180875922872
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 3
+      }
+    },
+    {
+      "id": "left-launcher-lower-4",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_launcher_face"
+      ],
+      "seedLocal": [
+        0.06062689110238817,
+        -0.0534905103802681,
+        -0.028817179708342702
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 4
+      }
+    },
+    {
+      "id": "left-launcher-lower-1",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_launcher_face"
+      ],
+      "seedLocal": [
+        -0.06223333750882663,
+        -0.052976614034175876,
+        -0.028854321468109588
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 1
+      }
+    },
+    {
+      "id": "left-launcher-lower-2",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_launcher_face"
+      ],
+      "seedLocal": [
+        -0.020661327527044693,
+        -0.05325525084733963,
+        -0.02896002853286858
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 2
+      }
+    },
+    {
+      "id": "left-energy-1",
+      "parent": "socket_left_shoulder",
+      "meshes": [
+        "repair_left_energy_optic"
+      ],
+      "seedLocal": [
+        0.0016118877353764466,
+        -0.04678376594781876,
+        -0.009512852452667461
+      ],
+      "searchRadius": 0.042
+    },
+    {
+      "id": "left-gun-1",
+      "parent": "rig_mount_left-gun",
+      "meshes": [
+        "repair_shared_tripo_part_101",
+        "repair_shared_tripo_part_106",
+        "repair_shared_tripo_part_27",
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_61",
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_95"
+      ],
+      "seedLocal": [
+        0.07130960628283511,
+        -0.4283458424568176,
+        -0.024815794983674287
+      ],
+      "searchRadius": 0.025
+    },
+    {
+      "id": "right-launcher-upper-1",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_launcher_face"
+      ],
+      "seedLocal": [
+        -0.061141128144258435,
+        -0.053339941596984866,
+        0.014915598362420873
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 1
+      }
+    },
+    {
+      "id": "right-launcher-upper-4",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_launcher_face"
+      ],
+      "seedLocal": [
+        0.06181165886526885,
+        -0.05327977070808411,
+        0.014848366320364764
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 4
+      }
+    },
+    {
+      "id": "right-launcher-upper-2",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_launcher_face"
+      ],
+      "seedLocal": [
+        -0.020863476489404315,
+        -0.05326361039876938,
+        0.014781398824199488
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 2
+      }
+    },
+    {
+      "id": "right-launcher-upper-3",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_launcher_face"
+      ],
+      "seedLocal": [
+        0.020406853139265047,
+        -0.05324537137746811,
+        0.014728999392364286
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 3
+      }
+    },
+    {
+      "id": "right-launcher-lower-2",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_launcher_face"
+      ],
+      "seedLocal": [
+        -0.0206726210981253,
+        -0.053141219711303714,
+        -0.02870170123311385
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 2
+      }
+    },
+    {
+      "id": "right-launcher-lower-4",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_launcher_face"
+      ],
+      "seedLocal": [
+        0.061917696997859734,
+        -0.05318187752962113,
+        -0.028747626152800278
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 4
+      }
+    },
+    {
+      "id": "right-launcher-lower-1",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_launcher_face"
+      ],
+      "seedLocal": [
+        -0.060912564673740836,
+        -0.0531930832028389,
+        -0.02877605814420133
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 1
+      }
+    },
+    {
+      "id": "right-launcher-lower-3",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_launcher_face"
+      ],
+      "seedLocal": [
+        0.02044226847446426,
+        -0.05327488312721253,
+        -0.028782296047746354
+      ],
+      "searchRadius": 0.022,
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 3
+      }
+    },
+    {
+      "id": "right-energy-1",
+      "parent": "socket_right_shoulder",
+      "meshes": [
+        "repair_right_energy_optic"
+      ],
+      "seedLocal": [
+        -0.0016047290826180435,
+        -0.0470326451420784,
+        -0.009310868959214416
+      ],
+      "searchRadius": 0.042
+    },
+    {
+      "id": "right-gun-1",
+      "parent": "rig_mount_right-gun",
+      "meshes": [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_105",
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_22",
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_93"
+      ],
+      "seedLocal": [
+        -0.0717593522347829,
+        -0.42831544408798217,
+        -0.025468087037894716
+      ],
+      "searchRadius": 0.025
+    }
+  ]
+}
