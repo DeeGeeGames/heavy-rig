@@ -1,0 +1,54 @@
+{
+  "id": "warden-a-turnaround-v1",
+  "status": "pending-owner-review",
+  "baselineId": "warden-v1-candidate-01",
+  "baselineImageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3",
+  "contractSignature": "159059be1a516a8404eff0bbfddee6eb6aa12b369047101a5d678aad9c143c83",
+  "generator": "built-in image_gen",
+  "views": {
+    "front": {
+      "image": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/front.png",
+      "sha256": "356c08fcee73cd4370cf9e99ba504806807c3a3c8960cac867b015266a90e35c",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "prompt": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/front-prompt.txt"
+    },
+    "back": {
+      "image": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/back.png",
+      "sha256": "30a3285f5b1684532c4e730485dea8175f1a8f3d102d87e590763b9c07673d7c",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "prompt": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/back-prompt.txt"
+    },
+    "left": {
+      "image": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/left.png",
+      "sha256": "ac030f7c7ec8e5dc616bb89e826453468dc378a8b466949e53a6f734eacff5fc",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "prompt": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/left-prompt.txt"
+    },
+    "right": {
+      "image": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/right.png",
+      "sha256": "a2718fe2b638e17c0151059c3e8f8cca95c370eb83098f77b8ee1b4dc9292cc2",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "prompt": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/right-prompt.txt",
+      "repairPrompt": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v1/right-repair-prompt.txt",
+      "supportingReference": "left.png; opposite-side consistency repair"
+    }
+  },
+  "ownerApproval": null,
+  "tripoSubmitted": false
+}

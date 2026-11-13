@@ -48,5 +48,29 @@
       "approval": "2026-11-13 03:01 UTC (2026-11-12 America/Chicago): owner said \"These are approved\" for Warden B and C and authorized committing the process and images."
     }
   ],
-  "notes": "Warden baseline and B/C images approved by owner. These are reference design assets, not replacements for gameplay geometry. Tripo model trials follow as separate work."
+  "notes": "Warden baseline and B/C images approved by owner. These are reference design assets, not replacements for gameplay geometry. Tripo model trials follow as separate work.",
+  "activeTurnaround": "warden-a-turnaround-v2",
+  "turnarounds": [
+    {
+      "id": "warden-a-turnaround-v2",
+      "status": "approved",
+      "manifest": "design/mechs/chassis/warden/drafts/warden-a-turnaround-v2/manifest.json",
+      "approval": "Owner: Much better. Proceed to the next step. Approved complete v2 turnaround for Tripo generation."
+    }
+  ],
+  "sharedMaster": "design/mechs/chassis/warden/shared-master.json",
+  "approvedMotion": "design/mechs/chassis/warden/approved-motion.json",
+  "ankleGuardDirection": {
+    "appearance": "unsplit front and rear",
+    "decision": "Owner explicitly requested retaining unsplit guards on both front and back.",
+    "clearanceConstraint": "Preserve this exterior while investigating concealed trimming or joint ownership. Clearance remains unresolved.",
+    "supersededExperiments": [
+      "warden-clearance-v4",
+      "warden-clearance-v5"
+    ],
+    "axle": "Retain previously approved larger axle; compact axle v8 rejected by owner.",
+    "frontAssembly": "Owner-approved v10: the lower front plate and upper pieces follow the shin; foot articulates beneath. Retain original larger axle and unsplit exterior."
+  },
+  "approvedFrontGuard": "design/mechs/chassis/warden/approved-front-guard.json",
+  "approvedInterfaces": "design/mechs/chassis/warden/approved-interfaces.json"
 }

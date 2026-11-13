@@ -1,0 +1,31 @@
+{
+  "id": "warden-guard-v10",
+  "status": "visual-motion-approved",
+  "approval": "Owner explicitly said Approved after viewing the corrected front guard attached to the shin.",
+  "scope": "Lower front plates 51/44 and their upper pieces move with the shin; feet articulate beneath. Retain original larger axle, unsplit exterior and approved walking cycle.",
+  "supersedes": [
+    "warden-guard-v9",
+    "warden-clearance-v4",
+    "warden-clearance-v5",
+    "warden-clearance-v8"
+  ],
+  "artifacts": {
+    "guard-candidate.blend": {
+      "path": "design/mechs/generated/warden-guard-v10/guard-candidate.blend",
+      "sha256": "071548b628e81ad1cef414c486bcaa639fee8c7a57e18ae2758f9167e2713a9d"
+    },
+    "guard-report.json": {
+      "path": "design/mechs/generated/warden-guard-v10/guard-report.json",
+      "sha256": "df2d8e3f992c8b284124f7432ad6924f721a2a8af7efcd953344fd89fabb077b"
+    },
+    "after.gif": {
+      "path": "design/mechs/generated/warden-guard-v10/after.gif",
+      "sha256": "c66f0e7f7abe3cd6237c9586d3286c264512a34c50e4365168b756a1e1381e4f"
+    }
+  },
+  "remainingChecks": [
+    "Mechanical hinge/clearance review within the accepted visual direction",
+    "Module interfaces, muzzle anchors and empty mounts",
+    "Optimization and runtime integration"
+  ]
+}
