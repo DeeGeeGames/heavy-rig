@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "warden",
+  "background": "Transparent",
+  "details": "Design modular shoulder housings whose launcher inserts can later be replaced by energy emitters while retaining the same exterior shell and attachment positions. Keep all four mount assemblies visibly distinct in the primary view.",
+  "loadout": [
+    { "weaponId": "autocannon", "rounds": 240 },
+    { "weaponId": "autocannon", "rounds": 240 },
+    { "weaponId": "stream-missiles", "rounds": 360 },
+    { "weaponId": "stream-missiles", "rounds": 360 }
+  ]
+}
