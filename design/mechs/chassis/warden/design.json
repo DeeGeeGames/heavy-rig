@@ -59,7 +59,6 @@
     }
   ],
   "sharedMaster": "design/mechs/chassis/warden/shared-master.json",
-  "approvedMotion": "design/mechs/chassis/warden/approved-motion.json",
   "ankleGuardDirection": {
     "appearance": "unsplit front and rear",
     "decision": "Owner explicitly requested retaining unsplit guards on both front and back.",
@@ -70,5 +69,6 @@
   "approvedFrontGuard": "design/mechs/chassis/warden/approved-front-guard.json",
   "approvedInterfaces": "design/mechs/chassis/warden/approved-interfaces.json",
   "approvedRun": "design/mechs/chassis/warden/approved-run.json",
-  "approvedLocomotion": "design/mechs/chassis/warden/approved-locomotion.json"
+  "approvedLocomotion": "design/mechs/chassis/warden/approved-locomotion.json",
+  "articulationBase": "design/mechs/chassis/warden/articulation-base.json"
 }

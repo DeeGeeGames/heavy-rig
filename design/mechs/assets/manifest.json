@@ -3,31 +3,6 @@
   "scope": "Retained Warden production lineage checkpoints; temporary candidates excluded.",
   "files": [
     {
-      "path": "design/mechs/assets/warden/articulation-base/clearance-report.json",
-      "bytes": 97037,
-      "sha256": "bb24a9ad14341d2c96fa6025ce9da03a286c373a42677debdfb1fb7923a1c8b2"
-    },
-    {
-      "path": "design/mechs/assets/warden/articulation-base/gait-report.json",
-      "bytes": 132572,
-      "sha256": "b36fd376699727b71059ad45672aca737259bef99322287cd76c7e85ada2012e"
-    },
-    {
-      "path": "design/mechs/assets/warden/articulation-base/three-verification.json",
-      "bytes": 404,
-      "sha256": "2eeea85c330bd5c65567c6717dbc2c28001239f1880e5480bc29aaed289b02cf"
-    },
-    {
-      "path": "design/mechs/assets/warden/articulation-base/walk.gif",
-      "bytes": 4890794,
-      "sha256": "a6c431901115c89f81df8a60be78fc35ce98843d94488b2378245f9c6ae91394"
-    },
-    {
-      "path": "design/mechs/assets/warden/articulation-base/warden-b-walk.glb",
-      "bytes": 4829368,
-      "sha256": "0dbab34957a1059dd7da081ea7c5ae0886dac7f83affd0a56e5365281993c013"
-    },
-    {
       "path": "design/mechs/assets/warden/articulation-base/warden-walk.blend",
       "bytes": 14802159,
       "sha256": "a4005e454d2ac52313653e497acf6f283ec0773722b583763622548cdc975802"

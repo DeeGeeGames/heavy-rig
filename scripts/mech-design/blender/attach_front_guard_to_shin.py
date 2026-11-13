@@ -4,7 +4,7 @@ from pathlib import Path
 import bpy
 from mathutils import Matrix,Vector
 repo=Path(REPO_ROOT);out=repo/'design/mechs/generated'/globals().get('OUTPUT_FOLDER', 'guards-candidate')
-record=json.loads((repo/'design/mechs/chassis/warden/approved-motion.json').read_text())['artifacts']['warden-walk.blend']
+record=json.loads((repo/'design/mechs/chassis/warden/articulation-base.json').read_text())['artifacts']['warden-walk.blend']
 if hashlib.sha256((repo/record['path']).read_bytes()).hexdigest()!=record['sha256']:raise RuntimeError('Approved source changed.')
 if (out/'guard-candidate.blend').exists():raise RuntimeError('Candidate exists.')
 out.mkdir(parents=True,exist_ok=True)

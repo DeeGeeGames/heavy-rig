@@ -17,7 +17,8 @@ byte count and SHA-256. Approval records live in `../chassis/warden/`.
 - `generated-source/launcher-donor`: original Tripo A input supplying launchers.
 - `modular-assembly`: shared body and extracted module assembly checkpoint.
 - `repaired-chassis`: approved repaired shared master.
-- `articulation-base`: approved intermediate required by the guard recipe.
+- `articulation-base`: Blender source dependency for the guard recipe only;
+  its superseded walk previews, exports and reports are excluded.
 - `guards`: final approved shin-owned guards and original axles.
 - `interfaces`: shared sockets, cartridges and approved empty covers.
 - `motions/walk`, `motions/run`, `motions/backward`: selected current motions.
@@ -31,7 +32,8 @@ Historical IDs and internal Blender scene names are preserved to avoid modifying
 approved binary assets merely for naming consistency.
 
 Preserving the older articulation base is necessary: the accepted guard recipe
-uses it as input. It is not an alternative to the current walk. The original
+uses it as input. Current animation assets live only under `motions/`; see
+`chassis/warden/approved-locomotion.json` for their acceptance. The original
 launcher-donor model is likewise retained as a required source, not a separately
 approved production chassis.
 
