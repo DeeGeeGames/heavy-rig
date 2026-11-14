@@ -225,3 +225,23 @@ The next actor should follow
 Start with the remaining component cost/feature inventory, preserve shared
 ownership and stage 6 motion/aim contracts, and keep PR 67 in draft. This handoff
 does not replace runtime models or close full-model stage 7, stage 8 or stage 9.
+
+### Remaining component inventory
+
+The [Warden component plan](../../../design/mechs/chassis/warden/optimization-plan.md)
+records the measured source costs and priority order. Reproduce the inventory
+without opening Blender or modifying assets:
+
+```sh
+python3 scripts/mech-design/inventory-warden-components.py \
+  --repo "$PWD" --output design/mechs/generated/stage7-inventory.json
+```
+
+The output must be fresh and under ignored `generated/`. The command verifies
+the hashes of all 21 stage 6 GLBs and compares chassis geometry fingerprints and
+parent ownership across all three motions. It counts actual default-scene mesh
+instances/sections and indexed triangles at the sole exported LOD, lists module
+and equipped-configuration costs, and separates vertex/index bytes from encoded
+file payload. Identical assigned material definitions are counted separately
+from the material objects in standalone files. It does not measure runtime
+performance, validate motion matrices, or approve new geometry.

@@ -181,7 +181,9 @@ camera-scale estimates, and hardware frame time has not been measured.
 2. Inventory the remaining stage 6 shared chassis and modules under
    `assets/warden/components/`. Record feature decisions, protected interfaces
    and expected camera sizes. Choose the next component from that measured
-   inventory; do not assign every part the pod's reduction ratio.
+   inventory; do not assign every part the pod's reduction ratio. The current
+   [Warden inventory and component sequence](chassis/warden/optimization-plan.md)
+   records the retained source costs and next component priorities.
 3. Produce isolated component candidates using this procedure. Preserve the
    exact shared-body/module ownership and approved motion envelope. Use the pod
    as an approved reference while keeping its source dependencies available.
