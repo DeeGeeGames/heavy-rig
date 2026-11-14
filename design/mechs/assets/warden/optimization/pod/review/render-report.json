@@ -1,0 +1,56 @@
+{
+  "inputs": {
+    "source": {
+      "path": "design/mechs/assets/warden/optimization/pod/source.glb",
+      "sha256": "edae730332c13a83772e63e19ab56232bed0764ad2a3f2dbad28c5cf2c51e6c2"
+    },
+    "candidate": {
+      "path": "design/mechs/assets/warden/optimization/pod/pod.glb",
+      "sha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5"
+    }
+  },
+  "target": [
+    0.0,
+    0.054999999701976776,
+    0.0
+  ],
+  "span": 0.43,
+  "geometryOnly": false,
+  "cameraScale": {
+    "scope": "Height-matched estimate using current production camera; source scale is not approved for integration.",
+    "productionHeight": 101.75,
+    "sourceHeight": 0.9624838484333693,
+    "scale": 105.71605971946234,
+    "viewport": [
+      1280,
+      720
+    ],
+    "zoom": 1,
+    "pixelsPerSourceUnit": 125.97587218229685,
+    "maximumZoomPixelsPerSourceUnit": 314.9396804557421,
+    "cameraDirection": [
+      1,
+      1,
+      1
+    ]
+  },
+  "scope": "Matched export renders and declared gameplay-size estimates; no runtime capture or performance measurement.",
+  "renders": {
+    "candidate-front.png": "0157d6ae4acd6f5d759e03d8da072a7c01b31669f890a6b02d0cc37ddaa05490",
+    "candidate-game.png": "d3f6acd864d8a71b1dad9d3558b912eaea8b928265629154ec45bf1ce684bbaa",
+    "candidate-oblique.png": "b05f400ec235080b3777371387617060d35f16c246dc283a2f5cb63c73e1013f",
+    "candidate-opposite-side.png": "ccfa47e2c0d493ef225f706cde39a5639befe0c327e542ebb7984172399700aa",
+    "candidate-rear.png": "ed66e869ed02c1b8467c1e96fb16c424e5af65da1701421d5032fd04039712dc",
+    "candidate-side.png": "2576c2fd94065935a99d6e39080e7defa85c803bb6a9934454354e02c1159acf",
+    "candidate-underside.png": "e62fe59915015222a20608f34948a6a0396f2957e84152eb9d0217b39ed55e6e",
+    "candidate-zoom.png": "d7f287365002c7bc22c62eb539582c88f6185d963f4239b80bea4ad98e95042e",
+    "source-front.png": "29dd368a3a031ff2f86ae65a1dccc21ed36ae4b94cbef1130886b0d53ba50791",
+    "source-game.png": "64be348de8b750b7ab549a0812db42940e73e2397d94e7f4e92fe74a77247c7d",
+    "source-oblique.png": "83b1b4bbdb07f193084d3dfa919d13efda9bb7ff7a128069d71cd84b45f98b8f",
+    "source-opposite-side.png": "1ea6baebff36e4246b62a9491b91826a8a70654119a4c017f17f4f3c53a800e8",
+    "source-rear.png": "81951028beb7f0552d50d12ed0093532d1ec955baea1e1e601e31e21218624c9",
+    "source-side.png": "a3c8675520b10deb921c6577b2d778976ec1fd2e3fd737a57d987141566afb62",
+    "source-underside.png": "ae744ed7169f4897e7dfd2b91585ae52e604e6014e41ba3a7d9eea088c8284be",
+    "source-zoom.png": "b2d132277cc3ab837d30ef56897b53c305a3f091b2d3013a0efe1ab7aab18530"
+  }
+}

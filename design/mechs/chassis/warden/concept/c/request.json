@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "warden-c",
+  "background": "Transparent",
+  "details": "Preserve the approved baseline exactly, including both AC/38 cannons, all chassis geometry, materials, pose, framing and shoulder pod outer housings. Change only the mech-own left shoulder insert (image-right) to a recessed ARC laser optical emitter, removing its launcher apertures. Keep the mech-own right shoulder (image-left) original NEEDLE/2 launcher unchanged. No glow, beams, new housings or added weapons.",
+  "loadout": [
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "laser",
+      "rounds": 0
+    },
+    {
+      "weaponId": "stream-missiles",
+      "rounds": 360
+    }
+  ],
+  "baselineId": "warden-v1-candidate-01"
+}

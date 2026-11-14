@@ -1,0 +1,18 @@
+{
+  "chassisId": "maul",
+  "activeBaseline": "maul-a-baseline-v1",
+  "baselines": [
+    {
+      "id": "maul-a-baseline-v1",
+      "status": "approved",
+      "image": "design/mechs/chassis/maul/concept/a/maul-a.png",
+      "imageSha256": "9549c80c62be16566eae62b558203dc09b0c7015a9cf919759299099365e9d84",
+      "request": "design/mechs/chassis/maul/concept/a/request.json",
+      "requestSha256": "c62790096b46bc081057dc58a3f81960c057008f5799d97b70c9fa2dcb7dd7e2",
+      "prompt": "design/mechs/chassis/maul/concept/a/prompt.txt",
+      "contractSignature": "f5ff61ae5df9f6e2e835bc61ef028a4ad6cf1c618e216e62578cc14d23d53210",
+      "approval": "2026-11-13: owner selected Maul option 1: \"Add option 1. Then push these to the PR.\" Concept approval only; hidden surfaces and production model remain separate."
+    }
+  ],
+  "variants": []
+}

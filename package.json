@@ -14,7 +14,9 @@
 		"test": "bun test",
 		"typecheck": "tsc --noEmit",
 		"lint": "eslint .",
-		"check": "bun run test && bun run typecheck && bun run lint && bun run build"
+		"check": "bun run test && bun run typecheck && bun run lint && bun run build",
+		"mech:prompt": "bun run scripts/mech-design/cli.ts",
+		"mech:builder": "bun run scripts/mech-design/builder.ts"
 	},
 	"dependencies": {
 		"d3-contour": "4.0.3",

@@ -1,0 +1,90 @@
+{
+  "id": "warden-locomotion-v1",
+  "status": "articulation-prototype-approved",
+  "recordedAt": "2026-11-13T22:48:15.755383+00:00",
+  "approval": {
+    "backwardGait": "The dedicated gait is good. Let's go with this.",
+    "geometry": "With the current state of the animations, I don't see any geometry issues. Certainly nothing that can't be addressed or fine-tuned later."
+  },
+  "scope": "The dedicated backward gait is selected. Geometry and articulation are accepted for the reviewed walking reference, longer-stride run and backward gait. Stage 5 is complete for this prototype motion envelope; any remaining geometry refinements are deferred rather than blockers.",
+  "sourceApproval": "warden-interfaces-v1",
+  "motions": {
+    "walk": {
+      "id": "warden-run-v3",
+      "status": "selected-walking-reference",
+      "artifacts": {
+        "motion.blend": {
+          "path": "design/mechs/assets/warden/motions/walk/motion.blend",
+          "sha256": "287ac990c50c386c124d649086dcc7d8f07e453437ed2ce53b37273d7982992b"
+        },
+        "motion.glb": {
+          "path": "design/mechs/assets/warden/motions/walk/motion.glb",
+          "sha256": "af469b17a447755c07882654ee9af2f34becee957bc9462f2331747506c8d712"
+        },
+        "gait-report.json": {
+          "path": "design/mechs/assets/warden/motions/walk/gait-report.json",
+          "sha256": "87c1612bccbdeb7925aeca32754b047fa14317cc64ac96155ebc0563a1f29652"
+        },
+        "three-verification.json": {
+          "path": "design/mechs/assets/warden/motions/walk/three-verification.json",
+          "sha256": "5457b4c6e9815aaec32e443fe2973cccf5d25566e676fc944440ce5b6ef3a407"
+        }
+      }
+    },
+    "run": {
+      "id": "warden-suspended-run-v2",
+      "status": "visual-motion-approved",
+      "artifacts": {
+        "motion.blend": {
+          "path": "design/mechs/assets/warden/motions/run/motion.blend",
+          "sha256": "7df87f756087f1abbbcdb36d5dbf963c52bf517079d1a24a1d1dc5236a70b76b"
+        },
+        "motion.glb": {
+          "path": "design/mechs/assets/warden/motions/run/motion.glb",
+          "sha256": "205ba4015d0bf05fcd8cea1dd65d38d57e8952d0da5b2641d6c2adf6bece11ac"
+        },
+        "gait-report.json": {
+          "path": "design/mechs/assets/warden/motions/run/gait-report.json",
+          "sha256": "cd086e43b81b5a82923f708355e6ae00912d5dce47d20253a51d12d51f62831f"
+        },
+        "three-verification.json": {
+          "path": "design/mechs/assets/warden/motions/run/three-verification.json",
+          "sha256": "d4cea456c29a2365f765f04f1e514fa4d74676826d2569050653287178f2bbba"
+        }
+      }
+    },
+    "backward": {
+      "id": "warden-backward-walk-v1",
+      "status": "visual-motion-approved",
+      "artifacts": {
+        "motion.blend": {
+          "path": "design/mechs/assets/warden/motions/backward/motion.blend",
+          "sha256": "3b4b39cc19001cd9531d7010a4a2ffb47f7d2bd87a072fd08911e8b8432593f9"
+        },
+        "motion.glb": {
+          "path": "design/mechs/assets/warden/motions/backward/motion.glb",
+          "sha256": "f51a5be76251509c04d95070f995f8083a761b9e226a4b7b9a266d8fd79a28ba"
+        },
+        "gait-report.json": {
+          "path": "design/mechs/assets/warden/motions/backward/gait-report.json",
+          "sha256": "1e5cfd7f662babfb4da33fe0338c9e464adc93f77c3a95f0575239f506990e33"
+        },
+        "three-verification.json": {
+          "path": "design/mechs/assets/warden/motions/backward/three-verification.json",
+          "sha256": "16a40c9ab4267fca1b412782b608b6d780b581cda53371d34f2d7feeea94ed0c"
+        }
+      }
+    }
+  },
+  "preservedDecisions": [
+    "Keep the shared chassis geometry, original larger axles and unsplit front/rear guards.",
+    "Lower front plates 51/44 and upper front pieces remain attached to the shin.",
+    "Use the dedicated backward gait rather than reversed forward playback."
+  ],
+  "acceptanceLimits": [
+    "Owner visual acceptance does not establish zero mesh intersections or validated joint limits beyond the reviewed motion envelope.",
+    "Motion-study travel and cadence do not change gameplay speeds or collision dimensions.",
+    "Variant packaging, exact muzzle exits, aim sweeps, optimization, runtime transitions and in-game acceptance remain later work.",
+    "The historical motion, guard and run approval records remain unchanged; this record updates geometry acceptance for the current reviewed motions."
+  ]
+}

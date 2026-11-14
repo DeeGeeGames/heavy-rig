@@ -1,0 +1,74 @@
+{
+  "chassisId": "warden",
+  "activeBaseline": "warden-v1-candidate-01",
+  "baselines": [
+    {
+      "id": "warden-v1-candidate-01",
+      "status": "approved",
+      "image": "design/mechs/chassis/warden/concept/a/image.png",
+      "imageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3",
+      "request": "design/mechs/chassis/warden/concept/a/request.json",
+      "requestSha256": "49b0c878d4b8c5eeb06180ce13d96072c11e8bca10b5f32419fad293171f8673",
+      "prompt": "design/mechs/chassis/warden/concept/a/prompt.txt",
+      "repairPrompt": "design/mechs/chassis/warden/concept/a/repair-prompt.txt",
+      "review": "design/mechs/chassis/warden/concept/a/review.md",
+      "contractSignature": "159059be1a516a8404eff0bbfddee6eb6aa12b369047101a5d678aad9c143c83",
+      "approval": "2026-11-13 02:48 UTC (2026-11-12 America/Chicago): owner said \"This is a good baseline\" in this conversation."
+    }
+  ],
+  "variants": [
+    {
+      "id": "warden-b-v1-candidate-01",
+      "variantId": "warden-b",
+      "status": "approved",
+      "image": "design/mechs/chassis/warden/concept/b/image.png",
+      "imageSha256": "85058f871db7fc129ce7d200a13755872b69511689e7aee6b0793ae480225402",
+      "baselineId": "warden-v1-candidate-01",
+      "baselineImageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3",
+      "request": "design/mechs/chassis/warden/concept/b/request.json",
+      "prompt": "design/mechs/chassis/warden/concept/b/prompt.txt",
+      "review": "design/mechs/chassis/warden/concept/b/review.md",
+      "contractSignature": "159059be1a516a8404eff0bbfddee6eb6aa12b369047101a5d678aad9c143c83",
+      "mountReview": "Root and generating agent inspected image: four correct-family/location assemblies, retained shared chassis; minor surface/edge variation.",
+      "approval": "2026-11-13 03:01 UTC (2026-11-12 America/Chicago): owner said \"These are approved\" for Warden B and C and authorized committing the process and images."
+    },
+    {
+      "id": "warden-c-v1-candidate-01",
+      "variantId": "warden-c",
+      "status": "approved",
+      "image": "design/mechs/chassis/warden/concept/c/image.png",
+      "imageSha256": "d74648e025ed83d280061d0fa252375bdb29000d033c21300119a6ccc9970d27",
+      "baselineId": "warden-v1-candidate-01",
+      "baselineImageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3",
+      "request": "design/mechs/chassis/warden/concept/c/request.json",
+      "prompt": "design/mechs/chassis/warden/concept/c/prompt.txt",
+      "review": "design/mechs/chassis/warden/concept/c/review.md",
+      "contractSignature": "159059be1a516a8404eff0bbfddee6eb6aa12b369047101a5d678aad9c143c83",
+      "mountReview": "Root and generating agent inspected image: four correct-family/location assemblies, retained shared chassis; minor surface/edge variation.",
+      "approval": "2026-11-13 03:01 UTC (2026-11-12 America/Chicago): owner said \"These are approved\" for Warden B and C and authorized committing the process and images."
+    }
+  ],
+  "notes": "Warden baseline and B/C images approved by owner. These are reference design assets, not replacements for gameplay geometry. Tripo model trials follow as separate work.",
+  "activeTurnaround": "warden-a-turnaround-v2",
+  "turnarounds": [
+    {
+      "id": "warden-a-turnaround-v2",
+      "status": "approved",
+      "manifest": "design/mechs/chassis/warden/turnaround/a/manifest.json",
+      "approval": "Owner: Much better. Proceed to the next step. Approved complete v2 turnaround for Tripo generation."
+    }
+  ],
+  "sharedMaster": "design/mechs/chassis/warden/shared-master.json",
+  "ankleGuardDirection": {
+    "appearance": "unsplit front and rear",
+    "decision": "Owner explicitly requested retaining unsplit guards on both front and back.",
+    "clearanceConstraint": "Preserve this exterior. Owner accepts geometry in the reviewed walk, run and dedicated backward gait; remaining refinements are deferred. See approved-locomotion.json for the accepted motion envelope.",
+    "axle": "Retain previously approved larger axle; compact axle v8 rejected by owner.",
+    "frontAssembly": "Owner-approved v10: the lower front plate and upper pieces follow the shin; foot articulates beneath. Retain original larger axle and unsplit exterior."
+  },
+  "approvedFrontGuard": "design/mechs/chassis/warden/approved-front-guard.json",
+  "approvedInterfaces": "design/mechs/chassis/warden/approved-interfaces.json",
+  "approvedRun": "design/mechs/chassis/warden/approved-run.json",
+  "approvedLocomotion": "design/mechs/chassis/warden/approved-locomotion.json",
+  "articulationBase": "design/mechs/chassis/warden/articulation-base.json"
+}

@@ -1,0 +1,120 @@
+{
+  "status": "preview-unapproved",
+  "sources": {
+    "bodyB": {
+      "path": "design/mechs/assets/warden/generated-source/body/warden-b-multiview-detailed.glb",
+      "sha256": "c4b8771f6c31e81475b75dcef3bee57f38e4ec9d0949ac16d0983c9d31543763"
+    },
+    "launcherA": {
+      "path": "design/mechs/assets/warden/generated-source/launcher-donor/warden-a-multiview-balanced.glb",
+      "sha256": "d79f7955e53f892768370c58b903285890dbc5c0b355a8399ef5f41837470189"
+    }
+  },
+  "variants": {
+    "warden": {
+      "sharedGeometrySha256": "f5cd88ff1a1169f7249a8e4bc3de4c8f98baac766d4e00d01c4e8dbb9191012f",
+      "sharedMeshes": 105,
+      "modules": [
+        "launcher",
+        "launcher"
+      ],
+      "meshes": 107,
+      "triangles": 192439
+    },
+    "warden-b": {
+      "sharedGeometrySha256": "f5cd88ff1a1169f7249a8e4bc3de4c8f98baac766d4e00d01c4e8dbb9191012f",
+      "sharedMeshes": 105,
+      "modules": [
+        "energy",
+        "energy"
+      ],
+      "meshes": 109,
+      "triangles": 189826
+    },
+    "warden-c": {
+      "sharedGeometrySha256": "f5cd88ff1a1169f7249a8e4bc3de4c8f98baac766d4e00d01c4e8dbb9191012f",
+      "sharedMeshes": 105,
+      "modules": [
+        "energy",
+        "launcher"
+      ],
+      "meshes": 108,
+      "triangles": 191082
+    }
+  },
+  "donorFit": {
+    "left": {
+      "scale": [
+        1.0164772001532763,
+        1.0,
+        1.0408495634441337
+      ],
+      "offset": [
+        -0.0065486984457575614,
+        0.0,
+        -0.0372200857465782
+      ],
+      "targetBounds": [
+        [
+          0.1291656494140625,
+          0.057727787643671036,
+          0.8162841796875
+        ],
+        [
+          0.3720245361328125,
+          0.11999999731779099,
+          0.963134765625
+        ]
+      ]
+    },
+    "right": {
+      "scale": [
+        1.0185610409491006,
+        1.0,
+        1.0400953935533677
+      ],
+      "offset": [
+        0.00538689561881095,
+        0.0,
+        -0.03633544536199207
+      ],
+      "targetBounds": [
+        [
+          -0.3731231689453125,
+          0.05776205658912659,
+          0.8167091012001038
+        ],
+        [
+          -0.12945556640625,
+          0.11999999731779099,
+          0.963348388671875
+        ]
+      ]
+    }
+  },
+  "interface": {
+    "coordinates": "Blender Z-up, -Y-forward, +X own-left; unnormalized source units",
+    "planeY": 0.12,
+    "donorMinimumZ": 0.8,
+    "anchors": {
+      "left": [
+        0.25,
+        0.12,
+        0.885
+      ],
+      "right": [
+        -0.25,
+        0.12,
+        0.885
+      ]
+    },
+    "status": "provisional; donor fit is not a watertight seam"
+  },
+  "limitations": [
+    "Inherited unresolved ankle/piston articulation",
+    "Cartridge seams not welded or closed",
+    "No muzzle anchors or runtime integration",
+    "No empty-mount cap",
+    "Source scale unnormalized"
+  ]
+}

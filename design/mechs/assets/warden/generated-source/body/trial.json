@@ -1,0 +1,26 @@
+{
+  "status": "exported-visual-review-pending",
+  "sourceManifest": "design/mechs/chassis/warden/turnaround/b/manifest.json",
+  "viewHashes": {
+    "front": "97f56d73d9b8c4f936c0aa00b3b7de0c93bb2c9ab6c2828cc25e7de35152d678",
+    "back": "30a3285f5b1684532c4e730485dea8175f1a8f3d102d87e590763b9c07673d7c",
+    "left": "84efcd9ffee3d4973947d86978cd23e2804c96a673560ed820fc4f18b10004c4",
+    "right": "c4b7c3b44445b32f0bee92f0f7312e4a4f853b54b39527a30adcef7f52b05447"
+  },
+  "parts": "Detailed (15+)",
+  "model": "H3.1 HD",
+  "targetPolygons": 200000,
+  "texture": false,
+  "privacy": "Private retained; public authorized",
+  "creditsSpent": 60,
+  "remainingCredits": 2880,
+  "url": "https://studio.tripo3d.ai/workspace/segmentation/01d6e8ae-a50f-4666-b844-2f8590d666d2",
+  "triangles": 189050,
+  "meshes": 107,
+  "reportedPreviewParts": 107,
+  "skins": 0,
+  "animations": 0,
+  "bytes": 4783328,
+  "sha256": "c4b8771f6c31e81475b75dcef3bee57f38e4ec9d0949ac16d0983c9d31543763",
+  "smallMeshesUnder100Triangles": 0
+}

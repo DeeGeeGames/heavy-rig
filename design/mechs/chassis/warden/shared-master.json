@@ -1,0 +1,31 @@
+{
+  "id": "warden-repair-v1",
+  "status": "approved-for-rigging",
+  "approval": "Owner explicitly said Approved after review of the shared repair candidate and next-step discussion. Approval covers the shared repaired visual master; walking, final limits, optimization and game integration remain separate gates.",
+  "artifacts": {
+    "warden-repair.blend": {
+      "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.blend",
+      "sha256": "af8df2f7e839f2b1eb46b2cfc927ace98c7fa0293356ed84746209e1164c1761"
+    },
+    "warden-repair.glb": {
+      "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.glb",
+      "sha256": "a29d7f5990ff7f46a4f031c2c244a0ef0421dde0e45f774503cf9851d9a36d95"
+    },
+    "warden-b-repair.glb": {
+      "path": "design/mechs/assets/warden/repaired-chassis/warden-b-repair.glb",
+      "sha256": "300263a03aa40e3be98bf61610629e347a622f0fe9c5500869050698ab06087a"
+    },
+    "warden-c-repair.glb": {
+      "path": "design/mechs/assets/warden/repaired-chassis/warden-c-repair.glb",
+      "sha256": "5cd6617be3a01bdfcd11c3fa4c2490b6405a6109b5be0c69fae6d8ee5ba3810c"
+    },
+    "repair-report.json": {
+      "path": "design/mechs/assets/warden/repaired-chassis/repair-report.json",
+      "sha256": "cf1770825cbeb868282a963540ec0f1509bf9418958a313d56dd1451bc40bf51"
+    },
+    "neutral.png": {
+      "path": "design/mechs/assets/warden/repaired-chassis/neutral.png",
+      "sha256": "36bc51093827175115e3c116d269f1178e774ac0bf3259f2e34f74fa03578b05"
+    }
+  }
+}

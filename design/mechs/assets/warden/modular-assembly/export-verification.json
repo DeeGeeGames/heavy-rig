@@ -1,0 +1,29 @@
+{
+  "sharedMeshesIdentical": 105,
+  "variants": {
+    "warden": {
+      "meshes": 107,
+      "triangles": 192439,
+      "sockets": [
+        "socket_left_shoulder",
+        "socket_right_shoulder"
+      ]
+    },
+    "warden-b": {
+      "meshes": 109,
+      "triangles": 189826,
+      "sockets": [
+        "socket_left_shoulder",
+        "socket_right_shoulder"
+      ]
+    },
+    "warden-c": {
+      "meshes": 108,
+      "triangles": 191082,
+      "sockets": [
+        "socket_left_shoulder",
+        "socket_right_shoulder"
+      ]
+    }
+  }
+}

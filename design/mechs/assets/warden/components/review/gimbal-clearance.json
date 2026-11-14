@@ -1,0 +1,2732 @@
+[
+  {
+    "side": "left",
+    "pitch": 0,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -60,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_27",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_10"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_27",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -60,
+    "yaw": -30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": -60,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": -60,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -60,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -60,
+    "yaw": 30,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -60,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_7"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_7"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -30,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_77"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_10"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_77"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_10"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -30,
+    "yaw": -30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": -30,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": -30,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -30,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -30,
+    "yaw": 30,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -30,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_7"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_7"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -15,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_77"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_77"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -15,
+    "yaw": -30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": -15,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": -15,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -15,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -15,
+    "yaw": 30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": -15,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 0,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_75"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_10"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_10"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_75"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_10"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 0,
+    "yaw": -30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": 0,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": 0,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 0,
+    "yaw": 30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 0,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 15,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_10"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_10"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 15,
+    "yaw": -30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": 15,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": 15,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 15,
+    "yaw": 15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 15,
+    "yaw": 30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 15,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 30,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_8"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_8"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 30,
+    "yaw": -30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "left",
+    "pitch": 30,
+    "yaw": -15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 30,
+    "yaw": 0,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 30,
+    "yaw": 15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 30,
+    "yaw": 30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_15"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 30,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 60,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_left_front_piston_barrel"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_39"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_53"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_7"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_70"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_71"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_8"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_left_front_piston_barrel"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_39"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_53"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_7"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_70"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_71"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_8"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 60,
+    "yaw": -30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_left_front_piston_barrel"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_left_front_piston_rod"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_100"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_7"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_73"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_98"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_32",
+        "repair_left_front_piston_barrel"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_left_front_piston_rod"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_100"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_7"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_73"
+      ],
+      [
+        "repair_shared_tripo_part_32",
+        "repair_shared_tripo_part_98"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 60,
+    "yaw": -15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 60,
+    "yaw": 0,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_15"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 60,
+    "yaw": 15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_15"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_15"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 60,
+    "yaw": 30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_27",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_23"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_27",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_23"
+      ]
+    ]
+  },
+  {
+    "side": "left",
+    "pitch": 60,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_27",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_69"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_27",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_5",
+        "repair_shared_tripo_part_69"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_9",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_15"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_23"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_47"
+      ],
+      [
+        "repair_shared_tripo_part_95",
+        "repair_shared_tripo_part_69"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 0,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -60,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -60,
+    "yaw": -30,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -60,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -60,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -60,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": -60,
+    "yaw": 30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": -60,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_16"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_16"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -30,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_19"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_19"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_19"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_19"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -30,
+    "yaw": -30,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -30,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -30,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -30,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": -30,
+    "yaw": 30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": -30,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_80"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_80"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -15,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_19"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_19"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -15,
+    "yaw": -30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -15,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -15,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": -15,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": -15,
+    "yaw": 30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": -15,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_80"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_80"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 0,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 0,
+    "yaw": -30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 0,
+    "yaw": -15,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 0,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": 0,
+    "yaw": 30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": 0,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_75"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_3"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_3"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_75"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_16"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_3"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 15,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 15,
+    "yaw": -30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 15,
+    "yaw": -15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 15,
+    "yaw": 0,
+    "newPairs": [],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 15,
+    "yaw": 15,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": 15,
+    "yaw": 30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": 15,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_16"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_16"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 30,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_58"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_58"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 30,
+    "yaw": -30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 30,
+    "yaw": -15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 30,
+    "yaw": 0,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 30,
+    "yaw": 15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 30,
+    "yaw": 30,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": 30,
+    "yaw": 60,
+    "newPairs": [],
+    "allPairs": []
+  },
+  {
+    "side": "right",
+    "pitch": 60,
+    "yaw": -60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_30"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_30"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_58"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_30"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_0"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_30"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_58"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 60,
+    "yaw": -30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_58"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_56"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_58"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 60,
+    "yaw": -15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_24"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_43",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_24"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 60,
+    "yaw": 0,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_24"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_48"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_58"
+      ],
+      [
+        "repair_shared_tripo_part_93",
+        "repair_shared_tripo_part_24"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 60,
+    "yaw": 15,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 60,
+    "yaw": 30,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_11"
+      ],
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_50"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_50"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_11"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_11"
+      ],
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_50"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_50"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_11"
+      ]
+    ]
+  },
+  {
+    "side": "right",
+    "pitch": 60,
+    "yaw": 60,
+    "newPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_11"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_104"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_21"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_50"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_11"
+      ]
+    ],
+    "allPairs": [
+      [
+        "repair_shared_tripo_part_102",
+        "repair_shared_tripo_part_11"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_104"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_21"
+      ],
+      [
+        "repair_shared_tripo_part_20",
+        "repair_shared_tripo_part_50"
+      ],
+      [
+        "repair_shared_tripo_part_4",
+        "repair_shared_tripo_part_24"
+      ],
+      [
+        "repair_shared_tripo_part_6",
+        "repair_shared_tripo_part_11"
+      ]
+    ]
+  }
+]

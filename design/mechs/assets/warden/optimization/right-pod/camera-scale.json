@@ -1,0 +1,18 @@
+{
+  "scope": "Height-matched estimate using current production camera; source scale is not approved for integration.",
+  "productionHeight": 101.75,
+  "sourceHeight": 0.9624838484333693,
+  "scale": 105.71605971946234,
+  "viewport": [
+    1280,
+    720
+  ],
+  "zoom": 1,
+  "pixelsPerSourceUnit": 125.97587218229685,
+  "maximumZoomPixelsPerSourceUnit": 314.9396804557421,
+  "cameraDirection": [
+    1,
+    1,
+    1
+  ]
+}

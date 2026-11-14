@@ -1,0 +1,146 @@
+{
+  "warden": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "left-shoulder pod",
+      "name": "Left shoulder pod",
+      "family": "launcher",
+      "weapons": [
+        "stream-missiles",
+        "stream-missiles-4",
+        "stream-missiles-6",
+        "cluster-missiles",
+        "cluster-missiles-4",
+        "cluster-missiles-6",
+        "stream-rockets",
+        "stream-rockets-4",
+        "stream-rockets-6",
+        "cluster-rockets",
+        "cluster-rockets-4",
+        "cluster-rockets-6"
+      ]
+    },
+    {
+      "id": "right-shoulder pod",
+      "name": "Right shoulder pod",
+      "family": "launcher",
+      "weapons": [
+        "stream-missiles",
+        "stream-missiles-4",
+        "stream-missiles-6",
+        "cluster-missiles",
+        "cluster-missiles-4",
+        "cluster-missiles-6",
+        "stream-rockets",
+        "stream-rockets-4",
+        "stream-rockets-6",
+        "cluster-rockets",
+        "cluster-rockets-4",
+        "cluster-rockets-6"
+      ]
+    }
+  ],
+  "warden-b": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "left-shoulder bank",
+      "name": "Left shoulder bank",
+      "family": "energy",
+      "weapons": [
+        "laser",
+        "ppc"
+      ]
+    },
+    {
+      "id": "right-shoulder bank",
+      "name": "Right shoulder bank",
+      "family": "energy",
+      "weapons": [
+        "laser",
+        "ppc"
+      ]
+    }
+  ],
+  "warden-c": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "left-shoulder bank",
+      "name": "Left shoulder bank",
+      "family": "energy",
+      "weapons": [
+        "laser",
+        "ppc"
+      ]
+    },
+    {
+      "id": "right-shoulder pod",
+      "name": "Right shoulder pod",
+      "family": "launcher",
+      "weapons": [
+        "stream-missiles",
+        "stream-missiles-4",
+        "stream-missiles-6",
+        "cluster-missiles",
+        "cluster-missiles-4",
+        "cluster-missiles-6",
+        "stream-rockets",
+        "stream-rockets-4",
+        "stream-rockets-6",
+        "cluster-rockets",
+        "cluster-rockets-4",
+        "cluster-rockets-6"
+      ]
+    }
+  ]
+}

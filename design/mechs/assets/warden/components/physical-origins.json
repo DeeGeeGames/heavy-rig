@@ -1,0 +1,513 @@
+{
+  "status": "measured-origins-export-validation-pending",
+  "sourceSha256": "01f1ef4a71437ae96319346203f31e4c4ff21fa6dbc7a1e6271d9bdc57bbd7c4",
+  "coordinates": "Blender parent-local Z up, -Y forward. Source scale unchanged.",
+  "method": "128 radial profiles with 160 depth samples each around previously segmented recess center. Closest front-surface sample per radial profile defines lip. Least-squares XZ circle fits center; frontmost measured lip Y minus explicit 0.0001 offset defines exit plane. Five parallel outgoing rays per exit test self-obstruction. Radial sample error, asymmetric geometry and depth variation are reported, not discarded.",
+  "origins": [
+    {
+      "id": "left-launcher-upper-4",
+      "parent": "socket_left_shoulder",
+      "local": [
+        0.05790954455733299,
+        -0.05819326639175415,
+        0.016757767647504807
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05809326469898224,
+        -0.05350206792354584
+      ],
+      "lipRadius": 0.01871678197712415,
+      "radialRms": 0.0012605069029623008,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 4
+      }
+    },
+    {
+      "id": "left-launcher-upper-3",
+      "parent": "socket_left_shoulder",
+      "local": [
+        0.01853850483894348,
+        -0.05833467096090317,
+        0.01554883737117052
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.058234669268131256,
+        -0.05343487858772278
+      ],
+      "lipRadius": 0.019395909287644512,
+      "radialRms": 0.0023889986739884504,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 3
+      }
+    },
+    {
+      "id": "left-launcher-upper-2",
+      "parent": "socket_left_shoulder",
+      "local": [
+        -0.023112541064620018,
+        -0.058297187089920044,
+        0.015061257407069206
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05819718539714813,
+        -0.05343650281429291
+      ],
+      "lipRadius": 0.018828988753451625,
+      "radialRms": 0.0021968923120646933,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 2
+      }
+    },
+    {
+      "id": "left-launcher-upper-1",
+      "parent": "socket_left_shoulder",
+      "local": [
+        -0.06482966989278793,
+        -0.05836925655603409,
+        0.015790173783898354
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.058269254863262177,
+        -0.05341815948486328
+      ],
+      "lipRadius": 0.019665340032722786,
+      "radialRms": 0.0016028751062468192,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 1
+      }
+    },
+    {
+      "id": "left-launcher-lower-3",
+      "parent": "socket_left_shoulder",
+      "local": [
+        0.02025815099477768,
+        -0.05372178927063942,
+        -0.029729260131716728
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05362178757786751,
+        -0.05344591289758682
+      ],
+      "lipRadius": 0.02016884370020563,
+      "radialRms": 0.002508172930883124,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 3
+      }
+    },
+    {
+      "id": "left-launcher-lower-4",
+      "parent": "socket_left_shoulder",
+      "local": [
+        0.06001370772719383,
+        -0.053858257830142975,
+        -0.029290810227394104
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05375825613737106,
+        -0.05347885191440582
+      ],
+      "lipRadius": 0.019247245234048437,
+      "radialRms": 0.002910354969348633,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 4
+      }
+    },
+    {
+      "id": "left-launcher-lower-1",
+      "parent": "socket_left_shoulder",
+      "local": [
+        -0.06464936584234238,
+        -0.05385773628950119,
+        -0.031155969947576523
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05375773459672928,
+        -0.05343528464436531
+      ],
+      "lipRadius": 0.019799626507062334,
+      "radialRms": 0.0013491224777345764,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 1
+      }
+    },
+    {
+      "id": "left-launcher-lower-2",
+      "parent": "socket_left_shoulder",
+      "local": [
+        -0.022106582298874855,
+        -0.05375659465789795,
+        -0.030399125069379807
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05365659296512604,
+        -0.05342520773410797
+      ],
+      "lipRadius": 0.019444996503050514,
+      "radialRms": 0.0023630401054779266,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 2
+      }
+    },
+    {
+      "id": "left-energy-1",
+      "parent": "socket_left_shoulder",
+      "local": [
+        0.0015361756086349487,
+        -0.05468872934579849,
+        -0.010638820938766003
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05458872765302658,
+        -0.04496410861611366
+      ],
+      "lipRadius": 0.03891740800635048,
+      "radialRms": 0.0032091905193136093,
+      "radialSamples": 128,
+      "selfExitRayHits": []
+    },
+    {
+      "id": "left-gun-1",
+      "parent": "rig_mount_left-gun",
+      "local": [
+        0.07183809578418732,
+        -0.4283389747142792,
+        -0.02442546747624874
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.42823898792266846,
+        -0.4278814494609833
+      ],
+      "lipRadius": 0.019275916782499947,
+      "radialRms": 0.0009073453176037911,
+      "radialSamples": 128,
+      "selfExitRayHits": []
+    },
+    {
+      "id": "right-launcher-upper-1",
+      "parent": "socket_right_shoulder",
+      "local": [
+        -0.06265493482351303,
+        -0.0587148442864418,
+        0.015538315288722515
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05861484259366989,
+        -0.05345473438501358
+      ],
+      "lipRadius": 0.018253909052984702,
+      "radialRms": 0.002628212595082736,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 1
+      }
+    },
+    {
+      "id": "right-launcher-upper-4",
+      "parent": "socket_right_shoulder",
+      "local": [
+        0.05959201604127884,
+        -0.058853909373283386,
+        0.015807783231139183
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.058753907680511475,
+        -0.053463831543922424
+      ],
+      "lipRadius": 0.019470630407241597,
+      "radialRms": 0.002111642056567159,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 4
+      }
+    },
+    {
+      "id": "right-launcher-upper-2",
+      "parent": "socket_right_shoulder",
+      "local": [
+        -0.0236362237483263,
+        -0.058432817459106445,
+        0.015842990949749947
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.058332815766334534,
+        -0.053461313247680664
+      ],
+      "lipRadius": 0.019885728970520947,
+      "radialRms": 0.0015103849418189586,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 2
+      }
+    },
+    {
+      "id": "right-launcher-upper-3",
+      "parent": "socket_right_shoulder",
+      "local": [
+        0.017961377277970314,
+        -0.05831761285662651,
+        0.015196838416159153
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.0582176111638546,
+        -0.05346330627799034
+      ],
+      "lipRadius": 0.01902510531879296,
+      "radialRms": 0.0021926106598417366,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "upper",
+        "columnIncreasingLocalX": 3
+      }
+    },
+    {
+      "id": "right-launcher-lower-2",
+      "parent": "socket_right_shoulder",
+      "local": [
+        -0.02237197943031788,
+        -0.053835175931453705,
+        -0.03084547631442547
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05373517423868179,
+        -0.05346668139100075
+      ],
+      "lipRadius": 0.018605047055074386,
+      "radialRms": 0.0021725698803104782,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 2
+      }
+    },
+    {
+      "id": "right-launcher-lower-4",
+      "parent": "socket_right_shoulder",
+      "local": [
+        0.06305896490812302,
+        -0.053753096610307693,
+        -0.03047274611890316
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05365309491753578,
+        -0.05345645546913147
+      ],
+      "lipRadius": 0.019179528731053927,
+      "radialRms": 0.002139707964928632,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 4
+      }
+    },
+    {
+      "id": "right-launcher-lower-1",
+      "parent": "socket_right_shoulder",
+      "local": [
+        -0.061034150421619415,
+        -0.05382965877652168,
+        -0.030234310775995255
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05372965708374977,
+        -0.053404081612825394
+      ],
+      "lipRadius": 0.020038032137082856,
+      "radialRms": 0.0023828095347084915,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 1
+      }
+    },
+    {
+      "id": "right-launcher-lower-3",
+      "parent": "socket_right_shoulder",
+      "local": [
+        0.018997402861714363,
+        -0.053846146911382675,
+        -0.03101695142686367
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.053746145218610764,
+        -0.05348026007413864
+      ],
+      "lipRadius": 0.018621020224337547,
+      "radialRms": 0.002253227584498728,
+      "radialSamples": 128,
+      "selfExitRayHits": [],
+      "physicalTube": {
+        "row": "lower",
+        "columnIncreasingLocalX": 3
+      }
+    },
+    {
+      "id": "right-energy-1",
+      "parent": "socket_right_shoulder",
+      "local": [
+        -0.0014705972280353308,
+        -0.054805587977170944,
+        -0.012454495765268803
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.05470558628439903,
+        -0.04482696205377579
+      ],
+      "lipRadius": 0.036259274538730485,
+      "radialRms": 0.003153039570511613,
+      "radialSamples": 128,
+      "selfExitRayHits": []
+    },
+    {
+      "id": "right-gun-1",
+      "parent": "rig_mount_right-gun",
+      "local": [
+        -0.07250577211380005,
+        -0.42830151319503784,
+        -0.02523595653474331
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "lipDepthRange": [
+        -0.4282015264034271,
+        -0.4277874231338501
+      ],
+      "lipRadius": 0.020042478559046506,
+      "radialRms": 0.000836375207405358,
+      "radialSamples": 128,
+      "selfExitRayHits": []
+    }
+  ],
+  "launcherMapping": "Eight physical tube exits per module. No mapping to current runtime salvo count or launch ordering is asserted."
+}

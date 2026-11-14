@@ -1,0 +1,13 @@
+{
+  "id": "warden-gait-v2",
+  "status": "retained-source-dependency",
+  "purpose": "Intermediate Blender input required to reproduce the approved shin-owned guard repair. Its baked walking motion is superseded; current selected motions are recorded in approved-locomotion.json.",
+  "originalApproval": "Owner explicitly said Approved after viewing the v2 walk with pelvis weight transfer, step settling, hip rotation and delayed torso counter-motion.",
+  "sharedMasterId": "warden-repair-v1",
+  "artifacts": {
+    "warden-walk.blend": {
+      "path": "design/mechs/assets/warden/articulation-base/warden-walk.blend",
+      "sha256": "a4005e454d2ac52313653e497acf6f283ec0773722b583763622548cdc975802"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+design/mechs/assets/**/*.blend filter=lfs diff=lfs merge=lfs -text
+design/mechs/assets/**/*.glb filter=lfs diff=lfs merge=lfs -text
+design/mechs/assets/**/*.png filter=lfs diff=lfs merge=lfs -text
+design/mechs/assets/**/*.gif filter=lfs diff=lfs merge=lfs -text

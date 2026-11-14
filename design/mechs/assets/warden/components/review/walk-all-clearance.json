@@ -1,0 +1,8 @@
+{
+  "status": "sampled-clear",
+  "sourceSha256": "287ac990c50c386c124d649086dcc7d8f07e453437ed2ce53b37273d7982992b",
+  "motion": "walk",
+  "scope": "Gun and shoulder assembly surfaces versus lower body; 5-degree torso-local yaw steps at nine gait phases. Surface intersection sampling is not a continuous clearance proof. Independent weapon yaw/pitch, runtime heading stabilization and firing exits require separate validation. All shoulder module alternatives included.",
+  "samples": 648,
+  "findings": []
+}
