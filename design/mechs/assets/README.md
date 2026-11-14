@@ -34,6 +34,11 @@ byte count and SHA-256. Approval records live in `../chassis/warden/`.
   reports and selected export renders. It is a worked stage 7 example, not the
   completed Warden derivative. See `approved-pod-optimization.json` and the
   [optimization procedure](../game-optimization.md).
+- `optimization/right-pod`: owner-approved own-right housing/collar and launcher,
+  including the exact reviewed GLB, packed right-side bake references, source
+  comparison and matched textured/geometry-only views. Its cup reference is
+  already fitted to the right exits. See `approved-right-pod-optimization.json`.
+  Both pods are isolated proofs; supports and whole-model assembly remain open.
 
 Stable step paths hold one advancing result per step. Temporary candidates,
 render sequences, rejected reductions and competing animation trials stay out

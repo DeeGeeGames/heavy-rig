@@ -172,10 +172,34 @@ launcher render face must not be used as a projectile collision mesh. The pod
 retains source units and socket-local coordinates; gameplay-size images are
 camera-scale estimates, and hardware frame time has not been measured.
 
+### Approved own-right continuation
+
+The [own-right approval](chassis/warden/approved-right-pod-optimization.json) and
+[retained package](assets/warden/optimization/right-pod/) preserve the exact
+914-triangle export accepted with "Approved." Its isolated source has 16,500
+triangles. The right housing/collar has 828 triangles and its separate launcher
+has 86; supports remain excluded. Its 86-edge mounting boundary differs from
+the left proof's 94 edges and is preserved against the actual right source.
+
+The reconstructed cup reference was fitted to the frozen right exits before
+approval and is packed in the right authoring checkpoint. Rebuilding must reuse
+that fitted reference rather than fitting it again. Right shell and raw launcher
+normals were repaired in working bake copies; the source comparison is unchanged
+apart from its stated neutral review material and coordinate isolation.
+
+Projecting the original rim bevel shading onto the rebuilt front produced
+doubled edges. Neutralizing the entire rim then erased visible side fasteners.
+The accepted repair keeps front bevels geometric and transfers outer-rim detail
+selectively. Retain this distinction in future bakes rather than removing visible
+source details to hide projection defects. Matched textured and geometry-only
+views are retained for both sides, rear, underside, oblique and estimated camera
+sizes. Both pod approvals remain component proofs, not full Warden acceptance.
+
 ## Resume the remaining Warden work
 
 1. Restore LFS assets and run the asset verifier using the authoring commands.
-   Read `approved-stage6.json` and `approved-pod-optimization.json`. Reproduce or
+   Read `approved-stage6.json`, `approved-pod-optimization.json` and
+   `approved-right-pod-optimization.json`. Reproduce or
    inspect the approved pod with the retained inputs and documented tools before
    using its method on another component.
 2. Inventory the remaining stage 6 shared chassis and modules under

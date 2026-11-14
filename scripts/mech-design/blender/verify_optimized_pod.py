@@ -28,18 +28,20 @@ parser = argparse.ArgumentParser(
     description="Verify Warden pod interfaces and export geometry, not visual acceptance or a universal triangle budget."
 )
 parser.add_argument("--repo", type=Path, required=True)
+parser.add_argument("--side", choices=["left", "right"], default="left")
 parser.add_argument("--candidate", type=Path)
 parser.add_argument("--output", type=Path, required=True)
 args = parser.parse_args(blender_arguments())
 ROOT = args.repo.resolve()
+component = "right-pod" if args.side == "right" else "pod"
 source = verified_checkpoint(
-    ROOT, "design/mechs/assets/warden/optimization/pod/source.glb"
+    ROOT, f"design/mechs/assets/warden/optimization/{component}/source.glb"
 )
 candidate = (
     resolve_input(ROOT, args.candidate)
     if args.candidate
     else verified_checkpoint(
-        ROOT, "design/mechs/assets/warden/optimization/pod/pod.glb"
+        ROOT, f"design/mechs/assets/warden/optimization/{component}/pod.glb"
     )
 )
 output = fresh_output(ROOT, args.output)

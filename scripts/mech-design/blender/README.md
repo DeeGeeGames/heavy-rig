@@ -195,7 +195,49 @@ Warden-specific. Rebaking/exporting may change binary hashes; verify the actual
 output and review it before promotion. The approved artifact hash remains the
 one in the approval record.
 
-Generate fresh matching evidence for the rebuilt export:
+### Approved own-right pod
+
+The owner-approved own-right package is under
+`design/mechs/assets/warden/optimization/right-pod/`, with approval in
+`approved-right-pod-optimization.json`. Its exact GLB has 914 triangles. The
+packed checkpoint contains the right housing, collar, original launcher bake
+reference and an already-fitted reconstructed cup reference. No generated
+scratch inputs or repeated left-to-right fitting are needed.
+
+Verify the retained export, rebuild a separate candidate, then package/verify:
+
+```sh
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/mech-design/blender/verify_optimized_pod.py -- \
+  --repo "$PWD" --side right --output design/mechs/generated/right-pod-validation.json
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/mech-design/blender/build_warden_right_pod.py -- \
+  --repo "$PWD" --output design/mechs/generated/right-pod-rebuild
+python3 scripts/mech-design/package-optimized-glb.py \
+  --repo "$PWD" --input design/mechs/generated/right-pod-rebuild/pod-raw.glb \
+  --output design/mechs/generated/right-pod-rebuild/pod.glb
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/mech-design/blender/verify_optimized_pod.py -- \
+  --repo "$PWD" --side right \
+  --candidate design/mechs/generated/right-pod-rebuild/pod.glb \
+  --output design/mechs/generated/right-pod-rebuild/validation.json
+```
+
+Without `--side`, the verifier keeps its own-left default. Both sides check the
+actual source aperture and surrounding coverage; the right boundary has 86
+edges, versus 94 left. Both preserve nine anchors and check 40 outward samples.
+Use the comparison builder with the right package's `source.glb`, `pod.glb`
+and `review/` directory. `review/geometry/` retains its matched geometry-only
+views. Existing renderer commands accept the right paths unchanged.
+
+Front rim bevels use geometric shading; outer-rim fasteners and surface marks
+transfer selectively. Launcher circles bake from reconstructed cups and lack
+physical depth. The render face is not a projectile collision mesh. These
+isolated approvals do not complete whole-model stage 7 or runtime acceptance.
+
+Generate fresh matching evidence using the **own-left example** below. For the
+right pod, substitute `optimization/right-pod/` and the `right-pod-rebuild`
+candidate paths (and choose a fresh render output):
 
 ```sh
 blender --background --factory-startup --python-exit-code 1 \

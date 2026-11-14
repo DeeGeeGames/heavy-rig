@@ -59,6 +59,15 @@ and nine anchors are preserved. The owner accepted the visual comparison with
 "This is good." This approves the component proof, not a complete optimized
 Warden, production replacement or measured runtime performance.
 
+The isolated **own-right pod** is also approved, recorded in
+[approved-right-pod-optimization.json](chassis/warden/approved-right-pod-optimization.json).
+Its exact reviewed GLB has 914 triangles (828 housing/collar and 86 cartridge),
+two sections/materials and four maps, versus 16,500 source triangles. The right
+86-edge mounting aperture, surrounding coverage and nine anchors are preserved.
+Selective rim baking retains side fasteners while keeping front bevel shading
+geometric. The owner said "Approved." Both retained pods exclude their mounting
+supports and still need reassembly with the chassis, variants and motions.
+
 The [optimization procedure and continuation instructions](game-optimization.md)
 record the successful method, observed failures and remaining work. The accepted
 pod and required source dependencies are retained; earlier competing reductions

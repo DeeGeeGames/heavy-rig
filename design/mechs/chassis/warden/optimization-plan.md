@@ -67,11 +67,13 @@ Those costs must be counted when assembling the derivative.
 
 ## Prioritized component sequence
 
-1. **Own-right pod housing/collar and launcher.** Its isolated source is 16,500
+1. **Own-right pod housing/collar and launcher — component proof approved.** Its isolated source is 16,500
    triangles: 11,062 housing, 64 collar and 5,374 cartridge. Use its actual source
    and mounting boundary rather than mirroring the approved left export. Keep
    housing ownership on the shared chassis and the cartridge socket-local.
-   Mounting supports remain outside the isolated proof.
+   Mounting supports remain outside the isolated proof. The selected 914-triangle
+   export is retained in `assets/warden/optimization/right-pod/`, with approval in
+   `approved-right-pod-optimization.json`. Complete reassembly remains outstanding.
 2. **Ballistic guns, one side at a time.** Together they cost 31,760 triangles
    and 16 sections. Keep real barrel bore depth, lip boundaries, firing exits,
    trunnions, attachment joints and significant protrusions. Rebuild broad
