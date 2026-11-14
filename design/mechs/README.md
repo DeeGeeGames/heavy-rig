@@ -6,6 +6,8 @@ Use this kit to discuss and generate Heavy Rig art across chats. Start with “C
 
 For the stages after reference approval, read [Mech asset production](asset-production.md): source audit, articulation, shared variant modules, optimization, in-game acceptance and repeatability. This is the evolving process record; experimental results are not yet production defaults.
 
+For stage 7, use the [game optimization procedure](game-optimization.md). It defines feature decisions, structural and bake checks, exported-model comparisons, and where to resume the Warden from its approved pod proof. The pod establishes a reviewed component example; full-model optimization and runtime acceptance remain open.
+
 - `src/frames.ts`, `src/hardpoints.ts`, `src/arsenal.ts` and `src/combat-resources.ts` own gameplay facts. The kit reads them directly, including mount limits and loaded mass. Never maintain another weapon compatibility table.
 - `design/mechs/style.json` owns shared art direction and chassis anatomy. The supplied V3.1 specification is preserved in `source/` for provenance.
 - `bun run mech:builder` exports a self-contained offline builder to ignored `design/mechs/generated/builder.html`. Rebuild after gameplay, style or approval changes. Exported HTML is a dated snapshot; CLI prompts always use the current checkout.

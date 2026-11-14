@@ -7,3 +7,5 @@ coverage/
 !.env.example
 *.tsbuildinfo
 /design/mechs/generated/
+__pycache__/
+*.py[cod]

@@ -29,6 +29,11 @@ byte count and SHA-256. Approval records live in `../chassis/warden/`.
   historical measurement status is superseded by `approved-stage6.json`.
 - `components/review`: retained firing-origin overlays and owner-accepted
   clearance-contact evidence.
+- `optimization/pod`: owner-approved own-left pod component proof, packed
+  authoring checkpoint with required bake sources, original comparison GLB,
+  reports and selected export renders. It is a worked stage 7 example, not the
+  completed Warden derivative. See `approved-pod-optimization.json` and the
+  [optimization procedure](../game-optimization.md).
 
 Stable step paths hold one advancing result per step. Temporary candidates,
 render sequences, rejected reductions and competing animation trials stay out

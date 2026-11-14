@@ -35,7 +35,8 @@ Validate the exported GLB with `verify-walk.ts` against its generated report.
 Only owner-approved results replace a named checkpoint. Refresh its approval
 record and asset manifest in the same commit. Generated reports may retain
 historical IDs; that does not make a rejected experiment part of the retained
-asset set. No production optimization recipe is accepted yet.
+asset set. The own-left pod is now an approved component optimization proof;
+the complete Warden game derivative remains unfinished.
 
 Component and firing-scale checks print results without modifying the input
 checkpoint. Supply an optional second CLI argument for a new report path under
@@ -115,3 +116,112 @@ offset. Inspect marker overlays before accepting measurements; non-circular or
 angled emitters need a reviewed measurement method instead of forcing this fit.
 Use the measured definitions with packaging, then validate actual GLBs. The
 Warden seed recipe reproduced all twenty frozen local positions exactly.
+
+## Stage 7 component optimization and handoff
+
+Read [the optimization procedure](../../../design/mechs/game-optimization.md)
+before extending this work. The selected pod is recorded in
+`design/mechs/chassis/warden/approved-pod-optimization.json`; its exact export is
+`design/mechs/assets/warden/optimization/pod/pod.glb`. The GLB remains byte-for-byte
+the owner-reviewed 922-triangle proof. The packed `pod.blend` includes its low
+meshes and four required high-detail/bake references. Its reconstructed cup
+reference is a dependency of the chosen bake, not another selected model.
+
+The retained source GLB, report, validation and review images allow inspection
+without rerunning Blender. From the repository root, after `git lfs pull`,
+`python3 scripts/mech-design/verify-assets.py` and `bun install --frozen-lockfile`:
+
+```sh
+mkdir -p design/mechs/generated
+bun scripts/mech-design/optimization-review.ts \
+  --source design/mechs/assets/warden/optimization/pod/source.glb \
+  --candidate design/mechs/assets/warden/optimization/pod/pod.glb \
+  --renders design/mechs/assets/warden/optimization/pod/review \
+  --output design/mechs/generated/pod-review.html \
+  --source-label "Accepted source" --candidate-label "Approved pod proof"
+```
+
+The output is a self-contained HTML file: open it directly or use the HTML
+preview tool, without starting a server. The builder refuses existing output files, paths outside
+that directory, external GLB resources and decoder-dependent compression. Use
+an uncompressed review GLB. The `render-report.json` must match both GLB hashes
+and every PNG hash and describe a textured pass, so stale images cannot silently
+accompany a different candidate. It counts actual default-scene mesh instances and
+provides wireframe, neutral geometry, both sides, underside and native-size
+camera estimates. It does not measure runtime frame time.
+
+To verify the retained export in a fresh Blender 5.2 process:
+
+```sh
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/mech-design/blender/verify_optimized_pod.py -- \
+  --repo "$PWD" --output design/mechs/generated/pod-validation.json
+```
+
+The verifier compares against the checksummed source GLB. It checks nine exact
+anchor matrices, 40 outward clearance samples, the source mounting-aperture
+boundary, 90 underside coverage samples, finite positions, normals and triangle
+areas. These are Warden pod contracts, not generic sample locations for every
+component. The flat visual launcher face must not become a projectile collision
+mesh. Straight samples do not establish full aim arcs or projectile-volume
+clearance.
+
+To reproduce a new candidate from the retained packed authoring checkpoint:
+
+```sh
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/mech-design/blender/build_warden_pod.py -- \
+  --repo "$PWD" --output design/mechs/generated/pod-rebuild
+python3 scripts/mech-design/package-optimized-glb.py \
+  --repo "$PWD" --input design/mechs/generated/pod-rebuild/pod-raw.glb \
+  --output design/mechs/generated/pod-rebuild/pod.glb
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/mech-design/blender/verify_optimized_pod.py -- \
+  --repo "$PWD" --candidate design/mechs/generated/pod-rebuild/pod.glb \
+  --output design/mechs/generated/pod-rebuild/validation.json
+```
+
+The packager invokes pinned glTF Transform CLI 4.5.1 through Bun, requiring a
+network download on its first use. It deduplicates, prunes with `--keep-leaves
+true` to preserve anchors, and runs glTF validation. Inspect the adjacent
+`.gltf.log`; empty-anchor informational messages are expected. Output paths must
+be fresh and inside `generated/`, and neither the build nor packaging overwrites
+the retained checkpoint.
+
+This reproduces the component from its authoring checkpoint and retained bake
+references, not every historical operation from raw Tripo output. The section
+coordinates, opening classifier and vent masks in the worked recipe are
+Warden-specific. Rebaking/exporting may change binary hashes; verify the actual
+output and review it before promotion. The approved artifact hash remains the
+one in the approval record.
+
+Generate fresh matching evidence for the rebuilt export:
+
+```sh
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/mech-design/blender/render_optimization_proof.py -- \
+  --repo "$PWD" \
+  --source design/mechs/assets/warden/optimization/pod/source.glb \
+  --candidate design/mechs/generated/pod-rebuild/pod.glb \
+  --camera-scale design/mechs/assets/warden/optimization/pod/camera-scale.json \
+  --target 0 0.055 0 --span 0.43 \
+  --output design/mechs/generated/pod-rebuild-renders
+```
+
+Use that render directory and candidate with the HTML builder above, choosing a
+new HTML output. Add `--geometry-only` and a different output directory for a
+neutral geometry render pass. The renderer writes input/PNG hashes, camera values
+and material-mode evidence to `render-report.json`. It accepts other components;
+omit `--target`/`--span` to frame from source bounds and supply the appropriate
+camera-scale contract. The retained Warden scale is a height-matched estimate
+for a 1280×720 production camera, not an approved integration scale.
+
+On this machine, substitute `flatpak run org.blender.Blender` for `blender` and
+pass absolute script paths (`"$PWD/scripts/..."`). The `--repo "$PWD"` argument
+resolves assets independently of Flatpak's working directory.
+
+The next actor should follow
+[Resume the remaining Warden work](../../../design/mechs/game-optimization.md#resume-the-remaining-warden-work).
+Start with the remaining component cost/feature inventory, preserve shared
+ownership and stage 6 motion/aim contracts, and keep PR 67 in draft. This handoff
+does not replace runtime models or close full-model stage 7, stage 8 or stage 9.

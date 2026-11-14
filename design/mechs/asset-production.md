@@ -5,10 +5,10 @@
 1. **Concept:** validate current gameplay mounts, approve a 3/4 baseline, retain prompt, request and image hashes.
 2. **Turnaround:** derive and approve front/back/own-left/own-right views. Review physical connections and shared proportions. Reuse unchanged projections for variants when their changed inserts are fully hidden. Store exact view provenance.
 3. **Generated source:** upload the approved set; record provider/model, settings, credit cost, source hashes, job URL and export hash. Preserve the raw export unchanged. Public model uploads are permitted. Record failures separately from visual rejection.
-4. **Structural audit:** inspect front/rear/both sides and underside; verify weapon families/counts, connectors, leg bulk, missing surfaces and joint boundaries. Inventory actual meshes, triangles, materials, textures, transforms and animation data. Identify repair work explicitly.
+4. **Structural audit:** inspect front/rear/both sides and underside; verify weapon families/counts, connectors, leg bulk, missing surfaces and joint boundaries. Inventory actual meshes, triangles, materials, textures, transforms and animation data. Record protected structural features and likely geometry/bake candidates using the [optimization procedure](game-optimization.md#1-freeze-the-source-and-record-the-component-contract). Identify repair work explicitly.
 5. **Articulation prototype:** work on a derivative. Assign every source piece to a named rigid assembly; separate remaining fused joints before acceptance. Set hip/knee/ankle/waist and weapon pivots, preserve neutral world placement and retain source-part provenance. Sweep one joint at a time, then test a combined pose. Check gaps, collisions, detached armor and unintended movement. A diagnostic hierarchy with estimated pivots is not a validated rig.
-6. **Variant assembly:** use the same shared chassis geometry for every variant. Establish module boundaries before repairing multiple generated bodies. Keep existing pod housings and supports shared where possible; replace front cartridges or weapon assemblies at explicit interfaces. Separately generated variants are references or module donors, not alternate chassis masters. Test replacement, empty mounts and muzzle alignment. See the mandatory [modular consistency rules](#modular-consistency-rules).
-7. **Game derivative:** simplify the accepted structure, consolidate materials, bake/recreate detail as needed, normalize units/orientation and export GLB. Preserve source and intermediate assets. A 10–20k-triangle first candidate is an experiment, not an accepted universal budget. Establish budgets using actual camera distance and representative on-screen crowds.
+6. **Variant assembly:** use the same shared chassis geometry for every variant. Establish module boundaries before repairing multiple generated bodies. Keep existing pod housings and supports shared where possible; replace front cartridges or weapon assemblies at explicit interfaces. Separately generated variants are references or module donors, not alternate chassis masters. Record interface transforms, protected openings and firing origins for optimization checks. Test replacement, empty mounts and muzzle alignment. See the mandatory [modular consistency rules](#modular-consistency-rules).
+7. **Game derivative:** follow the mandatory [component optimization procedure](game-optimization.md): classify features, construct the structural mesh, bake surface detail, consolidate materials, verify the exported GLB and compare it with the accepted source. Preserve functional interfaces, source assets and required reproduction inputs. Normalize units/orientation consistently across the assembled derivative. Establish budgets using actual camera distance, texture/material costs and representative on-screen crowds; a 10–20k-triangle candidate or the pod proof's reduction percentage is not a universal target.
 8. **In-game acceptance:** validate independent torso aim, gait, muzzle origins, equipped/empty variants, lighting and silhouette in the real runtime. Report measured performance separately from owner acceptance. Do not replace production models until the agreed preview gate passes.
 9. **Repeatability:** run the documented procedure on another chassis before calling it general. Record special cases, repair steps and automation gaps; revise this document and the skill as evidence changes.
 
@@ -51,11 +51,22 @@ full-roster result with polish allowed later; this step addresses Warden only.
 Physical launcher cartridges have eight exits each, while current production
 rigs use six. Resolve that mapping during runtime integration without silently
 changing gameplay salvo size.
-Stage 7 has no accepted optimized derivative. Previous reduction/baking trials
-were rejected and are excluded from this deliverable. Establish a measured
-budget, preserve silhouette/openings, consolidate materials and normalize common
-scale/orientation. The owner's MW5 Atlas/Stalker reference counts still need
-verification of triangle/polygon, LOD and equipment context.
+Stage 7 has an owner-approved **isolated own-left pod proof**, recorded in
+[approved-pod-optimization.json](chassis/warden/approved-pod-optimization.json).
+The selected pod has 922 triangles, two mesh sections and two materials; its
+source comparison has 16,622 triangles. The source mounting-opening boundary
+and nine anchors are preserved. The owner accepted the visual comparison with
+"This is good." This approves the component proof, not a complete optimized
+Warden, production replacement or measured runtime performance.
+
+The [optimization procedure and continuation instructions](game-optimization.md)
+record the successful method, observed failures and remaining work. The accepted
+pod and required source dependencies are retained; earlier competing reductions
+remain excluded. The proof keeps source scale and socket-local coordinates.
+Full-model optimization, a measured material/texture budget and consistent
+scale/orientation normalization remain open. The owner's MW5 Atlas/Stalker
+reference counts still need verification of triangle/polygon, LOD and equipment
+context before using them as external budget evidence.
 
 Stages 8 and 9 remain outstanding: runtime combat/aim/movement integration and
 performance acceptance, then exercising the complete workflow on another
