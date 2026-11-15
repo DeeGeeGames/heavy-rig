@@ -1,3 +1,5 @@
+> Historical dense-master checkpoint. Continue from the [selected P2 package](../../assets/warden/game-ready/README.md) and [modularity proof](../../assets/warden/game-ready/modularity-proof.md). See the [history index](README.md) for restoration. Statements below describe this checkpoint, not current pending work.
+
 # Warden modular assembly trial 1
 
 Status: **preview-unapproved**. This demonstrates shared geometry across A/B/C; it does not promote a repaired or approved chassis master. Ankle/piston defects from the articulation trial remain unresolved.
@@ -18,7 +20,7 @@ These assignments were checked against current `getHardpoints()` output. The rec
 
 ## Extraction and interfaces
 
-[modular-draft.json](modular-draft.json) binds the recipe to the hashes of the untouched A/B source exports. B parts 1/2 are split at Blender Y=0.12. Their rear sections become shared housings; their fronts plus energy optics 59/68 become removable energy cartridges. A parts 1/2 supply launcher fronts, cropped above Z=0.80 to exclude support geometry and ahead of the same Y plane. Each launcher front is fitted to its corresponding B front's X/Z envelope (about 1.6–1.9% wider and 4.0–4.1% taller).
+[modular-draft.json](../../chassis/warden/modular-draft.json) binds the recipe to the hashes of the untouched A/B source exports. B parts 1/2 are split at Blender Y=0.12. Their rear sections become shared housings; their fronts plus energy optics 59/68 become removable energy cartridges. A parts 1/2 supply launcher fronts, cropped above Z=0.80 to exclude support geometry and ahead of the same Y plane. Each launcher front is fitted to its corresponding B front's X/Z envelope (about 1.6–1.9% wider and 4.0–4.1% taller).
 
 The cut is deliberately behind the visible front bezel: the replaceable cartridge includes the bezel and face, while rear housing, armor straps and support remain common. Imported source units are not yet real-world dimensions. `socket_left_shoulder` and `socket_right_shoulder` mark provisional attachment planes, facing -Y. They are **not muzzle origins**. Source-part provenance survives on derived objects.
 

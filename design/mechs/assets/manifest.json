@@ -4,8 +4,8 @@
   "files": [
     {
       "path": "design/mechs/assets/warden/archived-outputs.json",
-      "bytes": 10339,
-      "sha256": "fa22d8d2bbf40594c16aad661bdee054365295dcad2864ed0938ef00ac8f0986"
+      "bytes": 12341,
+      "sha256": "09565ffec3c1a07489297b6a001e97e46ff5deb822a9971b9fb43663bdec9c61"
     },
     {
       "path": "design/mechs/assets/warden/articulation-base/warden-walk.blend",
@@ -31,11 +31,6 @@
       "path": "design/mechs/assets/warden/components/review/conflict-whole.png",
       "bytes": 551085,
       "sha256": "40140b3d40cdb4bd57aab08f32284ffdfbe33fc383e381c65f9abca6d1a5fc81"
-    },
-    {
-      "path": "design/mechs/assets/warden/components/review/gimbal-clearance.json",
-      "bytes": 55094,
-      "sha256": "d69c4a9e3dffd694896a63f307dfe2ac8530a9a8d40847d755ce912b720a64c9"
     },
     {
       "path": "design/mechs/assets/warden/components/review/origins-A.png",
@@ -99,8 +94,8 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/modularity-proof.md",
-      "bytes": 12139,
-      "sha256": "fb5a1d84be5e241f8c1a39179383089fbd8f5460ea1c2641da91eac7d670163e"
+      "bytes": 9791,
+      "sha256": "57c3ec1e20e7fb3a85e73af20ba348b0769a9b0afc4548b3c191d57d56d4015a"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/modularity/alternate.glb",
@@ -124,8 +119,8 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/modularity/evidence-manifest.json",
-      "bytes": 2952,
-      "sha256": "35ae34672d075514147728949ed2a894a12dd9101631602f49b58c84cedeb072"
+      "bytes": 3371,
+      "sha256": "aa4ffa18e4e0fe198f1767de39305ac2af73edcef3a30375ab3acdc591a7dd99"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/modularity/motion-proof.json",
@@ -636,11 +631,6 @@
       "path": "design/mechs/assets/warden/repaired-chassis/neutral.png",
       "bytes": 845375,
       "sha256": "36bc51093827175115e3c116d269f1178e774ac0bf3259f2e34f74fa03578b05"
-    },
-    {
-      "path": "design/mechs/assets/warden/repaired-chassis/repair-report.json",
-      "bytes": 39511,
-      "sha256": "cf1770825cbeb868282a963540ec0f1509bf9418958a313d56dd1451bc40bf51"
     },
     {
       "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.blend",

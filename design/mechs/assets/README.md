@@ -32,7 +32,10 @@ launcher-donor models remain unchanged as provenance and potential module source
 
 Superseded dense-master GLB exports, component bundles, per-frame matrix traces
 and the old guard GIF are indexed in [archived-outputs.json](warden/archived-outputs.json).
-Their original hashes and containing Git revision are preserved. Historical
+Historical audit tools and detailed repair/gimbal reports use the same archive index.
+Their original hashes and containing Git revisions are preserved; per-file revisions
+override the top-level revision. Narrative reviews are indexed in
+[Warden history](../history/warden/README.md). Historical
 approval records label archived artifact paths with `storage: git-history`.
 To recover PR ancestry after a squash merge or branch deletion, run
 `git fetch origin refs/pull/69/head`. To run the complete historical workflow,

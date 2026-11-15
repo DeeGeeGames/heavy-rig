@@ -1,3 +1,5 @@
+> Historical dense-master checkpoint. Continue from the [selected P2 package](../../assets/warden/game-ready/README.md) and [modularity proof](../../assets/warden/game-ready/modularity-proof.md). See the [history index](README.md) for restoration. Statements below describe this checkpoint, not current pending work.
+
 # Warden accepted locomotion
 
 `approved-locomotion.json` freezes the selected walking reference, approved

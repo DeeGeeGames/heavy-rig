@@ -27,7 +27,9 @@
     },
     "repair-report.json": {
       "path": "design/mechs/assets/warden/repaired-chassis/repair-report.json",
-      "sha256": "cf1770825cbeb868282a963540ec0f1509bf9418958a313d56dd1451bc40bf51"
+      "sha256": "cf1770825cbeb868282a963540ec0f1509bf9418958a313d56dd1451bc40bf51",
+      "storage": "git-history",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
     },
     "neutral.png": {
       "path": "design/mechs/assets/warden/repaired-chassis/neutral.png",

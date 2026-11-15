@@ -1,6 +1,8 @@
+> Historical dense-master checkpoint. Continue from the [selected P2 package](../../assets/warden/game-ready/README.md) and [modularity proof](../../assets/warden/game-ready/modularity-proof.md). See the [history index](README.md) for restoration. Statements below describe this checkpoint, not current pending work.
+
 # Warden shared mechanical repair candidate 1
 
-Status: **owner-approved shared visual master for rigging**. The owner explicitly said “Approved” after this repair review and the next-step discussion. Exact accepted artifact hashes are recorded in [shared-master.json](shared-master.json); generated reports retain their original pre-approval status as historical evidence. This is the next derivative of the modular trial, not a production model replacement. Source exports, the modular library and prior pose evidence remain unchanged.
+Status: **owner-approved shared visual master for rigging**. The owner explicitly said “Approved” after this repair review and the next-step discussion. Exact accepted artifact hashes are recorded in [shared-master.json](../../chassis/warden/shared-master.json); generated reports retain their original pre-approval status as historical evidence. This is the next derivative of the modular trial, not a production model replacement. Source exports, the modular library and prior pose evidence remain unchanged.
 
 ## Changes made once to the shared master
 
@@ -25,14 +27,14 @@ All 117 shared exported meshes are checked across A/B/C for matching geometry at
 
 ## Reproduce and inspect
 
-[repair-draft.json](repair-draft.json) records the exact modular `.blend` hash, source-part map/hash and output directory. With those local sources available, set `REPO_ROOT` in Blender's Python environment and execute `scripts/mech-design/blender/repair_shared_chassis.py`. The script verifies inputs, copies meshes into its own candidate scene, renders checks, verifies the exported variants and saves a separate library. It restores the previously active scene. This approved recipe is now frozen: the script refuses to overwrite it. To derive or reproduce a candidate, copy the recipe to a new manifest, set its status to `repair-candidate-unapproved`, choose a new output directory and pass its repository-relative path as `REPAIR_MANIFEST`. Use a fresh session.
+[repair-draft.json](../../chassis/warden/repair-draft.json) records the exact modular `.blend` hash, source-part map/hash and output directory. With those local sources available, set `REPO_ROOT` in Blender's Python environment and execute `scripts/mech-design/blender/repair_shared_chassis.py`. The script verifies inputs, copies meshes into its own candidate scene, renders checks, verifies the exported variants and saves a separate library. It restores the previously active scene. This approved recipe is now frozen: the script refuses to overwrite it. To derive or reproduce a candidate, copy the recipe to a new manifest, set its status to `repair-candidate-unapproved`, choose a new output directory and pass its repository-relative path as `REPAIR_MANIFEST`. Use a fresh session.
 
-Retained checkpoint outputs under `design/mechs/assets/warden/repaired-chassis/` include:
+Historical checkpoint outputs under `design/mechs/assets/warden/repaired-chassis/` (see [archive index](../../assets/warden/archived-outputs.json) for exact recovery revisions):
 
 - `warden-repair.blend`: editable candidate with shared geometry, hierarchy and live actuator constraints. It contains both cartridge families; B is visible initially.
-- `warden-repair.glb`, `warden-b-repair.glb`, `warden-c-repair.glb`: neutral review exports.
-- `repair-report.json`: caps, changed source pieces, sampled poses/strokes and export verification.
-- Neutral, individual joint and combined-pose PNGs; ankle details include front/rear angles.
+- `warden-repair.glb`, `warden-b-repair.glb`, `warden-c-repair.glb`: archived neutral review exports.
+- `repair-report.json`: archived caps, changed source pieces, sampled poses/strokes and export verification; essential conclusions are preserved above.
+- `neutral.png` remains retained. Other joint/detail renders were transient local review evidence, not retained checkpoint files.
 
 Changing the modular source or part map requires reviewing the repair recipe and explicitly updating the input hashes. Required source/intermediate files are retained through Git LFS; restore and verify the asset manifest before deriving a candidate.
 

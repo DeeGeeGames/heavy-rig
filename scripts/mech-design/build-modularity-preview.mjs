@@ -72,5 +72,5 @@ if(await Bun.file(`${folder}/original-front.png`).exists()) {
   }
   rows.push(`<section>${cells.join('')}</section>`);
  }
- await Bun.write(`${folder}/render-comparison.html`,`<!doctype html><html><meta charset="utf-8"><style>section{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}figure{margin:0}img{width:100%;display:block}figcaption{font:12px var(--font-sans);color:var(--muted-foreground);padding:6px 0}p{font:14px var(--font-sans)}</style><p>Actual selected-export assemblies. Alternate and empty appearances await owner review.</p>${rows.join('')}</html>`);
+ await Bun.write(`${folder}/render-comparison.html`,`<!doctype html><html><meta charset="utf-8"><style>section{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}figure{margin:0}img{width:100%;display:block}figcaption{font:12px var(--font-sans);color:var(--muted-foreground);padding:6px 0}p{font:14px var(--font-sans)}</style><p>Actual selected-export assemblies. Owner approved these exact alternate and empty configurations on 2026-11-15 for bounded whole-weapon authoring proof retention; rough appearance is scoped to this experiment.</p>${rows.join('')}</html>`);
 }

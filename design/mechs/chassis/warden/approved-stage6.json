@@ -106,7 +106,9 @@
     },
     "review/gimbal-clearance.json": {
       "path": "design/mechs/assets/warden/components/review/gimbal-clearance.json",
-      "sha256": "d69c4a9e3dffd694896a63f307dfe2ac8530a9a8d40847d755ce912b720a64c9"
+      "sha256": "d69c4a9e3dffd694896a63f307dfe2ac8530a9a8d40847d755ce912b720a64c9",
+      "storage": "git-history",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
     },
     "review/origins-A.png": {
       "path": "design/mechs/assets/warden/components/review/origins-A.png",

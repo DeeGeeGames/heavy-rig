@@ -4,8 +4,8 @@ The owner replied **"Approved" on 2026-11-15** to retention of the exact
 presented configurations as a whole-weapon assembly proof, accepting rough
 appearance only within the experiment. [modularity/approval.json](modularity/approval.json)
 records the explicit prompt, statement, source/export hashes and remaining gates.
-Parent technical review passed after the repairs below; delivery remains subject
-to parent review. The selected public GLB and its earlier approval are unchanged.
+Parent technical review passed for `a95e8ff`; subsequent cleanup requires
+separate parent review. The selected public GLB and its earlier approval are unchanged.
 This approval does not cover production appearance/replacement, runtime loadouts,
 hardware performance, another chassis or PR merge. PR69 must remain draft.
 
@@ -77,9 +77,7 @@ The retained `modularity/` directory holds only the two approved GLBs,
 and nine matched `review/*.png` stills (original/alternate/empty × front/rear/socket-close).
 The compact evidence manifest pins retained review bytes, source, contract and
 scripts. No intentionally defective export is retained. HTML, bundled viewer,
-bulky browser/check logs and rejected experiments remain ignored. The historical
-ignored evidence directory is `design/mechs/generated/warden-modularity-proof/`;
-none of the restoration commands depend on it.
+bulky browser/check logs and rejected experiments remain ignored. The restoration commands use only retained inputs.
 
 The standalone `comparison.html` uses production-bundled Three.js/GLTFLoader and
 embeds all three actual exports. It offers neutral rest, shared walk/run/backward
@@ -121,8 +119,7 @@ exported terminal rings 0.002 units behind each exit. No inactive original gun
 mesh or old muzzle remains attached in either candidate.
 
 `bun run check`: 436 tests, typecheck, lint and production build pass.
-`verify-assets.py` verifies the updated retained checkpoint manifest. The earlier
-parent review verified all 113 predecessor files; delivery adds this proof package. Both candidate GLBs
+`verify-assets.py` verifies the updated retained checkpoint manifest. Both candidate GLBs
 pass glTF Transform 4.5.1 validation without errors or warnings. Informational
 unused-resource/empty-tombstone messages and missing buffer-view target hints
 remain in these append-only review exports. The selected public
@@ -143,58 +140,27 @@ existing model/physical-origin factory and validate actual gameplay firing,
 saves/loadout compatibility and empty mounts. This task does not implement that
 API or authorize production replacement or PR merge.
 
-## Parent review repairs
+## Indexed housing regression
 
-The earlier AABB attachment check was a false positive: deleting all 12 bearing
-housing triangles left their unused positions in the accessor. The validator now
-casts nine inside-to-outside rays per contracted housing face and requires an
-intersection with an actually indexed triangle at that face's expected distance.
-Intersections elsewhere do not satisfy coverage. Interior overlaps from the
-receiver/cap are permitted. The module must be directly socket-owned, and its
-neck-relative point is checked at every motion sample. Small holes between probe
-points, arbitrary manifoldness and exhaustive collision remain outside this proof.
-
-`housing-coverage.mjs` owns this bounded check. The regression builds actual exact
-candidates, verifies both, then removes the first 36 housing indices separately
-from each export while preserving positions. Each defective export must fail with
-`Housing surface coverage missing`. It cleans its temporary generated directory.
-The parent's existing defective exports now fail with the same error:
+An AABB attachment check admitted a false positive: deleting all 12 bearing
+housing triangles left unused positions in the accessor. `housing-coverage.mjs`
+now casts nine inside-to-outside rays per contracted housing face and requires
+an actually indexed triangle at the expected distance. Intersections elsewhere
+do not satisfy coverage; receiver/cap interior overlaps are permitted. Direct
+socket ownership and neck-relative alignment are checked at every motion sample.
+Small holes between probes, arbitrary manifoldness and exhaustive collision remain
+outside this bounded check.
 
 ```sh
 bun test tests/modular-export.test.ts
-# Expected nonzero exit for the parent's deliberately broken exports:
-bun scripts/mech-design/verify-warden-modularity.mjs \
-  design/mechs/generated/modularity-parent-negative-review
 ```
 
-The tests CI job now runs `git lfs install --local` and pulls only
-`public/assets/mechs/warden/game-ready.glb` before testing. An isolated local
-clone with smudging disabled confirmed the initial LFS pointer, then ran those
-same commands and recovered the selected SHA. No shared asset was replaced;
-remote GitHub credentials/network availability were not simulated. Explicit LFS
-installation matters: a fresh local clone otherwise fetched the object but
-reported that checkout was skipped because LFS was not installed.
-
-The interactive page now embeds the existing actual-export front stills before
-JavaScript runs, uses fixed 340px panel areas, reports loading/failure, loads GLBs
-in parallel, and replaces each still after its first successful draw. It draws
-immediately after loading and on control changes, including when background-tab
-animation callbacks are throttled. The outer page is transparent without a banner
-or padding; controls use theme variables and wrap on narrow displays. WebGL model
-panels retain their scene background. The static front/close/rear comparison is
-still available, and the stills change view even if a GLB fails to load.
-
-Review browser evidence confirms actual GLB loading, different rendered images
-and torso matrices at walk phases .15/.65 and 60-degree yaw, different close/rear
-images, and run/backward clip selection. A displayed HTML preview also advanced
-run playback. Background browser tabs can throttle animation; immediate control
-redraws work there. Software WebGL fallback/ReadPixels warnings remain. No
-hardware performance or physical input acceptance is claimed.
-
-Review logs are `review-repair-check.log`, `review-repair-verifier.log`,
-`review-repair-parent-negative.log`, `review-repair-retained.log`,
-`review-repair-lfs.json`, and `review-repair-browser.json` in the existing ignored
-proof directory. Both GLB hashes and all nine still renders are unchanged; only
-the affected motion report and HTML views were regenerated. The owner subsequently approved retention of these exact proof configurations on
-2026-11-15. Existing concept and selected production-asset approvals retain their
-original scopes; this new approval is confined to the authoring experiment.
+The regression rebuilds exact candidates and deletes the first 36 housing indices
+from each export while retaining positions. Both defective exports must fail with
+`Housing surface coverage missing`; temporary test outputs are removed.
+CI explicitly installs Git LFS and retrieves the selected public GLB before tests.
+Earlier browser review exercised actual-export loading, walk phases .15/.65,
+60-degree torso yaw, close/rear views and run/backward playback. This cleanup
+changes only the static comparison approval caption; retained GLBs and all nine
+stills are unchanged. The evidence manifest distinguishes the historical generator
+fingerprint from the current caption-corrected builder.

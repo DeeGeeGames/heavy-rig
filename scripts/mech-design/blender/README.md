@@ -181,8 +181,11 @@ from a fresh clone after merge. To rerun historical component packaging/inventor
 commands, use a separate
 checkout at that record's Git revision, restore LFS, and follow the README and
 manifest from that revision. Current production continuation is the selected
-P2 recipe above. Historical scripts remain to preserve authoring knowledge;
-they are not extra steps required for every future mech.
+P2 recipe above. Retained historical helpers preserve editable authoring work; five superseded
+audit/trial/render tools are archived at their per-file revisions in that index.
+The [history index](../../../design/mechs/history/warden/README.md) separates the
+old narrative reviews from current continuation. These are not extra steps for
+every future mech.
 
 ## Selected-export module proof
 

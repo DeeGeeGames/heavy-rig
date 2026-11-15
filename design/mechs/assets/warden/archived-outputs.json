@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "scope": "Superseded dense-master derivative exports and transient matrix traces. Editable masters, raw sources, module/bake inputs and approved component evidence remain retained.",
+  "scope": "Superseded dense-master derivative exports, transient matrix traces, historical audit tools and detailed reports. Editable masters, raw sources, module/bake inputs and essential approved conclusions remain retained.",
   "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755",
-  "restoration": "Run git fetch origin refs/pull/69/head to retrieve PR ancestry even after a squash merge or branch deletion. Use a separate checkout at gitRevision, run git lfs pull, then python scripts/mech-design/verify-assets.py. Historical recipes and original approval manifests are available there. No LFS history or shared object store is pruned.",
+  "restoration": "Run git fetch origin refs/pull/69/head to retrieve PR ancestry even after a squash merge or branch deletion. Use a separate checkout at gitRevision, run git lfs pull, then python scripts/mech-design/verify-assets.py. Historical recipes and original approval manifests are available there. No LFS history or shared object store is pruned. Per-file gitRevision overrides the top-level revision for later archives. Restore tools/reports with git show <revision>:<path>; use that revision in a separate checkout for the complete matching workflow.",
   "files": [
     {
       "path": "design/mechs/assets/warden/components/backward/chassis.glb",
@@ -248,6 +248,48 @@
       "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.glb",
       "bytes": 4843496,
       "sha256": "a29d7f5990ff7f46a4f031c2c244a0ef0421dde0e45f774503cf9851d9a36d95"
+    },
+    {
+      "path": "scripts/mech-design/audit-firing-scale.ts",
+      "bytes": 3547,
+      "sha256": "2a8ff5603b23b9794059b37874136be31cb6684ed684492ad05491aed2e06cfa",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
+    },
+    {
+      "path": "scripts/mech-design/blender/gait_trial.py",
+      "bytes": 12384,
+      "sha256": "220b70eaffa702e679d14cc6b6fb18a6ba5665b41d5a1f84950a3a5cf34760fc",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
+    },
+    {
+      "path": "scripts/mech-design/verify-walk.ts",
+      "bytes": 10440,
+      "sha256": "a39fc5d0fbe467de23ce4b2733376103e990c3189a31f0d3c23218a9330f9698",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
+    },
+    {
+      "path": "scripts/mech-design/blender/render_variant_package.py",
+      "bytes": 3660,
+      "sha256": "0128c543eadd1ad291017e329cedafdd29c2d6bd6bb449f83b4e81b39a50eac5",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
+    },
+    {
+      "path": "scripts/mech-design/blender/audit_aim_clearance.py",
+      "bytes": 4097,
+      "sha256": "02a990beb9db74cf1c8e9b42e972e798324f0d07cfd8e20dbb0203cd0f8d60a8",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
+    },
+    {
+      "path": "design/mechs/assets/warden/components/review/gimbal-clearance.json",
+      "bytes": 55094,
+      "sha256": "d69c4a9e3dffd694896a63f307dfe2ac8530a9a8d40847d755ce912b720a64c9",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
+    },
+    {
+      "path": "design/mechs/assets/warden/repaired-chassis/repair-report.json",
+      "bytes": 39511,
+      "sha256": "cf1770825cbeb868282a963540ec0f1509bf9418958a313d56dd1451bc40bf51",
+      "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122"
     }
   ],
   "recoveryRef": "refs/pull/69/head"

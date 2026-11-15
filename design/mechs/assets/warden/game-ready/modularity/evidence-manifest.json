@@ -12,7 +12,7 @@
     "scripts/mech-design/verify-warden-modularity.mjs": "70ee804d1d915bf5b42e8da9c2d0c2f2e48a66a7e8a0e71c3e5c559d05aacac4",
     "scripts/mech-design/housing-coverage.mjs": "d03bee6828e33f6da0ce5940a237b1096171c9f38a29974089902f5d3c4a3ad4",
     "scripts/mech-design/render-warden-modularity.py": "6edbe3b7f3dc5ac41dc3f0df519acd4d666332c6eea3340f10b9bc20a452af16",
-    "scripts/mech-design/build-modularity-preview.mjs": "a327c90df7047f7a41ecc8cf9697ec2b4000e724c824ed23935b7a3b8176ecaf"
+    "scripts/mech-design/build-modularity-preview.mjs": "85800d1244746457fe2f2923030adec6e99980477f6bef778624a6078cee9bbf"
   },
   "artifacts": {
     "alternate.glb": "e1ca2ac6c41883847fbe1fceb009ec5d62c9eae35500ce39e5bf286c5c2c8a28",
@@ -35,5 +35,11 @@
     "blenderStills": "5.2.0 LTS; matched previous owner-reviewed renders, not rerendered for retention",
     "gltfTransform": "4.5.1; previous validation no errors/warnings"
   },
-  "reviewEvidence": "Parent inspected repaired interactive comparison with all three exact assets before owner approval; browser evidence remains ignored. Stills are rest-pose appearance evidence, not animation evidence."
+  "reviewEvidence": "Parent inspected repaired interactive comparison with all three exact assets before owner approval; browser evidence remains ignored. Stills are rest-pose appearance evidence, not animation evidence.",
+  "historicalPreviewGenerator": {
+    "gitRevision": "a95e8ffa070968be34852c8c03c8d347a6bf1122",
+    "path": "scripts/mech-design/build-modularity-preview.mjs",
+    "sha256": "a327c90df7047f7a41ecc8cf9697ec2b4000e724c824ed23935b7a3b8176ecaf",
+    "scope": "Generator used before cleanup; retained owner-reviewed assets/stills are unchanged. Current generator corrects only the static comparison approval caption."
+  }
 }
