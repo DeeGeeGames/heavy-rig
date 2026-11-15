@@ -6,7 +6,7 @@ const dist = join(root, 'dist');
 await rm(dist, { recursive: true, force: true });
 
 const result = await Bun.build({
-	entrypoints: [join(root, 'index.html'), join(root, 'warden-preview.html'), join(root, 'models-preview.html')],
+	entrypoints: [join(root, 'index.html'), join(root, 'warden-preview.html'), join(root, 'models-preview.html'), join(root, 'warden-stress.html')],
 	outdir: dist,
 	target: 'browser',
 	minify: true,
