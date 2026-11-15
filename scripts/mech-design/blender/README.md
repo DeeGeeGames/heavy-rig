@@ -183,3 +183,18 @@ checkout at that record's Git revision, restore LFS, and follow the README and
 manifest from that revision. Current production continuation is the selected
 P2 recipe above. Historical scripts remain to preserve authoring knowledge;
 they are not extra steps required for every future mech.
+
+## Selected-export module proof
+
+The P2 Warden modularity proof uses the selected exported GLB directly, rather
+than resuming the historical dense-master assembly. Its commands and boundaries
+are in [modularity-proof.md](../../../design/mechs/assets/warden/game-ready/modularity-proof.md).
+`../modular-export.py` supplies Blender-independent actual-resource fingerprints
+and append-only GLB assembly helpers. `../build-warden-modularity.py` is the
+source-specific complete-left-gun adapter; its dimensions are not a general
+chassis segmentation algorithm. `../verify-warden-modularity.mjs` exercises the
+actual exported module/socket/muzzle geometry through shared Three.js motion.
+
+The exact alternate and empty exports are owner-approved for bounded proof
+retention (2026-11-15). The linked record includes fresh-checkout LFS retrieval,
+byte-for-byte rebuilding and preview reconstruction from retained stills.

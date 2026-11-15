@@ -1,0 +1,155 @@
+{
+  "status": "owner-approved-bounded-authoring-proof",
+  "sourceSha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
+  "authoringContract": {
+    "status": "owner-approved-bounded-authoring-proof",
+    "selectedAsset": "public/assets/mechs/warden/game-ready.glb",
+    "selectedSha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
+    "frame": "warden",
+    "slot": 0,
+    "hardpoint": "left-gun",
+    "alternateWeapon": "machine-gun",
+    "parent": "rig_mount_left-gun",
+    "socket": "socket_left_gun",
+    "replaceableGeometry": "geometry_rig_mount_left-gun",
+    "replacedExit": "physical_exit_left_gun_1",
+    "boundary": "Whole left weapon assembly, including its outer armor. Torso-owned neck, collars, other three weapons and entire chassis remain selected-export geometry.",
+    "axes": "socket-local glTF Y-up / +Z-forward / +X-own-left",
+    "socketLocalTransform": "identity under original left-gun rigid group",
+    "alternateEnvelope": [
+      [
+        -0.008,
+        -0.027,
+        -0.075
+      ],
+      [
+        0.115,
+        0.112,
+        0.282
+      ]
+    ],
+    "housingBounds": [
+      [
+        -0.008,
+        0.052,
+        -0.075
+      ],
+      [
+        0.055,
+        0.112,
+        -0.025
+      ]
+    ],
+    "retainedNeckEndpointLocal": [
+      0.006281863,
+      0.085,
+      -0.05
+    ],
+    "physicalExitCount": 3,
+    "logicalEmission": "One projectile per shot, physical barrel (shotIndex modulo 3) + 1. Authoring mapping only; runtime adapter still fixed and unchanged.",
+    "empty": "Retained selected structural neck plus sealed locally modeled bearing housing; no weapon mesh or active exit attached.",
+    "materialPolicy": "Use existing selected material index 0; no new materials or textures.",
+    "approval": "design/mechs/assets/warden/game-ready/modularity/approval.json"
+  },
+  "authoringContractSha256": "b115a4c9505786612d16b81545a6325915032c0513edb54123a1ddcfe04f69de",
+  "boundary": "complete left-gun module; original torso-owned neck and all other geometry retained",
+  "interface": {
+    "socket": "socket_left_gun",
+    "parent": "rig_mount_left-gun",
+    "frame": "warden",
+    "hardpoint": "left-gun",
+    "alternate": "machine-gun",
+    "axes": "glTF Y-up/+Z-forward/+X-own-left",
+    "socketLocalTransform": "identity",
+    "housingBounds": [
+      [
+        -0.008,
+        0.052,
+        -0.075
+      ],
+      [
+        0.055,
+        0.112,
+        -0.025
+      ]
+    ],
+    "retainedNeckEndpointLocal": [
+      0.006281863,
+      0.085,
+      -0.05
+    ]
+  },
+  "reference": {
+    "geometryAndBindings": {
+      "geometry_mount_connections": "57ab73c65c7890fdf07d2c958fb284deeb444ce369e5581fd173d3a7cb269af6",
+      "geometry_rig_leg_left_foot": "70a16ebd4f3d7bb6be5c5de803559d34454393d40c2ab7fd723c08970490517d",
+      "geometry_rig_leg_left_shin": "fa84e25bd5c9f90a8423a22a5e9b9d98b699ed73b0e7c6280a16c0385f45dde3",
+      "geometry_rig_leg_left_thigh": "168309abb6c4b42967ac4ed3ff7489e9d1eac501620b9e3820c23ce9c9295f86",
+      "geometry_rig_leg_right_foot": "608339c1230579a89ed44b41b9c0a948f68c9087c6a75ecb5e77ebcdff57688e",
+      "geometry_rig_leg_right_shin": "8d3600bf644d0e145c4625ccfcf69d84e5e6a837ff8eca33edd142e7a38fc005",
+      "geometry_rig_leg_right_thigh": "080b38db9bc5c72799681fa9af36124c6a6ef23d72359e85b7672792c6069c5d",
+      "geometry_rig_mount_left-shoulder bank": "cb3ee3c6b1d9daef8854faa055b1b22dd4889efdc7b969a901a952a4443d97dc",
+      "geometry_rig_mount_right-gun": "1f981d18b1fa11289ac48cbfdd5a8609638fc92991d388be23cd2282d818b52d",
+      "geometry_rig_mount_right-shoulder bank": "bae0c738c11423a030814a3501ea997c43fdf7e901ccf1ca279a02aed8649e11",
+      "geometry_rig_pelvis": "3755f0fb6f8e1dadd3c0a8348aa621864a9f08c55a45f236055426803cad9984",
+      "geometry_rig_torso": "b46cfa4d4efb50d0be206d21c3e6e2584b6b633ffd3b439d6c5a5b0cf9e2a8c3"
+    },
+    "rigAndNeutralTransforms": "ce446e3d53db4f9d5c07bf9e236ced4981e41099830323f8c09cb8500cea203e",
+    "motion": "f16a92c2619a9dd5abf380624a85926093bb8db2591d6e57526794a7b24fa36c",
+    "materialsAndImages": "31648421c0099eabd9051330ee511723b05cbde22efd70ecd0ef20b4b83272b8"
+  },
+  "assemblies": {
+    "alternate": {
+      "sha256": "e1ca2ac6c41883847fbe1fceb009ec5d62c9eae35500ce39e5bf286c5c2c8a28",
+      "reuse": {
+        "geometryAndBindings": {
+          "geometry_mount_connections": "57ab73c65c7890fdf07d2c958fb284deeb444ce369e5581fd173d3a7cb269af6",
+          "geometry_rig_leg_left_foot": "70a16ebd4f3d7bb6be5c5de803559d34454393d40c2ab7fd723c08970490517d",
+          "geometry_rig_leg_left_shin": "fa84e25bd5c9f90a8423a22a5e9b9d98b699ed73b0e7c6280a16c0385f45dde3",
+          "geometry_rig_leg_left_thigh": "168309abb6c4b42967ac4ed3ff7489e9d1eac501620b9e3820c23ce9c9295f86",
+          "geometry_rig_leg_right_foot": "608339c1230579a89ed44b41b9c0a948f68c9087c6a75ecb5e77ebcdff57688e",
+          "geometry_rig_leg_right_shin": "8d3600bf644d0e145c4625ccfcf69d84e5e6a837ff8eca33edd142e7a38fc005",
+          "geometry_rig_leg_right_thigh": "080b38db9bc5c72799681fa9af36124c6a6ef23d72359e85b7672792c6069c5d",
+          "geometry_rig_mount_left-shoulder bank": "cb3ee3c6b1d9daef8854faa055b1b22dd4889efdc7b969a901a952a4443d97dc",
+          "geometry_rig_mount_right-gun": "1f981d18b1fa11289ac48cbfdd5a8609638fc92991d388be23cd2282d818b52d",
+          "geometry_rig_mount_right-shoulder bank": "bae0c738c11423a030814a3501ea997c43fdf7e901ccf1ca279a02aed8649e11",
+          "geometry_rig_pelvis": "3755f0fb6f8e1dadd3c0a8348aa621864a9f08c55a45f236055426803cad9984",
+          "geometry_rig_torso": "b46cfa4d4efb50d0be206d21c3e6e2584b6b633ffd3b439d6c5a5b0cf9e2a8c3"
+        },
+        "rigAndNeutralTransforms": "ce446e3d53db4f9d5c07bf9e236ced4981e41099830323f8c09cb8500cea203e",
+        "motion": "f16a92c2619a9dd5abf380624a85926093bb8db2591d6e57526794a7b24fa36c",
+        "materialsAndImages": "31648421c0099eabd9051330ee511723b05cbde22efd70ecd0ef20b4b83272b8"
+      },
+      "moduleTriangles": 240,
+      "activeLeftExits": 3
+    },
+    "empty": {
+      "sha256": "d58ae105305ee2191543bdd8676fb963fb9fe725aded966a6d1da99e307e5e0d",
+      "reuse": {
+        "geometryAndBindings": {
+          "geometry_mount_connections": "57ab73c65c7890fdf07d2c958fb284deeb444ce369e5581fd173d3a7cb269af6",
+          "geometry_rig_leg_left_foot": "70a16ebd4f3d7bb6be5c5de803559d34454393d40c2ab7fd723c08970490517d",
+          "geometry_rig_leg_left_shin": "fa84e25bd5c9f90a8423a22a5e9b9d98b699ed73b0e7c6280a16c0385f45dde3",
+          "geometry_rig_leg_left_thigh": "168309abb6c4b42967ac4ed3ff7489e9d1eac501620b9e3820c23ce9c9295f86",
+          "geometry_rig_leg_right_foot": "608339c1230579a89ed44b41b9c0a948f68c9087c6a75ecb5e77ebcdff57688e",
+          "geometry_rig_leg_right_shin": "8d3600bf644d0e145c4625ccfcf69d84e5e6a837ff8eca33edd142e7a38fc005",
+          "geometry_rig_leg_right_thigh": "080b38db9bc5c72799681fa9af36124c6a6ef23d72359e85b7672792c6069c5d",
+          "geometry_rig_mount_left-shoulder bank": "cb3ee3c6b1d9daef8854faa055b1b22dd4889efdc7b969a901a952a4443d97dc",
+          "geometry_rig_mount_right-gun": "1f981d18b1fa11289ac48cbfdd5a8609638fc92991d388be23cd2282d818b52d",
+          "geometry_rig_mount_right-shoulder bank": "bae0c738c11423a030814a3501ea997c43fdf7e901ccf1ca279a02aed8649e11",
+          "geometry_rig_pelvis": "3755f0fb6f8e1dadd3c0a8348aa621864a9f08c55a45f236055426803cad9984",
+          "geometry_rig_torso": "b46cfa4d4efb50d0be206d21c3e6e2584b6b633ffd3b439d6c5a5b0cf9e2a8c3"
+        },
+        "rigAndNeutralTransforms": "ce446e3d53db4f9d5c07bf9e236ced4981e41099830323f8c09cb8500cea203e",
+        "motion": "f16a92c2619a9dd5abf380624a85926093bb8db2591d6e57526794a7b24fa36c",
+        "materialsAndImages": "31648421c0099eabd9051330ee511723b05cbde22efd70ecd0ef20b4b83272b8"
+      },
+      "moduleTriangles": 24,
+      "activeLeftExits": 0
+    }
+  },
+  "scriptSha256": {
+    "build-warden-modularity.py": "7d236e7ff9e11c3d7d139d48a43dcc05f1d331cdfd9f796974d4f8e65f090060",
+    "modular-export.py": "592c0763911b49b9bdd803cb10eb57d20ac8032d3ecd08a36a347baf215e584f"
+  }
+}

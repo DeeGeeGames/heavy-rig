@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "Selected owner-visual-approved Warden A derivative, required inputs, reusable approved modules and retained editable historical checkpoints; archived derivative outputs are indexed separately.",
+  "scope": "Selected owner-visual-approved Warden A derivative, required inputs, reusable approved modules and retained editable historical checkpoints; archived derivative outputs are indexed separately. Includes bounded owner-approved selected-export modularity proof; no production promotion.",
   "files": [
     {
       "path": "design/mechs/assets/warden/archived-outputs.json",
@@ -64,8 +64,8 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/README.md",
-      "bytes": 9205,
-      "sha256": "c6c5e0890b7649a128bad0764d040c21d51e1c1a585f19ec892ef7f558211066"
+      "bytes": 9479,
+      "sha256": "5697e86f754616efdce1e6d4ef5270e5a0621553e6a55793ae8d8c698f94a897"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/approval.json",
@@ -89,8 +89,93 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/manifest.json",
-      "bytes": 2863,
-      "sha256": "8e05129416f0e9ea5e702dd7f30feaa7b5e260bfd6bbff19ea8a9f31b9ab8faa"
+      "bytes": 3192,
+      "sha256": "37016840e5e13c8fc9eb79ef22a07399250b488faacf50e98e71a6b3f6deba6b"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity-contract.json",
+      "bytes": 1611,
+      "sha256": "b115a4c9505786612d16b81545a6325915032c0513edb54123a1ddcfe04f69de"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity-proof.md",
+      "bytes": 12139,
+      "sha256": "fb5a1d84be5e241f8c1a39179383089fbd8f5460ea1c2641da91eac7d670163e"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/alternate.glb",
+      "bytes": 1051860,
+      "sha256": "e1ca2ac6c41883847fbe1fceb009ec5d62c9eae35500ce39e5bf286c5c2c8a28"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/approval.json",
+      "bytes": 1805,
+      "sha256": "631e8cc6ef89b7e3fcbfd208793c13fae2adfccca111f7d71de2143d4a5dd295"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/assembly-proof.json",
+      "bytes": 8072,
+      "sha256": "0e276fb2880c9b767849b4894d752bb6ac36c636dfdff0ade0c4e5927852c69d"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/empty.glb",
+      "bytes": 1038428,
+      "sha256": "d58ae105305ee2191543bdd8676fb963fb9fe725aded966a6d1da99e307e5e0d"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/evidence-manifest.json",
+      "bytes": 2952,
+      "sha256": "35ae34672d075514147728949ed2a894a12dd9101631602f49b58c84cedeb072"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/motion-proof.json",
+      "bytes": 1516,
+      "sha256": "bc69c5ee72f686e81243d4dc3787464323c1c9440be8f32678df3587a9c70144"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/alternate-front.png",
+      "bytes": 635926,
+      "sha256": "47e9496433cdda47b1ecc7279b1496b915f99f77ac33f96333db0b078bcfe46b"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/alternate-rear.png",
+      "bytes": 609558,
+      "sha256": "db77aa78666ee9828c0211b56b35ad8764e70990b884dccdfe2402913e52f72b"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/alternate-socket-close.png",
+      "bytes": 641017,
+      "sha256": "88196eb60cc533a654cc2683d4caba63767367dfe84f460eb79e3ddb3cd37b4a"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/empty-front.png",
+      "bytes": 632482,
+      "sha256": "1eb523b9fe95364035a789139531dc9e4d725d89848b7c081dd9fb674cfbc4dc"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/empty-rear.png",
+      "bytes": 608921,
+      "sha256": "2099c74c74f0b13fcf5e36ab099ef9ea9d5281edc331034fff4256f161b30840"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/empty-socket-close.png",
+      "bytes": 631680,
+      "sha256": "85c414a13bb663ef0c0ed6063b4dfc3dc63d45989d7aae2e81106ec44e7036f1"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/original-front.png",
+      "bytes": 645394,
+      "sha256": "d733f7b7ab600726bc00f7941b8c58068265a4f27400ed8caac6cb61b443a305"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/original-rear.png",
+      "bytes": 615770,
+      "sha256": "e868e6ab17612e782101daa11535c30877c95a98c4669cb63ebc57da034f6fb9"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/review/original-socket-close.png",
+      "bytes": 670296,
+      "sha256": "d4470876780c4ab3f56ba3bf65edaeeba2fffbd79f95258cb9a8522871213424"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/recipe.json",

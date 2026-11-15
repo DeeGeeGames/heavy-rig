@@ -119,3 +119,14 @@ A fresh worker can restore approved inputs, reproduce documented transformations
 inspect acceptance evidence and identify remaining manual work without reading
 chat history. At least one mech must reach a reviewed in-game derivative, and
 another chassis must exercise the procedure before calling it broadly validated.
+
+## Bounded selected-export module evidence
+
+The [selected P2 Warden proof](assets/warden/game-ready/modularity-proof.md)
+replaces the complete left weapon, including armor, or seals the empty socket
+while retaining the torso-owned neck and shared body/rig/material/motion bytes.
+The owner approved these exact configurations on 2026-11-15 for retention as
+a rough authoring proof. Indexed-triangle housing probes, physical exit checks
+and 915 comparative motion states support this specific interface. This is not
+a universal segmentation recipe, production art approval, runtime equipment
+integration, exhaustive collision proof or second-chassis validation.

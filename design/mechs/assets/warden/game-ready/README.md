@@ -161,3 +161,8 @@ zoom and lighting on intended hardware, with the procedural model as a baseline.
 The section counts above are an estimate, not a hardware frame-time result.
 Agree scene budgets from that evidence; owner appearance and control feel remain
 separate. These measurements have not been performed by this workflow refactor.
+
+The [selected-export modularity proof](modularity-proof.md) now has bounded owner
+approval for the exact alternate left weapon and sealed empty socket. Retained
+proof assets are in `modularity/`; production appearance and runtime equipment
+switching remain separate gates.

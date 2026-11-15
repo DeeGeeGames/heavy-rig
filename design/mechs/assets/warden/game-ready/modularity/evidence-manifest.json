@@ -1,0 +1,39 @@
+{
+  "status": "owner-approved-bounded-authoring-proof",
+  "approval": "design/mechs/assets/warden/game-ready/modularity/approval.json",
+  "source": {
+    "path": "public/assets/mechs/warden/game-ready.glb",
+    "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de"
+  },
+  "contractSha256": "b115a4c9505786612d16b81545a6325915032c0513edb54123a1ddcfe04f69de",
+  "scripts": {
+    "scripts/mech-design/modular-export.py": "592c0763911b49b9bdd803cb10eb57d20ac8032d3ecd08a36a347baf215e584f",
+    "scripts/mech-design/build-warden-modularity.py": "7d236e7ff9e11c3d7d139d48a43dcc05f1d331cdfd9f796974d4f8e65f090060",
+    "scripts/mech-design/verify-warden-modularity.mjs": "70ee804d1d915bf5b42e8da9c2d0c2f2e48a66a7e8a0e71c3e5c559d05aacac4",
+    "scripts/mech-design/housing-coverage.mjs": "d03bee6828e33f6da0ce5940a237b1096171c9f38a29974089902f5d3c4a3ad4",
+    "scripts/mech-design/render-warden-modularity.py": "6edbe3b7f3dc5ac41dc3f0df519acd4d666332c6eea3340f10b9bc20a452af16",
+    "scripts/mech-design/build-modularity-preview.mjs": "a327c90df7047f7a41ecc8cf9697ec2b4000e724c824ed23935b7a3b8176ecaf"
+  },
+  "artifacts": {
+    "alternate.glb": "e1ca2ac6c41883847fbe1fceb009ec5d62c9eae35500ce39e5bf286c5c2c8a28",
+    "approval.json": "631e8cc6ef89b7e3fcbfd208793c13fae2adfccca111f7d71de2143d4a5dd295",
+    "assembly-proof.json": "0e276fb2880c9b767849b4894d752bb6ac36c636dfdff0ade0c4e5927852c69d",
+    "empty.glb": "d58ae105305ee2191543bdd8676fb963fb9fe725aded966a6d1da99e307e5e0d",
+    "motion-proof.json": "bc69c5ee72f686e81243d4dc3787464323c1c9440be8f32678df3587a9c70144",
+    "review/alternate-front.png": "47e9496433cdda47b1ecc7279b1496b915f99f77ac33f96333db0b078bcfe46b",
+    "review/alternate-rear.png": "db77aa78666ee9828c0211b56b35ad8764e70990b884dccdfe2402913e52f72b",
+    "review/alternate-socket-close.png": "88196eb60cc533a654cc2683d4caba63767367dfe84f460eb79e3ddb3cd37b4a",
+    "review/empty-front.png": "1eb523b9fe95364035a789139531dc9e4d725d89848b7c081dd9fb674cfbc4dc",
+    "review/empty-rear.png": "2099c74c74f0b13fcf5e36ab099ef9ea9d5281edc331034fff4256f161b30840",
+    "review/empty-socket-close.png": "85c414a13bb663ef0c0ed6063b4dfc3dc63d45989d7aae2e81106ec44e7036f1",
+    "review/original-front.png": "d733f7b7ab600726bc00f7941b8c58068265a4f27400ed8caac6cb61b443a305",
+    "review/original-rear.png": "e868e6ab17612e782101daa11535c30877c95a98c4669cb63ebc57da034f6fb9",
+    "review/original-socket-close.png": "d4470876780c4ab3f56ba3bf65edaeeba2fffbd79f95258cb9a8522871213424"
+  },
+  "tools": {
+    "bun": "1.3.14",
+    "blenderStills": "5.2.0 LTS; matched previous owner-reviewed renders, not rerendered for retention",
+    "gltfTransform": "4.5.1; previous validation no errors/warnings"
+  },
+  "reviewEvidence": "Parent inspected repaired interactive comparison with all three exact assets before owner approval; browser evidence remains ignored. Stills are rest-pose appearance evidence, not animation evidence."
+}

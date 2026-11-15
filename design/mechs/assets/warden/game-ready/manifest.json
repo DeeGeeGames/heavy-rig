@@ -78,5 +78,11 @@
     "Runtime waist-origin normalization and offset-aware weapon convergence",
     "Rigid torso parenting for all four mounts and one combined static structural neck mesh"
   ],
-  "approval": "design/mechs/assets/warden/game-ready/approval.json"
+  "approval": "design/mechs/assets/warden/game-ready/approval.json",
+  "modularityProof": {
+    "status": "owner-approved-bounded-authoring-proof",
+    "contract": "design/mechs/assets/warden/game-ready/modularity-contract.json",
+    "approval": "design/mechs/assets/warden/game-ready/modularity/approval.json",
+    "documentation": "design/mechs/assets/warden/game-ready/modularity-proof.md"
+  }
 }

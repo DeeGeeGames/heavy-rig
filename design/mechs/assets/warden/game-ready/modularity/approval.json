@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-approved-bounded-authoring-proof",
+  "date": "2026-11-15",
+  "ownerStatement": "Approved",
+  "presentedQuestion": "Technical review passes... I recommend accepting this as a whole-weapon assembly proof, with its rough appearance scoped to the experiment. Runtime equipment switching and production appearance remain separate work. Do you approve these draft configurations for retention as the modularity proof?",
+  "scope": "Retention of the exact presented whole-left-weapon machine-gun assembly and sealed empty socket as a bounded authoring modularity proof. Rough appearance accepted only for this experiment; torso-owned neck/body unchanged.",
+  "selectedSource": {
+    "path": "public/assets/mechs/warden/game-ready.glb",
+    "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de"
+  },
+  "approvedExports": [
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/alternate.glb",
+      "sha256": "e1ca2ac6c41883847fbe1fceb009ec5d62c9eae35500ce39e5bf286c5c2c8a28"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/modularity/empty.glb",
+      "sha256": "d58ae105305ee2191543bdd8676fb963fb9fe725aded966a6d1da99e307e5e0d"
+    }
+  ],
+  "technicalReview": "Parent technical review passed after indexed-triangle coverage, scoped CI LFS retrieval and interactive fallback/render repairs; parent will review delivery commit.",
+  "remainingGates": [
+    "Production appearance and game asset replacement",
+    "Runtime equipment/loadout integration and firing/save compatibility",
+    "Hardware performance, physical controller/touch, audio, balance and in-game owner acceptance",
+    "Other configurations, second chassis and general pipeline repeatability",
+    "PR remains draft; merge not authorized"
+  ]
+}

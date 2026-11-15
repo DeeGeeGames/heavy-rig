@@ -44,3 +44,8 @@ New candidates and bulk validation evidence belong in ignored `generated/`.
 Retain the advancing result, necessary inputs, recipe, compact validation summary
 and approval record. Regenerate derivative exports instead of retaining duplicate
 review packages for every animation and intermediate assembly step.
+
+The selected-export [modularity proof](warden/game-ready/modularity-proof.md) retains
+only the exact owner-approved alternate/empty GLBs, nine matched review stills
+and compact approval/fingerprint evidence in `warden/game-ready/modularity/`.
+These are authoring experiments, not installed production configurations.
