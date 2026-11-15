@@ -1,0 +1,273 @@
+{
+  "status": "intersections-found",
+  "sourceSha256": "7df87f756087f1abbbcdb36d5dbf963c52bf517079d1a24a1d1dc5236a70b76b",
+  "motion": "run",
+  "scope": "Gun and shoulder assembly surfaces versus lower body; 5-degree torso-local yaw steps at nine gait phases. Surface intersection sampling is not a continuous clearance proof. Independent weapon yaw/pitch, runtime heading stabilization and firing exits require separate validation. All shoulder module alternatives included.",
+  "samples": 648,
+  "findings": [
+    {
+      "frame": 28,
+      "yawDegrees": -140,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 105
+    },
+    {
+      "frame": 28,
+      "yawDegrees": -135,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 139
+    },
+    {
+      "frame": 28,
+      "yawDegrees": -130,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 84
+    },
+    {
+      "frame": 28,
+      "yawDegrees": 25,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 87
+    },
+    {
+      "frame": 28,
+      "yawDegrees": 30,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 132
+    },
+    {
+      "frame": 28,
+      "yawDegrees": 35,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 89
+    },
+    {
+      "frame": 28,
+      "yawDegrees": 40,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 21
+    },
+    {
+      "frame": 42,
+      "yawDegrees": -140,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 29
+    },
+    {
+      "frame": 42,
+      "yawDegrees": -135,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 86
+    },
+    {
+      "frame": 42,
+      "yawDegrees": -130,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 59
+    },
+    {
+      "frame": 42,
+      "yawDegrees": 30,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 100
+    },
+    {
+      "frame": 42,
+      "yawDegrees": 35,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_11"
+        ]
+      ],
+      "trianglePairs": 66
+    },
+    {
+      "frame": 82,
+      "yawDegrees": -40,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 33
+    },
+    {
+      "frame": 82,
+      "yawDegrees": -35,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 97
+    },
+    {
+      "frame": 82,
+      "yawDegrees": -30,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 158
+    },
+    {
+      "frame": 82,
+      "yawDegrees": -25,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 86
+    },
+    {
+      "frame": 82,
+      "yawDegrees": 130,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 88
+    },
+    {
+      "frame": 82,
+      "yawDegrees": 135,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 107
+    },
+    {
+      "frame": 82,
+      "yawDegrees": 140,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 107
+    },
+    {
+      "frame": 96,
+      "yawDegrees": -35,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 73
+    },
+    {
+      "frame": 96,
+      "yawDegrees": -30,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_27",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 114
+    },
+    {
+      "frame": 96,
+      "yawDegrees": 130,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 59
+    },
+    {
+      "frame": 96,
+      "yawDegrees": 135,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 84
+    },
+    {
+      "frame": 96,
+      "yawDegrees": 140,
+      "pairs": [
+        [
+          "repair_shared_tripo_part_43",
+          "repair_shared_tripo_part_8"
+        ]
+      ],
+      "trianglePairs": 17
+    }
+  ]
+}

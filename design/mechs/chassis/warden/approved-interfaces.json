@@ -1,0 +1,24 @@
+{
+  "id": "warden-interfaces-v1",
+  "status": "empty-cover-visual-approved",
+  "approval": "Owner approved the blank shoulder covers after A/B/C and empty-mount comparison.",
+  "scope": "Cover appearance only; muzzle accuracy and runtime packaging remain separate validation gates.",
+  "artifacts": {
+    "interfaces.blend": {
+      "path": "design/mechs/assets/warden/interfaces/interfaces.blend",
+      "sha256": "01f1ef4a71437ae96319346203f31e4c4ff21fa6dbc7a1e6271d9bdc57bbd7c4"
+    },
+    "interfaces.json": {
+      "path": "design/mechs/assets/warden/interfaces/interfaces.json",
+      "sha256": "350539685f3b7c697b413a733657a8bdb1ab82d1f8cc2d516ceccf147e695eb2"
+    },
+    "empty.png": {
+      "path": "design/mechs/assets/warden/interfaces/empty.png",
+      "sha256": "b927ccb9250557a062a5ef30c9d42dc1d167622e617ef0650cbea7e937a10591"
+    },
+    "motion-validation.json": {
+      "path": "design/mechs/assets/warden/interfaces/motion-validation.json",
+      "sha256": "440022f6ca97981057b2bf8c6fe2c74f3cf97a8629ca540dc8608ec65528750b"
+    }
+  }
+}

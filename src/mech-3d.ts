@@ -1,3 +1,4 @@
+import type { AuthoredPoseContext } from './authored-pose';
 import { Box3, Group, Matrix4, Mesh, Vector3 } from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { getFrame, type FrameId } from './frames';
@@ -10,8 +11,9 @@ import type { EnemyKind } from './simulation';
 import { articulateWeapons } from './weapon-articulation';
 import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
+import { getMechAssetBinding } from './mech-asset-registry';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
@@ -30,6 +32,8 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[]): number {
 // remain presentation data; every view uses this same production factory.
 export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden') {
 	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind);
+	const authored = kind ? undefined : getMechAssetBinding(frame);
+	if (authored) return authored.create();
 	const definition = getFrame(frame); const chassis = definition.chassisId; const size = kind ? mechScale(kind) : definition.size;
 	const rig = kind ? STANDARD_LEG_RIG : FRAME_RIGS[frame]; const suspension = kind ? 1 : definition.suspension;
 	const root = new Group(); root.name = kind ? `${commander ? 'commander' : kind}-frame` : `${frame}-frame`;

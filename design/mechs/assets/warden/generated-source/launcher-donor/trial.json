@@ -1,0 +1,28 @@
+{
+  "status": "exported",
+  "sourceManifest": "design/mechs/chassis/warden/turnaround/a/manifest.json",
+  "views": {
+    "front": "356c08fcee73cd4370cf9e99ba504806807c3a3c8960cac867b015266a90e35c",
+    "back": "30a3285f5b1684532c4e730485dea8175f1a8f3d102d87e590763b9c07673d7c",
+    "left": "84efcd9ffee3d4973947d86978cd23e2804c96a673560ed820fc4f18b10004c4",
+    "right": "c4b7c3b44445b32f0bee92f0f7312e4a4f853b54b39527a30adcef7f52b05447"
+  },
+  "model": "H3.1 HD",
+  "targetPolygons": 200000,
+  "parts": "Balanced",
+  "texture": false,
+  "ultraMeshQuality": true,
+  "privacy": "Private (retained setting; public authorized)",
+  "creditsSpent": 60,
+  "remainingCredits": 2940,
+  "url": "https://studio.tripo3d.ai/workspace/segmentation/3e542b80-8ed6-4675-ad9f-2085f2ba3fbf",
+  "reportedTriangles": 189164,
+  "reportedParts": 14,
+  "triangles": 189164,
+  "meshes": 13,
+  "skins": 0,
+  "animations": 0,
+  "bytes": 4581444,
+  "sha256": "d79f7955e53f892768370c58b903285890dbc5c0b355a8399ef5f41837470189",
+  "visualEvidence": "Owner screenshot shows four weapon assemblies and thicker legs; some feet remain combined with lower legs. Full articulation validation pending."
+}

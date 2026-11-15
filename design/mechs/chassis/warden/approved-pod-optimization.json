@@ -1,0 +1,111 @@
+{
+  "id": "warden-pod-optimization",
+  "status": "approved-component-visual-proof",
+  "approval": {
+    "ownerStatement": "This is good.",
+    "recordingAuthorizedBy": "Go ahead and codify this check into the process. Also, add this piece to the PR in any way you see fit because we will be handing this off to another actor to pick up the work for the rest based on your codification."
+  },
+  "scope": "Isolated own-left shoulder housing/collar and launcher cartridge. Mounting struts and the rest of the Warden are outside this proof.",
+  "approvedGLBSha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5",
+  "stage7WholeWardenComplete": false,
+  "productionReplacementApproved": false,
+  "report": "design/mechs/assets/warden/optimization/pod/proof-report.json",
+  "artifacts": {
+    "design/mechs/assets/warden/optimization/pod/camera-scale.json": {
+      "sha256": "d7ddeb6b7bfe8759f60860bc93e7caed1e652a99941d5120c69a4d0aea41655b",
+      "bytes": 418
+    },
+    "design/mechs/assets/warden/optimization/pod/gltf-validation.json": {
+      "sha256": "9abefad2ea207b193e5d081c8a9776c9ee2faba6b7a4d90b2bc70a7bce3a9a7c",
+      "bytes": 3384
+    },
+    "design/mechs/assets/warden/optimization/pod/pod.blend": {
+      "sha256": "f686b64bbb5eb591dfcd05a78750627f277ae106c40a9b03e1a834cffdf96d3e",
+      "bytes": 2433909
+    },
+    "design/mechs/assets/warden/optimization/pod/pod.glb": {
+      "sha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5",
+      "bytes": 1298608
+    },
+    "design/mechs/assets/warden/optimization/pod/proof-report.json": {
+      "sha256": "03e94686ff11d9d7f5bced4ced6111ef34289eece1fbc6530057d061ca1ca49b",
+      "bytes": 5320
+    },
+    "design/mechs/assets/warden/optimization/pod/review/candidate-front.png": {
+      "sha256": "0157d6ae4acd6f5d759e03d8da072a7c01b31669f890a6b02d0cc37ddaa05490",
+      "bytes": 460920
+    },
+    "design/mechs/assets/warden/optimization/pod/review/candidate-game.png": {
+      "sha256": "d3f6acd864d8a71b1dad9d3558b912eaea8b928265629154ec45bf1ce684bbaa",
+      "bytes": 21471
+    },
+    "design/mechs/assets/warden/optimization/pod/review/candidate-oblique.png": {
+      "sha256": "b05f400ec235080b3777371387617060d35f16c246dc283a2f5cb63c73e1013f",
+      "bytes": 508095
+    },
+    "design/mechs/assets/warden/optimization/pod/review/candidate-opposite-side.png": {
+      "sha256": "ccfa47e2c0d493ef225f706cde39a5639befe0c327e542ebb7984172399700aa",
+      "bytes": 459050
+    },
+    "design/mechs/assets/warden/optimization/pod/review/candidate-rear.png": {
+      "sha256": "ed66e869ed02c1b8467c1e96fb16c424e5af65da1701421d5032fd04039712dc",
+      "bytes": 511638
+    },
+    "design/mechs/assets/warden/optimization/pod/review/candidate-side.png": {
+      "sha256": "2576c2fd94065935a99d6e39080e7defa85c803bb6a9934454354e02c1159acf",
+      "bytes": 454603
+    },
+    "design/mechs/assets/warden/optimization/pod/review/candidate-underside.png": {
+      "sha256": "e62fe59915015222a20608f34948a6a0396f2957e84152eb9d0217b39ed55e6e",
+      "bytes": 492445
+    },
+    "design/mechs/assets/warden/optimization/pod/review/candidate-zoom.png": {
+      "sha256": "d7f287365002c7bc22c62eb539582c88f6185d963f4239b80bea4ad98e95042e",
+      "bytes": 28445
+    },
+    "design/mechs/assets/warden/optimization/pod/review/render-report.json": {
+      "sha256": "7bb2c05cacd1486f95e519778e6ea78b43579a42c2c7c2646707482f56fb8b5f",
+      "bytes": 2608
+    },
+    "design/mechs/assets/warden/optimization/pod/review/source-front.png": {
+      "sha256": "29dd368a3a031ff2f86ae65a1dccc21ed36ae4b94cbef1130886b0d53ba50791",
+      "bytes": 469102
+    },
+    "design/mechs/assets/warden/optimization/pod/review/source-game.png": {
+      "sha256": "64be348de8b750b7ab549a0812db42940e73e2397d94e7f4e92fe74a77247c7d",
+      "bytes": 21336
+    },
+    "design/mechs/assets/warden/optimization/pod/review/source-oblique.png": {
+      "sha256": "83b1b4bbdb07f193084d3dfa919d13efda9bb7ff7a128069d71cd84b45f98b8f",
+      "bytes": 512356
+    },
+    "design/mechs/assets/warden/optimization/pod/review/source-opposite-side.png": {
+      "sha256": "1ea6baebff36e4246b62a9491b91826a8a70654119a4c017f17f4f3c53a800e8",
+      "bytes": 459693
+    },
+    "design/mechs/assets/warden/optimization/pod/review/source-rear.png": {
+      "sha256": "81951028beb7f0552d50d12ed0093532d1ec955baea1e1e601e31e21218624c9",
+      "bytes": 509502
+    },
+    "design/mechs/assets/warden/optimization/pod/review/source-side.png": {
+      "sha256": "a3c8675520b10deb921c6577b2d778976ec1fd2e3fd737a57d987141566afb62",
+      "bytes": 459048
+    },
+    "design/mechs/assets/warden/optimization/pod/review/source-underside.png": {
+      "sha256": "ae744ed7169f4897e7dfd2b91585ae52e604e6014e41ba3a7d9eea088c8284be",
+      "bytes": 492529
+    },
+    "design/mechs/assets/warden/optimization/pod/review/source-zoom.png": {
+      "sha256": "b2d132277cc3ab837d30ef56897b53c305a3f091b2d3013a0efe1ab7aab18530",
+      "bytes": 28333
+    },
+    "design/mechs/assets/warden/optimization/pod/source.glb": {
+      "sha256": "edae730332c13a83772e63e19ab56232bed0764ad2a3f2dbad28c5cf2c51e6c2",
+      "bytes": 305904
+    },
+    "design/mechs/assets/warden/optimization/pod/validation.json": {
+      "sha256": "a171afffb79d788dd430cdcb7b14799538997768f2098f88e204d5082424ea07",
+      "bytes": 63682
+    }
+  }
+}

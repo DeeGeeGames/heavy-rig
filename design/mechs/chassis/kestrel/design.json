@@ -1,0 +1,18 @@
+{
+  "chassisId": "kestrel",
+  "activeBaseline": "kestrel-a-baseline-v4",
+  "baselines": [
+    {
+      "id": "kestrel-a-baseline-v4",
+      "status": "approved",
+      "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+      "imageSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4",
+      "request": "design/mechs/chassis/kestrel/concept/a/request.json",
+      "requestSha256": "6864c14a5c8a6142dbd565e0f1604b7baae0067e00b37ef02a5f11de1397890d",
+      "prompt": "design/mechs/chassis/kestrel/concept/a/imagegen-prompt.txt",
+      "contractSignature": "229ffbad2cf9c46ceceaf28cfa99a129ae3462413428f8bd907a6c0cd3ffc96c",
+      "approval": "2026-11-13: owner said \"This is good. Stage this.\" for option 2 with enlarged guns (baseline-v4)."
+    }
+  ],
+  "variants": []
+}

@@ -1,0 +1,64 @@
+{
+  "samples": 915,
+  "clips": [
+    {
+      "name": "walk",
+      "duration": 0.8999999761581421,
+      "phases": 61
+    },
+    {
+      "name": "run",
+      "duration": 0.8999999761581421,
+      "phases": 61
+    },
+    {
+      "name": "backward",
+      "duration": 1,
+      "phases": 61
+    }
+  ],
+  "aimDegrees": [
+    -90,
+    -45,
+    0,
+    45,
+    90
+  ],
+  "maxSharedWorldMatrixError": 0,
+  "maxSocketRelativeError": 4.440892098500626e-16,
+  "maxExitRelativeError": 3.226585665316861e-16,
+  "minimumForwardRayClearance": 0.5,
+  "assets": [
+    {
+      "name": "original",
+      "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de"
+    },
+    {
+      "name": "alternate",
+      "sha256": "e1ca2ac6c41883847fbe1fceb009ec5d62c9eae35500ce39e5bf286c5c2c8a28"
+    },
+    {
+      "name": "empty",
+      "sha256": "d58ae105305ee2191543bdd8676fb963fb9fe725aded966a6d1da99e307e5e0d"
+    }
+  ],
+  "limitations": [
+    "Sampled clips and yaw only; no exhaustive swept collision or projectile volume test.",
+    "Headless texture stub; appearance reviewed separately.",
+    "Standalone authoring assembly, no runtime equipment integration."
+  ],
+  "housingCoverage": [
+    {
+      "name": "alternate",
+      "probes": 54,
+      "tolerance": 0.000001,
+      "method": "indexed triangles; nine outward rays per contracted face"
+    },
+    {
+      "name": "empty",
+      "probes": 54,
+      "tolerance": 0.000001,
+      "method": "indexed triangles; nine outward rays per contracted face"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
+import type { AuthoredPoseContext } from './authored-pose';
 import { getFrame, type FrameId } from './frames';
 import { FRAME_RIGS } from './frame-rig';
 import { getHardpoints } from './hardpoints';
+import { getMechAssetBinding } from './mech-asset-registry';
 import type { EnemyKind, Point } from './simulation';
 
 export interface SpatialPoint extends Point { elevation: number }
@@ -26,6 +28,7 @@ const scaleRig = function (rig: WeaponRig, size: number, rise = 0): WeaponRig {
 };
 const playerRigs = new Map<FrameId, readonly WeaponRig[]>();
 export const getPlayerWeaponRig = function (frame: FrameId): readonly WeaponRig[] {
+	const authored = getMechAssetBinding(frame); if (authored) return authored.weaponRigs;
 	const cached = playerRigs.get(frame); if (cached) return cached;
 	const definition = getFrame(frame);
 	const rigs = getHardpoints(frame).map(function (hardpoint, slot): WeaponRig {
@@ -73,24 +76,58 @@ export const weaponDirection = function (rig: WeaponRig, body: WeaponBody, headi
 	// Gimbals converge toward targets ahead, without swiveling backward through the chassis.
 	const forward = (target.x - pivot.x) * Math.cos(heading) + (target.y - pivot.y) * Math.sin(heading);
 	const adjustment = Math.max(0, 1 - forward);
-	return getFiringDirection(pivot, heading, { x: target.x + Math.cos(heading) * adjustment, y: target.y + Math.sin(heading) * adjustment, elevation: target.elevation });
+	const ahead = { x: target.x + Math.cos(heading) * adjustment, y: target.y + Math.sin(heading) * adjustment, elevation: target.elevation };
+	const baseline = getFiringDirection(pivot, heading, ahead);
+	const lateral = rig.muzzle.y - rig.pivot.y; const vertical = rig.muzzle.elevation - rig.pivot.elevation;
+	if (lateral === 0 && vertical === 0) return baseline;
+	const dx = ahead.x - pivot.x; const dy = ahead.y - pivot.y; const dz = ahead.elevation - pivot.elevation;
+	const horizontalSquared = dx * dx + dy * dy - lateral * lateral;
+	const alongSquared = horizontalSquared + dz * dz - vertical * vertical;
+	// Offset hinges need the barrel axis, rather than the pivot-to-target line,
+	// to converge. Targets inside the transverse offset or behind the muzzle
+	// have no forward solution; retain the stable ahead-facing fallback there.
+	const barrelLength = rig.muzzle.x - rig.pivot.x;
+	if (horizontalSquared <= 0 || alongSquared <= barrelLength * barrelLength) return baseline;
+	const horizontal = Math.sqrt(horizontalSquared); const along = Math.sqrt(alongSquared);
+	const yaw = Math.atan2(dy, dx) - Math.atan2(lateral, horizontal);
+	const pitch = Math.atan2(dz, horizontal) - Math.atan2(vertical, along);
+	const direction = { x: Math.cos(yaw) * Math.cos(pitch), y: Math.sin(yaw) * Math.cos(pitch), elevation: Math.sin(pitch) };
+	return direction.x * Math.cos(heading) + direction.y * Math.sin(heading) > 0 ? direction : baseline;
 };
 export const rigMuzzle = function (rig: WeaponRig, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint): SpatialPoint {
 	const pivot = weaponPivot(rig, body, heading); const direction = weaponDirection(rig, body, heading, target);
 	const yaw = Math.atan2(direction.y, direction.x); const horizontal = Math.hypot(direction.x, direction.y);
 	const tube = tubeIndex === undefined || rig.tubes.length === 0 ? undefined : rig.tubes[((Math.floor(tubeIndex) % rig.tubes.length) + rig.tubes.length) % rig.tubes.length];
-	const forward = rig.muzzle.x - rig.pivot.x + (tube?.x ?? 0); const lateral = tube?.y ?? 0; const vertical = tube?.elevation ?? 0;
+	const forward = rig.muzzle.x - rig.pivot.x + (tube?.x ?? 0);
+	const lateral = rig.muzzle.y - rig.pivot.y + (tube?.y ?? 0);
+	const vertical = rig.muzzle.elevation - rig.pivot.elevation + (tube?.elevation ?? 0);
 	return {
 		x: pivot.x + direction.x * forward - Math.sin(yaw) * lateral - Math.cos(yaw) * direction.elevation * vertical,
 		y: pivot.y + direction.y * forward + Math.cos(yaw) * lateral - Math.sin(yaw) * direction.elevation * vertical,
 		elevation: pivot.elevation + direction.elevation * forward + horizontal * vertical,
 	};
 };
-export const getPlayerMuzzle = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint): SpatialPoint {
+export const getPlayerMuzzle = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint, context?: AuthoredPoseContext): SpatialPoint {
+	const binding = getMechAssetBinding(frame);
+	if (binding?.muzzle) return binding.muzzle(body, heading, slot, tubeIndex, context);
 	const rig = getPlayerWeaponRig(frame)[slot]; if (!rig) throw new RangeError(`Missing weapon rig ${frame}/${slot}`);
 	return rigMuzzle(rig, body, heading, tubeIndex, target);
 };
 export const getEnemyMuzzle = function (kind: EnemyKind, commander: boolean, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint): SpatialPoint {
 	const rig = getEnemyWeaponRig(kind, commander)[slot]; if (!rig) throw new RangeError(`Missing enemy weapon rig ${kind}/${slot}`);
 	return rigMuzzle(rig, body, heading, tubeIndex, target);
+};
+
+// Fixed authored mounts share torso motion; projectiles still converge through
+// gameplay aim. Procedural gimbals retain their existing direction solver.
+export const getPlayerFiringDirection = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, origin: SpatialPoint, target?: SpatialPoint): SpatialPoint {
+	if (getMechAssetBinding(frame)?.muzzle) {
+		if (!target) return getFiringDirection(origin, heading);
+		const forward = (target.x - origin.x) * Math.cos(heading) + (target.y - origin.y) * Math.sin(heading);
+		const adjustment = Math.max(0, 1 - forward);
+		return getFiringDirection(origin, heading, { x: target.x + Math.cos(heading) * adjustment, y: target.y + Math.sin(heading) * adjustment, elevation: target.elevation });
+	}
+	const rig = getPlayerWeaponRig(frame)[slot];
+	if (!rig) throw new RangeError(`Missing weapon rig ${frame}/${slot}`);
+	return weaponDirection(rig, body, heading, target);
 };

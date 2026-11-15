@@ -1,0 +1,60 @@
+{
+  "sourceSha256": "01f1ef4a71437ae96319346203f31e4c4ff21fa6dbc7a1e6271d9bdc57bbd7c4",
+  "scope": "Source Blender evaluated assemblies in original approved motions; center rays only, no independent aim sweep.",
+  "results": [
+    {
+      "motion": "walk",
+      "variant": "A",
+      "rays": 990,
+      "hits": []
+    },
+    {
+      "motion": "walk",
+      "variant": "B",
+      "rays": 220,
+      "hits": []
+    },
+    {
+      "motion": "walk",
+      "variant": "C",
+      "rays": 605,
+      "hits": []
+    },
+    {
+      "motion": "run",
+      "variant": "A",
+      "rays": 1962,
+      "hits": []
+    },
+    {
+      "motion": "run",
+      "variant": "B",
+      "rays": 436,
+      "hits": []
+    },
+    {
+      "motion": "run",
+      "variant": "C",
+      "rays": 1199,
+      "hits": []
+    },
+    {
+      "motion": "backward",
+      "variant": "A",
+      "rays": 2178,
+      "hits": []
+    },
+    {
+      "motion": "backward",
+      "variant": "B",
+      "rays": 484,
+      "hits": []
+    },
+    {
+      "motion": "backward",
+      "variant": "C",
+      "rays": 1331,
+      "hits": []
+    }
+  ]
+}

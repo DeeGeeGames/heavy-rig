@@ -1,0 +1,56 @@
+{
+  "inputs": {
+    "source": {
+      "path": "design/mechs/assets/warden/optimization/right-pod/source.glb",
+      "sha256": "2b56094a45107429a2657c9636a8b46eb6f7fe60d8bd01d41d46faa79f921863"
+    },
+    "candidate": {
+      "path": "design/mechs/assets/warden/optimization/right-pod/pod.glb",
+      "sha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89"
+    }
+  },
+  "target": [
+    0.0,
+    0.054999999701976776,
+    0.0
+  ],
+  "span": 0.43,
+  "geometryOnly": true,
+  "renders": {
+    "candidate-front.png": "c5912f2254aa93ef2586dcebd98411ab688c5ef84dcd25dd2870ee64225d6c4d",
+    "candidate-game.png": "dadd90483c32059416e98051aa54f87290e809208386659e0c9c697487cc7133",
+    "candidate-oblique.png": "ef4cd53aaef3cdad341319699e333765e43cefbc8e7ffdbd73bbb122c863f370",
+    "candidate-opposite-side.png": "290f4b432494781edd8aa9e8965aa8190e863aa361ed9f1f6cab150026937b8b",
+    "candidate-rear.png": "bce01b452145ede023c2bf0b65cb16a059c2b626b9f0c236f92bf0c29765f4fc",
+    "candidate-side.png": "efae977748bf4916a981e54b4f985a6d1fbeb45e4b7aad82ce42f90baf7ee5ab",
+    "candidate-underside.png": "b10e4f268a60a4a80f7e011b676c35a00daf8c95713c1d280c68e7a017e340a0",
+    "candidate-zoom.png": "eea4c97a0413b9a143bb48bcecfc6f88aeb372e53b82849a85ce0b1d11b0d379",
+    "source-front.png": "5469b19b21756a7c586f8f8ca55ab75859252a956a565e14f3049d06e69f1dad",
+    "source-game.png": "fb0e3efff2ffc27c8d3c2960b642cf01b4fae6d453bbd65d6d020232c789352d",
+    "source-oblique.png": "49fd49cab76426534fab9567b4a79f6e418c36f82885eb977c7447f8083d4f9f",
+    "source-opposite-side.png": "c8c8603401d037a988cf5a703178eec4ff8525fe4123b9934af7887a05ca7643",
+    "source-rear.png": "bee072308e94f08236f014ec6e1d5cf8b2a522f2f20cfb297d13bd90afdda6fb",
+    "source-side.png": "6e03a01ab4ef1226990ad07cecfd59741e9a31c0779d6d98fa92a918ba288fbe",
+    "source-underside.png": "346473cb02f6515ce14935e9abe62f73cb320aee2ca14e226dfd56ff60ca4b84",
+    "source-zoom.png": "b536c65b120f27df5fb5f47664b0f3662433853781ba96e0c8df84f08955539e"
+  },
+  "cameraScale": {
+    "scope": "Height-matched estimate using current production camera; source scale is not approved for integration.",
+    "productionHeight": 101.75,
+    "sourceHeight": 0.9624838484333693,
+    "scale": 105.71605971946234,
+    "viewport": [
+      1280,
+      720
+    ],
+    "zoom": 1,
+    "pixelsPerSourceUnit": 125.97587218229685,
+    "maximumZoomPixelsPerSourceUnit": 314.9396804557421,
+    "cameraDirection": [
+      1,
+      1,
+      1
+    ]
+  },
+  "scope": "Matched export renders and declared gameplay-size estimates; no runtime capture or performance measurement."
+}

@@ -1,0 +1,51 @@
+{
+  "chassisId": "warden",
+  "variantId": "warden-b",
+  "contractSignature": "159059be1a516a8404eff0bbfddee6eb6aa12b369047101a5d678aad9c143c83",
+  "mounts": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "left-shoulder bank",
+      "name": "Left shoulder bank",
+      "family": "energy",
+      "weapons": [
+        "laser",
+        "ppc"
+      ]
+    },
+    {
+      "id": "right-shoulder bank",
+      "name": "Right shoulder bank",
+      "family": "energy",
+      "weapons": [
+        "laser",
+        "ppc"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "warden-v1-candidate-01",
+    "image": "design/mechs/chassis/warden/concept/a/image.png",
+    "imageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3",
+    "variantId": "warden"
+  },
+  "reviewStatus": "pending",
+  "ownerApproval": null
+}

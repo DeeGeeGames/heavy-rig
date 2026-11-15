@@ -1,0 +1,850 @@
+{
+  "coordinateSystem": "Blender Z-up,-Y forward,+Xown-left",
+  "neutralHeight": 0.99951171875,
+  "groups": [
+    {
+      "name": "rig_pelvis",
+      "parent": null,
+      "pivot": [
+        0,
+        0.08,
+        0.565
+      ]
+    },
+    {
+      "name": "rig_torso",
+      "parent": "rig_pelvis",
+      "pivot": [
+        0,
+        0.08,
+        0.61
+      ]
+    },
+    {
+      "name": "rig_leg_left_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        0.136,
+        0.0767,
+        0.5164
+      ]
+    },
+    {
+      "name": "rig_leg_left_shin",
+      "parent": "rig_leg_left_thigh",
+      "pivot": [
+        0.205,
+        -0.048,
+        0.329
+      ]
+    },
+    {
+      "name": "rig_leg_left_foot",
+      "parent": "rig_leg_left_shin",
+      "pivot": [
+        0.2168,
+        0.01355,
+        0.0835
+      ]
+    },
+    {
+      "name": "rig_mount_left-gun",
+      "parent": "rig_torso",
+      "pivot": [
+        0.27,
+        0.07,
+        0.625
+      ]
+    },
+    {
+      "name": "rig_mount_left-shoulder bank",
+      "parent": "rig_torso",
+      "pivot": [
+        0.23,
+        0.103,
+        0.75
+      ]
+    },
+    {
+      "name": "rig_leg_right_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        -0.136,
+        0.0767,
+        0.5164
+      ]
+    },
+    {
+      "name": "rig_leg_right_shin",
+      "parent": "rig_leg_right_thigh",
+      "pivot": [
+        -0.205,
+        -0.048,
+        0.329
+      ]
+    },
+    {
+      "name": "rig_leg_right_foot",
+      "parent": "rig_leg_right_shin",
+      "pivot": [
+        -0.2168,
+        0.01355,
+        0.0835
+      ]
+    },
+    {
+      "name": "rig_mount_right-gun",
+      "parent": "rig_torso",
+      "pivot": [
+        -0.27,
+        0.07,
+        0.625
+      ]
+    },
+    {
+      "name": "rig_mount_right-shoulder bank",
+      "parent": "rig_torso",
+      "pivot": [
+        -0.23,
+        0.103,
+        0.75
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "name": "muzzle_left_launcher__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.26364782452583313,
+        0.0457058921456337,
+        0.9200563430786133
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true
+      }
+    },
+    {
+      "name": "physical_exit_left_launcher_lower_1__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.2004069685935974,
+        0.06302194499969482,
+        0.8923150300979614
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.06256917119026184,
+        "reprojectedRenderFaceY": 0.06402194499969482
+      }
+    },
+    {
+      "name": "physical_exit_left_launcher_lower_2__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.24228516221046448,
+        0.0629420747756958,
+        0.8929952383041382
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.06267616897821426,
+        "reprojectedRenderFaceY": 0.0639420747756958
+      }
+    },
+    {
+      "name": "physical_exit_left_launcher_lower_3__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.2839880883693695,
+        0.06287114524841309,
+        0.8935973048210144
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.06271298974752426,
+        "reprojectedRenderFaceY": 0.06387114524841309
+      }
+    },
+    {
+      "name": "physical_exit_left_launcher_lower_4__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.3231225609779358,
+        0.06282465362548828,
+        0.8939914703369141
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.06256862729787827,
+        "reprojectedRenderFaceY": 0.06382465362548828
+      }
+    },
+    {
+      "name": "physical_exit_left_launcher_upper_1__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.2002294957637787,
+        0.058055447578430175,
+        0.9345093965530396
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.057796236127614975,
+        "reprojectedRenderFaceY": 0.059055447578430176
+      }
+    },
+    {
+      "name": "physical_exit_left_launcher_upper_2__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.24129492044448853,
+        0.05813257598876953,
+        0.9338542819023132
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.05787248536944389,
+        "reprojectedRenderFaceY": 0.05913257598876953
+      }
+    },
+    {
+      "name": "physical_exit_left_launcher_upper_3__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.282295286655426,
+        0.05808095836639404,
+        0.9342924952507019
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.057832829654216766,
+        "reprojectedRenderFaceY": 0.05908095836639404
+      }
+    },
+    {
+      "name": "physical_exit_left_launcher_upper_4__export",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.32105129957199097,
+        0.057953046798706054,
+        0.9353790879249573
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.0579824261367321,
+        "reprojectedRenderFaceY": 0.058953046798706055
+      }
+    },
+    {
+      "name": "muzzle_right_launcher__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.26361772418022156,
+        0.045778412371873856,
+        0.9238836169242859
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true
+      }
+    },
+    {
+      "name": "physical_exit_right_launcher_lower_1__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.3232756555080414,
+        0.06292443180084228,
+        0.8978421688079834
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.0625988095998764,
+        "reprojectedRenderFaceY": 0.06392443180084229
+      }
+    },
+    {
+      "name": "physical_exit_right_launcher_lower_2__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.2853052318096161,
+        0.06298904323577881,
+        0.8973162770271301
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.06259296834468842,
+        "reprojectedRenderFaceY": 0.06398904323577881
+      }
+    },
+    {
+      "name": "physical_exit_right_launcher_lower_3__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.24467603862285614,
+        0.06300716304779053,
+        0.8971686959266663
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.0625813752412796,
+        "reprojectedRenderFaceY": 0.06400716304779053
+      }
+    },
+    {
+      "name": "physical_exit_right_launcher_lower_4__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.20140278339385986,
+        0.06294970417022705,
+        0.8976369500160217
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.06267980486154556,
+        "reprojectedRenderFaceY": 0.06394970417022705
+      }
+    },
+    {
+      "name": "physical_exit_right_launcher_upper_1__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.32486745715141296,
+        0.05808203125,
+        0.9372295141220093
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.057430561631917953,
+        "reprojectedRenderFaceY": 0.05908203125
+      }
+    },
+    {
+      "name": "physical_exit_right_launcher_upper_2__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.28654685616493225,
+        0.05804984474182129,
+        0.9374916553497314
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.057728927582502365,
+        "reprojectedRenderFaceY": 0.05904984474182129
+      }
+    },
+    {
+      "name": "physical_exit_right_launcher_upper_3__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.24569348990917206,
+        0.058118151664733886,
+        0.9369357824325562
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.05785081535577774,
+        "reprojectedRenderFaceY": 0.05911815166473389
+      }
+    },
+    {
+      "name": "physical_exit_right_launcher_upper_4__export",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.20480772852897644,
+        0.05805354022979736,
+        0.9374614357948303
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "fitted approved pod",
+        "visualOnlyCavity": true,
+        "inheritedDepth": 0.0572834312915802,
+        "reprojectedRenderFaceY": 0.05905354022979736
+      }
+    },
+    {
+      "name": "physical_exit_left_gun",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.35083,
+        -0.372,
+        0.6245
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "P2 barrel lip center; outside front plane by0.0031"
+      }
+    },
+    {
+      "name": "physical_exit_right_gun",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.35083,
+        -0.372,
+        0.6245
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "extras": {
+        "source": "P2 barrel lip center; outside front plane by0.0031"
+      }
+    },
+    {
+      "name": "connection_left_gun_torso",
+      "parent": "rig_torso",
+      "worldPosition": [
+        0.21104101836681366,
+        0.11999999731779099,
+        0.7099999785423279
+      ],
+      "extras": {
+        "role": "mount-connection-endpoint",
+        "embeddedNative": 0.006
+      }
+    },
+    {
+      "name": "connection_left_gun_mount",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.27628186345100403,
+        0.11999999731779099,
+        0.7099999785423279
+      ],
+      "extras": {
+        "role": "mount-connection-endpoint",
+        "embeddedNative": 0.006
+      }
+    },
+    {
+      "name": "connection_right_gun_torso",
+      "parent": "rig_torso",
+      "worldPosition": [
+        -0.21104104816913605,
+        0.11999999731779099,
+        0.7099999785423279
+      ],
+      "extras": {
+        "role": "mount-connection-endpoint",
+        "embeddedNative": 0.006
+      }
+    },
+    {
+      "name": "connection_right_gun_mount",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.27628186345100403,
+        0.11999999731779099,
+        0.7099999785423279
+      ],
+      "extras": {
+        "role": "mount-connection-endpoint",
+        "embeddedNative": 0.006
+      }
+    },
+    {
+      "name": "connection_left_shoulder_torso",
+      "parent": "rig_torso",
+      "worldPosition": [
+        0.19728197157382965,
+        0.10300000011920929,
+        0.75
+      ],
+      "extras": {
+        "role": "mount-connection-endpoint",
+        "embeddedNative": 0.006
+      }
+    },
+    {
+      "name": "connection_left_shoulder_mount",
+      "parent": "rig_mount_left-shoulder bank",
+      "worldPosition": [
+        0.2300027757883072,
+        0.10300000011920929,
+        0.75
+      ],
+      "extras": {
+        "role": "mount-connection-endpoint",
+        "embeddedNative": 0.006
+      }
+    },
+    {
+      "name": "connection_right_shoulder_torso",
+      "parent": "rig_torso",
+      "worldPosition": [
+        -0.19728191196918488,
+        0.10300000011920929,
+        0.75
+      ],
+      "extras": {
+        "role": "mount-connection-endpoint",
+        "embeddedNative": 0.006
+      }
+    },
+    {
+      "name": "connection_right_shoulder_mount",
+      "parent": "rig_mount_right-shoulder bank",
+      "worldPosition": [
+        -0.230002760887146,
+        0.10300000011920929,
+        0.75
+      ],
+      "extras": {
+        "role": "mount-connection-endpoint",
+        "embeddedNative": 0.006
+      }
+    }
+  ],
+  "staticConnections": [
+    {
+      "id": "left_gun",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
+      "parent": "rig_torso",
+      "binding": "rigid-to-torso",
+      "bodyAnchor": "connection_left_gun_torso",
+      "mountAnchor": "connection_left_gun_mount",
+      "style": "fixed solid neck with two embedded bearing collars",
+      "measurement": {
+        "id": "left_gun",
+        "mountGroup": "rig_mount_left-gun",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          0.217041015625,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountSkinPoint": [
+          0.2702818512916565,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodyAnchorWorld": [
+          0.21104101836681366,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountAnchorWorld": [
+          0.27628186345100403,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodySkinNormal": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "mountSkinNormal": [
+          -0.9853298664093018,
+          0.1704578995704651,
+          0.008315019309520721
+        ],
+        "axialSkinGapNative": 0.053240835666656494,
+        "lengthNative": 0.06524084367488395,
+        "radiusNative": 0.016,
+        "collarRadiusNative": 0.023,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapNative": 0.018267436228967506,
+        "neutralSkinTrianglePairs": {
+          "body": 78,
+          "mount": 120
+        }
+      }
+    },
+    {
+      "id": "right_gun",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
+      "parent": "rig_torso",
+      "binding": "rigid-to-torso",
+      "bodyAnchor": "connection_right_gun_torso",
+      "mountAnchor": "connection_right_gun_mount",
+      "style": "fixed solid neck with two embedded bearing collars",
+      "measurement": {
+        "id": "right_gun",
+        "mountGroup": "rig_mount_right-gun",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          -0.2170410454273224,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountSkinPoint": [
+          -0.2702818512916565,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodyAnchorWorld": [
+          -0.21104104816913605,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountAnchorWorld": [
+          -0.27628186345100403,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodySkinNormal": [
+          -1.0,
+          -0.0,
+          0.0
+        ],
+        "mountSkinNormal": [
+          0.9853298664093018,
+          0.17045773565769196,
+          0.008314969018101692
+        ],
+        "axialSkinGapNative": 0.053240805864334106,
+        "lengthNative": 0.06524081512458552,
+        "radiusNative": 0.016,
+        "collarRadiusNative": 0.023,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapNative": 0.018267428234883948,
+        "neutralSkinTrianglePairs": {
+          "body": 79,
+          "mount": 113
+        }
+      }
+    },
+    {
+      "id": "left_shoulder",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
+      "parent": "rig_torso",
+      "binding": "rigid-to-torso",
+      "bodyAnchor": "connection_left_shoulder_torso",
+      "mountAnchor": "connection_left_shoulder_mount",
+      "style": "fixed solid neck with two embedded bearing collars",
+      "measurement": {
+        "id": "left_shoulder",
+        "mountGroup": "rig_mount_left-shoulder bank",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          0.203281968832016,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountSkinPoint": [
+          0.22400277853012085,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodyAnchorWorld": [
+          0.19728197157382965,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountAnchorWorld": [
+          0.2300027757883072,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodySkinNormal": [
+          0.7769778370857239,
+          0.6224316954612732,
+          0.09425623714923859
+        ],
+        "mountSkinNormal": [
+          -0.9989888668060303,
+          -0.043395016342401505,
+          -0.01175280287861824
+        ],
+        "axialSkinGapNative": 0.02072080969810486,
+        "lengthNative": 0.03272080367159454,
+        "radiusNative": 0.014,
+        "collarRadiusNative": 0.021,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapNative": 0.009161825028046472,
+        "neutralSkinTrianglePairs": {
+          "body": 171,
+          "mount": 131
+        }
+      }
+    },
+    {
+      "id": "right_shoulder",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
+      "parent": "rig_torso",
+      "binding": "rigid-to-torso",
+      "bodyAnchor": "connection_right_shoulder_torso",
+      "mountAnchor": "connection_right_shoulder_mount",
+      "style": "fixed solid neck with two embedded bearing collars",
+      "measurement": {
+        "id": "right_shoulder",
+        "mountGroup": "rig_mount_right-shoulder bank",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          -0.20328190922737122,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountSkinPoint": [
+          -0.22400276362895966,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodyAnchorWorld": [
+          -0.19728191196918488,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountAnchorWorld": [
+          -0.230002760887146,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodySkinNormal": [
+          -0.7769778370857239,
+          0.6224316954612732,
+          0.09425623714923859
+        ],
+        "mountSkinNormal": [
+          0.998988926410675,
+          -0.043395012617111206,
+          -0.011752801947295666
+        ],
+        "axialSkinGapNative": 0.02072085440158844,
+        "lengthNative": 0.03272084814454051,
+        "radiusNative": 0.014,
+        "collarRadiusNative": 0.021,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapNative": 0.009161837480471344,
+        "neutralSkinTrianglePairs": {
+          "body": 177,
+          "mount": 132
+        }
+      }
+    }
+  ],
+  "meshGroups": {
+    "mount_connections": "rig_torso"
+  },
+  "weaponBinding": "rigid-to-torso",
+  "source": "geometry-report.json",
+  "bakedLauncherCollisionPolicy": "renderface only; analytic gameplaycolliders and independent exit anchors; eightvisiblecells,sixmappedgameplaytubes"
+}

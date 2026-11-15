@@ -1,0 +1,36 @@
+{
+  "toolVersions": {
+    "python": "3.14.7",
+    "pillow": "12.3.0",
+    "blender": "Blender 5.2.0 LTS",
+    "bun": "1.3.14",
+    "gltfTransform": "4.5.1"
+  },
+  "sourceSha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9",
+  "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
+  "bytes": 1036424,
+  "asset": "public/assets/mechs/warden/game-ready.glb",
+  "scope": "Shared inventory and neutral packaging refactor reproduced the selected approved asset byte-for-byte. New source ownership decisions and chassis motion remain separately reviewed.",
+  "recipeHashes": {
+    "scripts/mech-design/build-warden-game-ready.py": "16996cafce843ac369587182e1e81112fe457ce7164d084995456ff2692aa80e",
+    "design/mechs/assets/warden/game-ready/recipe.json": "6673b91c879dd5044226df3f8050a0fdb592c0c30ea79bd536588c804312643b",
+    "scripts/mech-design/blender/warden_game_ready/build_geometry.py": "013045c907c02f1b3d6e29c7d3ace477377dd5abe250ff4dff6e408dc7d03b4e",
+    "scripts/mech-design/blender/warden_game_ready/inventory_source.py": "f7e501112049a395d62b4f9ff33e2ded6775f9421f3d6cee53f2fe4ce7b6824f",
+    "scripts/mech-design/blender/warden_game_ready/mount_connections.py": "0bb90bbd3ec16624ccb0280fc69f8fd10966b74b86afd91d8a819149e0df49f2",
+    "scripts/mech-design/blender/warden_game_ready/pack_atlas.py": "b06a53248a1971a283d1f5049480a84519dcf311bd063156ee910c7933650855",
+    "scripts/mech-design/blender/warden_game_ready/package_rig.py": "05ad2ef2a0e0ba49a51bdc919c768a5e4e9b0a551adccd0a1cd17c6b9b6c8d4e",
+    "scripts/mech-design/blender/warden_game_ready/recipe.py": "8367b17635ed3c78244b534e4a8244510ec26f353d495d41b63252370714991a",
+    "scripts/mech-design/blender/warden_game_ready/vent_rebuild.py": "1960d5e86a5d535f261902ac39daf4a08a535be6deee81c58d5f41e594e953d8",
+    "scripts/mech-design/blender/source_inventory.py": "cc6664ae55aa15b6cce51419c95331a8cf478125700c421ab0a86dbf706a9e86",
+    "scripts/mech-design/blender/rigid_contract.py": "db5fcd7c4648a5fa980a3d8b20a4d4cd8560061f7f7b28f8f5e12c596f9159b0",
+    "scripts/mech-design/blender/rigid_packaging.py": "e51f1485eb35d4e7adf8595daa20a6b2136692222430adea1b9ce6cc232b83a2",
+    "design/mechs/assets/warden/game-ready/source-ownership.json": "2cd8a81cbfc0e001faad4eb68fab865e6accfa8fe7986b8f7b6991796a1c3c23",
+    "scripts/mech-design/blender/locomotion_trial.py": "717e99b713c403bdd9a8f26c3e1b12d333bdedee5a0910b3200e72f5d72c9e1a",
+    "scripts/mech-design/verify-authored-rig.mjs": "39bc52a2e0865cb414ee719f2f515693f41baebc084876900cbcc0a4623ebc45",
+    "scripts/mech-design/verify-game-ready.mjs": "eb198b447fa28555a354f09765d5d6fbfeb3205a4ecf295287f0bedc53714db8",
+    "scripts/mech-design/candidate-budget.ts": "1984079055040226c1f8a3a2603baeec4c047b785c99bcf28cece0c057183781",
+    "bun.lock": "0c29ed5c93e4fde1b712889a22797a2dd3fef7a1bf4868699570ac6847b79400"
+  },
+  "buildOutputAtValidation": "design/mechs/generated/pipeline-reviewed-rebuild/warden.glb",
+  "matchesSelectedAsset": true
+}

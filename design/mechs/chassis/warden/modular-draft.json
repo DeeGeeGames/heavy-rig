@@ -1,0 +1,45 @@
+{
+  "status": "preview-unapproved",
+  "sources": {
+    "bodyB": {
+      "path": "design/mechs/assets/warden/generated-source/body/warden-b-multiview-detailed.glb",
+      "sha256": "c4b8771f6c31e81475b75dcef3bee57f38e4ec9d0949ac16d0983c9d31543763"
+    },
+    "launcherA": {
+      "path": "design/mechs/assets/warden/generated-source/launcher-donor/warden-a-multiview-balanced.glb",
+      "sha256": "d79f7955e53f892768370c58b903285890dbc5c0b355a8399ef5f41837470189"
+    }
+  },
+  "interface": {
+    "coordinates": "Blender Z-up, -Y-forward, +X own-left; unnormalized source units",
+    "planeY": 0.12,
+    "donorMinimumZ": 0.8,
+    "anchors": {
+      "left": [
+        0.25,
+        0.12,
+        0.885
+      ],
+      "right": [
+        -0.25,
+        0.12,
+        0.885
+      ]
+    },
+    "status": "provisional; donor fit is not a watertight seam"
+  },
+  "variants": {
+    "warden": [
+      "launcher",
+      "launcher"
+    ],
+    "warden-b": [
+      "energy",
+      "energy"
+    ],
+    "warden-c": [
+      "energy",
+      "launcher"
+    ]
+  }
+}

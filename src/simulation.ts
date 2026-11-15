@@ -1,3 +1,5 @@
+import type { AuthoredPoseContext } from './authored-pose';
+import { getMechAssetBinding } from './mech-asset-registry';
 import { consumeFire, coolReactor, frameWeight, loadedMounts, usableMount, weightMetrics, type ReactorState } from './combat-resources';
 import { createMount, getWeapon, weaponDamage, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
 import { FRAMES, getFrame, type FrameId } from './frames';
@@ -5,7 +7,7 @@ import { canEquipWeapon, getEnemyHardpoints, getHardpoints, isFrameLoadout } fro
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, FACILITY_TARGET_ID, generateMissionMap, missionHostileCount, missionSpawn } from './missions';
-import { getPlayerMuzzle, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint } from './weapon-rig';
+import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint } from './weapon-rig';
 import { enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
 import { planSquads, squadApproach, type SquadOrder } from './enemy-squads';
 
@@ -27,6 +29,7 @@ export interface CombatCollection<T> extends ReadonlyArray<T> {
 	push(...items: T[]): number;
 }
 export interface CombatStateView {
+	authoredPose?: AuthoredPoseContext | undefined;
 	mission?: MissionRuntime;
 	frame: FrameId; difficulty: Difficulty; phase: 'combat'; loadout: WeaponMount[]; seed: number; stats: CombatStats; strikes: CombatCollection<ArtilleryStrike>;
 	player: Point & { angle: number; turret: number; targetId?: number | undefined; throttle: number; speed: number; hp: number; heat: number; overheated: boolean };
@@ -197,10 +200,8 @@ const launchWeapon = function (state: CombatStateView, weapon: WeaponDefinition,
 	const p = state.player;
 	state.stats.shotsFired++;
 	const aim = playerAimPoint(state);
-	const origin = getPlayerMuzzle(state.frame, slot, p, p.turret, tubeIndex(getPlayerWeaponRig(state.frame)[slot]?.tubes.length ?? 0, state.stats.shotsFired), aim);
-	const rig = getPlayerWeaponRig(state.frame)[slot];
-	if (!rig) throw new RangeError(`Missing weapon rig ${state.frame}/${slot}`);
-	const direction = weaponDirection(rig, p, p.turret, aim);
+	const origin = getPlayerMuzzle(state.frame, slot, p, p.turret, tubeIndex(getPlayerWeaponRig(state.frame)[slot]?.tubes.length ?? 0, state.stats.shotsFired), aim, state.authoredPose);
+	const direction = getPlayerFiringDirection(state.frame, slot, p, p.turret, origin, aim);
 	const spread = angle - p.turret; const cosine = Math.cos(spread); const sine = Math.sin(spread);
 	state.shots.push({ ...origin, origin, age: 0, vx: (direction.x * cosine - direction.y * sine) * weapon.speed, vy: (direction.x * sine + direction.y * cosine) * weapon.speed, vElevation: direction.elevation * weapon.speed, life: weapon.range / weapon.speed,
 		kind: weapon.kind, weapon: weapon.id, slot, target, damage: weaponDamage(weapon, mount.level),
@@ -309,6 +310,8 @@ export const coolingStep = function (state: CombatStateView, input: Controls, dt
 
 export const movementStep = function (state: CombatStateView, input: Controls, dt: number) {
 	const p = state.player;
+	const advancePose = getMechAssetBinding(state.frame)?.advancePose;
+	const before = state.authoredPose ?? advancePose?.(undefined, p, state.time - dt);
 	const frame = getFrame(state.frame);
 	const bounds = state.mission?.map ?? ARENA;
 	p.angle += input.heading === undefined ? input.turn * dt * frame.turnRate : clamp(angleDelta(p.angle, input.heading), -dt * frame.turnRate, dt * frame.turnRate);
@@ -323,6 +326,7 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 	p.y = clamp(p.y + Math.sin(p.angle) * p.speed * dt, 35, bounds.height - 35);
 	const aimAngle = Math.atan2(input.aim.y - p.y, input.aim.x - p.x);
 	p.turret += input.turretTurn === undefined ? clamp(angleDelta(p.turret, aimAngle), -dt * frame.turretRate, dt * frame.turretRate) : clamp(input.turretTurn, -1, 1) * dt * frame.turretRate;
+	if (advancePose) state.authoredPose = advancePose(before, p, state.time);
 
 };
 
@@ -353,10 +357,8 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 		if (p.overheated || !usableMount(mount) || !input.fire[slot]) return;
 		if (weapon.kind === 'laser') {
 			if (!consumeFire(mount, p, dt)) return;
-			const origin = getPlayerMuzzle(state.frame, slot, p, p.turret, undefined, playerAimPoint(state));
-			const rig = getPlayerWeaponRig(state.frame)[slot];
-			if (!rig) throw new RangeError(`Missing weapon rig ${state.frame}/${slot}`);
-			const direction = weaponDirection(rig, p, p.turret, playerAimPoint(state));
+			const origin = getPlayerMuzzle(state.frame, slot, p, p.turret, undefined, playerAimPoint(state), state.authoredPose);
+			const direction = getPlayerFiringDirection(state.frame, slot, p, p.turret, origin, playerAimPoint(state));
 			const length = direction.elevation < 0 ? Math.min(weapon.range, -origin.elevation / direction.elevation) : weapon.range;
 			const end = { x: origin.x + direction.x * length, y: origin.y + direction.y * length, elevation: Math.max(0, origin.elevation + direction.elevation * length) };
 			const hits = combatTargets(state).map(function (target) { return { target, entry: hitVolumeFraction(origin, end, targetVolume(target)) }; }).filter(function (hit): hit is { target: CombatTarget; entry: number } { return hit.entry !== undefined; }).sort(function (a, b) { return a.entry - b.entry; });

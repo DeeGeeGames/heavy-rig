@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-visual-approved-awaiting-in-game-acceptance",
+  "chassis": "warden",
+  "variant": "warden-a",
+  "scope": "Opt-in runtime asset; ordinary game and prior approved checkpoints unchanged",
+  "asset": {
+    "path": "public/assets/mechs/warden/game-ready.glb",
+    "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
+    "bytes": 1036424,
+    "triangles": 39748,
+    "meshSections": 16,
+    "materials": 3,
+    "textureImages": 2,
+    "textureDimensions": [
+      [
+        128,
+        128
+      ],
+      [
+        128,
+        128
+      ]
+    ],
+    "geometryArrayBytes": 986040,
+    "rgba8TextureBytesWithMipsEstimate": 174763,
+    "rigGroups": 12,
+    "anchors": 28,
+    "clips": [
+      "walk",
+      "run",
+      "backward"
+    ],
+    "coordinateSystem": "glTF Y-up, +Z-forward, +X-own-left; approximately one unit tall",
+    "extensionsRequired": [
+      "KHR_mesh_quantization"
+    ],
+    "mechanicalConnections": 4,
+    "weaponBinding": "rigid-to-torso",
+    "shinGuardBinding": "rigid-to-shin"
+  },
+  "source": {
+    "path": "design/mechs/assets/warden/game-ready/source.glb",
+    "sha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9",
+    "generation": "design/mechs/assets/warden/game-ready/generation.json"
+  },
+  "reproduction": "scripts/mech-design/build-warden-game-ready.py",
+  "runtimeAdapter": "src/authored-mech.ts",
+  "startup": "src/authored-game.ts",
+  "rigContract": "design/mechs/assets/warden/game-ready/rig-contract.json",
+  "priorPodSources": [
+    {
+      "path": "design/mechs/assets/warden/optimization/pod/pod.glb",
+      "sha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5"
+    },
+    {
+      "path": "design/mechs/assets/warden/optimization/right-pod/pod.glb",
+      "sha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89"
+    }
+  ],
+  "sixOfEightLogicalTubeMapping": [
+    "lower_1",
+    "lower_2",
+    "lower_4",
+    "upper_1",
+    "upper_3",
+    "upper_4"
+  ],
+  "acceptanceLimits": [
+    "Owner approved the exact Warden A appearance and demonstrated study motion; in-game appearance/feel and hardware performance acceptance remain open",
+    "Existing analytic gameplay collisions remain authoritative; baked launcher face is not a projectile collider",
+    "Second chassis repeatability not established"
+  ],
+  "repairs": [
+    "Reused approved pod shells and launcher bakes fitted to selected source",
+    "Explicit UV render-layer selection and MikkTSpace tangents",
+    "Removed two gun-roof slivers and rebuilt six overlapping vent inserts",
+    "Runtime waist-origin normalization and offset-aware weapon convergence",
+    "Rigid torso parenting for all four mounts and one combined static structural neck mesh"
+  ],
+  "approval": "design/mechs/assets/warden/game-ready/approval.json",
+  "modularityProof": {
+    "status": "owner-approved-bounded-authoring-proof",
+    "contract": "design/mechs/assets/warden/game-ready/modularity-contract.json",
+    "approval": "design/mechs/assets/warden/game-ready/modularity/approval.json",
+    "documentation": "design/mechs/assets/warden/game-ready/modularity-proof.md"
+  }
+}

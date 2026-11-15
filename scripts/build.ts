@@ -16,7 +16,11 @@ const result = await Bun.build({
 if (!result.success) throw new AggregateError(result.logs, 'Heavy Rig build failed');
 
 for await (const path of new Bun.Glob('**/*').scan({ cwd: join(root, 'public'), onlyFiles: true })) {
-	await Bun.write(join(dist, path), Bun.file(join(root, 'public', path)));
+	const file = Bun.file(join(root, 'public', path));
+	if (path.endsWith('.glb') && (await file.slice(0, 80).text()).startsWith('version https://git-lfs.github.com/spec/v1\n')) {
+		throw new Error(`Unresolved Git LFS asset: public/${path}; run git lfs pull --include='public/assets/mechs/**' --exclude=''`);
+	}
+	await Bun.write(join(dist, path), file);
 }
 for (const path of ['CNAME', '.nojekyll']) {
 	await Bun.write(join(dist, path), Bun.file(join(root, path)));

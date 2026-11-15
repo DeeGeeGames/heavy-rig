@@ -1,0 +1,76 @@
+{
+  "status": "interfaces-and-empty-cover-preview",
+  "sourceSha256": "071548b628e81ad1cef414c486bcaa639fee8c7a57e18ae2758f9167e2713a9d",
+  "interfaces": {
+    "left-energy": {
+      "socket": "socket_left_shoulder",
+      "muzzle": "muzzle_left_energy",
+      "muzzleLocal": [
+        -0.0004048943519592285,
+        -0.06727220863103867,
+        -0.0002905130386352539
+      ],
+      "forward": "-Y",
+      "scope": "Single logical bank origin; individual launcher tube exits are not defined."
+    },
+    "left-launcher": {
+      "socket": "socket_left_shoulder",
+      "muzzle": "muzzle_left_launcher",
+      "muzzleLocal": [
+        -0.0004048943519592285,
+        -0.06979741901159286,
+        -0.0002905130386352539
+      ],
+      "forward": "-Y",
+      "scope": "Single logical bank origin; individual launcher tube exits are not defined."
+    },
+    "left-gun": {
+      "muzzle": "muzzle_left_gun",
+      "muzzleLocal": [
+        0.07198002934455872,
+        -0.43024584650993347,
+        -0.024846196174621582
+      ],
+      "forward": "-Y",
+      "scope": "Estimated center of the terminal barrel rim."
+    },
+    "right-energy": {
+      "socket": "socket_right_shoulder",
+      "muzzle": "muzzle_right_energy",
+      "muzzleLocal": [
+        -0.0002893805503845215,
+        -0.06723794341087341,
+        2.872943878173828e-05
+      ],
+      "forward": "-Y",
+      "scope": "Single logical bank origin; individual launcher tube exits are not defined."
+    },
+    "right-launcher": {
+      "socket": "socket_right_shoulder",
+      "muzzle": "muzzle_right_launcher",
+      "muzzleLocal": [
+        -0.0002893805503845215,
+        -0.06972882151603699,
+        2.872943878173828e-05
+      ],
+      "forward": "-Y",
+      "scope": "Single logical bank origin; individual launcher tube exits are not defined."
+    },
+    "right-gun": {
+      "muzzle": "muzzle_right_gun",
+      "muzzleLocal": [
+        -0.07254448533058167,
+        -0.43021541833877563,
+        -0.024747014045715332
+      ],
+      "forward": "-Y",
+      "scope": "Estimated center of the terminal barrel rim."
+    }
+  },
+  "maximumReparentDrift": 5.960464477539063e-08,
+  "remaining": [
+    "Empty cover appearance approval",
+    "Verify exact muzzle exits and runtime axis conversion",
+    "Socket-local component packaging and optimization"
+  ]
+}

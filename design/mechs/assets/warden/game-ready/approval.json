@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-visual-approved",
+  "recordedDate": "2026-11-15",
+  "asset": {
+    "path": "public/assets/mechs/warden/game-ready.glb",
+    "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de"
+  },
+  "ownerStatement": "This is good. We can integrate this into the game to see how it looks soon.",
+  "scope": "Warden A appearance and demonstrated study motion, including rigid torso-mounted arms/pods and shin-owned ankle guards.",
+  "remainingAcceptance": [
+    "Real in-game appearance and control feel",
+    "Representative hardware performance",
+    "Other equipped variants",
+    "Second-chassis repeatability"
+  ],
+  "productionReplacementApproved": false
+}

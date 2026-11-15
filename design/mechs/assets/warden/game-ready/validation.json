@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "mode": "checkpoint",
+  "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
+  "selectedAssetMatch": true,
+  "bytes": 1036424,
+  "triangles": 39748,
+  "meshSections": 16,
+  "materials": 3,
+  "geometryBufferBytes": 986040,
+  "shinOwnership": {
+    "components": 14,
+    "maximumProbeError": 0
+  },
+  "rigidAttachments": {
+    "mounts": 4,
+    "staticNeckMeshes": 1,
+    "maximumLocalMatrixError": 0
+  },
+  "clips": {
+    "walk": {
+      "samples": 55,
+      "duration": 0.8999999761581421,
+      "minimumGround": -0.0000033573197199543436,
+      "maximumLoopError": 2.7197911922627327e-8,
+      "maximumAnkleArticulation": 0.3371986410688379
+    },
+    "run": {
+      "samples": 109,
+      "duration": 0.8999999761581421,
+      "minimumGround": -0.000003348649831952377,
+      "maximumLoopError": 3.426112576976337e-8,
+      "maximumAnkleArticulation": 0.5176639071077443
+    },
+    "backward": {
+      "samples": 121,
+      "duration": 1,
+      "minimumGround": -0.0000033557106338330533,
+      "maximumLoopError": 1.8538063598083632e-8,
+      "maximumAnkleArticulation": 0.26883572694222785
+    }
+  },
+  "firingOrigins": {
+    "runtimeSamples": 480,
+    "maximumMuzzleError": 1.0079944672093509e-13,
+    "originRenderDependencyError": 0
+  },
+  "fingerprints": {
+    "design/mechs/assets/warden/game-ready/recipe.json": "6673b91c879dd5044226df3f8050a0fdb592c0c30ea79bd536588c804312643b",
+    "scripts/mech-design/verify-game-ready.mjs": "eb198b447fa28555a354f09765d5d6fbfeb3205a4ecf295287f0bedc53714db8",
+    "scripts/mech-design/candidate-budget.ts": "1984079055040226c1f8a3a2603baeec4c047b785c99bcf28cece0c057183781",
+    "src/authored-mech.ts": "22594fedb08b9731e8564d44397c90c960186bcdb4b3d1e0a0b2fc8529f4d805",
+    "src/authored-pose.ts": "06820c220a8454817cf8841bec80e07fcda2a80b0a0d577ee0d7950e7b18dab4",
+    "src/weapon-rig.ts": "ed144d9f8eb3cd9074d8923cae47df230248a95e5ed2e14aa4bbed4694ea5c5b"
+  },
+  "limits": [
+    "Warden structural and runtime adapter contract; other chassis require their own validator configuration/adapter",
+    "Candidate cost ceilings do not establish hardware performance or owner acceptance",
+    "Headless texture placeholders; image appearance requires browser review",
+    "Samples do not establish swept-volume clearance or hardware frame time"
+  ],
+  "errors": []
+}

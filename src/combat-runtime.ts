@@ -30,6 +30,7 @@ export interface CombatComponents {
 }
 export interface CombatResources {
 	combatOrdering: { next: number };
+	combatPose: { value: CombatStateView['authoredPose'] };
 	combatConfig: Pick<State, 'frame' | 'difficulty' | 'phase' | 'seed'>;
 	combatMission: { value: MissionRuntime | undefined };
 	combatProgress: Pick<State, 'relay' | 'wave' | 'spawned' | 'spawnIn' | 'intermission' | 'time' | 'kills' | 'outcome' | 'nextId'>;
@@ -77,6 +78,7 @@ export const createCombatRuntime = function () {
 		.install(function (world, onCleanup) {
 			const empty = createState();
 			world.addResource('combatOrdering', { next: 0 });
+			world.addResource('combatPose', { value: undefined });
 			const nextOrder = function () { const ordering = world.getResource('combatOrdering'); return ordering.next++; };
 			const setOrder = function (id: number, order: number) { world.addComponent(id, 'combatOrder', order); const ordering = world.getResource('combatOrdering'); ordering.next = Math.max(ordering.next, order + 1); };
 			world.addResource('combatConfig', { frame: empty.frame, difficulty: empty.difficulty, phase: empty.phase, seed: empty.seed });
@@ -143,6 +145,7 @@ export const createCombatRuntime = function () {
 				const config = { frame: snapshot.frame, difficulty: snapshot.difficulty, phase: snapshot.phase, seed: snapshot.seed };
 				const progress = { relay: snapshot.relay, wave: snapshot.wave, spawned: snapshot.spawned, spawnIn: snapshot.spawnIn, intermission: snapshot.intermission, time: snapshot.time, kills: snapshot.kills, outcome: snapshot.outcome, nextId: snapshot.nextId };
 				const feedback = { beams: snapshot.beams.map(function (beam) { return { ...beam }; }), shake: snapshot.shake, cannonIn: snapshot.cannonIn, events: snapshot.events };
+				world.addResource('combatPose', { value: snapshot.authoredPose });
 				world.addResource('combatConfig', config); world.addResource('combatProgress', progress); world.addResource('combatFeedback', feedback); world.addResource('combatStats', snapshot.stats);
 				bindMission(snapshot.mission);
 				const position = { x: snapshot.player.x, y: snapshot.player.y }; const heading = { angle: snapshot.player.angle };
@@ -163,6 +166,7 @@ export const createCombatRuntime = function () {
 					get overheated() { return component(playerEntity.id, 'reactor').overheated; }, set overheated(value) { writeField(playerEntity.id, 'reactor', 'overheated', value); },
 				};
 				const facade: CombatStateView = {
+					get authoredPose() { return world.getResource('combatPose').value; }, set authoredPose(value) { world.getResource('combatPose').value = value; },
 					get player() { return player; }, set player(value) { Object.assign(player, value); },
 					get frame() { return world.getResource('combatConfig').frame; }, set frame(value) { world.getResource('combatConfig').frame = value; },
 					get difficulty() { return world.getResource('combatConfig').difficulty; }, set difficulty(value) { world.getResource('combatConfig').difficulty = value; },

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "kestrel",
+  "background": "Transparent",
+  "details": "Use option 2 as the exact image edit target. Enlarge both lateral Rattler gun modules modestly, approximately 15 percent in barrel-cluster diameter and barrel length, with proportionately larger gun housings. Preserve bracket attachment positions and shared forward aim. Preserve every other chassis detail, silhouette, cockpit, rear counterweight, torso, waist, legs, feet, rear talons, pose, camera, framing, materials and lighting.",
+  "loadout": [
+    {
+      "weaponId": "machine-gun",
+      "rounds": 600
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 600
+    }
+  ]
+}

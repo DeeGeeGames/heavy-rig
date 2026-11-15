@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Heavy Rig · Authored Warden study</title>
+	<style>
+		:root{font-family:system-ui,sans-serif;color:#dce5df;background:#0d181d;color-scheme:dark}*{box-sizing:border-box}body{margin:0}main{max-width:1100px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px}h1{font-size:15px;letter-spacing:.07em;color:#d9b36e;margin:0}.stage{position:relative;background:#102027;overflow:hidden}canvas{display:block;width:100%;aspect-ratio:16/10;touch-action:none}.status{position:absolute;top:12px;left:14px;pointer-events:none;font:11px ui-monospace,monospace;color:#dce5df}.controls{padding:12px 14px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}button,select{font:12px system-ui;min-height:34px;padding:7px 9px;border:1px solid #354a4e;background:#16282e;color:#c0cfcc;border-radius:5px;cursor:pointer}button[aria-pressed=true]{color:#152328;background:#d5ae6b;border-color:#d5ae6b}label{font-size:11px;display:flex;gap:7px;align-items:center}p{font-size:12px;line-height:1.5;color:#9eb4b3;margin:0;padding:0 14px 12px}details{margin:0 14px 14px;font-size:12px}pre{font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}#error{color:#f1bfa8}@media(max-width:500px){header{padding:12px 10px}h1{font-size:13px}canvas{aspect-ratio:1}.controls{padding:10px 8px;gap:5px}button,select{font-size:11px;padding:6px 7px}}@media(max-height:500px) and (min-width:650px){canvas{aspect-ratio:3/1}header{padding:8px 10px}}
+	</style>
+</head>
+<body>
+<main>
+	<header><h1>HEAVY RIG / AUTHORED WARDEN</h1><span id="asset-state">Loading asset…</span></header>
+	<div class="stage"><canvas id="authored-canvas"></canvas><output class="status" id="status">Loading…</output></div>
+	<div class="controls">
+		<button data-motion="idle" aria-pressed="true">Idle</button><button data-motion="walk" aria-pressed="false">Walk</button><button data-motion="run" aria-pressed="false">Run</button><button data-motion="backward" aria-pressed="false">Reverse</button><button data-motion="turn" aria-pressed="false">Turn</button><button data-motion="aim" aria-pressed="false">Aim</button><button data-motion="fire" aria-pressed="false">Fire</button>
+		<button id="pause" aria-pressed="false">Pause</button><button id="step">Step 1/60 s</button><button id="reset">Reset</button>
+		<label>View <select id="view"><option value="oblique">Three quarter</option><option value="front">Front</option><option value="rear">Rear</option><option value="legs">Shin guards</option><option value="side">Side</option><option value="underside">Underside</option><option value="joints-front">Connections · front</option><option value="joints-rear">Connections · rear</option><option value="joints-left">Connections · own-left</option><option value="joints-right">Connections · own-right</option><option value="joints-underside">Connections · underside</option><option value="game">Game camera</option><option value="game-max">Game maximum zoom</option></select></label>
+		<label>Aim target <select id="aim-target"><option value="sweep">Sweep</option><option value="near-high">Near / high</option><option value="near-low">Near / ground</option></select></label>
+		<label><input id="wireframe" type="checkbox">Wireframe</label><label><input id="anchors" type="checkbox">Firing origins</label>
+	</div>
+	<p>Walk, run and reverse reuse the authored motion clips. Weapons remain fixed to the torso through aim and gait. Firing origins share the simulation pose. The game-camera views use the production projection. Drag close views to orbit.</p>
+	<p id="error" hidden></p>
+	<details><summary>Asset and runtime evidence</summary><pre id="diagnostics">Loading…</pre></details>
+</main>
+<script type="module" src="./src/authored-mech-study.ts"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "samples": 121,
+  "duration": 1,
+  "maximumAnkleError": 1.253635610548333e-7,
+  "maximumFootTilt": 0.10464053853132023,
+  "maximumFootOrientationError": 2.555016904992207e-7,
+  "maximumPistonEndpointError": 0,
+  "maximumActuatorAngleError": 4.7309720118009125e-7,
+  "maximumBodyMatrixError": 9.319762872550541e-8,
+  "maximumGuardMatrixError": 1.8569521165190395e-7,
+  "minimumOverlap": 0.02347031126495669,
+  "minimumGroundHeight": -8.578498731430665e-8,
+  "airborneSamplesAbove002": 0,
+  "airbornePeakClearance": 0,
+  "airborneApexClearance": [],
+  "unsupportedSamples": 0,
+  "maximumStanceDrift": 7.228742151497784e-8,
+  "signedRootTravel": -0.2666666954755783,
+  "rootTravelError": 2.8808911645139545e-8,
+  "pelvisVerticalTravel": 0.008000016212463379,
+  "pelvisLateralTravel": 0.01600000072858967
+}

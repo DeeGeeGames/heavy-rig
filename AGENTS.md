@@ -12,3 +12,7 @@
 - Keep assets relative, saves namespaced, and unrelated edits intact.
 - Deliver through PRs against protected `master`; never bypass protection or merge without every required check succeeding for the current head.
 - Release task-created processes and browser tabs; preserve shared/user resources.
+
+## Mech image design
+
+For mech appearance, baseline images, or visual variants, read `.agents/skills/mech-design/SKILL.md` and use `design/mechs/README.md`. The design records, approved images and current gameplay hardpoints are the source of truth across chats. Keep candidates as drafts until explicit owner approval; review mount accuracy at every step. Do not replace game assets as part of concept-image approval.

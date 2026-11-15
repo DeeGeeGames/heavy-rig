@@ -1,0 +1,2056 @@
+{
+  "staticConnections": [
+    {
+      "id": "left_gun",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
+      "parent": "rig_torso",
+      "binding": "rigid-to-torso",
+      "bodyAnchor": "connection_left_gun_torso",
+      "mountAnchor": "connection_left_gun_mount",
+      "style": "fixed solid neck with two embedded bearing collars",
+      "measurement": {
+        "id": "left_gun",
+        "mountGroup": "rig_mount_left-gun",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          0.217041015625,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountSkinPoint": [
+          0.2702818512916565,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodyAnchorWorld": [
+          0.21104101836681366,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountAnchorWorld": [
+          0.27628186345100403,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodySkinNormal": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "mountSkinNormal": [
+          -0.9853298664093018,
+          0.1704578995704651,
+          0.008315019309520721
+        ],
+        "axialSkinGapNative": 0.053240835666656494,
+        "lengthNative": 0.06524084367488395,
+        "radiusNative": 0.016,
+        "collarRadiusNative": 0.023,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapNative": 0.018267436228967506,
+        "neutralSkinTrianglePairs": {
+          "body": 78,
+          "mount": 120
+        }
+      }
+    },
+    {
+      "id": "right_gun",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
+      "parent": "rig_torso",
+      "binding": "rigid-to-torso",
+      "bodyAnchor": "connection_right_gun_torso",
+      "mountAnchor": "connection_right_gun_mount",
+      "style": "fixed solid neck with two embedded bearing collars",
+      "measurement": {
+        "id": "right_gun",
+        "mountGroup": "rig_mount_right-gun",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          -0.2170410454273224,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountSkinPoint": [
+          -0.2702818512916565,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodyAnchorWorld": [
+          -0.21104104816913605,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountAnchorWorld": [
+          -0.27628186345100403,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodySkinNormal": [
+          -1.0,
+          -0.0,
+          0.0
+        ],
+        "mountSkinNormal": [
+          0.9853298664093018,
+          0.17045773565769196,
+          0.008314969018101692
+        ],
+        "axialSkinGapNative": 0.053240805864334106,
+        "lengthNative": 0.06524081512458552,
+        "radiusNative": 0.016,
+        "collarRadiusNative": 0.023,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapNative": 0.018267428234883948,
+        "neutralSkinTrianglePairs": {
+          "body": 79,
+          "mount": 113
+        }
+      }
+    },
+    {
+      "id": "left_shoulder",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
+      "parent": "rig_torso",
+      "binding": "rigid-to-torso",
+      "bodyAnchor": "connection_left_shoulder_torso",
+      "mountAnchor": "connection_left_shoulder_mount",
+      "style": "fixed solid neck with two embedded bearing collars",
+      "measurement": {
+        "id": "left_shoulder",
+        "mountGroup": "rig_mount_left-shoulder bank",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          0.203281968832016,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountSkinPoint": [
+          0.22400277853012085,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodyAnchorWorld": [
+          0.19728197157382965,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountAnchorWorld": [
+          0.2300027757883072,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodySkinNormal": [
+          0.7769778370857239,
+          0.6224316954612732,
+          0.09425623714923859
+        ],
+        "mountSkinNormal": [
+          -0.9989888668060303,
+          -0.043395016342401505,
+          -0.01175280287861824
+        ],
+        "axialSkinGapNative": 0.02072080969810486,
+        "lengthNative": 0.03272080367159454,
+        "radiusNative": 0.014,
+        "collarRadiusNative": 0.021,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapNative": 0.009161825028046472,
+        "neutralSkinTrianglePairs": {
+          "body": 171,
+          "mount": 131
+        }
+      }
+    },
+    {
+      "id": "right_shoulder",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
+      "parent": "rig_torso",
+      "binding": "rigid-to-torso",
+      "bodyAnchor": "connection_right_shoulder_torso",
+      "mountAnchor": "connection_right_shoulder_mount",
+      "style": "fixed solid neck with two embedded bearing collars",
+      "measurement": {
+        "id": "right_shoulder",
+        "mountGroup": "rig_mount_right-shoulder bank",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          -0.20328190922737122,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountSkinPoint": [
+          -0.22400276362895966,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodyAnchorWorld": [
+          -0.19728191196918488,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountAnchorWorld": [
+          -0.230002760887146,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodySkinNormal": [
+          -0.7769778370857239,
+          0.6224316954612732,
+          0.09425623714923859
+        ],
+        "mountSkinNormal": [
+          0.998988926410675,
+          -0.043395012617111206,
+          -0.011752801947295666
+        ],
+        "axialSkinGapNative": 0.02072085440158844,
+        "lengthNative": 0.03272084814454051,
+        "radiusNative": 0.014,
+        "collarRadiusNative": 0.021,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapNative": 0.009161837480471344,
+        "neutralSkinTrianglePairs": {
+          "body": 177,
+          "mount": 132
+        }
+      }
+    }
+  ],
+  "shinGuardBinding": {
+    "description": "Front ankle guard plates and their fasteners follow the shin; soles, toes and ankle bearings follow the foot",
+    "sourceComponents": [
+      {
+        "id": 4,
+        "group": "rig_leg_right_shin",
+        "triangles": 52
+      },
+      {
+        "id": 5,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 6,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 8,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 14,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 17,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 21,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 246,
+        "group": "rig_leg_left_shin",
+        "triangles": 52
+      },
+      {
+        "id": 247,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 248,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 253,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 276,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 278,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 279,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      }
+    ]
+  },
+  "sourceSha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9",
+  "originalImportedTriangles": 44783,
+  "removedOriginalPodTriangles": 5996,
+  "removedSlivers": [
+    {
+      "id": 53,
+      "triangles": 11,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0759277492761612,
+          0.71923828125
+        ],
+        [
+          -0.1271972358226776,
+          -0.0720214918255806,
+          0.7255859375
+        ]
+      ]
+    },
+    {
+      "id": 211,
+      "triangles": 9,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.681640625
+        ],
+        [
+          -0.1472168117761612,
+          0.3376464545726776,
+          0.6904296875
+        ]
+      ]
+    },
+    {
+      "id": 212,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.68505859375
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.69384765625
+        ]
+      ]
+    },
+    {
+      "id": 213,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2985839545726776,
+          0.7001953125
+        ],
+        [
+          -0.1477051079273224,
+          0.3381347358226776,
+          0.70703125
+        ]
+      ]
+    },
+    {
+      "id": 214,
+      "triangles": 67,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1716308742761612,
+          0.2937011420726776,
+          0.7294921875
+        ],
+        [
+          -0.1467285454273224,
+          0.3391112983226776,
+          0.76416015625
+        ]
+      ]
+    },
+    {
+      "id": 215,
+      "triangles": 27,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.73779296875
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.75927734375
+        ]
+      ]
+    },
+    {
+      "id": 216,
+      "triangles": 13,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.7412109375
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.75146484375
+        ]
+      ]
+    },
+    {
+      "id": 217,
+      "triangles": 14,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.732421875
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.74462890625
+        ]
+      ]
+    },
+    {
+      "id": 218,
+      "triangles": 18,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.74609375
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.75439453125
+        ]
+      ]
+    },
+    {
+      "id": 220,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.72119140625
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.7314453125
+        ]
+      ]
+    },
+    {
+      "id": 221,
+      "triangles": 15,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.73095703125
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.740234375
+        ]
+      ]
+    },
+    {
+      "id": 222,
+      "triangles": 11,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.68798828125
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.69873046875
+        ]
+      ]
+    },
+    {
+      "id": 230,
+      "triangles": 7,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.75537109375
+        ],
+        [
+          -0.1472168266773224,
+          0.3376464545726776,
+          0.76171875
+        ]
+      ]
+    },
+    {
+      "id": 393,
+      "triangles": 23,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3303222954273224,
+          0.68798828125
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.7060546875
+        ]
+      ]
+    },
+    {
+      "id": 394,
+      "triangles": 13,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3303222954273224,
+          0.7265625
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.73828125
+        ]
+      ]
+    },
+    {
+      "id": 397,
+      "triangles": 9,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2946777641773224,
+          0.68505859375
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.69677734375
+        ]
+      ]
+    },
+    {
+      "id": 398,
+      "triangles": 7,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1472167670726776,
+          0.2951660454273224,
+          0.68896484375
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.70166015625
+        ]
+      ]
+    },
+    {
+      "id": 399,
+      "triangles": 9,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2946777641773224,
+          0.697265625
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.70654296875
+        ]
+      ]
+    },
+    {
+      "id": 400,
+      "triangles": 9,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1477050483226776,
+          0.2946777641773224,
+          0.70458984375
+        ],
+        [
+          0.1696777194738388,
+          0.3381347954273224,
+          0.7158203125
+        ]
+      ]
+    },
+    {
+      "id": 401,
+      "triangles": 19,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2946777641773224,
+          0.693359375
+        ],
+        [
+          0.1696777194738388,
+          0.3381347954273224,
+          0.7109375
+        ]
+      ]
+    },
+    {
+      "id": 402,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1472167670726776,
+          0.2946777641773224,
+          0.7177734375
+        ],
+        [
+          0.1696777194738388,
+          0.3381347954273224,
+          0.72509765625
+        ]
+      ]
+    },
+    {
+      "id": 403,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2946777641773224,
+          0.7333984375
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.740234375
+        ]
+      ]
+    },
+    {
+      "id": 404,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2946777641773224,
+          0.7373046875
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.7451171875
+        ]
+      ]
+    },
+    {
+      "id": 405,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2946777641773224,
+          0.7421875
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.75048828125
+        ]
+      ]
+    },
+    {
+      "id": 406,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2946777641773224,
+          0.74755859375
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.75537109375
+        ]
+      ]
+    },
+    {
+      "id": 415,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2946777641773224,
+          0.75244140625
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.76025390625
+        ]
+      ]
+    },
+    {
+      "id": 485,
+      "triangles": 22,
+      "reason": "nonstructural forward-pointing gun-roof sliver",
+      "bounds": [
+        [
+          -0.357177734375,
+          -0.008056676015257835,
+          0.74755859375
+        ],
+        [
+          -0.3449706733226776,
+          0.09106441587209702,
+          0.75390625
+        ]
+      ]
+    },
+    {
+      "id": 486,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1740722358226776,
+          -0.0695800930261612,
+          0.68115234375
+        ],
+        [
+          -0.1271972358226776,
+          -0.0661621168255806,
+          0.68896484375
+        ]
+      ]
+    },
+    {
+      "id": 487,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1740722358226776,
+          -0.0700683742761612,
+          0.68505859375
+        ],
+        [
+          -0.1271972358226776,
+          -0.0666503980755806,
+          0.69287109375
+        ]
+      ]
+    },
+    {
+      "id": 488,
+      "triangles": 20,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1740722358226776,
+          -0.0715332180261612,
+          0.689453125
+        ],
+        [
+          -0.1271972358226776,
+          -0.0676269605755806,
+          0.701171875
+        ]
+      ]
+    },
+    {
+      "id": 489,
+      "triangles": 20,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0729980617761612,
+          0.6982421875
+        ],
+        [
+          -0.1271972358226776,
+          -0.0690918043255806,
+          0.70703125
+        ]
+      ]
+    },
+    {
+      "id": 490,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0739746242761612,
+          0.70654296875
+        ],
+        [
+          -0.1271972358226776,
+          -0.0695800855755806,
+          0.7119140625
+        ]
+      ]
+    },
+    {
+      "id": 491,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0744629055261612,
+          0.71044921875
+        ],
+        [
+          -0.1267089545726776,
+          -0.0705566480755806,
+          0.716796875
+        ]
+      ]
+    },
+    {
+      "id": 492,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0749511867761612,
+          0.71484375
+        ],
+        [
+          -0.1271972358226776,
+          -0.0715332105755806,
+          0.72119140625
+        ]
+      ]
+    },
+    {
+      "id": 493,
+      "triangles": 18,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0783691555261612,
+          0.73046875
+        ],
+        [
+          -0.1271972358226776,
+          -0.0744628980755806,
+          0.73876953125
+        ]
+      ]
+    },
+    {
+      "id": 494,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0788574367761612,
+          0.73779296875
+        ],
+        [
+          -0.1271972358226776,
+          -0.0749511793255806,
+          0.74267578125
+        ]
+      ]
+    },
+    {
+      "id": 495,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0798339992761612,
+          0.74169921875
+        ],
+        [
+          -0.1271972358226776,
+          -0.0759277418255806,
+          0.7470703125
+        ]
+      ]
+    },
+    {
+      "id": 496,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0764160305261612,
+          0.72314453125
+        ],
+        [
+          -0.1271972358226776,
+          -0.0729980543255806,
+          0.72998046875
+        ]
+      ]
+    },
+    {
+      "id": 497,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1745605170726776,
+          -0.0769043117761612,
+          0.72705078125
+        ],
+        [
+          -0.1271972358226776,
+          -0.0734863355755806,
+          0.734375
+        ]
+      ]
+    },
+    {
+      "id": 565,
+      "triangles": 64,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1716308742761612,
+          0.2941894233226776,
+          0.67919921875
+        ],
+        [
+          -0.1472168117761612,
+          0.3391112983226776,
+          0.7109375
+        ]
+      ]
+    },
+    {
+      "id": 566,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.6884765625
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.69775390625
+        ]
+      ]
+    },
+    {
+      "id": 567,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.6923828125
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.70166015625
+        ]
+      ]
+    },
+    {
+      "id": 568,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.6962890625
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.7060546875
+        ]
+      ]
+    },
+    {
+      "id": 569,
+      "triangles": 8,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1696777492761612,
+          0.2951659858226776,
+          0.70458984375
+        ],
+        [
+          -0.1472168266773224,
+          0.3381347358226776,
+          0.7109375
+        ]
+      ]
+    },
+    {
+      "id": 570,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.6923828125
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.703125
+        ]
+      ]
+    },
+    {
+      "id": 571,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.69775390625
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.70849609375
+        ]
+      ]
+    },
+    {
+      "id": 572,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.70263671875
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.71337890625
+        ]
+      ]
+    },
+    {
+      "id": 573,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.70751953125
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.7177734375
+        ]
+      ]
+    },
+    {
+      "id": 574,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.7119140625
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.72216796875
+        ]
+      ]
+    },
+    {
+      "id": 575,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.716796875
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.7265625
+        ]
+      ]
+    },
+    {
+      "id": 576,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.72607421875
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.73583984375
+        ]
+      ]
+    },
+    {
+      "id": 577,
+      "triangles": 24,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.7353515625
+        ],
+        [
+          -0.08325197547674179,
+          0.357666015625,
+          0.75
+        ]
+      ]
+    },
+    {
+      "id": 578,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          -0.1364746391773224,
+          0.3303222358226776,
+          0.7451171875
+        ],
+        [
+          -0.08325198292732239,
+          0.357666015625,
+          0.7548828125
+        ]
+      ]
+    },
+    {
+      "id": 589,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.06958005577325821,
+          0.68115234375
+        ],
+        [
+          0.1745605766773224,
+          -0.06616207957267761,
+          0.68896484375
+        ]
+      ]
+    },
+    {
+      "id": 590,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07006833702325821,
+          0.68505859375
+        ],
+        [
+          0.1745605766773224,
+          -0.06665036082267761,
+          0.69287109375
+        ]
+      ]
+    },
+    {
+      "id": 591,
+      "triangles": 20,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07153318077325821,
+          0.689453125
+        ],
+        [
+          0.1745605766773224,
+          -0.06762692332267761,
+          0.701171875
+        ]
+      ]
+    },
+    {
+      "id": 592,
+      "triangles": 20,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07299802452325821,
+          0.6982421875
+        ],
+        [
+          0.1745605766773224,
+          -0.06909176707267761,
+          0.70703125
+        ]
+      ]
+    },
+    {
+      "id": 593,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07397458702325821,
+          0.70654296875
+        ],
+        [
+          0.1745605766773224,
+          -0.06958004832267761,
+          0.7119140625
+        ]
+      ]
+    },
+    {
+      "id": 594,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07446286827325821,
+          0.71044921875
+        ],
+        [
+          0.1745605766773224,
+          -0.07055661082267761,
+          0.716796875
+        ]
+      ]
+    },
+    {
+      "id": 595,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07495114952325821,
+          0.71484375
+        ],
+        [
+          0.1745605766773224,
+          -0.07153317332267761,
+          0.72119140625
+        ]
+      ]
+    },
+    {
+      "id": 596,
+      "triangles": 18,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07836911827325821,
+          0.73046875
+        ],
+        [
+          0.1745605766773224,
+          -0.07446286082267761,
+          0.73876953125
+        ]
+      ]
+    },
+    {
+      "id": 597,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07885739952325821,
+          0.73779296875
+        ],
+        [
+          0.1745605766773224,
+          -0.07495114207267761,
+          0.74267578125
+        ]
+      ]
+    },
+    {
+      "id": 598,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07934568077325821,
+          0.7421875
+        ],
+        [
+          0.1745605766773224,
+          -0.07592770457267761,
+          0.7470703125
+        ]
+      ]
+    },
+    {
+      "id": 599,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07592771202325821,
+          0.71923828125
+        ],
+        [
+          0.1745605766773224,
+          -0.07202145457267761,
+          0.7255859375
+        ]
+      ]
+    },
+    {
+      "id": 600,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07641599327325821,
+          0.72314453125
+        ],
+        [
+          0.1745605766773224,
+          -0.07299801707267761,
+          0.72998046875
+        ]
+      ]
+    },
+    {
+      "id": 601,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1271972954273224,
+          -0.07690427452325821,
+          0.72705078125
+        ],
+        [
+          0.1745605766773224,
+          -0.07348629832267761,
+          0.734375
+        ]
+      ]
+    },
+    {
+      "id": 604,
+      "triangles": 22,
+      "reason": "nonstructural forward-pointing gun-roof sliver",
+      "bounds": [
+        [
+          0.344482421875,
+          -0.008056583814322948,
+          0.74755859375
+        ],
+        [
+          0.3571777641773224,
+          0.09106450527906418,
+          0.75390625
+        ]
+      ]
+    },
+    {
+      "id": 636,
+      "triangles": 2,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08422849327325821,
+          0.3298340141773224,
+          0.6865234375
+        ],
+        [
+          0.1330566108226776,
+          0.340087890625,
+          0.75146484375
+        ]
+      ]
+    },
+    {
+      "id": 637,
+      "triangles": 8,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3312988579273224,
+          0.69775390625
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.70849609375
+        ]
+      ]
+    },
+    {
+      "id": 638,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08374021202325821,
+          0.3303222954273224,
+          0.703125
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.71337890625
+        ]
+      ]
+    },
+    {
+      "id": 639,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3303222954273224,
+          0.70751953125
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.7177734375
+        ]
+      ]
+    },
+    {
+      "id": 640,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3303222954273224,
+          0.71240234375
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.72216796875
+        ]
+      ]
+    },
+    {
+      "id": 641,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3303222954273224,
+          0.716796875
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.7265625
+        ]
+      ]
+    },
+    {
+      "id": 642,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3303222954273224,
+          0.7216796875
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.7314453125
+        ]
+      ]
+    },
+    {
+      "id": 643,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3303222954273224,
+          0.73095703125
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.74267578125
+        ]
+      ]
+    },
+    {
+      "id": 644,
+      "triangles": 10,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3312988579273224,
+          0.73583984375
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.74462890625
+        ]
+      ]
+    },
+    {
+      "id": 645,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325193077325821,
+          0.3303222954273224,
+          0.740234375
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.75
+        ]
+      ]
+    },
+    {
+      "id": 646,
+      "triangles": 12,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.08325192332267761,
+          0.3303222954273224,
+          0.7451171875
+        ],
+        [
+          0.1359862983226776,
+          0.357666015625,
+          0.7548828125
+        ]
+      ]
+    },
+    {
+      "id": 647,
+      "triangles": 64,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467284858226776,
+          0.2937012016773224,
+          0.67919921875
+        ],
+        [
+          0.1716308444738388,
+          0.3391113579273224,
+          0.7109375
+        ]
+      ]
+    },
+    {
+      "id": 648,
+      "triangles": 8,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1467285007238388,
+          0.2946777641773224,
+          0.681640625
+        ],
+        [
+          0.1691894382238388,
+          0.3381347954273224,
+          0.69189453125
+        ]
+      ]
+    },
+    {
+      "id": 649,
+      "triangles": 16,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1472167670726776,
+          0.2946777641773224,
+          0.70947265625
+        ],
+        [
+          0.1696777194738388,
+          0.3381347954273224,
+          0.72021484375
+        ]
+      ]
+    },
+    {
+      "id": 650,
+      "triangles": 8,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1472167670726776,
+          0.2946777641773224,
+          0.72216796875
+        ],
+        [
+          0.1696777194738388,
+          0.3381347954273224,
+          0.7294921875
+        ]
+      ]
+    },
+    {
+      "id": 651,
+      "triangles": 8,
+      "reason": "overlapping vent relief replaced with explicit louvres",
+      "bounds": [
+        [
+          0.1472167670726776,
+          0.2946777641773224,
+          0.72705078125
+        ],
+        [
+          0.1701660007238388,
+          0.3381347954273224,
+          0.73388671875
+        ]
+      ]
+    }
+  ],
+  "roundCollarReductions": [
+    {
+      "component": 109,
+      "before": 620,
+      "after": 402,
+      "sampledBidirectionalSurfaceError": 0.00042991252848878503,
+      "tolerance": 0.0015
+    },
+    {
+      "component": 129,
+      "before": 624,
+      "after": 404,
+      "sampledBidirectionalSurfaceError": 0.000505391857586801,
+      "tolerance": 0.0015
+    },
+    {
+      "component": 423,
+      "before": 606,
+      "after": 392,
+      "sampledBidirectionalSurfaceError": 0.0005054173525422812,
+      "tolerance": 0.0015
+    },
+    {
+      "component": 443,
+      "before": 614,
+      "after": 398,
+      "sampledBidirectionalSurfaceError": 0.00042898074025288224,
+      "tolerance": 0.0015
+    }
+  ],
+  "bodyBeforePlanarDissolve": {
+    "rig_leg_left_foot": 1540,
+    "rig_leg_left_shin": 3348,
+    "rig_leg_left_thigh": 1318,
+    "rig_leg_right_foot": 1537,
+    "rig_leg_right_shin": 3338,
+    "rig_leg_right_thigh": 1295,
+    "rig_mount_left-gun": 5403,
+    "rig_mount_left-shoulder bank": 601,
+    "rig_mount_right-gun": 5551,
+    "rig_mount_right-shoulder bank": 597,
+    "rig_pelvis": 2332,
+    "rig_torso": 10398
+  },
+  "bodyAfterPlanarDissolve": {
+    "rig_leg_left_foot": 1538,
+    "rig_leg_left_shin": 3343,
+    "rig_leg_left_thigh": 1310,
+    "rig_leg_right_foot": 1533,
+    "rig_leg_right_shin": 3335,
+    "rig_leg_right_thigh": 1286,
+    "rig_mount_left-gun": 5285,
+    "rig_mount_left-shoulder bank": 599,
+    "rig_mount_right-gun": 5410,
+    "rig_mount_right-shoulder bank": 595,
+    "rig_pelvis": 2297,
+    "rig_torso": 10261
+  },
+  "podFits": [
+    {
+      "side": "left",
+      "source": "design/mechs/assets/warden/optimization/pod/pod.glb",
+      "sourceSha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5",
+      "sourceBounds": [
+        [
+          -0.1385248899459839,
+          -0.06199999898672104,
+          -0.0879065990447998
+        ],
+        [
+          0.13726791739463806,
+          0.23800000548362732,
+          0.08811283111572266
+        ]
+      ],
+      "targetBounds": [
+        [
+          0.1276855319738388,
+          0.053955115377902985,
+          0.84130859375
+        ],
+        [
+          0.399169921875,
+          0.3713379502296448,
+          0.99951171875
+        ]
+      ],
+      "scale": [
+        0.9843780398368835,
+        1.0579427480697632,
+        0.8987821936607361
+      ]
+    },
+    {
+      "side": "right",
+      "source": "design/mechs/assets/warden/optimization/right-pod/pod.glb",
+      "sourceSha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89",
+      "sourceBounds": [
+        [
+          -0.13831102848052979,
+          -0.06199999898672104,
+          -0.09593278169631958
+        ],
+        [
+          0.1381191611289978,
+          0.23800000548362732,
+          0.08791717886924744
+        ]
+      ],
+      "targetBounds": [
+        [
+          -0.3991699516773224,
+          0.05395504832267761,
+          0.84130859375
+        ],
+        [
+          -0.1276855617761612,
+          0.371337890625,
+          0.99951171875
+        ]
+      ],
+      "scale": [
+        0.9821082949638367,
+        1.0579427480697632,
+        0.8605012893676758
+      ]
+    }
+  ],
+  "atlas": {
+    "size": 128,
+    "paddingPixels": 3,
+    "tiles": [
+      {
+        "side": "left",
+        "material": "pod_launcher_atlas",
+        "tile": 0,
+        "source": "design/mechs/assets/warden/optimization/pod/pod.glb",
+        "sourceSha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5",
+        "uvOffset": [
+          0.0234375,
+          0.5234375
+        ],
+        "uvScale": [
+          0.453125,
+          0.453125
+        ],
+        "color": {
+          "sourceDimensions": [
+            512,
+            512
+          ],
+          "sourceImageSha256": "461e167d7f742314853417f4e54472875bf7df07debe8baca68b5249b2fbcb80"
+        },
+        "normal": {
+          "sourceDimensions": [
+            512,
+            512
+          ],
+          "sourceImageSha256": "72052796203e7757e039473e1e964fbb9bef86d493147115aeced1572ac15286"
+        }
+      },
+      {
+        "side": "left",
+        "material": "pod_housing_atlas",
+        "tile": 1,
+        "source": "design/mechs/assets/warden/optimization/pod/pod.glb",
+        "sourceSha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5",
+        "uvOffset": [
+          0.5234375,
+          0.5234375
+        ],
+        "uvScale": [
+          0.453125,
+          0.453125
+        ],
+        "color": {
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "sourceImageSha256": "8a4938d2d232283cebdd52c94eb7c204da1708d23837a774d8f0b6f07e855310"
+        },
+        "normal": {
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "sourceImageSha256": "b77ad77d29132ee614fb75b823858d0f0a8fafe6c1f9efe883fa093ebdf4f444"
+        }
+      },
+      {
+        "side": "right",
+        "material": "pod_launcher_atlas",
+        "tile": 2,
+        "source": "design/mechs/assets/warden/optimization/right-pod/pod.glb",
+        "sourceSha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89",
+        "uvOffset": [
+          0.0234375,
+          0.0234375
+        ],
+        "uvScale": [
+          0.453125,
+          0.453125
+        ],
+        "color": {
+          "sourceDimensions": [
+            512,
+            512
+          ],
+          "sourceImageSha256": "1f464929ae70cd3b88bf6451ffa0f9d1ecc44178f2987d3cf2cb93d3f92d000e"
+        },
+        "normal": {
+          "sourceDimensions": [
+            512,
+            512
+          ],
+          "sourceImageSha256": "389f323bc0770b967d97978895f1bbba0c5ebdbdc1bc89a77854281008856c80"
+        }
+      },
+      {
+        "side": "right",
+        "material": "pod_housing_atlas",
+        "tile": 3,
+        "source": "design/mechs/assets/warden/optimization/right-pod/pod.glb",
+        "sourceSha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89",
+        "uvOffset": [
+          0.5234375,
+          0.0234375
+        ],
+        "uvScale": [
+          0.453125,
+          0.453125
+        ],
+        "color": {
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "sourceImageSha256": "02217d90e09e6cee35bf35025325d578f21b5b0133f9d5003bfd8661e5195f89"
+        },
+        "normal": {
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "sourceImageSha256": "5656cdf0a80d594942651a9f3be53c95848a6fcf05d2d8e8dee7c74345211abf"
+        }
+      }
+    ],
+    "rgba8WithFullMipChainEstimatedBytes": 174762.66666666666
+  },
+  "objects": [
+    {
+      "name": "rig_leg_left_foot",
+      "triangles": 1538,
+      "materials": 1
+    },
+    {
+      "name": "rig_leg_left_shin",
+      "triangles": 3343,
+      "materials": 1
+    },
+    {
+      "name": "rig_leg_left_thigh",
+      "triangles": 1310,
+      "materials": 1
+    },
+    {
+      "name": "rig_leg_right_foot",
+      "triangles": 1533,
+      "materials": 1
+    },
+    {
+      "name": "rig_leg_right_shin",
+      "triangles": 3335,
+      "materials": 1
+    },
+    {
+      "name": "rig_leg_right_thigh",
+      "triangles": 1286,
+      "materials": 1
+    },
+    {
+      "name": "rig_mount_left-gun",
+      "triangles": 5285,
+      "materials": 1
+    },
+    {
+      "name": "rig_mount_left-shoulder bank",
+      "triangles": 1521,
+      "materials": 2
+    },
+    {
+      "name": "rig_mount_right-gun",
+      "triangles": 5410,
+      "materials": 1
+    },
+    {
+      "name": "rig_mount_right-shoulder bank",
+      "triangles": 1509,
+      "materials": 2
+    },
+    {
+      "name": "rig_pelvis",
+      "triangles": 2297,
+      "materials": 1
+    },
+    {
+      "name": "rig_torso",
+      "triangles": 10261,
+      "materials": 2
+    },
+    {
+      "name": "mount_connections",
+      "triangles": 1120,
+      "materials": 1
+    }
+  ],
+  "featureDecisions": {
+    "mountConnections": "Four measured solid sleeve/rod necks with embedded bearing collars; one combined static neck mesh, all weapon groups and necks remain rigidly fixed to the torso",
+    "bankPivot": "Pitch axis through measured lower bracket-to-torso contact band Y~0.103 Z~0.750; X remains along the bearing axis",
+    "ventRepair": "Six rebuilt noncoplanar geometric louvres, source frames retained; browser z-fighting repaired without texture growth",
+    "keep": "body outline,major armor,joints,bores,pod supports",
+    "reuse": "approved housing/cartridge topology and selective bakes, fitted toP2 pod envelope",
+    "simplify": "near-coplanar interior body tessellation at0.8degrees; no collapse",
+    "bake": "reuse accepted shallow relief and launcher face bakes in shared128pxcolor+normalatlas",
+    "remove": "original cracked P2podskins and replaced geometric launcher detail; isolated thin slivers"
+  },
+  "triangles": 39748
+}

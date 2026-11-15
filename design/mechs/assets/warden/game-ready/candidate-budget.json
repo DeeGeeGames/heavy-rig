@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "chassis": "warden",
+  "rationale": "Conservative iteration envelope: do not exceed the selected Warden A's measured geometry or payload costs. Lower costs may pass while retaining all structural checks. These ceilings are not a hardware performance target or owner acceptance; other chassis require their own justified budgets.",
+  "maximum": {
+    "triangles": 39748,
+    "meshSections": 16,
+    "materials": 3,
+    "geometryBufferBytes": 986040,
+    "bytes": 1036424
+  }
+}

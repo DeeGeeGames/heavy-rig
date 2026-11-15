@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "warden-own-right-pod-optimization",
+  "status": "owner-approved-component-proof",
+  "approvalRecord": "design/mechs/chassis/warden/approved-right-pod-optimization.json",
+  "scope": "Own-right shared housing/collar and socket-local launcher; supports excluded. Owner acceptance covers this isolated component only; no full-model or production replacement approval.",
+  "coordinateConvention": {
+    "blender": "Socket-local Z up, -Y forward, +X own-left",
+    "gltf": "Standard exported +Y up, +Z forward",
+    "units": "Unnormalized accepted source units"
+  },
+  "sourceInputs": {
+    "design/mechs/assets/warden/components/walk/chassis.glb": "f261981a90ebc58da763f0a6804c2ed9654e85d25a90ca47fb99bcee3ba868a8",
+    "design/mechs/assets/warden/components/walk/right-launcher.glb": "c572cb55b3ba79610dc28b3c1fdfe8ec105a6efc6e58abfd7d330bf0aa663581",
+    "design/mechs/assets/warden/components/physical-origins.json": "f59138e187c0e20dff9896f5dea8a595e8e03ae99b1ce9d04ce0ec97dcb77f97"
+  },
+  "sourceReference": {
+    "path": "source.glb",
+    "sha256": "2b56094a45107429a2657c9636a8b46eb6f7fe60d8bd01d41d46faa79f921863",
+    "bytes": 303396,
+    "triangles": 16500,
+    "meshes": {
+      "repair_right_cartridge_collar": 64,
+      "repair_right_launcher_face__export": 5374,
+      "repair_shared_tripo_part_2": 11062
+    },
+    "meshSections": 3,
+    "materials": 1,
+    "textureImages": 0,
+    "materialTreatment": "Neutral comparison shader; original stage 6 geometry/normals in socket-local coordinates"
+  },
+  "approvedExport": {
+    "path": "pod.glb",
+    "sha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89",
+    "bytes": 1261056,
+    "triangles": 914,
+    "meshes": {
+      "right_pod_launcher_cartridge": 86,
+      "right_pod_shared_housing": 828
+    },
+    "meshSections": 2,
+    "materials": 2,
+    "textureImages": 4,
+    "housingAndCollarTriangles": 828,
+    "launcherCartridgeTriangles": 86
+  },
+  "authoring": {
+    "path": "pod.blend",
+    "packedImages": true,
+    "bakeReferences": [
+      "repair_shared_tripo_part_2",
+      "repair_right_cartridge_collar",
+      "repair_right_launcher_face__export",
+      "right_reconstructed_cup_bake_reference"
+    ],
+    "reconstructedCupAncestor": {
+      "path": "design/mechs/assets/warden/optimization/pod/pod.blend",
+      "sha256": "f686b64bbb5eb591dfcd05a78750627f277ae106c40a9b03e1a834cffdf96d3e"
+    },
+    "cupReference": "Approved left reconstructed cup geometry moved at mouth/cup vertices to the matching right exit centers; short smooth transition on nearby plate vertices. No raw-bore transfer claim.",
+    "sourceNormalsTreatment": "Right shell and raw launcher/rim working copies welded/reoriented; native comparison normals unchanged. Retained reconstructed cup orientation preserved.",
+    "rimTreatment": "Source detail transferred selectively onto outer rim surfaces; front bevels retain geometric shading. Side fasteners and top marks remain visible."
+  },
+  "featureDecisions": [
+    {
+      "feature": "Outer silhouette, rails, middle band, structural vent frames and rear chamfers and chamfered launcher rim",
+      "decision": "rebuild geometry"
+    },
+    {
+      "feature": "Exact 86-edge mounting opening and surrounding underside coverage; collar; nine logical/physical anchors",
+      "decision": "keep geometry"
+    },
+    {
+      "feature": "Shallow latches, seams, rivets, individual vent slats and eight launcher circles; launcher outer-rim fasteners and top surface marks",
+      "decision": "bake"
+    },
+    {
+      "feature": "Hidden geometry removal",
+      "decision": "none; no removal proof established"
+    }
+  ],
+  "textureBudget": {
+    "housing": {
+      "normal": [
+        1024,
+        1024
+      ],
+      "baseColor": [
+        1024,
+        1024
+      ]
+    },
+    "cartridge": {
+      "normal": [
+        512,
+        512
+      ],
+      "baseColor": [
+        512,
+        512
+      ]
+    },
+    "baseColorTreatment": "Neutral gray with baked cavity darkening; not final production paint",
+    "uncompressedRGBA8BaseLevelsMiB": 10,
+    "uncompressedRGBA8WithMipChainApproxMiB": 13.33,
+    "memoryNote": "Illustrative four RGBA8 texture allocation; actual GPU format/compression/runtime allocation is unmeasured."
+  },
+  "validation": {
+    "anchorsUnchanged": 9,
+    "outgoingSamplesClear": 40,
+    "mountingBoundaryEdges": 86,
+    "mountingBoundaryMaximumError": 0.0,
+    "undersideCoverageSamplesMatched": 90,
+    "gltfErrors": 0,
+    "gltfWarnings": 0,
+    "independentReview": "No remaining blocking structural/bake defect in selected export and both 8-pair render sets",
+    "reviewedGLBSha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89"
+  },
+  "acceptedVisualTradeoffs": [
+    "Harder rebuilt front rim and vent-frame edges",
+    "Flatter small surface relief",
+    "Smaller/sharper reconstructed launcher circles than original source",
+    "Baked launcher circles/slats have no cavity depth or parallax",
+    "Source-derived small underside boundary projection retained"
+  ],
+  "limitations": [
+    "Smaller sharper launcher circles use reconstructed cup source; no cavity depth/parallax",
+    "Rebuilt front rim bevels and vent frames have harder geometric edges; front bevel shading stays geometric, outer-rim surface details transfer selectively",
+    "Tiny underside boundary projection is inherited from source and preserved",
+    "No optimized reassembly, complete aiming/motion/empty checks or collision proxy validation",
+    "Current source units and estimated camera views; final scale and material/texture consolidation remain",
+    "Eight physical exits must later map to six production tubes without changing salvo size",
+    "Component visual proof only; complete Warden stage 7 remains unfinished",
+    "Flat launcher render face must not be a projectile collision mesh",
+    "Neither pod reduction is a whole-model fidelity or runtime-performance claim"
+  ],
+  "reproductionScope": "Rebuild from this retained packed authoring checkpoint and its already-fitted bake references; no temporary generated dependencies. This does not repeat every historical operation from raw Tripo generation. Rebuilt GLB metadata/buffer ordering may differ; retain the exact owner-approved export.",
+  "reproductionValidation": {
+    "status": "passed-from-retained-authoring-checkpoint",
+    "toolVersions": {
+      "Blender": "5.2.0",
+      "glTFTransformCLI": "4.5.1",
+      "Bun": "1.3.14"
+    },
+    "result": "Rebuilt packaged candidate passes the right-pod verifier with 914 triangles. Canonical per-vertex attributes, oriented triangles and all four encoded map images match the exact approved export; metadata/buffer ordering may differ.",
+    "globalWorkflowClaim": "No claim of end-to-end regeneration from raw provider output or full-model/runtime acceptance."
+  }
+}

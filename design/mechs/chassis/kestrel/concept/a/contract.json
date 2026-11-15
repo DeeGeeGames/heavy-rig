@@ -1,0 +1,26 @@
+{
+  "chassisId": "kestrel",
+  "variantId": "kestrel",
+  "contractSignature": "229ffbad2cf9c46ceceaf28cfa99a129ae3462413428f8bd907a6c0cd3ffc96c",
+  "mounts": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun"
+      ]
+    }
+  ],
+  "baseline": null,
+  "reviewStatus": "approved",
+  "ownerApproval": "2026-11-13: owner said \"This is good. Stage this.\" for option 2 with enlarged guns (baseline-v4)."
+}

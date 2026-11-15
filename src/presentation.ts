@@ -110,7 +110,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						if (!transform) return;
 						transform.x = gait.body.x; transform.z = gait.body.y;
 						world.markChanged(id, 'localTransform3D');
-						view.model.pose(gait, heading, { hit: Math.max(0, 1 - (state.time - view.damage.hitAt) / 0.16), recoil, heat: view.kind ? 0 : state.player.heat, time: state.time, ...(target ? { target } : {}) });
+						view.model.pose(gait, heading, { hit: Math.max(0, 1 - (state.time - view.damage.hitAt) / 0.16), recoil, heat: view.kind ? 0 : state.player.heat, time: state.time, ...(!view.kind && state.authoredPose ? { authoredPose: state.authoredPose } : {}), ...(target ? { target } : {}) });
 					},
 					scale: function (id, scale) {
 						const transform = world.getComponent(id, 'localTransform3D');

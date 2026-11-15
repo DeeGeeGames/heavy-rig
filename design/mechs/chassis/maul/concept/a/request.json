@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "maul",
+  "background": "Transparent",
+  "details": "Broad squat breacher with a low compact protected head between wide shoulders, thick simple slab armor and massive rectangular forearm launcher gauntlets. Forward-jointed humanoid industrial legs, broad load-bearing feet and clear elbow, hip, knee and ankle joints. Exactly one launcher assembly housed inside each forearm gauntlet; no shoulder weapons or hands carrying guns.",
+  "loadout": [
+    {
+      "weaponId": "cluster-rockets",
+      "rounds": 120
+    },
+    {
+      "weaponId": "cluster-rockets",
+      "rounds": 120
+    }
+  ]
+}

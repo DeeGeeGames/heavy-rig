@@ -1,0 +1,50 @@
+{
+  "status": "owner-approved-bounded-authoring-proof",
+  "selectedAsset": "public/assets/mechs/warden/game-ready.glb",
+  "selectedSha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
+  "frame": "warden",
+  "slot": 0,
+  "hardpoint": "left-gun",
+  "alternateWeapon": "machine-gun",
+  "parent": "rig_mount_left-gun",
+  "socket": "socket_left_gun",
+  "replaceableGeometry": "geometry_rig_mount_left-gun",
+  "replacedExit": "physical_exit_left_gun_1",
+  "boundary": "Whole left weapon assembly, including its outer armor. Torso-owned neck, collars, other three weapons and entire chassis remain selected-export geometry.",
+  "axes": "socket-local glTF Y-up / +Z-forward / +X-own-left",
+  "socketLocalTransform": "identity under original left-gun rigid group",
+  "alternateEnvelope": [
+    [
+      -0.008,
+      -0.027,
+      -0.075
+    ],
+    [
+      0.115,
+      0.112,
+      0.282
+    ]
+  ],
+  "housingBounds": [
+    [
+      -0.008,
+      0.052,
+      -0.075
+    ],
+    [
+      0.055,
+      0.112,
+      -0.025
+    ]
+  ],
+  "retainedNeckEndpointLocal": [
+    0.006281863,
+    0.085,
+    -0.05
+  ],
+  "physicalExitCount": 3,
+  "logicalEmission": "One projectile per shot, physical barrel (shotIndex modulo 3) + 1. Authoring mapping only; runtime adapter still fixed and unchanged.",
+  "empty": "Retained selected structural neck plus sealed locally modeled bearing housing; no weapon mesh or active exit attached.",
+  "materialPolicy": "Use existing selected material index 0; no new materials or textures.",
+  "approval": "design/mechs/assets/warden/game-ready/modularity/approval.json"
+}
