@@ -8,6 +8,7 @@ Normal game startup is unchanged. Derive candidates into a new ignored
 ## Restore and rebuild the selected derivative
 
 ```sh
+git lfs install --local
 git lfs pull
 bun install --frozen-lockfile
 python scripts/mech-design/verify-assets.py

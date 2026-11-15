@@ -6,7 +6,7 @@ owner-approved visual revision; normal game startup remains procedural until
 in-game integration and acceptance.
 
 ```sh
-git lfs install
+git lfs install --local
 git lfs pull
 bun install --frozen-lockfile
 python scripts/mech-design/verify-assets.py
