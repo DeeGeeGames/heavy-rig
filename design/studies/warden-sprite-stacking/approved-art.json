@@ -1,0 +1,25 @@
+{
+  "id": "warden-pixel-a2",
+  "status": "owner-selected-concept",
+  "recordedAt": "2026-11-15T02:46:24Z",
+  "approval": "Proceed with this design",
+  "scope": "The coarser A2 pixel-art concept is selected as the design baseline. New orthographic views, reconstructed volume, animation, memory and runtime behavior require their own review.",
+  "image": {
+    "path": "art/approved-concept.png",
+    "sha256": "f4c513a48611aae46595e17c21086615e095d52345b490a7c99e537b7bc0a307"
+  },
+  "prompt": {
+    "path": "art/approved-concept.prompt.txt",
+    "sha256": "d3030d6cbe2db617849be64ca704642d88f6070367437767a767167e14ce0646"
+  },
+  "generation": "built-in image_gen; selected candidate derived from original approved Warden A geometry references",
+  "originalDesign": {
+    "pr": 67,
+    "commit": "9881bcfbc23d9fd1109f5f33609900ad9869ea17",
+    "path": "design/mechs/chassis/warden/concept/a/image.png"
+  },
+  "limits": [
+    "Concept PNG is an enlarged art reference; no exact native pixel dimensions or memory saving are implied.",
+    "Only this selected candidate is retained; rejected concepts are not production inputs."
+  ]
+}
