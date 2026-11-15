@@ -1,13 +1,13 @@
 # Warden A game derivative
 
 Selected runtime file: `public/assets/mechs/warden/game-ready.glb` (SHA-256
-`9cb234b3b1c7d852b835f7a6ef89ca99d35ef302925338ad64656a52cdcb1464`).
+`9d8a3bceed1810876dbc656b12eb21dac2f52321f9c1ba2200e5ac22b0782213`).
 This is the completed opt-in integration candidate. The normal game and older
 approved checkpoints are unchanged; final owner visual acceptance is separate.
 
-The file contains 38,628 triangles, 15 mesh sections, three materials, two shared
-128×128 images, twelve rigid motion groups, twenty named anchors and three
-in-place animation clips (`walk`, `run`, `backward`). It is 1,013,312 bytes.
+The file contains 39,748 triangles, 19 mesh sections, three materials, two shared
+128×128 images, twelve rigid motion groups, twenty firing/logical anchors plus eight attachment anchors and three
+in-place animation clips (`walk`, `run`, `backward`). It is 1,035,492 bytes.
 Quantized vertex attributes use standard `KHR_mesh_quantization`, supported by
 Three.js GLTFLoader without an additional decoder. MikkTSpace tangents are included.
 
@@ -27,6 +27,12 @@ const uninstall = asset.install();
 // Create the existing game presentation after installation.
 // Dispose presentation instances, then uninstall() and asset.dispose().
 ```
+
+The four body-to-weapon attachments use authored mechanical couplings. Their
+body and mount endpoints follow their respective assemblies; the adapter updates
+the coupling controls after stabilized aiming. The mesh children retain their
+exported transforms, including quantization transforms. Attachment coverage is
+checked separately from firing-ray clearance.
 
 Instances share immutable geometry/textures and own their transforms, mixers
 and material clones. `loadAuthoredWarden` owns loaded resources; the separate
@@ -86,22 +92,22 @@ a second chassis is still required before calling the process general.
 All 285 sampled clip poses clear the floor. Rig matrices and animation samples
 survive packaging unchanged; quantization moves vertices by less than 0.00081
 game units. Three.js playback and actual game-camera/aim paths are checked
-separately from the source Blender scene. Physical-exit center rays are clear
-in 243 sampled motion/heading/target configurations (4,374 center rays); this is not a swept-volume
-or exhaustive joint-limit proof. Small knee/ankle/guard contacts remain around
+separately from the source Blender scene. Firing-origin alignment is checked through motion and independent aim. The four
+connections additionally pass 448 actual body/mount skin contact checks across
+56 runtime poses. These samples are not a swept-volume or exhaustive joint-limit proof. Small knee/ankle/guard contacts remain around
 mechanical hinges. In-place playback provides usable locomotion; turns/transitions
 and foot sliding under abrupt direction changes still warrant owner playtesting.
 The authored model supports hit flashes; bespoke recoil, thermal and exhaust
 animations are deferred. Hardware GPU performance and owner visual/feel acceptance
 remain separate from automated correctness checks.
 
-Geometry arrays total 969,848 bytes. Two RGBA8 images with full mip chains add an
-estimated 174,763 bytes, for approximately 1.09 MiB combined. This excludes scene
+Geometry arrays total 976,264 bytes. Two RGBA8 images with full mip chains add an
+estimated 174,763 bytes, for approximately 1.10 MiB combined. This excludes scene
 objects, animation arrays, decoder temporaries and driver allocations. It is a
 modest improvement over the raw source's 1.15 MiB geometry, not a large RAM claim.
 
 
-The 1/8/24-mech probe submits 15/120/360 model draws while shared geometry and
+With all sections visible, 1/8/24 mechs require 19/152/456 model draws while shared geometry and
 the two asset maps remain constant. Per-instance transforms, mixers and material
 clones still add CPU cost. The workflow fetches only shipped public mech LFS
 objects in build/Pages jobs; the build rejects unresolved GLB pointer files.

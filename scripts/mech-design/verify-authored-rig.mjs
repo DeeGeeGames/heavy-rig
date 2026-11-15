@@ -2,6 +2,7 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { AnimationMixer, Box3, LoopOnce, Mesh, Texture, Vector3 } from 'three';
 import { createHash } from 'node:crypto';
+import { prepareAuthoredConnections } from '../../src/authored-connections.ts';
 const [path, reportPath, outputPath] = process.argv.slice(2);
 if (!path || !reportPath || !outputPath) throw new Error('Usage: validate_rig.mjs GLB RIG_REPORT OUTPUT');
 if (await Bun.file(outputPath).exists()) throw new Error('Output must be new');
@@ -27,6 +28,21 @@ for (const anchor of report.anchors) {
  if (!node || originalName(node.parent) !== anchor.parent) throw new Error(`Bad anchor ${anchor.name}`);
 }
 const bounds = new Box3().setFromObject(asset.scene);
+asset.scene.updateMatrixWorld(true);
+const connectionController = prepareAuthoredConnections(asset.scene);
+let maximumConnectionError = 0;
+let minimumConnectionOverlap = Infinity;
+const checkConnections = function () {
+ asset.scene.updateMatrixWorld(true); connectionController.update();
+ const evidence = connectionController.audit();
+ if (evidence.length !== (report.connectors?.length ?? 0)) throw new Error('Missing authored attachment controls');
+ for (const link of evidence) {
+  maximumConnectionError = Math.max(maximumConnectionError,link.bodyEndpointError,link.mountEndpointError);
+  minimumConnectionOverlap = Math.min(minimumConnectionOverlap,link.sleeveOverlapNative,link.bodyEndCoverageNative,link.mountEndCoverageNative);
+ }
+ if (maximumConnectionError > 2e-5 || minimumConnectionOverlap <= 0) throw new Error('Broken authored attachment span/overlap');
+};
+checkConnections();
 const mixer = new AnimationMixer(asset.scene);
 const clips = {};
 let meshSections = 0;
@@ -58,7 +74,7 @@ for (const clip of asset.animations) {
  let maximumLoopMatrixError = 0;
  let frameIndex = 0;
  for (const sample of source.samples) {
-  mixer.setTime(Math.min(sample.phase*source.duration,clip.duration));
+  mixer.setTime(Math.min(sample.phase*source.duration,clip.duration)); checkConnections();
   asset.scene.updateMatrixWorld(true);
   const pelvis = nodes.get('rig_pelvis');
   maximumForwardDrift = Math.max(maximumForwardDrift,Math.abs(pelvis.position.z+report.groups.rig_pelvis.pivot[1]));
@@ -90,6 +106,6 @@ for (const clip of asset.animations) {
 if (Object.keys(clips).length!==3) throw new Error('Expected three motion clips');
 mixer.stopAllAction();
 mixer.uncacheRoot(asset.scene);
-const result = {sha256,bytes:data.byteLength,textureImages:rawDocument.images?.length ?? 0,textureDecode:'Headless texture placeholders; image decoding and appearance require browser validation',triangles,meshSections,materials:materials.size,geometryBufferBytes:[...arrays].reduce(function(total,array) { return total+array.byteLength; },0),neutralBounds:{minimum:bounds.min.toArray(),maximum:bounds.max.toArray()},rigGroups:requiredGroups.length,anchors:report.anchors.length,clips,errors:[]};
+const result = {connections:{count:report.connectors?.length ?? 0,maximumEndpointError:maximumConnectionError,minimumPositiveOverlap:Number.isFinite(minimumConnectionOverlap)?minimumConnectionOverlap:null},sha256,bytes:data.byteLength,textureImages:rawDocument.images?.length ?? 0,textureDecode:'Headless texture placeholders; image decoding and appearance require browser validation',triangles,meshSections,materials:materials.size,geometryBufferBytes:[...arrays].reduce(function(total,array) { return total+array.byteLength; },0),neutralBounds:{minimum:bounds.min.toArray(),maximum:bounds.max.toArray()},rigGroups:requiredGroups.length,anchors:report.anchors.length,clips,errors:[]};
 await Bun.write(outputPath,JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify(result,null,2));

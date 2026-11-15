@@ -1,4 +1,302 @@
 {
+  "connections": [
+    {
+      "id": "left_gun",
+      "node": "joint_left_gun",
+      "meshName": "joint_left_gun",
+      "parent": "rig_torso",
+      "bodyAnchor": "connection_left_gun_torso",
+      "mountAnchor": "connection_left_gun_mount",
+      "baseLengthNative": 0.06524084367488395,
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "radiusNative": 0.016,
+      "collarRadiusNative": 0.023,
+      "collarDepthNative": 0.01,
+      "embedDepthNative": 0.006,
+      "bodyPenetrationNative": 0.006,
+      "mountPenetrationNative": 0.006,
+      "sleeveOverlapFraction": 0.28,
+      "localAxialBoundsNative": [
+        -0.005,
+        0.07024084367488395
+      ],
+      "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+      "measurement": {
+        "id": "left_gun",
+        "mountGroup": "rig_mount_left-gun",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          0.217041015625,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountSkinPoint": [
+          0.2702818512916565,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodyAnchorWorld": [
+          0.21104101836681366,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountAnchorWorld": [
+          0.27628186345100403,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodySkinNormal": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "mountSkinNormal": [
+          -0.9853298664093018,
+          0.1704578995704651,
+          0.008315019309520721
+        ],
+        "axialSkinGapNative": 0.053240835666656494,
+        "baseLengthNative": 0.06524084367488395,
+        "radiusNative": 0.016,
+        "collarRadiusNative": 0.023,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapFraction": 0.28,
+        "neutralSkinTrianglePairs": {
+          "body": 78,
+          "mount": 120
+        }
+      }
+    },
+    {
+      "id": "right_gun",
+      "node": "joint_right_gun",
+      "meshName": "joint_right_gun",
+      "parent": "rig_torso",
+      "bodyAnchor": "connection_right_gun_torso",
+      "mountAnchor": "connection_right_gun_mount",
+      "baseLengthNative": 0.06524081512458552,
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "radiusNative": 0.016,
+      "collarRadiusNative": 0.023,
+      "collarDepthNative": 0.01,
+      "embedDepthNative": 0.006,
+      "bodyPenetrationNative": 0.006,
+      "mountPenetrationNative": 0.006,
+      "sleeveOverlapFraction": 0.28,
+      "localAxialBoundsNative": [
+        -0.005,
+        0.07024081512458552
+      ],
+      "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+      "measurement": {
+        "id": "right_gun",
+        "mountGroup": "rig_mount_right-gun",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          -0.2170410454273224,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountSkinPoint": [
+          -0.2702818512916565,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodyAnchorWorld": [
+          -0.21104104816913605,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "mountAnchorWorld": [
+          -0.27628186345100403,
+          0.11999999731779099,
+          0.7099999785423279
+        ],
+        "bodySkinNormal": [
+          -1.0,
+          -0.0,
+          0.0
+        ],
+        "mountSkinNormal": [
+          0.9853298664093018,
+          0.17045773565769196,
+          0.008314969018101692
+        ],
+        "axialSkinGapNative": 0.053240805864334106,
+        "baseLengthNative": 0.06524081512458552,
+        "radiusNative": 0.016,
+        "collarRadiusNative": 0.023,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapFraction": 0.28,
+        "neutralSkinTrianglePairs": {
+          "body": 79,
+          "mount": 113
+        }
+      }
+    },
+    {
+      "id": "left_shoulder",
+      "node": "joint_left_shoulder",
+      "meshName": "joint_left_shoulder",
+      "parent": "rig_torso",
+      "bodyAnchor": "connection_left_shoulder_torso",
+      "mountAnchor": "connection_left_shoulder_mount",
+      "baseLengthNative": 0.03272080367159454,
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "radiusNative": 0.014,
+      "collarRadiusNative": 0.021,
+      "collarDepthNative": 0.01,
+      "embedDepthNative": 0.006,
+      "bodyPenetrationNative": 0.006,
+      "mountPenetrationNative": 0.006,
+      "sleeveOverlapFraction": 0.28,
+      "localAxialBoundsNative": [
+        -0.005,
+        0.037720803671594534
+      ],
+      "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+      "measurement": {
+        "id": "left_shoulder",
+        "mountGroup": "rig_mount_left-shoulder bank",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          0.203281968832016,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountSkinPoint": [
+          0.22400277853012085,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodyAnchorWorld": [
+          0.19728197157382965,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountAnchorWorld": [
+          0.2300027757883072,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodySkinNormal": [
+          0.7769778370857239,
+          0.6224316954612732,
+          0.09425623714923859
+        ],
+        "mountSkinNormal": [
+          -0.9989888668060303,
+          -0.043395016342401505,
+          -0.01175280287861824
+        ],
+        "axialSkinGapNative": 0.02072080969810486,
+        "baseLengthNative": 0.03272080367159454,
+        "radiusNative": 0.014,
+        "collarRadiusNative": 0.021,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapFraction": 0.28,
+        "neutralSkinTrianglePairs": {
+          "body": 171,
+          "mount": 131
+        }
+      }
+    },
+    {
+      "id": "right_shoulder",
+      "node": "joint_right_shoulder",
+      "meshName": "joint_right_shoulder",
+      "parent": "rig_torso",
+      "bodyAnchor": "connection_right_shoulder_torso",
+      "mountAnchor": "connection_right_shoulder_mount",
+      "baseLengthNative": 0.03272084814454051,
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "radiusNative": 0.014,
+      "collarRadiusNative": 0.021,
+      "collarDepthNative": 0.01,
+      "embedDepthNative": 0.006,
+      "bodyPenetrationNative": 0.006,
+      "mountPenetrationNative": 0.006,
+      "sleeveOverlapFraction": 0.28,
+      "localAxialBoundsNative": [
+        -0.005,
+        0.037720848144540506
+      ],
+      "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+      "measurement": {
+        "id": "right_shoulder",
+        "mountGroup": "rig_mount_right-shoulder bank",
+        "bodyGroup": "rig_torso",
+        "bodySkinPoint": [
+          -0.20328190922737122,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountSkinPoint": [
+          -0.22400276362895966,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodyAnchorWorld": [
+          -0.19728191196918488,
+          0.10300000011920929,
+          0.75
+        ],
+        "mountAnchorWorld": [
+          -0.230002760887146,
+          0.10300000011920929,
+          0.75
+        ],
+        "bodySkinNormal": [
+          -0.7769778370857239,
+          0.6224316954612732,
+          0.09425623714923859
+        ],
+        "mountSkinNormal": [
+          0.998988926410675,
+          -0.043395012617111206,
+          -0.011752801947295666
+        ],
+        "axialSkinGapNative": 0.02072085440158844,
+        "baseLengthNative": 0.03272084814454051,
+        "radiusNative": 0.014,
+        "collarRadiusNative": 0.021,
+        "collarDepthNative": 0.01,
+        "embedDepthNative": 0.006,
+        "bodyPenetrationNative": 0.006,
+        "mountPenetrationNative": 0.006,
+        "sleeveOverlapFraction": 0.28,
+        "neutralSkinTrianglePairs": {
+          "body": 177,
+          "mount": 132
+        }
+      }
+    }
+  ],
   "sourceSha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9",
   "originalImportedTriangles": 44783,
   "removedOriginalPodTriangles": 5996,
@@ -1726,9 +2024,30 @@
       "name": "rig_torso",
       "triangles": 10261,
       "materials": 2
+    },
+    {
+      "name": "joint_left_gun",
+      "triangles": 280,
+      "materials": 1
+    },
+    {
+      "name": "joint_right_gun",
+      "triangles": 280,
+      "materials": 1
+    },
+    {
+      "name": "joint_left_shoulder",
+      "triangles": 280,
+      "materials": 1
+    },
+    {
+      "name": "joint_right_shoulder",
+      "triangles": 280,
+      "materials": 1
     }
   ],
   "featureDecisions": {
+    "mountConnections": "Four measured solid sleeve/rod necks with embedded bearing collars; one mesh per attachment, runtime empty controls preserve both endpoint surfaces",
     "bankPivot": "Pitch axis through measured lower bracket-to-torso contact band Y~0.103 Z~0.750; X remains along the bearing axis",
     "ventRepair": "Six rebuilt noncoplanar geometric louvres, source frames retained; browser z-fighting repaired without texture growth",
     "keep": "body outline,major armor,joints,bores,pod supports",
@@ -1737,5 +2056,5 @@
     "bake": "reuse accepted shallow relief and launcher face bakes in shared128pxcolor+normalatlas",
     "remove": "original cracked P2podskins and replaced geometric launcher detail; isolated thin slivers"
   },
-  "triangles": 38628
+  "triangles": 39748
 }

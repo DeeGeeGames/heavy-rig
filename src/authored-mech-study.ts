@@ -1,6 +1,6 @@
 import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Float32BufferAttribute, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh, MeshStandardMaterial, OrthographicCamera, PlaneGeometry, Scene, SphereGeometry, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { authoredMuzzleError, authoredWardenUrl, loadAuthoredWarden } from './authored-mech';
+import { authoredConnectionAudit, authoredMuzzleError, authoredWardenUrl, loadAuthoredWarden } from './authored-mech';
 import { advanceGait, createGait } from './gait';
 import { createMech } from './mech-3d';
 import { alignCamera } from './projection-3d';
@@ -47,9 +47,10 @@ const start = async function () {
 		const gameView = view.value === 'game' || view.value === 'game-max'; orbit.enabled = !gameView;
 		if (gameView) alignCamera(camera, width, height, state, view.value === 'game-max' ? 2.5 : 1, { x: 0, y: 0 });
 		else {
-			const aspect = width / height; camera.left = -75 * aspect; camera.right = 75 * aspect; camera.top = 75; camera.bottom = -75;
-			const direction = view.value === 'front' ? new Vector3(1, 0.1, 0) : view.value === 'rear' ? new Vector3(-1, 0.1, 0) : view.value === 'side' ? new Vector3(0, 0.1, 1) : view.value === 'underside' ? new Vector3(1, -0.65, 0.8) : new Vector3(1, 0.48, 1.2);
-			camera.position.copy(direction.normalize().multiplyScalar(350)).add(new Vector3(0, 48, 0)); camera.lookAt(0, 48, 0); camera.updateProjectionMatrix(); orbit.target.set(0, 48, 0); orbit.update();
+			const close = view.value.startsWith('joints-'); const halfHeight = close ? 40 : 75; const target = new Vector3(0, close ? 75 : 48, 0);
+			const aspect = width / height; camera.left = -halfHeight * aspect; camera.right = halfHeight * aspect; camera.top = halfHeight; camera.bottom = -halfHeight;
+			const direction = view.value === 'front' || view.value === 'joints-front' ? new Vector3(1, 0.1, 0) : view.value === 'rear' ? new Vector3(-1, 0.1, 0) : view.value === 'joints-rear' ? new Vector3(-1, 0.2, 0.65) : view.value === 'joints-left' ? new Vector3(0, 0.1, -1) : view.value === 'side' || view.value === 'joints-right' ? new Vector3(0, 0.1, 1) : view.value === 'underside' || view.value === 'joints-underside' ? new Vector3(1, -0.65, 0.8) : new Vector3(1, 0.48, 1.2);
+			camera.position.copy(direction.normalize().multiplyScalar(350)).add(target); camera.lookAt(target); camera.updateProjectionMatrix(); orbit.target.copy(target); orbit.update();
 		}
 	};
 	const setWireframe = function () { model.root.traverse(function (node) { if (node instanceof Mesh) for (const material of Array.isArray(node.material) ? node.material : [node.material]) if (material instanceof MeshStandardMaterial) material.wireframe = wireframe.checked; }); };
@@ -94,7 +95,7 @@ const start = async function () {
 		if (!paused && !lost) { accumulator += dt; while (accumulator >= 1 / 60) { step(); accumulator -= 1 / 60; } }
 		if (!lost) { if (orbit.enabled) orbit.update(); renderer.render(scene, camera); rendered += 1; }
 		status.textContent = `${motion.toUpperCase()} · ${time.toFixed(3)} s · ${renderer.info.render.triangles.toLocaleString()} scene triangles · ${renderer.info.render.calls} draws`;
-		diagnostics.textContent = JSON.stringify({ ready: true, asset: assetLabel, motion, time, authoredMotion: model.root.userData['authoredMotion'], rendered, maxMuzzleError, drawCalls: renderer.info.render.calls, sceneTriangles: renderer.info.render.triangles, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries, weaponRigs: factory.weaponRigs, logicalTubeMapping: factory.tubeMapping, contextLost: lost }, null, 2);
+		diagnostics.textContent = JSON.stringify({ ready: true, asset: assetLabel, motion, time, authoredMotion: model.root.userData['authoredMotion'], connections: authoredConnectionAudit(model), rendered, maxMuzzleError, drawCalls: renderer.info.render.calls, sceneTriangles: renderer.info.render.triangles, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries, weaponRigs: factory.weaponRigs, logicalTubeMapping: factory.tubeMapping, contextLost: lost }, null, 2);
 		frame = requestAnimationFrame(tick);
 	};
 	const dispose = function () {

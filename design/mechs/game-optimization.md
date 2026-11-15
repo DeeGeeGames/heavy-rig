@@ -255,6 +255,11 @@ Observed integration repairs are part of this recipe:
 - Normalize the horizontal runtime origin to the waist pivot before extracting
   weapon rigs. Otherwise torso swivel and combat-origin rotation use different
   centers, visibly separating mounts from the body.
+- Stabilized weapons can separate from an animated torso even when every muzzle
+  origin is correct. Verify solid body-to-mount joint coverage in the actual
+  runtime, including gait bob/tilt and independent aim. Endpoint-driven mechanical
+  couplings must overlap the surrounding skin and retain positive internal
+  sleeve/collar insertion; matching anchor coordinates alone is insufficient.
 - Retained physical anchors can lie behind a new flat baked launcher face.
   Reproject exits just outside that face and keep it out of projectile collision.
 - Authoring hinges can offset barrel axes laterally/vertically. Aim math must

@@ -4,6 +4,7 @@ import { installMechAssetBinding, type MechAssetModel } from './mech-asset-regis
 import type { WalkerGait } from './gait';
 import type { MechFeedback } from './mech-3d';
 import { rigMuzzle, weaponDirection, weaponPivot, type SpatialPoint, type WeaponRig } from './weapon-rig';
+import { prepareAuthoredConnections, type AuthoredConnectionEvidence } from './authored-connections';
 
 export const WARDEN_LOGICAL_TUBE_MAPPING = ['lower_1', 'lower_2', 'lower_4', 'upper_1', 'upper_3', 'upper_4'] as const;
 
@@ -20,6 +21,11 @@ const clipNames = ['walk', 'run', 'backward'] as const;
 type MotionName = typeof clipNames[number];
 interface AuthoredOptions { readonly height?: number; readonly diagnostics?: boolean }
 interface Motion { readonly name: MotionName; readonly clip: AnimationClip; readonly nominalSpeed: number }
+const connectionAudits = new WeakMap<Object3D, () => readonly AuthoredConnectionEvidence[]>();
+
+export const authoredConnectionAudit = function (model: Pick<MechAssetModel, 'root'>): readonly AuthoredConnectionEvidence[] {
+	return connectionAudits.get(model.root)?.() ?? [];
+};
 
 const named = function (root: Object3D, name: string): Object3D {
 	const found: Object3D[] = [];
@@ -80,6 +86,7 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 		return { root, hull, scene };
 	};
 	const probe = makeGraph();
+	prepareAuthoredConnections(probe.scene);
 	const weaponRigs: readonly WeaponRig[] = weaponSpecs.map(function (spec) {
 		const pivot = named(probe.scene, spec.group).getWorldPosition(new Vector3());
 		const muzzle = named(probe.scene, spec.muzzle).getWorldPosition(new Vector3());
@@ -117,6 +124,8 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 		});
 		const torso = named(scene, 'rig_torso');
 		const torsoRest = torso.quaternion.clone();
+		const connections = prepareAuthoredConnections(scene);
+		connectionAudits.set(root, connections.audit);
 		const weapons = weaponSpecs.map(function (spec, slot) {
 			const part = named(scene, spec.group); const rig = weaponRigs[slot];
 			if (!rig) throw new Error('Missing authored weapon rig');
@@ -185,7 +194,7 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 				weapon.part.quaternion.copy(parent.getWorldQuaternion(parentQuaternion).invert().multiply(desiredQuaternion));
 				weapon.part.updateWorldMatrix(false, true);
 			}
-			root.updateMatrixWorld(true); inverse.copy(root.matrixWorld).invert();
+			root.updateMatrixWorld(true); connections.update(); inverse.copy(root.matrixWorld).invert();
 			for (const [slot, weapon] of weapons.entries()) {
 				muzzles[slot]?.copy(weapon.muzzle.getWorldPosition(position)).applyMatrix4(inverse);
 				for (const [index, exit] of weapon.exits.entries()) rocketMuzzles[slot]?.[index]?.copy(exit.getWorldPosition(position)).applyMatrix4(inverse);
@@ -210,6 +219,7 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 			pose,
 			dispose: function () {
 				if (disposed) return; disposed = true;
+				connectionAudits.delete(root);
 				mixer.stopAllAction(); mixer.uncacheRoot(scene);
 				for (const material of ownedMaterials.values()) material.dispose();
 				root.removeFromParent(); root.clear(); instances -= 1; releaseIfUnused();

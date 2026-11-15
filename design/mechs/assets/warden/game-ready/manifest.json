@@ -6,10 +6,10 @@
   "scope": "Opt-in runtime asset; ordinary game and prior approved checkpoints unchanged",
   "asset": {
     "path": "public/assets/mechs/warden/game-ready.glb",
-    "sha256": "9cb234b3b1c7d852b835f7a6ef89ca99d35ef302925338ad64656a52cdcb1464",
-    "bytes": 1013312,
-    "triangles": 38628,
-    "meshSections": 15,
+    "sha256": "9d8a3bceed1810876dbc656b12eb21dac2f52321f9c1ba2200e5ac22b0782213",
+    "bytes": 1035492,
+    "triangles": 39748,
+    "meshSections": 19,
     "materials": 3,
     "textureImages": 2,
     "textureDimensions": [
@@ -22,10 +22,10 @@
         128
       ]
     ],
-    "geometryArrayBytes": 969848,
+    "geometryArrayBytes": 976264,
     "rgba8TextureBytesWithMipsEstimate": 174763,
     "rigGroups": 12,
-    "anchors": 20,
+    "anchors": 28,
     "clips": [
       "walk",
       "run",
@@ -34,7 +34,8 @@
     "coordinateSystem": "glTF Y-up, +Z-forward, +X-own-left; approximately one unit tall",
     "extensionsRequired": [
       "KHR_mesh_quantization"
-    ]
+    ],
+    "mechanicalConnections": 4
   },
   "source": {
     "path": "design/mechs/assets/warden/game-ready/source.glb",
@@ -73,6 +74,7 @@
     "Explicit UV render-layer selection and MikkTSpace tangents",
     "Removed two gun-roof slivers and rebuilt six overlapping vent inserts",
     "Lower-bracket pitch axes placed at measured torso attachment band",
-    "Runtime waist-origin normalization and offset-aware weapon convergence"
+    "Runtime waist-origin normalization and offset-aware weapon convergence",
+    "Four articulated body-to-mount couplings with buried collars and positive sleeve overlap"
   ]
 }

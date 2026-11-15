@@ -1,29 +1,45 @@
 import { expect, test } from 'bun:test';
-import { AnimationClip, BoxGeometry, Group, Mesh, MeshStandardMaterial, QuaternionKeyframeTrack, Vector3 } from 'three';
-import { authoredMuzzleError, prepareAuthoredWarden, WARDEN_LOGICAL_TUBE_MAPPING } from '../src/authored-mech';
-import { createGait } from '../src/gait';
+import { AnimationClip, BoxGeometry, Group, Mesh, MeshStandardMaterial, QuaternionKeyframeTrack, VectorKeyframeTrack, Vector3 } from 'three';
+import { authoredConnectionAudit, authoredMuzzleError, prepareAuthoredWarden, WARDEN_LOGICAL_TUBE_MAPPING } from '../src/authored-mech';
+import { advanceGait, createGait } from '../src/gait';
 import { createMech } from '../src/mech-3d';
 import { getFiringDirection, getPlayerWeaponRig, rigMuzzle, weaponDirection, type WeaponRig } from '../src/weapon-rig';
 
-const fixture = function () {
+const fixture = function (connections = false) {
 	const scene = new Group();
 	const pelvis = new Group(); pelvis.name = 'rig_pelvis'; pelvis.position.set(0.07, 0, -0.08); scene.add(pelvis);
 	const torso = new Group(); torso.name = 'rig_torso'; torso.position.y = 0.5; pelvis.add(torso);
 	const geometry = new BoxGeometry(0.4, 1, 0.3); const material = new MeshStandardMaterial();
+	const geometries = [geometry];
 	const mesh = new Mesh(geometry, material); mesh.position.y = 0.5; pelvis.add(mesh);
 	for (const [side, x] of [['left', 0.35], ['right', -0.35]] as const) {
 		for (const kind of ['gun', 'launcher'] as const) {
 			const part = new Group(); part.name = kind === 'gun' ? `rig_mount_${side}-gun` : `rig_mount_${side}-shoulder bank`;
 			part.position.set(x, kind === 'gun' ? 0.1 : 0.35, 0); torso.add(part);
 			const muzzle = new Group(); muzzle.name = kind === 'gun' ? `physical_exit_${side}_gun_1` : `muzzle_${side}_launcher`; muzzle.position.set(0.02, 0.03, 0.3); part.add(muzzle);
+			if (connections) {
+				const id = `${side}_${kind === 'gun' ? 'gun' : 'shoulder'}`; const sign = Math.sign(x);
+				const bodyAnchor = new Group(); bodyAnchor.name = `connection_${id}_torso`; bodyAnchor.position.set(sign * 0.18, part.position.y, 0.02); torso.add(bodyAnchor);
+				const mountAnchor = new Group(); mountAnchor.name = `connection_${id}_mount`; mountAnchor.position.set(-sign * 0.04, 0, 0.015); part.add(mountAnchor);
+				const housing = new BoxGeometry(0.12, 0.12, 0.12); geometries.push(housing); part.add(new Mesh(housing, material));
+				const end = part.position.clone().add(mountAnchor.position); const direction = end.sub(bodyAnchor.position); const length = direction.length();
+				const control = new Group(); control.name = `joint_${id}`; control.position.copy(bodyAnchor.position); control.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), direction.normalize());
+				control.userData = { bodyAnchor: bodyAnchor.name, mountAnchor: mountAnchor.name, baseLengthNative: length, axis: [0, 1, 0], sleeveOverlapFraction: 0.28, radiusNative: 0.012, collarRadiusNative: 0.024 }; torso.add(control);
+				// Non-identity child TRS represents a quantized mesh's decode transform.
+				const bridgeGeometry = new BoxGeometry(2, 2, 2); geometries.push(bridgeGeometry);
+				const bridge = new Mesh(bridgeGeometry, material); bridge.name = `joint_${id}_mesh`; bridge.position.y = length / 2; bridge.scale.set(0.024, length / 2 + 0.006, 0.024); control.add(bridge);
+			}
 			if (kind === 'launcher') for (const row of ['lower', 'upper'] as const) for (const column of [1, 2, 3, 4]) {
 				const exit = new Group(); exit.name = `physical_exit_${side}_launcher_${row}_${column}`;
 				exit.position.set((column - 2.5) * 0.04, row === 'lower' ? 0 : 0.06, 0.3); part.add(exit);
 			}
 		}
 	}
-	const animations = ['walk', 'run', 'backward'].map(function (name) { return new AnimationClip(name, 1, [new QuaternionKeyframeTrack('rig_pelvis.quaternion', [0, 1], [0, 0, 0, 1, 0, 0, 0, 1])]); });
-	return { scene, animations, geometry, material };
+	const animations = ['walk', 'run', 'backward'].map(function (name) { return new AnimationClip(name, 1, connections ? [
+		new VectorKeyframeTrack('rig_pelvis.position', [0, 0.5, 1], [0.07, 0, -0.08, 0.09, 0.03, -0.10, 0.07, 0, -0.08]),
+		new QuaternionKeyframeTrack('rig_torso.quaternion', [0, 0.5, 1], [0, 0, 0, 1, Math.sin(0.07), 0, 0, Math.cos(0.07), 0, 0, 0, 1]),
+	] : [new QuaternionKeyframeTrack('rig_pelvis.quaternion', [0, 1], [0, 0, 0, 1, 0, 0, 0, 1])]); });
+	return { scene, animations, geometry, geometries, material };
 };
 
 test('non-collinear authored hinges keep physical muzzle and six selected exits aligned through aim', function () {
@@ -54,6 +70,37 @@ test('non-collinear authored hinges keep physical muzzle and six selected exits 
 		expect(model.rocketMuzzles.map(function (exits) { return exits.length; })).toEqual([0, 0, 6, 6]);
 		expect(new Set(WARDEN_LOGICAL_TUBE_MAPPING).size).toBe(6);
 	} finally { model.dispose(); factory.dispose(); asset.geometry.dispose(); asset.material.dispose(); }
+});
+
+test('solid mount bridges follow animated skin and stabilized weapons without changing decode transforms or firing origins', function () {
+	const asset = fixture(true); const factory = prepareAuthoredWarden(asset); const model = factory.create();
+	const children = model.root.getObjectsByProperty('type', 'Mesh').filter(function (node) { return node.name.startsWith('joint_'); });
+	const transforms = children.map(function (child) { return { position: child.position.toArray(), quaternion: child.quaternion.toArray(), scale: child.scale.toArray() }; });
+	let body = { x: 500, y: 400, angle: 0 }; let gait = createGait(body); let lowest = Infinity; let highest = -Infinity; let maximumTilt = 0;
+	try {
+		for (let tick = 0; tick <= 120; tick++) {
+			const speed = tick < 40 ? 40 : tick < 80 ? 90 : -28; const angle = tick * 0.004;
+			body = { x: body.x + Math.cos(angle) * speed / 60, y: body.y + Math.sin(angle) * speed / 60, angle }; gait = advanceGait(gait, body, 1 / 60);
+			const heading = angle + Math.sin(tick / 13); const range = tick < 80 ? 125 : 350;
+			const target = { x: body.x + Math.cos(heading) * range, y: body.y + Math.sin(heading) * range, elevation: tick < 40 ? 220 : tick < 80 ? 0 : 100 };
+			model.root.position.set(body.x, 0, body.y); model.root.rotation.y = 0.23; model.root.scale.setScalar(1.3);
+			model.pose(gait, heading, { recoil: 0, hit: 0, heat: 0, time: tick / 60, target });
+			expect(authoredMuzzleError(model, factory.weaponRigs, gait, heading, target)).toBeLessThan(1e-6);
+			const evidence = authoredConnectionAudit(model); expect(evidence.length).toBe(4);
+			for (const link of evidence) {
+				expect(link.bodyEndpointError).toBeLessThan(1e-7); expect(link.mountEndpointError).toBeLessThan(1e-7);
+				expect(link.sleeveOverlapNative).toBeGreaterThan(0); expect(link.bodyEndCoverageNative).toBeGreaterThan(0); expect(link.mountEndCoverageNative).toBeGreaterThan(0);
+				const height = link.bodyAnchor[1]; if (height === undefined) throw new Error('Missing body anchor coordinate'); if (link.id === 'left_gun') { lowest = Math.min(lowest, height); highest = Math.max(highest, height); }
+			}
+			const torso = model.root.getObjectByName('rig_torso'); if (!torso) throw new Error('Missing animated torso');
+			maximumTilt = Math.max(maximumTilt, 1 - new Vector3(0, 1, 0).transformDirection(torso.matrixWorld).y);
+		}
+		expect(highest - lowest).toBeGreaterThan(1); expect(maximumTilt).toBeGreaterThan(0.001);
+		expect(children.map(function (child) { return { position: child.position.toArray(), quaternion: child.quaternion.toArray(), scale: child.scale.toArray() }; })).toEqual(transforms);
+	} finally { model.dispose(); factory.dispose(); for (const geometry of asset.geometries) geometry.dispose(); asset.material.dispose(); }
+	const incomplete = fixture(true); const missing = incomplete.scene.getObjectByName('joint_right_shoulder'); if (!missing) throw new Error('Missing fixture connection'); missing.removeFromParent();
+	expect(function () { prepareAuthoredWarden(incomplete); }).toThrow('Expected one authored connection node');
+	for (const geometry of incomplete.geometries) geometry.dispose(); incomplete.material.dispose();
 });
 
 test('authored instances own materials while caller-owned shared assets and defaults survive removal', function () {
