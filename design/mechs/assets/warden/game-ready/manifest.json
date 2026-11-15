@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "status": "implementation-complete-awaiting-owner-visual-acceptance",
+  "chassis": "warden",
+  "variant": "warden-a",
+  "scope": "Opt-in runtime asset; ordinary game and prior approved checkpoints unchanged",
+  "asset": {
+    "path": "public/assets/mechs/warden/game-ready.glb",
+    "sha256": "9cb234b3b1c7d852b835f7a6ef89ca99d35ef302925338ad64656a52cdcb1464",
+    "bytes": 1013312,
+    "triangles": 38628,
+    "meshSections": 15,
+    "materials": 3,
+    "textureImages": 2,
+    "textureDimensions": [
+      [
+        128,
+        128
+      ],
+      [
+        128,
+        128
+      ]
+    ],
+    "geometryArrayBytes": 969848,
+    "rgba8TextureBytesWithMipsEstimate": 174763,
+    "rigGroups": 12,
+    "anchors": 20,
+    "clips": [
+      "walk",
+      "run",
+      "backward"
+    ],
+    "coordinateSystem": "glTF Y-up, +Z-forward, +X-own-left; approximately one unit tall",
+    "extensionsRequired": [
+      "KHR_mesh_quantization"
+    ]
+  },
+  "source": {
+    "path": "design/mechs/assets/warden/game-ready/source.glb",
+    "sha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9",
+    "generation": "design/mechs/assets/warden/game-ready/generation.json"
+  },
+  "reproduction": "scripts/mech-design/build-warden-game-ready.py",
+  "runtimeAdapter": "src/authored-mech.ts",
+  "startup": "src/authored-game.ts",
+  "rigContract": "design/mechs/assets/warden/game-ready/rig-contract.json",
+  "priorPodSources": [
+    {
+      "path": "design/mechs/assets/warden/optimization/pod/pod.glb",
+      "sha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5"
+    },
+    {
+      "path": "design/mechs/assets/warden/optimization/right-pod/pod.glb",
+      "sha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89"
+    }
+  ],
+  "sixOfEightLogicalTubeMapping": [
+    "lower_1",
+    "lower_2",
+    "lower_4",
+    "upper_1",
+    "upper_3",
+    "upper_4"
+  ],
+  "acceptanceLimits": [
+    "Independent review and automation do not replace owner visual or hardware performance acceptance",
+    "Existing analytic gameplay collisions remain authoritative; baked launcher face is not a projectile collider",
+    "Second chassis repeatability not established"
+  ],
+  "repairs": [
+    "Reused approved pod shells and launcher bakes fitted to selected source",
+    "Explicit UV render-layer selection and MikkTSpace tangents",
+    "Removed two gun-roof slivers and rebuilt six overlapping vent inserts",
+    "Lower-bracket pitch axes placed at measured torso attachment band",
+    "Runtime waist-origin normalization and offset-aware weapon convergence"
+  ]
+}

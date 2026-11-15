@@ -225,3 +225,44 @@ sizes. Both pod approvals remain component proofs, not full Warden acceptance.
 PR 67 remains draft and open for the unfinished process. The approved pod closes
 its component proof only; it does not complete stage 7 for the full Warden or
 authorize production replacement.
+
+## P2.0 source with retained optimized modules
+
+A later owner-authorized Warden experiment starts from an original-reference
+P2.0 50K source rather than globally reducing the accepted dense master. The
+selected source returned 44,793 triangles. It is frozen under
+`assets/warden/game-ready/source.glb`; the explicit recipe and runtime candidate
+are documented in [the game-ready package](assets/warden/game-ready/README.md).
+This is an opt-in integration candidate, not a replacement approval for the
+older master or evidence that one budget works for every chassis.
+
+Reuse the approved pod geometry and bakes as modules when fitting permits.
+Small bounded fitting adjustments, a shared atlas and scoped collar reduction
+reach the requested 30K–40K range without a whole-model collapse pass. Retarget
+the existing gait recipe to measured new pivots and actual sole geometry.
+Derive visual and combat firing origins from the same graph; eight visible
+launcher cells still map to six gameplay slots.
+
+Observed integration repairs are part of this recipe:
+
+- Joining UV-mapped pods to untextured supports initially lost the active render
+  UV selection and exported `texCoord: -1`. Name/select the UV layer explicitly
+  and validate the actual export. A successful file write is insufficient.
+- Raw captured vent relief produced visible depth speckling in WebGL despite
+  acceptable Cycles renders. The unquantized control confirmed source overlap.
+  Rebuild explicit separated louvres and backing planes while retaining frames;
+  do not conceal geometry problems with camera clipping or shading settings.
+- Normalize the horizontal runtime origin to the waist pivot before extracting
+  weapon rigs. Otherwise torso swivel and combat-origin rotation use different
+  centers, visibly separating mounts from the body.
+- Retained physical anchors can lie behind a new flat baked launcher face.
+  Reproject exits just outside that face and keep it out of projectile collision.
+- Authoring hinges can offset barrel axes laterally/vertically. Aim math must
+  account for those offsets as well as moving muzzle positions.
+
+Standard integer attribute quantization and MikkTSpace tangents retain native
+GLTFLoader support without an extra decoder. Verify sampled/all-vertex error,
+rig matrices, clips, UVs and normals after packing. Preserve empty anchor nodes.
+The full recipe has reproduced a selected candidate byte-for-byte; binary
+repeatability on this toolchain does not establish cross-chassis repeatability,
+owner visual acceptance or hardware frame-time performance.

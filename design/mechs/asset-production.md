@@ -77,6 +77,14 @@ scale/orientation normalization remain open. The owner's MW5 Atlas/Stalker
 reference counts still need verification of triangle/polygon, LOD and equipment
 context before using them as external budget evidence.
 
+An owner-authorized P2.0-based **opt-in game derivative** now has a reproducible
+recipe, retargeted walk/run/backward clips, physical firing anchors and an
+adapter that installs rendering and combat origins together. See the
+[game-ready package](assets/warden/game-ready/README.md). It reuses the approved
+pod proofs and selected original-reference 50K source. Its implementation and
+browser evidence remain separate from owner visual acceptance; it does not
+replace the normal game, the shared-master approval or the earlier checkpoints.
+
 Stages 8 and 9 remain outstanding: runtime combat/aim/movement integration and
 performance acceptance, then exercising the complete workflow on another
 chassis. Kestrel and Maul currently have approved concepts only. No production

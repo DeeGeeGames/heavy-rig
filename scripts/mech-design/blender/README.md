@@ -287,3 +287,23 @@ and equipped-configuration costs, and separates vertex/index bytes from encoded
 file payload. Identical assigned material definitions are counted separately
 from the material objects in standalone files. It does not measure runtime
 performance, validate motion matrices, or approve new geometry.
+
+### P2.0-based whole Warden derivative
+
+The owner-authorized opt-in runtime candidate is documented in
+[its package README](../../../design/mechs/assets/warden/game-ready/README.md).
+It reuses the approved pod geometry/bakes and existing gait recipe while
+repairing the P2 source, establishing new pivots and packaging actual animations
+and physical firing anchors. It leaves ordinary game startup unchanged.
+
+```sh
+python scripts/mech-design/build-warden-game-ready.py --repo . \
+  --output design/mechs/generated/warden-rebuild \
+  --blender-command 'flatpak run org.blender.Blender'
+```
+
+Python/Pillow 13 prepares the atlas; Blender 5.2 builds geometry and retargets
+motions; pinned glTF Transform 4.5.1 generates tangents, quantizes and validates.
+The output must be fresh. `warden_game_ready/` contains source-specific feature
+rules, not a general automatic segmentation system. The recipe checks hashes
+before reuse. The retained source and approved component files remain immutable.

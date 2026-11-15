@@ -1,0 +1,57 @@
+{
+  "status": "selected-working-source",
+  "startedUnix": 1794705445.0562289,
+  "model": "P2.0 Smart Mesh",
+  "targetTriangles": 50000,
+  "topology": "Triangle",
+  "textures": false,
+  "generationCount": 1,
+  "inputs": {
+    "front": {
+      "path": "design/mechs/chassis/warden/turnaround/a/front.png",
+      "sha256": "356c08fcee73cd4370cf9e99ba504806807c3a3c8960cac867b015266a90e35c"
+    },
+    "back": {
+      "path": "design/mechs/chassis/warden/turnaround/a/back.png",
+      "sha256": "30a3285f5b1684532c4e730485dea8175f1a8f3d102d87e590763b9c07673d7c"
+    },
+    "left": {
+      "path": "design/mechs/chassis/warden/turnaround/a/left.png",
+      "sha256": "84efcd9ffee3d4973947d86978cd23e2804c96a673560ed820fc4f18b10004c4"
+    },
+    "right": {
+      "path": "design/mechs/chassis/warden/turnaround/a/right.png",
+      "sha256": "c4b7c3b44445b32f0bee92f0f7312e4a4f853b54b39527a30adcef7f52b05447"
+    }
+  },
+  "scope": "One original-reference50K generation, raw inspection, comparison with20K and selective simplification/bake feature plan. No production replacement.",
+  "ownerInstruction": "Raise budget to50,000; investigate selective manual simplification and texture replacement of intricate features.",
+  "quotedCredits": 100,
+  "balanceBefore": 2390,
+  "verifiedTarget": 50000,
+  "verifiedTopology": "triangle",
+  "settingsVerifiedUnix": 1794705624.312331,
+  "submittedAt": "2026-11-15T01:20:24.457Z",
+  "jobId": "2e04b572-683d-48d1-95da-872cb32fb87c",
+  "jobUrl": "https://studio.tripo3d.ai/workspace/generate/2e04b572-683d-48d1-95da-872cb32fb87c",
+  "creditsSpent": 100,
+  "balanceAfter": 2290,
+  "rawExport": {
+    "path": "raw/warden-low-poly.glb",
+    "sha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9",
+    "bytes": 1202036,
+    "exportedTriangles": 44793,
+    "vertices": 27643,
+    "blenderImportedTriangles": 44783,
+    "textures": 0,
+    "animationClips": 0
+  },
+  "toolVersions": {
+    "blender": "5.2.0 LTS",
+    "bun": "1.3.14",
+    "gltfTransform": "4.5.1"
+  },
+  "manualAdjustmentsApplied": false,
+  "productionAssetsChanged": false,
+  "selection": "Owner authorized proceeding from the 50K result on 2026-11-14; final visual acceptance remains separate."
+}

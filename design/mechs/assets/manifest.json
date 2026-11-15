@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "Retained Warden authoring lineage and approved component optimization proofs; temporary candidates excluded.",
+  "scope": "Retained Warden authoring lineage, approved component proofs and owner-authorized opt-in runtime candidate; visual acceptance scopes remain separate.",
   "files": [
     {
       "path": "design/mechs/assets/warden/articulation-base/warden-walk.blend",
@@ -206,6 +206,36 @@
       "path": "design/mechs/assets/warden/components/walk/runtime-validation.json",
       "bytes": 608,
       "sha256": "a37a14ff389a3065dbb9e291eb1e513e839dc02c1f5487ad0cb6d8c3bb41969e"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/README.md",
+      "bytes": 5762,
+      "sha256": "832a42c29856006e70bd39611994e691748681757376ef1463a3b43107355718"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/generation.json",
+      "bytes": 2211,
+      "sha256": "7c4d873530a0814d10dca38ee05736c342c9d05719191a12c34bf55d76bb7eaf"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/geometry-report.json",
+      "bytes": 38706,
+      "sha256": "43c99e518ff855ad4f18b170a5f87a7e43de218fdb2a244315d4dddfb31fba28"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/manifest.json",
+      "bytes": 2617,
+      "sha256": "1da380e1177bd5321900916e6f960f6794e6b573e02435198c5aa51631b22588"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/rig-contract.json",
+      "bytes": 11675,
+      "sha256": "f88b085029d7b242e7dd9749dfe1eb8e36c2fbe51b4655e4570e64c9e82d179d"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/source.glb",
+      "bytes": 1202036,
+      "sha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9"
     },
     {
       "path": "design/mechs/assets/warden/generated-source/body/gltf-metadata.json",
@@ -741,6 +771,11 @@
       "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.glb",
       "bytes": 4843496,
       "sha256": "a29d7f5990ff7f46a4f031c2c244a0ef0421dde0e45f774503cf9851d9a36d95"
+    },
+    {
+      "path": "public/assets/mechs/warden/game-ready.glb",
+      "bytes": 1013312,
+      "sha256": "9cb234b3b1c7d852b835f7a6ef89ca99d35ef302925338ad64656a52cdcb1464"
     }
   ]
 }
