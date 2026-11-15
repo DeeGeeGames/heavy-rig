@@ -53,7 +53,7 @@ const disposeAsset = function (asset: Pick<GLTF, 'scene'>) {
 };
 
 // The source stays caller-owned. Instances share immutable geometry/textures and
-// own their cloned materials, mixer state and transforms.
+// own their cloned materials, pose state and transforms.
 const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, options: AuthoredOptions, release?: () => void) {
 	if (asset.scene.parent) throw new Error('Authored source must be an unparented neutral scene');
 	const sourceBounds = new Box3().setFromObject(asset.scene);

@@ -49,7 +49,7 @@
     "design/mechs/assets/warden/game-ready/recipe.json": "6673b91c879dd5044226df3f8050a0fdb592c0c30ea79bd536588c804312643b",
     "scripts/mech-design/verify-game-ready.mjs": "e848d42de87f24b0ac3230635ff3ec042359db666d4ec6ccf34521cf21786b2d",
     "scripts/mech-design/candidate-budget.ts": "1984079055040226c1f8a3a2603baeec4c047b785c99bcf28cece0c057183781",
-    "src/authored-mech.ts": "cf284b60f78e9502fef51a487df8b6745fe5e3cfddb18d51dcf1a791347e3362",
+    "src/authored-mech.ts": "0cd8a9f1e24ac38072394868160ded962355d716e43f509429fedf1746a78007",
     "src/authored-pose.ts": "1fddf2a21cebb1720d06b02835fa8b34c50e0ac307ba6c169230603eb58d6fec",
     "src/authored-gait.ts": "6a2859201cd1ba1e90f7684389af9e2b351a44b2459ee9f423e626c7a9957d14",
     "src/authored-run.ts": "bfcb7d1267d2729cc893b64144d8a2952f79ea1ac6631d01419cf869452569b3",

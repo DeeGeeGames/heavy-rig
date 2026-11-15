@@ -3,7 +3,8 @@
 Selected runtime file: `public/assets/mechs/warden/game-ready.glb` (SHA-256
 `734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de`).
 The owner approved this exact visual revision and demonstrated motion; see
-[approval.json](approval.json). Next is in-game integration and acceptance.
+[approval.json](approval.json). The local opt-in procedural locomotion preview
+also has owner acceptance, recorded under validation limits below.
 Normal game startup remains procedural. Historical approvals retain their own scopes.
 
 The file contains 39,748 triangles, 16 mesh sections, three materials, two shared
@@ -174,12 +175,11 @@ necks intersect both attachment skins; rigid torso parenting preserves that
 contact through animation. Small knee/ankle/guard contacts remain around
 mechanical hinges.
 These retained clip audits describe the asset's authored motions. The current
-runtime uses planted procedural feet; stride, turning contacts and body weight
-still require owner feel acceptance in the local game preview.
-Independent review also reproduced an existing grounded reverse/steering failure
-at the arena edge: some contact arrangements exceed the bounded guard-clearance
-search. The same failure occurs on pre-run revision `039d799`; this extension
-does not resolve that edge-recovery limitation.
+runtime uses planted procedural feet. The owner accepted the local stride, run
+and turn feel at runtime revision `0a11fc2` on 2026-11-15 and authorized delivery.
+Some contact arrangements, including arena-edge turns and reverse, exceed the
+bounded guard-clearance search. The runtime now retains the reachable leg pose
+instead of throwing, with guard contacts/intersections accepted for this pass.
 The authored model supports hit flashes; bespoke recoil, thermal and exhaust
 animations are deferred. Hardware GPU performance and owner visual/feel acceptance
 remain separate from automated correctness checks.
