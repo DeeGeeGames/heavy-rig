@@ -36,8 +36,8 @@ const stancePitch = function (gait: WalkerGait, foot: Foot, size: number) {
 export const mechScale = function (kind: EnemyKind) { return kind === 'scout' ? 0.8 : kind === 'siege' ? 1.15 : 1; };
 const restFoot = function (body: Body, index: FootIndex, size: number, rig: LegRig): Foot {
 	const side = index === 0 ? -1 : 1;
-	const forward = rig.kneeDirection === 1 ? rig.hipForward + 5 : 7;
-	const width = rig.kneeDirection === 1 ? rig.hipWidth : 23;
+	const forward = rig.footForward ?? (rig.kneeDirection === 1 ? rig.hipForward + 5 : 7);
+	const width = rig.footWidth ?? (rig.kneeDirection === 1 ? rig.hipWidth : 23);
 	return {
 		x: body.x + Math.cos(body.angle) * forward * size - Math.sin(body.angle) * side * width * size,
 		y: body.y + Math.sin(body.angle) * forward * size + Math.cos(body.angle) * side * width * size,

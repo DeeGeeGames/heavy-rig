@@ -12,11 +12,18 @@ import { getFiringDirection, getPlayerFiringDirection, getPlayerMuzzle, getPlaye
 
 const fixture = function (connections = false) {
 	const scene = new Group();
-	const pelvis = new Group(); pelvis.name = 'rig_pelvis'; pelvis.position.set(0.07, 0, -0.08); scene.add(pelvis);
+	const pelvis = new Group(); pelvis.name = 'rig_pelvis'; pelvis.position.set(0.07, 0.5, -0.08); scene.add(pelvis);
 	const torso = new Group(); torso.name = 'rig_torso'; torso.position.y = 0.5; pelvis.add(torso);
 	const geometry = new BoxGeometry(0.4, 1, 0.3); const material = new MeshStandardMaterial();
 	const geometries = [geometry];
-	const mesh = new Mesh(geometry, material); mesh.position.y = 0.5; pelvis.add(mesh);
+	const mesh = new Mesh(geometry, material); pelvis.add(mesh);
+	for (const [side, sign] of [['left', 1], ['right', -1]] as const) {
+		const thigh = new Group(); thigh.name = `rig_leg_${side}_thigh`; thigh.position.set(sign * 0.14, -0.03, 0); pelvis.add(thigh);
+		const shin = new Group(); shin.name = `rig_leg_${side}_shin`; shin.position.set(sign * 0.04, -0.2, 0.1); thigh.add(shin);
+		const foot = new Group(); foot.name = `rig_leg_${side}_foot`; foot.position.set(0, -0.2, -0.06); shin.add(foot);
+		const shoe = new BoxGeometry(0.16, 0.12, 0.25); geometries.push(shoe);
+		const sole = new Mesh(shoe, material); sole.position.y = -0.01; foot.add(sole);
+	}
 	for (const [side, x] of [['left', 0.35], ['right', -0.35]] as const) {
 		for (const kind of ['gun', 'launcher'] as const) {
 			const part = new Group(); part.name = kind === 'gun' ? `rig_mount_${side}-gun` : `rig_mount_${side}-shoulder bank`;
@@ -40,7 +47,7 @@ const fixture = function (connections = false) {
 		}
 	}
 	const animations = ['walk', 'run', 'backward'].map(function (name) { return new AnimationClip(name, 1, connections ? [
-		new VectorKeyframeTrack('rig_pelvis.position', [0, 0.5, 1], [0.07, 0, -0.08, 0.09, 0.03, -0.10, 0.07, 0, -0.08]),
+		new VectorKeyframeTrack('rig_pelvis.position', [0, 0.5, 1], [0.07, 0.5, -0.08, 0.09, 0.53, -0.10, 0.07, 0.5, -0.08]),
 		new QuaternionKeyframeTrack('rig_torso.quaternion', [0, 0.5, 1], [0, 0, 0, 1, Math.sin(0.07), 0, 0, Math.cos(0.07), 0, 0, 0, 1]),
 	] : [new QuaternionKeyframeTrack('rig_pelvis.quaternion', [0, 1], [0, 0, 0, 1, 0, 0, 0, 1])]); });
 	return { scene, animations, geometry, geometries, material };
@@ -73,7 +80,7 @@ test('non-collinear authored hinges keep physical muzzle and six selected exits 
 		}
 		expect(model.rocketMuzzles.map(function (exits) { return exits.length; })).toEqual([0, 0, 6, 6]);
 		expect(new Set(WARDEN_LOGICAL_TUBE_MAPPING).size).toBe(6);
-	} finally { model.dispose(); remove(); factory.dispose(); asset.geometry.dispose(); asset.material.dispose(); }
+	} finally { model.dispose(); remove(); factory.dispose(); for (const geometry of asset.geometries) geometry.dispose(); asset.material.dispose(); }
 });
 
 test('rigid mounts inherit animated torso motion and simulation muzzle sampling never depends on rendering', function () {
@@ -140,7 +147,7 @@ test('authored instances own materials while caller-owned shared assets and defa
 	expect(getPlayerWeaponRig('warden')).toBe(originalRigs);
 	expect(geometryDisposals).toBe(0); expect(sourceMaterialDisposals).toBe(0);
 	const procedural = createMech(); expect(procedural.root.name).toBe('warden-frame'); procedural.dispose();
-	asset.geometry.dispose(); asset.material.dispose();
+	for (const geometry of asset.geometries) geometry.dispose(); asset.material.dispose();
 	expect(geometryDisposals).toBe(1); expect(sourceMaterialDisposals).toBe(1);
 });
 

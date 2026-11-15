@@ -39,13 +39,23 @@ transforms stay constant while the entire torso bobs, tilts and swivels. Structu
 necks bridge the neutral attachment surfaces; they do not telescope or stabilize
 the weapons in world space. Tests check this rigid parent-child invariant directly.
 
-The fixed-step simulation owns the authored animation clock. A shared numeric
-sampler reads immutable source curves and supplies the same torso pose to the
-renderer and physical muzzle calculations. Gameplay does not read back render
-nodes or a render-populated cache. Mounts do not independently yaw, pitch or
-translate toward targets; existing projectile targeting remains gameplay logic.
+The fixed-step simulation owns procedural foot contacts and body motion. The
+existing gait planner keeps supporting feet at fixed ground positions and
+headings, including turns in place. The adapter measures this export's joint
+lengths, resting stance and sole bounds, then solves its rigid thigh, shin and
+foot rotations. Supporting shoes stay flat; airborne shoes roll within a small
+range. Shorter strides and a shared pelvis reach/guard-clearance correction keep
+both legs in reach and the shin guards above the floor without stretching their
+geometry. Guard support uses a convex hull measured once from the actual mesh.
+Separate toe articulation is absent.
 
-Instances share immutable geometry/textures and own their transforms, mixers
+A shared numeric sampler supplies the same procedural pelvis and torso pose to
+the renderer and physical muzzle calculations. Gameplay does not read back render
+nodes or a render-populated cache. The GLB's original motion clips remain intact
+as authoring references; runtime legs and body motion use the procedural gait.
+Mounts remain rigidly torso-owned; existing projectile targeting stays gameplay logic.
+
+Instances share immutable geometry/textures and own their transforms
 and material clones. `loadAuthoredWarden` owns loaded resources; the separate
 `prepareAuthoredWarden` helper preserves caller-owned resources. Removing a
 binding is deferred while its authored instances remain alive, so combat and
@@ -87,6 +97,9 @@ torso binding and simulation/render firing-origin agreement. The retained
 `validation.json` pins the exact asset and validation source fingerprints.
 CI runs the same command. Texture appearance remains a browser check.
 The preview command emits self-contained `study.html` and opt-in `game.html`.
+`tests/authored-locomotion.test.ts` checks the actual GLB through turning in both
+directions, curved forward travel, reverse and stops: supporting foot position
+and heading, floor clearance, paused rendering and shared weapon origins.
 
 ## Reproduce
 
@@ -138,8 +151,10 @@ independent 181-pose review confirmed torso binding and physical firing origins.
 These historical counts are not a rerun claim for the final shin-guard revision. The four static
 necks intersect both attachment skins; rigid torso parenting preserves that
 contact through animation. Small knee/ankle/guard contacts remain around
-mechanical hinges. In-place playback provides usable locomotion; turns/transitions
-and foot sliding under abrupt direction changes still warrant owner playtesting.
+mechanical hinges.
+These retained clip audits describe the asset's authored motions. The current
+runtime uses planted procedural feet; stride, turning contacts and body weight
+still require owner feel acceptance in the local game preview.
 The authored model supports hit flashes; bespoke recoil, thermal and exhaust
 animations are deferred. Hardware GPU performance and owner visual/feel acceptance
 remain separate from automated correctness checks.
@@ -151,7 +166,7 @@ modest improvement over the raw source's 1.15 MiB geometry, not a large RAM clai
 
 
 With all sections visible, 1/8/24 mechs require 16/128/384 model draws while shared geometry and
-the two asset maps remain constant. Per-instance transforms, mixers and material
+the two asset maps remain constant. Per-instance transforms, joint solving and material
 clones still add CPU cost. The workflow fetches only shipped public mech LFS
 objects in build/Pages jobs; the build rejects unresolved GLB pointer files.
 

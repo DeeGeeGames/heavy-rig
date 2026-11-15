@@ -1,10 +1,11 @@
-import { AnimationMixer, Box3, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, SkinnedMesh, Texture, Vector3, type BufferGeometry } from 'three';
+import { Box3, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, SkinnedMesh, Texture, Vector3, type BufferGeometry } from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { installMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
 import type { WalkerGait } from './gait';
 import type { MechFeedback } from './mech-3d';
 import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
+import { prepareAuthoredLocomotion } from './authored-gait';
 
 export const WARDEN_LOGICAL_TUBE_MAPPING = ['lower_1', 'lower_2', 'lower_4', 'upper_1', 'upper_3', 'upper_4'] as const;
 
@@ -101,7 +102,15 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 	});
 	const nativeBasis = new Matrix4().compose(new Vector3(-origin.z * scale, -sourceBounds.min.y * scale, origin.x * scale), new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2), new Vector3(scale, scale, scale));
 	const sampler = prepareAuthoredTorsoSampler(named(asset.scene, 'rig_torso'), motions, nativeBasis);
-	const advancePose = function (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number) { return advanceAuthoredPose(motions, previous, body, time); };
+	const locomotion = prepareAuthoredLocomotion(named(probe.scene, 'rig_pelvis'), (['left', 'right'] as const).map(function (side, index) {
+		return { index: index === 0 ? 0 : 1, thigh: named(probe.scene, `rig_leg_${side}_thigh`), shin: named(probe.scene, `rig_leg_${side}_shin`), foot: named(probe.scene, `rig_leg_${side}_foot`) };
+	}), scale);
+	const advancePose = function (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number): AuthoredPoseContext {
+		const valid = previous && time >= previous.time ? previous : undefined;
+		const dt = valid ? Math.min(time - valid.time, 0.1) : 0;
+		const context = { ...advanceAuthoredPose(motions, valid, body, time), gait: locomotion.advance(valid?.gait, body, dt) };
+		return { ...context, pelvisDrop: locomotion.pelvisDrop(context.gait, sampler.pelvisMatrix(context)) };
+	};
 	const muzzle = function (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined): SpatialPoint {
 		const exit = exits[slot]; if (!exit) throw new RangeError(`Missing authored muzzle ${slot}`);
 		const local = tubeIndex === undefined || exit.tubes.length === 0 ? exit.muzzle : exit.tubes[((tubeIndex % exit.tubes.length) + exit.tubes.length) % exit.tubes.length];
@@ -142,10 +151,7 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 		});
 		const muzzles = weapons.map(function () { return new Vector3(); });
 		const rocketMuzzles = weapons.map(function (weapon) { return weapon.exits.map(function () { return new Vector3(); }); });
-		const mixer = new AnimationMixer(scene);
-		const actions = motions.map(function (motion) {
-			const action = mixer.clipAction(motion.clip); action.setEffectiveWeight(0).play(); return { motion, action };
-		});
+		const legs = (['left', 'right'] as const).map(function (side) { return { thigh: named(scene, `rig_leg_${side}_thigh`), shin: named(scene, `rig_leg_${side}_shin`), foot: named(scene, `rig_leg_${side}_foot`) }; });
 		const y = new Vector3(0, 1, 0); const yaw = new Quaternion(); const inverse = new Matrix4();
 		const position = new Vector3(); const labelVertex = new Vector3(); const relative = new Matrix4();
 		const bounds: { part: Mesh; corners: Vector3[] }[] = [];
@@ -163,19 +169,19 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 		const pose = function (gait: WalkerGait, heading: number, feedback?: MechFeedback) {
 			if (disposed) return;
 			const context = feedback?.authoredPose ?? advancePose(previous, gait.body, feedback?.time ?? previous?.time ?? 0);
-			for (const entry of actions) {
-				const clip = context.clips.find(function (candidate) { return candidate.name === entry.motion.name; });
-				entry.action.time = clip?.time ?? 0;
-				entry.action.setEffectiveWeight(clip?.weight ?? 0);
-			}
-			mixer.update(0);
 			for (const transform of sampler.sample(context)) {
 				const target = upperBody.find(function (entry) { return entry.name === transform.name; })?.node;
 				if (!target) throw new Error(`Missing authored upper-body node ${transform.name}`);
 				target.position.copy(transform.position); target.quaternion.copy(transform.quaternion); target.scale.copy(transform.scale);
 			}
-			hull.rotation.y = -gait.body.angle;
-			torso.quaternion.premultiply(yaw.setFromAxisAngle(y, gait.body.angle - heading));
+			const planted = context.gait;
+			if (!planted) throw new Error('Missing fixed-step authored gait');
+			hull.rotation.y = -planted.body.angle;
+			torso.quaternion.premultiply(yaw.setFromAxisAngle(y, planted.body.angle - heading));
+			for (const solved of locomotion.solve(planted, sampler.pelvisMatrix(context))) {
+				const leg = legs[solved.index]; if (!leg) throw new Error('Missing authored leg');
+				leg.thigh.quaternion.copy(solved.thigh); leg.shin.quaternion.copy(solved.shin); leg.foot.quaternion.copy(solved.foot);
+			}
 			// Weapons and structural necks retain their authored local transforms.
 			root.updateMatrixWorld(true); inverse.copy(root.matrixWorld).invert();
 			for (const [slot, weapon] of weapons.entries()) {
@@ -202,7 +208,6 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 			pose,
 			dispose: function () {
 				if (disposed) return; disposed = true;
-				mixer.stopAllAction(); mixer.uncacheRoot(scene);
 				for (const material of ownedMaterials.values()) material.dispose();
 				root.removeFromParent(); root.clear(); instances -= 1; releaseIfUnused();
 			},

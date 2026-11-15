@@ -1,5 +1,6 @@
 import { InterpolateDiscrete, InterpolateLinear, Matrix4, Quaternion, Vector3, type AnimationClip, type KeyframeTrack, type Object3D } from 'three';
 import type { WeaponBody } from './weapon-rig';
+import type { WalkerGait } from './gait';
 
 export const authoredClipNames = ['walk', 'run', 'backward'] as const;
 export type AuthoredMotionName = typeof authoredClipNames[number];
@@ -10,6 +11,9 @@ export interface AuthoredPoseContext {
 	readonly body: { readonly x: number; readonly y: number; readonly angle: number };
 	readonly selected: AuthoredMotionName | 'idle';
 	readonly clips: readonly AuthoredClipState[];
+	readonly gait?: WalkerGait;
+	/** Native Y-up correction shared by the pelvis and all weapon origins. */
+	readonly pelvisDrop?: number;
 }
 export interface AuthoredMotion { readonly name: AuthoredMotionName; readonly clip: AnimationClip; readonly nominalSpeed: number }
 export interface AuthoredTransform { readonly name: string; readonly position: Vector3; readonly quaternion: Quaternion; readonly scale: Vector3 }
@@ -46,6 +50,7 @@ const prepareTrack = function (source: KeyframeTrack) {
 // Capture immutable source curves and rest transforms once. Sampling never reads
 // a render graph: the same numeric upper-body pose drives visuals and combat.
 export const prepareAuthoredTorsoSampler = function (torso: Object3D, motions: readonly AuthoredMotion[], basis: Matrix4) {
+	const nativeScale = new Vector3().setFromMatrixScale(basis).y;
 	const chain: Object3D[] = []; let current: Object3D | null = torso;
 	while (current) { chain.unshift(current); current = current.parent; }
 	const rests = chain.map(function (node) {
@@ -56,6 +61,11 @@ export const prepareAuthoredTorsoSampler = function (torso: Object3D, motions: r
 	const sample = function (context: AuthoredPoseContext | undefined): AuthoredTransform[] {
 		return rests.map(function (rest) {
 			const position = rest.position.clone(); const quaternion = rest.quaternion.clone(); const scale = rest.scale.clone();
+			if (context?.gait) {
+				if (rest.originalName === 'rig_pelvis') position.y += context.gait.motion.lift * 0.3 / nativeScale + (context.pelvisDrop ?? 0);
+				if (rest.originalName === 'rig_torso') quaternion.multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -context.gait.motion.pitch)).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), context.gait.motion.roll));
+				return { name: rest.name, position, quaternion, scale };
+			}
 			for (const property of ['position', 'quaternion', 'scale'] as const) {
 				let total = 0; const vector = new Vector3(); const rotation = new Quaternion();
 				for (const clip of clips) {
@@ -82,14 +92,18 @@ export const prepareAuthoredTorsoSampler = function (torso: Object3D, motions: r
 		});
 	};
 	const matrix = function (context: AuthoredPoseContext | undefined, angle: number, heading: number): Matrix4 {
-		const result = new Matrix4().makeRotationY(-angle).multiply(basis);
+		const hullAngle = context?.gait?.body.angle ?? angle;
+		const result = new Matrix4().makeRotationY(-hullAngle).multiply(basis);
 		const transforms = sample(context);
 		for (const [index, transform] of transforms.entries()) {
 			const rotation = transform.quaternion.clone();
-			if (index === transforms.length - 1) rotation.premultiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), angle - heading));
+			if (index === transforms.length - 1) rotation.premultiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), hullAngle - heading));
 			result.multiply(new Matrix4().compose(transform.position, rotation, transform.scale));
 		}
 		return result;
 	};
-	return { sample, matrix };
+	const pelvisMatrix = function (context: AuthoredPoseContext): Matrix4 {
+		return sample(context).slice(0, -1).reduce(function (result, transform) { return result.multiply(new Matrix4().compose(transform.position, transform.quaternion, transform.scale)); }, basis.clone());
+	};
+	return { sample, matrix, pelvisMatrix };
 };
