@@ -8,76 +8,14 @@ unchanged. Existing approved gait parameters/foot-path/IK direction are reused;
 new limb lengths and actual sole geometry determine joint rotations and contacts.
 """
 
-import argparse, copy, hashlib, json, math, runpy, struct, sys
+import argparse, hashlib, json, math, runpy, struct, sys
 from pathlib import Path
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-def read_glb(path):
-    data = path.read_bytes()
-    if struct.unpack_from("<II", data, 0) != (0x46546C67, 2):
-        raise ValueError("Expected GLB2")
-    length, kind = struct.unpack_from("<II", data, 12)
-    if kind != 0x4E4F534A:
-        raise ValueError("Missing JSON chunk")
-    document = json.loads(data[20 : 20 + length])
-    offset = 20 + length
-    bin_length, bin_kind = struct.unpack_from("<II", data, offset)
-    if bin_kind != 0x004E4942:
-        raise ValueError("Missing BIN chunk")
-    binary = data[offset + 8 : offset + 8 + bin_length]
-    if len(document.get("buffers", [])) != 1:
-        raise ValueError("Expected single embedded buffer")
-    return document, binary[: document["buffers"][0]["byteLength"]]
-
-
-def write_glb(path, document, binary):
-    document["buffers"] = [{"byteLength": len(binary)}]
-    body = json.dumps(document, separators=(",", ":"), allow_nan=False).encode()
-    body += b" " * (-len(body) % 4)
-    binary += b"\0" * (-len(binary) % 4)
-    path.write_bytes(
-        struct.pack("<III", 0x46546C67, 2, 28 + len(body) + len(binary))
-        + struct.pack("<II", len(body), 0x4E4F534A)
-        + body
-        + struct.pack("<II", len(binary), 0x004E4942)
-        + binary
-    )
-
-
-def local_matrix(node):
-    if "matrix" in node:
-        return Matrix(
-            tuple(
-                tuple(node["matrix"][col * 4 + row] for col in range(4))
-                for row in range(4)
-            )
-        )
-    q = node.get("rotation", [0, 0, 0, 1])
-    return Matrix.LocRotScale(
-        Vector(node.get("translation", [0, 0, 0])),
-        Quaternion((q[3], q[0], q[1], q[2])),
-        Vector(node.get("scale", [1, 1, 1])),
-    )
-
-
-def column_major(matrix):
-    return [matrix[row][col] for col in range(4) for row in range(4)]
-
-
-def accessor_values(document, binary, identifier):
-    a = document["accessors"][identifier]
-    if a.get("sparse"):
-        raise ValueError("Sparse accessors not supported in authoring input")
-    view = document["bufferViews"][a["bufferView"]]
-    width = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}[a["type"]]
-    code = {5121: "B", 5123: "H", 5125: "I", 5126: "f"}[a["componentType"]]
-    fmt = "<" + code * width
-    stride = view.get("byteStride", struct.calcsize(fmt))
-    start = view.get("byteOffset", 0) + a.get("byteOffset", 0)
-    return [
-        struct.unpack_from(fmt, binary, start + i * stride) for i in range(a["count"])
-    ]
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from rigid_packaging import read_glb, write_glb, accessor_values, package_neutral_rig
+from rigid_contract import validate_groups
 
 
 def main():
@@ -121,7 +59,7 @@ def main():
             for family in ("gun", "shoulder bank")
         }
     )
-    groups = {item["name"]: item for item in contract["groups"]}
+    groups = validate_groups(contract["groups"])
     if set(groups) != expected:
         raise ValueError("Expected exact twelve rigid motion groups")
     rest = {name: Vector(item["pivot"]) for name, item in groups.items()}
@@ -136,140 +74,26 @@ def main():
             raise ValueError("Missing parent " + str(parent))
         if name.startswith("rig_mount_") and parent != "rig_torso":
             raise ValueError("All weapon mounts must remain fixed torso children")
-    # Preserve only geometry/material resources from the candidate input. Source
-    # motion geometry is never appended. glTF Transform prunes unused resources.
-    document = copy.deepcopy(source)
-    document.pop("animations", None)
-    document.pop("skins", None)
-    document["asset"] = {
-        "version": "2.0",
-        "generator": "Heavy Rig rigid Warden game-asset packager",
-    }
-    document["nodes"] = []
-    document["scenes"] = [{"name": "Warden", "nodes": []}]
-    document["scene"] = 0
-    node_indices = {}
-    for name in groups:
-        node_indices[name] = len(document["nodes"])
-        parent = groups[name]["parent"]
-        translation = basis @ (
-            rest[name] - (rest[parent] if parent else Vector((0, 0, 0)))
-        )
-        document["nodes"].append(
-            {
-                "name": name,
-                "translation": list(translation),
-                "children": [],
-                "extras": {
-                    "role": "rigid-motion-group",
-                    "sourceDirection": "Blender Z-up/-Y-forward",
-                },
-            }
-        )
-    for name, index in node_indices.items():
-        parent = groups[name]["parent"]
-        if parent:
-            document["nodes"][node_indices[parent]]["children"].append(index)
-        else:
-            document["scenes"][0]["nodes"].append(index)
-    source_parents = {}
-    for index, node in enumerate(source["nodes"]):
-        for child in node.get("children", []):
-            if child in source_parents:
-                raise ValueError("Shared input node parents are unsupported")
-            source_parents[child] = index
-    world_cache = {}
-
-    def world(index):
-        if index not in world_cache:
-            own = local_matrix(source["nodes"][index])
-            world_cache[index] = (
-                world(source_parents[index]) @ own if index in source_parents else own
-            )
-        return world_cache[index]
-
-    assignments = contract.get("meshGroups", {})
-    static_connections = {}
     for item in contract.get("staticConnections", []):
         if item["parent"] != "rig_torso" or item["binding"] != "rigid-to-torso":
             raise ValueError("Structural necks must remain fixed to the torso")
-        static_connections.setdefault(item["meshName"], []).append(item)
-    owned = {name: [] for name in groups}
+    document, node_indices, groups, rest, owned, mesh_bindings = package_neutral_rig(
+        source, contract, scene_name="Warden",
+        generator="Heavy Rig rigid Warden game-asset packager",
+    )
+    if any(not value for value in owned.values()):
+        raise ValueError("Each of twelve Warden motion groups must own geometry")
     soles = {side: [] for side in ("left", "right")}
-    for index, node in enumerate(source["nodes"]):
-        if "mesh" not in node:
-            continue
-        ancestor = index
-        owner = assignments.get(node.get("name", "")) or node.get("extras", {}).get(
-            "rigGroup"
-        )
-        while not owner:
-            ancestor_name = source["nodes"][ancestor].get("name", "")
-            if ancestor_name in groups:
-                owner = ancestor_name
-                break
-            if ancestor not in source_parents:
-                break
-            ancestor = source_parents[ancestor]
-        if owner not in groups:
-            raise ValueError("Unassigned mesh " + node.get("name", str(index)))
-        matrix = world(index)
-        pivot_glb = basis @ rest[owner]
-        local = Matrix.Translation(-pivot_glb) @ matrix
-        child = {
-            "name": "geometry_" + node.get("name", str(index)),
-            "mesh": node["mesh"],
-            "matrix": column_major(local),
-            "extras": {"rigGroup": owner, "sourceNode": node.get("name", str(index))},
-        }
-        connections = static_connections.get(node.get("name", ""), [])
-        if connections:
-            child["extras"].update(
-                role="static-mount-connections",
-                connectionIds=[item["id"] for item in connections],
-            )
-        document["nodes"][node_indices[owner]]["children"].append(
-            len(document["nodes"])
-        )
-        document["nodes"].append(child)
-        owned[owner].append(child["name"])
+    for entry in mesh_bindings:
+        node, owner, matrix = entry["node"], entry["owner"], entry["matrix"]
         for side in ("left", "right"):
             if owner != f"rig_leg_{side}_foot":
                 continue
             for primitive in source["meshes"][node["mesh"]]["primitives"]:
-                for point in accessor_values(
-                    source, source_binary, primitive["attributes"]["POSITION"]
-                ):
-                    soles[side].append(
-                        inverse_basis @ (matrix @ Vector(point)) - rest[owner]
-                    )
-    if any(not value for value in owned.values()):
-        raise ValueError("Each of twelve motion groups must own geometry")
+                for point in accessor_values(source, source_binary, primitive["attributes"]["POSITION"]):
+                    soles[side].append(inverse_basis @ (matrix @ Vector(point)) - rest[owner])
     if any(not value for value in soles.values()):
-        raise ValueError("Foot geometry needed for ground/sole checks")
-    anchor_world_positions = dict(rest)
-    for anchor in contract.get("anchors", []):
-        name, parent = anchor["name"], anchor["parent"]
-        if name in node_indices or parent not in node_indices:
-            raise ValueError("Duplicate anchor or missing parent " + name)
-        translation = basis @ (
-            Vector(anchor["worldPosition"]) - anchor_world_positions[parent]
-        )
-        node = {
-            "name": name,
-            "translation": list(translation),
-            "extras": anchor.get("extras", {}),
-        }
-        if "direction" in anchor:
-            node["extras"]["forwardDirection"] = list(
-                basis.to_3x3() @ Vector(anchor["direction"])
-            )
-        document["nodes"][node_indices[parent]]["children"].append(
-            len(document["nodes"])
-        )
-        node_indices[name] = len(document["nodes"])
-        document["nodes"].append(node)
-        anchor_world_positions[name] = Vector(anchor["worldPosition"])
+        raise ValueError("Foot geometry needed for Warden ground/sole checks")
     library = runpy.run_path(
         str(root / "scripts/mech-design/blender/locomotion_trial.py")
     )

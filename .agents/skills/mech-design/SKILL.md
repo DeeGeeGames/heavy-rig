@@ -25,4 +25,18 @@ Before 3D generation, derive a front/back/own-left/own-right turnaround from the
 
 ## Retained production checkpoints
 
+For new baselines, follow `design/mechs/visual-consistency.md`: attach every
+verified PNG in the CLI's `attachments.json` as a shared-world reference, preserve
+the requested chassis identity, and complete the side-by-side family review
+before turnaround generation. Record the exact candidate hash and explicit owner
+decision; do not infer approval or retroactively change existing approvals.
+
+For new 3D sources, use the shared source inventory and neutral rig packaging in
+`scripts/mech-design/blender/README.md`. Inventory every mesh, review and assign
+every source component, and verify the frozen inventory before repairs. The
+Warden ownership mapping, repair adapter and gait remain source-specific. Use
+candidate budgets for experiments and exact checkpoint mode for reproduction.
+Measure Warden's representative in-game crowd costs before adopting its budgets
+or per-instance animation/material architecture across the roster.
+
 Retain only approved steps and the source dependencies needed to reproduce or pivot from them. Use semantic step paths instead of numbered candidate folders. Store large retained Blender and GLB assets under `design/mechs/assets/` with Git LFS; keep experimental renders and rejected candidates in ignored `design/mechs/generated/`. Do not commit rejected variants or abandoned optimization recipes. Keep approval hashes and provenance aligned when promoting a candidate. Check fresh-clone retrieval and asset hashes before delivery.

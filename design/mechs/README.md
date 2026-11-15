@@ -15,6 +15,12 @@ For stage 7, use the [game optimization procedure](game-optimization.md). It def
 
 ## Baselines and variants
 
+New baselines follow [shared-world visual consistency](visual-consistency.md):
+attach the verified approved reference images emitted by the CLI, then review
+the candidate beside those references before turnaround generation. The family
+review records exact image hashes and remains pending until explicitly reviewed
+and approved; existing concept approvals retain their original scope.
+
 Once a 3D chassis exists, use the [modular consistency workflow](asset-production.md#modular-consistency-rules): one shared body, replaceable weapon cartridges, and approval views rendered from assembled geometry. Whole-mech image edits below are for concept exploration before that stage. See the [Warden assembly trial](chassis/warden/modular-review.md) for the first executable example.
 
 Use `chassis/warden/baseline-request.json` as a working baseline example. A fully fitted baseline is a concept loadout, not the one-weapon purchase loadout. `mode` is `baseline` or `variant`. A variant request also supplies `baselineId`. Equipment entries follow current mount order; each has `weaponId` or null and integer `rounds`. Base anatomy and attachment locations must remain consistent even when a mount is empty.

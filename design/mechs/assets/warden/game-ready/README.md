@@ -113,6 +113,11 @@ deduplicates/welds, generates tangents, quantizes, preserves empty anchors, and
 runs format plus Three.js rig validation. glTF Transform is pinned to 4.5.1.
 `recipe.json` holds frozen inputs/hashes, ownership overrides and probes,
 measured pivots, module fits, atlas choices and feature-specific repair rules.
+`source-ownership.json` freezes all 680 source component assignments extracted
+from the approved result. Shared inventory verifies every mesh and that complete
+mapping; coordinate-threshold guessing is no longer part of reproduction.
+Neutral rig packaging is shared; Warden's feature repairs and gait remain its
+own adapters. See the [new-source workflow](../../../../../scripts/mech-design/blender/README.md#inventory-and-package-a-new-source).
 `reproduction.json` records the exact output hash, actual tool versions and
 recipe/shared-library fingerprints. The complete pipeline reproduced the
 selected GLB byte-for-byte on this machine.
@@ -120,7 +125,7 @@ The retained validation summary identifies its exact asset hash and checks.
 Earlier 1,448/181-pose runtime audits cover the torso-binding revision `a0194813…`;
 the shin-guard revision preserves those animation tracks and changes only guard
 ownership, with a separate export/gait comparison.
-The anatomy classifier and repair rules are specific to this Warden source;
+The ownership mapping and repair rules are specific to this Warden source;
 a second chassis is still required before calling the process general.
 
 ## Validation limits
@@ -149,3 +154,10 @@ With all sections visible, 1/8/24 mechs require 16/128/384 model draws while sha
 the two asset maps remain constant. Per-instance transforms, mixers and material
 clones still add CPU cost. The workflow fetches only shipped public mech LFS
 objects in build/Pages jobs; the build rejects unresolved GLB pointer files.
+
+Before adopting these choices across the roster, measure actual draw calls,
+CPU/GPU frame times and memory in representative real game crowds, equipment,
+zoom and lighting on intended hardware, with the procedural model as a baseline.
+The section counts above are an estimate, not a hardware frame-time result.
+Agree scene budgets from that evidence; owner appearance and control feel remain
+separate. These measurements have not been performed by this workflow refactor.

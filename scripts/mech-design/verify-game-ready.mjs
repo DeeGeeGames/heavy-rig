@@ -1,6 +1,7 @@
 /** Validate the retained Warden GLB directly; no Blender or ignored reports required.
- * bun scripts/mech-design/verify-game-ready.mjs [asset.glb] [new-report.json] [--candidate]
- * --candidate permits an unpromoted digest while retaining structural checks.
+ * bun scripts/mech-design/verify-game-ready.mjs [asset.glb] [new-report.json] [--candidate [--budget path.json]]
+ * Default mode verifies the exact checkpoint; --candidate checks explicit cost
+ * ceilings and retains the same Warden structural/ownership/gait/origin checks.
  * Texture decoding, physical controls and hardware timing remain browser/owner checks.
  */
 import { createHash } from 'node:crypto';
@@ -10,14 +11,28 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { prepareAuthoredWarden, authoredMuzzleError } from '../../src/authored-mech.ts';
 import { createGait, advanceGait } from '../../src/gait.ts';
 import { getPlayerMuzzle } from '../../src/weapon-rig.ts';
+import { parseCandidateBudget, verifyCandidateBudget } from './candidate-budget.ts';
 
 const root = resolve(import.meta.dirname, '../..');
 const manifest = await Bun.file(resolve(root, 'design/mechs/assets/warden/game-ready/manifest.json')).json();
 const recipePath = 'design/mechs/assets/warden/game-ready/recipe.json';
 const recipe = await Bun.file(resolve(root, recipePath)).json();
-const candidate = process.argv.includes('--candidate');
-const arguments_ = process.argv.slice(2).filter(function (value) { return value !== '--candidate'; });
+let candidate = false;
+let budgetArgument;
+const arguments_ = [];
+for (let index = 2; index < process.argv.length; index++) {
+ const argument = process.argv[index];
+ if (argument === '--candidate' && !candidate) candidate = true;
+ else if (argument === '--budget' && !budgetArgument) {
+  budgetArgument = process.argv[++index];
+  if (!budgetArgument || budgetArgument.startsWith('--')) throw new Error('--budget requires a JSON path');
+ } else if (argument.startsWith('--')) throw new Error('Unknown or duplicate option ' + argument);
+ else arguments_.push(argument);
+}
+if (budgetArgument && !candidate) throw new Error('--budget requires --candidate; checkpoint verification uses the selected manifest');
 if (arguments_.length > 2) throw new Error('Expected at most asset and new report paths');
+const budgetPath = candidate ? budgetArgument ?? 'design/mechs/assets/warden/game-ready/candidate-budget.json' : undefined;
+const budget = budgetPath ? parseCandidateBudget(await Bun.file(resolve(root, budgetPath)).json()) : undefined;
 const path = resolve(root, arguments_[0] ?? manifest.asset.path);
 const output = arguments_[1] ? resolve(root, arguments_[1]) : undefined;
 if (output && await Bun.file(output).exists()) throw new Error('Validation output must be new');
@@ -52,9 +67,13 @@ asset.scene.traverse(function (node) {
  }
  if (node.geometry.index) arrays.add(node.geometry.index.array);
 });
-if (triangles !== manifest.asset.triangles || meshSections !== manifest.asset.meshSections || materials.size !== manifest.asset.materials) throw new Error('Asset geometry budget differs from manifest');
 const geometryBufferBytes = [...arrays].reduce(function (total, array) { return total + array.byteLength; }, 0);
-if (geometryBufferBytes !== manifest.asset.geometryArrayBytes) throw new Error('Geometry memory differs from manifest');
+const costs = { triangles, meshSections, materials: materials.size, geometryBufferBytes, bytes: data.byteLength };
+if (budget) verifyCandidateBudget(costs, budget, manifest.chassis);
+else {
+ if (triangles !== manifest.asset.triangles || meshSections !== manifest.asset.meshSections || materials.size !== manifest.asset.materials) throw new Error('Checkpoint geometry differs from manifest');
+ if (geometryBufferBytes !== manifest.asset.geometryArrayBytes || data.byteLength !== manifest.asset.bytes) throw new Error('Checkpoint memory/payload differs from manifest');
+}
 const point = new Vector3();
 let maximumGuardProbeError = 0;
 for (const rule of recipe.ownershipOverrides) {
@@ -131,7 +150,7 @@ try {
  for (const material of materials) { for (const value of Object.values(material)) if (value instanceof Texture) value.dispose(); material.dispose(); }
 }
 const fingerprints = {};
-for (const file of [recipePath, 'scripts/mech-design/verify-game-ready.mjs', 'src/authored-mech.ts', 'src/authored-pose.ts', 'src/weapon-rig.ts']) fingerprints[file] = createHash('sha256').update(new Uint8Array(await Bun.file(resolve(root, file)).arrayBuffer())).digest('hex');
-const result = { schemaVersion: 1, sha256, selectedAssetMatch: sha256 === manifest.asset.sha256, bytes: data.byteLength, triangles, meshSections, materials: materials.size, geometryBufferBytes, shinOwnership: { components: recipe.ownershipOverrides.length, maximumProbeError: maximumGuardProbeError }, rigidAttachments: { mounts: 4, staticNeckMeshes: 1, maximumLocalMatrixError: maximumRigidMatrixError }, clips, firingOrigins: { runtimeSamples: 480, maximumMuzzleError, originRenderDependencyError }, fingerprints, limits: ['Headless texture placeholders; image appearance requires browser review', 'Samples do not establish swept-volume clearance or hardware frame time'], errors: [] };
+for (const file of [recipePath, 'scripts/mech-design/verify-game-ready.mjs', 'scripts/mech-design/candidate-budget.ts', 'src/authored-mech.ts', 'src/authored-pose.ts', 'src/weapon-rig.ts', ...(budgetPath ? [budgetPath] : [])]) fingerprints[file] = createHash('sha256').update(new Uint8Array(await Bun.file(resolve(root, file)).arrayBuffer())).digest('hex');
+const result = { schemaVersion: 1, mode: candidate ? 'candidate' : 'checkpoint', ...(budget ? { budget } : {}), sha256, selectedAssetMatch: sha256 === manifest.asset.sha256, bytes: data.byteLength, triangles, meshSections, materials: materials.size, geometryBufferBytes, shinOwnership: { components: recipe.ownershipOverrides.length, maximumProbeError: maximumGuardProbeError }, rigidAttachments: { mounts: 4, staticNeckMeshes: 1, maximumLocalMatrixError: maximumRigidMatrixError }, clips, firingOrigins: { runtimeSamples: 480, maximumMuzzleError, originRenderDependencyError }, fingerprints, limits: ['Warden structural and runtime adapter contract; other chassis require their own validator configuration/adapter', 'Candidate cost ceilings do not establish hardware performance or owner acceptance', 'Headless texture placeholders; image appearance requires browser review', 'Samples do not establish swept-volume clearance or hardware frame time'], errors: [] };
 if (output) await Bun.write(output, JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify(result, null, 2));

@@ -1,8 +1,10 @@
 import { catalog } from './catalog';
 import { verifiedBaseline } from './cli';
+import { verifiedVisualReferences } from './visual-references';
 import type { BaselineReference } from './prompt';
 import { resolve } from 'node:path';
 const root = resolve(import.meta.dir,'../..');
+await verifiedVisualReferences();
 const result = await Bun.build({entrypoints:[resolve(import.meta.dir,'browser.ts')],target:'browser',format:'iife',minify:true});
 if (!result.success) throw new AggregateError(result.logs,'Could not build mech design interface');
 const output = result.outputs[0];

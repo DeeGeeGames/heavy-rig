@@ -40,6 +40,76 @@ checks rigid ownership, sampled gait and physical origins, and requires no
 ignored reports. Add an asset path and a new report path as positional arguments
 to save fresh evidence. The retained validation summary pins its source hashes.
 
+Checkpoint mode requires exact hash and measured cost equality. For a changed
+Warden candidate use `--candidate`, which retains the ownership, hierarchy, gait
+and physical-origin checks but permits costs within explicit ceilings:
+
+```sh
+bun scripts/mech-design/verify-game-ready.mjs \
+  design/mechs/generated/warden-rebuild/warden.glb --candidate
+```
+
+The default `game-ready/candidate-budget.json` conservatively caps each cost at
+the selected asset's current value. Use `--candidate --budget path.json` for an
+explicit alternative with chassis, rationale and all maximum costs. These are
+experiment limits, not hardware acceptance or budgets for every chassis. The
+cost parser is reusable; the Warden structural/runtime verifier stays an adapter.
+
+## Inventory and package a new source
+
+```sh
+blender --background --factory-startup --python-exit-code 1 \
+  --python "$PWD/scripts/mech-design/blender/source_inventory.py" -- \
+  --repo "$PWD" --input design/mechs/assets/CHASSIS/source.glb \
+  --output design/mechs/generated/CHASSIS-inventory
+```
+
+Use absolute script paths with Flatpak (`flatpak run org.blender.Blender`). The
+inventory covers all imported mesh instances, local/world bounds, transforms,
+geometry hashes and disconnected components, including loose vertices. Mesh and
+component IDs are local to the exact source/import fingerprint. They are not
+stable across regeneration or changed import tools.
+
+The command emits `inventory.json` and draft `ownership.json`. Review every
+component, supply semantic `groups` and one assignment for every component ID,
+and record explicit scoped approval in `approval.status`/`approval.evidence`.
+Before applying source-specific repairs, call `verify_ownership(inventory,
+mapping, source_sha256)`; changed geometry, transforms, missing/stale assignments
+and unreviewed mappings fail. Keep groups for parts being replaced so their source
+coverage remains accounted for. The Warden map inherits existing approval only
+through byte-for-byte equivalence with its selected asset; new source mappings
+require their own review. Do not copy Warden component IDs or spatial thresholds.
+
+After source-specific separation/repair, use `package_neutral_rig(source,
+contract, scene_name=..., generator=...)` from `rigid_packaging.py`. `source` is
+the GLB JSON returned with its buffer by `read_glb`; the contract declares
+`groups` (name, parent, world pivot), `meshGroups` (source node name to assembly),
+and optional anchors (name, parent, world position/direction). Coordinates are
+Blender Z-up/-Y-forward. Every mesh instance must resolve to one owner, explicitly
+or through a named group ancestor. Duplicate names, unknown/stale assignments,
+cycles, skins, morph targets and GPU instancing are rejected; expand instances
+with an explicit adapter before packaging. The returned tuple contains document,
+node indices, groups, pivots, owned geometry and mesh bindings. The document
+preserves neutral world placement and can be saved with `write_glb` using the source buffer.
+It contains no generated locomotion; chassis-specific adapters add their own
+motion and runtime contracts and validate the actual export.
+
+`warden_game_ready/package_rig.py` demonstrates an adapter around this shared
+packager. It retains Warden's twelve-group anatomy and accepted gait. A synthetic
+two-group fixture verifies shared packaging beyond that anatomy; it is not a
+second-chassis art or game-readiness acceptance claim.
+
+Regression checks:
+
+```sh
+python3 -m unittest discover -s tests -p 'test_*.py'
+python3 tests/mech-rigid-contract_test.py
+blender --background --factory-startup --python-exit-code 1 \
+  --python "$PWD/tests/mech-rigid-packaging_blender.py"
+blender --background --factory-startup --python-exit-code 1 \
+  --python "$PWD/tests/mech-source-inventory_blender.py"
+```
+
 ## Generate a standalone study and opt-in game preview
 
 ```sh

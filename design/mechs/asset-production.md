@@ -2,7 +2,7 @@
 
 ## Stages and acceptance
 
-1. **Concept:** validate current gameplay mounts, approve a 3/4 baseline, retain prompt, request and image hashes.
+1. **Concept:** validate current gameplay mounts, attach the verified approved shared-world references and complete the [family consistency review](visual-consistency.md), approve a 3/4 baseline, retain prompt, request, attachments, family review and image hashes.
 2. **Turnaround:** derive and approve front/back/own-left/own-right views. Review physical connections and shared proportions. Reuse unchanged projections for variants when their changed inserts are fully hidden. Store exact view provenance.
 3. **Generated source:** upload the approved set; record provider/model, settings, credit cost, source hashes, job URL and export hash. Preserve the raw export unchanged. Public model uploads are permitted. Record failures separately from visual rejection.
 4. **Structural audit:** inspect front/rear/both sides and underside; verify weapon families/counts, connectors, leg bulk, missing surfaces and joint boundaries. Inventory actual meshes, triangles, materials, textures, transforms and animation data. Record protected structural features and likely geometry/bake candidates using the [optimization procedure](game-optimization.md#1-freeze-the-source-and-record-the-component-contract). Identify repair work explicitly.
@@ -11,6 +11,23 @@
 7. **Game derivative:** follow the [optimization procedure](game-optimization.md): measure geometry, sections and textures first, then choose selective repairs, component rebuilding or detail baking where the measured cost and appearance justify it. A source already near the intended budget may need only bounded cleanup. Consolidate compatible materials, verify the exported GLB and compare it with the source. Preserve functional interfaces, source assets and required reproduction inputs. Normalize units/orientation consistently across the assembled derivative. Establish budgets using actual camera distance, texture/material costs and representative on-screen crowds; a 10–20k-triangle candidate or the pod proof's reduction percentage is not a universal target.
 8. **In-game acceptance:** validate independent torso aim, gait, muzzle origins, equipped/empty variants, lighting and silhouette in the real runtime. Report measured performance separately from owner acceptance. Do not replace production models until the agreed preview gate passes.
 9. **Repeatability:** run the documented procedure on another chassis before calling it general. Record special cases, repair steps and automation gaps; revise this document and the skill as evidence changes.
+
+## Reusable tools and source-specific decisions
+
+Use `source_inventory.py` to inventory every imported mesh instance and connected
+component. Its draft ownership map deliberately makes no anatomical guesses.
+Assign every component to a reviewed semantic assembly (including replacement
+sources); record approval evidence and freeze source/inventory hashes before
+repair. Missing or stale assignments fail instead of silently dropping geometry.
+The Warden map is extracted from the exact approved derivative's ownership; it
+is inherited evidence, not a new approval or a template of anatomical thresholds.
+
+`rigid_packaging.py` packages arbitrary reviewed rigid groups, pivots, parents,
+mesh ownership and anchors. It rejects ambiguous names, cycles and unassigned
+mesh instances. Chassis adapters supply source segmentation/repairs, motion and
+runtime contracts. The Warden adapter retains its explicit twelve-group gait
+requirements; other chassis must supply their own adapter instead of copying
+coordinate thresholds. See [commands and boundaries](../../scripts/mech-design/blender/README.md#inventory-and-package-a-new-source).
 
 ## Checkpoints and storage
 
@@ -42,6 +59,16 @@ Normal game startup is unchanged. Next, integrate this selected asset for real
 in-game review. In-game appearance/feel, representative hardware performance,
 other equipped variants and second-chassis repeatability remain outstanding.
 The eight visible launcher cells map to six gameplay tubes without changing salvos.
+
+Before making Warden's geometry, material or animation choices roster defaults,
+measure it in representative real game scenes on the intended hardware. Sixteen
+mesh sections and per-instance mixers/material clones are measured architectural
+costs, not evidence of an unacceptable frame time or an accepted budget. Capture
+actual draw calls, CPU/GPU frame times and memory for representative crowds and
+equipment at gameplay zoom/lighting, alongside the procedural baseline. Agree
+performance targets from those measurements before repeating the architecture.
+Owner appearance/control feel remains a separate gate. This PR does not perform
+that hardware evaluation or establish second-chassis production readiness.
 
 Earlier dense-master assembly, articulation and pod approvals remain scoped
 historical evidence. The pod modules and gait direction directly informed the

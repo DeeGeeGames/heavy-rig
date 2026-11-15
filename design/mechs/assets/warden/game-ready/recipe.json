@@ -18,7 +18,11 @@
         "path": "design/mechs/assets/warden/optimization/right-pod/pod.glb",
         "sha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89"
       }
-    ]
+    ],
+    "ownership": {
+      "path": "design/mechs/assets/warden/game-ready/source-ownership.json",
+      "sha256": "2cd8a81cbfc0e001faad4eb68fab865e6accfa8fe7986b8f7b6991796a1c3c23"
+    }
   },
   "ownershipOverrides": [
     {
@@ -627,7 +631,7 @@
     ]
   ],
   "validation": {
-    "sourceBoundsTolerance": 1e-7,
-    "ownershipProbeTolerance": 0.00003
+    "sourceBoundsTolerance": 1e-07,
+    "ownershipProbeTolerance": 3e-05
   }
 }

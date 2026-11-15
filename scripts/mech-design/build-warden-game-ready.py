@@ -142,9 +142,14 @@ def version(command):
 fingerprint_paths = [
     Path(__file__), recipe_path,
     *sorted(recipe.glob("*.py")),
+    repo / "scripts/mech-design/blender/source_inventory.py",
+    repo / "scripts/mech-design/blender/rigid_contract.py",
+    repo / "scripts/mech-design/blender/rigid_packaging.py",
+    repo / config["inputs"]["ownership"]["path"],
     repo / "scripts/mech-design/blender/locomotion_trial.py",
     repo / "scripts/mech-design/verify-authored-rig.mjs",
     repo / "scripts/mech-design/verify-game-ready.mjs",
+    repo / "scripts/mech-design/candidate-budget.ts",
     repo / "bun.lock",
 ]
 report = {

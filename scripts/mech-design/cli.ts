@@ -2,6 +2,7 @@ import { resolve, relative, isAbsolute, dirname } from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { catalog, contractSignature } from './catalog';
 import { buildPrompt, parseRequest, type BaselineReference, type DesignRequest } from './prompt';
+import { verifiedVisualReferences } from './visual-references';
 const root = resolve(import.meta.dir, '../..');
 const localPath = function(path: string): string {
 	const absolute = resolve(root,path); const rel = relative(root,absolute);
@@ -32,6 +33,7 @@ if (import.meta.main) {
 	if (!input || !output) throw Error('Usage: bun run mech:prompt request.json new-output-directory');
 	const request = parseRequest(await Bun.file(input).json());
 	const baseline = await verifiedBaseline(request);
+	const references = request.mode === 'baseline' ? await verifiedVisualReferences() : [];
 	const prompt = buildPrompt(catalog,request,baseline);
 	const frame = catalog.frames.find(function(f) { return f.id === request.variantId; });
 	if (!frame) throw Error('Unknown frame.');
@@ -40,5 +42,9 @@ if (import.meta.main) {
 	await Bun.write(resolve(output,'request.json'),JSON.stringify(request,null,2)+'\n');
 	await Bun.write(resolve(output,'prompt.txt'),prompt+'\n');
 	await Bun.write(resolve(output,'contract.json'),JSON.stringify({chassisId:frame.chassisId,variantId:frame.id,contractSignature:contractSignature(frame.chassisId),mounts:frame.mounts,baseline:baseline??null,reviewStatus:'pending',ownerApproval:null},null,2)+'\n');
+	await Bun.write(resolve(output,'attachments.json'),JSON.stringify({schemaVersion:1,scope:'Attach the actual PNG files to the image generator; writing their paths in a prompt does not attach them.',attachments:baseline ? [{role:'edit-target',image:baseline.image,imageSha256:baseline.imageSha256,baselineId:baseline.id}] : references.map(function(reference) { return {role:'style-reference',...reference}; })},null,2)+'\n');
+	if (request.mode === 'baseline') {
+		await Bun.write(resolve(output,'family-review.json'),JSON.stringify({schemaVersion:1,status:'pending',referenceSetId:catalog.visualReferenceSet.id,references,styleSha256:new Bun.CryptoHasher('sha256').update(await Bun.file(resolve(root,'design/mechs/style.json')).arrayBuffer()).digest('hex'),candidateImage:null,candidateImageSha256:null,criteria:catalog.visualReferenceSet.reviewCriteria.map(function(criterion) { return {criterion,result:'pending',evidence:null}; }),ownerApproval:null,gate:'Complete family review and explicit owner baseline approval before turnaround generation. Existing reference approvals do not approve this candidate.'},null,2)+'\n');
+	}
 	console.log(`Prepared ${resolve(output)}. Inspect the actual generated image against contract.json; owner approval remains separate.`);
 }

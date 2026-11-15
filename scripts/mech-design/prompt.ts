@@ -2,7 +2,8 @@ import { weightSpeedModifier } from '../../src/combat-resources';
 import type { FrameDefinition } from '../../src/frames';
 import type { Hardpoint } from '../../src/hardpoints';
 import type { WeaponDefinition } from '../../src/arsenal';
-export interface Catalog { frames: readonly (FrameDefinition & { mounts: readonly Hardpoint[] })[]; weapons: readonly WeaponDefinition[]; basePrompt: string; presentationPrompt: string; chassisStyle: Readonly<Record<string, string>> }
+import type { VisualReference } from './visual-references';
+export interface Catalog { frames: readonly (FrameDefinition & { mounts: readonly Hardpoint[] })[]; weapons: readonly WeaponDefinition[]; basePrompt: string; presentationPrompt: string; chassisStyle: Readonly<Record<string, string>>; visualReferenceSet: { readonly id: string; readonly references: readonly VisualReference[]; readonly reviewCriteria: readonly string[] } }
 export interface DesignRequest { schemaVersion: 1; mode: 'baseline' | 'variant'; variantId: string; background: 'Transparent' | 'White'; details: string; baselineId?: string; loadout: readonly { weaponId: string | null; rounds: number }[] }
 export const parseRequest = function(value: unknown): DesignRequest {
 	if (typeof value !== 'object' || value === null || !('schemaVersion' in value) || value.schemaVersion !== 1 || !('mode' in value) || (value.mode !== 'baseline' && value.mode !== 'variant') || !('variantId' in value) || typeof value.variantId !== 'string' || !('background' in value) || (value.background !== 'Transparent' && value.background !== 'White') || !('details' in value) || typeof value.details !== 'string' || !('loadout' in value) || !Array.isArray(value.loadout)) throw Error('Invalid design request. Read design/mechs/README.md.');
@@ -52,7 +53,7 @@ export const buildPrompt = function(catalog: Catalog, request: DesignRequest, ba
 	const full = buildBasePrompt(catalog,request);
 	const frame = catalog.frames.find(function(f) { return f.id === request.variantId; });
 	if (!frame) throw Error('Unknown frame.');
-	if (request.mode === 'baseline') return full;
+	if (request.mode === 'baseline') return `SHARED WORLD VISUAL REFERENCES\n\nAttach all the actual images below as style references (${catalog.visualReferenceSet.id}). Paths written in this prompt are not attachments. They are individually approved concepts, not permission to copy their silhouettes or equipment.\n${catalog.visualReferenceSet.references.map(function(reference) { return `${reference.chassisId}: ${reference.image} (baseline ${reference.baselineId}, SHA-256 ${reference.imageSha256})`; }).join('\n')}\n\nMatch their shared construction and material language while preserving the requested chassis identity:\n${catalog.visualReferenceSet.reviewCriteria.join('\n')}\n\nGenerate exactly the requested mech, never a lineup or collage of the references. Review the candidate beside these references at matched framing before owner baseline approval and before turnaround generation. Family consistency and legal mounts are separate review requirements.\n\n${full}`;
 	if (!baseline || request.baselineId !== baseline.id) throw Error('An approved verified baseline is required for variants.');
 	const source = catalog.frames.find(function(f) { return f.id === baseline.variantId; });
 	if (!source || source.chassisId !== frame.chassisId) throw Error('Baseline belongs to a different chassis.');

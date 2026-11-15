@@ -64,13 +64,18 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/README.md",
-      "bytes": 8287,
-      "sha256": "0d276aca618248f166e0f3682fa1785dd65d30699f041521149dfddf4faabb9a"
+      "bytes": 9205,
+      "sha256": "c6c5e0890b7649a128bad0764d040c21d51e1c1a585f19ec892ef7f558211066"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/approval.json",
       "bytes": 714,
       "sha256": "8a860c2cd17739822e1ff0449bbb2cd62830a0ad65adadb05ff1340fd66c8ccc"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/candidate-budget.json",
+      "bytes": 502,
+      "sha256": "2308fb3e4bf187d560192bd64b765f6e7fe796747549ba815c5c0ecc55c9604b"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/generation.json",
@@ -89,18 +94,23 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/recipe.json",
-      "bytes": 12238,
-      "sha256": "0dff681dbf42dd56346e554263112f175d4d1c197fc1df330218d8a14326ed08"
+      "bytes": 12423,
+      "sha256": "6673b91c879dd5044226df3f8050a0fdb592c0c30ea79bd536588c804312643b"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/reproduction.json",
-      "bytes": 2359,
-      "sha256": "680ea2055988579d60ca6461bb79a2afc6cd4d66a811d28140ac11eac209e28e"
+      "bytes": 3013,
+      "sha256": "6daafcde5af8203faae1adc8771be874065cb58473e9d7c417368354492619d2"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/rig-contract.json",
       "bytes": 21082,
       "sha256": "0f53f9798ce93c21c318cda504e99cd28aa62eca77b3b7f07c74d9ccf3637582"
+    },
+    {
+      "path": "design/mechs/assets/warden/game-ready/source-ownership.json",
+      "bytes": 31495,
+      "sha256": "2cd8a81cbfc0e001faad4eb68fab865e6accfa8fe7986b8f7b6991796a1c3c23"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/source.glb",
@@ -109,8 +119,8 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/validation.json",
-      "bytes": 2013,
-      "sha256": "a086ebba708f5b630ef1ee1a7b4f0ca3c07b2320c6972e2ac82795b213ba3726"
+      "bytes": 2360,
+      "sha256": "29f7ea73552c7a47b33c7327e198ef40c37308e177d5e8e70024fc62a26347f5"
     },
     {
       "path": "design/mechs/assets/warden/generated-source/body/trial.json",

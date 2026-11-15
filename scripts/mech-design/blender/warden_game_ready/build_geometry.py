@@ -25,7 +25,10 @@ assert (
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(source))
 scene = bpy.context.scene
-raw = next(o for o in scene.objects if o.type == "MESH")
+source_meshes = [o for o in scene.objects if o.type == "MESH"]
+if len(source_meshes) != 1:
+    raise ValueError("Warden repair adapter requires exactly one frozen source mesh")
+raw = source_meshes[0]
 raw.data.calc_loop_triangles()
 rows = json.loads((r / "components.json").read_text())
 atlas = json.loads((r / "atlas.json").read_text())

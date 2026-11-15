@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { catalog } from '../scripts/mech-design/catalog';
 import { buildPrompt, parseRequest } from '../scripts/mech-design/prompt';
+import { validateVisualReference, verifiedVisualReferences } from '../scripts/mech-design/visual-references';
 
 const baseline = {schemaVersion:1,mode:'baseline',variantId:'kestrel-b',background:'Transparent',details:'',loadout:[{weaponId:'machine-gun',rounds:1200},{weaponId:'laser',rounds:0}]};
 
@@ -29,4 +30,29 @@ test('deriving Longbow A from a two-mount baseline explicitly removes auxiliary 
 	expect(prompt).toContain('Remove baseline mount 2');
 	expect(prompt).toContain('Remove the auxiliary mounting brace');
 	expect(prompt).not.toContain('No structural redesign is authorized.');
+});
+
+test('family references reject wrong chassis, stale baselines, unapproved images and changed image bytes', function() {
+	const reference = {chassisId:'warden',baselineId:'warden-approved',image:'concept.png',imageSha256:'approved-image-hash'};
+	const entry = {id:reference.baselineId,status:'approved',approval:'Explicit owner decision',image:reference.image,imageSha256:reference.imageSha256};
+	const record = {chassisId:'warden',activeBaseline:reference.baselineId,baselines:[entry]};
+	expect(function() { validateVisualReference(reference,record,reference.imageSha256); }).not.toThrow();
+	expect(function() { validateVisualReference(reference,{...record,chassisId:'maul'},reference.imageSha256); }).toThrow('active chassis baseline');
+	expect(function() { validateVisualReference(reference,{...record,activeBaseline:'new-baseline'},reference.imageSha256); }).toThrow('active chassis baseline');
+	expect(function() { validateVisualReference(reference,{...record,baselines:[{...entry,status:'draft'}]},reference.imageSha256); }).toThrow('owner-approved');
+	expect(function() { validateVisualReference(reference,{...record,baselines:[{...entry,image:'other.png'}]},reference.imageSha256); }).toThrow('owner-approved');
+	expect(function() { validateVisualReference(reference,record,'modified-image-hash'); }).toThrow('changed since approval');
+});
+
+test('baseline prompts use verified family images while variants preserve their one edit target', async function() {
+	const references = await verifiedVisualReferences();
+	const prompt = buildPrompt(catalog,parseRequest(baseline));
+	for (const reference of references) {
+		expect(prompt).toContain(reference.image);
+		expect(prompt).toContain(reference.imageSha256);
+	}
+	expect(prompt).toContain('before turnaround generation');
+	const variant = buildPrompt(catalog,parseRequest({...baseline,mode:'variant',baselineId:'kestrel-v1'}),{id:'kestrel-v1',variantId:'kestrel',image:'baseline.png',imageSha256:'test'});
+	expect(variant).toContain('Required edit target: baseline.png');
+	expect(variant).not.toContain('SHARED WORLD VISUAL REFERENCES');
 });
