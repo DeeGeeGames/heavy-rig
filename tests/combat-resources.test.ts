@@ -4,7 +4,7 @@ import { createMount, WEAPONS } from '../src/arsenal';
 import { consumeFire, coolReactor, frameWeight, isReserveLoadout, loadedMounts, weightSpeedModifier } from '../src/combat-resources';
 import { createCombatRuntime } from '../src/combat-runtime';
 import { createMissionState, createState, deathsStep, enemiesStep, enemyWeight, ENEMY_STATS, movementStep, outcomeStep, weaponsStep, artilleryStep, type Controls } from '../src/simulation';
-import { FRAMES } from '../src/frames';
+import { FRAMES, getFrame } from '../src/frames';
 import type { Contract } from '../src/campaign-types';
 
 const idle: Controls = { drive: 0, stop: false, turn: 0, aim: { x: 900, y: 100 }, fire: [false, false, false, false], coolant: false };
@@ -77,13 +77,14 @@ test('burning carried ammunition changes target speed smoothly in forward and re
 	expect(weightSpeedModifier(800, 80)).toBeGreaterThan(0);
 	const state = createState(); state.loadout = [createMount('autocannon', 320), createMount('autocannon', 320)];
 	const loaded = frameWeight(state.frame, state.loadout);
+	const frame = getFrame(state.frame);
 	expect(loaded.modifier).toBeLessThan(1);
 	for (const reverse of [false, true]) {
-		state.player.throttle = reverse ? -1 : 1; state.player.speed = (reverse ? -48 : 90) * loaded.modifier;
+		state.player.throttle = reverse ? -1 : 1; state.player.speed = (reverse ? -frame.reverseSpeed : frame.speed) * loaded.modifier;
 		for (const mount of state.loadout) mount.rounds = 0;
 		const previous = state.player.speed; movementStep(state, idle, 1 / 60);
 		expect(Math.abs(state.player.speed)).toBeGreaterThan(Math.abs(previous));
-		expect(Math.abs(state.player.speed - previous)).toBeLessThan(1);
+		expect(Math.abs((state.player.speed - previous) / previous)).toBeLessThan(0.02);
 	}
 	state.player.x = 35; state.player.angle = Math.PI; movementStep(state, idle, 1); expect(state.player.x).toBeGreaterThanOrEqual(35);
 });

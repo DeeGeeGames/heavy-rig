@@ -8,6 +8,8 @@ export interface LegRig {
 	readonly lower: number;
 	readonly kneeDirection: -1 | 1;
 	readonly torsoRise?: number;
+	readonly footForward?: number;
+	readonly footWidth?: number;
 }
 export const STANDARD_LEG_RIG: LegRig = { hipHeight: 48, hipForward: -2, hipWidth: 18, upper: 30, lower: 34, kneeDirection: -1 };
 

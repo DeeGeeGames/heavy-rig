@@ -3,7 +3,8 @@
 Selected runtime file: `public/assets/mechs/warden/game-ready.glb` (SHA-256
 `734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de`).
 The owner approved this exact visual revision and demonstrated motion; see
-[approval.json](approval.json). Next is in-game integration and acceptance.
+[approval.json](approval.json). The local opt-in procedural locomotion preview
+also has owner acceptance, recorded under validation limits below.
 Normal game startup remains procedural. Historical approvals retain their own scopes.
 
 The file contains 39,748 triangles, 16 mesh sections, three materials, two shared
@@ -39,13 +40,40 @@ transforms stay constant while the entire torso bobs, tilts and swivels. Structu
 necks bridge the neutral attachment surfaces; they do not telescope or stabilize
 the weapons in world space. Tests check this rigid parent-child invariant directly.
 
-The fixed-step simulation owns the authored animation clock. A shared numeric
-sampler reads immutable source curves and supplies the same torso pose to the
-renderer and physical muzzle calculations. Gameplay does not read back render
-nodes or a render-populated cache. Mounts do not independently yaw, pitch or
-translate toward targets; existing projectile targeting remains gameplay logic.
+The fixed-step simulation owns procedural foot contacts and body motion. The
+existing gait planner keeps supporting feet at fixed ground positions and
+headings, including turns in place. The adapter measures this export's joint
+lengths, resting stance and sole bounds, then solves its rigid thigh, shin and
+foot rotations. Supporting shoes stay flat; airborne shoes roll within a small
+range. Forward walking uses longer strides; reverse and steering retain tighter
+steps for guard clearance. At 50 m/s of actual forward travel, independent leg
+swings introduce a run with brief flight phases and body lift. It returns to
+walking below 42 m/s, completing its landing transition before handing back to
+the walking planner. Entry preserves the existing support foot's stance progress.
+Airborne landing targets change gradually when velocity or steering changes.
+Running uses a longer stride cycle with lower shoe lift, body flight and landing
+compression. Cadence increases with actual forward speed to keep the elongated
+stride within the measured legs' reach.
 
-Instances share immutable geometry/textures and own their transforms, mixers
+A shared pelvis correction keeps both legs in reach and attempts shin-guard
+clearance without shifting planted shoes or stretching their geometry. Guard
+support uses a convex hull measured once from the actual mesh. Armor clearance
+is best effort for this owner-directed motion pass: an exhausted clearance search
+retains the reachable leg pose instead of stopping the game. Some guard contacts
+and intersections are accepted for review. Separate toe articulation is absent.
+
+The Warden chassis's forward gameplay speed is 180 m/s, doubled from 90 at the
+owner's request. Existing carried-weight modifiers still apply; reverse speed,
+steering and collision rules are unchanged. The inspector's Run mode uses the
+same 180 m/s forward speed.
+
+A shared numeric sampler supplies the same procedural pelvis and torso pose to
+the renderer and physical muzzle calculations. Gameplay does not read back render
+nodes or a render-populated cache. The GLB's original motion clips remain intact
+as authoring references; runtime legs and body motion use the procedural gait.
+Mounts remain rigidly torso-owned; existing projectile targeting stays gameplay logic.
+
+Instances share immutable geometry/textures and own their transforms
 and material clones. `loadAuthoredWarden` owns loaded resources; the separate
 `prepareAuthoredWarden` helper preserves caller-owned resources. Removing a
 binding is deferred while its authored instances remain alive, so combat and
@@ -87,6 +115,13 @@ torso binding and simulation/render firing-origin agreement. The retained
 `validation.json` pins the exact asset and validation source fingerprints.
 CI runs the same command. Texture appearance remains a browser check.
 The preview command emits self-contained `study.html` and opt-in `game.html`.
+`tests/authored-locomotion.test.ts` checks the actual GLB through turning in both
+directions, curved forward travel at 90 and 180 m/s, reverse and stops: supporting
+foot position and heading, sole floor clearance, both shoes fully above the floor during
+flight, paused flight/rendering and shared weapon origins. It also checks longer
+walking steps, speed hysteresis, and real acceleration, steering reversal and
+braking through the existing movement simulation. Armor clearance remains a
+visual review concern for this pass.
 
 ## Reproduce
 
@@ -138,8 +173,13 @@ independent 181-pose review confirmed torso binding and physical firing origins.
 These historical counts are not a rerun claim for the final shin-guard revision. The four static
 necks intersect both attachment skins; rigid torso parenting preserves that
 contact through animation. Small knee/ankle/guard contacts remain around
-mechanical hinges. In-place playback provides usable locomotion; turns/transitions
-and foot sliding under abrupt direction changes still warrant owner playtesting.
+mechanical hinges.
+These retained clip audits describe the asset's authored motions. The current
+runtime uses planted procedural feet. The owner accepted the local stride, run
+and turn feel at runtime revision `0a11fc2` on 2026-11-15 and authorized delivery.
+Some contact arrangements, including arena-edge turns and reverse, exceed the
+bounded guard-clearance search. The runtime now retains the reachable leg pose
+instead of throwing, with guard contacts/intersections accepted for this pass.
 The authored model supports hit flashes; bespoke recoil, thermal and exhaust
 animations are deferred. Hardware GPU performance and owner visual/feel acceptance
 remain separate from automated correctness checks.
@@ -151,7 +191,7 @@ modest improvement over the raw source's 1.15 MiB geometry, not a large RAM clai
 
 
 With all sections visible, 1/8/24 mechs require 16/128/384 model draws while shared geometry and
-the two asset maps remain constant. Per-instance transforms, mixers and material
+the two asset maps remain constant. Per-instance transforms, joint solving and material
 clones still add CPU cost. The workflow fetches only shipped public mech LFS
 objects in build/Pages jobs; the build rejects unresolved GLB pointer files.
 
