@@ -1,0 +1,98 @@
+{
+  "source": "design/studies/warden-sprite-stacking/art/source-sheet.png",
+  "sourceSha256": "d1b76940aca0eb0de11da4fd9b417deddc1178f2b137684400f896eeae566d2f",
+  "recipeSha256": "ef74e9c8fb665ad3e4a3e059575947a6e74871424978b4ecf3499ed95b2fd1c2",
+  "status": "retained generated four-view draft; not owner-approved turnaround geometry",
+  "uniformScaleFactor": 0.05405405405405406,
+  "dimensionRounding": "nearest whole pixel after applying the same factor",
+  "alphaThreshold": 128,
+  "views": {
+    "top": {
+      "path": "inputs/top.png",
+      "forward": "down",
+      "sourceBounds": [
+        61,
+        107,
+        583,
+        575
+      ],
+      "sourceSize": [
+        522,
+        468
+      ],
+      "size": [
+        28,
+        25
+      ],
+      "sha256": "e6296aa7a8e79500f48fea2214f89033b694f24103b7bae264b9c227660786af"
+    },
+    "side": {
+      "path": "inputs/side.png",
+      "forward": "left",
+      "sourceBounds": [
+        717,
+        21,
+        1160,
+        613
+      ],
+      "sourceSize": [
+        443,
+        592
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "sha256": "31416663ea7db7e8a4af9a7bded6aab96acebdcd4545ee0e115fac626b5f79b0"
+    },
+    "front": {
+      "path": "inputs/front.png",
+      "forward": "toward viewer",
+      "sourceBounds": [
+        38,
+        651,
+        592,
+        1236
+      ],
+      "sourceSize": [
+        554,
+        585
+      ],
+      "size": [
+        30,
+        32
+      ],
+      "sha256": "9555749c7b8cf6ffe5ac04850d7432141e7c8286636c3ea6b78d80ed69afbe91"
+    },
+    "back": {
+      "path": "inputs/back.png",
+      "forward": "away from viewer",
+      "sourceBounds": [
+        668,
+        651,
+        1216,
+        1236
+      ],
+      "sourceSize": [
+        548,
+        585
+      ],
+      "size": [
+        30,
+        32
+      ],
+      "sha256": "c69595f416a9fd6ee964a3bfef883b411920409954d6d86d45fa6d87ef9be535"
+    }
+  },
+  "limitations": [
+    "The side drawing's arm occludes part of the lower chest. A crop of its visible chest would not establish the full isolated chest silhouette.",
+    "Back-view lateral chest surfaces and shoulder mounts do not have an unambiguous isolated-component boundary.",
+    "The generated views differ slightly in measured width and depth. The article converter's own fitting stage handles dimensions; that fitting does not prove semantic consistency or hidden geometry."
+  ],
+  "measuredRatiosBeforeArticleFitting": {
+    "topWidthOverFrontWidth": 0.9333333333333333,
+    "topDepthOverSideDepth": 1.0416666666666667,
+    "sideHeightOverFrontHeight": 1.0,
+    "backWidthOverFrontWidth": 1.0
+  }
+}

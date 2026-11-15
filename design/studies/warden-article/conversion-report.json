@@ -1,0 +1,102 @@
+{
+  "colors": 24,
+  "shade": 0,
+  "topNose": "down",
+  "sideNose": "left",
+  "datasets": {
+    "warden": {
+      "inputSizes": {
+        "top": [
+          28,
+          25
+        ],
+        "side": [
+          24,
+          32
+        ],
+        "front": [
+          30,
+          32
+        ],
+        "back": [
+          30,
+          32
+        ]
+      },
+      "fittedSizes": {
+        "top": [
+          28,
+          25
+        ],
+        "side": [
+          25,
+          33
+        ],
+        "front": [
+          28,
+          33
+        ],
+        "back": [
+          28,
+          33
+        ]
+      },
+      "sliceCount": 33,
+      "sliceSize": [
+        28,
+        25
+      ],
+      "occupiedVoxels": 7104,
+      "rgba8Bytes": 92400,
+      "paletteSize": 25,
+      "sliceSha256": "b64deca8ea841be438d704609d86144cea316e7b1b1ed6efbe549833e3dc8bbd"
+    },
+    "car": {
+      "inputSizes": {
+        "top": [
+          24,
+          43
+        ],
+        "side": [
+          45,
+          16
+        ],
+        "front": [
+          27,
+          20
+        ],
+        "back": [
+          27,
+          20
+        ]
+      },
+      "fittedSizes": {
+        "top": [
+          24,
+          43
+        ],
+        "side": [
+          43,
+          15
+        ],
+        "front": [
+          24,
+          15
+        ],
+        "back": [
+          24,
+          15
+        ]
+      },
+      "sliceCount": 15,
+      "sliceSize": [
+        24,
+        43
+      ],
+      "occupiedVoxels": 7923,
+      "rgba8Bytes": 61920,
+      "paletteSize": 22,
+      "sliceSha256": "ca3504851c2e2186540f33d06ce841b742e343a2b6be8a9870c3df03676b4ac5"
+    }
+  }
+}

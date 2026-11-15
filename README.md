@@ -482,7 +482,13 @@ The original `warden-preview.html` and `dist/warden-study.html` remain available
 as the approved design reference. Crowd profiling and shared model resources
 remain tracked in [performance issue #10](https://github.com/DeeGeeGames/heavy-rig/issues/10).
 
-The separate pixel-art experiment builds with `bun run study:torso` into
+The four-view pixel-art reproduction builds with `bun run study:article` into
+`dist/article-stack-study.html`. It follows the SpriteCook converter and
+stacking transforms, showing the retained straight-on views, the uncorrected
+Warden result and the article's car control. See the
+[four-view study](design/studies/warden-article/README.md) for exact scope and limits.
+
+The earlier single-view pixel-art experiment builds with `bun run study:torso` into
 `dist/torso-stack-test.html`. It compares an authored horizontal PNG stack of
 the chest/cockpit with the selected A2 reference. The matched-view paint is
 fitted from that reference; unseen faces remain placeholders. See the

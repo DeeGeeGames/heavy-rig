@@ -1,0 +1,24 @@
+{
+  "source": "design/studies/warden-sprite-stacking/art/source-sheet.png",
+  "sourceSha256": "d1b76940aca0eb0de11da4fd9b417deddc1178f2b137684400f896eeae566d2f",
+  "sourceStatus": "retained generated four-view draft; not owner-approved turnaround geometry",
+  "alphaThreshold": 128,
+  "targetSideHeight": 32,
+  "views": {
+    "top": { "quadrant": [0, 0, 627, 627], "forward": "down" },
+    "side": { "quadrant": [627, 0, 1254, 627], "forward": "left" },
+    "front": { "quadrant": [0, 627, 627, 1254], "forward": "toward viewer" },
+    "back": { "quadrant": [627, 627, 1254, 1254], "forward": "away from viewer" }
+  },
+  "preparation": [
+    "Use all visible pixels of the full mech in each named quadrant. No chest isolation or silhouette editing.",
+    "Tightly crop the alpha mask at threshold 128, matching the article's occupied-pixel threshold.",
+    "Apply the same nominal nearest-neighbor scale factor to every view, chosen to make the side view 32 pixels high. Round each resulting dimension to the nearest whole pixel.",
+    "Keep the source RGB values. No custom palette, geometric fitting, waist alignment or color projection is applied during input preparation."
+  ],
+  "limitations": [
+    "The side drawing's arm occludes part of the lower chest. A crop of its visible chest would not establish the full isolated chest silhouette.",
+    "Back-view lateral chest surfaces and shoulder mounts do not have an unambiguous isolated-component boundary.",
+    "The generated views differ slightly in measured width and depth. The article converter's own fitting stage handles dimensions; that fitting does not prove semantic consistency or hidden geometry."
+  ]
+}

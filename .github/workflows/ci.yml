@@ -47,6 +47,7 @@ jobs:
       - run: bun run build
       - run: bun run study:sprite-stacking
       - run: bun run study:torso
+      - run: bun run study:article
 
   lint:
     name: lint

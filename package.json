@@ -12,6 +12,7 @@
 		"build": "bun run scripts/build.ts",
 		"study:sprite-stacking": "bun run scripts/build-sprite-stacking-study.ts",
 		"study:torso": "bun run scripts/build-torso-stack-test.ts",
+		"study:article": "bun run scripts/build-article-stack-study.ts",
 		"preview": "bun run scripts/preview.ts",
 		"test": "bun test",
 		"typecheck": "tsc --noEmit",

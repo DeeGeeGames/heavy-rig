@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "articleUrl": "https://www.spritecook.ai/blog/sprite-stacking-pixel-art",
+  "defaultDataset": "warden",
+  "datasets": [
+    {
+      "id": "warden",
+      "label": "Warden \u00b7 four-view reproduction",
+      "views": [
+        {
+          "name": "top",
+          "image": "inputs/top.png",
+          "sha256": "e6296aa7a8e79500f48fea2214f89033b694f24103b7bae264b9c227660786af",
+          "width": 28,
+          "height": 25
+        },
+        {
+          "name": "side",
+          "image": "inputs/side.png",
+          "sha256": "31416663ea7db7e8a4af9a7bded6aab96acebdcd4545ee0e115fac626b5f79b0",
+          "width": 24,
+          "height": 32
+        },
+        {
+          "name": "front",
+          "image": "inputs/front.png",
+          "sha256": "9555749c7b8cf6ffe5ac04850d7432141e7c8286636c3ea6b78d80ed69afbe91",
+          "width": 30,
+          "height": 32
+        },
+        {
+          "name": "back",
+          "image": "inputs/back.png",
+          "sha256": "c69595f416a9fd6ee964a3bfef883b411920409954d6d86d45fa6d87ef9be535",
+          "width": 30,
+          "height": 32
+        }
+      ],
+      "slices": {
+        "image": "warden-slices.png",
+        "sha256": "b64deca8ea841be438d704609d86144cea316e7b1b1ed6efbe549833e3dc8bbd",
+        "width": 28,
+        "height": 25,
+        "count": 33
+      },
+      "notes": [
+        "The faithful conversion still distorts this mech. The car control is coherent; Warden fidelity has not passed.",
+        "Static full mech: chest-only silhouettes are obscured by the arm in the side view.",
+        "Four retained intended orthographic drafts supply geometry and surface colors. They are not validated turnarounds; the angled A2 image is not an input.",
+        "Named view labels replace the car-specific aspect-ratio detector. Conversion rules and default shade 0 are retained.",
+        "Top/front widths and top/side depth differ slightly, and some details disagree across views. The article's fitter adjusts dimensions, not those contradictions.",
+        "No animated legs, hand-shaped volume, single-view paint transfer or pixelated mesh rendering."
+      ]
+    },
+    {
+      "id": "car",
+      "label": "Article car \u00b7 control",
+      "views": [
+        {
+          "name": "top",
+          "image": "control/top.png",
+          "sha256": "4b8a3ffb78b06a0e7d31fda97d8f2a521bde4c8bcc6947a27b00716e5aaa2979",
+          "width": 24,
+          "height": 43
+        },
+        {
+          "name": "side",
+          "image": "control/side.png",
+          "sha256": "a6e6ba2f4d6b0e5295e8cd39ff7db6f00dcb1e938968dcc780a397124fa6ea18",
+          "width": 45,
+          "height": 16
+        },
+        {
+          "name": "front",
+          "image": "control/front.png",
+          "sha256": "93f3f4799091e8756d262cbfb3875d255fc0e77193a03272429cf1144ea0f1db",
+          "width": 27,
+          "height": 20
+        },
+        {
+          "name": "back",
+          "image": "control/back.png",
+          "sha256": "d718dbec20945817a223ab1cdc053e36f60052c839b8f706a580438e1120ce1f",
+          "width": 27,
+          "height": 20
+        }
+      ],
+      "slices": {
+        "image": "car-slices.png",
+        "sha256": "ca3504851c2e2186540f33d06ce841b742e343a2b6be8a9870c3df03676b4ac5",
+        "width": 24,
+        "height": 43,
+        "count": 15
+      },
+      "notes": [
+        "Control inputs recovered from SpriteCook's published four-view illustration at its native 6\u00d7 pixel scale.",
+        "Article artwork is retained only as an attributed diagnostic control; it is separate from game assets.",
+        "Same converter, shared palette of 24 colors, shade 0, and renderer as Warden."
+      ]
+    }
+  ]
+}

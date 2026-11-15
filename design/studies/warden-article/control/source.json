@@ -1,0 +1,83 @@
+{
+  "sourceUrl": "https://www.spritecook.ai/blog/sprite-stacking-pixel-art/sprite-stacking-four-views-generated.png",
+  "sourceSha256": "9a2108937c72bca4b82641c259eed45537dc43d538659bf1ec577a05df3fee15",
+  "scale": 0.16666666666666666,
+  "views": {
+    "top": {
+      "panel": [
+        0,
+        0,
+        320,
+        320
+      ],
+      "bounds": [
+        92,
+        26,
+        236,
+        284
+      ],
+      "size": [
+        24,
+        43
+      ],
+      "sha256": "4b8a3ffb78b06a0e7d31fda97d8f2a521bde4c8bcc6947a27b00716e5aaa2979"
+    },
+    "side": {
+      "panel": [
+        320,
+        0,
+        640,
+        320
+      ],
+      "bounds": [
+        12,
+        122,
+        282,
+        218
+      ],
+      "size": [
+        45,
+        16
+      ],
+      "sha256": "a6e6ba2f4d6b0e5295e8cd39ff7db6f00dcb1e938968dcc780a397124fa6ea18"
+    },
+    "front": {
+      "panel": [
+        0,
+        320,
+        320,
+        640
+      ],
+      "bounds": [
+        86,
+        12,
+        248,
+        132
+      ],
+      "size": [
+        27,
+        20
+      ],
+      "sha256": "93f3f4799091e8756d262cbfb3875d255fc0e77193a03272429cf1144ea0f1db"
+    },
+    "back": {
+      "panel": [
+        320,
+        320,
+        640,
+        640
+      ],
+      "bounds": [
+        66,
+        12,
+        228,
+        132
+      ],
+      "size": [
+        27,
+        20
+      ],
+      "sha256": "d718dbec20945817a223ab1cdc053e36f60052c839b8f706a580438e1120ce1f"
+    }
+  }
+}
