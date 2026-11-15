@@ -6,7 +6,7 @@
   "scope": "Opt-in runtime asset; ordinary game and prior approved checkpoints unchanged",
   "asset": {
     "path": "public/assets/mechs/warden/game-ready.glb",
-    "sha256": "a01948139fd1c007811b14f3dfb0c3ea77d3ddb9e19b54c534239d621ac8db7a",
+    "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
     "bytes": 1036424,
     "triangles": 39748,
     "meshSections": 16,
@@ -36,7 +36,8 @@
       "KHR_mesh_quantization"
     ],
     "mechanicalConnections": 4,
-    "weaponBinding": "rigid-to-torso"
+    "weaponBinding": "rigid-to-torso",
+    "shinGuardBinding": "rigid-to-shin"
   },
   "source": {
     "path": "design/mechs/assets/warden/game-ready/source.glb",

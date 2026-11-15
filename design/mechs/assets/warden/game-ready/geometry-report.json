@@ -233,6 +233,81 @@
       }
     }
   ],
+  "shinGuardBinding": {
+    "description": "Front ankle guard plates and their fasteners follow the shin; soles, toes and ankle bearings follow the foot",
+    "sourceComponents": [
+      {
+        "id": 4,
+        "group": "rig_leg_right_shin",
+        "triangles": 52
+      },
+      {
+        "id": 5,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 6,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 8,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 14,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 17,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 21,
+        "group": "rig_leg_right_shin",
+        "triangles": 58
+      },
+      {
+        "id": 246,
+        "group": "rig_leg_left_shin",
+        "triangles": 52
+      },
+      {
+        "id": 247,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 248,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 253,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 276,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 278,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      },
+      {
+        "id": 279,
+        "group": "rig_leg_left_shin",
+        "triangles": 58
+      }
+    ]
+  },
   "sourceSha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9",
   "originalImportedTriangles": 44783,
   "removedOriginalPodTriangles": 5996,
@@ -1680,11 +1755,11 @@
     }
   ],
   "bodyBeforePlanarDissolve": {
-    "rig_leg_left_foot": 1940,
-    "rig_leg_left_shin": 2948,
+    "rig_leg_left_foot": 1540,
+    "rig_leg_left_shin": 3348,
     "rig_leg_left_thigh": 1318,
-    "rig_leg_right_foot": 1937,
-    "rig_leg_right_shin": 2938,
+    "rig_leg_right_foot": 1537,
+    "rig_leg_right_shin": 3338,
     "rig_leg_right_thigh": 1295,
     "rig_mount_left-gun": 5403,
     "rig_mount_left-shoulder bank": 601,
@@ -1694,11 +1769,11 @@
     "rig_torso": 10398
   },
   "bodyAfterPlanarDissolve": {
-    "rig_leg_left_foot": 1938,
-    "rig_leg_left_shin": 2943,
+    "rig_leg_left_foot": 1538,
+    "rig_leg_left_shin": 3343,
     "rig_leg_left_thigh": 1310,
-    "rig_leg_right_foot": 1933,
-    "rig_leg_right_shin": 2935,
+    "rig_leg_right_foot": 1533,
+    "rig_leg_right_shin": 3335,
     "rig_leg_right_thigh": 1286,
     "rig_mount_left-gun": 5285,
     "rig_mount_left-shoulder bank": 599,
@@ -1903,12 +1978,12 @@
   "objects": [
     {
       "name": "rig_leg_left_foot",
-      "triangles": 1938,
+      "triangles": 1538,
       "materials": 1
     },
     {
       "name": "rig_leg_left_shin",
-      "triangles": 2943,
+      "triangles": 3343,
       "materials": 1
     },
     {
@@ -1918,12 +1993,12 @@
     },
     {
       "name": "rig_leg_right_foot",
-      "triangles": 1933,
+      "triangles": 1533,
       "materials": 1
     },
     {
       "name": "rig_leg_right_shin",
-      "triangles": 2935,
+      "triangles": 3335,
       "materials": 1
     },
     {

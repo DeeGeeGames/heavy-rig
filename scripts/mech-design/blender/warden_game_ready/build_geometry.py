@@ -347,6 +347,14 @@ for anchor in anchors:
 connections = add_mount_connections(objects, anchors, body)
 report = {
     "staticConnections": connections,
+    "shinGuardBinding": {
+        "description": "Front ankle guard plates and their fasteners follow the shin; soles, toes and ankle bearings follow the foot",
+        "sourceComponents": [
+            {"id": row["id"], "group": row["group"], "triangles": row["triangles"]}
+            for row in rows
+            if row["id"] in {4, 5, 6, 8, 14, 17, 21, 246, 247, 248, 253, 276, 278, 279}
+        ],
+    },
     "sourceSha256": hashlib.sha256(source.read_bytes()).hexdigest(),
     "originalImportedTriangles": 44783,
     "removedOriginalPodTriangles": sum(

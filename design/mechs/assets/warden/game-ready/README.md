@@ -1,7 +1,7 @@
 # Warden A game derivative
 
 Selected runtime file: `public/assets/mechs/warden/game-ready.glb` (SHA-256
-`a01948139fd1c007811b14f3dfb0c3ea77d3ddb9e19b54c534239d621ac8db7a`).
+`734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de`).
 This is the completed opt-in integration candidate. The normal game and older
 approved checkpoints are unchanged; final owner visual acceptance is separate.
 
@@ -27,6 +27,11 @@ const uninstall = asset.install();
 // Create the existing game presentation after installation.
 // Dispose presentation instances, then uninstall() and asset.dispose().
 ```
+
+Both front ankle guard plates and their fasteners belong to the shin, so they
+follow shin rotation independently of the foot. Toe, sole and ankle-bearing
+geometry retains foot ownership. The guard shapes and resting positions are
+preserved; existing gait tracks are unchanged.
 
 The arms and missile pods are rigidly fixed to the torso. Their local attachment
 transforms stay constant while the entire torso bobs, tilts and swivels. Structural

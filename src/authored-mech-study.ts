@@ -48,9 +48,9 @@ const start = async function () {
 		const gameView = view.value === 'game' || view.value === 'game-max'; orbit.enabled = !gameView;
 		if (gameView) alignCamera(camera, width, height, state, view.value === 'game-max' ? 2.5 : 1, { x: 0, y: 0 });
 		else {
-			const close = view.value.startsWith('joints-'); const halfHeight = close ? 40 : 75; const target = new Vector3(0, close ? 75 : 48, 0);
+			const close = view.value.startsWith('joints-'); const legs = view.value === 'legs'; const halfHeight = legs ? 22 : close ? 40 : 75; const target = new Vector3(0, legs ? 18 : close ? 75 : 48, 0);
 			const aspect = width / height; camera.left = -halfHeight * aspect; camera.right = halfHeight * aspect; camera.top = halfHeight; camera.bottom = -halfHeight;
-			const direction = view.value === 'front' || view.value === 'joints-front' ? new Vector3(1, 0.1, 0) : view.value === 'rear' ? new Vector3(-1, 0.1, 0) : view.value === 'joints-rear' ? new Vector3(-1, 0.2, 0.65) : view.value === 'joints-left' ? new Vector3(0, 0.1, -1) : view.value === 'side' || view.value === 'joints-right' ? new Vector3(0, 0.1, 1) : view.value === 'underside' || view.value === 'joints-underside' ? new Vector3(1, -0.65, 0.8) : new Vector3(1, 0.48, 1.2);
+			const direction = view.value === 'front' || view.value === 'joints-front' ? new Vector3(1, 0.1, 0) : view.value === 'rear' ? new Vector3(-1, 0.1, 0) : view.value === 'joints-rear' ? new Vector3(-1, 0.2, 0.65) : view.value === 'joints-left' ? new Vector3(0, 0.1, -1) : view.value === 'side' || view.value === 'legs' || view.value === 'joints-right' ? new Vector3(0, 0.1, 1) : view.value === 'underside' || view.value === 'joints-underside' ? new Vector3(1, -0.65, 0.8) : new Vector3(1, 0.48, 1.2);
 			camera.position.copy(direction.normalize().multiplyScalar(350)).add(target); camera.lookAt(target); camera.updateProjectionMatrix(); orbit.target.copy(target); orbit.update();
 		}
 	};

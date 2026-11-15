@@ -48,6 +48,11 @@ for start in bm.verts:
         group = "rig_leg_" + side + "_foot"
     else:
         group = "rig_leg_" + side + "_shin"
+    # Frozen P2 source: front ankle guard plates and their six fasteners per side.
+    # Keep the toe, sole and ankle bearing with the foot; these guards follow the shin.
+    if len(rows) in {4, 5, 6, 8, 14, 17, 21, 246, 247, 248, 253, 276, 278, 279}:
+        assert group == "rig_leg_" + side + "_foot"
+        group = "rig_leg_" + side + "_shin"
     rows.append(
         {
             "id": len(rows),
