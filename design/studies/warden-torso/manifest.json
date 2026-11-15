@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "grid": {
+    "size": 48,
+    "columns": 8,
+    "occupiedRadius": 17
+  },
+  "layers": {
+    "image": "layers.png",
+    "sha256": "26777ad2864b8f8fc9330d3ca309e6e1f18715fca14c644f6bde5a85d6b7434a",
+    "sliceCount": 29,
+    "zMin": 0
+  },
+  "unpainted": {
+    "image": "unpainted.png",
+    "sha256": "e0bf839b9028c5b67f4504a1b23710df2f0ed88ca8542dab4e77b8b077b37446",
+    "sliceCount": 29,
+    "zMin": 0
+  },
+  "reference": {
+    "image": "reference.png",
+    "width": 48,
+    "height": 48,
+    "sha256": "287310f7237993b4d96d97323c4bf4918408eb5ca873911ab676e74e3d0c83be"
+  },
+  "frame": {
+    "width": 48,
+    "height": 48
+  },
+  "camera": {
+    "yaw": 212,
+    "elevation": 34,
+    "origin": {
+      "x": 24,
+      "y": 35
+    }
+  },
+  "metrics": {
+    "silhouetteIoU": 0.9106002554278416,
+    "colorMeanError": 0.5904628330995793,
+    "matchedPixelCount": 713,
+    "silhouetteIntersection": 713,
+    "silhouetteUnion": 783,
+    "colorMetric": "Mean absolute RGB channel error on overlapping opaque pixels, 0..255. This is one-view paint fitting, not an independent quality score.",
+    "camera": {
+      "yaw": 212,
+      "elevation": 34,
+      "origin": {
+        "x": 24,
+        "y": 35
+      }
+    }
+  },
+  "source": {
+    "scope": "central chest and cockpit; no pods, guns, legs, waist or shoulder mounts",
+    "paintMethod": "Fixed A2 paint anchors extended through solid slices. Hidden faces use extrapolated placeholder paint; they have no approved reference."
+  },
+  "voxelCount": 9609
+}

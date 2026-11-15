@@ -46,6 +46,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: bun run study:sprite-stacking
+      - run: bun run study:torso
 
   lint:
     name: lint

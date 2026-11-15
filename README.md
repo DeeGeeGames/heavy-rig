@@ -482,6 +482,14 @@ The original `warden-preview.html` and `dist/warden-study.html` remain available
 as the approved design reference. Crowd profiling and shared model resources
 remain tracked in [performance issue #10](https://github.com/DeeGeeGames/heavy-rig/issues/10).
 
+The separate pixel-art experiment builds with `bun run study:torso` into
+`dist/torso-stack-test.html`. It compares an authored horizontal PNG stack of
+the chest/cockpit with the selected A2 reference. The matched-view paint is
+fitted from that reference; unseen faces remain placeholders. See the
+[isolated torso study](design/studies/warden-torso/README.md) for its sources and
+limits. The earlier whole-mech experiment remains available through
+`bun run study:sprite-stacking`; neither study changes the game renderer.
+
 An original locally synthesized 96-BPM score changes its layers with combat
 intensity and uses quieter ship arrangements. The playable intro escape selects the
 144-BPM Pursuit theme with a running bass pulse, tense brass-like phrases, and

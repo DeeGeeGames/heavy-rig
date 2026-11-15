@@ -1,0 +1,90 @@
+{
+  "grid": {
+    "size": 48,
+    "columns": 8
+  },
+  "sliceCount": 29,
+  "unseenColor": [
+    112,
+    111,
+    115
+  ],
+  "sections": [
+    {
+      "z": 0,
+      "halfWidth": 4,
+      "front": -7,
+      "back": -3,
+      "bevel": 1
+    },
+    {
+      "z": 3,
+      "halfWidth": 7,
+      "front": -10,
+      "back": 4,
+      "bevel": 2
+    },
+    {
+      "z": 7,
+      "halfWidth": 12,
+      "front": -11,
+      "back": 10,
+      "bevel": 3
+    },
+    {
+      "z": 15,
+      "halfWidth": 13,
+      "front": -12,
+      "back": 11,
+      "bevel": 3
+    },
+    {
+      "z": 18,
+      "halfWidth": 13,
+      "front": -10,
+      "back": 11,
+      "bevel": 3
+    },
+    {
+      "z": 20,
+      "halfWidth": 10,
+      "front": -8,
+      "back": 11,
+      "bevel": 2
+    },
+    {
+      "z": 23,
+      "halfWidth": 6,
+      "front": 3,
+      "back": 12,
+      "bevel": 1
+    },
+    {
+      "z": 26,
+      "halfWidth": 4,
+      "front": 8,
+      "back": 12,
+      "bevel": 1
+    },
+    {
+      "z": 28,
+      "halfWidth": 2,
+      "front": 9,
+      "back": 12,
+      "bevel": 1
+    }
+  ],
+  "referencePlacement": {
+    "x": 7,
+    "y": 6,
+    "width": 34
+  },
+  "camera": {
+    "yaw": 212,
+    "elevation": 34,
+    "origin": {
+      "x": 24,
+      "y": 35
+    }
+  }
+}

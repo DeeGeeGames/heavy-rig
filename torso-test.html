@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Warden · isolated torso stack</title>
+		<style>
+			:root { color-scheme: light dark; font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif); color: var(--foreground, #202827); }
+			* { box-sizing: border-box; }
+			body { margin: 0; }
+			button, input { font: inherit; }
+			main { max-width: 1000px; margin: 0 auto; }
+			h1 { margin: 0 0 8px; font-size: clamp(23px, 3vw, 32px); font-weight: 650; letter-spacing: -0.035em; }
+			p { margin: 0; line-height: 1.5; }
+			.intro { margin-bottom: 20px; }
+			.eyebrow { margin-bottom: 8px; color: var(--muted-foreground, #60736b); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+			.intro > p:last-child { max-width: 700px; color: var(--muted-foreground, #63716d); font-size: 14px; }
+			.comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+			.card { min-width: 0; border: 1px solid var(--border, #d3ded7); border-radius: var(--radius, 12px); background: var(--card, #f3f6f2); overflow: hidden; }
+			.card-header { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border, #d3ded7); }
+			h2 { margin: 0; font-size: 14px; font-weight: 650; }
+			.tag { color: var(--muted-foreground, #63716d); font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; }
+			.canvas-stage { display: grid; place-items: center; min-height: 320px; padding: 16px 8px; overflow: auto; }
+			canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+			.card-note { min-height: 50px; padding: 0 16px 14px; color: var(--muted-foreground, #63716d); font-size: 12px; }
+			.view-status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 18px; color: var(--muted-foreground, #63716d); font-size: 12px; }
+			#torso-view-note { color: var(--foreground, #202827); }
+			fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+			.buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+			button { min-height: 36px; padding: 7px 12px; border: 1px solid var(--border, #c5d1c9); border-radius: calc(var(--radius, 12px) * 0.65); background: var(--card, #f3f6f2); color: var(--foreground, #202827); cursor: pointer; font-size: 12px; }
+			button:hover { filter: brightness(0.97); }
+			button[aria-pressed="true"] { background: var(--foreground, #243c32); color: var(--background, #ffffff); }
+			button:disabled { cursor: wait; opacity: 0.5; }
+			.sliders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+			.control-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 12px; }
+			output { color: var(--muted-foreground, #63716d); font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; }
+			input[type="range"] { display: block; width: 100%; margin: 0; accent-color: var(--foreground, #355a45); }
+			.control-note { margin-top: 8px; color: var(--muted-foreground, #63716d); font-size: 11px; }
+			.overlay-note { margin-top: 14px; color: var(--warning, #94601c); font-size: 12px; }
+			details { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border, #d3ded7); color: var(--muted-foreground, #63716d); font-size: 12px; }
+			summary { width: fit-content; cursor: pointer; }
+			dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 20px; margin: 16px 0; }
+			dt, dd { margin: 0; }
+			dd { color: var(--foreground, #202827); }
+			.diagnostic-copy { max-width: 740px; }
+			.diagnostic-copy + p { margin-top: 8px; }
+			#torso-loading { margin: 16px 0; color: var(--muted-foreground, #63716d); font-size: 13px; }
+			#torso-loading[data-error="true"] { color: var(--warning, #94601c); }
+			[hidden] { display: none !important; }
+			@media (max-width: 620px) { .comparison { gap: 10px; } .card-header { padding: 12px 10px; } .tag { display: none; } .canvas-stage { min-height: 200px; } .card-note { padding-right: 10px; padding-left: 10px; } .sliders { grid-template-columns: 1fr; gap: 18px; } }
+			@media (prefers-color-scheme: dark) { :root { color: var(--foreground, #e0e9e2); } .card, button { background: var(--card, #17221c); border-color: var(--border, #344438); } .card-header, details { border-color: var(--border, #344438); } .intro > p:last-child, .eyebrow, .tag, .card-note, .view-status, output, .control-note, details, #torso-loading { color: var(--muted-foreground, #9eafa2); } #torso-view-note, dd, button { color: var(--foreground, #e0e9e2); } button[aria-pressed="true"] { color: var(--background, #17221c); background: var(--foreground, #e0e9e2); } }
+		</style>
+	</head>
+	<body>
+		<main>
+			<header class="intro">
+				<p class="eyebrow">Warden · isolated technique test</p>
+				<h1>One torso, stacked from pixels</h1>
+				<p>One authored torso volume; fixed A2 paint; no inferred rig or live lighting. Hidden faces are placeholders.</p>
+			</header>
+			<section class="comparison">
+				<article class="card">
+					<div class="card-header"><h2>Reference</h2><span class="tag">Approved A2 pixels</span></div>
+					<div class="canvas-stage" id="reference-stage"><canvas id="torso-reference" width="48" height="48" aria-label="Approved pixel-art torso reference"></canvas></div>
+					<p class="card-note">Original colors, sampled into the shared logical frame.</p>
+				</article>
+				<article class="card">
+					<div class="card-header"><h2>Slice result</h2><span class="tag">Canvas 2D · PNG layers</span></div>
+					<div class="canvas-stage" id="result-stage"><canvas id="torso-result" width="48" height="48" data-ready="false" aria-label="Torso rendered from stacked PNG slices"></canvas></div>
+					<p class="card-note">A single fixed volume. Turning the camera keeps its paint unchanged.</p>
+				</article>
+			</section>
+			<div class="view-status"><span id="torso-view-note">Loading matched view…</span><span id="torso-scale">48 × 48 logical pixels</span></div>
+			<p id="torso-loading" role="status">Decoding the embedded PNG slices…</p>
+			<fieldset id="torso-controls" disabled>
+				<div class="buttons">
+					<button id="torso-reset" type="button">Reset matched view</button>
+					<button id="torso-rotate" type="button" aria-pressed="false">Rotate</button>
+					<button id="torso-explode" type="button" aria-pressed="false">Explode layers</button>
+					<button id="torso-plain" type="button" aria-pressed="false">Plain volume</button>
+				</div>
+				<div class="sliders">
+					<label><span class="control-label"><span>Yaw</span><output id="torso-yaw-value" for="torso-yaw">—</output></span><input id="torso-yaw" type="range" min="0" max="360" step="0.1" value="0" /></label>
+					<label><span class="control-label"><span>Elevation</span><output id="torso-elevation-value" for="torso-elevation">—</output></span><input id="torso-elevation" type="range" min="5" max="75" step="0.1" value="30" /></label>
+					<label><span class="control-label"><span>Reference overlay · diagnostic</span><output id="torso-overlay-value" for="torso-overlay">0%</output></span><input id="torso-overlay" type="range" min="0" max="100" step="1" value="0" /><span class="control-note">Off by default. Adds the reference over the result.</span></label>
+				</div>
+			</fieldset>
+			<p class="overlay-note" id="torso-overlay-note" hidden>Reference overlay is active. The right panel now includes source-image pixels for alignment diagnosis.</p>
+			<details>
+				<summary>Volume and comparison diagnostics</summary>
+				<dl><dt>Volume</dt><dd id="torso-volume">—</dd><dt>Silhouette overlap</dt><dd id="torso-iou">—</dd><dt>Paint mean error</dt><dd id="torso-paint-error">—</dd><dt>Compared pixels</dt><dd id="torso-matched-pixels">—</dd></dl>
+				<p class="diagnostic-copy">These diagnostics describe the matched camera only. They are alignment checks, not an acceptance score or evidence that unseen surfaces are complete.</p>
+				<p class="diagnostic-copy" id="torso-scope"></p>
+				<p class="diagnostic-copy" id="torso-paint-method"></p>
+			</details>
+		</main>
+		<script id="torso-data" type="application/json">__TORSO_DATA__</script>
+		<script type="module" src="./src/torso-stack-test.ts"></script>
+	</body>
+</html>

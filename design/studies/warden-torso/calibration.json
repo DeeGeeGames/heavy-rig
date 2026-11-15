@@ -1,0 +1,16 @@
+{
+  "silhouetteIoU": 0.9106002554278416,
+  "colorMeanError": 0.5904628330995793,
+  "matchedPixelCount": 713,
+  "silhouetteIntersection": 713,
+  "silhouetteUnion": 783,
+  "colorMetric": "Mean absolute RGB channel error on overlapping opaque pixels, 0..255. This is one-view paint fitting, not an independent quality score.",
+  "camera": {
+    "yaw": 212,
+    "elevation": 34,
+    "origin": {
+      "x": 24,
+      "y": 35
+    }
+  }
+}
