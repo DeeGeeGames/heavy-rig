@@ -1,5 +1,5 @@
 import { Color, DirectionalLight, HemisphereLight, OrthographicCamera, Scene, WebGLRenderer } from 'three';
-import { createMech } from './mech-3d';
+import { loadAuthoredWarden } from './authored-mech';
 import { advanceGait, createGait } from './gait';
 import { FRAME_RIGS } from './frame-rig';
 import { getFrame } from './frames';
@@ -9,7 +9,7 @@ const element = function (id: string) {
 	if (!result) throw new Error(`Missing stress-test element: ${id}`);
 	return result;
 };
-const start = function () {
+const start = function (factory: Awaited<ReturnType<typeof loadAuthoredWarden>>) {
 	const canvas = element('stage'); const count = element('count'); const resolution = element('resolution');
 	if (!(canvas instanceof HTMLCanvasElement) || !(count instanceof HTMLInputElement) || !(resolution instanceof HTMLSelectElement)) throw new Error('Invalid stress-test controls');
 	const renderer = new WebGLRenderer({ canvas, antialias: true });
@@ -19,7 +19,7 @@ const start = function () {
 	const camera = new OrthographicCamera(-1000, 1000, 1000, -1000, 1, 10000);
 	camera.position.set(0, 3000, 1800); camera.lookAt(0, 0, 0);
 	const definition = getFrame('warden');
-	type Walker = { model: ReturnType<typeof createMech>; gait: ReturnType<typeof createGait>; phase: number; radius: number; cx: number; cy: number };
+	type Walker = { model: ReturnType<typeof factory.create>; gait: ReturnType<typeof createGait>; authoredPose: ReturnType<typeof factory.advancePose>; phase: number; radius: number; cx: number; cy: number };
 	const walkers: Walker[] = [];
 	const abort = new AbortController();
 	let frame = 0; let previous = 0; let accumulator = 0; let time = 0; let disposed = false; let lost = false;
@@ -43,8 +43,8 @@ const start = function () {
 			const phase = Math.random() * Math.PI * 2; const radius = 100 + Math.random() * 180;
 			const cx = (Math.random() - 0.5) * 1150; const cy = (Math.random() - 0.5) * 1150;
 			const body = { x: cx + Math.cos(phase) * radius, y: cy + Math.sin(phase) * radius, angle: phase + Math.PI / 2 };
-			const model = createMech(undefined, false, 'warden'); scene.add(model.root);
-			walkers.push({ model, phase, radius, cx, cy, gait: createGait(body, definition.size, FRAME_RIGS.warden) });
+			const model = factory.create(); scene.add(model.root);
+			walkers.push({ model, authoredPose: factory.advancePose(undefined, body, time), phase, radius, cx, cy, gait: createGait(body, definition.size, FRAME_RIGS.warden) });
 		}
 		reset();
 	};
@@ -59,11 +59,12 @@ const start = function () {
 			for (const walker of walkers) {
 				walker.phase += definition.speed * 0.65 / walker.radius / 60;
 				const body = { x: walker.cx + Math.cos(walker.phase) * walker.radius, y: walker.cy + Math.sin(walker.phase) * walker.radius, angle: walker.phase + Math.PI / 2 };
+				walker.authoredPose = factory.advancePose(walker.authoredPose, body, time);
 				walker.gait = advanceGait(walker.gait, body, 1 / 60, definition.size, definition.stride, FRAME_RIGS.warden);
 			}
 		}
 		for (const walker of walkers) {
-			walker.model.pose(walker.gait, walker.gait.body.angle + Math.sin(time * 0.6) * 0.4);
+			walker.model.pose(walker.gait, walker.gait.body.angle + Math.sin(time * 0.6) * 0.4, { recoil: 0, hit: 0, heat: 0, time, authoredPose: walker.authoredPose });
 			walker.model.root.position.set(walker.gait.body.x, 0, walker.gait.body.y);
 		}
 		renderer.render(scene, camera);
@@ -91,8 +92,12 @@ const start = function () {
 		if (event.persisted) { previous = 0; accumulator = 0; reset(); return; }
 		disposed = true; cancelAnimationFrame(frame); observer.disconnect(); abort.abort();
 		for (const walker of walkers) walker.model.dispose();
-		scene.clear(); renderer.dispose(); renderer.forceContextLoss();
+		scene.clear(); renderer.dispose(); renderer.forceContextLoss(); factory.dispose();
 	}, { signal: abort.signal });
 	apply(); resize(); frame = requestAnimationFrame(tick);
 };
-try { start(); } catch (error) { const output = element('error'); output.hidden = false; output.textContent = `Unable to start: ${error instanceof Error ? error.message : String(error)}`; }
+try {
+	element('stats').textContent = 'Loading authored Warden model…';
+	const factory = await loadAuthoredWarden('./assets/mechs/warden/game-ready.glb');
+	try { start(factory); } catch (error) { factory.dispose(); throw error; }
+} catch (error) { const output = element('error'); output.hidden = false; output.textContent = `Unable to start: ${error instanceof Error ? error.message : String(error)}`; }

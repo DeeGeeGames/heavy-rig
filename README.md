@@ -532,7 +532,8 @@ Each setting resets measurements with a two-second warmup. The readout shows
 rolling average FPS, p95 frame time, frames over 20ms, resolution, draw calls,
 and triangles. Wait ten seconds per setting and longer for heat throttling.
 The fixed arena keeps every model in view, with overlap at high counts.
-This uses the production Warden factory and fixed-step gait, without combat,
+This loads the new authored Warden GLB with shared geometry/textures and
+independent fixed-step animation for each model, without combat,
 AI, collisions, or shadows; it is a model workload rather than a full-game
 capacity estimate. Browser refresh rate and device temperature affect results.
 
