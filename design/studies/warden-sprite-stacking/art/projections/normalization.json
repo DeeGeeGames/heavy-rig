@@ -1,0 +1,119 @@
+{
+  "sheetSha256": "d1b76940aca0eb0de11da4fd9b417deddc1178f2b137684400f896eeae566d2f",
+  "baselineSha256": "f4c513a48611aae46595e17c21086615e095d52345b490a7c99e537b7bc0a307",
+  "status": "generated-views-normalized-for-proof-not-owner-approved",
+  "grid": {
+    "width": 64,
+    "height": 48,
+    "waist": [
+      32,
+      32,
+      23
+    ]
+  },
+  "views": {
+    "top": {
+      "panel": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "sourceBounds": [
+        62,
+        108,
+        583,
+        575
+      ],
+      "normalizedSize": [
+        45,
+        36
+      ],
+      "placement": [
+        9,
+        16
+      ],
+      "sha256": "f4fb95f4167169a66df86d8fe29d4b45c2575f38bca5ce0e0cc3fb4c455f3b83"
+    },
+    "side": {
+      "panel": [
+        627,
+        0,
+        1254,
+        627
+      ],
+      "sourceBounds": [
+        91,
+        22,
+        533,
+        613
+      ],
+      "normalizedSize": [
+        36,
+        48
+      ],
+      "placement": [
+        12,
+        0
+      ],
+      "sha256": "f44b99dca9c7570daf85f2cbf7daf4fc31679c19a1f0ed66964fd789784baab6"
+    },
+    "front": {
+      "panel": [
+        0,
+        627,
+        627,
+        1254
+      ],
+      "sourceBounds": [
+        38,
+        24,
+        592,
+        609
+      ],
+      "normalizedSize": [
+        45,
+        48
+      ],
+      "placement": [
+        9,
+        0
+      ],
+      "sha256": "e3f8153ba74471af97255c6a8ff9223f30588ef5c29849dbaddc8cd19097540a"
+    },
+    "back": {
+      "panel": [
+        627,
+        627,
+        1254,
+        1254
+      ],
+      "sourceBounds": [
+        41,
+        25,
+        588,
+        609
+      ],
+      "normalizedSize": [
+        45,
+        48
+      ],
+      "placement": [
+        9,
+        0
+      ],
+      "sha256": "d77467923b2454e83d057463523b86091af6b88da4560c4dc1ef3885f3da3654"
+    }
+  },
+  "sideWaist": {
+    "row": 25,
+    "column": 20.5,
+    "alignedColumn": 32.5
+  },
+  "assumptions": [
+    "Front/back/side share a 48-pixel height; back width is fitted to front width.",
+    "Top width matches front, top depth matches side. This rescales generated views to a common grid.",
+    "The side waist band sets depth origin. Matching dimensions do not prove hidden geometry.",
+    "Transparent pixels become empty space; opaque dark weapon markings stay painted surfaces."
+  ]
+}

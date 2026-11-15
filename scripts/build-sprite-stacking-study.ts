@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 
 const root = join(import.meta.dir, '..');
-const assets = join(root, 'design/studies/warden-sprite-stacking');
+const assets = process.argv[3] ?? join(root, 'design/studies/warden-sprite-stacking');
 const source: unknown = await Bun.file(join(assets, 'manifest.json')).json();
 const embedSheets = async function (value: unknown): Promise<unknown> {
 	if (Array.isArray(value)) return Promise.all(value.map(embedSheets));
@@ -26,7 +26,16 @@ if (!bundle) throw new Error('Sprite stacking proof bundle is missing');
 const template = await Bun.file(join(root, 'sprite-stacking-preview.html')).text();
 const script = (await bundle.text()).replaceAll('</script', '<\\/script');
 const manifest = JSON.stringify(await embedSheets(source)).replaceAll('<', '\\u003c');
+const art = [];
+for (const [filename, label] of [['approved-concept.png', 'Selected A2 concept'], ['source-sheet.png', 'Generated projection views · draft']]) {
+	if (!filename || !label) continue;
+	const file = Bun.file(join(assets, 'art', filename));
+	if (!(await file.exists())) continue;
+	art.push(`<figure><figcaption>${label}</figcaption><img loading="lazy" src="data:image/png;base64,${Buffer.from(await file.arrayBuffer()).toString('base64')}" alt="${label}"></figure>`);
+}
+const artSources = art.length ? `<details class="card"><summary>Selected design and source views</summary><div class="source-art">${art.join('')}</div></details>` : '';
 const html = template.replace('__SPRITE_STACK_DATA__', function () { return manifest; })
+	.replace('__ART_SOURCES__', function () { return artSources; })
 	.replace('<script type="module" src="./src/sprite-stack-study.ts"></script>', function () { return `<script>${script}</script>`; });
 const output = process.argv[2] ?? join(root, 'dist/sprite-stacking-study.html');
 await Bun.write(output, html);

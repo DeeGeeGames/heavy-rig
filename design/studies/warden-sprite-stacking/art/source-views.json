@@ -1,0 +1,15 @@
+{
+  "status": "generated-for-proof-awaiting-owner-view-and-volume-review",
+  "baseline": "../approved-art.json",
+  "sourceSheet": {
+    "path": "source-sheet.png",
+    "sha256": "d1b76940aca0eb0de11da4fd9b417deddc1178f2b137684400f896eeae566d2f"
+  },
+  "prompt": "source-sheet.prompt.txt",
+  "normalization": "projections/normalization.json",
+  "notes": [
+    "The owner selected the A2 concept. New projections, hidden geometry, reconstructed volume and gait are not separately owner-approved.",
+    "The sheet uses A2 for style and original Warden front/left/back references from PR67 at9881bcf for hidden geometry.",
+    "Normalization uses a64-pixel ground footprint and48-pixel height; source grid alignment remains an approximation."
+  ]
+}

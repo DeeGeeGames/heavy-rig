@@ -1,78 +1,93 @@
-# Warden sprite-stacking proof
+# Warden pixel-art sprite-stacking proof
 
-Experimental visual proof, awaiting owner review. This is separate from the
-production renderer and PR 67's approved model checkpoints.
+The owner selected the **coarser A2 concept**: “Proceed with this design.” Its
+exact PNG, prompt and hash are retained in `art/approved-concept.png` and
+`approved-art.json`. Approval covers that concept. The new projection images,
+inferred volume and voxel-part motion remain drafts for visual review.
 
-Build the self-contained interactive study with `bun run study:sprite-stacking`,
-then open `dist/sprite-stacking-study.html`. It works offline with no server.
-The HTML template is `sprite-stacking-preview.html`; its data placeholder is
-filled by the build command, so opening that template directly is not supported.
+Build with `bun run study:sprite-stacking`, then open
+`dist/sprite-stacking-study.html` offline. The template's data placeholder is
+filled by that command, so opening `sprite-stacking-preview.html` directly is
+not supported. The proof is separate from production gameplay and its renderer.
 
-## What it demonstrates
+## Pixel-art source workflow
 
-The browser uses **Canvas2D and horizontal PNG slices only**. It loads no GLBs,
-meshes, shaders or 3D library. It rotates every slice around the vertical axis,
-squashes its footprint for the camera, and raises it by its sampled height.
-Torso and leg headings are independent. Their layers are interleaved by absolute
-height so lower-hanging weapons are not simply painted over the entire pelvis.
+The active proof is reconstructed from **pixel-art projection images**. It uses
+no mesh or Blender input. The browser draws horizontal PNG slices with Canvas2D;
+there is no 3D renderer, shader or pixelation pass.
 
-One torso sheet is shared by all motions. The lower body has 16 sampled poses for
-each approved walk, run and dedicated backward cycle. The waist translation and
-height recorded for each pose connect the two stacks. Layer explosion and the
-sheet inspector expose the actual source slices.
+`art/source-sheet.png` is a generated top/side/front/back sheet based on A2, with
+the original approved Warden views supplying hidden-form reference. Its prompt,
+hash and draft status are recorded beside it. Deterministic preparation aligns
+the four views to a 64-pixel ground grid and 48-pixel height, a shared floor and
+waist origin. All four normalized PNGs and the fitting assumptions are retained
+under `art/projections/`.
 
-## Offline source and reproduction
+The exporter intersects top and side silhouettes with the front/back silhouette
+union to construct a visual hull. It infers hidden volume, rather than recovering
+exact geometry from the drawings. The retained silhouette overlap scores are
+0.934 front, 0.933 back, 1.000 side and 0.993 top; these are axis-projection checks,
+not proof of correct hidden or oblique surfaces.
 
-Source: PR 67, commit `9881bcfbc23d9fd1109f5f33609900ad9869ea17`, retained
-`design/mechs/assets/warden/components/{walk,run,backward}/` packages. The proof
-uses the **unoptimized shared chassis** and the two launcher cartridges. None
-of the stage 7 optimized pods or experimental gun reductions are required.
-Exact source and output PNG SHA-256 values are in `manifest.json`; the exporter
-rejects inputs that do not match this frozen source.
+Five gray tones shade voxel surfaces; interiors use a stable flat tone. Dark
+features project only onto matching outer faces and stay away from silhouette
+edges. Each launcher retains its eight painted aperture marks; these are not
+carved tube cavities. Source contour colors are not extended through the volume.
 
-In a checkout of that source revision, restore its Git LFS assets. Then run
-Blender 5.2 with absolute paths (the Flatpak resolves relative paths internally):
+The lower body splits into pelvis, thighs, shins and feet. Rigid voxel-part
+transforms and a simple two-bone solve produce 16 poses for each walk, run and
+dedicated backward cycle. The new gait is an in-place proof, not the previously
+approved 3D motion. Editable pivot and split data are retained in `rig.json`.
+The static upper stack follows each frame's waist position and turns independently.
+
+The renderer composites slices at their logical scale, then enlarges the finished
+image with nearest-neighbor sampling. The art's 2× display scale adds no source
+texture pixels. Height sorting interleaves the torso and leg layers. Exploded
+layers and the sheet inspector expose the actual slice representation.
+
+## Reproduce
+
+Offline authoring requires Python and Pillow (validated with Python 3.14.7 and
+Pillow 12.3.0). Runtime/build dependencies remain the existing Bun project stack.
+Both export commands require a new output folder and leave retained inputs alone.
 
 ```sh
-flatpak run org.blender.Blender --background --factory-startup \
-  --python /absolute/proof-repo/scripts/sprite-stacking/export_warden.py -- \
-  --source /absolute/source-repo/design/mechs/assets/warden/components \
-  --output /absolute/new-output-directory --samples 16
+python3 scripts/sprite-stacking/prepare_pixel_views.py \
+  --sheet design/studies/warden-sprite-stacking/art/source-sheet.png \
+  --baseline design/studies/warden-sprite-stacking/art/approved-concept.png \
+  --output /absolute/new-normalized-views
+
+python3 scripts/sprite-stacking/export_pixel_views.py \
+  --views /absolute/new-normalized-views \
+  --rig design/studies/warden-sprite-stacking/rig.json \
+  --source-commit f26d443dcf583d642f1d4cdcb708b008089d37ee \
+  --output /absolute/new-stack-output
 ```
 
-The source model evaluates **offline only**. BVH surface crossings sample the
-whole torso/lower assembly into a volume at 96 pixels per source unit. Sampling
-the entire assembly avoids treating every open mesh partition as a separate
-solid. One fixed neighborhood pass suppresses isolated chips and tiny cracks;
-voxel density supplies simple palette shading. Blender's image API encodes the
-PNGs; it does not render images of the model. No retopology, decimation, LODs,
-normal baking or hand-edited component geometry is used for this proof.
+`manifest.json` pins the normalized input hashes, source concept commit, palette,
+grid, waist anchors and 49 PNG hashes. `sampling-report.json` records projection
+overlap, occupied voxel counts, foot heights and solver clamps. The build verifies
+PNG hashes before embedding them in the self-contained HTML. To inspect a fresh
+candidate without replacing retained files, pass output HTML and asset directory
+as the two optional arguments to `bun run study:sprite-stacking`.
 
-Output sheets contain 128 by 128 pixel slices, eight across, ordered from lowest
-to highest. `zMin` and waist anchors are in voxel units. The footprint is Blender
-X/Y; height is Z; forward is -Y. The palette and lighting are experimental and
-object-relative, so shading turns with each stack.
+## Memory and acceptance
 
-## Boundaries of this result
+The 49 sheets contain **18.75 MiB of RGBA8-equivalent pixels**, compared with 171 MiB
+for the earlier mesh-derived proof. This measures width × height × 4 across the
+images; browser overhead, GPU allocation, crowd performance and frame time are
+unmeasured. The new logical grids and fewer height layers account for the
+reduction; larger display pixels alone do not save storage. The earlier input
+pipeline remains reproducible through `export_warden.py` and PR history, but its
+large slice assets are superseded by the active pixel-art proof.
 
-- This proves a slice-based representation and animated lower-body frames. It
-  does not remove the need to author three-dimensional form: this trial reuses
-  the retained model; a future source could be a deliberately simple voxel model.
-- Generated source surfaces are imperfect. Unpaired ray hits receive a bounded
-  one-voxel shell. Sampling counts are recorded in `sampling-report.json`; this
-  is an approximate visual volume, not a watertight reconstruction or collision mesh.
-- The torso stays upright. Source torso pitch, roll, independent weapon elevation,
-  recoil and equipment swaps are not represented in this proof.
-- Fixed cycles do not establish planted-foot turns, speed changes, stopping,
-  motion transitions, terrain adaptation or compatibility with the runtime gait.
-  Idle currently holds the first walking pose.
-- Nearest-neighbor rotation can make pixels flicker along thin edges. Art quality,
-  final palette and gameplay resolution require owner review.
-- Height sorting works for these horizontal layers; game-world occlusion,
-  perspective title/hangar views, lighting and shadows need separate integration.
-- This one-mech study is not a memory, crowd or hardware benchmark. Decoded atlas
-  memory and overlapping sprite draws must be measured before a roster-wide pivot.
+Remaining gates include owner review of the generated projections and oblique
+volume, readability of small markings, torso pitch/roll, weapon articulation,
+equipment swaps, planted-foot turns, world-speed synchronization, stopping and
+motion transitions. The proof has an upright torso, simplified fixed cycles and
+an idle pose held from walking. It establishes no terrain, perspective hangar,
+world-occlusion, physical controller/touch, audio, hardware or balance acceptance.
 
-The PNGs and manifest are retained so the proof is reviewable without Blender or
-access to PR 67's large authoring assets. Rejected sampling experiments and QA
-screenshots are not part of the deliverable.
+Retain the selected concept, current proof and required source dependencies.
+Rejected style candidates, intermediate color experiments and QA evidence stay
+outside version control.

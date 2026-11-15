@@ -5,9 +5,10 @@ interface StackMotion { duration: number; frames: readonly StackFrame[] }
 interface StudyData {
 	version: 1;
 	grid: { size: number; columns: number; pitch: number };
+	displayScale: number;
 	torso: Atlas;
 	motions: { walk: StackMotion; run: StackMotion; backward: StackMotion };
-	source: { commit: string };
+	source: { commit: string; kind: 'retained-mesh' | 'pixel-views' };
 	palette: readonly string[];
 }
 type MotionChoice = 'walk' | 'run' | 'backward' | 'idle';
@@ -36,11 +37,13 @@ const parseMotion = function (value: unknown): StackMotion {
 const parseData = function (value: unknown): StudyData {
 	if (!isRecord(value) || value['version'] !== 1 || !isRecord(value['grid']) || !isRecord(value['motions']) || !isRecord(value['source'])) throw new Error('Invalid sprite stack study data');
 	const grid = value['grid']; const motions = value['motions']; const source = value['source']; const palette = value['palette'];
+	const scale = value['displayScale'] ?? 1; const kind = source['kind'] ?? 'retained-mesh';
+	if (!finite(scale, 1, 8) || !Number.isInteger(scale) || (kind !== 'retained-mesh' && kind !== 'pixel-views')) throw new Error('Invalid sprite stack scale or source kind');
 	if (!finite(grid['size'], 16, 512) || !Number.isInteger(grid['size']) || !finite(grid['columns'], 1, 32) || !Number.isInteger(grid['columns']) || !finite(grid['pitch'], 0.00001, 10) || typeof source['commit'] !== 'string' || !Array.isArray(palette) || !palette.every(function (color: unknown) { return typeof color === 'string'; })) throw new Error('Invalid sprite stack grid or provenance');
 	return {
-		version: 1, grid: { size: grid['size'], columns: grid['columns'], pitch: grid['pitch'] },
+		version: 1, grid: { size: grid['size'], columns: grid['columns'], pitch: grid['pitch'] }, displayScale: scale,
 		torso: parseAtlas(value['torso']), motions: { walk: parseMotion(motions['walk']), run: parseMotion(motions['run']), backward: parseMotion(motions['backward']) },
-		source: { commit: source['commit'] }, palette,
+		source: { commit: source['commit'], kind }, palette,
 	};
 };
 const element = function (id: string) { const found = document.getElementById(id); if (!found) throw new Error(`Missing study element: ${id}`); return found; };
@@ -73,6 +76,15 @@ const start = async function () {
 	const sheets = [data.torso, ...Object.values(data.motions).flatMap(function (motion) { return motion.frames.map(function (frame) { return frame.atlas; }); })];
 	const images = new Map<Atlas, HTMLImageElement>();
 	await Promise.all(sheets.map(async function (sheet) { images.set(sheet, await loadImage(sheet, data.grid.size, data.grid.columns)); }));
+	const decodedBytes = [...images.values()].reduce(function (total, image) { return total + image.width * image.height * 4; }, 0);
+	if (data.source.kind === 'pixel-views') {
+		element('source-note').textContent = 'The slice volume comes from pixel-art projection images. The browser draws only PNG layers with Canvas 2D. These draft voxel-part cycles demonstrate separate headings; planted-foot turning and production movement transitions still need work.';
+		const earlierBytes = 179306496;
+		element('memory-card').hidden = false;
+		element('memory-before').textContent = `${(earlierBytes / 1048576).toFixed(2)} MiB`;
+		element('memory-now').textContent = `${(decodedBytes / 1048576).toFixed(2)} MiB`;
+		element('memory-now-bar').style.width = `${Math.min(100, decodedBytes / earlierBytes * 100)}%`;
+	}
 	const getImage = function (atlas: Atlas) { const image = images.get(atlas); if (!image) throw new Error('A decoded slice sheet is missing'); return image; };
 	const mainCanvas = canvas('stack-canvas'); const mainContext = context(mainCanvas);
 	const nativeCanvas = canvas('native-canvas'); const nativeContext = context(nativeCanvas);
@@ -117,6 +129,8 @@ const start = async function () {
 		const frame = currentFrame(); const index = currentIndex(); const motion = currentMotion();
 		const hull = radians(hullAngle); const torso = radians(torsoAngle + (sweeping ? Math.sin(sweepTime * 0.7) * 38 : 0));
 		const squash = Math.sin(radians(cameraAngle)); const elevation = Math.cos(radians(cameraAngle));
+		// Compose the whole stack at its logical pixel scale. Enlarging individual
+		// planes before projection leaves gaps between adjacent height layers.
 		const anchorX = frame.anchor.x * Math.cos(hull) - frame.anchor.y * Math.sin(hull);
 		const anchorY = frame.anchor.x * Math.sin(hull) + frame.anchor.y * Math.cos(hull);
 		const layers: Layer[] = [
@@ -131,7 +145,7 @@ const start = async function () {
 			surfaceContext.beginPath(); surfaceContext.moveTo(0, baseline + row * 14); surfaceContext.lineTo(surface.width, baseline + row * 14); surfaceContext.stroke();
 			surfaceContext.beginPath(); surfaceContext.moveTo(center + row * 28 - 70, baseline - 65); surfaceContext.lineTo(center + row * 28 + 70, baseline + 65); surfaceContext.stroke();
 		}
-		surfaceContext.fillStyle = '#091417'; surfaceContext.beginPath(); surfaceContext.ellipse(center, baseline + 4, 35, 15 * squash, 0, 0, Math.PI * 2); surfaceContext.fill();
+		surfaceContext.fillStyle = '#091417'; surfaceContext.beginPath(); surfaceContext.ellipse(center, baseline + 4 / data.displayScale, 35 / data.displayScale, 15 * squash / data.displayScale, 0, 0, Math.PI * 2); surfaceContext.fill();
 		for (const layer of layers) {
 			surfaceContext.setTransform(1, 0, 0, 1, Math.round(center + layer.x), Math.round(baseline + layer.y * squash - layer.height * elevation * spacing));
 			surfaceContext.scale(1, squash); surfaceContext.rotate(layer.angle);
@@ -143,7 +157,8 @@ const start = async function () {
 		const top = baseline - (frame.anchor.z + data.torso.zMin + data.torso.sliceCount) * elevation * spacing - footprintRadius * squash - 6;
 		const bottom = baseline + footprintRadius * squash + 6;
 		const expandedSize = Math.ceil(bottom - top);
-		const crop = spacing > 1 ? { x: center - expandedSize / 2, y: Math.floor(top), size: expandedSize } : { x: 72, y: 234, size: 176 };
+		const normalSize = 176 / data.displayScale;
+		const crop = spacing > 1 ? { x: center - expandedSize / 2, y: Math.floor(top), size: expandedSize } : { x: center - normalSize / 2, y: baseline - 144 / data.displayScale, size: normalSize };
 		mainContext.drawImage(surface, crop.x, crop.y, crop.size, crop.size, 0, 0, mainCanvas.width, mainCanvas.height);
 		nativeContext.clearRect(0, 0, nativeCanvas.width, nativeCanvas.height); nativeContext.fillStyle = '#0b171b'; nativeContext.fillRect(0, 0, nativeCanvas.width, nativeCanvas.height);
 		nativeContext.drawImage(surface, crop.x, crop.y, crop.size, crop.size, 0, 0, 112, 112);
@@ -182,6 +197,7 @@ const start = async function () {
 	};
 	listen(window, 'pagehide', function () { disposed = true; cancelAnimationFrame(animation); resizeObserver.disconnect(); abort.abort(); });
 	mainCanvas.dataset['renderer'] = 'canvas2d-sprite-stacks'; mainCanvas.dataset['ready'] = 'true';
+	mainCanvas.dataset['source'] = data.source.kind; mainCanvas.dataset['displayScale'] = String(data.displayScale); mainCanvas.dataset['decodedBytes'] = String(decodedBytes);
 	draw(); animation = requestAnimationFrame(loop);
 };
 

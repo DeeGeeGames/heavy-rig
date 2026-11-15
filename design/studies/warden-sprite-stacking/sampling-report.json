@@ -1,261 +1,439 @@
 {
+  "silhouettes": {
+    "front": {
+      "sourcePixels": 1395,
+      "hullPixels": 1493,
+      "intersectionOverUnion": 0.93436,
+      "missingSourcePixels": 0,
+      "extraHullPixels": 98
+    },
+    "back": {
+      "sourcePixels": 1404,
+      "hullPixels": 1493,
+      "intersectionOverUnion": 0.932622,
+      "missingSourcePixels": 6,
+      "extraHullPixels": 95
+    },
+    "side": {
+      "sourcePixels": 814,
+      "hullPixels": 814,
+      "intersectionOverUnion": 1.0,
+      "missingSourcePixels": 0,
+      "extraHullPixels": 0
+    },
+    "top": {
+      "sourcePixels": 1075,
+      "hullPixels": 1068,
+      "intersectionOverUnion": 0.993488,
+      "missingSourcePixels": 7,
+      "extraHullPixels": 0
+    }
+  },
+  "sourceOccupiedVoxels": 23813,
+  "shading": {
+    "armorPalette": [
+      [
+        66,
+        66,
+        66
+      ],
+      [
+        96,
+        96,
+        96
+      ],
+      [
+        130,
+        130,
+        130
+      ],
+      [
+        168,
+        168,
+        168
+      ],
+      [
+        190,
+        190,
+        190
+      ]
+    ],
+    "darkFeatureSkinVoxels": {
+      "front": 232,
+      "back": 235,
+      "side": 243
+    },
+    "normalMethod": "central differences of 3x3x3 occupancy density",
+    "light": [
+      -0.45,
+      -0.6,
+      1.0
+    ]
+  },
+  "parts": {
+    "pelvis": 1044,
+    "left-thigh": 1238,
+    "left-shin": 757,
+    "left-foot": 1077,
+    "right-thigh": 1290,
+    "right-shin": 834,
+    "right-foot": 1104
+  },
   "motions": {
     "walk": [
       {
-        "openSurfaceRays": 261,
-        "sampledRays": 3332,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.2934982973999709,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 264,
-        "sampledRays": 3400,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.13384604670666533,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 252,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 247,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 1
+        }
       },
       {
-        "openSurfaceRays": 222,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 2
+        }
       },
       {
-        "openSurfaceRays": 252,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 2
+        }
       },
       {
-        "openSurfaceRays": 249,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 2
+        }
       },
       {
-        "openSurfaceRays": 265,
-        "sampledRays": 3400,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 1
+        }
       },
       {
-        "openSurfaceRays": 283,
-        "sampledRays": 3283,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.3134109133507863,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 260,
-        "sampledRays": 3400,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.1515945817404436,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 256,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 245,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 1,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 225,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 2,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 246,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 2,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 256,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 2,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 272,
-        "sampledRays": 3350,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 1,
+          "right": 0
+        }
       }
     ],
     "run": [
       {
-        "openSurfaceRays": 314,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.616322676087524,
+        "footMinimumZ": {
+          "left": 1,
+          "right": 1
+        }
       },
       {
-        "openSurfaceRays": 298,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.2063075200595108,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 2
+        }
       },
       {
-        "openSurfaceRays": 288,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 3
+        }
       },
       {
-        "openSurfaceRays": 289,
-        "sampledRays": 3350,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 3
+        }
       },
       {
-        "openSurfaceRays": 266,
-        "sampledRays": 3400,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 4
+        }
       },
       {
-        "openSurfaceRays": 265,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 3
+        }
       },
       {
-        "openSurfaceRays": 299,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 2
+        }
       },
       {
-        "openSurfaceRays": 321,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 1
+        }
       },
       {
-        "openSurfaceRays": 317,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.642158047621308,
+        "footMinimumZ": {
+          "left": 1,
+          "right": 1
+        }
       },
       {
-        "openSurfaceRays": 291,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.22786305876605795,
+        "footMinimumZ": {
+          "left": 2,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 293,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 3,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 275,
-        "sampledRays": 3350,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 3,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 278,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 4,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 283,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 3,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 273,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 2,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 297,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 1,
+          "right": 0
+        }
       }
     ],
     "backward": [
       {
-        "openSurfaceRays": 232,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.06579530216749063,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 205,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.07459581203416121,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 203,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.020809307939270383,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 219,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 187,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 1
+        }
       },
       {
-        "openSurfaceRays": 198,
-        "sampledRays": 3536,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 2
+        }
       },
       {
-        "openSurfaceRays": 214,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 2
+        }
       },
       {
-        "openSurfaceRays": 236,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 1
+        }
       },
       {
-        "openSurfaceRays": 225,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.05241625297637498,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 193,
-        "sampledRays": 3468,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.05930792286196507,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 185,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0035512966495439002,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 207,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 0,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 191,
-        "sampledRays": 3417,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 1,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 205,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 2,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 203,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 2,
+          "right": 0
+        }
       },
       {
-        "openSurfaceRays": 220,
-        "sampledRays": 3484,
-        "solidSampling": "Combined-assembly BVH crossings"
+        "maximumIkClamp": 0.0,
+        "footMinimumZ": {
+          "left": 1,
+          "right": 0
+        }
       }
     ]
   },
-  "limits": [
-    "Sampled open source surfaces keep a one-voxel shell; not a watertight mesh repair.",
-    "Static torso omits source torso pitch/roll. Waist translation and bob follow sampled lower-body motion.",
-    "Fixed gait cycles do not establish planted-foot turns, speed transitions or game integration.",
-    "No runtime frame-time, GPU or crowd-performance claim."
+  "assumptions": [
+    "Source views share floor height, scale and waist projection at ground grid (32, 32).",
+    "Back view is mirrored; top is vertically flipped to make -Y forward.",
+    "Front/back silhouette union tolerates drawn differences; top and side intersect that union.",
+    "Hidden cavities, occluded surfaces and component depth are inferred by a visual hull.",
+    "Five grayscale armor tones use offline voxel-density normals; interiors stay flat gray; no live lighting.",
+    "Only dark markings inside a one-pixel-eroded source silhouette project onto corresponding predominantly axis-facing boundary skins.",
+    "Part boundaries use horizontal ankle/knee/hip bands; pivots come from mask centroids unless supplied.",
+    "The gait is a new in-place voxel articulation study, not the previously approved 3D motion.",
+    "No planted-foot turning, world-speed synchronization, transitions, terrain adaptation or game integration is established."
   ],
-  "torso": {
-    "openSurfaceRays": 554,
-    "sampledRays": 4324,
-    "solidSampling": "Combined-assembly BVH crossings"
-  }
+  "atlasCount": 49,
+  "decodedAtlasRgbaBytes": 19660800
 }

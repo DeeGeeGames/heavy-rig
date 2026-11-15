@@ -1,44 +1,43 @@
 {
   "version": 1,
   "grid": {
-    "size": 128,
+    "size": 64,
     "columns": 8,
-    "pitch": 0.010416666666666666
+    "pitch": 0.020833333333333332
   },
+  "displayScale": 2,
   "source": {
-    "commit": "9881bcfbc23d9fd1109f5f33609900ad9869ea17",
+    "commit": "f26d443dcf583d642f1d4cdcb708b008089d37ee",
+    "kind": "pixel-views",
     "files": {
-      "walk/chassis.glb": "f261981a90ebc58da763f0a6804c2ed9654e85d25a90ca47fb99bcee3ba868a8",
-      "walk/left-launcher.glb": "d58c79e3c19439e26b2d29f06c1216813a5a620a79bf5ff6dcbfb23bde1bf5a3",
-      "walk/right-launcher.glb": "c572cb55b3ba79610dc28b3c1fdfe8ec105a6efc6e58abfd7d330bf0aa663581",
-      "run/chassis.glb": "02eb6737ab81b267081d4e7507b173fdb9b53721374b23cbf19210800c4584e1",
-      "run/left-launcher.glb": "243df07beb21c3f242daba579a4734a49ad4b5c33eebf8678b77d03f543aa005",
-      "run/right-launcher.glb": "3f6d0b93b9dd8feb30c19343a5e5144f65a4b20a6b7d39d790540929a2aa0e96",
-      "backward/chassis.glb": "866f151d3bfbb903bc0956ba91732cd35b336d35e65268b7bbd648de7caba155",
-      "backward/left-launcher.glb": "4e9cf2bf55160493ad0f951a8e9c0cdae6c46484549581cbe5bfd708808f6e89",
-      "backward/right-launcher.glb": "b939fff5204a7423f234fd354b0ac5192e5596f1dcd1590f358fd158671f7a27"
+      "front.png": "e3f8153ba74471af97255c6a8ff9223f30588ef5c29849dbaddc8cd19097540a",
+      "back.png": "d77467923b2454e83d057463523b86091af6b88da4560c4dc1ef3885f3da3654",
+      "side.png": "f44b99dca9c7570daf85f2cbf7daf4fc31679c19a1f0ed66964fd789784baab6",
+      "top.png": "f4fb95f4167169a66df86d8fe29d4b45c2575f38bca5ce0e0cc3fb4c455f3b83"
     }
   },
   "palette": [
-    "#17252a",
-    "#26383c",
-    "#354a4b",
-    "#475e5a",
-    "#5c7468",
-    "#748c78",
-    "#92a28a",
-    "#b2bca0",
-    "#293038",
-    "#414952",
-    "#606a70",
-    "#85908e",
-    "#b3bdb0",
-    "#16434c",
-    "#36828b",
-    "#81c8c3",
-    "#b87c3c",
-    "#e5b769"
+    "#181818",
+    "#262626",
+    "#343434",
+    "#424242",
+    "#505050",
+    "#606060",
+    "#707070",
+    "#828282",
+    "#949494",
+    "#a8a8a8",
+    "#bebebe",
+    "#d6d6d6"
   ],
+  "torso": {
+    "image": "torso.png",
+    "sliceCount": 25,
+    "zMin": 0,
+    "occupiedVoxels": 16469,
+    "sha256": "264890ca3df5c152b169ff8e217e2b188ac6522ce0377973a5b5080439942108",
+    "decodedRgbaBytes": 524288
+  },
   "motions": {
     "walk": {
       "duration": 0.9,
@@ -46,225 +45,241 @@
         {
           "atlas": {
             "image": "walk-00.png",
-            "sliceCount": 49,
+            "sliceCount": 23,
             "zMin": 0,
-            "occupiedVoxels": 26461,
-            "sha256": "be583951851ab6d1d832d24b0bfe0d4bf5d68b32297d73adb28c3a2e50d788e5"
+            "occupiedVoxels": 7247,
+            "sha256": "8daf4a235c7c202177d9706589061d8e0a76f4aa7408233e10f366a4eb7b3ccf",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.07226195186376572,
-            "y": -0.527245044708252,
-            "z": 49.32289123535156
+            "x": 0,
+            "y": 0,
+            "z": 23.0
           }
         },
         {
           "atlas": {
             "image": "walk-01.png",
-            "sliceCount": 50,
-            "zMin": -1,
-            "occupiedVoxels": 26081,
-            "sha256": "0c1b48ef26c51359935ca00fa60d6ee426113581390ca24d5be767efe6020f10"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7258,
+            "sha256": "4b301f0bb0455c7ccf714592c573eda02773d9b07d01c999185bf8a27f8abda1",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.02604902721941471,
-            "y": -0.5803138017654419,
-            "z": 49.63278007507324
+            "x": 0,
+            "y": 0,
+            "z": 22.934099025766972
           }
         },
         {
           "atlas": {
             "image": "walk-02.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 25880,
-            "sha256": "04e1e28a4897a53168d5ede6823dba6ca0ffacd9989b2a9c06e2bd187e4e9378"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7251,
+            "sha256": "b9a3e1cf76ca3f31328a3e5015a8ac0d8075854d97ea39c618c6fa9248f4f944",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.12075760960578918,
-            "y": -0.6000248193740845,
-            "z": 50.37227439880371
+            "x": 0,
+            "y": 0,
+            "z": 22.775
           }
         },
         {
           "atlas": {
             "image": "walk-03.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 26153,
-            "sha256": "fb7b54f2f9dcb26e6675b476323ece12ecfd57c5beb802cc11f8a9d3b368d067"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6935,
+            "sha256": "1e6b1b2fd480d3cc1732563be692c2fe7a61f172ff89f5652222fe1b4151a281",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.19616791605949402,
-            "y": -0.5747957825660706,
-            "z": 51.11686706542969
+            "x": 0,
+            "y": 0,
+            "z": 22.61590097423303
           }
         },
         {
           "atlas": {
             "image": "walk-04.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 26725,
-            "sha256": "56eca4f35b127e59215847d1250257c929961189c7c3977f17424b3aa3f68152"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6760,
+            "sha256": "0c6bcba21ffba19bcccc289c365ba16bfb6b47d165bcb2c164c8735c00e98c51",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.24022176861763,
-            "y": -0.5191909074783325,
-            "z": 51.424461364746094
+            "x": 0,
+            "y": 0,
+            "z": 22.55
           }
         },
         {
           "atlas": {
             "image": "walk-05.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 26339,
-            "sha256": "0b8d373bf5a0333eb3b309e3d06d318e28bfaf747edb1a122321aea62eb6f09f"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6720,
+            "sha256": "d58c21781375727e97c8e540d0e7bdfbec950b90d2b3764d8c18ba18ea7b1daa",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.24818819761276245,
-            "y": -0.46588289737701416,
-            "z": 51.12360763549805
+            "x": 0,
+            "y": 0,
+            "z": 22.61590097423303
           }
         },
         {
           "atlas": {
             "image": "walk-06.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 26620,
-            "sha256": "64c5b00070932ad07407c6af79e7183110fb75f52bc4568ab4d28cfa6d636b72"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6853,
+            "sha256": "e8680cb5507e41d9a03a7b6b30be06257dee6101db21c48979a62e6eb64c0771",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.21930554509162903,
-            "y": -0.4463235139846802,
-            "z": 50.381778717041016
+            "x": 0,
+            "y": 0,
+            "z": 22.775
           }
         },
         {
           "atlas": {
             "image": "walk-07.png",
-            "sliceCount": 50,
-            "zMin": -1,
-            "occupiedVoxels": 26811,
-            "sha256": "97a92952b427a3c68ab8639c9a9a00143a7e394f2e75576189c651382fa58b65"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6985,
+            "sha256": "15741cdc65a55186720a1a1e30346ba86493b651e8fe4f96382a7846953d0d07",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.1580071896314621,
-            "y": -0.47176122665405273,
-            "z": 49.63949203491211
+            "x": 0,
+            "y": 0,
+            "z": 22.934099025766972
           }
         },
         {
           "atlas": {
             "image": "walk-08.png",
-            "sliceCount": 49,
+            "sliceCount": 23,
             "zMin": 0,
-            "occupiedVoxels": 26471,
-            "sha256": "400c29833f5a7c49a35ac3f7dc7f8c5d5d83cbe000d3dd723a3c57993c545429"
+            "occupiedVoxels": 7263,
+            "sha256": "076e1f8a90e3f92adad17684e2118b44e7b536679a8cf3160720c1f0a46f6658",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.07226195186376572,
-            "y": -0.527245044708252,
-            "z": 49.32289123535156
+            "x": 0,
+            "y": 0,
+            "z": 23.0
           }
         },
         {
           "atlas": {
             "image": "walk-09.png",
-            "sliceCount": 50,
-            "zMin": -1,
-            "occupiedVoxels": 26182,
-            "sha256": "1933c2e9ad58747a648f7f7f976ceb034eef3673b453d0d57d9bdbbbf39bd40c"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7236,
+            "sha256": "48b7d9876e86eb005df29bdab5d5666aa0d6a7002550ad5af5fdd645f13aec09",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.026049016043543816,
-            "y": -0.5803134441375732,
-            "z": 49.63278007507324
+            "x": 0,
+            "y": 0,
+            "z": 22.934099025766972
           }
         },
         {
           "atlas": {
             "image": "walk-10.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 25951,
-            "sha256": "f9fae84de4e5ccdc71169b45cd2b59b3f9b60e2c83bdabcff63d560b50ffb310"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7261,
+            "sha256": "db9bca716602d7bdedfdbb0f6eb1151339026b723e4fcda893b91c8a45b156f4",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.1207575649023056,
-            "y": -0.6000251770019531,
-            "z": 50.37227439880371
+            "x": 0,
+            "y": 0,
+            "z": 22.775
           }
         },
         {
           "atlas": {
             "image": "walk-11.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 26185,
-            "sha256": "a1b49d3b27def9b6075b2c1100399272ae502d170566e9028babc17eece78388"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6949,
+            "sha256": "87e024d5a76ce17b4e6ae4d4098853505a873b41985c3ece947e0ca5a3ef927c",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.19616791605949402,
-            "y": -0.5747952461242676,
-            "z": 51.11686706542969
+            "x": 0,
+            "y": 0,
+            "z": 22.61590097423303
           }
         },
         {
           "atlas": {
             "image": "walk-12.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 26769,
-            "sha256": "01a2517d24e8e98fb346369f24e90acb1509509ce2f10bfb6dd1dd1da4338da0"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6791,
+            "sha256": "58a5a708922e07aecc1393985638aaed7d7fe68875f1b0737074ca90bba0cf26",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.24022176861763,
-            "y": -0.5191912651062012,
-            "z": 51.424461364746094
+            "x": 0,
+            "y": 0,
+            "z": 22.55
           }
         },
         {
           "atlas": {
             "image": "walk-13.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 26438,
-            "sha256": "d2ae0a64b0568840265b69acf8634944ef4b2a8b22744cfd53c8e6581b0d5f8a"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6747,
+            "sha256": "ca57b4041adf73e7ab7f3ea5537c29df3bebacd82a25baa28fb404aecfc44f06",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.24818819761276245,
-            "y": -0.4658832550048828,
-            "z": 51.12360763549805
+            "x": 0,
+            "y": 0,
+            "z": 22.61590097423303
           }
         },
         {
           "atlas": {
             "image": "walk-14.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 26658,
-            "sha256": "5f86be5107e23d0c1627bb3c7d3135db769432dbf7243bbffadac9c0c065fda9"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6852,
+            "sha256": "d98b968632e807cf1ce7e85a3e447f5f782d6b80236949d8331f47885384a4d5",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.2193056344985962,
-            "y": -0.44632387161254883,
-            "z": 50.381778717041016
+            "x": 0,
+            "y": 0,
+            "z": 22.775
           }
         },
         {
           "atlas": {
             "image": "walk-15.png",
-            "sliceCount": 50,
-            "zMin": -1,
-            "occupiedVoxels": 26737,
-            "sha256": "f9dbd1951285eb7d107c07ad1e5161efab02adebdcf6d0f84b574a9e9e3f1067"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7004,
+            "sha256": "f8d5bbda7572899234b2131c80895fec54ab47805c72b6a51dee839709399ed8",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.15800723433494568,
-            "y": -0.47176122665405273,
-            "z": 49.63949203491211
+            "x": 0,
+            "y": 0,
+            "z": 22.934099025766972
           }
         }
       ]
@@ -275,225 +290,241 @@
         {
           "atlas": {
             "image": "run-00.png",
-            "sliceCount": 51,
-            "zMin": 0,
-            "occupiedVoxels": 25083,
-            "sha256": "e1765a8fd2f30c72e3edf4143770cfdf029d599af1a2127ee0459e69141ce12f"
+            "sliceCount": 22,
+            "zMin": 1,
+            "occupiedVoxels": 6962,
+            "sha256": "ecb24b775e5f5fa637f88dc5e60ae34c14492e6c70e319e68ade0ff42a4cf6b4",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.0432916134595871,
-            "y": -0.6440842151641846,
-            "z": 51.68869400024414
+            "x": 0,
+            "y": 0,
+            "z": 23.0
           }
         },
         {
           "atlas": {
             "image": "run-01.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 24811,
-            "sha256": "f8ac7e8f739428ae05b441a732a473639c42b6f54eb1a23608478f976f8855fe"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6792,
+            "sha256": "3d8b44b53b617cca199e86f7945e0d00d575ba7cef8750512d730351c190c338",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.019915306940674782,
-            "y": -0.6686064004898071,
-            "z": 50.88273811340332
+            "x": 0,
+            "y": 0,
+            "z": 22.8389087296526
           }
         },
         {
           "atlas": {
             "image": "run-02.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 24692,
-            "sha256": "2876d5412430a61278657c1b997be44479806f862ef3995666b1a9b8a3e447bb"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6582,
+            "sha256": "2d0834932273516c010b141c9b0cebd4117cd838347a39f5d54c624ee00e71c1",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.08027362078428268,
-            "y": -0.6772638559341431,
-            "z": 50.05803680419922
+            "x": 0,
+            "y": 0,
+            "z": 22.45
           }
         },
         {
           "atlas": {
             "image": "run-03.png",
-            "sliceCount": 50,
-            "zMin": -1,
-            "occupiedVoxels": 25159,
-            "sha256": "04451404791fd3004a1c79f5e06a4c8782a4ebdf9c67d23ddad85e5ece28affb"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6476,
+            "sha256": "02cf09ecfd5fb9fd5c53b0e513230e10bf73d0ddb3657360e7ff81b0b9a8d6ac",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.12795500457286835,
-            "y": -0.6650347709655762,
-            "z": 49.69581985473633
+            "x": 0,
+            "y": 0,
+            "z": 22.061091270347397
           }
         },
         {
           "atlas": {
             "image": "run-04.png",
-            "sliceCount": 50,
+            "sliceCount": 24,
             "zMin": 0,
-            "occupiedVoxels": 25480,
-            "sha256": "98dde34290fa34a0587a640967d482925835efacfde11401e8aa4ed760f32e66"
+            "occupiedVoxels": 6380,
+            "sha256": "51835212704f5024e02cff05e63e30ed912654b9566a32fd88ac1e4f6feeaf49",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.15562690794467926,
-            "y": -0.6390416622161865,
-            "z": 50.00796318054199
+            "x": 0,
+            "y": 0,
+            "z": 21.9
           }
         },
         {
           "atlas": {
             "image": "run-05.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 25823,
-            "sha256": "5750e169276f5a7bc66eb84471b6268140178234104b2acd7fb1688d8dca63fa"
+            "sliceCount": 25,
+            "zMin": 0,
+            "occupiedVoxels": 6495,
+            "sha256": "b75a0a9f5eda75785eb227f17c0be7cd3fdd67d2155be3add8bad02eb0c6929a",
+            "decodedRgbaBytes": 524288
           },
           "anchor": {
-            "x": 0.15954923629760742,
-            "y": -0.6145205497741699,
-            "z": 50.81382751464844
+            "x": 0,
+            "y": 0,
+            "z": 22.061091270347397
           }
         },
         {
           "atlas": {
             "image": "run-06.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 26029,
-            "sha256": "d6c43698cd4d7e704a3db1fff99d61a148c53d7f480b0cc82326fc94e51f2fb4"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6625,
+            "sha256": "60e7fb6e28f3f523b55707bc2070babaa6f0e0c6d3fa73350fdfee72ef6215f8",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.139815554022789,
-            "y": -0.6058444976806641,
-            "z": 51.638437271118164
+            "x": 0,
+            "y": 0,
+            "z": 22.45
           }
         },
         {
           "atlas": {
             "image": "run-07.png",
-            "sliceCount": 51,
-            "zMin": 1,
-            "occupiedVoxels": 25737,
-            "sha256": "1286d845085622dfb0d4dedde52223e9c4f156d39ffa78b1ec4d7894814a9a47"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6965,
+            "sha256": "4f9289ca071df0e71b083a2d95bd4d3cb22c691b785380a0b2c4b7eca99f01e4",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.09924700856208801,
-            "y": -0.618072509765625,
-            "z": 52.00075149536133
+            "x": 0,
+            "y": 0,
+            "z": 22.8389087296526
           }
         },
         {
           "atlas": {
             "image": "run-08.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 24896,
-            "sha256": "f78604b91c512d966254f0be69f7f7990b9ddb524dc489d28916bcc61112273b"
+            "sliceCount": 22,
+            "zMin": 1,
+            "occupiedVoxels": 6992,
+            "sha256": "7bc78bbcad9992952d8f0629239e85741cec82c45f2676d9c064bb3de36af8b5",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.0432916134595871,
-            "y": -0.6440849304199219,
-            "z": 51.68869400024414
+            "x": 0,
+            "y": 0,
+            "z": 23.0
           }
         },
         {
           "atlas": {
             "image": "run-09.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 24728,
-            "sha256": "80ca7b8bfbaf525aa80445f131cbdf09cdd26bdd2bb11acbfb285233350ababa"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6852,
+            "sha256": "5af9b1cc6e3fff2a4b42b2b746d928ede8116bc12703aacf37864470891b208f",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.01991529017686844,
-            "y": -0.6686067581176758,
-            "z": 50.88273811340332
+            "x": 0,
+            "y": 0,
+            "z": 22.8389087296526
           }
         },
         {
           "atlas": {
             "image": "run-10.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 24631,
-            "sha256": "45a3cc7c377dbbd96c1560f55165e48a6c2d56fa92f591072bbda282cec9f848"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6643,
+            "sha256": "51d70a4ada6acf83da23616f3b5bd492d330fc3ba5545e4ef6e3546738464daf",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.0802735984325409,
-            "y": -0.6772642135620117,
-            "z": 50.05804252624512
+            "x": 0,
+            "y": 0,
+            "z": 22.45
           }
         },
         {
           "atlas": {
             "image": "run-11.png",
-            "sliceCount": 50,
-            "zMin": -1,
-            "occupiedVoxels": 25311,
-            "sha256": "c1f1c0fe142a8cc26eccc2d8f7eb2feb6f15ffcb3fd4a2408ed523d5243ce3f9"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6509,
+            "sha256": "ea644b007bebe97c1f8b77a912f4fd43a7d880e9368b387c2907524ce00cfa57",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.12795500457286835,
-            "y": -0.6650362014770508,
-            "z": 49.69581985473633
+            "x": 0,
+            "y": 0,
+            "z": 22.0610912703474
           }
         },
         {
           "atlas": {
             "image": "run-12.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 25518,
-            "sha256": "58c715c6fe1d8c1d42c0262ea50f4802b4f7e000bde665e57aa774705d48a13f"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6462,
+            "sha256": "429d1bf8a5b54677223b15d6794e04fb267c8e8c7e46c199e991a2df238672b8",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.15562690794467926,
-            "y": -0.6390409469604492,
-            "z": 50.00796318054199
+            "x": 0,
+            "y": 0,
+            "z": 21.9
           }
         },
         {
           "atlas": {
             "image": "run-13.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 25854,
-            "sha256": "6dfdca6e43b1482bf309dbd67403731533fbcb37b0461ea9c4752ca06d16951c"
+            "sliceCount": 25,
+            "zMin": 0,
+            "occupiedVoxels": 6522,
+            "sha256": "a2715da49349fd294c2e6a85ac268389ec4c0ff3cfe6acfeb0bda54421bdd331",
+            "decodedRgbaBytes": 524288
           },
           "anchor": {
-            "x": -0.15954923629760742,
-            "y": -0.6145219802856445,
-            "z": 50.81382751464844
+            "x": 0,
+            "y": 0,
+            "z": 22.0610912703474
           }
         },
         {
           "atlas": {
             "image": "run-14.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 26342,
-            "sha256": "4b70dd1ad6f893d44dda93481db099e2ae7cd4e9617df9891bc8284525e8055c"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6680,
+            "sha256": "5970074e500ffe6de700145bc77aba62de5129c9dccd3027cbed72c6a395873d",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.13981559872627258,
-            "y": -0.6058444976806641,
-            "z": 51.638437271118164
+            "x": 0,
+            "y": 0,
+            "z": 22.45
           }
         },
         {
           "atlas": {
             "image": "run-15.png",
-            "sliceCount": 51,
-            "zMin": 1,
-            "occupiedVoxels": 25975,
-            "sha256": "6698cd56d9c65d6b0a27bd190f72df7b202acf5e83569a490f9c924b7701b913"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6969,
+            "sha256": "8309d47046abc57f5c0525e755cfee128b94ed19eeb90bbdddbc80d5f2fef33d",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.09924696385860443,
-            "y": -0.618072509765625,
-            "z": 52.00075149536133
+            "x": 0,
+            "y": 0,
+            "z": 22.8389087296526
           }
         }
       ]
@@ -504,236 +535,245 @@
         {
           "atlas": {
             "image": "backward-00.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 27491,
-            "sha256": "9f5f578abadea9901b8d3883e22bdd0ed0b9b6d828959919a708be7b144ff302"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7253,
+            "sha256": "4148f46acbc2f4168835e5d4142dba2c381c5e1eca63820dc514c4012145f1b2",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.04349016398191452,
-            "y": -0.05864238739013672,
-            "z": 51.26360321044922
+            "x": 0,
+            "y": 0,
+            "z": 23.0
           }
         },
         {
           "atlas": {
             "image": "backward-01.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 27751,
-            "sha256": "047bd2fd4a1539aa1f6cbe9691360c979a271ccd989685dac02990a076951be6"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7256,
+            "sha256": "a1da359ed8cb06aa50be17174096ca526d27930a0de2ef4c401ffc157acca304",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.012152312323451042,
-            "y": -0.08333086967468262,
-            "z": 51.37631607055664
+            "x": 0,
+            "y": 0,
+            "z": 22.948743686707648
           }
         },
         {
           "atlas": {
             "image": "backward-02.png",
-            "sliceCount": 51,
+            "sliceCount": 23,
             "zMin": 0,
-            "occupiedVoxels": 27691,
-            "sha256": "767e6de13c68ba8121ec861944cba2280fb3f0b097af25a123df53cc8e3170f4"
+            "occupiedVoxels": 7245,
+            "sha256": "45970b037ff637f303dc2f2e150d198b69e9b7588b1357439a74424f9bddef99",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.06618513911962509,
-            "y": -0.09222078323364258,
-            "z": 51.647037506103516
+            "x": 0,
+            "y": 0,
+            "z": 22.825
           }
         },
         {
           "atlas": {
             "image": "backward-03.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 27456,
-            "sha256": "f8e84ed7a18816bf4d1e5663814e9dce6df39e82b978421c591ef0cff1289463"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7231,
+            "sha256": "dc412338d1d37ca69158dd18f5c753d16874e15cab2b09e3a4e033d9f0888517",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.10960784554481506,
-            "y": -0.07999563217163086,
-            "z": 51.917781829833984
+            "x": 0,
+            "y": 0,
+            "z": 22.701256313292355
           }
         },
         {
           "atlas": {
             "image": "backward-04.png",
-            "sliceCount": 51,
+            "sliceCount": 23,
             "zMin": 0,
-            "occupiedVoxels": 27388,
-            "sha256": "6dc7be7b13335664dffa35e385abe41d2380103d14c2b6870b9da004b08ea67d"
+            "occupiedVoxels": 7011,
+            "sha256": "36464cabd22c1d2f9c4aed361db4d625637360cf5042f8cf6ca8432303b26acd",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.13580600917339325,
-            "y": -0.053936004638671875,
-            "z": 52.03040885925293
+            "x": 0,
+            "y": 0,
+            "z": 22.65
           }
         },
         {
           "atlas": {
             "image": "backward-05.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 27133,
-            "sha256": "91b6c64b75ddd290b2f2156f8383ed4fd223ef3f0477f9d3f0a0f1de2ed13e9a"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6905,
+            "sha256": "c980bbf23945a4df6e3e96a17a0b44912f489df0117dc29f3b5179c62451851e",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.1412661373615265,
-            "y": -0.029258251190185547,
-            "z": 51.91760444641113
+            "x": 0,
+            "y": 0,
+            "z": 22.701256313292355
           }
         },
         {
           "atlas": {
             "image": "backward-06.png",
-            "sliceCount": 51,
+            "sliceCount": 23,
             "zMin": 0,
-            "occupiedVoxels": 27310,
-            "sha256": "6ac4bf9b97c9851e4ccea1543d70271f8445036734a89f9b0defd5eeb5741ab7"
+            "occupiedVoxels": 6957,
+            "sha256": "06c19480bcde7d64dc2a2c7ec2561c13a17f78446ee9951115b1d8ee7cf9f90b",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.12593597173690796,
-            "y": -0.020354747772216797,
-            "z": 51.646785736083984
+            "x": 0,
+            "y": 0,
+            "z": 22.825
           }
         },
         {
           "atlas": {
             "image": "backward-07.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 27256,
-            "sha256": "d997b4336ac8e7fc8e29f3753bf9cb29c0269d5a93f6bd3613afba7caf40e36b"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6995,
+            "sha256": "e6ba74f1922869032d9e6ae8067d42edb157973725cf859469185d7822d621da",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.09181281924247742,
-            "y": -0.03257274627685547,
-            "z": 51.37613868713379
+            "x": 0,
+            "y": 0,
+            "z": 22.948743686707648
           }
         },
         {
           "atlas": {
             "image": "backward-08.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 27373,
-            "sha256": "817dfb7f99483ca1db2ec3de2a971a88b89d7c3221d409830424cee8c32009f6"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7231,
+            "sha256": "5931865cebc9c41e2e5f1195679f1c8da2e196e9f5be4508ef699d8743adaf70",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": 0.04349016398191452,
-            "y": -0.05864238739013672,
-            "z": 51.26360321044922
+            "x": 0,
+            "y": 0,
+            "z": 23.0
           }
         },
         {
           "atlas": {
             "image": "backward-09.png",
-            "sliceCount": 51,
-            "zMin": -1,
-            "occupiedVoxels": 27813,
-            "sha256": "ae54e54a602d5b8ac200551c2af49fa7cca09ec06f9759cb61be114439339c9b"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7256,
+            "sha256": "ac3ab6c353a01c3628b30d2e345eca3721d7306704fab624073480ecbaddb1a0",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.012152312323451042,
-            "y": -0.08333015441894531,
-            "z": 51.37631607055664
+            "x": 0,
+            "y": 0,
+            "z": 22.948743686707648
           }
         },
         {
           "atlas": {
             "image": "backward-10.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 27735,
-            "sha256": "456a715c88db852fb6eb5d9940853ce3877797475dafee25f74adc228c5553e5"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7234,
+            "sha256": "53d9e8d7476444ec2874a2204d2e9c1962fd2ba830a49d9810291a4ec5b54f5e",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.06618513911962509,
-            "y": -0.09222078323364258,
-            "z": 51.647037506103516
+            "x": 0,
+            "y": 0,
+            "z": 22.825
           }
         },
         {
           "atlas": {
             "image": "backward-11.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 27603,
-            "sha256": "f76c346999fd002691dfe4a90f8c84faf5ed50720331c9a800487522e9b0b334"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7241,
+            "sha256": "29cc562e18cd3dbce78499ea178dd1bcbc55bc5858a5141c93868a1c1512b221",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.10960784554481506,
-            "y": -0.07999420166015625,
-            "z": 51.917781829833984
+            "x": 0,
+            "y": 0,
+            "z": 22.701256313292355
           }
         },
         {
           "atlas": {
             "image": "backward-12.png",
-            "sliceCount": 51,
+            "sliceCount": 23,
             "zMin": 0,
-            "occupiedVoxels": 27348,
-            "sha256": "f73bd8d508f35ecb09b2612dec6dc6393327c9ae05029768a06ff65a5c570df8"
+            "occupiedVoxels": 7030,
+            "sha256": "c8d93b8fdfd89d2d041d5935beca58fcb41706c0caa45cb2fa928fbd3e701eff",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.13580600917339325,
-            "y": -0.053936004638671875,
-            "z": 52.03040885925293
+            "x": 0,
+            "y": 0,
+            "z": 22.65
           }
         },
         {
           "atlas": {
             "image": "backward-13.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 27213,
-            "sha256": "16a101acd55cf640ab0215e653ab442cd7eb04143881ab9a5a8a33b7313a435b"
+            "sliceCount": 24,
+            "zMin": 0,
+            "occupiedVoxels": 6909,
+            "sha256": "f5097143f34276aad533c49e78b0caa6dde1e89adc3601f62d490d8dae650065",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.1412661373615265,
-            "y": -0.029259681701660156,
-            "z": 51.91760444641113
+            "x": 0,
+            "y": 0,
+            "z": 22.701256313292355
           }
         },
         {
           "atlas": {
             "image": "backward-14.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 27223,
-            "sha256": "656852482f8f6e3a0ab3767824927bba25d793f8beeec85511485ea0edfd461b"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 6980,
+            "sha256": "a2ccc3db24856e1af052bb07a825d3eb85e593f975983f5d58d736bbabd849dc",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.12593597173690796,
-            "y": -0.020356178283691406,
-            "z": 51.646785736083984
+            "x": 0,
+            "y": 0,
+            "z": 22.825
           }
         },
         {
           "atlas": {
             "image": "backward-15.png",
-            "sliceCount": 52,
-            "zMin": -1,
-            "occupiedVoxels": 27219,
-            "sha256": "e5f01ed63b498531778892017ca7b1df1eb44d1ae6fc9d1697db4dd0bdbe88f5"
+            "sliceCount": 23,
+            "zMin": 0,
+            "occupiedVoxels": 7036,
+            "sha256": "05f006b4737e46821ca69d4f3c6cb8e71376d9e0d348295a3eee5b6bfac672ce",
+            "decodedRgbaBytes": 393216
           },
           "anchor": {
-            "x": -0.09181281924247742,
-            "y": -0.03257274627685547,
-            "z": 51.37613868713379
+            "x": 0,
+            "y": 0,
+            "z": 22.948743686707644
           }
         }
       ]
     }
   },
-  "method": "Horizontal solid sampling; fixed object-relative palette shading; Canvas2D slice runtime",
-  "torso": {
-    "image": "torso.png",
-    "sliceCount": 47,
-    "zMin": -5,
-    "occupiedVoxels": 53175,
-    "sha256": "6aa1f808fe79cf39536ae46c4a5d05d0b2d53e70914db04924aee9ba8d43ddc9"
-  }
+  "method": "Four-view visual hull with flat density-normal shading and dark interior markings; articulated voxel parts; PNG slices only"
 }

@@ -43,6 +43,18 @@
 		.atlas-viewport { max-height: 380px; overflow: auto; background: var(--background, #0b171b); border-radius: 6px; }
 		#atlas-canvas { width: 100%; }
 		#error { margin-top: 12px; color: var(--destructive, #ed9a83); font-size: 13px; }
+		.memory { margin-top: 10px; }
+		.memory h2 { font-size: 13px; margin: 0 0 14px; }
+		.memory-row { display: grid; grid-template-columns: 160px 1fr 70px; align-items: center; gap: 12px; margin: 10px 0; font-size: 11px; }
+		.memory-track { height: 14px; background: var(--background, #0b171b); border-radius: 3px; overflow: hidden; }
+		.memory-bar { height: 100%; background: var(--muted-foreground, #6c7e7c); }
+		.memory-bar.current { background: var(--warning, #dfb572); }
+		.source-art { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 14px; }
+		.source-art figure { margin: 0; }
+		.source-art figcaption { font-size: 11px; color: var(--muted-foreground, #a0b3af); margin-bottom: 8px; }
+		.source-art img { width: 100%; height: 260px; object-fit: contain; image-rendering: pixelated; background: var(--background, #0b171b); border-radius: 6px; }
+		@media (max-width: 520px) { .source-art { grid-template-columns: 1fr; } }
+		@media (max-width: 520px) { .memory-row { grid-template-columns: 95px 1fr 60px; gap: 8px; } }
 		@media (max-width: 520px) { .sliders { gap: 16px 14px; } .native { display: none; } .stage-viewport { min-height: 250px; } .card { padding: 12px; } .control-bar { gap: 6px; } button, select { padding: 7px 8px; } }
 	</style>
 </head>
@@ -71,8 +83,14 @@
 			<label class="field"><span class="field-heading">Layer spacing<output id="spacing-value">1×</output></span><input id="spacing" type="range" min="1" max="2.8" value="1" step="0.1"></label>
 		</div>
 		<label class="field timeline"><span class="field-heading">Animation frame<output id="timeline-value">1</output></span><input id="timeline" type="range" min="0" max="15" value="0" step="1"></label>
-		<p class="description">Every visible mech pixel comes from a PNG layer. The 3D source is used offline to make the sheets; this preview draws them with Canvas 2D. These fixed cycles demonstrate the style and separate headings; they do not establish planted-foot turning or production movement transitions.</p>
+		<p class="description" id="source-note">Every visible mech pixel comes from a PNG layer. The 3D source is used offline to make the sheets; this preview draws them with Canvas 2D. These fixed cycles demonstrate the style and separate headings; they do not establish planted-foot turning or production movement transitions.</p>
 		<p id="error" hidden></p>
+	</section>
+	<section class="card memory" id="memory-card" hidden>
+		<h2>Decoded slice-sheet pixels</h2>
+		<div class="memory-row"><span>Earlier mesh-derived proof</span><div class="memory-track"><div class="memory-bar" style="width:100%"></div></div><output id="memory-before"></output></div>
+		<div class="memory-row"><span>Pixel-art source</span><div class="memory-track"><div class="memory-bar current" id="memory-now-bar"></div></div><output id="memory-now"></output></div>
+		<p class="description">RGBA pixel storage for the eagerly loaded PNG sheets. Browser overhead, GPU allocation and runtime frame time are not measured here.</p>
 	</section>
 	<details class="card" id="atlas-inspector">
 		<summary>Inspect the source slices</summary>
@@ -80,6 +98,7 @@
 		<div class="atlas-viewport"><canvas id="atlas-canvas"></canvas></div>
 		<p class="description">Tiles run left to right, then down, from the lowest layer to the highest. Transparent gaps remain empty as the stack turns.</p>
 	</details>
+	__ART_SOURCES__
 </main>
 <script id="sprite-stack-data" type="application/json">__SPRITE_STACK_DATA__</script>
 <script type="module" src="./src/sprite-stack-study.ts"></script>
