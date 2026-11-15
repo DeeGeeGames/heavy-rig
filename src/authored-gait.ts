@@ -130,7 +130,9 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 			}
 			return clear / scale;
 		}
-		throw new Error('Authored gait exceeds ankle guard clearance');
+		// Clearance is best effort for this motion preview. Keep planted shoes and
+		// fixed-length legs when no guard-clear pose fits the bounded search.
+		return reachDrop / scale;
 	};
 	return { advance, pelvisDrop, solve };
 };

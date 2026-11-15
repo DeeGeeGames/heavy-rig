@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { advanceGait, advanceGaits, createGait, createGaits, legJoints } from '../src/gait';
+import { advanceGait, advanceGaits, createGait, createGaits, footPose, legJoints, STANDARD_LEG_RIG } from '../src/gait';
 import { createState, step, type Controls } from '../src/simulation';
 
 const idle: Controls = { drive: 0, stop: false, turn: 0, aim: { x: 900, y: 0 }, fire: [false, false, false, false], coolant: false };
@@ -59,13 +59,16 @@ test('faster travel lengthens forward and reverse strides without doubling caden
 test('reverse, pivoting, and braking keep articulated legs within reach and settle both feet', function () {
 	for (const size of [0.8, 1, 1.15]) {
 		const state = createState();
-		let gait = createGait(state.player, size);
+		// Scale travel with anatomy to exercise the same relative speed on each rig.
+		const body = function () { return { x: state.player.x * size, y: state.player.y * size, angle: state.player.angle }; };
+		let gait = createGait(body(), size);
 		for (let i = 0; i < 1800; i++) {
 			const drive = i < 300 ? 1 : i < 720 ? -1 : i < 1100 ? 1 : 0;
 			step(state, { ...idle, drive, turn: i > 500 && i < 1300 ? 1 : 0, stop: i >= 1100 }, dt);
-			gait = advanceGait(gait, state.player, dt, size);
+			gait = advanceGait(gait, body(), dt, size);
 			for (const index of [0, 1] as const) {
-				const { hip, knee, ankle } = legJoints(state.player, gait.feet[index], index, size);
+				const foot = footPose(gait, index, size);
+				const { hip, knee, ankle } = legJoints(gait.body, foot, index, size, STANDARD_LEG_RIG, foot.pitch);
 				const upper = Math.hypot(hip.x - knee.x, hip.y - knee.y, hip.z - knee.z);
 				const lower = Math.hypot(ankle.x - knee.x, ankle.y - knee.y, ankle.z - knee.z);
 				expect(upper).toBeCloseTo(30 * size, 6);

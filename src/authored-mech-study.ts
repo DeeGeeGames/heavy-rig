@@ -76,7 +76,7 @@ const start = async function () {
 	};
 	const step = function () {
 		const dt = 1 / 60; authoredPose ??= factory.advancePose(undefined, body, time); time += dt;
-		const speed = motion === 'walk' ? 38 : motion === 'run' ? 90 : motion === 'backward' ? -28 : motion === 'aim' ? 35 : 0;
+		const speed = motion === 'walk' ? 38 : motion === 'run' ? 180 : motion === 'backward' ? -28 : motion === 'aim' ? 35 : 0;
 		const angle = body.angle + (motion === 'turn' ? dt * 0.7 : 0);
 		body = { x: body.x + Math.cos(angle) * speed * dt, y: body.y + Math.sin(angle) * speed * dt, angle };
 		authoredPose = factory.advancePose(authoredPose, body, time);

@@ -50,11 +50,21 @@ swings introduce a run with brief flight phases and body lift. It returns to
 walking below 42 m/s, completing its landing transition before handing back to
 the walking planner. Entry preserves the existing support foot's stance progress.
 Airborne landing targets change gradually when velocity or steering changes.
+Running uses a longer stride cycle with lower shoe lift, body flight and landing
+compression. Cadence increases with actual forward speed to keep the elongated
+stride within the measured legs' reach.
 
-A shared pelvis reach/guard-clearance correction keeps both legs in reach and
-the shin guards above the floor without stretching their geometry. Guard support
-uses a convex hull measured once from the actual mesh. Separate toe articulation
-is absent. The visual run changes neither gameplay speed nor collision rules.
+A shared pelvis correction keeps both legs in reach and attempts shin-guard
+clearance without shifting planted shoes or stretching their geometry. Guard
+support uses a convex hull measured once from the actual mesh. Armor clearance
+is best effort for this owner-directed motion pass: an exhausted clearance search
+retains the reachable leg pose instead of stopping the game. Some guard contacts
+and intersections are accepted for review. Separate toe articulation is absent.
+
+The Warden chassis's forward gameplay speed is 180 m/s, doubled from 90 at the
+owner's request. Existing carried-weight modifiers still apply; reverse speed,
+steering and collision rules are unchanged. The inspector's Run mode uses the
+same 180 m/s forward speed.
 
 A shared numeric sampler supplies the same procedural pelvis and torso pose to
 the renderer and physical muzzle calculations. Gameplay does not read back render
@@ -105,11 +115,12 @@ torso binding and simulation/render firing-origin agreement. The retained
 CI runs the same command. Texture appearance remains a browser check.
 The preview command emits self-contained `study.html` and opt-in `game.html`.
 `tests/authored-locomotion.test.ts` checks the actual GLB through turning in both
-directions, curved forward travel, reverse and stops: supporting foot position
-and heading, all-mesh floor clearance, both shoes fully above the floor during
+directions, curved forward travel at 90 and 180 m/s, reverse and stops: supporting
+foot position and heading, sole floor clearance, both shoes fully above the floor during
 flight, paused flight/rendering and shared weapon origins. It also checks longer
 walking steps, speed hysteresis, and real acceleration, steering reversal and
-braking through the existing movement simulation.
+braking through the existing movement simulation. Armor clearance remains a
+visual review concern for this pass.
 
 ## Reproduce
 

@@ -130,7 +130,7 @@ let maximumMuzzleError = 0; let originRenderDependencyError = 0;
 let body = { x: 500, y: 400, angle: 0 }; let gait = createGait(body); let context = factory.advancePose(undefined, body, 0);
 try {
  for (let tick = 1; tick <= 480; tick++) {
-  const speed = tick < 120 ? 38 : tick < 240 ? 90 : tick < 360 ? -28 : 0;
+  const speed = tick < 120 ? 38 : tick < 240 ? 180 : tick < 360 ? -28 : 0;
   const angle = tick * 0.004;
   body = { x: body.x + Math.cos(angle) * speed / 60, y: body.y + Math.sin(angle) * speed / 60, angle };
   context = factory.advancePose(context, body, tick / 60); gait = advanceGait(gait, body, 1 / 60);
@@ -150,7 +150,7 @@ try {
  for (const material of materials) { for (const value of Object.values(material)) if (value instanceof Texture) value.dispose(); material.dispose(); }
 }
 const fingerprints = {};
-for (const file of [recipePath, 'scripts/mech-design/verify-game-ready.mjs', 'scripts/mech-design/candidate-budget.ts', 'src/authored-mech.ts', 'src/authored-pose.ts', 'src/authored-gait.ts', 'src/authored-run.ts', 'src/gait.ts', 'src/frame-rig.ts', 'src/weapon-rig.ts', ...(budgetPath ? [budgetPath] : [])]) fingerprints[file] = createHash('sha256').update(new Uint8Array(await Bun.file(resolve(root, file)).arrayBuffer())).digest('hex');
+for (const file of [recipePath, 'scripts/mech-design/verify-game-ready.mjs', 'scripts/mech-design/candidate-budget.ts', 'src/authored-mech.ts', 'src/authored-pose.ts', 'src/authored-gait.ts', 'src/authored-run.ts', 'src/gait.ts', 'src/frame-rig.ts', 'src/frames.ts', 'src/weapon-rig.ts', ...(budgetPath ? [budgetPath] : [])]) fingerprints[file] = createHash('sha256').update(new Uint8Array(await Bun.file(resolve(root, file)).arrayBuffer())).digest('hex');
 const result = { schemaVersion: 1, mode: candidate ? 'candidate' : 'checkpoint', ...(budget ? { budget } : {}), sha256, selectedAssetMatch: sha256 === manifest.asset.sha256, bytes: data.byteLength, triangles, meshSections, materials: materials.size, geometryBufferBytes, shinOwnership: { components: recipe.ownershipOverrides.length, maximumProbeError: maximumGuardProbeError }, rigidAttachments: { mounts: 4, staticNeckMeshes: 1, maximumLocalMatrixError: maximumRigidMatrixError }, clips, firingOrigins: { runtimeSamples: 480, maximumMuzzleError, originRenderDependencyError }, fingerprints, limits: ['Warden structural and runtime adapter contract; other chassis require their own validator configuration/adapter', 'Candidate cost ceilings do not establish hardware performance or owner acceptance', 'Headless texture placeholders; image appearance requires browser review', 'Samples do not establish swept-volume clearance or hardware frame time'], errors: [] };
 if (output) await Bun.write(output, JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify(result, null, 2));

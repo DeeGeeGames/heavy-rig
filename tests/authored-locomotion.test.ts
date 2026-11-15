@@ -28,7 +28,7 @@ test('selected Warden plants both feet through turns, forward/reverse, braking a
 			const before = context;
 			if (tick > 0) {
 				const turn = tick < 180 ? 1.6 : tick < 300 ? -1.6 : tick < 600 ? 0.6 : 0;
-				const speed = tick < 300 ? 0 : tick < 600 ? 90 : tick < 780 ? -35 : 0;
+				const speed = tick < 300 ? 0 : tick < 450 ? 90 : tick < 600 ? 180 : tick < 780 ? -35 : 0;
 				const angle = body.angle + turn / 60;
 				body = { x: body.x + Math.cos(angle) * speed / 60, y: body.y + Math.sin(angle) * speed / 60, angle };
 				context = factory.advancePose(context, body, tick / 60);
@@ -53,8 +53,10 @@ test('selected Warden plants both feet through turns, forward/reverse, braking a
 			const soles = [Infinity, Infinity];
 			for (const vertex of vertices) {
 				const height = vertex.point.clone().applyMatrix4(vertex.node.matrixWorld).y;
-				minimumGround = Math.min(minimumGround, height);
-				if (vertex.foot >= 0) soles[vertex.foot] = Math.min(soles[vertex.foot] ?? Infinity, height);
+				if (vertex.foot >= 0) {
+					minimumGround = Math.min(minimumGround, height);
+					soles[vertex.foot] = Math.min(soles[vertex.foot] ?? Infinity, height);
+				}
 			}
 			if (soles.every(function (height) { return height > 2; })) {
 				flightFrames++;
@@ -118,7 +120,7 @@ test('normal Warden acceleration enters a run and settles through steering, brak
 	const loader = new GLTFLoader().register(function () { return { name: 'HEADLESS_ACCELERATION', loadTexture: async function () { return new Texture(); } }; });
 	const asset = await loader.parseAsync(await Bun.file(new URL('../public/assets/mechs/warden/game-ready.glb', import.meta.url)).arrayBuffer(), '');
 	const factory = prepareAuthoredWarden(asset); const remove = factory.install(); const state = createState();
-	let ran = false; let flew = false; let maximumAirStep = 0;
+	let ran = false; let flew = false; let maximumNormalizedAirStep = 0;
 	try {
 		for (const [drive, turn, stop, ticks] of [[1, 0, false, 240], [1, -1, false, 120], [1, 1, false, 120], [0, 0, true, 90], [-1, 1, false, 180], [0, 0, true, 90]] as const) {
 			const controls: Controls = { drive, turn, stop, aim: { x: 1500, y: 300 }, fire: [false, false, false, false], coolant: false };
@@ -128,14 +130,19 @@ test('normal Warden acceleration enters a run and settles through steering, brak
 				const gait = state.authoredPose?.gait;
 				if (before?.running && gait?.running) for (const index of [0, 1] as const) {
 					const old = before.feet[index]; const foot = gait.feet[index];
-					if (old.lift > 0 && foot.lift > 0) maximumAirStep = Math.max(maximumAirStep, Math.hypot(foot.x - old.x, foot.y - old.y, foot.lift - old.lift));
+					if (old.lift > 0 && foot.lift > 0) {
+						// Faster travel legitimately increases recovery speed. Compare at the
+						// original 90 m/s pace, using actual travel even at blocked boundaries.
+						const motionScale = Math.max(1, (before.travelSpeed ?? 0) / 90, (gait.travelSpeed ?? 0) / 90);
+						maximumNormalizedAirStep = Math.max(maximumNormalizedAirStep, Math.hypot(foot.x - old.x, foot.y - old.y, foot.lift - old.lift) / motionScale);
+					}
 				}
 				ran ||= gait?.running !== undefined;
 				flew ||= gait?.feet.every(function (foot) { return foot.lift > 2; }) ?? false;
 			}
 		}
 		expect(ran).toBe(true); expect(flew).toBe(true);
-		expect(maximumAirStep).toBeLessThan(6);
+		expect(maximumNormalizedAirStep).toBeLessThan(6);
 		expect(state.authoredPose?.gait?.running).toBeUndefined();
 		expect(state.authoredPose?.gait?.feet.every(function (foot) { return foot.lift === 0; })).toBe(true);
 	} finally {

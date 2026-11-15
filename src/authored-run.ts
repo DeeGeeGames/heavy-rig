@@ -3,7 +3,7 @@ import type { Foot, LegRig, WalkerGait } from './gait';
 
 export const RUN_ENTER_SPEED = 50;
 export const RUN_EXIT_SPEED = 42;
-const cycleSeconds = 0.82;
+const cycleSeconds = 0.94;
 const stanceFraction = 0.32;
 interface Landing { readonly x: number; readonly y: number; readonly angle: number }
 interface RunSwing { readonly from: Foot; readonly elapsed: number; readonly duration: number; readonly target?: Landing }
@@ -19,7 +19,8 @@ const beginRun = function (gait: WalkerGait, speed: number, rig: LegRig): RunSta
 	const ahead = (foot.x - gait.body.x) * Math.cos(gait.body.angle) + (foot.y - gait.body.y) * Math.sin(gait.body.angle) - (rig.footForward ?? rig.hipForward + 5);
 	// A trailing walk contact is already near toe-off. Reusing its stance progress
 	// prevents the run handoff from pinning it through another full support phase.
-	const progress = Math.max(0, Math.min(0.999, 0.5 - ahead / (speed * cycleSeconds * stanceFraction)));
+	const rate = Math.max(1, speed / 90);
+	const progress = Math.max(0, Math.min(0.999, 0.5 - ahead / (speed * cycleSeconds * stanceFraction / rate)));
 	const phase = (progress * stanceFraction + support * 0.5) % 1;
 	const leg = function (index: 0 | 1): RunLeg {
 		const local = phaseOf(phase, index); const swinging = local >= stanceFraction;
@@ -40,7 +41,9 @@ export const advanceAuthoredRun = function (previous: AuthoredGait, actual: Walk
 	const stance = stopping ? 0.6 : stanceFraction;
 	// Finish the airborne step promptly under braking instead of leaving its
 	// supporting partner stretched ahead of a reversing hull.
-	const rate = stopping ? 1.6 : 1;
+	// Cover higher ground speeds with cadence after extending the stride, so
+	// planted contacts remain inside the measured legs' reach at 180 m/s.
+	const rate = stopping ? 1.6 : Math.max(1, speed / 90);
 	const phase = (before.phase + dt * rate / cycleSeconds) % 1;
 	const turn = angleDelta(previous.body.angle, body.angle) / dt;
 	let landed = false;
@@ -64,7 +67,7 @@ export const advanceAuthoredRun = function (previous: AuthoredGait, actual: Walk
 		const foot: Foot = {
 			x: swing.from.x + (target.x - swing.from.x) * blend, y: swing.from.y + (target.y - swing.from.y) * blend,
 			angle: swing.from.angle + angleDelta(swing.from.angle, target.angle) * blend,
-			lift: progress === 1 ? 0 : swing.from.lift * (1 - blend) + arc * 12,
+			lift: progress === 1 ? 0 : swing.from.lift * (1 - blend) + arc * 8,
 		};
 		if (progress === 1) landed = true;
 		return { foot, leg: { swingPhase, swing: progress === 1 ? undefined : { ...swing, elapsed, target } } };
@@ -72,8 +75,8 @@ export const advanceAuthoredRun = function (previous: AuthoredGait, actual: Walk
 	const left = advanceLeg(0); const right = advanceLeg(1);
 	const impact = landed ? 1 : previous.motion.impact * Math.exp(-dt * 14);
 	const halfPhase = phase * 2 % 1; const flight = (halfPhase - stanceFraction * 2) / (1 - stanceFraction * 2);
-	const flightLift = !stopping && flight > 0 ? Math.sin(Math.PI * flight) ** 2 * 4 : 0;
-	const motion = { lift: (flightLift - impact * 1.5) / 0.3, roll: Math.sin(phase * Math.PI * 2) * 0.035, pitch: -Math.min(1, Math.max(-1, speed / 90)) * 0.06, impact };
+	const flightLift = !stopping && flight > 0 ? Math.sin(Math.PI * flight) ** 2 * 1.2 : 0;
+	const motion = { lift: (flightLift - impact * 0.8) / 0.3, roll: Math.sin(phase * Math.PI * 2) * 0.035, pitch: -Math.min(1, Math.max(-1, speed / 90)) * 0.06, impact };
 	const gait: WalkerGait = { body, feet: [left.foot, right.foot], swing: undefined, nextFoot: phase < 0.5 ? 1 : 0, travelSpeed: Math.hypot(dx, dy), motion };
 	if (stopping && !left.leg.swing && !right.leg.swing && left.foot.lift === 0 && right.foot.lift === 0) return gait;
 	return { ...gait, running: { phase, legs: [left.leg, right.leg], stopping } };
