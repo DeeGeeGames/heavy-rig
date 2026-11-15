@@ -607,32 +607,16 @@
       }
     }
   ],
-  "connectors": [
+  "staticConnections": [
     {
       "id": "left_gun",
-      "node": "joint_left_gun",
-      "meshName": "joint_left_gun",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
       "parent": "rig_torso",
+      "binding": "rigid-to-torso",
       "bodyAnchor": "connection_left_gun_torso",
       "mountAnchor": "connection_left_gun_mount",
-      "baseLengthNative": 0.06524084367488395,
-      "axis": [
-        0,
-        1,
-        0
-      ],
-      "radiusNative": 0.016,
-      "collarRadiusNative": 0.023,
-      "collarDepthNative": 0.01,
-      "embedDepthNative": 0.006,
-      "bodyPenetrationNative": 0.006,
-      "mountPenetrationNative": 0.006,
-      "sleeveOverlapFraction": 0.28,
-      "localAxialBoundsNative": [
-        -0.005,
-        0.07024084367488395
-      ],
-      "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+      "style": "fixed solid neck with two embedded bearing collars",
       "measurement": {
         "id": "left_gun",
         "mountGroup": "rig_mount_left-gun",
@@ -668,14 +652,14 @@
           0.008315019309520721
         ],
         "axialSkinGapNative": 0.053240835666656494,
-        "baseLengthNative": 0.06524084367488395,
+        "lengthNative": 0.06524084367488395,
         "radiusNative": 0.016,
         "collarRadiusNative": 0.023,
         "collarDepthNative": 0.01,
         "embedDepthNative": 0.006,
         "bodyPenetrationNative": 0.006,
         "mountPenetrationNative": 0.006,
-        "sleeveOverlapFraction": 0.28,
+        "sleeveOverlapNative": 0.018267436228967506,
         "neutralSkinTrianglePairs": {
           "body": 78,
           "mount": 120
@@ -684,29 +668,13 @@
     },
     {
       "id": "right_gun",
-      "node": "joint_right_gun",
-      "meshName": "joint_right_gun",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
       "parent": "rig_torso",
+      "binding": "rigid-to-torso",
       "bodyAnchor": "connection_right_gun_torso",
       "mountAnchor": "connection_right_gun_mount",
-      "baseLengthNative": 0.06524081512458552,
-      "axis": [
-        0,
-        1,
-        0
-      ],
-      "radiusNative": 0.016,
-      "collarRadiusNative": 0.023,
-      "collarDepthNative": 0.01,
-      "embedDepthNative": 0.006,
-      "bodyPenetrationNative": 0.006,
-      "mountPenetrationNative": 0.006,
-      "sleeveOverlapFraction": 0.28,
-      "localAxialBoundsNative": [
-        -0.005,
-        0.07024081512458552
-      ],
-      "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+      "style": "fixed solid neck with two embedded bearing collars",
       "measurement": {
         "id": "right_gun",
         "mountGroup": "rig_mount_right-gun",
@@ -742,14 +710,14 @@
           0.008314969018101692
         ],
         "axialSkinGapNative": 0.053240805864334106,
-        "baseLengthNative": 0.06524081512458552,
+        "lengthNative": 0.06524081512458552,
         "radiusNative": 0.016,
         "collarRadiusNative": 0.023,
         "collarDepthNative": 0.01,
         "embedDepthNative": 0.006,
         "bodyPenetrationNative": 0.006,
         "mountPenetrationNative": 0.006,
-        "sleeveOverlapFraction": 0.28,
+        "sleeveOverlapNative": 0.018267428234883948,
         "neutralSkinTrianglePairs": {
           "body": 79,
           "mount": 113
@@ -758,29 +726,13 @@
     },
     {
       "id": "left_shoulder",
-      "node": "joint_left_shoulder",
-      "meshName": "joint_left_shoulder",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
       "parent": "rig_torso",
+      "binding": "rigid-to-torso",
       "bodyAnchor": "connection_left_shoulder_torso",
       "mountAnchor": "connection_left_shoulder_mount",
-      "baseLengthNative": 0.03272080367159454,
-      "axis": [
-        0,
-        1,
-        0
-      ],
-      "radiusNative": 0.014,
-      "collarRadiusNative": 0.021,
-      "collarDepthNative": 0.01,
-      "embedDepthNative": 0.006,
-      "bodyPenetrationNative": 0.006,
-      "mountPenetrationNative": 0.006,
-      "sleeveOverlapFraction": 0.28,
-      "localAxialBoundsNative": [
-        -0.005,
-        0.037720803671594534
-      ],
-      "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+      "style": "fixed solid neck with two embedded bearing collars",
       "measurement": {
         "id": "left_shoulder",
         "mountGroup": "rig_mount_left-shoulder bank",
@@ -816,14 +768,14 @@
           -0.01175280287861824
         ],
         "axialSkinGapNative": 0.02072080969810486,
-        "baseLengthNative": 0.03272080367159454,
+        "lengthNative": 0.03272080367159454,
         "radiusNative": 0.014,
         "collarRadiusNative": 0.021,
         "collarDepthNative": 0.01,
         "embedDepthNative": 0.006,
         "bodyPenetrationNative": 0.006,
         "mountPenetrationNative": 0.006,
-        "sleeveOverlapFraction": 0.28,
+        "sleeveOverlapNative": 0.009161825028046472,
         "neutralSkinTrianglePairs": {
           "body": 171,
           "mount": 131
@@ -832,29 +784,13 @@
     },
     {
       "id": "right_shoulder",
-      "node": "joint_right_shoulder",
-      "meshName": "joint_right_shoulder",
+      "node": "geometry_mount_connections",
+      "meshName": "mount_connections",
       "parent": "rig_torso",
+      "binding": "rigid-to-torso",
       "bodyAnchor": "connection_right_shoulder_torso",
       "mountAnchor": "connection_right_shoulder_mount",
-      "baseLengthNative": 0.03272084814454051,
-      "axis": [
-        0,
-        1,
-        0
-      ],
-      "radiusNative": 0.014,
-      "collarRadiusNative": 0.021,
-      "collarDepthNative": 0.01,
-      "embedDepthNative": 0.006,
-      "bodyPenetrationNative": 0.006,
-      "mountPenetrationNative": 0.006,
-      "sleeveOverlapFraction": 0.28,
-      "localAxialBoundsNative": [
-        -0.005,
-        0.037720848144540506
-      ],
-      "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+      "style": "fixed solid neck with two embedded bearing collars",
       "measurement": {
         "id": "right_shoulder",
         "mountGroup": "rig_mount_right-shoulder bank",
@@ -890,14 +826,14 @@
           -0.011752801947295666
         ],
         "axialSkinGapNative": 0.02072085440158844,
-        "baseLengthNative": 0.03272084814454051,
+        "lengthNative": 0.03272084814454051,
         "radiusNative": 0.014,
         "collarRadiusNative": 0.021,
         "collarDepthNative": 0.01,
         "embedDepthNative": 0.006,
         "bodyPenetrationNative": 0.006,
         "mountPenetrationNative": 0.006,
-        "sleeveOverlapFraction": 0.28,
+        "sleeveOverlapNative": 0.009161837480471344,
         "neutralSkinTrianglePairs": {
           "body": 177,
           "mount": 132
@@ -906,11 +842,9 @@
     }
   ],
   "meshGroups": {
-    "joint_left_gun": "rig_torso",
-    "joint_right_gun": "rig_torso",
-    "joint_left_shoulder": "rig_torso",
-    "joint_right_shoulder": "rig_torso"
+    "mount_connections": "rig_torso"
   },
+  "weaponBinding": "rigid-to-torso",
   "source": "geometry-report.json",
   "bakedLauncherCollisionPolicy": "renderface only; analytic gameplaycolliders and independent exit anchors; eightvisiblecells,sixmappedgameplaytubes"
 }

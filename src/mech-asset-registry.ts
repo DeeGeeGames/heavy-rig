@@ -3,7 +3,8 @@ import type { FrameId } from './frames';
 import type { WalkerGait } from './gait';
 import { getHardpoints } from './hardpoints';
 import type { MechFeedback } from './mech-3d';
-import type { WeaponRig } from './weapon-rig';
+import type { AuthoredPoseContext } from './authored-pose';
+import type { SpatialPoint, WeaponBody, WeaponRig } from './weapon-rig';
 
 export interface MechAssetModel {
 	readonly root: Group;
@@ -18,6 +19,8 @@ export interface MechAssetModel {
 export interface MechAssetBinding {
 	readonly create: () => MechAssetModel;
 	readonly weaponRigs: readonly WeaponRig[];
+	readonly advancePose?: (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number) => AuthoredPoseContext;
+	readonly muzzle?: (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined) => SpatialPoint;
 }
 
 // A single optional binding changes rendering and combat origins together.

@@ -1,3 +1,4 @@
+import type { AuthoredPoseContext } from './authored-pose';
 import { getFrame, type FrameId } from './frames';
 import { FRAME_RIGS } from './frame-rig';
 import { getHardpoints } from './hardpoints';
@@ -106,11 +107,27 @@ export const rigMuzzle = function (rig: WeaponRig, body: WeaponBody, heading: nu
 		elevation: pivot.elevation + direction.elevation * forward + horizontal * vertical,
 	};
 };
-export const getPlayerMuzzle = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint): SpatialPoint {
+export const getPlayerMuzzle = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint, context?: AuthoredPoseContext): SpatialPoint {
+	const binding = getMechAssetBinding(frame);
+	if (binding?.muzzle) return binding.muzzle(body, heading, slot, tubeIndex, context);
 	const rig = getPlayerWeaponRig(frame)[slot]; if (!rig) throw new RangeError(`Missing weapon rig ${frame}/${slot}`);
 	return rigMuzzle(rig, body, heading, tubeIndex, target);
 };
 export const getEnemyMuzzle = function (kind: EnemyKind, commander: boolean, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint): SpatialPoint {
 	const rig = getEnemyWeaponRig(kind, commander)[slot]; if (!rig) throw new RangeError(`Missing enemy weapon rig ${kind}/${slot}`);
 	return rigMuzzle(rig, body, heading, tubeIndex, target);
+};
+
+// Fixed authored mounts share torso motion; projectiles still converge through
+// gameplay aim. Procedural gimbals retain their existing direction solver.
+export const getPlayerFiringDirection = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, origin: SpatialPoint, target?: SpatialPoint): SpatialPoint {
+	if (getMechAssetBinding(frame)?.muzzle) {
+		if (!target) return getFiringDirection(origin, heading);
+		const forward = (target.x - origin.x) * Math.cos(heading) + (target.y - origin.y) * Math.sin(heading);
+		const adjustment = Math.max(0, 1 - forward);
+		return getFiringDirection(origin, heading, { x: target.x + Math.cos(heading) * adjustment, y: target.y + Math.sin(heading) * adjustment, elevation: target.elevation });
+	}
+	const rig = getPlayerWeaponRig(frame)[slot];
+	if (!rig) throw new RangeError(`Missing weapon rig ${frame}/${slot}`);
+	return weaponDirection(rig, body, heading, target);
 };

@@ -255,15 +255,17 @@ Observed integration repairs are part of this recipe:
 - Normalize the horizontal runtime origin to the waist pivot before extracting
   weapon rigs. Otherwise torso swivel and combat-origin rotation use different
   centers, visibly separating mounts from the body.
-- Stabilized weapons can separate from an animated torso even when every muzzle
-  origin is correct. Verify solid body-to-mount joint coverage in the actual
-  runtime, including gait bob/tilt and independent aim. Endpoint-driven mechanical
-  couplings must overlap the surrounding skin and retain positive internal
-  sleeve/collar insertion; matching anchor coordinates alone is insufficient.
+- The authored Warden arms and pods must remain rigidly fixed to the torso.
+  Verify constant torso-relative mount transforms through gait bob/tilt, torso
+  swivel and target changes. Structural attachment necks remain fixed too; adding
+  flexible couplings does not correct unwanted world-space stabilization. Check
+  actual skin coverage separately from firing-origin alignment.
 - Retained physical anchors can lie behind a new flat baked launcher face.
   Reproject exits just outside that face and keep it out of projectile collision.
-- Authoring hinges can offset barrel axes laterally/vertically. Aim math must
-  account for those offsets as well as moving muzzle positions.
+- Resolve mount ownership before designing aim math. The Warden ports are rigid
+  torso children; derive origins from a shared simulation-owned torso pose.
+  Do not add per-weapon gimbals or stabilization to compensate for moving origins.
+  Rendering must not become authoritative for projectile spawn positions.
 
 Standard integer attribute quantization and MikkTSpace tangents retain native
 GLTFLoader support without an extra decoder. Verify sampled/all-vertex error,

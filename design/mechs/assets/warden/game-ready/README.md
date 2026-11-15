@@ -1,13 +1,13 @@
 # Warden A game derivative
 
 Selected runtime file: `public/assets/mechs/warden/game-ready.glb` (SHA-256
-`9d8a3bceed1810876dbc656b12eb21dac2f52321f9c1ba2200e5ac22b0782213`).
+`a01948139fd1c007811b14f3dfb0c3ea77d3ddb9e19b54c534239d621ac8db7a`).
 This is the completed opt-in integration candidate. The normal game and older
 approved checkpoints are unchanged; final owner visual acceptance is separate.
 
-The file contains 39,748 triangles, 19 mesh sections, three materials, two shared
+The file contains 39,748 triangles, 16 mesh sections, three materials, two shared
 128×128 images, twelve rigid motion groups, twenty firing/logical anchors plus eight attachment anchors and three
-in-place animation clips (`walk`, `run`, `backward`). It is 1,035,492 bytes.
+in-place animation clips (`walk`, `run`, `backward`). It is 1,036,424 bytes.
 Quantized vertex attributes use standard `KHR_mesh_quantization`, supported by
 Three.js GLTFLoader without an additional decoder. MikkTSpace tangents are included.
 
@@ -28,11 +28,16 @@ const uninstall = asset.install();
 // Dispose presentation instances, then uninstall() and asset.dispose().
 ```
 
-The four body-to-weapon attachments use authored mechanical couplings. Their
-body and mount endpoints follow their respective assemblies; the adapter updates
-the coupling controls after stabilized aiming. The mesh children retain their
-exported transforms, including quantization transforms. Attachment coverage is
-checked separately from firing-ray clearance.
+The arms and missile pods are rigidly fixed to the torso. Their local attachment
+transforms stay constant while the entire torso bobs, tilts and swivels. Structural
+necks bridge the neutral attachment surfaces; they do not telescope or stabilize
+the weapons in world space. Tests check this rigid parent-child invariant directly.
+
+The fixed-step simulation owns the authored animation clock. A shared numeric
+sampler reads immutable source curves and supplies the same torso pose to the
+renderer and physical muzzle calculations. Gameplay does not read back render
+nodes or a render-populated cache. Mounts do not independently yaw, pitch or
+translate toward targets; existing projectile targeting remains gameplay logic.
 
 Instances share immutable geometry/textures and own their transforms, mixers
 and material clones. `loadAuthoredWarden` owns loaded resources; the separate
@@ -42,7 +47,7 @@ visual origins cannot change independently during teardown.
 
 The GLB is native glTF Y-up/+Z-forward/+X-own-left at approximately one unit tall.
 The adapter rotates it into game +X-forward, scales height to 101.75 game units,
-and derives aiming/firing origins from its anchors. Six of the eight visible
+and derives firing origins from its anchors and the shared torso pose. Six of the eight visible
 cells are mapped explicitly by `WARDEN_LOGICAL_TUBE_MAPPING`; salvo size does not
 change. Baked launcher faces are visual surfaces, not projectile colliders.
 The existing analytic gameplay collision shapes remain authoritative.
@@ -92,22 +97,24 @@ a second chassis is still required before calling the process general.
 All 285 sampled clip poses clear the floor. Rig matrices and animation samples
 survive packaging unchanged; quantization moves vertices by less than 0.00081
 game units. Three.js playback and actual game-camera/aim paths are checked
-separately from the source Blender scene. Firing-origin alignment is checked through motion and independent aim. The four
-connections additionally pass 448 actual body/mount skin contact checks across
-56 runtime poses. These samples are not a swept-volume or exhaustive joint-limit proof. Small knee/ankle/guard contacts remain around
+separately from the source Blender scene. Across 1,448 runtime poses, mount-local
+transforms remain fixed and physical firing origins match the rendered exits.
+An independent 181-pose review confirms the same invariants. The four static
+necks intersect both attachment skins; rigid torso parenting preserves that
+contact through animation. Small knee/ankle/guard contacts remain around
 mechanical hinges. In-place playback provides usable locomotion; turns/transitions
 and foot sliding under abrupt direction changes still warrant owner playtesting.
 The authored model supports hit flashes; bespoke recoil, thermal and exhaust
 animations are deferred. Hardware GPU performance and owner visual/feel acceptance
 remain separate from automated correctness checks.
 
-Geometry arrays total 976,264 bytes. Two RGBA8 images with full mip chains add an
-estimated 174,763 bytes, for approximately 1.10 MiB combined. This excludes scene
+Geometry arrays total 986,040 bytes. Two RGBA8 images with full mip chains add an
+estimated 174,763 bytes, for approximately 1.11 MiB combined. This excludes scene
 objects, animation arrays, decoder temporaries and driver allocations. It is a
 modest improvement over the raw source's 1.15 MiB geometry, not a large RAM claim.
 
 
-With all sections visible, 1/8/24 mechs require 19/152/456 model draws while shared geometry and
+With all sections visible, 1/8/24 mechs require 16/128/384 model draws while shared geometry and
 the two asset maps remain constant. Per-instance transforms, mixers and material
 clones still add CPU cost. The workflow fetches only shipped public mech LFS
 objects in build/Pages jobs; the build rejects unresolved GLB pointer files.

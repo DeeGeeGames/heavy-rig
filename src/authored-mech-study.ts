@@ -1,11 +1,12 @@
+import type { AuthoredPoseContext } from './authored-pose';
 import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Float32BufferAttribute, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh, MeshStandardMaterial, OrthographicCamera, PlaneGeometry, Scene, SphereGeometry, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { authoredConnectionAudit, authoredMuzzleError, authoredWardenUrl, loadAuthoredWarden } from './authored-mech';
+import { authoredMuzzleError, authoredWardenUrl, loadAuthoredWarden } from './authored-mech';
 import { advanceGait, createGait } from './gait';
 import { createMech } from './mech-3d';
 import { alignCamera } from './projection-3d';
 import { createState } from './simulation';
-import { getPlayerMuzzle, getPlayerWeaponRig, weaponDirection } from './weapon-rig';
+import { getPlayerMuzzle, getPlayerWeaponRig, getPlayerFiringDirection } from './weapon-rig';
 
 const required = function (id: string): HTMLElement { const node = document.getElementById(id); if (!(node instanceof HTMLElement)) throw new Error(`Missing authored study element ${id}`); return node; };
 const canvas = required('authored-canvas'); if (!(canvas instanceof HTMLCanvasElement)) throw new Error('Missing authored study canvas');
@@ -54,32 +55,34 @@ const start = async function () {
 		}
 	};
 	const setWireframe = function () { model.root.traverse(function (node) { if (node instanceof Mesh) for (const material of Array.isArray(node.material) ? node.material : [node.material]) if (material instanceof MeshStandardMaterial) material.wireframe = wireframe.checked; }); };
+	let authoredPose: AuthoredPoseContext | undefined;
 	const pose = function () {
 		const range = aimTarget.value === 'sweep' ? 350 : 125;
 		const elevation = aimTarget.value === 'near-high' ? 220 : aimTarget.value === 'near-low' ? 0 : 80 + Math.sin(time * 0.7) * 60;
 		const target = motion === 'aim' ? { x: body.x + Math.cos(heading) * range, y: body.y + Math.sin(heading) * range, elevation } : undefined;
 		const recoil = motion === 'fire' ? Math.max(0, 1 - time % 0.5 / 0.18) : 0;
-		model.pose(gait, heading, { recoil, hit: 0, heat: motion === 'fire' ? 50 : 0, time, ...(target ? { target } : {}) });
-		maxMuzzleError = Math.max(maxMuzzleError, authoredMuzzleError(model, getPlayerWeaponRig('warden'), gait, heading, target));
+		model.pose(gait, heading, { recoil, hit: 0, heat: motion === 'fire' ? 50 : 0, time, ...(authoredPose ? { authoredPose } : {}), ...(target ? { target } : {}) });
+		maxMuzzleError = Math.max(maxMuzzleError, authoredMuzzleError(model, getPlayerWeaponRig('warden'), gait, heading, target, authoredPose));
 		const points = [...model.muzzles, ...model.rocketMuzzles.flat()];
 		for (const [index, marker] of markers.entries()) { const at = points[index]; marker.visible = anchors.checked && at !== undefined; if (at) marker.position.copy(at); }
 		shots.visible = recoil > 0;
 		if (shots.visible) for (const [slot, rig] of getPlayerWeaponRig('warden').entries()) {
-			const origin = getPlayerMuzzle('warden', slot, body, heading, rig.tubes.length ? Math.floor(time * 2) % 6 : undefined, target);
-			const direction = weaponDirection(rig, body, heading, target); const position = shotGeometry.getAttribute('position');
+			const origin = getPlayerMuzzle('warden', slot, body, heading, rig.tubes.length ? Math.floor(time * 2) % 6 : undefined, target, authoredPose);
+			const direction = getPlayerFiringDirection('warden', slot, body, heading, origin, target); const position = shotGeometry.getAttribute('position');
 			position.setXYZ(slot * 2, origin.x - body.x, origin.elevation, origin.y - body.y);
 			position.setXYZ(slot * 2 + 1, origin.x - body.x + direction.x * (25 + recoil * 35), origin.elevation + direction.elevation * (25 + recoil * 35), origin.y - body.y + direction.y * (25 + recoil * 35)); position.needsUpdate = true;
 		}
 		grid.position.set(-body.x % 50, -0.15, -body.y % 50);
 	};
 	const step = function () {
-		const dt = 1 / 60; time += dt;
+		const dt = 1 / 60; authoredPose ??= factory.advancePose(undefined, body, time); time += dt;
 		const speed = motion === 'walk' ? 38 : motion === 'run' ? 90 : motion === 'backward' ? -28 : motion === 'aim' ? 35 : 0;
 		const angle = body.angle + (motion === 'turn' ? dt * 0.7 : 0);
 		body = { x: body.x + Math.cos(angle) * speed * dt, y: body.y + Math.sin(angle) * speed * dt, angle };
+		authoredPose = factory.advancePose(authoredPose, body, time);
 		gait = advanceGait(gait, body, dt); heading = body.angle + (motion === 'aim' ? Math.sin(time * 0.9) * 1.25 : 0); pose();
 	};
-	const reset = function () { time = 0; previous = 0; accumulator = 0; body = { x: 0, y: 0, angle: 0 }; gait = createGait(body); heading = 0; maxMuzzleError = 0; pose(); };
+	const reset = function () { time = 0; previous = 0; accumulator = 0; body = { x: 0, y: 0, angle: 0 }; gait = createGait(body); heading = 0; maxMuzzleError = 0; authoredPose = undefined; pose(); };
 	const setPaused = function (value: boolean) { paused = value; previous = 0; accumulator = 0; pauseButton.textContent = paused ? 'Resume' : 'Pause'; pauseButton.setAttribute('aria-pressed', String(paused)); };
 	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-motion]')) button.addEventListener('click', function () { const name = button.dataset['motion']; if (!isMotion(name)) return; motion = name; reset(); for (const sibling of document.querySelectorAll<HTMLButtonElement>('[data-motion]')) sibling.setAttribute('aria-pressed', String(sibling === button)); }, { signal: abort.signal });
 	pauseButton.addEventListener('click', function () { setPaused(!paused); }, { signal: abort.signal });
@@ -95,7 +98,7 @@ const start = async function () {
 		if (!paused && !lost) { accumulator += dt; while (accumulator >= 1 / 60) { step(); accumulator -= 1 / 60; } }
 		if (!lost) { if (orbit.enabled) orbit.update(); renderer.render(scene, camera); rendered += 1; }
 		status.textContent = `${motion.toUpperCase()} · ${time.toFixed(3)} s · ${renderer.info.render.triangles.toLocaleString()} scene triangles · ${renderer.info.render.calls} draws`;
-		diagnostics.textContent = JSON.stringify({ ready: true, asset: assetLabel, motion, time, authoredMotion: model.root.userData['authoredMotion'], connections: authoredConnectionAudit(model), rendered, maxMuzzleError, drawCalls: renderer.info.render.calls, sceneTriangles: renderer.info.render.triangles, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries, weaponRigs: factory.weaponRigs, logicalTubeMapping: factory.tubeMapping, contextLost: lost }, null, 2);
+		diagnostics.textContent = JSON.stringify({ ready: true, asset: assetLabel, motion, time, authoredMotion: model.root.userData['authoredMotion'], rendered, maxMuzzleError, drawCalls: renderer.info.render.calls, sceneTriangles: renderer.info.render.triangles, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries, weaponRigs: factory.weaponRigs, logicalTubeMapping: factory.tubeMapping, contextLost: lost }, null, 2);
 		frame = requestAnimationFrame(tick);
 	};
 	const dispose = function () {

@@ -1,9 +1,8 @@
-"""Small four-mount couplings measured against the preserved neutral geometry.
+"""Four fixed structural necks measured against the preserved neutral geometry.
 
-Each coupling is one solid mesh below an empty runtime control. Two short end
-collars overlap their respective skins; a thinner rod overlaps an outer sleeve.
-The runtime scales the control along its native glTF +Y axis only, preserving
-its radius and the mesh child's quantization transform.
+Each combined solid neck and its end collars belong rigidly to the torso.
+The four weapon groups share that torso transform, so no bridge deformation,
+per-weapon articulation or runtime connection controls are required.
 """
 
 import math
@@ -59,7 +58,7 @@ def measure_connections(group_objects):
         body_anchor = body_hit - direction * embed
         mount_anchor = mount_hit + direction * embed
         if (mount_anchor - body_anchor).length < 0.008:
-            # Overlapping source skins still need a finite native telescope frame.
+            # Overlapping source skins still need a finite structural connection span.
             mount_anchor += direction * 0.012
         length = (mount_anchor - body_anchor).length
         if not 0.008 < length < 0.14:
@@ -78,14 +77,14 @@ def measure_connections(group_objects):
                 "bodySkinNormal": list(body_normal),
                 "mountSkinNormal": list(mount_normal),
                 "axialSkinGapNative": gap,
-                "baseLengthNative": length,
+                "lengthNative": length,
                 "radiusNative": radius,
                 "collarRadiusNative": collar_radius,
                 "collarDepthNative": 0.010,
                 "embedDepthNative": embed,
                 "bodyPenetrationNative": embed,
                 "mountPenetrationNative": embed,
-                "sleeveOverlapFraction": 0.28,
+                "sleeveOverlapNative": length * 0.28,
             }
         )
     return result
@@ -163,6 +162,7 @@ def add_mount_connections(objects, anchors, material):
     group_objects = {obj.name: [obj] for obj in objects}
     measured = measure_connections(group_objects)
     contracts = []
+    neck_objects = []
     for row in measured:
         identifier = row["id"]
         name = "joint_" + identifier
@@ -170,7 +170,7 @@ def add_mount_connections(objects, anchors, material):
         direction = (end - start).normalized()
         obj = coupling_mesh(
             name,
-            row["baseLengthNative"],
+            row["lengthNative"],
             row["radiusNative"],
             row["collarRadiusNative"],
             material,
@@ -188,7 +188,7 @@ def add_mount_connections(objects, anchors, material):
                 "Connector lacks positive skin intersection: " + identifier
             )
         row["neutralSkinTrianglePairs"] = {"body": body_pairs, "mount": mount_pairs}
-        objects.append(obj)
+        neck_objects.append(obj)
         body_anchor = "connection_" + identifier + "_torso"
         mount_anchor = "connection_" + identifier + "_mount"
         anchors.extend(
@@ -216,23 +216,24 @@ def add_mount_connections(objects, anchors, material):
         contracts.append(
             {
                 "id": identifier,
-                "node": name,
-                "meshName": name,
+                "node": "geometry_mount_connections",
+                "meshName": "mount_connections",
                 "parent": "rig_torso",
+                "binding": "rigid-to-torso",
                 "bodyAnchor": body_anchor,
                 "mountAnchor": mount_anchor,
-                "baseLengthNative": row["baseLengthNative"],
-                "axis": [0, 1, 0],
-                "radiusNative": row["radiusNative"],
-                "collarRadiusNative": row["collarRadiusNative"],
-                "collarDepthNative": row["collarDepthNative"],
-                "embedDepthNative": row["embedDepthNative"],
-                "bodyPenetrationNative": row["bodyPenetrationNative"],
-                "mountPenetrationNative": row["mountPenetrationNative"],
-                "sleeveOverlapFraction": row["sleeveOverlapFraction"],
-                "localAxialBoundsNative": [-0.005, row["baseLengthNative"] + 0.005],
-                "style": "one solid sleeved neck with two thin bearing collars; axial scale preserves radius",
+                "style": "fixed solid neck with two embedded bearing collars",
                 "measurement": row,
             }
         )
+    # Consolidate only these new static parts; the original armor data remains separate.
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in neck_objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = neck_objects[0]
+    bpy.ops.object.join()
+    merged = neck_objects[0]
+    merged.name = "mount_connections"
+    merged.data.name = "mount_connections_mesh"
+    objects.append(merged)
     return contracts

@@ -1,10 +1,10 @@
-import { AnimationMixer, Box3, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, SkinnedMesh, Texture, Vector3, type AnimationAction, type AnimationClip, type BufferGeometry } from 'three';
+import { AnimationMixer, Box3, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, SkinnedMesh, Texture, Vector3, type BufferGeometry } from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { installMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
 import type { WalkerGait } from './gait';
 import type { MechFeedback } from './mech-3d';
-import { rigMuzzle, weaponDirection, weaponPivot, type SpatialPoint, type WeaponRig } from './weapon-rig';
-import { prepareAuthoredConnections, type AuthoredConnectionEvidence } from './authored-connections';
+import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
+import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
 
 export const WARDEN_LOGICAL_TUBE_MAPPING = ['lower_1', 'lower_2', 'lower_4', 'upper_1', 'upper_3', 'upper_4'] as const;
 
@@ -17,15 +17,7 @@ const weaponSpecs = [
 	{ group: 'rig_mount_left-shoulder bank', muzzle: 'muzzle_left_launcher', side: 'left', launcher: true },
 	{ group: 'rig_mount_right-shoulder bank', muzzle: 'muzzle_right_launcher', side: 'right', launcher: true },
 ] as const;
-const clipNames = ['walk', 'run', 'backward'] as const;
-type MotionName = typeof clipNames[number];
 interface AuthoredOptions { readonly height?: number; readonly diagnostics?: boolean }
-interface Motion { readonly name: MotionName; readonly clip: AnimationClip; readonly nominalSpeed: number }
-const connectionAudits = new WeakMap<Object3D, () => readonly AuthoredConnectionEvidence[]>();
-
-export const authoredConnectionAudit = function (model: Pick<MechAssetModel, 'root'>): readonly AuthoredConnectionEvidence[] {
-	return connectionAudits.get(model.root)?.() ?? [];
-};
 
 const named = function (root: Object3D, name: string): Object3D {
 	const found: Object3D[] = [];
@@ -71,7 +63,7 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 	const scale = height / sourceHeight;
 	const sourceCenter = named(asset.scene, 'rig_torso').getWorldPosition(new Vector3());
 	const origin = Object.freeze({ x: sourceCenter.x, z: sourceCenter.z });
-	const motions: Motion[] = clipNames.map(function (name) {
+	const motions: AuthoredMotion[] = authoredClipNames.map(function (name) {
 		const clip = asset.animations.find(function (candidate) { return candidate.name === name; });
 		if (!clip || !Number.isFinite(clip.duration) || clip.duration <= 0) throw new Error(`Missing authored ${name} animation`);
 		const metadata: unknown = clip.userData['nativeUnitsPerSecond'];
@@ -86,7 +78,6 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 		return { root, hull, scene };
 	};
 	const probe = makeGraph();
-	prepareAuthoredConnections(probe.scene);
 	const weaponRigs: readonly WeaponRig[] = weaponSpecs.map(function (spec) {
 		const pivot = named(probe.scene, spec.group).getWorldPosition(new Vector3());
 		const muzzle = named(probe.scene, spec.muzzle).getWorldPosition(new Vector3());
@@ -98,6 +89,26 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 		}) : [];
 		return { pivot: point(pivot), muzzle: point(muzzle), tubes };
 	});
+	const neutralTorso = named(probe.scene, 'rig_torso');
+	for (const spec of weaponSpecs) {
+		const mount = named(probe.scene, spec.group);
+		if (mount.parent !== neutralTorso) throw new Error(`Authored mount must be fixed directly to torso: ${spec.group}`);
+		if (motions.some(function (motion) { return motion.clip.tracks.some(function (track) { return track.name.startsWith(`${mount.name}.`) || track.name.startsWith(`${spec.group}.`); }); })) throw new Error(`Authored mount cannot have independent animation: ${spec.group}`);
+	}
+	const inverseTorso = neutralTorso.matrixWorld.clone().invert();
+	const exits = weaponSpecs.map(function (spec) {
+		return { muzzle: named(probe.scene, spec.muzzle).getWorldPosition(new Vector3()).applyMatrix4(inverseTorso), tubes: spec.launcher ? WARDEN_LOGICAL_TUBE_MAPPING.map(function (suffix) { return named(probe.scene, `physical_exit_${spec.side}_launcher_${suffix}`).getWorldPosition(new Vector3()).applyMatrix4(inverseTorso); }) : [] };
+	});
+	const nativeBasis = new Matrix4().compose(new Vector3(-origin.z * scale, -sourceBounds.min.y * scale, origin.x * scale), new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2), new Vector3(scale, scale, scale));
+	const sampler = prepareAuthoredTorsoSampler(named(asset.scene, 'rig_torso'), motions, nativeBasis);
+	const advancePose = function (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number) { return advanceAuthoredPose(motions, previous, body, time); };
+	const muzzle = function (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined): SpatialPoint {
+		const exit = exits[slot]; if (!exit) throw new RangeError(`Missing authored muzzle ${slot}`);
+		const local = tubeIndex === undefined || exit.tubes.length === 0 ? exit.muzzle : exit.tubes[((tubeIndex % exit.tubes.length) + exit.tubes.length) % exit.tubes.length];
+		if (!local) throw new RangeError(`Missing authored tube ${slot}/${tubeIndex}`);
+		const result = point(local.clone().applyMatrix4(sampler.matrix(context, body.angle ?? heading, heading)));
+		return { x: result.x + body.x, y: result.y + body.y, elevation: result.elevation };
+	};
 	probe.root.clear();
 	let instances = 0;
 	let closed = false;
@@ -123,26 +134,20 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 			node.castShadow = true; node.receiveShadow = true;
 		});
 		const torso = named(scene, 'rig_torso');
-		const torsoRest = torso.quaternion.clone();
-		const connections = prepareAuthoredConnections(scene);
-		connectionAudits.set(root, connections.audit);
-		const weapons = weaponSpecs.map(function (spec, slot) {
-			const part = named(scene, spec.group); const rig = weaponRigs[slot];
-			if (!rig) throw new Error('Missing authored weapon rig');
+		const upperBody = sampler.sample(undefined).map(function (transform, index) { return { name: transform.name, node: index === 0 ? scene : named(scene, transform.name) }; });
+		const weapons = weaponSpecs.map(function (spec) {
 			const muzzle = named(scene, spec.muzzle);
 			const exits = spec.launcher ? WARDEN_LOGICAL_TUBE_MAPPING.map(function (suffix) { return named(scene, `physical_exit_${spec.side}_launcher_${suffix}`); }) : [];
-			return { part, rig, muzzle, exits, rest: part.quaternion.clone() };
+			return { muzzle, exits };
 		});
 		const muzzles = weapons.map(function () { return new Vector3(); });
 		const rocketMuzzles = weapons.map(function (weapon) { return weapon.exits.map(function () { return new Vector3(); }); });
 		const mixer = new AnimationMixer(scene);
-		const actions: { motion: Motion; action: AnimationAction; weight: number }[] = motions.map(function (motion) {
-			const action = mixer.clipAction(motion.clip); action.setEffectiveWeight(0).play(); return { motion, action, weight: 0 };
+		const actions = motions.map(function (motion) {
+			const action = mixer.clipAction(motion.clip); action.setEffectiveWeight(0).play(); return { motion, action };
 		});
 		const y = new Vector3(0, 1, 0); const yaw = new Quaternion(); const inverse = new Matrix4();
-		const x = new Vector3(1, 0, 0); const pitch = new Quaternion();
-		const parentQuaternion = new Quaternion(); const desiredQuaternion = new Quaternion(); const rootQuaternion = new Quaternion();
-		const position = new Vector3(); const direction = new Vector3(); const labelVertex = new Vector3(); const relative = new Matrix4();
+		const position = new Vector3(); const labelVertex = new Vector3(); const relative = new Matrix4();
 		const bounds: { part: Mesh; corners: Vector3[] }[] = [];
 		scene.traverse(function (node) {
 			if (!(node instanceof Mesh)) return;
@@ -152,49 +157,27 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 		const neutralMaterials = [...ownedMaterials.values()].flatMap(function (material) {
 			return material instanceof MeshStandardMaterial ? [{ material, emissive: material.emissive.clone(), intensity: material.emissiveIntensity }] : [];
 		});
-		let previous: { time: number; x: number; y: number; angle: number } | undefined;
+		let previous: AuthoredPoseContext | undefined;
 		let disposed = false; let labelHeight = height;
 		instances += 1;
 		const pose = function (gait: WalkerGait, heading: number, feedback?: MechFeedback) {
 			if (disposed) return;
-			const time = feedback?.time ?? previous?.time ?? 0;
-			if (previous && time < previous.time) for (const entry of actions) { entry.weight = 0; entry.action.reset().setEffectiveWeight(0).play(); }
-			const dt = previous && time > previous.time ? Math.min(time - previous.time, 0.1) : 0;
-			const dx = previous ? gait.body.x - previous.x : 0; const dz = previous ? gait.body.y - previous.y : 0;
-			const signedSpeed = dt > 0 ? (dx * Math.cos(gait.body.angle) + dz * Math.sin(gait.body.angle)) / dt : 0;
-			const turning = previous && dt > 0 ? Math.abs(Math.atan2(Math.sin(gait.body.angle - previous.angle), Math.cos(gait.body.angle - previous.angle))) / dt * 24 : 0;
-			const speed = Math.max(Math.abs(signedSpeed), turning);
-			const walk = motions.find(function (motion) { return motion.name === 'walk'; });
-			const run = motions.find(function (motion) { return motion.name === 'run'; });
-			if (!walk || !run) throw new Error('Missing authored motion timing');
-			const selected = speed < 0.5 ? undefined : signedSpeed < -0.5 ? 'backward' : speed > (walk.nominalSpeed + run.nominalSpeed) / 2 ? 'run' : 'walk';
+			const context = feedback?.authoredPose ?? advancePose(previous, gait.body, feedback?.time ?? previous?.time ?? 0);
 			for (const entry of actions) {
-				const desiredWeight = entry.motion.name === selected ? 1 : 0;
-				entry.weight += (desiredWeight - entry.weight) * (dt > 0 ? 1 - Math.exp(-dt * 18) : 0);
-				if (Math.abs(entry.weight - desiredWeight) < 0.0001) entry.weight = desiredWeight;
-				entry.action.setEffectiveWeight(entry.weight);
-				entry.action.setEffectiveTimeScale(Math.max(0.25, Math.min(3, speed / entry.motion.nominalSpeed)));
+				const clip = context.clips.find(function (candidate) { return candidate.name === entry.motion.name; });
+				entry.action.time = clip?.time ?? 0;
+				entry.action.setEffectiveWeight(clip?.weight ?? 0);
 			}
-			torso.quaternion.copy(torsoRest);
-			for (const weapon of weapons) weapon.part.quaternion.copy(weapon.rest);
-			mixer.update(dt);
+			mixer.update(0);
+			for (const transform of sampler.sample(context)) {
+				const target = upperBody.find(function (entry) { return entry.name === transform.name; })?.node;
+				if (!target) throw new Error(`Missing authored upper-body node ${transform.name}`);
+				target.position.copy(transform.position); target.quaternion.copy(transform.quaternion); target.scale.copy(transform.scale);
+			}
 			hull.rotation.y = -gait.body.angle;
 			torso.quaternion.premultiply(yaw.setFromAxisAngle(y, gait.body.angle - heading));
-			root.updateMatrixWorld(true); root.getWorldQuaternion(rootQuaternion);
-			for (const weapon of weapons) {
-				const parent = weapon.part.parent; if (!parent) throw new Error('Detached authored weapon');
-				const at = weaponPivot(weapon.rig, gait.body, heading);
-				position.set(at.x - gait.body.x, at.elevation, at.y - gait.body.y).applyMatrix4(root.matrixWorld);
-				weapon.part.position.copy(parent.worldToLocal(position));
-				const targetDirection = weaponDirection(weapon.rig, gait.body, heading, feedback?.target);
-				direction.set(targetDirection.x, targetDirection.elevation, targetDirection.y);
-				desiredQuaternion.setFromAxisAngle(y, Math.atan2(direction.x, direction.z));
-				desiredQuaternion.multiply(pitch.setFromAxisAngle(x, -Math.atan2(direction.y, Math.hypot(direction.x, direction.z))));
-				desiredQuaternion.premultiply(rootQuaternion);
-				weapon.part.quaternion.copy(parent.getWorldQuaternion(parentQuaternion).invert().multiply(desiredQuaternion));
-				weapon.part.updateWorldMatrix(false, true);
-			}
-			root.updateMatrixWorld(true); connections.update(); inverse.copy(root.matrixWorld).invert();
+			// Weapons and structural necks retain their authored local transforms.
+			root.updateMatrixWorld(true); inverse.copy(root.matrixWorld).invert();
 			for (const [slot, weapon] of weapons.entries()) {
 				muzzles[slot]?.copy(weapon.muzzle.getWorldPosition(position)).applyMatrix4(inverse);
 				for (const [index, exit] of weapon.exits.entries()) rocketMuzzles[slot]?.[index]?.copy(exit.getWorldPosition(position)).applyMatrix4(inverse);
@@ -209,8 +192,8 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 				relative.multiplyMatrices(inverse, bound.part.matrixWorld);
 				for (const corner of bound.corners) { labelVertex.copy(corner).applyMatrix4(relative); labelHeight = Math.max(labelHeight, labelVertex.y - (labelVertex.x + labelVertex.z) * 0.5); }
 			}
-			previous = { time, x: gait.body.x, y: gait.body.y, angle: gait.body.angle };
-			if (options.diagnostics) root.userData['authoredMotion'] = { selected: selected ?? 'idle', clips: actions.map(function (entry) { return { name: entry.motion.name, time: entry.action.time, duration: entry.motion.clip.duration, weight: entry.weight, timeScale: entry.action.getEffectiveTimeScale() }; }) };
+			previous = context;
+			if (options.diagnostics) root.userData['authoredMotion'] = context;
 		};
 		return {
 			root, muzzles, rocketMuzzles,
@@ -219,7 +202,6 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 			pose,
 			dispose: function () {
 				if (disposed) return; disposed = true;
-				connectionAudits.delete(root);
 				mixer.stopAllAction(); mixer.uncacheRoot(scene);
 				for (const material of ownedMaterials.values()) material.dispose();
 				root.removeFromParent(); root.clear(); instances -= 1; releaseIfUnused();
@@ -227,10 +209,10 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 		};
 	};
 	return {
-		create, weaponRigs, tubeMapping: WARDEN_LOGICAL_TUBE_MAPPING, height, nativeHorizontalOrigin: origin,
+		create, weaponRigs, advancePose, muzzle, tubeMapping: WARDEN_LOGICAL_TUBE_MAPPING, height, nativeHorizontalOrigin: origin,
 		install: function () {
 			if (closed) throw new Error('Authored Warden factory is disposed');
-			const remove = installMechAssetBinding('warden', { create, weaponRigs });
+			const remove = installMechAssetBinding('warden', { create, weaponRigs, advancePose, muzzle });
 			installation = { remove, closing: false };
 			return function () { if (installation?.remove === remove) installation.closing = true; releaseIfUnused(); };
 		},
@@ -253,14 +235,14 @@ export const loadAuthoredWarden = async function (url: string, options: Authored
 	}
 };
 
-export const authoredMuzzleError = function (model: MechAssetModel, rigs: readonly WeaponRig[], gait: WalkerGait, heading: number, target?: SpatialPoint): number {
+export const authoredMuzzleError = function (model: MechAssetModel, rigs: readonly WeaponRig[], gait: WalkerGait, heading: number, target?: SpatialPoint, context?: AuthoredPoseContext): number {
 	return rigs.reduce(function (largest, rig, slot) {
 		const actual = model.muzzles[slot]; if (!actual) throw new Error('Missing authored muzzle output');
-		const expected = rigMuzzle(rig, gait.body, heading, undefined, target);
+		const expected = getPlayerMuzzle('warden', slot, gait.body, heading, undefined, target, context);
 		let error = Math.max(largest, actual.distanceTo(new Vector3(expected.x - gait.body.x, expected.elevation, expected.y - gait.body.y)));
 		for (const index of rig.tubes.keys()) {
 			const exit = model.rocketMuzzles[slot]?.[index]; if (!exit) throw new Error('Missing authored tube output');
-			const expectedExit = rigMuzzle(rig, gait.body, heading, index, target);
+			const expectedExit = getPlayerMuzzle('warden', slot, gait.body, heading, index, target, context);
 			error = Math.max(error, exit.distanceTo(new Vector3(expectedExit.x - gait.body.x, expectedExit.elevation, expectedExit.y - gait.body.y)));
 		}
 		return error;

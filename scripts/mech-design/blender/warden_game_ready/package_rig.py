@@ -134,6 +134,8 @@ def main():
         parent = item["parent"]
         if parent is not None and parent not in groups:
             raise ValueError("Missing parent " + str(parent))
+        if name.startswith("rig_mount_") and parent != "rig_torso":
+            raise ValueError("All weapon mounts must remain fixed torso children")
     # Preserve only geometry/material resources from the candidate input. Source
     # motion geometry is never appended. glTF Transform prunes unused resources.
     document = copy.deepcopy(source)
@@ -187,7 +189,11 @@ def main():
         return world_cache[index]
 
     assignments = contract.get("meshGroups", {})
-    connectors = {item["meshName"]: item for item in contract.get("connectors", [])}
+    static_connections = {}
+    for item in contract.get("staticConnections", []):
+        if item["parent"] != "rig_torso" or item["binding"] != "rigid-to-torso":
+            raise ValueError("Structural necks must remain fixed to the torso")
+        static_connections.setdefault(item["meshName"], []).append(item)
     owned = {name: [] for name in groups}
     soles = {side: [] for side in ("left", "right")}
     for index, node in enumerate(source["nodes"]):
@@ -216,25 +222,16 @@ def main():
             "matrix": column_major(local),
             "extras": {"rigGroup": owner, "sourceNode": node.get("name", str(index))},
         }
-        connector = connectors.get(node.get("name", ""))
-        if connector is not None:
-            control_index = len(document["nodes"])
-            control = {
-                "name": connector["node"],
-                "matrix": column_major(local),
-                "children": [control_index + 1],
-                "extras": dict(connector, role="dynamic-mount-connection"),
-            }
-            child["matrix"] = column_major(Matrix.Identity(4))
-            document["nodes"][node_indices[owner]]["children"].append(control_index)
-            document["nodes"].append(control)
-            document["nodes"].append(child)
-            node_indices[connector["node"]] = control_index
-        else:
-            document["nodes"][node_indices[owner]]["children"].append(
-                len(document["nodes"])
+        connections = static_connections.get(node.get("name", ""), [])
+        if connections:
+            child["extras"].update(
+                role="static-mount-connections",
+                connectionIds=[item["id"] for item in connections],
             )
-            document["nodes"].append(child)
+        document["nodes"][node_indices[owner]]["children"].append(
+            len(document["nodes"])
+        )
+        document["nodes"].append(child)
         owned[owner].append(child["name"])
         for side in ("left", "right"):
             if owner != f"rig_leg_{side}_foot":
@@ -495,11 +492,12 @@ def main():
         "chassisId": "warden",
         "coordinateSystem": "glTF Y-up,+Z-forward,+X-own-left",
         "neutralHeight": contract.get("neutralHeight"),
-        "rigContractVersion": 1,
+        "rigContractVersion": 2,
         "sourceGeometrySha256": geometry_hash,
         "rigMotionSource": "Approved Warden locomotion recipe, retargeted to measured candidate pivots and soles",
         "inPlaceClips": True,
-        "mountConnections": contract.get("connectors", []),
+        "weaponBinding": "rigid-to-torso",
+        "staticMountConnections": contract.get("staticConnections", []),
     }
     output.mkdir(parents=True)
     write_glb(output / "warden.glb", document, binary)
@@ -520,7 +518,8 @@ def main():
         "groups": groups,
         "ownedMeshNodes": owned,
         "anchors": contract.get("anchors", []),
-        "connectors": contract.get("connectors", []),
+        "weaponBinding": "rigid-to-torso",
+        "staticConnections": contract.get("staticConnections", []),
         "clips": reports,
         "sourceGeometryUnchanged": hashlib.sha256(args.input.read_bytes()).hexdigest()
         == geometry_hash,

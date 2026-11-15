@@ -209,8 +209,8 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/README.md",
-      "bytes": 6259,
-      "sha256": "27e2ec1b62e6c25dc62309a94c25dac14a1756cfc97a8f8733ea849a4ed8a5a8"
+      "bytes": 6690,
+      "sha256": "1b5955d184073da92925c793404f980c7825d2752dced1dc85ec2eb2e3eb95dc"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/generation.json",
@@ -219,18 +219,18 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/geometry-report.json",
-      "bytes": 47728,
-      "sha256": "a3885e4df3b0bb71ccdb1dcf437510d4f40884ad052ef3d070e44f8c691f4a75"
+      "bytes": 45815,
+      "sha256": "4f71b48d112fdec7f7c28919cdb03c3218c6511c26f344daa9c315c25a264911"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/manifest.json",
-      "bytes": 2745,
-      "sha256": "93f1b82d95aa88a903a1e1b3137212fc6d84e28f314c95cf4d458c391bf47977"
+      "bytes": 2782,
+      "sha256": "62c124c75f5adafa67192a8cc296ff07005fd65687e3e28f6966cddfccc8448f"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/rig-contract.json",
-      "bytes": 22806,
-      "sha256": "7fd14bdfe66f3fe9777ea89f561d6520f22cb580daddae7f471dc535dce18107"
+      "bytes": 21082,
+      "sha256": "0f53f9798ce93c21c318cda504e99cd28aa62eca77b3b7f07c74d9ccf3637582"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/source.glb",
@@ -774,8 +774,8 @@
     },
     {
       "path": "public/assets/mechs/warden/game-ready.glb",
-      "bytes": 1035492,
-      "sha256": "9d8a3bceed1810876dbc656b12eb21dac2f52321f9c1ba2200e5ac22b0782213"
+      "bytes": 1036424,
+      "sha256": "a01948139fd1c007811b14f3dfb0c3ea77d3ddb9e19b54c534239d621ac8db7a"
     }
   ]
 }

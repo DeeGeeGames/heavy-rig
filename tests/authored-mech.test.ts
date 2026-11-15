@@ -1,9 +1,14 @@
+import ECSpresso from 'ecspresso';
+import { createCombatRuntime } from '../src/combat-runtime';
+import { createMount } from '../src/arsenal';
+import { createState, step, type Controls } from '../src/simulation';
+import type { AuthoredPoseContext } from '../src/authored-pose';
 import { expect, test } from 'bun:test';
-import { AnimationClip, BoxGeometry, Group, Mesh, MeshStandardMaterial, QuaternionKeyframeTrack, VectorKeyframeTrack, Vector3 } from 'three';
-import { authoredConnectionAudit, authoredMuzzleError, prepareAuthoredWarden, WARDEN_LOGICAL_TUBE_MAPPING } from '../src/authored-mech';
+import { AnimationClip, BoxGeometry, Group, Mesh, MeshStandardMaterial, QuaternionKeyframeTrack, VectorKeyframeTrack, Vector3, Matrix4 } from 'three';
+import { authoredMuzzleError, prepareAuthoredWarden, WARDEN_LOGICAL_TUBE_MAPPING } from '../src/authored-mech';
 import { advanceGait, createGait } from '../src/gait';
 import { createMech } from '../src/mech-3d';
-import { getFiringDirection, getPlayerWeaponRig, rigMuzzle, weaponDirection, type WeaponRig } from '../src/weapon-rig';
+import { getFiringDirection, getPlayerFiringDirection, getPlayerMuzzle, getPlayerWeaponRig, rigMuzzle, weaponDirection, type WeaponRig } from '../src/weapon-rig';
 
 const fixture = function (connections = false) {
 	const scene = new Group();
@@ -23,7 +28,7 @@ const fixture = function (connections = false) {
 				const mountAnchor = new Group(); mountAnchor.name = `connection_${id}_mount`; mountAnchor.position.set(-sign * 0.04, 0, 0.015); part.add(mountAnchor);
 				const housing = new BoxGeometry(0.12, 0.12, 0.12); geometries.push(housing); part.add(new Mesh(housing, material));
 				const end = part.position.clone().add(mountAnchor.position); const direction = end.sub(bodyAnchor.position); const length = direction.length();
-				const control = new Group(); control.name = `joint_${id}`; control.position.copy(bodyAnchor.position); control.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), direction.normalize());
+				const control = new Group(); control.name = `static_${id}`; control.position.copy(bodyAnchor.position); control.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), direction.normalize());
 				control.userData = { bodyAnchor: bodyAnchor.name, mountAnchor: mountAnchor.name, baseLengthNative: length, axis: [0, 1, 0], sleeveOverlapFraction: 0.28, radiusNative: 0.012, collarRadiusNative: 0.024 }; torso.add(control);
 				// Non-identity child TRS represents a quantized mesh's decode transform.
 				const bridgeGeometry = new BoxGeometry(2, 2, 2); geometries.push(bridgeGeometry);
@@ -56,7 +61,7 @@ test('non-collinear authored hinges keep physical muzzle and six selected exits 
 	expect([close.x, close.y, close.elevation].every(Number.isFinite)).toBe(true);
 	const behind = weaponDirection({ pivot: { x: 0, y: 0, elevation: 0 }, muzzle: { x: 45, y: -8, elevation: 0 }, tubes: [] }, { x: 0, y: 0 }, 0, { x: -10, y: 100, elevation: 0 });
 	expect(behind.x).toBeGreaterThan(0);
-	const asset = fixture(); const factory = prepareAuthoredWarden(asset); const model = factory.create();
+	const asset = fixture(); const factory = prepareAuthoredWarden(asset); const remove = factory.install(); const model = factory.create();
 	model.pose(createGait({ x: 0, y: 0, angle: 0 }), 0);
 	const torso = model.root.getObjectByName('rig_torso'); if (!torso) throw new Error('Missing authored torso');
 	const center = torso.getWorldPosition(new Vector3()); expect(Math.hypot(center.x, center.z)).toBeLessThan(1e-7);
@@ -69,38 +74,49 @@ test('non-collinear authored hinges keep physical muzzle and six selected exits 
 		}
 		expect(model.rocketMuzzles.map(function (exits) { return exits.length; })).toEqual([0, 0, 6, 6]);
 		expect(new Set(WARDEN_LOGICAL_TUBE_MAPPING).size).toBe(6);
-	} finally { model.dispose(); factory.dispose(); asset.geometry.dispose(); asset.material.dispose(); }
+	} finally { model.dispose(); remove(); factory.dispose(); asset.geometry.dispose(); asset.material.dispose(); }
 });
 
-test('solid mount bridges follow animated skin and stabilized weapons without changing decode transforms or firing origins', function () {
-	const asset = fixture(true); const factory = prepareAuthoredWarden(asset); const model = factory.create();
-	const children = model.root.getObjectsByProperty('type', 'Mesh').filter(function (node) { return node.name.startsWith('joint_'); });
-	const transforms = children.map(function (child) { return { position: child.position.toArray(), quaternion: child.quaternion.toArray(), scale: child.scale.toArray() }; });
-	let body = { x: 500, y: 400, angle: 0 }; let gait = createGait(body); let lowest = Infinity; let highest = -Infinity; let maximumTilt = 0;
+test('rigid mounts inherit animated torso motion and simulation muzzle sampling never depends on rendering', function () {
+	const asset = fixture(true); const factory = prepareAuthoredWarden(asset); const remove = factory.install();
+	let body = { x: 500, y: 400, angle: 0 }; let gait = createGait(body);
+	let context: AuthoredPoseContext = factory.advancePose(undefined, body, 0);
+	const before = getPlayerMuzzle('warden', 0, body, 0, undefined, undefined, context);
+	const model = factory.create();
+	expect(getPlayerFiringDirection('warden', 0, body, 0, before, { x: body.x - 100, y: body.y + 100, elevation: 220 }).x).toBeGreaterThan(0);
+	const torso = model.root.getObjectByName('rig_torso'); if (!torso) throw new Error('Missing animated torso');
+	const fixed = torso.children.filter(function (node) { return node.name.startsWith('rig_mount_') || node.name.startsWith('static_'); });
+	const matrices = fixed.map(function (node) { node.updateMatrix(); return node.matrix.clone(); });
+	const decode = model.root.getObjectsByProperty('type', 'Mesh').filter(function (node) { return node.name.startsWith('joint_'); });
+	const decodeMatrices = decode.map(function (node) { node.updateMatrix(); return node.matrix.toArray(); });
+	let lowest = Infinity; let highest = -Infinity; let maximumTilt = 0;
 	try {
-		for (let tick = 0; tick <= 120; tick++) {
-			const speed = tick < 40 ? 40 : tick < 80 ? 90 : -28; const angle = tick * 0.004;
-			body = { x: body.x + Math.cos(angle) * speed / 60, y: body.y + Math.sin(angle) * speed / 60, angle }; gait = advanceGait(gait, body, 1 / 60);
-			const heading = angle + Math.sin(tick / 13); const range = tick < 80 ? 125 : 350;
-			const target = { x: body.x + Math.cos(heading) * range, y: body.y + Math.sin(heading) * range, elevation: tick < 40 ? 220 : tick < 80 ? 0 : 100 };
+		// Rendering arbitrary unrelated poses cannot publish an authoritative cache.
+		model.pose(createGait({ x: -900, y: 73, angle: 2 }), -1, { recoil: 0, hit: 0, heat: 0, time: 50, target: { x: 0, y: 0, elevation: 220 } });
+		expect(getPlayerMuzzle('warden', 0, body, 0, undefined, undefined, context)).toEqual(before);
+		for (let tick = 1; tick <= 180; tick++) {
+			const speed = tick < 40 ? 40 : tick < 90 ? 90 : tick < 140 ? -28 : 0; const angle = tick * 0.004;
+			body = { x: body.x + Math.cos(angle) * speed / 60, y: body.y + Math.sin(angle) * speed / 60, angle };
+			context = factory.advancePose(context, body, tick / 60); gait = advanceGait(gait, body, 1 / 60);
+			const heading = angle + Math.sin(tick / 13);
+			const target = { x: body.x + Math.cos(heading) * 125, y: body.y + Math.sin(heading) * 125, elevation: tick % 2 ? 220 : 0 };
 			model.root.position.set(body.x, 0, body.y); model.root.rotation.y = 0.23; model.root.scale.setScalar(1.3);
-			model.pose(gait, heading, { recoil: 0, hit: 0, heat: 0, time: tick / 60, target });
-			expect(authoredMuzzleError(model, factory.weaponRigs, gait, heading, target)).toBeLessThan(1e-6);
-			const evidence = authoredConnectionAudit(model); expect(evidence.length).toBe(4);
-			for (const link of evidence) {
-				expect(link.bodyEndpointError).toBeLessThan(1e-7); expect(link.mountEndpointError).toBeLessThan(1e-7);
-				expect(link.sleeveOverlapNative).toBeGreaterThan(0); expect(link.bodyEndCoverageNative).toBeGreaterThan(0); expect(link.mountEndCoverageNative).toBeGreaterThan(0);
-				const height = link.bodyAnchor[1]; if (height === undefined) throw new Error('Missing body anchor coordinate'); if (link.id === 'left_gun') { lowest = Math.min(lowest, height); highest = Math.max(highest, height); }
+			model.pose(gait, heading, { recoil: 0, hit: 0, heat: 0, time: tick / 60, target, authoredPose: context });
+			expect(authoredMuzzleError(model, factory.weaponRigs, gait, heading, target, context)).toBeLessThan(1e-6);
+			const inverse = torso.matrixWorld.clone().invert();
+			for (const [index, node] of fixed.entries()) {
+				const expected = matrices[index]; if (!expected) throw new Error('Missing fixed matrix');
+				const relative = new Matrix4().multiplyMatrices(inverse, node.matrixWorld);
+				expect(Math.max(...relative.elements.map(function (value, element) { return Math.abs(value - (expected.elements[element] ?? Infinity)); }))).toBeLessThan(1e-12);
 			}
-			const torso = model.root.getObjectByName('rig_torso'); if (!torso) throw new Error('Missing animated torso');
+			const at = torso.getWorldPosition(new Vector3()); lowest = Math.min(lowest, at.y); highest = Math.max(highest, at.y);
 			maximumTilt = Math.max(maximumTilt, 1 - new Vector3(0, 1, 0).transformDirection(torso.matrixWorld).y);
 		}
 		expect(highest - lowest).toBeGreaterThan(1); expect(maximumTilt).toBeGreaterThan(0.001);
-		expect(children.map(function (child) { return { position: child.position.toArray(), quaternion: child.quaternion.toArray(), scale: child.scale.toArray() }; })).toEqual(transforms);
-	} finally { model.dispose(); factory.dispose(); for (const geometry of asset.geometries) geometry.dispose(); asset.material.dispose(); }
-	const incomplete = fixture(true); const missing = incomplete.scene.getObjectByName('joint_right_shoulder'); if (!missing) throw new Error('Missing fixture connection'); missing.removeFromParent();
-	expect(function () { prepareAuthoredWarden(incomplete); }).toThrow('Expected one authored connection node');
-	for (const geometry of incomplete.geometries) geometry.dispose(); incomplete.material.dispose();
+		expect(decode.map(function (node) { node.updateMatrix(); return node.matrix.toArray(); })).toEqual(decodeMatrices);
+		const last = getPlayerMuzzle('warden', 2, body, 1, 5, undefined, context);
+		model.dispose(); expect(getPlayerMuzzle('warden', 2, body, 1, 5, undefined, context)).toEqual(last);
+	} finally { model.dispose(); remove(); factory.dispose(); for (const geometry of asset.geometries) geometry.dispose(); asset.material.dispose(); }
 });
 
 test('authored instances own materials while caller-owned shared assets and defaults survive removal', function () {
@@ -127,4 +143,32 @@ test('authored instances own materials while caller-owned shared assets and defa
 	const procedural = createMech(); expect(procedural.root.name).toBe('warden-frame'); procedural.dispose();
 	asset.geometry.dispose(); asset.material.dispose();
 	expect(geometryDisposals).toBe(1); expect(sourceMaterialDisposals).toBe(1);
+});
+
+
+test('fixed-step authored pose survives pause and matches plain simulation before same-tick firing', async function () {
+	const asset = fixture(true); const factory = prepareAuthoredWarden(asset); const remove = factory.install();
+	const initial = createState(); initial.spawnIn = 3600; initial.loadout = [createMount('autocannon')];
+	const expected = structuredClone(initial); const combat = createCombatRuntime();
+	const world = ECSpresso.create().withPlugin(combat.plugin).withFixedTimestep(1 / 60).build();
+	await world.initialize(); const state = combat.attach(initial); combat.setEnabled(true);
+	let emissionChecks = 0;
+	try {
+		for (let tick = 0; tick < 120; tick++) {
+			const controls: Controls = { drive: tick < 50 ? 1 : -1, turn: 0.2, stop: false, aim: { x: 1500, y: 300 }, fire: [tick > 10, false, false, false], coolant: false };
+			combat.setControls(function () { return controls; }); step(expected, controls, 1 / 60); world.update(1 / 60);
+			expect(state.authoredPose).toEqual(expected.authoredPose);
+			expect(state.shots).toEqual(expected.shots);
+			for (const shot of state.shots.filter(function (shot) { return shot.slot === 0 && (shot.age ?? 0) <= 1 / 60 + 1e-9; })) {
+				const origin = getPlayerMuzzle('warden', 0, state.player, state.player.turret, undefined, undefined, state.authoredPose);
+				expect(shot.origin).toEqual(origin); emissionChecks++;
+			}
+		}
+		expect(emissionChecks).toBeGreaterThan(0);
+		expect(state.authoredPose?.clips.some(function (clip) { return clip.time > 0 && clip.weight > 0; })).toBe(true);
+		const snapshot = structuredClone(state.authoredPose); combat.setEnabled(false);
+		for (let tick = 0; tick < 10; tick++) world.update(1 / 60);
+		expect(state.authoredPose).toEqual(snapshot);
+		const replacement = combat.attach(createState()); expect(replacement.authoredPose).toBeUndefined();
+	} finally { await world.dispose(); remove(); factory.dispose(); for (const geometry of asset.geometries) geometry.dispose(); asset.material.dispose(); }
 });

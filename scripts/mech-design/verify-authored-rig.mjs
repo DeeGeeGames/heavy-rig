@@ -2,7 +2,6 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { AnimationMixer, Box3, LoopOnce, Mesh, Texture, Vector3 } from 'three';
 import { createHash } from 'node:crypto';
-import { prepareAuthoredConnections } from '../../src/authored-connections.ts';
 const [path, reportPath, outputPath] = process.argv.slice(2);
 if (!path || !reportPath || !outputPath) throw new Error('Usage: validate_rig.mjs GLB RIG_REPORT OUTPUT');
 if (await Bun.file(outputPath).exists()) throw new Error('Output must be new');
@@ -29,20 +28,27 @@ for (const anchor of report.anchors) {
 }
 const bounds = new Box3().setFromObject(asset.scene);
 asset.scene.updateMatrixWorld(true);
-const connectionController = prepareAuthoredConnections(asset.scene);
-let maximumConnectionError = 0;
-let minimumConnectionOverlap = Infinity;
-const checkConnections = function () {
- asset.scene.updateMatrixWorld(true); connectionController.update();
- const evidence = connectionController.audit();
- if (evidence.length !== (report.connectors?.length ?? 0)) throw new Error('Missing authored attachment controls');
- for (const link of evidence) {
-  maximumConnectionError = Math.max(maximumConnectionError,link.bodyEndpointError,link.mountEndpointError);
-  minimumConnectionOverlap = Math.min(minimumConnectionOverlap,link.sleeveOverlapNative,link.bodyEndCoverageNative,link.mountEndCoverageNative);
+if (report.weaponBinding !== 'rigid-to-torso' || report.staticConnections?.length !== 4) throw new Error('Expected four torso-fixed Warden attachments');
+const rigidNames = [...new Set([...requiredGroups.filter(function (name) { return name.startsWith('rig_mount_'); }), ...report.staticConnections.map(function (connection) { return connection.node; })])];
+const rigidMatrices = new Map();
+for (const name of rigidNames) {
+ const node = nodes.get(name);
+ if (!node || originalName(node.parent) !== 'rig_torso') throw new Error('Attachment is not a direct torso child: '+name);
+ rigidMatrices.set(name,[...node.matrix.elements]);
+}
+for (const animation of rawDocument.animations ?? []) for (const channel of animation.channels) {
+ if (rigidNames.includes(rawDocument.nodes[channel.target.node]?.name)) throw new Error('Rigid torso attachment has animation tracks');
+}
+let maximumRigidMatrixError = 0;
+const checkRigidAttachments = function () {
+ asset.scene.updateMatrixWorld(true);
+ for (const name of rigidNames) {
+  const node = nodes.get(name); const expected = rigidMatrices.get(name);
+  maximumRigidMatrixError = Math.max(maximumRigidMatrixError,...node.matrix.elements.map(function (value,index) { return Math.abs(value-expected[index]); }));
  }
- if (maximumConnectionError > 2e-5 || minimumConnectionOverlap <= 0) throw new Error('Broken authored attachment span/overlap');
+ if (maximumRigidMatrixError > 1e-10) throw new Error('Mount or neck moved relative to torso');
 };
-checkConnections();
+checkRigidAttachments();
 const mixer = new AnimationMixer(asset.scene);
 const clips = {};
 let meshSections = 0;
@@ -74,7 +80,7 @@ for (const clip of asset.animations) {
  let maximumLoopMatrixError = 0;
  let frameIndex = 0;
  for (const sample of source.samples) {
-  mixer.setTime(Math.min(sample.phase*source.duration,clip.duration)); checkConnections();
+  mixer.setTime(Math.min(sample.phase*source.duration,clip.duration)); checkRigidAttachments();
   asset.scene.updateMatrixWorld(true);
   const pelvis = nodes.get('rig_pelvis');
   maximumForwardDrift = Math.max(maximumForwardDrift,Math.abs(pelvis.position.z+report.groups.rig_pelvis.pivot[1]));
@@ -106,6 +112,6 @@ for (const clip of asset.animations) {
 if (Object.keys(clips).length!==3) throw new Error('Expected three motion clips');
 mixer.stopAllAction();
 mixer.uncacheRoot(asset.scene);
-const result = {connections:{count:report.connectors?.length ?? 0,maximumEndpointError:maximumConnectionError,minimumPositiveOverlap:Number.isFinite(minimumConnectionOverlap)?minimumConnectionOverlap:null},sha256,bytes:data.byteLength,textureImages:rawDocument.images?.length ?? 0,textureDecode:'Headless texture placeholders; image decoding and appearance require browser validation',triangles,meshSections,materials:materials.size,geometryBufferBytes:[...arrays].reduce(function(total,array) { return total+array.byteLength; },0),neutralBounds:{minimum:bounds.min.toArray(),maximum:bounds.max.toArray()},rigGroups:requiredGroups.length,anchors:report.anchors.length,clips,errors:[]};
+const result = {rigidAttachments:{mounts:4,staticNeckMeshes:rigidNames.length-4,maximumLocalMatrixError:maximumRigidMatrixError},sha256,bytes:data.byteLength,textureImages:rawDocument.images?.length ?? 0,textureDecode:'Headless texture placeholders; image decoding and appearance require browser validation',triangles,meshSections,materials:materials.size,geometryBufferBytes:[...arrays].reduce(function(total,array) { return total+array.byteLength; },0),neutralBounds:{minimum:bounds.min.toArray(),maximum:bounds.max.toArray()},rigGroups:requiredGroups.length,anchors:report.anchors.length,clips,errors:[]};
 await Bun.write(outputPath,JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify(result,null,2));

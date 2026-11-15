@@ -6,10 +6,10 @@
   "scope": "Opt-in runtime asset; ordinary game and prior approved checkpoints unchanged",
   "asset": {
     "path": "public/assets/mechs/warden/game-ready.glb",
-    "sha256": "9d8a3bceed1810876dbc656b12eb21dac2f52321f9c1ba2200e5ac22b0782213",
-    "bytes": 1035492,
+    "sha256": "a01948139fd1c007811b14f3dfb0c3ea77d3ddb9e19b54c534239d621ac8db7a",
+    "bytes": 1036424,
     "triangles": 39748,
-    "meshSections": 19,
+    "meshSections": 16,
     "materials": 3,
     "textureImages": 2,
     "textureDimensions": [
@@ -22,7 +22,7 @@
         128
       ]
     ],
-    "geometryArrayBytes": 976264,
+    "geometryArrayBytes": 986040,
     "rgba8TextureBytesWithMipsEstimate": 174763,
     "rigGroups": 12,
     "anchors": 28,
@@ -35,7 +35,8 @@
     "extensionsRequired": [
       "KHR_mesh_quantization"
     ],
-    "mechanicalConnections": 4
+    "mechanicalConnections": 4,
+    "weaponBinding": "rigid-to-torso"
   },
   "source": {
     "path": "design/mechs/assets/warden/game-ready/source.glb",
@@ -75,6 +76,6 @@
     "Removed two gun-roof slivers and rebuilt six overlapping vent inserts",
     "Lower-bracket pitch axes placed at measured torso attachment band",
     "Runtime waist-origin normalization and offset-aware weapon convergence",
-    "Four articulated body-to-mount couplings with buried collars and positive sleeve overlap"
+    "Rigid torso parenting for all four mounts and one combined static structural neck mesh"
   ]
 }

@@ -1,3 +1,4 @@
+import type { AuthoredPoseContext } from './authored-pose';
 import { Box3, Group, Matrix4, Mesh, Vector3 } from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { getFrame, type FrameId } from './frames';
@@ -12,7 +13,7 @@ import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weap
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { getMechAssetBinding } from './mech-asset-registry';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.

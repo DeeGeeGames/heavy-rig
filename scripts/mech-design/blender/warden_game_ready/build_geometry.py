@@ -346,7 +346,7 @@ for anchor in anchors:
     anchor["worldPosition"][1] = hit.y - 0.001
 connections = add_mount_connections(objects, anchors, body)
 report = {
-    "connections": connections,
+    "staticConnections": connections,
     "sourceSha256": hashlib.sha256(source.read_bytes()).hexdigest(),
     "originalImportedTriangles": 44783,
     "removedOriginalPodTriangles": sum(
@@ -360,7 +360,7 @@ report = {
     "atlas": atlas,
     "objects": [],
     "featureDecisions": {
-        "mountConnections": "Four measured solid sleeve/rod necks with embedded bearing collars; one mesh per attachment, runtime empty controls preserve both endpoint surfaces",
+        "mountConnections": "Four measured solid sleeve/rod necks with embedded bearing collars; one combined static neck mesh, all weapon groups and necks remain rigidly fixed to the torso",
         "bankPivot": "Pitch axis through measured lower bracket-to-torso contact band Y~0.103 Z~0.750; X remains along the bearing axis",
         "ventRepair": "Six rebuilt noncoplanar geometric louvres, source frames retained; browser z-fighting repaired without texture growth",
         "keep": "body outline,major armor,joints,bores,pod supports",
@@ -388,8 +388,9 @@ contract = {
         for name, point in pivots.items()
     ],
     "anchors": anchors,
-    "connectors": connections,
+    "staticConnections": connections,
     "meshGroups": {item["meshName"]: item["parent"] for item in connections},
+    "weaponBinding": "rigid-to-torso",
     "source": "geometry-report.json",
     "bakedLauncherCollisionPolicy": "renderface only; analytic gameplaycolliders and independent exit anchors; eightvisiblecells,sixmappedgameplaytubes",
 }
