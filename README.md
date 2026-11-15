@@ -523,6 +523,19 @@ clock while preserving the model, camera, throttle, playback speed, and pause
 state. Changing the model or motion also starts its animation from zero.
 The viewer uses no campaign saves. Set `PORT` to override its default port.
 
+For a moving Warden load test, run `bun run dev:stress` (port 3002), or
+build and serve production, then open `/warden-stress.html`. From a phone
+on the same network, use the computer's LAN IP instead of `localhost`.
+The deployed page is available at `/warden-stress.html` after publication.
+Set 0–1,000 Wardens using Apply or ±10, and adjust the pixel ratio cap.
+Each setting resets measurements with a two-second warmup. The readout shows
+rolling average FPS, p95 frame time, frames over 20ms, resolution, draw calls,
+and triangles. Wait ten seconds per setting and longer for heat throttling.
+The fixed arena keeps every model in view, with overlap at high counts.
+This uses the production Warden factory and fixed-step gait, without combat,
+AI, collisions, or shadows; it is a model workload rather than a full-game
+capacity estimate. Browser refresh rate and device temperature affect results.
+
 Production validation uses:
 
 ```sh
