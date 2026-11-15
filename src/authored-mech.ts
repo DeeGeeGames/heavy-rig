@@ -108,6 +108,7 @@ const prepareWarden = function (asset: Pick<GLTF, 'scene' | 'animations'>, optio
 	const advancePose = function (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number): AuthoredPoseContext {
 		const valid = previous && time >= previous.time ? previous : undefined;
 		const dt = valid ? Math.min(time - valid.time, 0.1) : 0;
+		if (valid?.gait && dt === 0 && valid.body.x === body.x && valid.body.y === body.y && valid.body.angle === (body.angle ?? 0)) return valid;
 		const context = { ...advanceAuthoredPose(motions, valid, body, time), gait: locomotion.advance(valid?.gait, body, dt) };
 		return { ...context, pelvisDrop: locomotion.pelvisDrop(context.gait, sampler.pelvisMatrix(context)) };
 	};

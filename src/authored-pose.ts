@@ -1,6 +1,6 @@
 import { InterpolateDiscrete, InterpolateLinear, Matrix4, Quaternion, Vector3, type AnimationClip, type KeyframeTrack, type Object3D } from 'three';
 import type { WeaponBody } from './weapon-rig';
-import type { WalkerGait } from './gait';
+import type { AuthoredGait } from './authored-run';
 
 export const authoredClipNames = ['walk', 'run', 'backward'] as const;
 export type AuthoredMotionName = typeof authoredClipNames[number];
@@ -11,7 +11,7 @@ export interface AuthoredPoseContext {
 	readonly body: { readonly x: number; readonly y: number; readonly angle: number };
 	readonly selected: AuthoredMotionName | 'idle';
 	readonly clips: readonly AuthoredClipState[];
-	readonly gait?: WalkerGait;
+	readonly gait?: AuthoredGait;
 	/** Native Y-up correction shared by the pelvis and all weapon origins. */
 	readonly pelvisDrop?: number;
 }

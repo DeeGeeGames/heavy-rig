@@ -44,10 +44,17 @@ existing gait planner keeps supporting feet at fixed ground positions and
 headings, including turns in place. The adapter measures this export's joint
 lengths, resting stance and sole bounds, then solves its rigid thigh, shin and
 foot rotations. Supporting shoes stay flat; airborne shoes roll within a small
-range. Shorter strides and a shared pelvis reach/guard-clearance correction keep
-both legs in reach and the shin guards above the floor without stretching their
-geometry. Guard support uses a convex hull measured once from the actual mesh.
-Separate toe articulation is absent.
+range. Forward walking uses longer strides; reverse and steering retain tighter
+steps for guard clearance. At 50 m/s of actual forward travel, independent leg
+swings introduce a run with brief flight phases and body lift. It returns to
+walking below 42 m/s, completing its landing transition before handing back to
+the walking planner. Entry preserves the existing support foot's stance progress.
+Airborne landing targets change gradually when velocity or steering changes.
+
+A shared pelvis reach/guard-clearance correction keeps both legs in reach and
+the shin guards above the floor without stretching their geometry. Guard support
+uses a convex hull measured once from the actual mesh. Separate toe articulation
+is absent. The visual run changes neither gameplay speed nor collision rules.
 
 A shared numeric sampler supplies the same procedural pelvis and torso pose to
 the renderer and physical muzzle calculations. Gameplay does not read back render
@@ -99,7 +106,10 @@ CI runs the same command. Texture appearance remains a browser check.
 The preview command emits self-contained `study.html` and opt-in `game.html`.
 `tests/authored-locomotion.test.ts` checks the actual GLB through turning in both
 directions, curved forward travel, reverse and stops: supporting foot position
-and heading, floor clearance, paused rendering and shared weapon origins.
+and heading, all-mesh floor clearance, both shoes fully above the floor during
+flight, paused flight/rendering and shared weapon origins. It also checks longer
+walking steps, speed hysteresis, and real acceleration, steering reversal and
+braking through the existing movement simulation.
 
 ## Reproduce
 
@@ -155,6 +165,10 @@ mechanical hinges.
 These retained clip audits describe the asset's authored motions. The current
 runtime uses planted procedural feet; stride, turning contacts and body weight
 still require owner feel acceptance in the local game preview.
+Independent review also reproduced an existing grounded reverse/steering failure
+at the arena edge: some contact arrangements exceed the bounded guard-clearance
+search. The same failure occurs on pre-run revision `039d799`; this extension
+does not resolve that edge-recovery limitation.
 The authored model supports hit flashes; bespoke recoil, thermal and exhaust
 animations are deferred. Hardware GPU performance and owner visual/feel acceptance
 remain separate from automated correctness checks.

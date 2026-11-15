@@ -19,7 +19,7 @@
 		<label>Aim target <select id="aim-target"><option value="sweep">Sweep</option><option value="near-high">Near / high</option><option value="near-low">Near / ground</option></select></label>
 		<label><input id="wireframe" type="checkbox">Wireframe</label><label><input id="anchors" type="checkbox">Firing origins</label>
 	</div>
-	<p>Procedural foot placement drives the authored joints through walk, run, reverse and turns. Supporting feet retain their ground position and heading. Weapons remain fixed to the torso; firing origins share the simulation pose. The game-camera views use the production projection. Drag close views to orbit.</p>
+	<p>Procedural walking keeps supporting feet planted through turns and reverse. Forward travel enters a run at 50 m/s and returns to walking below 42 m/s. The run has longer steps, body lift and brief flight phases with both feet clear of the floor. Weapons and firing origins share the simulation pose. Drag close views to orbit.</p>
 	<p id="error" hidden></p>
 	<details><summary>Asset and runtime evidence</summary><pre id="diagnostics">Loading…</pre></details>
 </main>

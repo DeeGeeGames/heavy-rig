@@ -42,16 +42,17 @@
   },
   "firingOrigins": {
     "runtimeSamples": 480,
-    "maximumMuzzleError": 8.85331686673191e-14,
+    "maximumMuzzleError": 8.788928253162695e-14,
     "originRenderDependencyError": 0
   },
   "fingerprints": {
     "design/mechs/assets/warden/game-ready/recipe.json": "6673b91c879dd5044226df3f8050a0fdb592c0c30ea79bd536588c804312643b",
-    "scripts/mech-design/verify-game-ready.mjs": "a7a801d8ebddd522cd03b9ae7d1f67c7d5cdb69e804eefe6b9bc835907a8671c",
+    "scripts/mech-design/verify-game-ready.mjs": "846c4318cf237b81819b7faafb572298033f7263c59e9b443ce3234e52783c7b",
     "scripts/mech-design/candidate-budget.ts": "1984079055040226c1f8a3a2603baeec4c047b785c99bcf28cece0c057183781",
-    "src/authored-mech.ts": "bba0a1c0bdd0c642b2cc63efe15e2a8a92992bdf7b31742312a541ba32e5aea8",
-    "src/authored-pose.ts": "a23e79f73096a1fa6b4be5b4054df7c3b290fb6555c8d3ea32ddd4ad210bb622",
-    "src/authored-gait.ts": "1ac91552383ddf2d349457f82e63c592ef4d623c28ffc4d70d8d9fd0505490fe",
+    "src/authored-mech.ts": "cf284b60f78e9502fef51a487df8b6745fe5e3cfddb18d51dcf1a791347e3362",
+    "src/authored-pose.ts": "1fddf2a21cebb1720d06b02835fa8b34c50e0ac307ba6c169230603eb58d6fec",
+    "src/authored-gait.ts": "df5fce528604e3cd2c600494f6f6837d9c5eea702b35c30b51b7ecf824a498f3",
+    "src/authored-run.ts": "66a9b2d89d3a1ba3c277b07efa0d3b4d70de651cc2d761ce8b3d088674d9b6d6",
     "src/gait.ts": "1794d9f580e77b902e240129a9f27c453202209e382a886b603968d0be2b8a40",
     "src/frame-rig.ts": "b25c045ae81e52b99331e889b7e3dfdf54eb7363e107a164428b03833695b900",
     "src/weapon-rig.ts": "ed144d9f8eb3cd9074d8923cae47df230248a95e5ed2e14aa4bbed4694ea5c5b"

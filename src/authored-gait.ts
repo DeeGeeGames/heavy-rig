@@ -2,6 +2,8 @@ import { Box3, Matrix4, Mesh, Quaternion, Vector3, type Object3D } from 'three';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 import { advanceGait, createGait, footPose, type LegRig, type WalkerGait } from './gait';
 import type { WeaponBody } from './weapon-rig';
+import { advanceAuthoredRun, authoredRunFootPitch, RUN_ENTER_SPEED, type AuthoredGait } from './authored-run';
+import { angleDelta } from './simulation';
 
 export interface AuthoredLegNodes {
 	readonly index: 0 | 1;
@@ -60,10 +62,10 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 		footForward: average(function (leg) { return leg.ankle.x; }), footWidth: average(function (leg) { return Math.abs(leg.ankle.z); }), kneeDirection: 1,
 	};
 	const neutral = createGait({ x: 0, y: 0, angle: 0 }, 1, rig);
-	const target = function (gait: WalkerGait, leg: typeof legs[number]) {
+	const target = function (gait: AuthoredGait, leg: typeof legs[number]) {
 		const contact = gait.feet[leg.index]; const rest = neutral.feet[leg.index];
 		const relative = contact.angle - gait.body.angle;
-		const pitch = gait.swing?.index === leg.index ? Math.max(-0.2, Math.min(0.2, footPose(gait, leg.index, 1, rig).pitch * 0.5)) : 0;
+		const pitch = gait.running ? authoredRunFootPitch(gait, leg.index) : gait.swing?.index === leg.index ? Math.max(-0.2, Math.min(0.2, footPose(gait, leg.index, 1, rig).pitch * 0.5)) : 0;
 		const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -relative).multiply(leg.footRotation).multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -pitch));
 		const support = Math.min(...leg.corners.map(function (corner) { return corner.clone().applyQuaternion(rotation).y; }));
 		const dx = contact.x - gait.body.x; const dz = contact.y - gait.body.y; const angle = gait.body.angle;
@@ -72,12 +74,17 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 		const position = new Vector3(dx * Math.cos(angle) + dz * Math.sin(angle) + offset.x, contact.lift - support, -dx * Math.sin(angle) + dz * Math.cos(angle) + offset.z);
 		return { position, rotation };
 	};
-	const advance = function (previous: WalkerGait | undefined, body: WeaponBody, dt: number): WalkerGait {
+	const advance = function (previous: AuthoredGait | undefined, body: WeaponBody, dt: number): AuthoredGait {
 		const actual = { x: body.x, y: body.y, angle: body.angle ?? 0 };
 		if (!previous || Math.hypot(actual.x - previous.body.x, actual.y - previous.body.y) > 80 || dt <= 0 && (actual.x !== previous.body.x || actual.y !== previous.body.y || actual.angle !== previous.body.angle)) return createGait(actual, 1, rig);
-		// The authored guards sit close to the sole. Shorter steps preserve their
-		// clearance as the fixed-length shin swings over a planted shoe.
-		return advanceGait(previous, actual, dt, 1, 0.5, rig);
+		if (dt <= 0) return previous;
+		const speed = ((actual.x - previous.body.x) * Math.cos(actual.angle) + (actual.y - previous.body.y) * Math.sin(actual.angle)) / dt;
+		if (previous.running || speed >= RUN_ENTER_SPEED) return advanceAuthoredRun(previous, actual, dt, rig);
+		// Extend forward straights while retaining the tighter contact envelope for
+		// reverse and steering, where the ankle guards need more frequent steps.
+		const turn = Math.abs(angleDelta(previous.body.angle, actual.angle)) / dt;
+		const stride = 0.5 + 0.4 * Math.min(1, Math.max(0, speed / 30)) * Math.max(0, 1 - turn / 0.6);
+		return advanceGait(previous, actual, dt, 1, stride, rig);
 	};
 	const solve = function (gait: WalkerGait, pelvisMatrix: Matrix4) {
 		const pelvisRotation = new Quaternion().setFromRotationMatrix(pelvisMatrix.clone().extractRotation(pelvisMatrix));

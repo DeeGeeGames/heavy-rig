@@ -59,8 +59,8 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/README.md",
-      "bytes": 10469,
-      "sha256": "faafb2e5e3ac0f41b48846d7acb63bc7daeaeee7e186eed2748c52c3e9ee1104"
+      "bytes": 11486,
+      "sha256": "c9928d661a4cf73caa196ec29c57d1e5f8a4d0d8dc1eaeca46a4c720053010b3"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/approval.json",
@@ -199,8 +199,8 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/validation.json",
-      "bytes": 2633,
-      "sha256": "7db3ab479a371da3194c14203bce97ee0e16228ee0fd7e4482f781d28d10428f"
+      "bytes": 2729,
+      "sha256": "a4d2d633905a73a0f3beaf2a61d05c8aa50fb59ba6723883d8d5a230848d9980"
     },
     {
       "path": "design/mechs/assets/warden/generated-source/body/trial.json",
