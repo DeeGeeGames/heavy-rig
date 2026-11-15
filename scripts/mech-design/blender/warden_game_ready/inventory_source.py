@@ -1,5 +1,11 @@
 from pathlib import Path
 import os
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from recipe import load_recipe
+config = load_recipe()
+overrides = {item["id"]: item for item in config["ownershipOverrides"]}
+matched_overrides = set()
 import bpy, bmesh, json
 from mathutils import Vector
 
@@ -50,9 +56,17 @@ for start in bm.verts:
         group = "rig_leg_" + side + "_shin"
     # Frozen P2 source: front ankle guard plates and their six fasteners per side.
     # Keep the toe, sole and ankle bearing with the foot; these guards follow the shin.
-    if len(rows) in {4, 5, 6, 8, 14, 17, 21, 246, 247, 248, 253, 276, 278, 279}:
-        assert group == "rig_leg_" + side + "_foot"
-        group = "rig_leg_" + side + "_shin"
+    override = overrides.get(len(rows))
+    if override:
+        tolerance = config["validation"]["sourceBoundsTolerance"]
+        if group != override["from"] or len(fs) != override["triangles"] or any(
+            abs(actual - expected) > tolerance
+            for actuals, expecteds in [(lo, override["minimum"]), (hi, override["maximum"])]
+            for actual, expected in zip(actuals, expecteds)
+        ):
+            raise ValueError("Ownership override no longer identifies the expected source piece: " + str(len(rows)))
+        group = override["to"]
+        matched_overrides.add(len(rows))
     rows.append(
         {
             "id": len(rows),
@@ -64,6 +78,8 @@ for start in bm.verts:
             "group": group,
         }
     )
+if matched_overrides != set(overrides):
+    raise ValueError("Missing source ownership overrides")
 (r / "components.json").write_text(json.dumps(rows, separators=(",", ":")))
 from collections import Counter
 

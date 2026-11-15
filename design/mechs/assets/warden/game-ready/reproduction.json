@@ -1,0 +1,31 @@
+{
+  "toolVersions": {
+    "python": "3.14.7",
+    "pillow": "12.3.0",
+    "blender": "Blender 5.2.0 LTS",
+    "bun": "1.3.14",
+    "gltfTransform": "4.5.1"
+  },
+  "sourceSha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9",
+  "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
+  "bytes": 1036424,
+  "asset": "public/assets/mechs/warden/game-ready.glb",
+  "scope": "Recorded local rebuild against selected approved asset; generated output path is historical context, not a required retained dependency.",
+  "recipeHashes": {
+    "scripts/mech-design/build-warden-game-ready.py": "ee693f6fe901e6845407b1e8dd30fd1a6f87488489ce8cbc31a03368f669b8eb",
+    "design/mechs/assets/warden/game-ready/recipe.json": "0dff681dbf42dd56346e554263112f175d4d1c197fc1df330218d8a14326ed08",
+    "scripts/mech-design/blender/warden_game_ready/build_geometry.py": "febea4252b9462dac224c12caa5e25627eda7adf292180921b1cede191519114",
+    "scripts/mech-design/blender/warden_game_ready/inventory_source.py": "96657478cce0f7e61e2828d8de9cd23813eb605776abb2ecf41ec15aa8131ee9",
+    "scripts/mech-design/blender/warden_game_ready/mount_connections.py": "0bb90bbd3ec16624ccb0280fc69f8fd10966b74b86afd91d8a819149e0df49f2",
+    "scripts/mech-design/blender/warden_game_ready/pack_atlas.py": "b06a53248a1971a283d1f5049480a84519dcf311bd063156ee910c7933650855",
+    "scripts/mech-design/blender/warden_game_ready/package_rig.py": "56f7f6c47833a55471d5f005f9db29d40836a96fe92864876df21a2675605a49",
+    "scripts/mech-design/blender/warden_game_ready/recipe.py": "bdedfacc7c4d865766019ee4aa69abc40c7b04a8a638de098660cea850675c5b",
+    "scripts/mech-design/blender/warden_game_ready/vent_rebuild.py": "1960d5e86a5d535f261902ac39daf4a08a535be6deee81c58d5f41e594e953d8",
+    "scripts/mech-design/blender/locomotion_trial.py": "717e99b713c403bdd9a8f26c3e1b12d333bdedee5a0910b3200e72f5d72c9e1a",
+    "scripts/mech-design/verify-authored-rig.mjs": "39bc52a2e0865cb414ee719f2f515693f41baebc084876900cbcc0a4623ebc45",
+    "scripts/mech-design/verify-game-ready.mjs": "d41445a7185731660a1357c03c84a377935067d0b543b0b947c7bbfedad96bc6",
+    "bun.lock": "0c29ed5c93e4fde1b712889a22797a2dd3fef7a1bf4868699570ac6847b79400"
+  },
+  "buildOutputAtValidation": "design/mechs/generated/warden-recipe-cleanup-verified/warden.glb",
+  "matchesSelectedAsset": true
+}

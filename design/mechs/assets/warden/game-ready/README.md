@@ -2,8 +2,9 @@
 
 Selected runtime file: `public/assets/mechs/warden/game-ready.glb` (SHA-256
 `734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de`).
-This is the completed opt-in integration candidate. The normal game and older
-approved checkpoints are unchanged; final owner visual acceptance is separate.
+The owner approved this exact visual revision and demonstrated motion; see
+[approval.json](approval.json). Next is in-game integration and acceptance.
+Normal game startup remains procedural. Historical approvals retain their own scopes.
 
 The file contains 39,748 triangles, 16 mesh sections, three materials, two shared
 128×128 images, twelve rigid motion groups, twenty firing/logical anchors plus eight attachment anchors and three
@@ -69,6 +70,24 @@ This emits `study.html` and `game.html`, using the real camera/model factory,
 combat rig definitions and existing game startup. The inspector offers motion,
 view, independent aim and physical-exit checks. It does not promote the asset.
 
+## Validate and preview
+
+After restoring inputs and installing Bun dependencies:
+
+```sh
+bun scripts/mech-design/verify-game-ready.mjs
+bun scripts/mech-design/build-authored-preview.ts \
+  public/assets/mechs/warden/game-ready.glb \
+  design/mechs/generated/warden-preview
+```
+
+The headless verifier loads the selected export directly; it does not require
+Blender or ignored experiment reports. It checks guard ownership, gait, rigid
+torso binding and simulation/render firing-origin agreement. The retained
+`validation.json` pins the exact asset and validation source fingerprints.
+CI runs the same command. Texture appearance remains a browser check.
+The preview command emits self-contained `study.html` and opt-in `game.html`.
+
 ## Reproduce
 
 The retained `source.glb` is the unchanged P2.0 50K source. `generation.json`
@@ -80,7 +99,7 @@ near-coplanar internal tessellation is dissolved, and two gun-roof slivers are
 removed. Six overlapping vent inserts are replaced with clean geometric louvres
 and recessed backs. The old gait recipe is retargeted to the new measured pivots and soles.
 
-Use Python with Pillow 13, Blender 5.2 and Bun 1.3.14:
+Use Python 3.14.7 with Pillow 12.3.0, Blender 5.2 and Bun 1.3.14:
 
 ```sh
 python scripts/mech-design/build-warden-game-ready.py --repo . \
@@ -92,8 +111,15 @@ Use `--blender-command blender` for a native installation. The command requires 
 new ignored output directory, checks source hashes, rebuilds geometry/atlases/rig,
 deduplicates/welds, generates tangents, quantizes, preserves empty anchors, and
 runs format plus Three.js rig validation. glTF Transform is pinned to 4.5.1.
-The complete pipeline reproduced the selected GLB byte-for-byte on this machine.
-An independent report covers every exported vertex, all three clips and anchors.
+`recipe.json` holds frozen inputs/hashes, ownership overrides and probes,
+measured pivots, module fits, atlas choices and feature-specific repair rules.
+`reproduction.json` records the exact output hash, actual tool versions and
+recipe/shared-library fingerprints. The complete pipeline reproduced the
+selected GLB byte-for-byte on this machine.
+The retained validation summary identifies its exact asset hash and checks.
+Earlier 1,448/181-pose runtime audits cover the torso-binding revision `a0194813…`;
+the shin-guard revision preserves those animation tracks and changes only guard
+ownership, with a separate export/gait comparison.
 The anatomy classifier and repair rules are specific to this Warden source;
 a second chassis is still required before calling the process general.
 
@@ -101,10 +127,10 @@ a second chassis is still required before calling the process general.
 
 All 285 sampled clip poses clear the floor. Rig matrices and animation samples
 survive packaging unchanged; quantization moves vertices by less than 0.00081
-game units. Three.js playback and actual game-camera/aim paths are checked
-separately from the source Blender scene. Across 1,448 runtime poses, mount-local
-transforms remain fixed and physical firing origins match the rendered exits.
-An independent 181-pose review confirms the same invariants. The four static
+game units. Earlier Three.js playback and actual game-camera/aim paths were
+checked separately from Blender at `a0194813…`: 1,448 runtime poses plus an
+independent 181-pose review confirmed torso binding and physical firing origins.
+These historical counts are not a rerun claim for the final shin-guard revision. The four static
 necks intersect both attachment skins; rigid torso parenting preserves that
 contact through animation. Small knee/ankle/guard contacts remain around
 mechanical hinges. In-place playback provides usable locomotion; turns/transitions

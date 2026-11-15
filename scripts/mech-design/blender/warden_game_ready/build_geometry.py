@@ -5,7 +5,8 @@ import os
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from vent_rebuild import VENT_IDS, is_vent_backing, build_inserts
+from vent_rebuild import is_vent_backing, build_inserts
+from recipe import load_recipe
 from mount_connections import add_mount_connections
 from collections import defaultdict
 import bpy, bmesh, json, math, hashlib
@@ -15,9 +16,11 @@ from mathutils.bvhtree import BVHTree
 r = Path(os.environ["WARDEN_GAME_WORK"]).resolve()
 repo = Path(os.environ["WARDEN_GAME_REPO"]).resolve()
 source = Path(os.environ["WARDEN_GAME_SOURCE"]).resolve()
+config = load_recipe(repo)
+features = config["featureDecisions"]
 assert (
     hashlib.sha256(source.read_bytes()).hexdigest()
-    == "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9"
+    == config["inputs"]["source"]["sha256"]
 )
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(source))
@@ -69,7 +72,7 @@ reduced = defaultdict(list)
 for row in rows:
     if row["group"].startswith("pod_"):
         continue
-    if row["id"] in VENT_IDS or is_vent_backing(row):
+    if row["id"] in features["ventComponentIds"] or is_vent_backing(row):
         removed.append(
             {
                 "id": row["id"],
@@ -79,7 +82,7 @@ for row in rows:
             }
         )
         continue
-    if row["id"] in [485, 604]:
+    if row["id"] in features["gunRoofSliverIds"]:
         removed.append(
             {
                 "id": row["id"],
@@ -123,7 +126,7 @@ for row in rows:
         bpy.context.view_layer.objects.active = co
         co.select_set(True)
         mod = co.modifiers.new("Scoped round collar reduction", "DECIMATE")
-        mod.ratio = 0.65
+        mod.ratio = features["roundCollarRatio"]
         bpy.ops.object.modifier_apply(modifier=mod.name)
         cm.calc_loop_triangles()
         newpoints = [v.co.copy() for v in cm.vertices]
@@ -138,7 +141,7 @@ for row in rows:
             [newtree.find_nearest(v)[3] for v in samples(points, faces)]
             + [oldtree.find_nearest(v)[3] for v in samples(newpoints, newfaces)]
         )
-        if error > 0.0015:
+        if error > features["roundCollarMaximumSurfaceError"]:
             raise ValueError("Round collar exceeds scoped surface tolerance")
         reduced[row["group"]].append((newpoints, newfaces))
         round_reductions.append(
@@ -147,7 +150,7 @@ for row in rows:
                 "before": len(faces),
                 "after": len(newfaces),
                 "sampledBidirectionalSurfaceError": error,
-                "tolerance": 0.0015,
+                "tolerance": features["roundCollarMaximumSurfaceError"],
             }
         )
         bpy.data.objects.remove(co, do_unlink=True)
@@ -187,7 +190,7 @@ for group, face_ids in sorted(parts.items()):
     # Remove only near-coplanar internal tessellation; no collapse decimation.
     bmesh.ops.dissolve_limit(
         bm,
-        angle_limit=math.radians(0.8),
+        angle_limit=math.radians(features["planarDissolveDegrees"]),
         use_dissolve_boundaries=False,
         verts=list(bm.verts),
         edges=list(bm.edges),
@@ -207,8 +210,9 @@ for group, face_ids in sorted(parts.items()):
     scene.collection.objects.link(o)
     objects.append(o)
 bpy.data.objects.remove(raw, do_unlink=True)
-for side, folder in [("left", "pod"), ("right", "right-pod")]:
-    path = repo / "design/mechs/assets/warden/optimization" / folder / "pod.glb"
+for pod in config["inputs"]["pods"]:
+    side = pod["side"]
+    path = repo / pod["path"]
     existing = set(scene.objects)
     bpy.ops.import_scene.gltf(filepath=str(path))
     imported = [o for o in scene.objects if o not in existing]
@@ -296,29 +300,14 @@ for side, folder in [("left", "pod"), ("right", "right-pod")]:
     members[0].data.uv_layers.active_index = 0
     members[0].data.uv_layers[0].active_render = True
     objects = [o for o in scene.objects if o.type == "MESH"]
-pivots = {"rig_pelvis": [0, 0.08, 0.565], "rig_torso": [0, 0.08, 0.61]}
-parents = {"rig_pelvis": None, "rig_torso": "rig_pelvis"}
+pivots = {item["name"]: item["pivot"] for item in config["rigGroups"]}
+parents = {item["name"]: item["parent"] for item in config["rigGroups"]}
 for side, sign in [("left", 1), ("right", -1)]:
-    for suffix, point, parent in [
-        ("thigh", [sign * 0.136, 0.0767, 0.5164], "rig_pelvis"),
-        ("shin", [sign * 0.205, -0.048, 0.329], "rig_leg_" + side + "_thigh"),
-        ("foot", [sign * 0.2168, 0.01355, 0.0835], "rig_leg_" + side + "_shin"),
-    ]:
-        name = "rig_leg_" + side + "_" + suffix
-        pivots[name] = point
-        parents[name] = parent
-    for suffix, point in [
-        ("gun", [sign * 0.27, 0.07, 0.625]),
-        ("shoulder bank", [sign * 0.23, 0.103, 0.750]),
-    ]:
-        name = "rig_mount_" + side + "-" + suffix
-        pivots[name] = point
-        parents[name] = "rig_torso"
     anchors.append(
         {
             "name": "physical_exit_" + side + "_gun",
             "parent": "rig_mount_" + side + "-gun",
-            "worldPosition": [sign * 0.35083, -0.372, 0.6245],
+            "worldPosition": [sign * config["gunExit"]["positiveX"], config["gunExit"]["y"], config["gunExit"]["z"]],
             "direction": [0, -1, 0],
             "extras": {"source": "P2 barrel lip center; outside front plane by0.0031"},
         }
@@ -344,7 +333,7 @@ for anchor in anchors:
     anchor["extras"]["inheritedDepth"] = original.y
     anchor["extras"]["reprojectedRenderFaceY"] = hit.y
     anchor["worldPosition"][1] = hit.y - 0.001
-connections = add_mount_connections(objects, anchors, body)
+connections = add_mount_connections(objects, anchors, body, config["mountConnections"])
 report = {
     "staticConnections": connections,
     "shinGuardBinding": {
@@ -352,7 +341,7 @@ report = {
         "sourceComponents": [
             {"id": row["id"], "group": row["group"], "triangles": row["triangles"]}
             for row in rows
-            if row["id"] in {4, 5, 6, 8, 14, 17, 21, 246, 247, 248, 253, 276, 278, 279}
+            if row["id"] in {item["id"] for item in config["ownershipOverrides"]}
         ],
     },
     "sourceSha256": hashlib.sha256(source.read_bytes()).hexdigest(),

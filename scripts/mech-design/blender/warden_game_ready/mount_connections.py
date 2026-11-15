@@ -10,12 +10,6 @@ import bpy
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
-CONNECTION_SPECS = (
-    ("left_gun", "rig_mount_left-gun", 1, 0.12, 0.71, 0.016, 0.023),
-    ("right_gun", "rig_mount_right-gun", -1, 0.12, 0.71, 0.016, 0.023),
-    ("left_shoulder", "rig_mount_left-shoulder bank", 1, 0.103, 0.750, 0.014, 0.021),
-    ("right_shoulder", "rig_mount_right-shoulder bank", -1, 0.103, 0.750, 0.014, 0.021),
-)
 
 
 def surface_tree(objects):
@@ -30,10 +24,10 @@ def surface_tree(objects):
     return BVHTree.FromPolygons(vertices, faces, all_triangles=True, epsilon=0)
 
 
-def measure_connections(group_objects):
+def measure_connections(group_objects, connection_specs):
     torso = surface_tree(group_objects["rig_torso"])
     result = []
-    for identifier, mount, side, y, z, radius, collar_radius in CONNECTION_SPECS:
+    for identifier, mount, side, y, z, radius, collar_radius in connection_specs:
         tree = surface_tree(group_objects[mount])
         start, direction = Vector((0, y, z)), Vector((side, 0, 0))
         body_hit, body_normal, _, body_distance = torso.ray_cast(
@@ -158,9 +152,9 @@ def coupling_mesh(name, length, radius, collar_radius, material):
     return obj
 
 
-def add_mount_connections(objects, anchors, material):
+def add_mount_connections(objects, anchors, material, connection_specs):
     group_objects = {obj.name: [obj] for obj in objects}
-    measured = measure_connections(group_objects)
+    measured = measure_connections(group_objects, connection_specs)
     contracts = []
     neck_objects = []
     for row in measured:

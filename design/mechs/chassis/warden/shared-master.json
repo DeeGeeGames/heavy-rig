@@ -9,15 +9,21 @@
     },
     "warden-repair.glb": {
       "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.glb",
-      "sha256": "a29d7f5990ff7f46a4f031c2c244a0ef0421dde0e45f774503cf9851d9a36d95"
+      "sha256": "a29d7f5990ff7f46a4f031c2c244a0ef0421dde0e45f774503cf9851d9a36d95",
+      "storage": "git-history",
+      "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
     },
     "warden-b-repair.glb": {
       "path": "design/mechs/assets/warden/repaired-chassis/warden-b-repair.glb",
-      "sha256": "300263a03aa40e3be98bf61610629e347a622f0fe9c5500869050698ab06087a"
+      "sha256": "300263a03aa40e3be98bf61610629e347a622f0fe9c5500869050698ab06087a",
+      "storage": "git-history",
+      "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
     },
     "warden-c-repair.glb": {
       "path": "design/mechs/assets/warden/repaired-chassis/warden-c-repair.glb",
-      "sha256": "5cd6617be3a01bdfcd11c3fa4c2490b6405a6109b5be0c69fae6d8ee5ba3810c"
+      "sha256": "5cd6617be3a01bdfcd11c3fa4c2490b6405a6109b5be0c69fae6d8ee5ba3810c",
+      "storage": "git-history",
+      "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
     },
     "repair-report.json": {
       "path": "design/mechs/assets/warden/repaired-chassis/repair-report.json",

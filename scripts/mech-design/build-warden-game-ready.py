@@ -1,6 +1,6 @@
 """Rebuild the selected Warden derivative from immutable P2 and approved pod inputs.
 
-Requires Python/Pillow 13, Blender 5.2, Bun and pinned glTF Transform 4.5.1.
+Requires Python/Pillow 12.3, Blender 5.2, Bun and pinned glTF Transform 4.5.1.
 The anatomy rules are Warden-specific; this is not a universal mech retopologizer.
 """
 
@@ -17,22 +17,20 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[2])
 parser.add_argument("--output", type=Path, required=True)
 parser.add_argument("--blender-command", default="blender")
+parser.add_argument("--recipe", type=Path, default=Path("design/mechs/assets/warden/game-ready/recipe.json"))
 args = parser.parse_args()
 repo = args.repo.resolve()
 output = (repo / args.output).resolve()
 if not output.is_relative_to(repo / "design/mechs/generated") or output.exists():
     raise ValueError("Output must be a new directory inside design/mechs/generated")
-source = repo / "design/mechs/assets/warden/game-ready/source.glb"
+recipe_path = (repo / args.recipe).resolve()
+recipe = repo / "scripts/mech-design/blender/warden_game_ready"
+sys.path.insert(0, str(recipe))
+from recipe import load_recipe
+os.environ["WARDEN_GAME_RECIPE"] = str(recipe_path)
+config = load_recipe(repo)
+source = repo / config["inputs"]["source"]["path"]
 source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
-if source_hash != "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9":
-    raise ValueError("Selected P2 source hash differs; restore Git LFS inputs")
-for pod, expected in [
-    ("pod", "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5"),
-    ("right-pod", "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89"),
-]:
-    pod_path = repo / "design/mechs/assets/warden/optimization" / pod / "pod.glb"
-    if hashlib.sha256(pod_path.read_bytes()).hexdigest() != expected:
-        raise ValueError("Approved pod hash differs; restore selected Git LFS inputs")
 
 output.mkdir(parents=True)
 work = output / "geometry-work"
@@ -43,6 +41,7 @@ environment = dict(
     WARDEN_GAME_REPO=str(repo),
     WARDEN_GAME_WORK=str(work),
     WARDEN_GAME_SOURCE=str(source),
+    WARDEN_GAME_RECIPE=str(recipe_path),
 )
 blender = shlex.split(args.blender_command)
 if not blender:
@@ -134,15 +133,36 @@ run(
     "verify-rig",
 )
 asset = output / "warden.glb"
+from PIL import __version__ as pillow_version
+
+def version(command):
+    result = subprocess.run(command, cwd=repo, capture_output=True, text=True, check=True)
+    return result.stdout.strip().splitlines()[0]
+
+fingerprint_paths = [
+    Path(__file__), recipe_path,
+    *sorted(recipe.glob("*.py")),
+    repo / "scripts/mech-design/blender/locomotion_trial.py",
+    repo / "scripts/mech-design/verify-authored-rig.mjs",
+    repo / "scripts/mech-design/verify-game-ready.mjs",
+    repo / "bun.lock",
+]
 report = {
+    "toolVersions": {
+        "python": sys.version.split()[0],
+        "pillow": pillow_version,
+        "blender": version(blender + ["--version"]),
+        "bun": version(["bun", "--version"]),
+        "gltfTransform": version(transform + ["--version"]),
+    },
     "sourceSha256": source_hash,
     "sha256": hashlib.sha256(asset.read_bytes()).hexdigest(),
     "bytes": asset.stat().st_size,
     "asset": str(asset.relative_to(repo)),
     "scope": "Rebuilt candidate; compare exports before replacing the selected asset.",
     "recipeHashes": {
-        p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in sorted(recipe.glob("*.py"))
+        str(p.resolve().relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in fingerprint_paths
     },
 }
 (output / "reproduction.json").write_text(json.dumps(report, indent=2) + "\n")

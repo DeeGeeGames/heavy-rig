@@ -5,25 +5,24 @@ import os
 import json, struct, hashlib, io
 from PIL import Image
 import math
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from recipe import load_recipe
 
 r = Path(os.environ["WARDEN_GAME_WORK"]).resolve()
 repo = Path(os.environ["WARDEN_GAME_REPO"]).resolve()
-size = 128
+config = load_recipe(repo)
+size = config["atlas"]["size"]
 tile = size // 2
-pad = 3
+pad = config["atlas"]["paddingPixels"]
 inner = tile - 2 * pad
 color = Image.new("RGB", (size, size), (115, 125, 135))
 normal = Image.new("RGB", (size, size), (128, 128, 255))
 rows = []
-for side, folder in [("left", "pod"), ("right", "right-pod")]:
-    path = repo / "design/mechs/assets/warden/optimization" / folder / "pod.glb"
+for pod in config["inputs"]["pods"]:
+    side = pod["side"]
+    path = repo / pod["path"]
     b = path.read_bytes()
-    expected = {
-        "left": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5",
-        "right": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89",
-    }
-    if hashlib.sha256(b).hexdigest() != expected[side]:
-        raise ValueError("Approved pod hash differs; restore the selected source")
     n = struct.unpack_from("<I", b, 12)[0]
     g = json.loads(b[20 : 20 + n])
     data = b[28 + n :]

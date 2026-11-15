@@ -20,7 +20,9 @@
     },
     "after.gif": {
       "path": "design/mechs/assets/warden/guards/after.gif",
-      "sha256": "c66f0e7f7abe3cd6237c9586d3286c264512a34c50e4365168b756a1e1381e4f"
+      "sha256": "c66f0e7f7abe3cd6237c9586d3286c264512a34c50e4365168b756a1e1381e4f",
+      "storage": "git-history",
+      "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
     }
   },
   "remainingChecks": [

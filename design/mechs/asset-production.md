@@ -8,7 +8,7 @@
 4. **Structural audit:** inspect front/rear/both sides and underside; verify weapon families/counts, connectors, leg bulk, missing surfaces and joint boundaries. Inventory actual meshes, triangles, materials, textures, transforms and animation data. Record protected structural features and likely geometry/bake candidates using the [optimization procedure](game-optimization.md#1-freeze-the-source-and-record-the-component-contract). Identify repair work explicitly.
 5. **Articulation prototype:** work on a derivative. Assign every source piece to a named rigid assembly; separate remaining fused joints before acceptance. Set hip/knee/ankle/waist and weapon pivots, preserve neutral world placement and retain source-part provenance. Sweep one joint at a time, then test a combined pose. Check gaps, collisions, detached armor and unintended movement. A diagnostic hierarchy with estimated pivots is not a validated rig.
 6. **Variant assembly:** use the same shared chassis geometry for every variant. Establish module boundaries before repairing multiple generated bodies. Keep existing pod housings and supports shared where possible; replace front cartridges or weapon assemblies at explicit interfaces. Separately generated variants are references or module donors, not alternate chassis masters. Record interface transforms, protected openings and firing origins for optimization checks. Test replacement, empty mounts and muzzle alignment. See the mandatory [modular consistency rules](#modular-consistency-rules).
-7. **Game derivative:** follow the mandatory [component optimization procedure](game-optimization.md): classify features, construct the structural mesh, bake surface detail, consolidate materials, verify the exported GLB and compare it with the accepted source. Preserve functional interfaces, source assets and required reproduction inputs. Normalize units/orientation consistently across the assembled derivative. Establish budgets using actual camera distance, texture/material costs and representative on-screen crowds; a 10–20k-triangle candidate or the pod proof's reduction percentage is not a universal target.
+7. **Game derivative:** follow the [optimization procedure](game-optimization.md): measure geometry, sections and textures first, then choose selective repairs, component rebuilding or detail baking where the measured cost and appearance justify it. A source already near the intended budget may need only bounded cleanup. Consolidate compatible materials, verify the exported GLB and compare it with the source. Preserve functional interfaces, source assets and required reproduction inputs. Normalize units/orientation consistently across the assembled derivative. Establish budgets using actual camera distance, texture/material costs and representative on-screen crowds; a 10–20k-triangle candidate or the pod proof's reduction percentage is not a universal target.
 8. **In-game acceptance:** validate independent torso aim, gait, muzzle origins, equipped/empty variants, lighting and silhouette in the real runtime. Report measured performance separately from owner acceptance. Do not replace production models until the agreed preview gate passes.
 9. **Repeatability:** run the documented procedure on another chassis before calling it general. Record special cases, repair steps and automation gaps; revise this document and the skill as evidence changes.
 
@@ -30,65 +30,27 @@ See [checkpoint roles](assets/README.md) and
 
 ## Current Warden acceptance
 
-Stages 1–4 have approved references, original generated inputs, a source-part
-map and repaired shared chassis. Stage 5 is accepted for the reviewed motion
-envelope: current walk, suspended run and dedicated backward gait. The owner
-accepted the visible geometry with remaining fine-tuning deferred. Preserve the
-original large axles, unsplit exterior and shin-owned front guards. This does
-not establish exhaustive joint limits or zero mesh intersections.
+The selected route is the original-reference P2.0 50K source with reused approved
+pod geometry/bakes and selective repairs. The 39,748-triangle Warden A includes
+walk/run/backward clips, rigid torso-mounted arms/pods, shin-owned ankle guards,
+and physical firing anchors. See [the selected package](assets/warden/game-ready/README.md)
+and its exact-hash visual approval record. The owner accepted its appearance and
+demonstrated motion with "This is good. We can integrate this into the game to
+see how it looks soon."
 
-Stage 6 is complete for the usable draft pass, recorded in
-`chassis/warden/approved-stage6.json`. A/B/C and empty-shoulder configurations
-use the shared chassis and interchangeable cartridges with all three current
-motions. Twenty geometry-measured physical exit definitions are retained;
-9,975 center-ray checks across the actual GLB assemblies pass. Empty shoulders
-retain the two ballistic guns. Logical bank anchors are preserved separately.
+Normal game startup is unchanged. Next, integrate this selected asset for real
+in-game review. In-game appearance/feel, representative hardware performance,
+other equipped variants and second-chassis repeatability remain outstanding.
+The eight visible launcher cells map to six gameplay tubes without changing salvos.
 
-The owner accepted the demonstrated run/swivel gun-detail-to-leg contact and
-independent gun-aim contacts as-is. These are recorded draft limitations, not
-claims of collision-free or exhaustive aiming. The process goal is a usable
-full-roster result with polish allowed later; this step addresses Warden only.
-Physical launcher cartridges have eight exits each, while current production
-rigs use six. Resolve that mapping during runtime integration without silently
-changing gameplay salvo size.
-Stage 7 has an owner-approved **isolated own-left pod proof**, recorded in
-[approved-pod-optimization.json](chassis/warden/approved-pod-optimization.json).
-The selected pod has 922 triangles, two mesh sections and two materials; its
-source comparison has 16,622 triangles. The source mounting-opening boundary
-and nine anchors are preserved. The owner accepted the visual comparison with
-"This is good." This approves the component proof, not a complete optimized
-Warden, production replacement or measured runtime performance.
-
-The isolated **own-right pod** is also approved, recorded in
-[approved-right-pod-optimization.json](chassis/warden/approved-right-pod-optimization.json).
-Its exact reviewed GLB has 914 triangles (828 housing/collar and 86 cartridge),
-two sections/materials and four maps, versus 16,500 source triangles. The right
-86-edge mounting aperture, surrounding coverage and nine anchors are preserved.
-Selective rim baking retains side fasteners while keeping front bevel shading
-geometric. The owner said "Approved." Both retained pods exclude their mounting
-supports and still need reassembly with the chassis, variants and motions.
-
-The [optimization procedure and continuation instructions](game-optimization.md)
-record the successful method, observed failures and remaining work. The accepted
-pod and required source dependencies are retained; earlier competing reductions
-remain excluded. The proof keeps source scale and socket-local coordinates.
-Full-model optimization, a measured material/texture budget and consistent
-scale/orientation normalization remain open. The owner's MW5 Atlas/Stalker
-reference counts still need verification of triangle/polygon, LOD and equipment
-context before using them as external budget evidence.
-
-An owner-authorized P2.0-based **opt-in game derivative** now has a reproducible
-recipe, retargeted walk/run/backward clips, physical firing anchors and an
-adapter that installs rendering and combat origins together. See the
-[game-ready package](assets/warden/game-ready/README.md). It reuses the approved
-pod proofs and selected original-reference 50K source. Its implementation and
-browser evidence remain separate from owner visual acceptance; it does not
-replace the normal game, the shared-master approval or the earlier checkpoints.
-
-Stages 8 and 9 remain outstanding: runtime combat/aim/movement integration and
-performance acceptance, then exercising the complete workflow on another
-chassis. Kestrel and Maul currently have approved concepts only. No production
-game assets are replaced by these authoring checkpoints.
+Earlier dense-master assembly, articulation and pod approvals remain scoped
+historical evidence. The pod modules and gait direction directly informed the
+selected derivative. Editable checkpoints and required bake sources remain;
+superseded exports and verbose traces are recoverable using
+[the archive index](assets/warden/archived-outputs.json). They are not instructions
+to resume whole-body dense-master retopology. Previous independent mount/gimbal
+contact acceptance does not change the selected asset's rigid torso ownership.
+Kestrel and Maul currently have approved concepts only.
 
 ## Reproduction and acceptance
 

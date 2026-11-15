@@ -1,57 +1,46 @@
-# Retained production checkpoints
+# Retained mech authoring inputs
 
-These files are the inputs and accepted steps needed to continue the Warden
-production pipeline or branch from a prior step. Blender and GLB binaries use
-Git LFS. JSON records and selected acceptance evidence stay in ordinary Git.
+The selected Warden A derivative is documented in
+[game-ready/README.md](warden/game-ready/README.md). Its manifest identifies the
+owner-approved visual revision; normal game startup remains procedural until
+in-game integration and acceptance.
 
 ```sh
 git lfs install
 git lfs pull
-python3 scripts/mech-design/verify-assets.py
+bun install --frozen-lockfile
+python scripts/mech-design/verify-assets.py
 ```
 
-`manifest.json` pins every retained checkpoint file by repository-relative path,
-byte count and SHA-256. Approval records live in `../chassis/warden/`.
+`manifest.json` pins all retained assets by path, size and SHA-256. GLB and Blender
+files use Git LFS. The current build directly reads only:
 
-- `generated-source/body`: original Tripo B body input.
-- `generated-source/launcher-donor`: original Tripo A input supplying launchers.
-- `modular-assembly`: shared body and extracted module assembly checkpoint.
-- `repaired-chassis`: approved repaired shared master.
-- `articulation-base`: Blender source dependency for the guard recipe only;
-  its superseded walk previews, exports and reports are excluded.
-- `guards`: final approved shin-owned guards and original axles.
-- `interfaces`: shared sockets, cartridges and approved empty covers.
-- `motions/walk`, `motions/run`, `motions/backward`: selected current motions.
-- `components/walk`, `components/run`, `components/backward`: current validated
-  unoptimized shared chassis and socket-local module packages, each supporting
-  A/B/C and empty shoulders with measured physical exit anchors.
-- `components/physical-origins.json`: frozen measured anchor definitions; its
-  historical measurement status is superseded by `approved-stage6.json`.
-- `components/review`: retained firing-origin overlays and owner-accepted
-  clearance-contact evidence.
-- `optimization/pod`: owner-approved own-left pod component proof, packed
-  authoring checkpoint with required bake sources, original comparison GLB,
-  reports and selected export renders. It is a worked stage 7 example, not the
-  completed Warden derivative. See `approved-pod-optimization.json` and the
-  [optimization procedure](../game-optimization.md).
-- `optimization/right-pod`: owner-approved own-right housing/collar and launcher,
-  including the exact reviewed GLB, packed right-side bake references, source
-  comparison and matched textured/geometry-only views. Its cup reference is
-  already fitted to the right exits. See `approved-right-pod-optimization.json`.
-  Both pods are isolated proofs; supports and whole-model assembly remain open.
+- `warden/game-ready/source.glb`: unchanged P2.0 source generated from approved views.
+- `warden/optimization/{pod,right-pod}/pod.glb`: approved geometry and embedded bakes.
+- The selected recipe and shared gait implementation named by the game-ready package.
 
-Stable step paths hold one advancing result per step. Temporary candidates,
-render sequences, rejected reductions and competing animation trials stay out
-of the deliverable. Prior committed states remain accessible through Git.
-Historical IDs and internal Blender scene names are preserved to avoid modifying
-approved binary assets merely for naming consistency.
+Keep the packed `pod.blend` files and original pod comparisons to refine or
+rebake those modules. The right pod recipe also reads
+`warden/components/physical-origins.json`. Approved component comparisons remain
+complete so their existing review builder can still reproduce the review page.
 
-Preserving the older articulation base is necessary: the accepted guard recipe
-uses it as input. Current animation assets live only under `motions/`; see
-`chassis/warden/approved-locomotion.json` for their acceptance. The original
-launcher-donor model is likewise retained as a required source, not a separately
-approved production chassis.
+Other retained Blender files under `modular-assembly`, `repaired-chassis`,
+`articulation-base`, `guards`, `interfaces` and `motions` are editable historical
+checkpoints. They preserve useful earlier assembly and animation work; they are
+not additional inputs to the selected P2 build. Original generated body and
+launcher-donor models remain unchanged as provenance and potential module sources.
 
-See the [authoring commands](../../../scripts/mech-design/blender/README.md)
-for recipe invocation. Storage does not establish final optimization, runtime
-acceptance or end-to-end regeneration from the original provider job.
+Superseded dense-master GLB exports, component bundles, per-frame matrix traces
+and the old guard GIF are indexed in [archived-outputs.json](warden/archived-outputs.json).
+Their original hashes and containing Git revision are preserved. Historical
+approval records label archived artifact paths with `storage: git-history`.
+To recover PR ancestry after a squash merge or branch deletion, run
+`git fetch origin refs/pull/69/head`. To run the complete historical workflow,
+use a separate checkout at the archive revision,
+restore its LFS files and use its original manifest and commands. No Git history
+or shared LFS object storage is pruned by this cleanup.
+
+New candidates and bulk validation evidence belong in ignored `generated/`.
+Retain the advancing result, necessary inputs, recipe, compact validation summary
+and approval record. Regenerate derivative exports instead of retaining duplicate
+review packages for every animation and intermediate assembly step.

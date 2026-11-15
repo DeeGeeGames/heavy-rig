@@ -19,11 +19,15 @@
         },
         "motion.glb": {
           "path": "design/mechs/assets/warden/motions/walk/motion.glb",
-          "sha256": "af469b17a447755c07882654ee9af2f34becee957bc9462f2331747506c8d712"
+          "sha256": "af469b17a447755c07882654ee9af2f34becee957bc9462f2331747506c8d712",
+          "storage": "git-history",
+          "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
         },
         "gait-report.json": {
           "path": "design/mechs/assets/warden/motions/walk/gait-report.json",
-          "sha256": "87c1612bccbdeb7925aeca32754b047fa14317cc64ac96155ebc0563a1f29652"
+          "sha256": "87c1612bccbdeb7925aeca32754b047fa14317cc64ac96155ebc0563a1f29652",
+          "storage": "git-history",
+          "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
         },
         "three-verification.json": {
           "path": "design/mechs/assets/warden/motions/walk/three-verification.json",
@@ -41,11 +45,15 @@
         },
         "motion.glb": {
           "path": "design/mechs/assets/warden/motions/run/motion.glb",
-          "sha256": "205ba4015d0bf05fcd8cea1dd65d38d57e8952d0da5b2641d6c2adf6bece11ac"
+          "sha256": "205ba4015d0bf05fcd8cea1dd65d38d57e8952d0da5b2641d6c2adf6bece11ac",
+          "storage": "git-history",
+          "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
         },
         "gait-report.json": {
           "path": "design/mechs/assets/warden/motions/run/gait-report.json",
-          "sha256": "cd086e43b81b5a82923f708355e6ae00912d5dce47d20253a51d12d51f62831f"
+          "sha256": "cd086e43b81b5a82923f708355e6ae00912d5dce47d20253a51d12d51f62831f",
+          "storage": "git-history",
+          "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
         },
         "three-verification.json": {
           "path": "design/mechs/assets/warden/motions/run/three-verification.json",
@@ -63,11 +71,15 @@
         },
         "motion.glb": {
           "path": "design/mechs/assets/warden/motions/backward/motion.glb",
-          "sha256": "f51a5be76251509c04d95070f995f8083a761b9e226a4b7b9a266d8fd79a28ba"
+          "sha256": "f51a5be76251509c04d95070f995f8083a761b9e226a4b7b9a266d8fd79a28ba",
+          "storage": "git-history",
+          "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
         },
         "gait-report.json": {
           "path": "design/mechs/assets/warden/motions/backward/gait-report.json",
-          "sha256": "1e5cfd7f662babfb4da33fe0338c9e464adc93f77c3a95f0575239f506990e33"
+          "sha256": "1e5cfd7f662babfb4da33fe0338c9e464adc93f77c3a95f0575239f506990e33",
+          "storage": "git-history",
+          "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
         },
         "three-verification.json": {
           "path": "design/mechs/assets/warden/motions/backward/three-verification.json",

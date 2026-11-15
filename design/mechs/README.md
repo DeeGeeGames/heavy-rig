@@ -6,7 +6,7 @@ Use this kit to discuss and generate Heavy Rig art across chats. Start with “C
 
 For the stages after reference approval, read [Mech asset production](asset-production.md): source audit, articulation, shared variant modules, optimization, in-game acceptance and repeatability. This is the evolving process record; experimental results are not yet production defaults.
 
-For stage 7, use the [game optimization procedure](game-optimization.md). It defines feature decisions, structural and bake checks, exported-model comparisons, and where to resume the Warden from its approved pod proof. The pod establishes a reviewed component example; full-model optimization and runtime acceptance remain open.
+For stage 7, use the [game optimization procedure](game-optimization.md). It defines cost measurement, selective repairs, structural and bake checks, and exported-model comparisons. The selected Warden P2 derivative has owner visual approval; in-game acceptance and a second-chassis trial remain open. Start with its game-ready package rather than the historical dense-master optimization sequence.
 
 - `src/frames.ts`, `src/hardpoints.ts`, `src/arsenal.ts` and `src/combat-resources.ts` own gameplay facts. The kit reads them directly, including mount limits and loaded mass. Never maintain another weapon compatibility table.
 - `design/mechs/style.json` owns shared art direction and chassis anatomy. The supplied V3.1 specification is preserved in `source/` for provenance.
@@ -37,7 +37,7 @@ Review the four views together. Check weapon assemblies against a newly composed
 
 Store each approved set in `chassis/<chassis>/turnaround/<variant>/` with four image files, exact per-view prompts, copied current contract/request, a manifest containing baseline ID/hash and each output hash, and a review. Keep approval status pending until the owner approves the complete set. Concept, turnaround and resulting 3D model approvals are separate. A changed baseline or gameplay contract requires turnaround revalidation. The existing CLI composes baseline/variant contracts; directional prompts and this approval gate are currently a documented manual workflow, not a new CLI mode.
 
-After turnaround approval, supply the separate views to Tripo's multi-view input. Inspect the generated model from all sides before texturing or reducing polygon count. Separate meshes do not guarantee attachment geometry, usable pivots or an animation hierarchy. Retain a cleaned source and derive lower-detail assets from it. Reuse one chassis across variants and change weapon modules; corresponding variant views should preserve the approved chassis geometry. Public model generations/uploads are permitted by the owner.
+After turnaround approval, supply the separate views to Tripo's multi-view input. Inspect the generated model from all sides before texturing or reducing polygon count. Separate meshes do not guarantee attachment geometry, usable pivots or an animation hierarchy. Preserve the raw source, measure its geometry/material/texture costs, and derive a cleaned game asset using selective repairs or reduction where justified. Reuse one chassis across variants and change weapon modules; corresponding variant views should preserve the approved chassis geometry. Public model generations/uploads are permitted by the owner.
 
 Tripo references: [multi-view inputs](https://www.tripo3d.ai/product-doc/model-generation/multi-view-to-3d) and [view consistency guidance](https://www.tripo3d.ai/help/features/how-to-use-multi-view-input-effectively).
 

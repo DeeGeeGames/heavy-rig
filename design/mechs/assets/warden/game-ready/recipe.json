@@ -1,0 +1,633 @@
+{
+  "schemaVersion": 1,
+  "chassis": "warden",
+  "scope": "Frozen P2.0 source-specific anatomy and repair recipe; shared tooling does not infer these choices for another chassis.",
+  "inputs": {
+    "source": {
+      "path": "design/mechs/assets/warden/game-ready/source.glb",
+      "sha256": "3dd7eb875bafd4ba536f874b8e44583f06ae4bf1bcbb9fac998c44910b5252b9"
+    },
+    "pods": [
+      {
+        "side": "left",
+        "path": "design/mechs/assets/warden/optimization/pod/pod.glb",
+        "sha256": "a93920080db8c2ea60130de46628b53322622a3a66a44a0fce2c86533525c2a5"
+      },
+      {
+        "side": "right",
+        "path": "design/mechs/assets/warden/optimization/right-pod/pod.glb",
+        "sha256": "5ee718e21d23be22144c2f5b87d9bff5df0aef8847bb4f5141f2aaadb000ed89"
+      }
+    ]
+  },
+  "ownershipOverrides": [
+    {
+      "id": 4,
+      "triangles": 52,
+      "minimum": [
+        -0.2966307997703552,
+        -0.13989262282848358,
+        0.0673828125
+      ],
+      "maximum": [
+        -0.15600579977035522,
+        -0.023681694641709328,
+        0.14208984375
+      ],
+      "from": "rig_leg_right_foot",
+      "to": "rig_leg_right_shin",
+      "role": "front ankle guard plate",
+      "probePositionsGlb": [
+        [
+          -0.27221821252988,
+          0.09912224117442854,
+          0.1188995934564929
+        ],
+        [
+          -0.1833512336525034,
+          0.14208807045770133,
+          0.10912979600402548
+        ],
+        [
+          -0.281493574364958,
+          0.11669661096720786,
+          0.031008968456492897
+        ]
+      ]
+    },
+    {
+      "id": 5,
+      "triangles": 58,
+      "minimum": [
+        -0.2746581435203552,
+        -0.11840825527906418,
+        0.111328125
+      ],
+      "maximum": [
+        -0.2683104872703552,
+        -0.11303716152906418,
+        0.1162109375
+      ],
+      "from": "rig_leg_right_foot",
+      "to": "rig_leg_right_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          -0.26977732783643843,
+          0.11327937239638967,
+          0.11742880396172684
+        ]
+      ]
+    },
+    {
+      "id": 6,
+      "triangles": 58,
+      "minimum": [
+        -0.2932128310203552,
+        -0.05004888400435448,
+        0.1025390625
+      ],
+      "maximum": [
+        -0.2878417372703552,
+        -0.04077154025435448,
+        0.1123046875
+      ],
+      "from": "rig_leg_right_foot",
+      "to": "rig_leg_right_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          -0.29125711313872427,
+          0.1108384877029481,
+          0.04711880743320729
+        ]
+      ]
+    },
+    {
+      "id": 8,
+      "triangles": 58,
+      "minimum": [
+        -0.2697753310203552,
+        -0.09448247402906418,
+        0.1357421875
+      ],
+      "maximum": [
+        -0.2639159560203552,
+        -0.08959966152906418,
+        0.14111328125
+      ],
+      "from": "rig_leg_right_foot",
+      "to": "rig_leg_right_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          -0.2653837353882436,
+          0.14013536270294807,
+          0.09253178008862281
+        ]
+      ]
+    },
+    {
+      "id": 14,
+      "triangles": 58,
+      "minimum": [
+        -0.19799798727035522,
+        -0.13696293532848358,
+        0.1103515625
+      ],
+      "maximum": [
+        -0.19213861227035522,
+        -0.13159184157848358,
+        0.11572265625
+      ],
+      "from": "rig_leg_right_foot",
+      "to": "rig_leg_right_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          -0.19555565711971123,
+          0.11230301851901302,
+          0.13647396324927222
+        ]
+      ]
+    },
+    {
+      "id": 17,
+      "triangles": 58,
+      "minimum": [
+        -0.16333001852035522,
+        -0.08471683412790298,
+        0.10205078125
+      ],
+      "maximum": [
+        -0.15747064352035522,
+        -0.07495120912790298,
+        0.11181640625
+      ],
+      "from": "rig_leg_right_foot",
+      "to": "rig_leg_right_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          -0.1574715972233216,
+          0.10595671831606496,
+          0.07788021324927222
+        ]
+      ]
+    },
+    {
+      "id": 21,
+      "triangles": 58,
+      "minimum": [
+        -0.19213861227035522,
+        -0.11303714662790298,
+        0.134765625
+      ],
+      "maximum": [
+        -0.18579095602035522,
+        -0.10815433412790298,
+        0.14013671875
+      ],
+      "from": "rig_leg_right_foot",
+      "to": "rig_leg_right_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          -0.1877448261006982,
+          0.13720630107081822,
+          0.11254703457484369
+        ]
+      ]
+    },
+    {
+      "id": 246,
+      "triangles": 52,
+      "minimum": [
+        0.15600591897964478,
+        -0.1398925632238388,
+        0.0673828125
+      ],
+      "maximum": [
+        0.2966309189796448,
+        -0.02368162013590336,
+        0.14208984375
+      ],
+      "from": "rig_leg_left_foot",
+      "to": "rig_leg_left_shin",
+      "role": "front ankle guard plate",
+      "probePositionsGlb": [
+        [
+          0.17114064091356157,
+          0.08105343576425977,
+          0.12378131813989249
+        ],
+        [
+          0.27417100969160046,
+          0.11474390321245462,
+          0.1159642284421783
+        ],
+        [
+          0.18628038469160044,
+          0.14159989351901303,
+          0.027585426503489996
+        ]
+      ]
+    },
+    {
+      "id": 247,
+      "triangles": 58,
+      "minimum": [
+        0.19213873147964478,
+        -0.1369628757238388,
+        0.1103515625
+      ],
+      "maximum": [
+        0.19799810647964478,
+        -0.1315917819738388,
+        0.11572265625
+      ],
+      "from": "rig_leg_left_foot",
+      "to": "rig_leg_left_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          0.1955557465266784,
+          0.11230301851901302,
+          0.13647391854578864
+        ]
+      ]
+    },
+    {
+      "id": 248,
+      "triangles": 58,
+      "minimum": [
+        0.15747076272964478,
+        -0.0847167894244194,
+        0.10205078125
+      ],
+      "maximum": [
+        0.16333013772964478,
+        -0.0749511644244194,
+        0.11181640625
+      ],
+      "from": "rig_leg_left_foot",
+      "to": "rig_leg_left_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          0.15747168663028877,
+          0.10595671831606496,
+          0.07788016854578864
+        ]
+      ]
+    },
+    {
+      "id": 253,
+      "triangles": 58,
+      "minimum": [
+        0.18627935647964478,
+        -0.1130371019244194,
+        0.134765625
+      ],
+      "maximum": [
+        0.19213873147964478,
+        -0.1081542894244194,
+        0.14013671875
+      ],
+      "from": "rig_leg_left_foot",
+      "to": "rig_leg_left_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          0.18774491550766537,
+          0.13720630107081822,
+          0.11254698987136011
+        ]
+      ]
+    },
+    {
+      "id": 276,
+      "triangles": 58,
+      "minimum": [
+        0.2687988877296448,
+        -0.11840818077325821,
+        0.111328125
+      ],
+      "maximum": [
+        0.2746582627296448,
+        -0.11303708702325821,
+        0.1162109375
+      ],
+      "from": "rig_leg_left_foot",
+      "to": "rig_leg_left_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          0.27221830193684715,
+          0.11279119545770135,
+          0.11791693619693155
+        ]
+      ]
+    },
+    {
+      "id": 278,
+      "triangles": 58,
+      "minimum": [
+        0.2878418564796448,
+        -0.05004880949854851,
+        0.1025390625
+      ],
+      "maximum": [
+        0.2932129502296448,
+        -0.04077146574854851,
+        0.1123046875
+      ],
+      "from": "rig_leg_left_foot",
+      "to": "rig_leg_left_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          0.29125720254569143,
+          0.1108384877029481,
+          0.04370152415890549
+        ]
+      ]
+    },
+    {
+      "id": 279,
+      "triangles": 58,
+      "minimum": [
+        0.2639160752296448,
+        -0.09448239952325821,
+        0.1357421875
+      ],
+      "maximum": [
+        0.2697754502296448,
+        -0.08959958702325821,
+        0.14111328125
+      ],
+      "from": "rig_leg_left_foot",
+      "to": "rig_leg_left_shin",
+      "role": "guard fastener",
+      "probePositionsGlb": [
+        [
+          0.2653838247952108,
+          0.14013536270294807,
+          0.09253173538513923
+        ]
+      ]
+    }
+  ],
+  "rigGroups": [
+    {
+      "name": "rig_pelvis",
+      "pivot": [
+        0,
+        0.08,
+        0.565
+      ],
+      "parent": null
+    },
+    {
+      "name": "rig_torso",
+      "pivot": [
+        0,
+        0.08,
+        0.61
+      ],
+      "parent": "rig_pelvis"
+    },
+    {
+      "name": "rig_leg_left_thigh",
+      "pivot": [
+        0.136,
+        0.0767,
+        0.5164
+      ],
+      "parent": "rig_pelvis"
+    },
+    {
+      "name": "rig_leg_left_shin",
+      "pivot": [
+        0.205,
+        -0.048,
+        0.329
+      ],
+      "parent": "rig_leg_left_thigh"
+    },
+    {
+      "name": "rig_leg_left_foot",
+      "pivot": [
+        0.2168,
+        0.01355,
+        0.0835
+      ],
+      "parent": "rig_leg_left_shin"
+    },
+    {
+      "name": "rig_mount_left-gun",
+      "pivot": [
+        0.27,
+        0.07,
+        0.625
+      ],
+      "parent": "rig_torso"
+    },
+    {
+      "name": "rig_mount_left-shoulder bank",
+      "pivot": [
+        0.23,
+        0.103,
+        0.75
+      ],
+      "parent": "rig_torso"
+    },
+    {
+      "name": "rig_leg_right_thigh",
+      "pivot": [
+        -0.136,
+        0.0767,
+        0.5164
+      ],
+      "parent": "rig_pelvis"
+    },
+    {
+      "name": "rig_leg_right_shin",
+      "pivot": [
+        -0.205,
+        -0.048,
+        0.329
+      ],
+      "parent": "rig_leg_right_thigh"
+    },
+    {
+      "name": "rig_leg_right_foot",
+      "pivot": [
+        -0.2168,
+        0.01355,
+        0.0835
+      ],
+      "parent": "rig_leg_right_shin"
+    },
+    {
+      "name": "rig_mount_right-gun",
+      "pivot": [
+        -0.27,
+        0.07,
+        0.625
+      ],
+      "parent": "rig_torso"
+    },
+    {
+      "name": "rig_mount_right-shoulder bank",
+      "pivot": [
+        -0.23,
+        0.103,
+        0.75
+      ],
+      "parent": "rig_torso"
+    }
+  ],
+  "gunExit": {
+    "positiveX": 0.35083,
+    "y": -0.372,
+    "z": 0.6245
+  },
+  "featureDecisions": {
+    "ventComponentIds": [
+      53,
+      211,
+      212,
+      213,
+      214,
+      215,
+      216,
+      217,
+      218,
+      220,
+      221,
+      222,
+      230,
+      393,
+      394,
+      397,
+      398,
+      399,
+      400,
+      401,
+      402,
+      403,
+      404,
+      405,
+      406,
+      415,
+      486,
+      487,
+      488,
+      489,
+      490,
+      491,
+      492,
+      493,
+      494,
+      495,
+      496,
+      497,
+      565,
+      566,
+      567,
+      568,
+      569,
+      570,
+      571,
+      572,
+      573,
+      574,
+      575,
+      576,
+      577,
+      578,
+      589,
+      590,
+      591,
+      592,
+      593,
+      594,
+      595,
+      596,
+      597,
+      598,
+      599,
+      600,
+      601,
+      637,
+      638,
+      639,
+      640,
+      641,
+      642,
+      643,
+      644,
+      645,
+      646,
+      647,
+      648,
+      649,
+      650,
+      651
+    ],
+    "gunRoofSliverIds": [
+      485,
+      604
+    ],
+    "planarDissolveDegrees": 0.8,
+    "roundCollarRatio": 0.65,
+    "roundCollarMaximumSurfaceError": 0.0015
+  },
+  "atlas": {
+    "size": 128,
+    "paddingPixels": 3
+  },
+  "mountConnections": [
+    [
+      "left_gun",
+      "rig_mount_left-gun",
+      1,
+      0.12,
+      0.71,
+      0.016,
+      0.023
+    ],
+    [
+      "right_gun",
+      "rig_mount_right-gun",
+      -1,
+      0.12,
+      0.71,
+      0.016,
+      0.023
+    ],
+    [
+      "left_shoulder",
+      "rig_mount_left-shoulder bank",
+      1,
+      0.103,
+      0.75,
+      0.014,
+      0.021
+    ],
+    [
+      "right_shoulder",
+      "rig_mount_right-shoulder bank",
+      -1,
+      0.103,
+      0.75,
+      0.014,
+      0.021
+    ]
+  ],
+  "validation": {
+    "sourceBoundsTolerance": 1e-7,
+    "ownershipProbeTolerance": 0.00003
+  }
+}

@@ -1,8 +1,10 @@
 # Game optimization procedure
 
-Stage 7 builds a game derivative from the accepted structure. Its default method
-for dense mechanical surfaces is to construct a small mesh around structural
-features, then transfer suitable surface detail onto it. Use this procedure with
+Stage 7 builds a game derivative from the selected source. Measure its actual
+geometry, sections, textures and expected scene use before choosing the work.
+Keep acceptable geometry near budget and repair expensive or visibly defective
+features selectively. Rebuild structural meshes and bake detail when that work
+has a demonstrated benefit. Use this procedure with
 the [production stages](asset-production.md) and
 [modular consistency rules](asset-production.md#modular-consistency-rules).
 
@@ -136,25 +138,17 @@ Automate inventories, invariant checks, packaging, validation and matched
 comparison generation. Keep component-specific feature decisions explicit. The
 code for one mechanical shape is not a universal automatic reconstruction tool.
 
-## Warden pod example and observed repairs
+## Reused Warden pod modules
 
-The approved own-left pod contains the shared housing/collar and launcher
-cartridge; mounting struts and the rest of the mech are outside this proof.
-See the [approval record](chassis/warden/approved-pod-optimization.json),
-[retained assets](assets/warden/optimization/pod/) and
+The approved left/right pod packages retain editable bake sources, selected GLBs,
+source comparisons and complete matched review views. They are reusable inputs
+to the current derivative; their isolated reduction percentages and original
+texture sizes are not whole-mech targets. See the
+[component approvals](chassis/warden/approved-pod-optimization.json),
+[right-side approval](chassis/warden/approved-right-pod-optimization.json) and
 [authoring commands](../../scripts/mech-design/blender/README.md).
 
-The selected export has 922 triangles: 836 for the housing/collar and 86 for the
-cartridge. It uses two mesh sections, two materials and four maps: housing normal
-and base color at 1024², cartridge normal and base color at 512². The isolated
-source has 16,622 triangles. These are component measurements, not a budget or
-expected reduction for the whole Warden.
-
-The proof preserves nine anchors, the source mounting-opening boundary and the
-skin around it. Its checks include 40 clear outgoing samples and 90 underside
-coverage samples matching the source. Those sample counts belong to the pod's
-contract. The selected revision passed export checks and independent review;
-owner acceptance is recorded separately in the approval file.
+The useful repairs from those proofs are retained below.
 
 | Observed failure | Repair to carry into future work |
 | --- | --- |
@@ -172,69 +166,15 @@ launcher render face must not be used as a projectile collision mesh. The pod
 retains source units and socket-local coordinates; gameplay-size images are
 camera-scale estimates, and hardware frame time has not been measured.
 
-### Approved own-right continuation
-
-The [own-right approval](chassis/warden/approved-right-pod-optimization.json) and
-[retained package](assets/warden/optimization/right-pod/) preserve the exact
-914-triangle export accepted with "Approved." Its isolated source has 16,500
-triangles. The right housing/collar has 828 triangles and its separate launcher
-has 86; supports remain excluded. Its 86-edge mounting boundary differs from
-the left proof's 94 edges and is preserved against the actual right source.
-
-The reconstructed cup reference was fitted to the frozen right exits before
-approval and is packed in the right authoring checkpoint. Rebuilding must reuse
-that fitted reference rather than fitting it again. Right shell and raw launcher
-normals were repaired in working bake copies; the source comparison is unchanged
-apart from its stated neutral review material and coordinate isolation.
-
-Projecting the original rim bevel shading onto the rebuilt front produced
-doubled edges. Neutralizing the entire rim then erased visible side fasteners.
-The accepted repair keeps front bevels geometric and transfers outer-rim detail
-selectively. Retain this distinction in future bakes rather than removing visible
-source details to hide projection defects. Matched textured and geometry-only
-views are retained for both sides, rear, underside, oblique and estimated camera
-sizes. Both pod approvals remain component proofs, not full Warden acceptance.
-
-## Resume the remaining Warden work
-
-1. Restore LFS assets and run the asset verifier using the authoring commands.
-   Read `approved-stage6.json`, `approved-pod-optimization.json` and
-   `approved-right-pod-optimization.json`. Reproduce or
-   inspect the approved pod with the retained inputs and documented tools before
-   using its method on another component.
-2. Inventory the remaining stage 6 shared chassis and modules under
-   `assets/warden/components/`. Record feature decisions, protected interfaces
-   and expected camera sizes. Choose the next component from that measured
-   inventory; do not assign every part the pod's reduction ratio. The current
-   [Warden inventory and component sequence](chassis/warden/optimization-plan.md)
-   records the retained source costs and next component priorities.
-3. Produce isolated component candidates using this procedure. Preserve the
-   exact shared-body/module ownership and approved motion envelope. Use the pod
-   as an approved reference while keeping its source dependencies available.
-4. Assemble the optimized parts with the retained variants and motions. Verify
-   shared identity, placement, empty mounts, articulation, aiming and firing
-   contracts. Carry forward the accepted stage 6 contacts and limitations; report
-   new or worsened interference. Establish the whole-model material/texture
-   budget and consistent scale/orientation before presenting the complete stage
-   7 derivative.
-5. Complete stage 8 in the real runtime, then exercise the process on another
-   chassis for stage 9. Preserve logical bank anchors separately from physical
-   exits. Warden's eight physical launcher exits still require mapping to the
-   production six-tube rig without silently changing salvo size.
-
-PR 67 remains draft and open for the unfinished process. The approved pod closes
-its component proof only; it does not complete stage 7 for the full Warden or
-authorize production replacement.
-
 ## P2.0 source with retained optimized modules
 
-A later owner-authorized Warden experiment starts from an original-reference
+The selected Warden A route starts from an original-reference
 P2.0 50K source rather than globally reducing the accepted dense master. The
 selected source returned 44,793 triangles. It is frozen under
 `assets/warden/game-ready/source.glb`; the explicit recipe and runtime candidate
 are documented in [the game-ready package](assets/warden/game-ready/README.md).
-This is an opt-in integration candidate, not a replacement approval for the
-older master or evidence that one budget works for every chassis.
+The current exact revision has owner visual approval and remains opt-in until
+in-game acceptance. Its budget and feature rules are specific to Warden.
 
 Reuse the approved pod geometry and bakes as modules when fitting permits.
 Small bounded fitting adjustments, a shared atlas and scoped collar reduction
@@ -273,3 +213,36 @@ rig matrices, clips, UVs and normals after packing. Preserve empty anchor nodes.
 The full recipe has reproduced a selected candidate byte-for-byte; binary
 repeatability on this toolchain does not establish cross-chassis repeatability,
 owner visual acceptance or hardware frame-time performance.
+
+## Continue from the selected result
+
+1. Restore retained inputs, verify hashes, and use the selected game-ready recipe.
+2. Rebuild in a fresh ignored directory and validate the actual exported asset.
+   Compare its hash and compact validation results with the selected revision.
+3. Generate the standalone study/game preview with the tracked preview builder.
+   Record visual approval against the exact export; source, component and whole-
+   model approvals have separate scopes.
+4. Integrate the selected Warden A for game-camera/lighting, firing, gait and
+   representative crowd measurements. Owner appearance/feel and hardware results
+   remain separate from automation. Review other module configurations when built.
+5. Apply the procedure to a second chassis. Supply its own source-specific recipe
+   and feature decisions, then revise the process using the observed work.
+
+## Lessons from superseded routes
+
+The detailed-source and simplified-source experiments did not justify treating
+triangle reduction as the sole definition of game readiness. Compare geometry
+memory, material sections, texture storage and hands-on repair time. A smaller
+GLB alone does not prove lower runtime cost. For this Warden, a near-budget source
+plus selected module reuse/repair produced the accepted result with less broad
+reconstruction. This remains a chassis-specific observation.
+
+World-space weapon stabilization and flexible connectors were discarded. Resolve
+rigid ownership first: torso carries arms/pods; shin carries ankle guards; foot
+carries toe/sole/bearing. Verify those relationships through motion before adding
+aim corrections. Use shared simulation-owned pose data for firing origins.
+
+The old dense-master component sequence is historical. Its derivative exports
+and full traces are recoverable from [the archive index](assets/warden/archived-outputs.json).
+Do not resume that sequence as the default next task. Retained editable masters,
+approved pod bake inputs and the gait implementation preserve the useful work.

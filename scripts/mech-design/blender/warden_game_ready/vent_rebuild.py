@@ -7,11 +7,6 @@ visible surfaces are separated in depth rather than using a depth-bias shader.
 
 from mathutils import Vector
 
-VENT_IDS = (
-    {53, *range(486, 498), *range(589, 602)}
-    | {220, 221, 222, 393, 394, *range(570, 579), *range(637, 647)}
-    | {*range(211, 219), 230, *range(565, 570), *range(397, 407), 415, *range(647, 652)}
-)
 
 
 def is_vent_backing(row):

@@ -12,11 +12,15 @@
     },
     "motion.glb": {
       "path": "design/mechs/assets/warden/motions/run/motion.glb",
-      "sha256": "205ba4015d0bf05fcd8cea1dd65d38d57e8952d0da5b2641d6c2adf6bece11ac"
+      "sha256": "205ba4015d0bf05fcd8cea1dd65d38d57e8952d0da5b2641d6c2adf6bece11ac",
+      "storage": "git-history",
+      "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
     },
     "gait-report.json": {
       "path": "design/mechs/assets/warden/motions/run/gait-report.json",
-      "sha256": "cd086e43b81b5a82923f708355e6ae00912d5dce47d20253a51d12d51f62831f"
+      "sha256": "cd086e43b81b5a82923f708355e6ae00912d5dce47d20253a51d12d51f62831f",
+      "storage": "git-history",
+      "gitRevision": "04127e5d3fcce414de4e460d2adef2248482d755"
     },
     "three-verification.json": {
       "path": "design/mechs/assets/warden/motions/run/three-verification.json",

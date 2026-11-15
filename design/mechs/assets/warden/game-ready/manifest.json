@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "implementation-complete-awaiting-owner-visual-acceptance",
+  "status": "owner-visual-approved-awaiting-in-game-acceptance",
   "chassis": "warden",
   "variant": "warden-a",
   "scope": "Opt-in runtime asset; ordinary game and prior approved checkpoints unchanged",
@@ -67,7 +67,7 @@
     "upper_4"
   ],
   "acceptanceLimits": [
-    "Independent review and automation do not replace owner visual or hardware performance acceptance",
+    "Owner approved the exact Warden A appearance and demonstrated study motion; in-game appearance/feel and hardware performance acceptance remain open",
     "Existing analytic gameplay collisions remain authoritative; baked launcher face is not a projectile collider",
     "Second chassis repeatability not established"
   ],
@@ -75,8 +75,8 @@
     "Reused approved pod shells and launcher bakes fitted to selected source",
     "Explicit UV render-layer selection and MikkTSpace tangents",
     "Removed two gun-roof slivers and rebuilt six overlapping vent inserts",
-    "Lower-bracket pitch axes placed at measured torso attachment band",
     "Runtime waist-origin normalization and offset-aware weapon convergence",
     "Rigid torso parenting for all four mounts and one combined static structural neck mesh"
-  ]
+  ],
+  "approval": "design/mechs/assets/warden/game-ready/approval.json"
 }

@@ -28,11 +28,10 @@ const fixture = function (connections = false) {
 				const mountAnchor = new Group(); mountAnchor.name = `connection_${id}_mount`; mountAnchor.position.set(-sign * 0.04, 0, 0.015); part.add(mountAnchor);
 				const housing = new BoxGeometry(0.12, 0.12, 0.12); geometries.push(housing); part.add(new Mesh(housing, material));
 				const end = part.position.clone().add(mountAnchor.position); const direction = end.sub(bodyAnchor.position); const length = direction.length();
-				const control = new Group(); control.name = `static_${id}`; control.position.copy(bodyAnchor.position); control.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), direction.normalize());
-				control.userData = { bodyAnchor: bodyAnchor.name, mountAnchor: mountAnchor.name, baseLengthNative: length, axis: [0, 1, 0], sleeveOverlapFraction: 0.28, radiusNative: 0.012, collarRadiusNative: 0.024 }; torso.add(control);
+				const control = new Group(); control.name = `static_${id}`; control.position.copy(bodyAnchor.position); control.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), direction.normalize()); torso.add(control);
 				// Non-identity child TRS represents a quantized mesh's decode transform.
 				const bridgeGeometry = new BoxGeometry(2, 2, 2); geometries.push(bridgeGeometry);
-				const bridge = new Mesh(bridgeGeometry, material); bridge.name = `joint_${id}_mesh`; bridge.position.y = length / 2; bridge.scale.set(0.024, length / 2 + 0.006, 0.024); control.add(bridge);
+				const bridge = new Mesh(bridgeGeometry, material); bridge.name = `static_decode_${id}_mesh`; bridge.position.y = length / 2; bridge.scale.set(0.024, length / 2 + 0.006, 0.024); control.add(bridge);
 			}
 			if (kind === 'launcher') for (const row of ['lower', 'upper'] as const) for (const column of [1, 2, 3, 4]) {
 				const exit = new Group(); exit.name = `physical_exit_${side}_launcher_${row}_${column}`;
@@ -87,7 +86,7 @@ test('rigid mounts inherit animated torso motion and simulation muzzle sampling 
 	const torso = model.root.getObjectByName('rig_torso'); if (!torso) throw new Error('Missing animated torso');
 	const fixed = torso.children.filter(function (node) { return node.name.startsWith('rig_mount_') || node.name.startsWith('static_'); });
 	const matrices = fixed.map(function (node) { node.updateMatrix(); return node.matrix.clone(); });
-	const decode = model.root.getObjectsByProperty('type', 'Mesh').filter(function (node) { return node.name.startsWith('joint_'); });
+	const decode = model.root.getObjectsByProperty('type', 'Mesh').filter(function (node) { return node.name.startsWith('static_decode_'); });
 	const decodeMatrices = decode.map(function (node) { node.updateMatrix(); return node.matrix.toArray(); });
 	let lowest = Infinity; let highest = -Infinity; let maximumTilt = 0;
 	try {
