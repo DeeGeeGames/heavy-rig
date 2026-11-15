@@ -1,0 +1,261 @@
+{
+  "motions": {
+    "walk": [
+      {
+        "openSurfaceRays": 261,
+        "sampledRays": 3332,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 264,
+        "sampledRays": 3400,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 252,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 247,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 222,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 252,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 249,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 265,
+        "sampledRays": 3400,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 283,
+        "sampledRays": 3283,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 260,
+        "sampledRays": 3400,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 256,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 245,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 225,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 246,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 256,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 272,
+        "sampledRays": 3350,
+        "solidSampling": "Combined-assembly BVH crossings"
+      }
+    ],
+    "run": [
+      {
+        "openSurfaceRays": 314,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 298,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 288,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 289,
+        "sampledRays": 3350,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 266,
+        "sampledRays": 3400,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 265,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 299,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 321,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 317,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 291,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 293,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 275,
+        "sampledRays": 3350,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 278,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 283,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 273,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 297,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      }
+    ],
+    "backward": [
+      {
+        "openSurfaceRays": 232,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 205,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 203,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 219,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 187,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 198,
+        "sampledRays": 3536,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 214,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 236,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 225,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 193,
+        "sampledRays": 3468,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 185,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 207,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 191,
+        "sampledRays": 3417,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 205,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 203,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      },
+      {
+        "openSurfaceRays": 220,
+        "sampledRays": 3484,
+        "solidSampling": "Combined-assembly BVH crossings"
+      }
+    ]
+  },
+  "limits": [
+    "Sampled open source surfaces keep a one-voxel shell; not a watertight mesh repair.",
+    "Static torso omits source torso pitch/roll. Waist translation and bob follow sampled lower-body motion.",
+    "Fixed gait cycles do not establish planted-foot turns, speed transitions or game integration.",
+    "No runtime frame-time, GPU or crowd-performance claim."
+  ],
+  "torso": {
+    "openSurfaceRays": 554,
+    "sampledRays": 4324,
+    "solidSampling": "Combined-assembly BVH crossings"
+  }
+}

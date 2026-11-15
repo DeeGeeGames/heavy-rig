@@ -10,6 +10,7 @@
 		"dev": "bun --port ${PORT:-3000} --console index.html",
 		"dev:models": "bun --port ${PORT:-3001} --console models-preview.html",
 		"build": "bun run scripts/build.ts",
+		"study:sprite-stacking": "bun run scripts/build-sprite-stacking-study.ts",
 		"preview": "bun run scripts/preview.ts",
 		"test": "bun test",
 		"typecheck": "tsc --noEmit",
