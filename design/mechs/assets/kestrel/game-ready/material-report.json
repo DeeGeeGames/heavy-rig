@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "status": "material-candidate-pending-owner-review",
+  "sourceSha256": "03e3d9386dcc445750780229c640e1165bf83b2701a245339afa7594d8108edd",
+  "recipeSha256": "f4a9d346d3d92d1729f016dc79286be2fd59ad15fc9c6a9bb21efb185d5a0483",
+  "authoringScriptSha256": "05a83c7f13139eed46d45649d06085dbfd0f2327d71854a83b0c9cdc46ef4bdd",
+  "candidateSha256": "351502e07efe8baf9b03f019dee7ea6a8b8ce729f3e7007409de6143300f901f",
+  "candidateBytes": 2613304,
+  "triangles": 42796,
+  "meshSections": 10,
+  "materials": 1,
+  "textures": 2,
+  "textureSize": [
+    8,
+    1
+  ],
+  "triangleRoles": {
+    "mechanism": 14685,
+    "armor": 22908,
+    "steel": 2812,
+    "chrome": 831,
+    "bore": 980,
+    "glass": 18,
+    "vent": 562
+  },
+  "faceOverridesApplied": 369,
+  "exactOrderedTrianglePositionNormalFingerprints": [
+    "53a2685cfa8dbe0ed4ca753e2ae7e0a16e7b0344b218c3dd3a2af7fe1d8a094f",
+    "b84d475abb6c082e894bd788c4e35db15160795bef9192081bb93e80e4675971",
+    "470b7355d737a13478e8f5042486fc80f0334ceed7fa4415eaf15e8ec3a695ee",
+    "8626f087dd083fa2e5ffdfe4fe5e16e51be75a650bcb0c61f5e8267a3dced50a",
+    "baafe8831d1a4328d2c589cfdc558531401dce71c780b8860d193d50cc62ef0d",
+    "51a53b528f20f499b33f583e26dbd04d2879f58d0064385e208ef886c62a7e16",
+    "3ce6fb5fddff3fdbaa886d0442d54ff04bbc6bd88738ec3fbdd830486354b78d",
+    "e78bdc18f6410a86d5b8b86680d494e81919c7e683464f1e6be9f7590a7ca0bd",
+    "5dc9d066b06ae2875ff0df05628b89b4bbe62ae2393f6f5d224b1e2fbc0c0c6b",
+    "7afbf0a9fbd03b5d79ad83be54f7632ae5721270fb81ea739822cff40c8a7f1a"
+  ],
+  "unchangedNodesAndAnimations": true,
+  "originalBufferPrefixUnchanged": true,
+  "notes": [
+    "Opaque tinted cockpit; no transmission, extra transparent pass or new geometry.",
+    "Palette classification is specific to this approved source; no paid texturing operations."
+  ]
+}

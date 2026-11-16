@@ -2,7 +2,7 @@ import { Box3, Matrix4, Mesh, Quaternion, Vector3, type Object3D } from 'three';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 import { advanceGait, createGait, footPose, type LegRig, type WalkerGait } from './gait';
 import type { WeaponBody } from './weapon-rig';
-import { advanceAuthoredRun, authoredRunFootPitch, RUN_ENTER_SPEED, type AuthoredGait } from './authored-run';
+import { advanceAuthoredRun, authoredRunFootPitch, WARDEN_RUN_PROFILE, type AuthoredGait, type AuthoredRunProfile } from './authored-run';
 import { angleDelta } from './simulation';
 
 export interface AuthoredLegNodes {
@@ -12,9 +12,16 @@ export interface AuthoredLegNodes {
 	readonly foot: Object3D;
 }
 
+export interface AuthoredLocomotionOptions {
+	readonly walkStride: number;
+	readonly walkExtension: number;
+	readonly run: AuthoredRunProfile;
+}
+const wardenLocomotion: AuthoredLocomotionOptions = { walkStride: 0.5, walkExtension: 0.4, run: WARDEN_RUN_PROFILE };
+
 // Measure neutral rigid assemblies once. Fixed-step sampling below only reads
 // these private measurements, never a live render graph or animation mixer.
-export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: readonly AuthoredLegNodes[], scale: number) {
+export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: readonly AuthoredLegNodes[], scale: number, options: AuthoredLocomotionOptions = wardenLocomotion) {
 	if (nodes.length !== 2) throw new Error('Authored locomotion requires two legs');
 	const legs = nodes.map(function (leg) {
 		if (leg.thigh.parent !== pelvis || leg.shin.parent !== leg.thigh || leg.foot.parent !== leg.shin) throw new Error('Invalid authored leg hierarchy');
@@ -65,7 +72,7 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 	const target = function (gait: AuthoredGait, leg: typeof legs[number]) {
 		const contact = gait.feet[leg.index]; const rest = neutral.feet[leg.index];
 		const relative = contact.angle - gait.body.angle;
-		const pitch = gait.running ? authoredRunFootPitch(gait, leg.index) : gait.swing?.index === leg.index ? Math.max(-0.2, Math.min(0.2, footPose(gait, leg.index, 1, rig).pitch * 0.5)) : 0;
+		const pitch = gait.running ? authoredRunFootPitch(gait, leg.index, options.run.footPitch) : gait.swing?.index === leg.index ? Math.max(-0.2, Math.min(0.2, footPose(gait, leg.index, 1, rig).pitch * 0.5)) : 0;
 		const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -relative).multiply(leg.footRotation).multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -pitch));
 		const support = Math.min(...leg.corners.map(function (corner) { return corner.clone().applyQuaternion(rotation).y; }));
 		const dx = contact.x - gait.body.x; const dz = contact.y - gait.body.y; const angle = gait.body.angle;
@@ -79,11 +86,11 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 		if (!previous || Math.hypot(actual.x - previous.body.x, actual.y - previous.body.y) > 80 || dt <= 0 && (actual.x !== previous.body.x || actual.y !== previous.body.y || actual.angle !== previous.body.angle)) return createGait(actual, 1, rig);
 		if (dt <= 0) return previous;
 		const speed = ((actual.x - previous.body.x) * Math.cos(actual.angle) + (actual.y - previous.body.y) * Math.sin(actual.angle)) / dt;
-		if (previous.running || speed >= RUN_ENTER_SPEED) return advanceAuthoredRun(previous, actual, dt, rig);
+		if (previous.running || speed >= options.run.enterSpeed) return advanceAuthoredRun(previous, actual, dt, rig, options.run);
 		// Extend forward straights while retaining the tighter contact envelope for
 		// reverse and steering, where the ankle guards need more frequent steps.
 		const turn = Math.abs(angleDelta(previous.body.angle, actual.angle)) / dt;
-		const stride = 0.5 + 0.4 * Math.min(1, Math.max(0, speed / 30)) * Math.max(0, 1 - turn / 0.6);
+		const stride = options.walkStride + options.walkExtension * Math.min(1, Math.max(0, speed / 30)) * Math.max(0, 1 - turn / 0.6);
 		return advanceGait(previous, actual, dt, 1, stride, rig);
 	};
 	const solve = function (gait: WalkerGait, pelvisMatrix: Matrix4) {

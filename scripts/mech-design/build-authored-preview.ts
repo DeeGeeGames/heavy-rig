@@ -4,7 +4,9 @@ import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 const root = resolve(import.meta.dir, '../..');
 const assetArgument = process.argv[2]; const outputArgument = process.argv[3];
-if (!assetArgument || !outputArgument) throw new Error('Usage: bun scripts/mech-design/build-authored-preview.ts asset.glb new-generated-output');
+const frameArgument = process.argv[4] ?? 'warden';
+if (frameArgument !== 'warden' && frameArgument !== 'kestrel') throw new Error('Authored preview chassis must be warden or kestrel');
+if (!assetArgument || !outputArgument) throw new Error('Usage: bun scripts/mech-design/build-authored-preview.ts asset.glb new-generated-output [warden|kestrel]');
 const asset = resolve(root, assetArgument); const output = resolve(root, outputArgument);
 const relativeOutput = relative(join(root, 'design/mechs/generated'), output);
 if (!relativeOutput || relativeOutput.startsWith('..') || isAbsolute(relativeOutput)) throw new Error('Preview output must be a new directory inside design/mechs/generated');
@@ -18,9 +20,9 @@ const bundle = async function (path: string) {
 	if (!script || result.outputs.length !== 1) throw new Error('Expected a single standalone authored preview bundle');
 	return (await script.text()).replaceAll('</script', '<\\/script');
 };
-const injectAsset = function (html: string) { return html.replace('<html lang="en">', `<html lang="en" data-authored-asset="${assetUrl}">`); };
+const injectAsset = function (html: string) { return html.replace('<html lang="en"', `<html lang="en" data-authored-asset="${assetUrl}"`); };
 const studyScript = await bundle('src/authored-mech-study.ts');
-const study = injectAsset((await Bun.file(join(root, 'authored-mech-study.html')).text()).replace('<script type="module" src="./src/authored-mech-study.ts"></script>', function () { return `<script type="module">${studyScript}</script>`; }));
+const study = injectAsset((await Bun.file(join(root, frameArgument === 'kestrel' ? 'kestrel-study.html' : 'authored-mech-study.html')).text()).replace('<script type="module" src="./src/authored-mech-study.ts"></script>', function () { return `<script type="module">${studyScript}</script>`; }));
 await Bun.write(join(output, 'study.html'), study);
 let game = await Bun.file(join(root, 'index.html')).text();
 for (const match of game.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)">/g)) {
@@ -35,10 +37,12 @@ for (const match of game.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)">/g)
 	game = game.replace(match[0], function () { return `<style>${css}</style>`; });
 }
 game = game.replace('src="./public/brand/heavy-rig.png"', `src="data:image/png;base64,${Buffer.from(await Bun.file(join(root, 'public/brand/heavy-rig.png')).arrayBuffer()).toString('base64')}"`);
-const gameScript = await bundle('src/authored-game.ts');
-game = injectAsset(game.replace('<script type="module" src="./src/main.ts"></script>', function () { return `<script type="module">${gameScript}</script>`; }));
+const gameScript = await bundle(frameArgument === 'kestrel' ? 'src/kestrel-game.ts' : 'src/authored-game.ts');
+const gameEntry = /<script type="module" src="\.\/src\/(?:main|kestrel-game)\.ts"><\/script>/;
+if (!gameEntry.test(game)) throw new Error('Expected one game bootstrap script');
+game = injectAsset(game.replace(gameEntry, function () { return `<script type="module">${gameScript}</script>`; }));
 await Bun.write(join(output, 'game.html'), game);
 for await (const path of new Bun.Glob('**/*').scan({ cwd: join(root, 'public'), onlyFiles: true })) await Bun.write(join(output, path), Bun.file(join(root, 'public', path)));
-const provenance = { asset: relative(root, asset), sha256: createHash('sha256').update(new Uint8Array(bytes)).digest('hex'), bytes: bytes.byteLength, study: 'study.html', game: 'game.html', mode: 'Production bundles with embedded authored GLB; ordinary index and default game are unchanged.' };
+const provenance = { frame: frameArgument, asset: relative(root, asset), sha256: createHash('sha256').update(new Uint8Array(bytes)).digest('hex'), bytes: bytes.byteLength, study: 'study.html', game: 'game.html', mode: 'Production bundles with the selected authored GLB embedded for portable review.' };
 await Bun.write(join(output, 'preview-manifest.json'), JSON.stringify(provenance, null, 2) + '\n');
 console.log(JSON.stringify({ output, ...provenance }, null, 2));

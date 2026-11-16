@@ -12,6 +12,24 @@ def signature(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
+def verify_inventory_equivalence(current, frozen):
+    """Ignore only BMesh DFS vertex traversal order, preserving frozen hashes.
+
+    Blender can reorder a vertex's linked edges between imports. Every geometry
+    hash, transform, component ID, vertex membership, face ID and bound remains
+    exact; only the order in which a component's vertices were visited varies.
+    Existing retained inventory/ownership fingerprints are not rewritten.
+    """
+    def canonical(inventory):
+        return {**inventory, "components": [
+            {**component, "vertices": sorted(component["vertices"])}
+            for component in inventory["components"]
+        ]}
+
+    if canonical(current) != canonical(frozen):
+        raise ValueError("Imported mesh/component inventory differs from reviewed source")
+
+
 def inventory_meshes(objects):
     import bmesh
 

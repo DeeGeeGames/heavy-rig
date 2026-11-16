@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-visual-approved-in-runtime",
+  "assetSha256": "fbab677c30bd0181dcb4a6758ac78602d168a8ee2556bc75793aa2b256129f8b",
+  "reproducedMaterialAuthoringBytes": true,
+  "glTFValidation": {
+    "errors": 0,
+    "warnings": 0,
+    "infos": 0,
+    "hints": 0
+  },
+  "packaging": "Exact geometry, normals, UVs, hierarchy, anchors, animation values, palette images and sampler/material definitions preserved.",
+  "checks": [
+    "Full bun run check: 440 tests, typecheck, lint and production build passed on final delivery code.",
+    "Python: 5 source-inventory regressions and 5 rig-contract checks passed.",
+    "Default index production browser: Mech Bay, contract acceptance/deployment, throttle to 111/125 m/s, steering, firing and pause; no page errors or missing resources.",
+    "Fallback browser: 404 and a held request still reach title and Mech Bay. Held-request startup took about 5.7 seconds including module initialization. Late factories are disposed by the bootstrap.",
+    "Study: walk/run/reverse/turn/aim/fire and both/single/empty equipment; desktop/portrait/landscape; no page errors, missing resources or overflow.",
+    "Independent source, articulation, material and runtime/delivery reviews completed; concrete findings repaired and affected checks rerun."
+  ],
+  "ownerDecision": "approval.json",
+  "limits": [
+    "Runtime uses measured IK/contact solver instead of direct leg-clip playback.",
+    "Physical control feel, audio and target-hardware performance unmeasured.",
+    "No additional Studio credits; total generation spend100."
+  ]
+}

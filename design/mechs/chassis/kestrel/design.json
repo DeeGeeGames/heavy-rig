@@ -14,5 +14,17 @@
       "approval": "2026-11-13: owner said \"This is good. Stage this.\" for option 2 with enlarged guns (baseline-v4)."
     }
   ],
-  "variants": []
+  "variants": [],
+  "activeTurnaround": "kestrel-a-turnaround",
+  "turnarounds": [
+    {
+      "id": "kestrel-a-turnaround",
+      "status": "approved",
+      "manifest": "design/mechs/chassis/kestrel/turnaround/a/manifest.json",
+      "approval": "2026-11-15: Owner said \"Approved\" in response to the presented complete four-view turnaround set, including the proposed rear design, for 3D generation. This approves these references only; 3D model and runtime acceptance remain separate."
+    }
+  ],
+  "generatedSource": "design/mechs/assets/kestrel/generated-source/approval.json",
+  "articulationBase": "design/mechs/assets/kestrel/articulation-base/approval.json",
+  "activeGameDerivative": "design/mechs/assets/kestrel/game-ready/manifest.json"
 }

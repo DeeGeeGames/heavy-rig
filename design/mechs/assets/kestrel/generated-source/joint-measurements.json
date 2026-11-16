@@ -1,0 +1,206 @@
+{
+  "scope": "Candidate source-derived joint centers; diagnostic until sweep and owner articulation review. Fits use geometry of this exact Kestrel source, never Warden thresholds.",
+  "coordinateConvention": "Blender Z-up, forward -Y, own-left +X",
+  "joints": {
+    "rightKnee": {
+      "position": [
+        -0.15468419841132486,
+        0.17737248038254227,
+        0.3335340500526313
+      ],
+      "outwardAxis": [
+        -0.9740490726784928,
+        0.21379418256276542,
+        0.07429974102570683
+      ],
+      "outerCapComponent": 52,
+      "innerCapComponent": 56,
+      "fitMethod": "Least-squares YZ circle centers on the matching outer/inner round cap pieces; X is component mean. Midpoint defines joint center.",
+      "estimatedCenterTolerance": 0.003,
+      "note": "Axle is tilted slightly in source. Axis may be normalized in repaired adapter after neutral-placement validation."
+    },
+    "leftKnee": {
+      "position": [
+        0.14694964402310906,
+        0.171226133457372,
+        0.3334257440015609
+      ],
+      "outwardAxis": [
+        0.9806045126259811,
+        0.1816930357370702,
+        0.07350122844013979
+      ],
+      "outerCapComponent": 165,
+      "innerCapComponent": 161,
+      "fitMethod": "Least-squares YZ circle centers on the matching outer/inner round cap pieces; X is component mean. Midpoint defines joint center.",
+      "estimatedCenterTolerance": 0.003,
+      "note": "Axle is tilted slightly in source. Axis may be normalized in repaired adapter after neutral-placement validation."
+    },
+    "rightAnkle": {
+      "position": [
+        -0.20324701815843582,
+        -0.0211182227358222,
+        0.0623779296875
+      ],
+      "outerCasingComponent": 2,
+      "innerCasingComponent": 6,
+      "fitMethod": "Midpoint of large fore-ankle casing bounds. Inner casing is flared and fails a reliable single-circle fit; bounded estimate is preferable to biased fit.",
+      "estimatedCenterTolerance": 0.006,
+      "note": "Do not use the smaller rear talon axle cap pair: right 9/49, left 115/126; those stay with foot."
+    },
+    "leftAnkle": {
+      "position": [
+        0.19140630215406418,
+        -0.02905273949727416,
+        0.0623779296875
+      ],
+      "outerCasingComponent": 123,
+      "innerCasingComponent": 120,
+      "fitMethod": "Midpoint of large fore-ankle casing bounds. Inner casing is flared and fails a reliable single-circle fit; bounded estimate is preferable to biased fit.",
+      "estimatedCenterTolerance": 0.006,
+      "note": "Do not use the smaller rear talon axle cap pair: right 9/49, left 115/126; those stay with foot."
+    },
+    "rightHip": {
+      "position": [
+        -0.1257323995232582,
+        0.03500180796918148,
+        0.5223657740413594
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "bearingComponent": 39,
+      "estimatedCenterTolerance": 0.007,
+      "note": "YZ from actual round inner bearing 39; X is midpoint of bearing 39 / thigh-shell 7 overlap. Axis [1,0,0] is a near-X orientation estimate, not an exact fitted physical axle; validate in neutral and sweep.",
+      "interfaceOverlapRangeX": [
+        -0.1472167670726776,
+        -0.1042480319738388
+      ]
+    },
+    "leftHip": {
+      "position": [
+        0.11718752235174179,
+        0.03064255904579822,
+        0.5222003201493355
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "bearingComponent": 139,
+      "estimatedCenterTolerance": 0.007,
+      "note": "YZ from actual round inner bearing 139; X is midpoint of bearing 139 / thigh-shell 121 overlap. Axis [1,0,0] is a near-X orientation estimate, not an exact fitted physical axle; validate in neutral and sweep.",
+      "interfaceOverlapRangeX": [
+        0.0979004055261612,
+        0.1364746391773224
+      ]
+    },
+    "waist": {
+      "position": [
+        -0.00513,
+        0.0032,
+        0.5786
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "verticalEnvelope": [
+        0.53955,
+        0.60107
+      ],
+      "outerRadius": 0.064,
+      "sourceComponents": [
+        40,
+        41,
+        43,
+        44,
+        45,
+        46,
+        90,
+        93,
+        94,
+        95,
+        136,
+        137,
+        138,
+        166,
+        167,
+        168,
+        169,
+        219
+      ],
+      "note": "Open cage and its cap rings account for 1,292 imported triangles; replace within this envelope using geometry matching the approved closed ribbed bearing."
+    }
+  },
+  "postSplitOwnership": {
+    "right": {
+      "shellToSplit": [
+        7
+      ],
+      "thighExtras": [
+        51,
+        73
+      ],
+      "shinExtras": [
+        8,
+        52,
+        53,
+        54,
+        56,
+        215,
+        237,
+        238
+      ],
+      "foot": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        9,
+        49,
+        50
+      ]
+    },
+    "left": {
+      "shellToSplit": [
+        121
+      ],
+      "thighExtras": [
+        164,
+        180
+      ],
+      "shinExtras": [
+        122,
+        161,
+        162,
+        163,
+        165,
+        269,
+        270,
+        271,
+        292
+      ],
+      "foot": [
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        123,
+        124,
+        126,
+        159
+      ]
+    },
+    "notes": "Keep complete knee caps/casings shin-owned. Main shell split runs through concealed joint interior; cap its cut boundaries explicitly. Upper hydraulic and shin piston endpoint continuity still requires a sweep; rigid grouping alone is not proof."
+  }
+}

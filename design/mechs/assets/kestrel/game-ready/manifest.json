@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-visual-approved-in-runtime",
+  "chassis": "kestrel",
+  "variant": "kestrel-a",
+  "asset": {
+    "path": "public/assets/mechs/kestrel/game-ready.glb",
+    "sha256": "fbab677c30bd0181dcb4a6758ac78602d168a8ee2556bc75793aa2b256129f8b",
+    "bytes": 1584884,
+    "triangles": 42796,
+    "meshSections": 10,
+    "materials": 1,
+    "textureImages": 2,
+    "textureDimensions": [
+      [
+        8,
+        1
+      ],
+      [
+        8,
+        1
+      ]
+    ],
+    "rigGroups": 10,
+    "physicalBarrelExits": 14,
+    "logicalWeaponSlots": 2,
+    "clips": [
+      "walk",
+      "run",
+      "backward"
+    ],
+    "coordinateSystem": "glTF Y-up, +Z-forward, +X-own-left; native height approximately one unit",
+    "extensionsRequired": []
+  },
+  "source": "design/mechs/assets/kestrel/generated-source/approval.json",
+  "articulation": "design/mechs/assets/kestrel/articulation-base/approval.json",
+  "approval": "design/mechs/assets/kestrel/game-ready/approval.json",
+  "materialRecipe": "design/mechs/assets/kestrel/game-ready/material-recipe.json",
+  "materialRecipeSha256": "f4a9d346d3d92d1729f016dc79286be2fd59ad15fc9c6a9bb21efb185d5a0483",
+  "authoring": "scripts/mech-design/materialize-kestrel.py",
+  "authoringSha256": "05a83c7f13139eed46d45649d06085dbfd0f2327d71854a83b0c9cdc46ef4bdd",
+  "packaging": "scripts/mech-design/package-optimized-glb.py",
+  "packagingSha256": "df8e8cf6a64257f7dcca0431458624622308a5f6ba0fe1995041d9402c77c908",
+  "verification": "scripts/mech-design/verify-kestrel-package.py",
+  "startup": "src/kestrel-game.ts",
+  "runtimeAdapter": "src/authored-mech.ts",
+  "runtimeHeight": 74.82,
+  "equipment": "Two independent machine-gun assemblies; torso-owned brackets remain when slots are empty. Kestrel B/C use procedural models.",
+  "motion": "Shipping clips retain the approved draft animation samples. Runtime uses measured fixed-step contacts/IK and Kestrel-specific stride/run parameters, visually approved separately.",
+  "collision": "Existing simulation-owned gameplay collision proxies remain; visual triangles are not added as physics colliders.",
+  "lighting": "Existing dynamic game lighting; opaque palette with embedded base-color and metallic/roughness textures.",
+  "lod": "Single approved geometry level. No universal crowd budget or hardware performance acceptance is inferred."
+}

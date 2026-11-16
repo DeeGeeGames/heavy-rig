@@ -1,0 +1,62 @@
+{
+  "sourceSha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a",
+  "status": "owner-approved-shape-source-for-local-repair",
+  "independentReviewer": "kestrel_source_review; read-only independent agent review, 2026-11-15",
+  "sourceViability": "Viable as a repair source subject to owner visual acceptance. No game-ready or rig acceptance.",
+  "identityReview": {
+    "retained": [
+      "Beak cockpit",
+      "Raised rear counterweight",
+      "Reverse-jointed legs",
+      "Rear talons",
+      "Exactly two lateral ballistic gun assemblies"
+    ],
+    "limitations": [
+      "Broad armor edges softer than references",
+      "Side profiles naturally occlude far-side geometry"
+    ]
+  },
+  "repairsRequired": [
+    "Rebuild/open capped muzzle bores and establish physical firing origins",
+    "Repair open cage waist bearing against approved ribbed structural reference",
+    "Separate joints crossed by connected leg components; explicitly review all rigid component ownership",
+    "Remove degenerate/duplicate geometry and repair invalid normals in derivative only"
+  ],
+  "rawGeometry": {
+    "triangles": 45664,
+    "vertices": 26116,
+    "meshSections": 1,
+    "connectedComponents": 321,
+    "zeroAreaTriangles": 93,
+    "tinyNonzeroTriangles": 3,
+    "referencedZeroLengthNormals": 4,
+    "nonFinitePositionsOrNormals": 0
+  },
+  "blenderImport": {
+    "triangles": 45654,
+    "vertices": 26116,
+    "trianglesRemoved": 10,
+    "cause": "Exactly ten excess duplicate indexed faces were removed; distinct face sets and all vertices survived. This is independent of the zero-area triangle count."
+  },
+  "riggingRisk": {
+    "componentsCrossingLegJointRegions": [
+      "mesh:0/component:7",
+      "mesh:0/component:121"
+    ],
+    "state": "No named rigid anatomy, pivots, hierarchy, animation or motion validation."
+  },
+  "undersideReview": "No gross missing panel apparent in inspected underside render; not a watertightness or clearance proof.",
+  "cost": {
+    "creditsAuthorized": 100,
+    "creditsSpent": 100,
+    "balanceBefore": 2290,
+    "balanceAfter": 2190
+  },
+  "provenance": [
+    "generation.json",
+    "input-manifest.json",
+    "export-audit.json",
+    "inventory.json"
+  ],
+  "ownerApproval": "2026-11-16: owner answered \"Yes\" to accepting the overall generated Kestrel shape as the basis for local repair and rigging. Approval includes the presented softer armor edges as a starting source, not final repaired geometry, materials, articulation, animation, game integration or performance."
+}

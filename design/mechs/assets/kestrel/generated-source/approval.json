@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "chassis": "kestrel",
+  "status": "owner-approved-repair-source",
+  "source": "design/mechs/assets/kestrel/generated-source/source.glb",
+  "sourceSha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a",
+  "approval": "2026-11-16: owner answered \"Yes\" to accepting the overall generated Kestrel shape as the basis for local repair and rigging. Approval includes the presented softer armor edges as a starting source, not final repaired geometry, materials, articulation, animation, game integration or performance.",
+  "scope": "Exact raw source is accepted as a basis for repair and rigging only. All derivative geometry, rig, animation and runtime acceptance remain separate.",
+  "generation": "design/mechs/assets/kestrel/generated-source/generation.json",
+  "structuralReview": "design/mechs/assets/kestrel/generated-source/structural-review.json",
+  "inventory": "design/mechs/assets/kestrel/generated-source/inventory.json"
+}

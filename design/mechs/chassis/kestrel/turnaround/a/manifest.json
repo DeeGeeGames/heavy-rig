@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "id": "kestrel-a-turnaround",
+  "status": "approved",
+  "baselineId": "kestrel-a-baseline-v4",
+  "baselineImage": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+  "baselineImageSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4",
+  "contractSignature": "229ffbad2cf9c46ceceaf28cfa99a129ae3462413428f8bd907a6c0cd3ffc96c",
+  "sourceRevision": "4473ab1f29e57f9f298770b29950da985556c9f1",
+  "generator": "built-in image_gen",
+  "transparentBackground": true,
+  "request": "design/mechs/chassis/kestrel/turnaround/a/request.json",
+  "contract": "design/mechs/chassis/kestrel/turnaround/a/contract.json",
+  "views": {
+    "front": {
+      "image": "design/mechs/chassis/kestrel/turnaround/a/front.png",
+      "sha256": "2290f8dc2119a4077208ad3bc22d8e7de032c41c5460d244559e2e084f49da28",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "visibleBoundsAlpha128": [
+        202,
+        18,
+        1053,
+        1225
+      ],
+      "prompt": "design/mechs/chassis/kestrel/turnaround/a/front-prompt.txt",
+      "promptSha256": "6a2003225aea4bba40035771c21fe9d04c74edd546c2bb3d6c7aa219f253214b",
+      "references": [
+        {
+          "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+          "sha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+        }
+      ],
+      "status": "approved",
+      "approval": "2026-11-15: Owner said \"Approved\" in response to the presented complete four-view turnaround set, including the proposed rear design, for 3D generation. This approves these references only; 3D model and runtime acceptance remain separate."
+    },
+    "back": {
+      "image": "design/mechs/chassis/kestrel/turnaround/a/back.png",
+      "sha256": "0bfe10aab0857404fc4c1111d91113c91f55b178c1e4d473a5047c3aede0a57e",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "visibleBoundsAlpha128": [
+        240,
+        39,
+        1015,
+        1179
+      ],
+      "prompt": "design/mechs/chassis/kestrel/turnaround/a/back-prompt.txt",
+      "promptSha256": "a99f604fcfca5d28a6a23d0c9da1921eeb1f5940be082e50014836fa565aa4cd",
+      "references": [
+        {
+          "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+          "sha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+        }
+      ],
+      "status": "approved",
+      "approval": "2026-11-15: Owner said \"Approved\" in response to the presented complete four-view turnaround set, including the proposed rear design, for 3D generation. This approves these references only; 3D model and runtime acceptance remain separate."
+    },
+    "left": {
+      "image": "design/mechs/chassis/kestrel/turnaround/a/left.png",
+      "sha256": "89744894e4412c9302fba869bda9db364f90e33f330961a08daa4aac4e130f56",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "visibleBoundsAlpha128": [
+        77,
+        50,
+        1162,
+        1208
+      ],
+      "prompt": "design/mechs/chassis/kestrel/turnaround/a/left-prompt.txt",
+      "promptSha256": "308fbe6d0b4931d405122e781428f8f58e86ccf0e47370652324ac4447ec05df",
+      "references": [
+        {
+          "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+          "sha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+        },
+        {
+          "image": "design/mechs/chassis/kestrel/turnaround/a/front.png",
+          "sha256": "2290f8dc2119a4077208ad3bc22d8e7de032c41c5460d244559e2e084f49da28"
+        }
+      ],
+      "status": "approved",
+      "approval": "2026-11-15: Owner said \"Approved\" in response to the presented complete four-view turnaround set, including the proposed rear design, for 3D generation. This approves these references only; 3D model and runtime acceptance remain separate."
+    },
+    "right": {
+      "image": "design/mechs/chassis/kestrel/turnaround/a/right.png",
+      "sha256": "703da9e16b7f65c5598068f83db626d08ca5ea1867d02f6fe51ae3c742b7bbf9",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "visibleBoundsAlpha128": [
+        78,
+        46,
+        1175,
+        1210
+      ],
+      "prompt": "design/mechs/chassis/kestrel/turnaround/a/right-prompt.txt",
+      "promptSha256": "6b43ddef71aade7066a94ed2bf90ddb48829f70f56ee56e19664b204e9c8e85e",
+      "references": [
+        {
+          "image": "design/mechs/chassis/kestrel/turnaround/a/left.png",
+          "sha256": "89744894e4412c9302fba869bda9db364f90e33f330961a08daa4aac4e130f56"
+        },
+        {
+          "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+          "sha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+        }
+      ],
+      "status": "approved",
+      "approval": "2026-11-15: Owner said \"Approved\" in response to the presented complete four-view turnaround set, including the proposed rear design, for 3D generation. This approves these references only; 3D model and runtime acceptance remain separate."
+    }
+  },
+  "ownerApproval": "2026-11-15: Owner said \"Approved\" in response to the presented complete four-view turnaround set, including the proposed rear design, for 3D generation. This approves these references only; 3D model and runtime acceptance remain separate.",
+  "tripoSubmitted": true,
+  "generationNotes": "One corrected own-right profile was selected after fixing barrel/housing drift. Only the four approved images and their exact provenance are retained. Occluded geometry remains subject to the generated-source audit.",
+  "review": "design/mechs/chassis/kestrel/turnaround/a/review.md",
+  "tripoJobUrl": "https://studio.tripo3d.ai/workspace/generate/c3aadba8-b6f5-44a8-a4bf-9d9237ea313d",
+  "tripoCreditAuthorization": "2026-11-15: owner selected \"Approve 100 credits\" for one private Tripo Studio P2.0 generation from the approved four views, geometry only, 50,000 triangles, 100 Studio credits total."
+}

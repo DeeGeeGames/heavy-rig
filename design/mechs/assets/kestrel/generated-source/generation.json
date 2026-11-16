@@ -1,0 +1,42 @@
+{
+  "provider": "Tripo Studio",
+  "model": "P2.0",
+  "inputMode": "multiview",
+  "inputManifest": "design/mechs/chassis/kestrel/turnaround/a/manifest.json",
+  "viewOrder": [
+    "front",
+    "left",
+    "right",
+    "back"
+  ],
+  "viewHashes": {
+    "front": "2290f8dc2119a4077208ad3bc22d8e7de032c41c5460d244559e2e084f49da28",
+    "left": "89744894e4412c9302fba869bda9db364f90e33f330961a08daa4aac4e130f56",
+    "right": "703da9e16b7f65c5598068f83db626d08ca5ea1867d02f6fe51ae3c742b7bbf9",
+    "back": "0bfe10aab0857404fc4c1111d91113c91f55b178c1e4d473a5047c3aede0a57e"
+  },
+  "topology": "Triangle",
+  "targetTriangles": 50000,
+  "texture": false,
+  "privacy": "Private",
+  "generationCount": 1,
+  "creditsAuthorized": 100,
+  "ownerSpendingApproval": "2026-11-15: owner selected \"Approve 100 credits\" for one private Tripo Studio P2.0 generation from the approved four views, geometry only, 50,000 triangles, 100 Studio credits total.",
+  "preSubmitBalance": 2290,
+  "status": "owner-approved-shape-source-for-local-repair",
+  "preparedAt": "2026-11-15T23:51:29.493622+00:00",
+  "inputManifestSnapshot": "design/mechs/assets/kestrel/generated-source/input-manifest.json",
+  "inputManifestSnapshotSha256": "cb080bc47cb2d20d8db2483627d32f379dec5a2b0235214eb1c1557b26ff55a4",
+  "submittedAt": "2026-11-15T23:51:35.645Z",
+  "jobId": "c3aadba8-b6f5-44a8-a4bf-9d9237ea313d",
+  "jobUrl": "https://studio.tripo3d.ai/workspace/generate/c3aadba8-b6f5-44a8-a4bf-9d9237ea313d",
+  "creditsSpent": 100,
+  "postSubmitBalance": 2190,
+  "rawExport": "design/mechs/assets/kestrel/generated-source/source.glb",
+  "rawExportSha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a",
+  "rawExportBytes": 1175832,
+  "completedAt": "2026-11-15T23:53:58.603138+00:00",
+  "providerReportedTriangles": 45664,
+  "providerReportedVertices": 26116,
+  "ownerSourceApproval": "2026-11-16: owner answered \"Yes\" to accepting the overall generated Kestrel shape as the basis for local repair and rigging. Approval includes the presented softer armor edges as a starting source, not final repaired geometry, materials, articulation, animation, game integration or performance."
+}
