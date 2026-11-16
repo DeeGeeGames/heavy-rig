@@ -75,7 +75,7 @@ test('burning carried ammunition changes target speed smoothly in forward and re
 	expect(weightSpeedModifier(80, 80)).toBe(1);
 	expect(weightSpeedModifier(40, 80) - 1).toBeLessThan(1 - weightSpeedModifier(120, 80));
 	expect(weightSpeedModifier(800, 80)).toBeGreaterThan(0);
-	const state = createState(); state.loadout = [createMount('autocannon', 320), createMount('autocannon', 320)];
+	const state = createState(); state.loadout = [createMount('autocannon', 480), createMount('autocannon', 480), createMount('stream-missiles', 720), createMount('stream-rockets', 720)];
 	const loaded = frameWeight(state.frame, state.loadout);
 	const frame = getFrame(state.frame);
 	expect(loaded.modifier).toBeLessThan(1);

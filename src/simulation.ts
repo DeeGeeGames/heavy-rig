@@ -1,9 +1,9 @@
 import type { AuthoredPoseContext } from './authored-pose';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { consumeFire, coolReactor, frameWeight, loadedMounts, usableMount, weightMetrics, type ReactorState } from './combat-resources';
-import { createMount, getWeapon, weaponDamage, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
+import { createMount, getWeapon, getWeaponTier, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
 import { FRAMES, getFrame, type FrameId } from './frames';
-import { canEquipWeapon, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
+import { canEquipWeapon, createStarterLoadout, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, FACILITY_TARGET_ID, generateMissionMap, missionHostileCount, missionSpawn } from './missions';
@@ -65,12 +65,10 @@ export interface MissionDeployment {
 }
 export const createMissionState = function (contract: Contract, options: MissionDeployment = {}): State {
 	const state = createState({ ...options, frame: options.frame ?? 'kestrel', seed: contract.seed });
+	if (options.loadout === undefined) state.loadout = loadedMounts(createStarterLoadout(state.frame), options.reserves);
 	if (options.loadout !== undefined) {
 		if (!isFrameLoadout(state.frame, options.loadout)) throw new RangeError(`Invalid loadout for ${state.frame}`);
 		state.loadout = loadedMounts(options.loadout, options.reserves);
-	} else if (options.reserves !== undefined) {
-		const loadout = getHardpoints(state.frame).map(function (_hardpoint, slot) { return state.loadout.find(function (mount) { return mount.slot === slot; })?.weapon ?? null; });
-		state.loadout = loadedMounts(loadout, options.reserves);
 	}
 	state.player.hp = options.integrity === undefined ? 100 : Number.isFinite(options.integrity) ? Math.max(0, Math.min(100, options.integrity)) : 0;
 	if (state.player.hp === 0) state.outcome = 'lost';
@@ -148,7 +146,7 @@ const enemyMounts = function (enemy: Unit): WeaponMount[] {
 	const seen = new Set<number>();
 	return (enemy.loadout ??= createEnemyLoadout(enemy.kind, enemy.commander)).filter(function (mount, index) {
 		const slot = mount.slot ?? index; const hardpoint = hardpoints[slot];
-		if (seen.has(slot) || hardpoint?.family !== getWeapon(mount.weapon).family || !hardpoint.weapons.includes(mount.weapon)) return false;
+		if (seen.has(slot) || hardpoint?.family !== getWeapon(mount.weapon).family || !hardpoint.weapons.includes(getWeapon(mount.weapon).modelId)) return false;
 		seen.add(slot); mount.slot = slot; return true;
 	});
 };
@@ -167,18 +165,20 @@ export const enemyAimPoint = function (state: CombatStateView, enemy: Unit): Spa
 	const target = enemy.squad ? enemy.squad.target === 'relay' && relay ? relay : state.player : !relay || enemy.commander || distance(enemy, state.player) < ENEMY_STATS[enemy.kind].aggro ? state.player : relay;
 	return projectAim(enemy, enemy.angle, target === state.player ? playerVolume(state.player, state.frame) : facilityVolume(target, 42));
 };
+const volleySpacing = function (weapon: WeaponDefinition): number { return 0.1 * getWeaponTier(weapon.tier).interval; };
 const tubeIndex = function (count: number, sequence: number): number { return count > 0 ? sequence % count : 0; };
 const launchEnemy = function (state: CombatStateView, enemy: Unit, mount: WeaponMount, target: Point, damage: number): boolean {
 	if (!consumeFire(mount, enemyReactor(enemy))) return false;
 	const angle = enemy.angle;
-	const speed = enemy.kind === 'tank' ? 330 : 230;
 	const slot = mount.slot ?? 0; const weapon = getWeapon(mount.weapon);
+	const quality = getWeaponTier(weapon.tier);
+	const speed = (enemy.kind === 'tank' ? 330 : 230) * quality.speed;
 	const aim = projectAim(enemy, angle, target === state.player ? playerVolume(state.player, state.frame) : facilityVolume(target, 42));
 	const origin = getEnemyMuzzle(enemy.kind, Boolean(enemy.commander), slot, enemy, angle, tubeIndex(getEnemyWeaponRig(enemy.kind, Boolean(enemy.commander))[slot]?.tubes.length ?? 0, mount.rounds), aim);
 	const rig = getEnemyWeaponRig(enemy.kind, Boolean(enemy.commander))[slot];
 	if (!rig) throw new RangeError(`Missing weapon rig ${enemy.kind}/${slot}`);
 	const direction = weaponDirection(rig, enemy, angle, aim);
-	state.shots.push({ ...origin, origin, age: 0, vx: direction.x * speed, vy: direction.y * speed, vElevation: direction.elevation * speed, life: 2.5, kind: 'enemy', target: undefined, damage: damage / weapon.projectiles,
+	state.shots.push({ ...origin, origin, age: 0, vx: direction.x * speed, vy: direction.y * speed, vElevation: direction.elevation * speed, life: 2.5, kind: 'enemy', target: undefined, damage: damage * quality.damage / weapon.projectiles,
 		weapon: mount.weapon, slot, owner: enemy.id, ...(weapon.kind === 'missile' ? { enemyTarget: target === state.player ? 'player' as const : 'relay' as const } : {}) });
 	mount.firing = true;
 	return true;
@@ -193,9 +193,9 @@ const fireEnemyMount = function (state: CombatStateView, enemy: Unit, mount: Wea
 	}
 	if (emitted === 0) return;
 	mount.cooldown = weapon.interval;
-	if (delayed && weapon.projectiles > 1 && usableMount(mount) && !enemyReactor(enemy).overheated) mount.rocketVolley = { remaining: Math.min(weapon.projectiles - 1, mount.rounds), nextIn: 0.1 };
+	if (delayed && weapon.projectiles > 1 && usableMount(mount) && !enemyReactor(enemy).overheated) mount.rocketVolley = { remaining: Math.min(weapon.projectiles - 1, mount.rounds), nextIn: volleySpacing(weapon) };
 };
-const launchWeapon = function (state: CombatStateView, weapon: WeaponDefinition, mount: WeaponMount, angle: number, slot: number, target?: number) {
+const launchWeapon = function (state: CombatStateView, weapon: WeaponDefinition, angle: number, slot: number, target?: number) {
 	if (weapon.kind === 'laser') return;
 	const p = state.player;
 	state.stats.shotsFired++;
@@ -204,7 +204,7 @@ const launchWeapon = function (state: CombatStateView, weapon: WeaponDefinition,
 	const direction = getPlayerFiringDirection(state.frame, slot, p, p.turret, origin, aim);
 	const spread = angle - p.turret; const cosine = Math.cos(spread); const sine = Math.sin(spread);
 	state.shots.push({ ...origin, origin, age: 0, vx: (direction.x * cosine - direction.y * sine) * weapon.speed, vy: (direction.x * sine + direction.y * cosine) * weapon.speed, vElevation: direction.elevation * weapon.speed, life: weapon.range / weapon.speed,
-		kind: weapon.kind, weapon: weapon.id, slot, target, damage: weaponDamage(weapon, mount.level),
+		kind: weapon.kind, weapon: weapon.id, slot, target, damage: weapon.damage,
 		...(weapon.splash > 0 ? { splash: weapon.splash } : {}), ...(weapon.kind === 'ppc' ? { hitIds: [] } : {}) });
 	burst(state, origin, 20, weapon.color, 'muzzle', slot);
 };
@@ -249,7 +249,7 @@ const commitBarrage = function (state: CombatStateView, enemy: Unit, target: Poi
 	const permissive = state.difficulty === 'story';
 	const duration = commander ? 3.2 : 2.8;
 	const radius = commander ? 82 : 62;
-	const damage = (commander ? 16 : 10) * getDifficultyDefinition(state.difficulty).enemyDamage;
+	const damage = (commander ? 16 : 10) * getDifficultyDefinition(state.difficulty).enemyDamage * getWeaponTier(getWeapon(mount.weapon).tier).damage;
 	const addStrike = function (at: Point, delay: number, size = radius) {
 		if (!consumeFire(mount, enemyReactor(enemy))) return;
 		state.strikes.push({ id: state.nextId++, x: at.x, y: at.y, life: delay, duration: delay, radius: size, damage, owner: enemy.id, slot: mount.slot ?? 4, weapon: mount.weapon });
@@ -347,8 +347,8 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 			while (volley.remaining > 0 && volley.nextIn <= 1e-9) {
 				if (!consumeFire(mount, p)) { volley.remaining = 0; break; }
 				const target = weapon.kind === 'missile' ? combatTargets(state).filter(function (candidate) { return distance(candidate.body, p) <= weapon.range && (p.targetId === undefined || candidate.id === p.targetId); }).reduce<CombatTarget | undefined>(function (best, candidate) { return !best || distance(candidate.body, input.aim) < distance(best.body, input.aim) ? candidate : best; }, undefined) : undefined;
-				launchWeapon(state, weapon, mount, p.turret, slot, target?.id);
-				volley.remaining--; volley.nextIn += 0.1; mount.firing = true;
+				launchWeapon(state, weapon, p.turret, slot, target?.id);
+				volley.remaining--; volley.nextIn += volleySpacing(weapon); mount.firing = true;
 				state.events.push(weapon.kind === 'missile' ? 'missile' : 'rocket');
 			}
 			if (volley.remaining === 0) delete mount.rocketVolley;
@@ -364,7 +364,7 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 			const hits = combatTargets(state).map(function (target) { return { target, entry: hitVolumeFraction(origin, end, targetVolume(target)) }; }).filter(function (hit): hit is { target: CombatTarget; entry: number } { return hit.entry !== undefined; }).sort(function (a, b) { return a.entry - b.entry; });
 			const hit = hits[0]; const endpoint = pointAlong(origin, end, hit?.entry ?? 1);
 			state.beams.push({ ...endpoint, slot, origin });
-			if (hit) hurtTarget(state, hit.target, weaponDamage(weapon, mount.level) * dt, origin);
+			if (hit) hurtTarget(state, hit.target, weapon.damage * dt, origin);
 			mount.firing = true;
 			return;
 		}
@@ -373,9 +373,9 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 		for (let projectile = 0; projectile < (weapon.kind === 'rocket' || weapon.stream ? 1 : weapon.projectiles); projectile++) {
 			if (!consumeFire(mount, p)) break;
 			const spread = weapon.projectiles === 1 ? Math.sin(state.stats.shotsFired * 2.4) * weapon.spread : (projectile - (weapon.projectiles - 1) / 2) * weapon.spread;
-			launchWeapon(state, weapon, mount, p.turret + spread, slot, target?.id);
+			launchWeapon(state, weapon, p.turret + spread, slot, target?.id);
 		}
-		if ((weapon.kind === 'rocket' || weapon.stream) && weapon.projectiles > 1 && usableMount(mount) && !p.overheated) mount.rocketVolley = { remaining: Math.min(weapon.projectiles - 1, mount.rounds), nextIn: 0.1 };
+		if ((weapon.kind === 'rocket' || weapon.stream) && weapon.projectiles > 1 && usableMount(mount) && !p.overheated) mount.rocketVolley = { remaining: Math.min(weapon.projectiles - 1, mount.rounds), nextIn: volleySpacing(weapon) };
 		mount.cooldown = weapon.interval; mount.firing = true;
 		if (weapon.kind === 'cannon' || weapon.kind === 'ppc') { state.cannonIn = 0.65; state.shake = weapon.kind === 'ppc' ? 4 : 3; }
 		state.events.push(weapon.kind === 'bullet' ? 'machine-gun' : weapon.kind);
@@ -447,7 +447,7 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 			volley.nextIn -= dt;
 			while (volley.remaining > 0 && volley.nextIn <= 1e-9) {
 				if (!launchEnemy(state, enemy, mount, target, stats.damage * difficulty.enemyDamage)) { volley.remaining = 0; break; }
-				volley.remaining--; volley.nextIn += 0.1;
+				volley.remaining--; volley.nextIn += volleySpacing(getWeapon(mount.weapon));
 			}
 			if (volley.remaining === 0) delete mount.rocketVolley;
 		}
@@ -510,13 +510,14 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 		if (!reactor.overheated && enemy.cooldown <= 0 && distance(enemy, target) < range + 50 && Math.abs(angleDelta(enemy.angle, targetAngle)) < 0.3) {
 			const ready = mounts.filter(function (mount) { return usableMount(mount) && mount.cooldown <= 0 && !mount.rocketVolley; });
 			const artillery = enemy.kind === 'siege' || enemy.commander ? ready.find(function (mount) { return getEnemyHardpoints(enemy.kind, enemy.commander)[mount.slot ?? 0]?.id === 'dorsal-artillery'; }) : undefined;
+			let fired = artillery;
 			if (artillery) commitBarrage(state, enemy, target, artillery);
 			else {
 				const next = enemy.attackSlot ?? 0;
 				const mount = Array.from({ length: mounts.length }, function (_unused, offset) { return mounts[(next + offset) % mounts.length]; }).find(function (candidate) { return candidate !== undefined && ready.includes(candidate); });
-				if (mount) { fireEnemyMount(state, enemy, mount, target, stats.damage * difficulty.enemyDamage); enemy.attackSlot = mounts.indexOf(mount) + 1; }
+				if (mount) { fired = mount; fireEnemyMount(state, enemy, mount, target, stats.damage * difficulty.enemyDamage); enemy.attackSlot = mounts.indexOf(mount) + 1; }
 			}
-			enemy.cooldown = stats.reload;
+			enemy.cooldown = stats.reload * (fired ? getWeaponTier(getWeapon(fired.weapon).tier).interval : 1);
 		}
 	}
 

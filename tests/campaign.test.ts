@@ -131,3 +131,40 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(parseCampaign(null).planetId).toBe('meridian');
 	});
 });
+
+test('v5 storage purges incompatible campaigns while preserving profile and unrelated browser data', async function () {
+	const { CAMPAIGN_STORAGE_KEY, readCampaign, saveCampaign } = await import('../src/campaign');
+	const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+	const data = new Map<string, string>();
+	const storage: Storage = {
+		get length() { return data.size; },
+		clear: function () { data.clear(); },
+		getItem: function (key) { return data.get(key) ?? null; },
+		key: function (index) { return [...data.keys()][index] ?? null; },
+		removeItem: function (key) { data.delete(key); },
+		setItem: function (key, value) { data.set(key, value); },
+	};
+	Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
+	try {
+		for (const version of [1, 2, 3, 4]) storage.setItem(`heavy-rig:campaign:v${version}`, JSON.stringify({ ...createCampaign(72), version, credits: 900 }));
+		storage.setItem('heavy-rig:profile:v1', 'keep settings');
+		storage.setItem('other-game:campaign:v4', 'keep other game');
+		const fresh = readCampaign();
+		expect(fresh.version).toBe(5);
+		expect(fresh.credits).toBe(0);
+		for (const version of [1, 2, 3, 4]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
+		expect(storage.getItem('heavy-rig:profile:v1')).toBe('keep settings');
+		expect(storage.getItem('other-game:campaign:v4')).toBe('keep other game');
+		const current = createCampaign(84);
+		expect(saveCampaign(current)).toBe(true);
+		expect(storage.getItem(CAMPAIGN_STORAGE_KEY)).toBe(JSON.stringify(current));
+		expect(readCampaign()).toEqual(current);
+		storage.setItem('heavy-rig:campaign:v4', 'obsolete');
+		expect(saveCampaign(current)).toBe(true);
+		expect(storage.getItem('heavy-rig:campaign:v4')).toBeNull();
+		expect(parseCampaign(JSON.stringify({ ...current, version: 4, credits: 900 })).credits).toBe(0);
+	} finally {
+		if (original) Object.defineProperty(globalThis, 'localStorage', original);
+		else Reflect.deleteProperty(globalThis, 'localStorage');
+	}
+});

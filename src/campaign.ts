@@ -31,7 +31,7 @@ export interface CampaignResult {
 }
 
 export interface Campaign extends CompanyState {
-	version: 4;
+	version: 5;
 	introComplete: boolean;
 	universe: UniverseState;
 	seed: number;
@@ -47,7 +47,7 @@ export interface Campaign extends CompanyState {
 	lastResult: CampaignResult | undefined;
 }
 
-export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v4';
+export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v5';
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance'];
 const MAX_COUNT = 1_000_000;
 export const MAX_CREDITS = 1_000_000_000_000;
@@ -65,7 +65,7 @@ const freshSeed = function () {
 
 export const createCampaign = function (seed?: number): Campaign {
 	return {
-		...createCompany(), version: 4, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
+		...createCompany(), version: 5, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
 		credits: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 	};
 };
@@ -215,7 +215,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 	if (!raw) return createCampaign();
 	try {
 		const value: unknown = JSON.parse(raw);
-		if (!object(value) || value['version'] !== 4 || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
+		if (!object(value) || value['version'] !== 5 || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > value['boardRevision'] || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
@@ -225,7 +225,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
 		const campaign: Campaign = {
-			...company, version: 4, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
+			...company, version: 5, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 		};
@@ -245,10 +245,15 @@ export const parseCampaign = function (raw: string | null): Campaign {
 	} catch { return createCampaign(); }
 };
 
+// Equipment identity changed in v5. Remove obsolete campaigns rather than leave
+// incompatible progression in storage; input and presentation profiles are separate.
+const purgePreviousCampaigns = function () {
+	for (const version of [1, 2, 3, 4]) localStorage.removeItem(`heavy-rig:campaign:v${version}`);
+};
 export const readCampaign = function (): Campaign {
-	try { return recoverInterruptedDeployment(parseCampaign(localStorage.getItem(CAMPAIGN_STORAGE_KEY))); } catch { return createCampaign(); }
+	try { purgePreviousCampaigns(); return recoverInterruptedDeployment(parseCampaign(localStorage.getItem(CAMPAIGN_STORAGE_KEY))); } catch { return createCampaign(); }
 };
 
 export const saveCampaign = function (campaign: Campaign): boolean {
-	try { localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(campaign)); return true; } catch { return false; }
+	try { purgePreviousCampaigns(); localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(campaign)); return true; } catch { return false; }
 };

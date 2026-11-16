@@ -10,7 +10,6 @@ export const MOUNTS = [
 	{ action: 'mount-2', mouse: 'MIDDLE', pad: 'RB / R1', key: '3', button: 1 },
 	{ action: 'mount-3', mouse: 'THUMB', pad: 'LB / L1', key: '4', button: 3 },
 ] as const;
-export const rankLabel = function (level: number) { return ['I', 'II', 'III'][level - 1] ?? 'I'; };
 export const massLabel = function (mass: number) { return `${mass.toFixed(3).replace(/\.?0+$/, '')} t`; };
 export const sustainedHeat = function (weapon: WeaponDefinition) { return weapon.kind === 'laser' ? weapon.heat : weapon.heat / weapon.interval; };
 export const supplySummary = function (loadout: Loadout, reserves: readonly number[]): string {

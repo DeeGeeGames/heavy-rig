@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { acceptContract, abandonContract, createCampaign, getContracts, parseCampaign, recoverInterruptedDeployment, type Campaign } from '../src/campaign';
+import { acceptContract, abandonContract, createCampaign, getContracts, parseCampaign, type Campaign } from '../src/campaign';
 import { advanceDays, beginDeployment, buyFrame, buyWeapon, canRefit, checkpointDeployment, getOwnedMech, isFrameId, queueRefit, queueRepair, selectFrame } from '../src/company';
 import { frameWeight, loadedMounts } from '../src/combat-resources';
 import { CHASSIS_IDS, FRAMES, getFrame } from '../src/frames';
@@ -67,11 +67,11 @@ test('Longbow auxiliary structure costs mass and mobility even with the secondar
 });
 
 test('separately purchased variants preserve independent equipment, reserves, damage and workshop orders', function () {
-	const company = buyWeapon(buyWeapon(buyFrame(buyFrame({ ...createCampaign(83), credits: 50000 }, 'kestrel-b'), 'kestrel-c'), 'laser'), 'cluster-rockets');
+	const company = buyWeapon(buyWeapon(buyFrame(buyFrame({ ...createCampaign(83), credits: 50000 }, 'kestrel-b'), 'kestrel-c'), 'laser:t1'), 'cluster-rockets');
 	expect(company.fleet.map(function (mech) { return mech.frameId; })).toEqual(['kestrel', 'kestrel-b', 'kestrel-c']);
-	expect(company.inventory['machine-gun']).toBe(3);
+	expect(company.inventory['machine-gun']).toBe(4);
 	expect(buyFrame(company, 'kestrel-b')).toBe(company);
-	const queued = queueRefit(queueRefit(company, 'kestrel-b', ['machine-gun', 'laser'], [300, 0]), 'kestrel-c', ['machine-gun', 'cluster-rockets'], [400, 45]);
+	const queued = queueRefit(queueRefit(company, 'kestrel-b', ['machine-gun', 'laser:t1'], [300, 0]), 'kestrel-c', ['machine-gun', 'cluster-rockets'], [400, 45]);
 	expect(queued.workOrders).toHaveLength(2);
 	const complete = advanceDays(parseCampaign(JSON.stringify(queued)), 1);
 	expect(getOwnedMech(complete, 'kestrel-b')?.reserves).toEqual([300, 0]);
@@ -93,36 +93,4 @@ test('separately purchased variants preserve independent equipment, reserves, da
 	const combat = createMissionState(contract, { frame: mech.frameId, loadout: mech.loadout, reserves: mech.reserves });
 	expect(combat.frame).toBe('kestrel-c');
 	expect(combat.loadout.map(function (mount) { return [mount.slot, mount.weapon, mount.rounds]; })).toEqual([[0, 'machine-gun', 400], [1, 'cluster-rockets', 45]]);
-});
-
-test('pre-variant v4 saves retain original rig identities, damage, pending work, supplies and deployment recovery', function () {
-	// Deliberately use the old serialized shapes and original IDs, with no variant metadata.
-	const legacy: Campaign = {
-		...createCampaign(73), credits: 12345, selectedFrame: 'longbow',
-		fleet: [
-			{ frameId: 'kestrel', integrity: 64, loadout: ['machine-gun', null], reserves: [1200, 0] },
-			{ frameId: 'warden', integrity: 82, loadout: ['autocannon', null, null, null], reserves: [240, 0, 0, 0] },
-			{ frameId: 'maul', integrity: 100, loadout: ['cluster-rockets', null], reserves: [360, 0] },
-			{ frameId: 'longbow', integrity: 73, loadout: ['ppc'], reserves: [0] },
-			{ frameId: 'morrow', integrity: 100, loadout: ['cluster-missiles', null], reserves: [360, 0] },
-		],
-		inventory: { ...createCampaign(73).inventory, 'machine-gun': 2, autocannon: 1, ppc: 1, 'cluster-rockets': 1, 'cluster-missiles': 1 },
-		workOrders: [
-			{ kind: 'repair', frameId: 'kestrel', startedDay: 1, readyDay: 3 },
-			{ kind: 'refit', frameId: 'warden', startedDay: 1, readyDay: 2, loadout: ['autocannon', 'machine-gun', null, null], reserves: [140, 800, 0, 0] },
-		],
-	};
-	expect(parseCampaign(JSON.stringify(legacy))).toEqual(legacy);
-	const deployed = checkpointDeployment(beginDeployment(accept(legacy)), 51, 1);
-	expect(deployed.deployed).toEqual({ frameId: 'longbow', integrity: 51, coolantCharges: 1 });
-	const restored = parseCampaign(JSON.stringify(deployed));
-	expect(restored).toEqual(deployed);
-	expect(restored.fleet.every(function (mech) { return getFrame(mech.frameId).variant === 'A'; })).toBe(true);
-	const recovered = recoverInterruptedDeployment(restored);
-	expect(recovered.credits).toBe(legacy.credits);
-	expect(getOwnedMech(recovered, 'longbow')?.integrity).toBe(51);
-	expect(getOwnedMech(recovered, 'warden')?.loadout).toEqual(['autocannon', 'machine-gun', null, null]);
-	expect(getOwnedMech(recovered, 'warden')?.reserves).toEqual([140, 800, 0, 0]);
-	expect(recovered.workOrders.map(function (order) { return order.frameId; })).toEqual(['kestrel']);
-	expect(recoverInterruptedDeployment(parseCampaign(JSON.stringify(recovered)))).toEqual(recovered);
 });
