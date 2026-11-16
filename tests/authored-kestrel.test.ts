@@ -80,3 +80,63 @@ test('retained Kestrel preserves equipped slots, fixed-step contacts and firing 
 	}
 	expect(getPlayerWeaponRig('kestrel')).not.toBe(factory.weaponRigs);
 });
+
+test('Kestrel bounds through sustained flight with its torso rising above the supported pose', async function () {
+	const loader = new GLTFLoader().register(function () { return { name: 'HEADLESS_KESTREL_BOUND', loadTexture: async function () { return new Texture(); } }; });
+	const asset = await loader.parseAsync(await Bun.file(new URL('../public/assets/mechs/kestrel/game-ready.glb', import.meta.url)).arrayBuffer(), '');
+	const factory = prepareAuthoredKestrel(asset); const model = factory.create();
+	try {
+		const torso = model.root.getObjectByName('rig_torso'); if (!torso) throw new Error('Missing Kestrel torso');
+		const soles = ['left', 'right'].map(function (side) {
+			const foot = model.root.getObjectByName(`rig_leg_${side}_foot`); if (!foot) throw new Error('Missing Kestrel foot');
+			const vertices: { mesh: Mesh; point: Vector3 }[] = [];
+			foot.traverse(function (node) {
+				if (!(node instanceof Mesh)) return;
+				const position = node.geometry.getAttribute('position');
+				for (let index = 0; index < position.count; index++) vertices.push({ mesh: node, point: new Vector3().fromBufferAttribute(position, index) });
+			});
+			return vertices;
+		});
+		// Exercise nominal and light-load pace. Measure the rendered sole and torso,
+		// since valid numeric contacts alone can still produce a grounded fast walk.
+		for (const speed of [90, 145]) {
+			let body = { x: 0, y: 0, angle: 0 }; let context = factory.advancePose(undefined, body, 0);
+			let airborne = 0; let longestFlight = 0; let flightFrames = 0; let supportFrames = 0;
+			let flightTorso = 0; let supportTorso = 0; let low = Infinity; let high = -Infinity;
+			let previousTorso: number | undefined; let largestVerticalStep = 0;
+			const touchdowns: [number | undefined, number | undefined] = [undefined, undefined]; const strides: number[] = [];
+			for (let tick = 1; tick <= 300; tick++) {
+				const before = context.gait; body = { ...body, x: body.x + speed / 60 };
+				context = factory.advancePose(context, body, tick / 60);
+				const gait = context.gait; if (!gait) throw new Error('Missing bounding pose');
+				model.root.position.set(body.x, 0, body.y);
+				model.pose(createGait(body), 0, { recoil: 0, hit: 0, heat: 0, time: tick / 60, authoredPose: context });
+				if (tick <= 60) continue;
+				const height = torso.getWorldPosition(new Vector3()).y; low = Math.min(low, height); high = Math.max(high, height);
+				if (previousTorso !== undefined) largestVerticalStep = Math.max(largestVerticalStep, Math.abs(height - previousTorso));
+				previousTorso = height;
+				const flying = soles.every(function (vertices) { return vertices.every(function (vertex) { return vertex.point.clone().applyMatrix4(vertex.mesh.matrixWorld).y > 0.5; }); });
+				if (flying) { airborne++; flightFrames++; flightTorso += height; longestFlight = Math.max(longestFlight, airborne); }
+				else { airborne = 0; supportFrames++; supportTorso += height; }
+				for (const index of [0, 1] as const) {
+					const foot = gait.feet[index]; const prior = touchdowns[index];
+					if ((before?.feet[index].lift ?? 0) <= 0 || foot.lift !== 0) continue;
+					if (prior !== undefined) strides.push(foot.x - prior);
+					touchdowns[index] = foot.x;
+				}
+			}
+			// Clear flight lasts several rendered frames, and the body crest follows it.
+			expect(longestFlight / 60).toBeGreaterThan(0.1);
+			expect(supportFrames).toBeGreaterThan(30);
+			expect(flightFrames).toBeGreaterThan(30);
+			expect(flightTorso / flightFrames - supportTorso / supportFrames).toBeGreaterThan(2);
+			expect(high - low).toBeGreaterThan(4);
+			expect(largestVerticalStep).toBeLessThan(3);
+			expect(strides.length).toBeGreaterThan(5);
+			expect(strides.reduce(function (sum, stride) { return sum + stride; }, 0) / strides.length).toBeGreaterThan(60);
+		}
+	} finally {
+		model.dispose(); factory.dispose();
+		asset.scene.traverse(function (node) { if (!(node instanceof Mesh)) return; node.geometry.dispose(); for (const material of Array.isArray(node.material) ? node.material : [node.material]) { for (const value of Object.values(material)) if (value instanceof Texture) value.dispose(); material.dispose(); } });
+	}
+});

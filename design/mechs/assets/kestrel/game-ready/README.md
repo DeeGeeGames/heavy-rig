@@ -19,8 +19,12 @@ gun assembly while retaining torso-owned supports. Each seven-barrel array is
 one gameplay weapon; the central barrel supplies its logical firing origin.
 The runtime shares fixed-step contact/IK helpers with Warden but measures this
 source's own asymmetric pivots and soles and supplies Kestrel-specific strides.
-It does not directly play the embedded leg tracks. Its accepted height, 74.82
-game units, matches the posed procedural Kestrel. Existing simulation collision
+The running profile uses longer bounds with brief support, visible flight and
+phase-driven torso rise and landing compression. It enters running at 40 game
+units per second and returns to walking below 32. The torso and firing origins
+share this fixed-step vertical pose. This runtime tuning does not change the
+approved asset or embedded clips. It does not directly play the embedded leg
+tracks. Its accepted height, 74.82 game units, matches the posed procedural Kestrel. Existing simulation collision
 proxies remain authoritative; visual triangles do not become physics colliders.
 
 ## Retained lineage and reproduction
