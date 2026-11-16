@@ -18,7 +18,7 @@ Controls appear during live play; alarms sound through the escape, whose map now
 covers three times the original area with six guards along the route. Hold the
 green evacuation zone for three seconds to finish.
 The borrowed rig, combat damage, and kills do not carry into the company.
-Completion is saved per company; completed v4 companies bypass the prologue. REPLAY ESCAPE
+Completion is saved per company; completed v5 companies bypass the prologue. REPLAY ESCAPE
 on the title menu repeats the full sequence without changing company progress.
 
 Completing the escape boards the Wayfarer directly at the company bridge and
@@ -40,7 +40,7 @@ throughout:
 | --- | --- |
 | Contracts | Plot travel, review faction standings, accept work, and inspect the mission briefing. |
 | Mech Bay | Select an owned frame, inspect its condition, plan chassis-specific weapon hardpoints, and deploy. |
-| Market | Spend contract earnings on weapon copies or additional frames with their signature weapons included. |
+| Market | Spend contract earnings on weapon copies or additional frames with complete tier 0 loadouts included. |
 | Engineering | Schedule repairs, inspect or cancel work orders, and advance calendar days. |
 
 **LB/RB** switches departments; **LT/RT** switches pages within a department.
@@ -52,10 +52,13 @@ Pages remember their focus and refit drafts survive department changes.
 Purchases, work orders, calendar advances, travel, contract acceptance, and
 deployment show a confirmation with their cost or consequences first.
 
-Each variant can be purchased once; multiple variants of a chassis can be owned together. Purchases arrive immediately; installing or
-moving weapons requires a refit. Weapons are physical inventory copies shared
-across the fleet: a fitted or reserved copy cannot also be installed on another
-frame. Buying a second copy permits fitting the same weapon family twice.
+Each variant can be purchased once; multiple variants of a chassis can be owned
+together. Every frame arrives with all hardpoints armed at tier 0 and standard
+ammunition. The starting Kestrel has both Rattlers fitted. Purchases arrive
+immediately; replacing or moving fitted weapons requires a refit. Weapons are
+physical inventory copies shared across the fleet: a fitted or reserved copy cannot also be installed on another
+frame. Model and tier identify each copy: a tier 0 Rattler cannot satisfy a
+tier 3 Rattler refit. Buying a second copy permits fitting that equipment twice.
 Weapons and their mount positions persist between sorties. Empty mounts do not
 shift another weapon's keyboard, mouse, touch, or controller binding.
 
@@ -178,10 +181,12 @@ subsequent reloads do not duplicate rewards.
 ## Frames and variants
 
 The fleet contains six chassis with three separately purchasable variants each.
-Existing rigs are A variants and retain their saved IDs, equipment, reserves,
-condition, and workshop orders in campaign v4. Each variant has its own crew and
-condition; shared weapon inventory still prevents double allocation. Purchases
-include one signature weapon, not a fully fitted example loadout.
+Each variant has its own crew, equipment, ammunition settings, and condition;
+shared weapon inventory prevents double allocation. Purchases include a complete
+stock loadout with every hardpoint fitted at tier 0. The Market lists every
+included weapon, its ammunition reserve, and the resulting loaded weight before
+purchase. Included weapons remain ordinary inventory copies that can be removed
+and refitted elsewhere.
 
 | Chassis | A | B | C |
 | --- | --- | --- | --- |
@@ -196,36 +201,38 @@ B means ballistic, E energy, and L launcher. Light ballistic mounts accept only
 Rattler; compact energy mounts accept only ARC; compact launchers accept only
 two-round rocket/missile weapons. Full mounts retain their family weapon choices.
 Longbow B/C include 3T of permanent auxiliary structure, even with an empty
-secondary mount. They ship with a Rattler and ARC respectively to keep their
-starter loads mobile; fitting a cannon or particle gun adds its full weight.
+secondary mount. Their full stock loadouts use a Rattler main gun with ARC
+offhand for B, and an ARC main bank with compact launcher for C. Fitting heavier equipment adds its
+full hardware and ammunition weight.
 Rook is a medium three-mount chassis with two underslung arms
-and a central dorsal pod: 55T base, 66T recommended operating weight, 95/52 m/s
+and a central dorsal pod: 55T base, 82T recommended operating weight, 95/52 m/s
 forward/reverse baseline, 12 heat/s cooling, and 20% increased incoming damage.
 These are initial tuning values; weapon mass, reserves, and shared heat determine
 the effective mobility and endurance of each fitted variant.
 
 Original A-variant specifications:
 
-| Frame | Ownership / price | Role / included weapon | Cruise / reverse | Cooling | Tradeoff |
+| Frame | Ownership / price | Role / complete tier 0 loadout | Cruise / reverse | Cooling | Tradeoff |
 | --- | --- | --- | --- | --- | --- |
-| Kestrel 21 · 40T | Starting frame | Skirmisher / Rattler | 125 / 65 m/s | 10 heat/s | Fast tracking and acceleration; takes 30% more damage |
-| Warden 08 · 80T | 5,000 CR | Line fighter / AC/38 | 90 / 48 m/s | 12 heat/s | Balanced armor and handling |
+| Kestrel 21 · 40T | Starting frame | Skirmisher / 2 Rattlers | 125 / 65 m/s | 10 heat/s | Fast tracking and acceleration; takes 30% more damage |
+| Warden 08 · 80T | 5,000 CR | Line fighter / AC/38, Rattler, Needle /2, Lance /2 | 90 / 48 m/s | 12 heat/s | Balanced armor and handling |
 | Longbow 16 · 65T | 6,000 CR | Precision gunner / Tempest | 86 / 42 m/s | 15 heat/s | Strong cooling; slow tracking and 12% more damage |
-| Morrow 52 · 70T | 6,500 CR | Missile support / Trident | 88 / 48 m/s | 12 heat/s | Guided area fire; takes 10% more damage |
-| Maul 34 · 100T | 7,500 CR | Brawler / Hailstorm | 82 / 40 m/s | 11 heat/s | Takes 22% less damage; slow hull and turret traverse |
+| Morrow 52 · 70T | 6,500 CR | Missile support / 2 Trident /2 | 88 / 48 m/s | 12 heat/s | Guided area fire; takes 10% more damage |
+| Maul 34 · 100T | 7,500 CR | Brawler / 2 Hailstorm /2 | 82 / 40 m/s | 11 heat/s | Takes 22% less damage; slow hull and turret traverse |
+| Rook 37 · 55T | 5,500 CR | Medium raider / AC/38, Rattler, Lance /2 | 95 / 52 m/s | 12 heat/s | Three mounts; takes 20% more damage |
 
 Frame tonnage above is **base chassis mass**, including fixed equipment.
-Recommended operating weights are Kestrel **44T**, Warden **92T**, Longbow **73T**,
-Morrow **86T**, and Maul **114T**. Installed weapons and remaining ammunition add
-to base mass. At the recommendation, cruise and reverse use the listed speed.
+Recommended operating weights are Kestrel **50T**, Warden **122T**, Longbow **80T**,
+Morrow **100T**, Maul **124T**, and Rook **82T**. Installed weapons and remaining
+ammunition add to base mass. At the recommendation, cruise and reverse use the listed speed.
 Underweight speed receives a modest bonus capped at 15%; overload is steeper:
 150% of recommended weight gives 50% speed, with a 35% minimum. Overweight
 deployment is allowed. Expending rounds reduces weight and updates both forward
 and reverse top speed; player acceleration still smooths velocity changes.
-These are first-version balance values. The default 240-shell AC reserve was
-raised after an ideal-hit tier-one clearance check exhausted the initial
-160-shell load; the 92T Warden recommendation keeps its starter load at baseline
-speed. Real combat accuracy and owner balance playtesting remain separate checks.
+Standard ammunition reserves remain available on every stock mount. Recommended
+operating weights account for complete stock equipment; changing reserves or
+fitting heavier hardware still changes mobility. Real combat accuracy and owner
+balance playtesting remain separate checks.
 
 Original A-variant hardpoints:
 
@@ -273,6 +280,28 @@ Launchers also have /4 and /6 variants. Each emitted bullet, shell, rocket, or
 missile consumes one round. A partly loaded launcher fires only its remaining
 rounds; staggered rounds obey heat lock at emission. Already launched ordnance
 continues to resolve.
+
+Weapon quality runs from **tier 0 through tier 5**. The Market keeps one tier
+selected at a time and shows the same 16 weapon models at that quality. Changing
+tier preserves the selected model. The item panel displays damage, firing cycle,
+range, sustained heat, projectile speed, spread, and comparison with tier 0.
+
+| Tier | Quality | Price multiplier |
+| --- | --- | --- |
+| 0 | Standard | 1× |
+| 1 | Service | 1.4× |
+| 2 | Refined | 2× |
+| 3 | Advanced | 3× |
+| 4 | Elite | 4.5× |
+| 5 | Exceptional | 7× |
+
+Higher tiers improve damage, range, cycling, heat efficiency, projectile speed,
+and existing spread. Continuous beams keep continuous fire. Hardware mass,
+round capacity, salvo size, splash radius, and hardpoint compatibility stay tied
+to the weapon model. Each model-and-tier combination is separate owned equipment;
+there is no combat rank or automatic equipment leveling. Replacing tier 0 with a
+higher tier requires buying that copy and completing a normal refit. All stock
+mechs, including the starting frame, arrive at tier 0.
 
 Initial ammunition and hardware tuning, in tonnes:
 
@@ -452,7 +481,7 @@ overlay stack. Pause and auxiliary dialogs retain the underlying combat entities
 simulation systems stop while browser input and permitted presentation continue.
 Transitions clear pending input and require controller neutral before resuming.
 Save conflicts remain locked to reload. Company transactions, save validation,
-and serialization remain ordinary domain functions, using the fresh v4 company
+and serialization remain ordinary domain functions, using the fresh v5 company
 and unchanged v1 preference formats. Mission replacement removes the previous entities;
 their view components release models. The application cleanup owner stops
 listeners and adapters, disposes the shared world, then releases its supplied
@@ -583,10 +612,11 @@ The Pages workflow deploys `master` after the complete check. Pull requests must
 satisfy live branch protection; workflow definitions alone do not establish
 merge readiness. The custom domain is configured in `CNAME`.
 
-Company progression uses **`heavy-rig:campaign:v4`**. Version 4 starts a fresh
-company with saved per-mount ammunition selections and strict loadout validation.
-Earlier campaigns, including v3, are left untouched and are not loaded; no
-migration is provided. Territory influence remains part of the company save.
+Company progression uses **`heavy-rig:campaign:v5`**. Version 5 starts a fresh
+company with tier-specific equipment ownership, complete stock loadouts, and
+per-mount ammunition selections. Earlier campaign namespaces (v1–v4) are purged
+when company data is read or saved; no migration is provided. Territory influence
+remains part of the company save.
 Preferences remain under `heavy-rig:profile:v1`; historical classic records in
 that profile are retained but the classic operation is no longer a playable mode.
 

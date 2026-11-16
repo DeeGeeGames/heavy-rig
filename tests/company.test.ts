@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { getWeapon } from '../src/arsenal';
+import { WEAPONS, getWeapon } from '../src/arsenal';
 import { FRAMES, getFrame } from '../src/frames';
-import { defaultReserves, loadedMounts } from '../src/combat-resources';
+import { defaultReserves, frameWeight, loadedMounts } from '../src/combat-resources';
 import { createMissionState } from '../src/simulation';
 import { abandonContract, acceptContract, createCampaign, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
 import { advanceDays, applyRigCheat, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, setAmmunition, unlockAllRigs, WEAPON_PRICES } from '../src/company';
@@ -15,10 +15,10 @@ const accept = function (campaign: Campaign): Campaign {
 const funded = function (): Campaign { return { ...createCampaign(23), credits: 30000 }; };
 
 describe('Company ownership and workshop transactions', function () {
-	test('starts with only Kestrel and requires affordable purchases without duplicate chassis or free armaments', function () {
+	test('starts with a fully armed Kestrel and includes the complete stock package in each chassis purchase', function () {
 		const fresh = createCampaign(23);
 		expect(fresh.selectedFrame).toBe('kestrel');
-		expect(fresh.fleet).toEqual([{ frameId: 'kestrel', integrity: 100, loadout: ['machine-gun', null], reserves: defaultReserves(['machine-gun', null]) }]);
+		expect(fresh.fleet).toEqual([{ frameId: 'kestrel', integrity: 100, loadout: ['machine-gun', 'machine-gun'], reserves: defaultReserves(['machine-gun', 'machine-gun']) }]);
 		expect(availableWeapons(fresh, 'machine-gun')).toBe(0);
 		expect(selectFrame(fresh, 'warden')).toBe(fresh);
 		expect(buyFrame(fresh, 'warden')).toBe(fresh);
@@ -26,7 +26,7 @@ describe('Company ownership and workshop transactions', function () {
 		const company = funded(); const before = JSON.stringify(company);
 		const purchased = buyWeapon(buyFrame(company, 'warden'), 'laser');
 		expect(purchased.credits).toBe(company.credits - getFrame('warden').price - WEAPON_PRICES.laser);
-		expect(getOwnedMech(purchased, 'warden')?.loadout).toEqual(['autocannon', null, null, null]);
+		expect(getOwnedMech(purchased, 'warden')?.loadout).toEqual(['autocannon', 'machine-gun', 'stream-missiles', 'stream-rockets']);
 		expect(purchased.inventory.autocannon).toBe(1);
 		expect(purchased.inventory.laser).toBe(1);
 		expect(buyFrame(purchased, 'warden')).toBe(purchased);
@@ -35,20 +35,20 @@ describe('Company ownership and workshop transactions', function () {
 	});
 
 	test('refits reserve physical copies across mechs, keep existing slots until completion, and conserve inventory', function () {
-		const company = buyWeapon(buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun'), 'stream-rockets');
-		const target = [null, 'machine-gun', 'stream-rockets', null] as const;
+		const company = buyWeapon(buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun:t1'), 'stream-rockets');
+		const target = ['machine-gun:t1', null, 'stream-rockets', null] as const;
 		const queued = queueRefit(company, 'warden', target);
-		expect(queued.workOrders[0]).toEqual({ kind: 'refit', frameId: 'warden', startedDay: 1, readyDay: 4, loadout: target, reserves: defaultReserves(target) });
-		expect(getOwnedMech(queued, 'warden')?.loadout).toEqual(['autocannon', null, null, null]);
-		expect(availableWeapons(queued, 'machine-gun')).toBe(0);
-		expect(queueRefit(queued, 'kestrel', ['machine-gun', 'machine-gun'])).toBe(queued);
-		expect(queueRefit(company, 'warden', ['machine-gun', 'machine-gun', null, null])).toBe(company);
+		expect(queued.workOrders[0]).toEqual({ kind: 'refit', frameId: 'warden', startedDay: 1, readyDay: 5, loadout: target, reserves: defaultReserves(target) });
+		expect(getOwnedMech(queued, 'warden')?.loadout).toEqual(['autocannon', 'machine-gun', 'stream-missiles', 'stream-rockets']);
+		expect(availableWeapons(queued, 'machine-gun:t1')).toBe(0);
+		expect(queueRefit(queued, 'kestrel', ['machine-gun', 'machine-gun:t1'])).toBe(queued);
+		expect(queueRefit(company, 'warden', ['machine-gun:t1', 'machine-gun:t1', null, null])).toBe(company);
 		expect(queueRefit(queued, 'warden', ['autocannon', null, null, null])).toBe(queued);
 		expect(canDeploy(accept(selectFrame(queued, 'warden')))).toBe(false);
 		const pending = advanceDays(queued, 2);
 		expect(getOwnedMech(pending, 'warden')?.loadout).toEqual(getOwnedMech(company, 'warden')?.loadout);
 		expect(roundTrip(pending)).toEqual(pending);
-		const complete = advanceDays(pending, 1);
+		const complete = advanceDays(pending, 2);
 		expect(complete.workOrders).toEqual([]);
 		expect(getOwnedMech(complete, 'warden')?.loadout).toEqual(target);
 		expect(complete.inventory).toEqual(company.inventory);
@@ -58,25 +58,25 @@ describe('Company ownership and workshop transactions', function () {
 	});
 
 	test('cancellation releases incoming reservations without handing out outgoing equipment early', function () {
-		const company = buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun');
-		const queued = queueRefit(company, 'warden', ['machine-gun', null, null, null]);
+		const company = buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun:t1');
+		const queued = queueRefit(company, 'warden', ['machine-gun:t1', null, null, null]);
 		expect(availableWeapons(queued, 'autocannon')).toBe(0);
-		expect(availableWeapons(queued, 'machine-gun')).toBe(0);
+		expect(availableWeapons(queued, 'machine-gun:t1')).toBe(0);
 		const cancelled = cancelWorkOrder(queued, 'warden');
 		expect(cancelled.inventory).toEqual(company.inventory);
 		expect(getOwnedMech(cancelled, 'warden')?.loadout).toEqual(getOwnedMech(company, 'warden')?.loadout);
-		expect(availableWeapons(cancelled, 'machine-gun')).toBe(1);
+		expect(availableWeapons(cancelled, 'machine-gun:t1')).toBe(1);
 		expect(availableWeapons(cancelled, 'autocannon')).toBe(0);
 		expect(cancelWorkOrder(cancelled, 'warden')).toBe(cancelled);
-		const completed = advanceDays(queued, 1);
+		const completed = advanceDays(queued, 4);
 		expect(availableWeapons(completed, 'autocannon')).toBe(1);
-		expect(availableWeapons(completed, 'machine-gun')).toBe(0);
+		expect(availableWeapons(completed, 'machine-gun:t1')).toBe(0);
 		expect(advanceDays(completed, 10).inventory).toEqual(company.inventory);
 	});
 
 	test('calendar days do not reroll postings, while travel and missions also complete spare-mech work', function () {
 		const company = buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun');
-		const queued = queueRefit(company, 'warden', ['autocannon', 'machine-gun', null, null]);
+		const queued = queueRefit(company, 'warden', ['machine-gun', 'machine-gun', 'stream-missiles', 'stream-rockets']);
 		const waited = advanceDays(queued, 7);
 		expect(waited.day).toBe(8);
 		expect(waited.boardRevision).toBe(0);
@@ -85,13 +85,13 @@ describe('Company ownership and workshop transactions', function () {
 		const travelled = travelTo(queued, 'cinder');
 		expect(travelled.day).toBe(2);
 		expect(travelled.workOrders).toEqual([]);
-		expect(getOwnedMech(travelled, 'warden')?.loadout[1]).toBe('machine-gun');
+		expect(getOwnedMech(travelled, 'warden')?.loadout[0]).toBe('machine-gun');
 		const deployed = beginDeployment(accept(queued));
 		expect(deployed.deployed?.frameId).toBe('kestrel');
 		const settled = settleContract(deployed, true);
 		expect(settled.day).toBe(2);
 		expect(settled.workOrders).toEqual([]);
-		expect(getOwnedMech(settled, 'warden')?.loadout[1]).toBe('machine-gun');
+		expect(getOwnedMech(settled, 'warden')?.loadout[0]).toBe('machine-gun');
 		expect(roundTrip(settled)).toEqual(settled);
 		expect(advanceDays(queued, 0)).toBe(queued);
 		expect(advanceDays(queued, -1)).toBe(queued);
@@ -152,9 +152,9 @@ describe('Company ownership and workshop transactions', function () {
 		expect(queueRefit(deployed, 'warden', [null, null, null, null])).toBe(deployed);
 		expect(advanceDays(deployed, 1)).toBe(deployed);
 		expect(beginDeployment(deployed)).toBe(deployed);
-		const empty = advanceDays(queueRefit(company, 'kestrel', [null, null]), 1);
+		const empty = advanceDays(queueRefit(company, 'kestrel', [null, null]), 2);
 		expect(canDeploy(accept(empty))).toBe(false);
-		expect(availableWeapons(empty, 'machine-gun')).toBe(1);
+		expect(availableWeapons(empty, 'machine-gun')).toBe(2);
 		const rearmed = advanceDays(queueRefit(empty, 'kestrel', [null, 'machine-gun']), 1);
 		expect(canDeploy(accept(rearmed))).toBe(true);
 	});
@@ -167,6 +167,7 @@ describe('Company ownership and workshop transactions', function () {
 			{ ...company, version: 1 },
 			{ ...company, version: 2 },
 			{ ...company, version: 3 },
+			{ ...company, version: 4 },
 			{ ...company, selectedFrame: 'maul' },
 			{ ...company, fleet: [] },
 			{ ...company, fleet: [...company.fleet, company.fleet[0]] },
@@ -233,10 +234,10 @@ test('fresh campaign saves require every weapon inventory entry', function () {
 test('ammunition-only changes are immediate, free, immutable and locked during deployment or work', function () {
 	const company = createCampaign(113);
 	const reserves = [42, 0];
-	const adjusted = queueRefit(company, 'kestrel', ['machine-gun', null], reserves);
+	const adjusted = queueRefit(company, 'kestrel', ['machine-gun', 'machine-gun'], reserves);
 	reserves[0] = 1;
 	expect(getOwnedMech(adjusted)?.reserves).toEqual([42, 0]);
-	expect(getOwnedMech(company)?.reserves).toEqual(defaultReserves(['machine-gun', null]));
+	expect(getOwnedMech(company)?.reserves).toEqual(defaultReserves(['machine-gun', 'machine-gun']));
 	expect(adjusted.day).toBe(company.day);
 	expect(adjusted.credits).toBe(company.credits);
 	expect(adjusted.inventory).toEqual(company.inventory);
@@ -248,7 +249,7 @@ test('ammunition-only changes are immediate, free, immutable and locked during d
 	expect(setAmmunition(deployed, 'kestrel', [1, 0])).toBe(deployed);
 	expect(queueRefit(deployed, 'kestrel', ['machine-gun', null], [1, 0])).toBe(deployed);
 	const pending = queueRefit(adjusted, 'kestrel', [null, 'machine-gun'], [0, 13]);
-	expect(pending.workOrders[0]?.readyDay).toBe(company.day + 2);
+	expect(pending.workOrders[0]?.readyDay).toBe(company.day + 1);
 	expect(getOwnedMech(pending)?.reserves).toEqual([42, 0]);
 	expect(setAmmunition(pending, 'kestrel', [1, 0])).toBe(pending);
 	expect(getOwnedMech(cancelWorkOrder(roundTrip(pending), 'kestrel'))?.reserves).toEqual([42, 0]);
@@ -267,7 +268,7 @@ test('new-format saves reject invalid ammunition counts and loadout mismatches',
 		const corrupt = { ...company, credits: 77, fleet: [{ ...mech, reserves: [rounds, 0] }] };
 		expect(parseCampaign(JSON.stringify(corrupt)).credits).toBe(0);
 	}
-	for (const reserves of [[], [1], [1, 1], [1, 0, 0]]) {
+	for (const reserves of [[], [1], [1, 0.5], [1, 0, 0]]) {
 		expect(setAmmunition(company, 'kestrel', reserves)).toBe(company);
 		expect(parseCampaign(JSON.stringify({ ...company, credits: 77, fleet: [{ ...mech, reserves }] })).credits).toBe(0);
 	}
@@ -301,5 +302,56 @@ test('sorties consume independent runtime supplies and replenish selected reserv
 		expect(getOwnedMech(roundTrip(finished))?.reserves).toEqual([37, 0]);
 		expect(finished.credits).toBe(outcome === 'success' ? contract.reward : 0);
 		expect(recoverInterruptedDeployment(roundTrip(finished))).toEqual(finished);
+	}
+});
+
+test('all acquired variants include legal tier-zero equipment and every physical inventory copy exactly once', function () {
+	const company = unlockAllRigs(createCampaign(912));
+	for (const mech of company.fleet) {
+		expect(mech.loadout.every(function (weapon) { return weapon !== null && getWeapon(weapon).tier === 0; })).toBe(true);
+		expect(mech.reserves).toEqual(defaultReserves(mech.loadout));
+		const weight = frameWeight(mech.frameId, loadedMounts(mech.loadout, mech.reserves));
+		expect(weight.total).toBeLessThanOrEqual(weight.recommended * 1.1);
+	}
+	for (const weapon of WEAPONS) {
+		const installed = company.fleet.reduce(function (count, mech) { return count + mech.loadout.filter(function (id) { return id === weapon.id; }).length; }, 0);
+		expect(company.inventory[weapon.id]).toBe(installed);
+		expect(availableWeapons(company, weapon.id)).toBe(0);
+	}
+	expect(roundTrip(company)).toEqual(company);
+	expect(unlockAllRigs(company)).toBe(company);
+});
+
+test('a chassis purchase refuses the complete package atomically when a duplicate stock weapon would overflow', function () {
+	const company = { ...funded(), inventory: { ...funded().inventory, autocannon: 999 } };
+	const before = JSON.stringify(company);
+	expect(buyFrame(company, 'maul-b')).toBe(company);
+	expect(JSON.stringify(company)).toBe(before);
+	const oneCopy = buyFrame(company, 'warden');
+	expect(oneCopy.inventory.autocannon).toBe(1000);
+	expect(getOwnedMech(oneCopy, 'warden')?.loadout.every(function (id) { return id !== null; })).toBe(true);
+	expect(roundTrip(oneCopy)).toEqual(oneCopy);
+});
+
+test('tiers retain separate ownership and refit reservations through cancellation, completion and forged saves', function () {
+	const company = buyWeapon(buyFrame(funded(), 'kestrel-b'), 'machine-gun:t4');
+	const queued = queueRefit(company, 'kestrel', ['machine-gun:t4', 'machine-gun']);
+	expect(queued.credits).toBe(company.credits);
+	expect(availableWeapons(queued, 'machine-gun:t4')).toBe(0);
+	expect(availableWeapons(queued, 'machine-gun')).toBe(0);
+	expect(queueRefit(queued, 'kestrel-b', ['machine-gun:t4', 'laser'])).toBe(queued);
+	expect(getOwnedMech(queued)?.loadout).toEqual(['machine-gun', 'machine-gun']);
+	expect(roundTrip(queued)).toEqual(queued);
+	expect(availableWeapons(cancelWorkOrder(queued, 'kestrel'), 'machine-gun:t4')).toBe(1);
+	const complete = advanceDays(queued, 1);
+	expect(getOwnedMech(complete)?.loadout).toEqual(['machine-gun:t4', 'machine-gun']);
+	expect(availableWeapons(complete, 'machine-gun')).toBe(1);
+	expect(complete.inventory).toEqual(company.inventory);
+	expect(roundTrip(complete)).toEqual(complete);
+	const forged = { ...complete, credits: 81, inventory: { ...complete.inventory, 'machine-gun:t4': 0, 'machine-gun': 99 } };
+	expect(parseCampaign(JSON.stringify(forged)).credits).toBe(0);
+	for (const id of ['machine-gun:t0', 'machine-gun:t6', 'machine-gun:t1.5', 'laser:t4']) {
+		const fleet = complete.fleet.map(function (mech) { return mech.frameId === 'kestrel' ? { ...mech, loadout: [id, 'machine-gun'] } : mech; });
+		expect(parseCampaign(JSON.stringify({ ...complete, credits: 81, fleet })).credits).toBe(0);
 	}
 });

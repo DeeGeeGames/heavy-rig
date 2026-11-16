@@ -1,17 +1,17 @@
-import { WEAPONS, getWeapon, type WeaponFamily, type WeaponId } from './arsenal';
-import { getFrame, type FrameId } from './frames';
+import { WEAPONS, WEAPON_MODELS, getWeapon, type WeaponFamily, type WeaponId, type WeaponModelId } from './arsenal';
+import type { FrameId } from './frames';
 import type { EnemyKind } from './simulation';
 
 export interface Hardpoint {
 	readonly id: string;
 	readonly name: string;
 	readonly family: WeaponFamily;
-	readonly weapons: readonly WeaponId[];
+	readonly weapons: readonly WeaponModelId[];
 }
 
-const BALLISTIC: readonly WeaponId[] = ['machine-gun', 'autocannon'];
-const LAUNCHERS: readonly WeaponId[] = WEAPONS.filter(function (weapon) { return weapon.family === 'launcher'; }).map(function (weapon) { return weapon.id; });
-const COMPACT_LAUNCHERS: readonly WeaponId[] = WEAPONS.filter(function (weapon) { return weapon.family === 'launcher' && weapon.projectiles === 2; }).map(function (weapon) { return weapon.id; });
+const BALLISTIC: readonly WeaponModelId[] = ['machine-gun', 'autocannon'];
+const LAUNCHERS: readonly WeaponModelId[] = WEAPON_MODELS.filter(function (weapon) { return weapon.family === 'launcher'; }).map(function (weapon) { return weapon.modelId; });
+const COMPACT_LAUNCHERS: readonly WeaponModelId[] = WEAPON_MODELS.filter(function (weapon) { return weapon.family === 'launcher' && weapon.projectiles === 2; }).map(function (weapon) { return weapon.modelId; });
 const gun = function (side: 'left' | 'right', light = false): Hardpoint {
 	return { id: `${side}-gun`, name: `${side === 'left' ? 'Left' : 'Right'} gun`, family: 'ballistic', weapons: light ? ['machine-gun'] : BALLISTIC };
 };
@@ -61,14 +61,35 @@ export const getEnemyHardpoints = function (kind: EnemyKind, commander = false):
 };
 export const canEquipWeapon = function (frame: FrameId, slot: number, weapon: WeaponId): boolean {
 	const hardpoint = getHardpoints(frame)[slot];
-	return Boolean(hardpoint && hardpoint.family === getWeapon(weapon).family && hardpoint.weapons.includes(weapon));
+	return Boolean(hardpoint && hardpoint.family === getWeapon(weapon).family && hardpoint.weapons.includes(getWeapon(weapon).modelId));
 };
 export const isFrameLoadout = function (frame: FrameId, value: unknown): value is readonly (WeaponId | null)[] {
 	return Array.isArray(value) && value.length === getHardpoints(frame).length && Array.from(value).every(function (weapon: unknown, slot) {
-		return weapon === null || typeof weapon === 'string' && getHardpoints(frame)[slot]?.weapons.some(function (allowed) { return allowed === weapon; });
+		return weapon === null || typeof weapon === 'string' && WEAPONS.some(function (equipment) {
+			return equipment.id === weapon && getHardpoints(frame)[slot]?.weapons.includes(equipment.modelId);
+		});
 	});
 };
-export const createStarterLoadout = function (frame: FrameId): (WeaponId | null)[] {
-	const starter = getFrame(frame).starter;
-	return getHardpoints(frame).map(function (_hardpoint, slot) { return slot === 0 ? starter : null; });
+// Stock packages fill every physical mount. Tier zero equipment is included in
+// the chassis price; refits may still deliberately leave individual mounts empty.
+const STOCK_LOADOUTS: Readonly<Record<FrameId, readonly WeaponModelId[]>> = {
+	warden: ['autocannon', 'machine-gun', 'stream-missiles', 'stream-rockets'],
+	'warden-b': ['autocannon', 'machine-gun', 'laser', 'ppc'],
+	'warden-c': ['autocannon', 'machine-gun', 'laser', 'stream-missiles'],
+	kestrel: ['machine-gun', 'machine-gun'],
+	'kestrel-b': ['machine-gun', 'laser'],
+	'kestrel-c': ['machine-gun', 'stream-rockets'],
+	maul: ['cluster-rockets', 'cluster-rockets'],
+	'maul-b': ['autocannon', 'autocannon'],
+	'maul-c': ['autocannon', 'laser'],
+	longbow: ['ppc'],
+	'longbow-b': ['machine-gun', 'laser'],
+	'longbow-c': ['laser', 'stream-missiles'],
+	morrow: ['cluster-missiles', 'cluster-missiles'],
+	'morrow-b': ['laser', 'ppc'],
+	'morrow-c': ['ppc', 'cluster-missiles'],
+	rook: ['autocannon', 'machine-gun', 'stream-rockets'],
+	'rook-b': ['laser', 'laser', 'stream-missiles'],
+	'rook-c': ['machine-gun', 'laser', 'stream-rockets'],
 };
+export const createStarterLoadout = function (frame: FrameId): WeaponId[] { return [...STOCK_LOADOUTS[frame]]; };

@@ -50,7 +50,7 @@ describe('Heavy Rig arsenal', function () {
 		expect(state.player.hp).toBe(50); expect(state.coolantCharges).toBe(1);
 		advance(state, 1.1);
 		expect(state.time).toBeGreaterThan(1); expect(state.player.hp).toBe(37);
-		expect(state.loadout.map(function (mount) { return [mount.weapon, mount.level]; })).toEqual([['machine-gun', 1]]);
+		expect(state.loadout.map(function (mount) { return [mount.weapon, getWeapon(mount.weapon).tier]; })).toEqual([['machine-gun', 0], ['machine-gun', 0]]);
 		expect(state.phase).toBe('combat');
 	});
 

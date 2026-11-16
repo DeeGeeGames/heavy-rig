@@ -1,12 +1,12 @@
 import { html } from 'lit-html';
 import { renderWorkspace, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
-import { getWeapon, WEAPONS, WEAPON_FAMILY_LABELS, type WeaponId } from './arsenal';
-import { canEquipWeapon, getHardpoints } from './hardpoints';
+import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_TIERS, WEAPON_FAMILY_LABELS, type WeaponDefinition, type WeaponId } from './arsenal';
+import { canEquipWeapon, createStarterLoadout, getHardpoints } from './hardpoints';
 import { getPlanet, type Campaign } from './campaign';
 import { availableWeapons, canDeploy, canRefit, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
 import { FRAMES, getFrame, type FrameDefinition, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary } from './loadout-ui';
-import { frameWeight, loadedMounts, usableMount } from './combat-resources';
+import { defaultReserves, frameWeight, loadedMounts, usableMount } from './combat-resources';
 
 export type CompanyScreen = 'mechbay' | 'market' | 'engineering';
 export type ShipScreen = 'starmap' | 'bridge' | CompanyScreen;
@@ -127,16 +127,16 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 		...compatibleOwned.map(function (weapon) {
 			const used = editor.loadout.filter(function (id, index) { return index !== slot && id === weapon.id; }).length;
 			const usable = availableWeapons(campaign, weapon.id, mech.frameId) - used;
-			return html`<button class="equipment-choice" data-equip-weapon=${weapon.id} data-weapon-family=${weapon.family} aria-pressed=${editor.loadout[slot] === weapon.id} ?disabled=${usable <= 0} @click=${function () { actions.setWeapon(weapon.id); }}><span><b>${weapon.name}</b><small>${WEAPON_FAMILY_LABELS[weapon.family]} · ${weapon.type}</small></span><small>${usable > 0 ? `${usable} available to fit` : 'Allocated elsewhere'}</small></button>`;
+			return html`<button class="equipment-choice" data-equip-weapon=${weapon.id} data-weapon-family=${weapon.family} data-weapon-tier=${weapon.tier} aria-pressed=${editor.loadout[slot] === weapon.id} ?disabled=${usable <= 0} @click=${function () { actions.setWeapon(weapon.id); }}><span><b>${weapon.name}</b><small>${tierLabel(weapon.tier)} · ${weapon.type}</small></span><small>${usable > 0 ? `${usable} available to fit` : 'Allocated elsewhere'}</small></button>`;
 		}),
 		...(compatibleOwned.length === 0 ? textItems('No compatible weapons owned. Buy equipment for this hardpoint at the Market.') : []),
-		...textItems('Only compatible owned weapons are listed. Other weapon families cannot be fitted here.'),
+		...textItems('Only compatible owned copies are listed. Every tier fits the same hardpoint; each tier is separate inventory.'),
 	];
 	return [
 		{ id: 'fleet', label: 'Fleet', items: [
 			html`<span class="eyebrow">${campaign.fleet.length} / ${FRAMES.length} VARIANTS OWNED</span>`,
 			...campaign.fleet.map(function (owned) { const definition = getFrame(owned.frameId); const job = workOrderFor(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${definition.chassisName} ${definition.variant}</b><small>${definition.variantName}</small>${renderHullIntegrity(owned.integrity)}<small>${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
-			...textItems('Each variant is a separate purchase with its own equipment, condition, ammunition settings, and workshop crew. Includes one signature weapon.'),
+			...textItems('Each variant is a separate purchase with its own equipment, condition, ammunition settings, and workshop crew. Every hardpoint arrives fitted with tier 0 equipment and standard ammunition.'),
 		], actions: html`<button class="secondary" @click=${function () { actions.navigate('market'); }}>ACQUIRE FRAME →</button>` },
 		{ id: 'condition', label: 'Condition', items: [
 			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName}</p></div>`,
@@ -158,8 +158,19 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 	];
 };
 
+const comparisonPercent = function (value: number, baseline: number): string {
+	return `${value >= baseline ? '+' : ''}${Math.round((value / baseline - 1) * 100)}%`;
+};
+const tierComparison = function (weapon: WeaponDefinition): string {
+	if (weapon.tier === 0) return 'Standard equipment. Higher tiers improve combat performance while keeping the same hardware mass, ammunition capacity, and hardpoint requirements.';
+	const base = getWeapon(weapon.modelId);
+	return `Against tier 0: ${comparisonPercent(weapon.damage, base.damage)} damage, ${comparisonPercent(weapon.range, base.range)} range, ${comparisonPercent(weapon.heat, base.heat)} heat per ${weapon.kind === 'laser' ? 'second' : 'salvo'}${base.interval > 0 ? `, ${comparisonPercent(weapon.interval, base.interval)} firing interval` : ''}.`;
+};
+
 const marketPanes = function (root: HTMLElement, campaign: Campaign, view: CompanyView, actions: CompanyActions, refresh: () => void): WorkspacePane[] {
 	const weapon = getWeapon(view.weapon); const frame = getFrame(view.frame);
+	const quality = getWeaponTier(weapon.tier);
+	const stock = createStarterLoadout(frame.id); const stockReserves = defaultReserves(stock);
 	const weaponMarket = view.kind === 'weapons';
 	const price = weaponMarket ? WEAPON_PRICES[weapon.id] : frame.price;
 	const owned = !weaponMarket && Boolean(getOwnedMech(campaign, frame.id));
@@ -167,25 +178,29 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 	const select = function () { refresh(); selectWorkspacePane(root, 'details', true); };
 	return [
 		{ id: 'catalogue', label: 'Catalogue', items: [
-			...(weaponMarket ? WEAPONS.map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.id; select(); }}><span><b>${item.name}</b><small>${WEAPON_FAMILY_LABELS[item.family]} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${getOwnedMech(campaign, item.id) ? 'OWNED' : creditsLabel(item.price)}</span></button>`; })),
-			...textItems('Purchases arrive immediately. Installing weapons requires a refit in the Mech Bay. Each variant can be purchased once and includes one signature weapon. Different variants of the same chassis can be owned together.'),
-		], actions: html`<button class="secondary" @click=${function () { actions.navigate('mechbay'); }}>EQUIP PURCHASES →</button>` },
+			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === weapon.tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.id; select(); }}><span><b>${item.name}</b><small>${WEAPON_FAMILY_LABELS[item.family]} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${getOwnedMech(campaign, item.id) ? 'OWNED' : creditsLabel(item.price)}</span></button>`; })),
+			...textItems('Weapon purchases arrive in stores; install them through a Mech Bay refit. Frame purchases arrive fully fitted at tier 0 with standard ammunition. Each variant can be purchased once.'),
+		], actions: html`${weaponMarket ? html`<div class="market-tiers"><span class="eyebrow">WEAPON QUALITY / ${quality.name.toUpperCase()}</span><div>${WEAPON_TIERS.map(function (entry) { return html`<button data-market-tier=${entry.tier} style="--tier-color:${entry.color}" aria-label=${`Show ${tierLabel(entry.tier)} weapons`} aria-pressed=${weapon.tier === entry.tier} @click=${function () { view.weapon = weaponIdForTier(weapon.modelId, entry.tier); refresh(); selectWorkspacePane(root, 'catalogue', true); root.querySelector<HTMLButtonElement>(`[data-market-tier="${entry.tier}"]`)?.focus({ preventScroll: true }); }}>T${entry.tier}</button>`; })}</div></div>` : ''}<button class="secondary market-equip" @click=${function () { actions.navigate('mechbay'); }}>EQUIP PURCHASES →</button>` },
 		{ id: 'details', label: 'Item details', items: weaponMarket ? [
-			html`<span class="eyebrow">${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
+			html`<span class="eyebrow weapon-quality" style="--tier-color:${quality.color}">${tierLabel(weapon.tier).toUpperCase()} / ${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
 			...textItems(`${WEAPON_FAMILY_LABELS[weapon.family]} weapon. ${weapon.description}`),
+			html`<dl class="frame-specifications"><dt>${weapon.kind === 'laser' ? 'DAMAGE / SECOND' : 'DAMAGE / ROUND'}</dt><dd>${weapon.damage.toFixed(1)}</dd><dt>FIRING CYCLE</dt><dd>${weapon.kind === 'laser' ? 'Continuous beam' : `${weapon.interval.toFixed(3)} s / ${weapon.projectiles} round${weapon.projectiles === 1 ? '' : 's'}`}</dd><dt>RANGE</dt><dd>${weapon.range.toFixed(0)} m</dd></dl>`,
+			...textItems(tierComparison(weapon)),
+			html`<dl class="frame-specifications"><dt>HEAT / SUSTAINED</dt><dd>${sustainedHeat(weapon).toFixed(1)} / second</dd><dt>HARDWARE</dt><dd>${massLabel(weapon.mass)}</dd><dt>${weapon.kind === 'laser' ? 'BEAM' : 'PROJECTILE SPEED'}</dt><dd>${weapon.kind === 'laser' ? 'Instant' : `${weapon.speed.toFixed(0)} m/s`}</dd><dt>SPREAD</dt><dd>${weapon.spread > 0 ? `${(weapon.spread * 180 / Math.PI).toFixed(2)}°` : 'Precise'}</dd></dl>`,
+			...textItems(weapon.ammunition ? `AMMUNITION: ${weapon.ammunition.defaultLoad} standard / ${weapon.ammunition.capacity} maximum rounds per mount. ${massLabel(weapon.ammunition.mass)} per round; ${massLabel(weapon.ammunition.defaultLoad * weapon.ammunition.mass)} standard reserve. Free replenishment between sorties.` : 'AMMUNITION INDEPENDENT: no rounds required. Weapons lock at 100 heat and recover at 35.'),
 			...FRAMES.filter(function (definition) { return definition.variant === 'A'; }).flatMap(function (chassis) {
 				const compatible = FRAMES.filter(function (definition) { return definition.chassisId === chassis.chassisId && getHardpoints(definition.id).some(function (_hardpoint, slot) { return canEquipWeapon(definition.id, slot, weapon.id); }); });
 				return compatible.length ? textItems(`Compatible: ${chassis.chassisName} ${compatible.map(function (definition) { return definition.variant; }).join(' / ')}.`) : [];
 			}),
-			html`<dl class="frame-specifications"><dt>RANGE</dt><dd>${weapon.range} m</dd><dt>HEAT / SUSTAINED</dt><dd>${sustainedHeat(weapon).toFixed(1)} / second</dd><dt>HARDWARE</dt><dd>${massLabel(weapon.mass)}</dd></dl>`,
-			...textItems(weapon.ammunition ? `AMMUNITION: ${weapon.ammunition.defaultLoad} standard / ${weapon.ammunition.capacity} maximum rounds per mount. ${massLabel(weapon.ammunition.mass)} per round; ${massLabel(weapon.ammunition.defaultLoad * weapon.ammunition.mass)} standard reserve. Free replenishment between sorties.` : 'AMMUNITION INDEPENDENT: no rounds required. Higher sustained reactor demand; weapons lock at 100 heat and recover at 35.'),
-			html`<dl class="frame-specifications"><dt>OWNED</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
-			...textItems(affordable ? `${creditsLabel(price)}. Buy another copy to equip the same weapon on another mount or frame.` : `Price ${creditsLabel(price)}. Need ${creditsLabel(price - campaign.credits)} more.`),
+			html`<dl class="frame-specifications"><dt>OWNED / THIS TIER</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES / THIS TIER</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
+			...textItems(affordable ? `${creditsLabel(price)}. Each purchase is one copy of this model and tier.` : `Price ${creditsLabel(price)}. Need ${creditsLabel(price - campaign.credits)} more.`),
 		] : [
 			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName}</p></div>`, frameSchematic(frame),
 			...textItems(frame.description), ...textItems(`BASE MASS: ${massLabel(frame.mass)} including fixed equipment. RECOMMENDED OPERATING WEIGHT: ${massLabel(frame.recommendedMass)}. Weapons and ammunition add to base mass.`), ...textItems(hardpointSummary(frame.id)), ...textItems(frame.tradeoff),
-			...getHardpoints(frame.id).flatMap(function (hardpoint, index) { return textItems(`${index + 1}. ${hardpoint.name} · ${WEAPON_FAMILY_LABELS[hardpoint.family]}: ${hardpoint.weapons.map(function (id) { return getWeapon(id).type; }).join(' / ')}.`); }),
-			html`<p class="workspace-copy">INCLUDES ${getWeapon(frame.starter).name} · ${owned ? 'ALREADY IN YOUR HANGAR' : creditsLabel(price)}</p>`,
+			html`<span class="eyebrow">COMPLETE STOCK LOADOUT / TIER 0</span>`,
+			...getHardpoints(frame.id).flatMap(function (hardpoint, index) { const id = stock[index]; const item = id ? getWeapon(id) : undefined; return textItems(`${index + 1}. ${hardpoint.name}: ${item?.name ?? 'Empty'}${item?.ammunition ? ` / ${stockReserves[index] ?? 0} rounds` : ' / energy'}.`); }),
+			...textItems(`STOCK: ${loadSummary(frame.id, stock, stockReserves)}`),
+			html`<p class="workspace-copy">All stock weapons and ammunition are included. ${owned ? 'ALREADY IN YOUR HANGAR' : creditsLabel(price)}</p>`,
 		], actions: html`<button class="secondary" @click=${function () { selectWorkspacePane(root, 'catalogue'); }}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${owned || !affordable || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>${owned ? 'OWNED' : `BUY · ${creditsLabel(price)}`}</button>` },
 	];
 };

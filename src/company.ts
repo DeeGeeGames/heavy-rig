@@ -1,4 +1,4 @@
-import { WEAPONS, type WeaponId } from './arsenal';
+import { WEAPONS, createWeaponRecord, getWeaponTier, type WeaponId, type WeaponModelId } from './arsenal';
 import { MAX_CREDITS, type Campaign } from './campaign';
 import { FRAMES, getFrame, type FrameId } from './frames';
 import { createStarterLoadout, isFrameLoadout } from './hardpoints';
@@ -24,12 +24,17 @@ export interface CompanyState {
 
 export const MAX_DAY = 1_000_000_000;
 const MAX_INVENTORY = 1000;
-export const WEAPON_PRICES: Readonly<Record<WeaponId, number>> = {
+const MODEL_PRICES: Readonly<Record<WeaponModelId, number>> = {
 	'machine-gun': 500, autocannon: 750, laser: 800, 'stream-rockets': 850,
 	'stream-rockets-4': 1700, 'stream-rockets-6': 2550, 'stream-missiles-4': 2000, 'stream-missiles-6': 3000,
 	'cluster-rockets-4': 2400, 'cluster-rockets-6': 3600, 'cluster-missiles-4': 2800, 'cluster-missiles-6': 4200,
 	'stream-missiles': 1000, 'cluster-rockets': 1200, 'cluster-missiles': 1400, ppc: 1500,
 };
+export const WEAPON_PRICES: Readonly<Record<WeaponId, number>> = createWeaponRecord(function (weapon) {
+	return Math.round(MODEL_PRICES[weapon.modelId] * getWeaponTier(weapon.tier).price);
+});
+const emptyInventory = function (): Record<WeaponId, number> { return createWeaponRecord(function () { return 0; }); };
+
 const isObject = function (value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); };
 const isInteger = function (value: unknown, min: number, max: number): value is number { return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max; };
 const isIntegrity = function (value: unknown): value is number { return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100; };
@@ -44,12 +49,20 @@ const refitReserves = function (mech: OwnedMech, target: Loadout): readonly numb
 	return defaultReserves(target).map(function (rounds, slot) { return target[slot] === mech.loadout[slot] ? mech.reserves[slot] ?? rounds : rounds; });
 };
 
+const includeLoadout = function (inventory: Readonly<Record<WeaponId, number>>, loadout: Loadout): Record<WeaponId, number> | undefined {
+	const next = { ...inventory };
+	for (const weapon of loadout) {
+		if (weapon === null) continue;
+		if (next[weapon] >= MAX_INVENTORY) return undefined;
+		next[weapon]++;
+	}
+	return next;
+};
 export const createCompany = function (): CompanyState {
-	return {
-		fleet: [createOwnedMech('kestrel')], selectedFrame: 'kestrel',
-		inventory: { 'stream-rockets-4': 0, 'stream-rockets-6': 0, 'stream-missiles-4': 0, 'stream-missiles-6': 0, 'cluster-rockets-4': 0, 'cluster-rockets-6': 0, 'cluster-missiles-4': 0, 'cluster-missiles-6': 0, 'machine-gun': 1, autocannon: 0, laser: 0, ppc: 0, 'stream-rockets': 0, 'cluster-rockets': 0, 'stream-missiles': 0, 'cluster-missiles': 0 },
-		workOrders: [], deployed: undefined,
-	};
+	const mech = createOwnedMech('kestrel');
+	const inventory = includeLoadout(emptyInventory(), mech.loadout);
+	if (!inventory) throw new RangeError('Starter loadout exceeds inventory capacity');
+	return { fleet: [mech], selectedFrame: 'kestrel', inventory, workOrders: [], deployed: undefined };
 };
 
 export const getOwnedMech = function (campaign: CompanyState, frameId: FrameId = campaign.selectedFrame): OwnedMech | undefined {
@@ -91,22 +104,24 @@ export const selectFrame = function (campaign: Campaign, frameId: FrameId): Camp
 };
 export const buyFrame = function (campaign: Campaign, frameId: FrameId): Campaign {
 	if (campaign.deployed || !isFrameId(frameId) || getOwnedMech(campaign, frameId) || campaign.credits < getFrame(frameId).price) return campaign;
-	const starter = getFrame(frameId).starter;
-	if (campaign.inventory[starter] >= MAX_INVENTORY) return campaign;
+	const mech = createOwnedMech(frameId);
+	const inventory = includeLoadout(campaign.inventory, mech.loadout);
+	if (!inventory) return campaign;
 	return {
 		...campaign, credits: campaign.credits - getFrame(frameId).price,
-		fleet: [...campaign.fleet, createOwnedMech(frameId)],
-		inventory: { ...campaign.inventory, [starter]: campaign.inventory[starter] + 1 },
+		fleet: [...campaign.fleet, mech], inventory,
 	};
 };
 // Grant only missing chassis; existing equipment, damage and deployment stay intact.
 export const unlockAllRigs = function (campaign: Campaign): Campaign {
 	return FRAMES.reduce(function (company, frame) {
 		if (getOwnedMech(company, frame.id)) return company;
+		const mech = createOwnedMech(frame.id);
+		const inventory = includeLoadout(company.inventory, mech.loadout);
+		if (!inventory) return company;
 		return {
 			...company,
-			fleet: [...company.fleet, createOwnedMech(frame.id)],
-			inventory: { ...company.inventory, [frame.starter]: Math.min(MAX_INVENTORY, company.inventory[frame.starter] + 1) },
+			fleet: [...company.fleet, mech], inventory,
 		};
 	}, campaign);
 };

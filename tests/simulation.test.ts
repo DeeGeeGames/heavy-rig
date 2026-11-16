@@ -62,7 +62,7 @@ describe('Heavy Rig combat', function () {
 	test('cleared waves advance without repairing or resupplying and the final clear wins', function () {
 		const state = createCombatState(); state.player.hp = 50; state.spawned = 5; run(state, 4.1);
 		expect(state.phase).toBe('combat'); expect(state.wave).toBe(2); expect(state.player.hp).toBe(50);
-		expect(state.coolantCharges).toBe(2); expect(state.loadout.map(function (mount) { return mount.level; })).toEqual([1, 1, 1]);
+		expect(state.coolantCharges).toBe(2); expect(state.loadout.map(function (mount) { return getWeapon(mount.weapon).tier; })).toEqual([0, 0, 0]);
 		state.wave = WAVES.length; state.spawned = getWaveDefinition(state.wave).enemies.length; state.enemies = []; state.shots = []; state.intermission = 0; run(state, 4.1);
 		expect(state.outcome).toBe('won');
 	});

@@ -64,7 +64,7 @@ const retryDryDrill = function (training: Training) {
 	// Simulator retries wait for launched rounds and staggered volleys. Normal
 	// missions never call this hook, so expended combat supplies stay expended.
 	if (!dry || state.shots.length > 0 || state.loadout.some(function (mount) { return mount.rocketVolley !== undefined; })) return;
-	state.loadout = state.loadout.map(function (mount) { return { ...createMount(mount.weapon), level: mount.level, ...(mount.slot === undefined ? {} : { slot: mount.slot }) }; });
+	state.loadout = state.loadout.map(function (mount) { return { ...createMount(mount.weapon), ...(mount.slot === undefined ? {} : { slot: mount.slot }) }; });
 	state.player.heat = 0; state.player.overheated = false;
 	training.combinedTime = 0;
 	placeTarget(state);

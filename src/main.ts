@@ -15,7 +15,7 @@ import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey
 import { getWeapon, isReserve, WEAPON_FAMILY_LABELS } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getFrame } from './frames';
-import { MOUNTS, rankLabel, loadSummary, massLabel, supplySummary } from './loadout-ui';
+import { MOUNTS, loadSummary, massLabel, supplySummary } from './loadout-ui';
 import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
 import { createMissionState, createState, distance, getOperationReport, type Controls, type Point } from './simulation';
@@ -436,7 +436,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (days === 0) { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Ammunition load saved. 0 CR · no calendar time.', undefined, true); return; }
 				confirm(function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Refit queued. Advance the calendar to finish installation.', 'engineering', true); }, 'QUEUE REFIT', `${days} calendar days. Ready day ${campaign.day + days}. ${loadSummary(campaign.selectedFrame, editor.loadout, editor.reserves)} The frame cannot deploy until work finishes.`, 'QUEUE THIS REFIT?');
 			},
-			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its standard weapon. Select it in the Mech Bay.`); }, 'BUY FRAME', `${getFrame(id).price.toLocaleString()} CR. Includes its signature weapon; arrives immediately.`, `BUY ${getFrame(id).name}?`); },
+			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its complete tier 0 loadout. Select it in the Mech Bay.`); }, 'BUY FRAME', `${getFrame(id).price.toLocaleString()} CR. Includes every stock weapon at tier 0 and standard ammunition; arrives ready to deploy.`, `BUY ${getFrame(id).name}?`); },
 			buyWeapon: function (id) { confirm(function () { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); }, 'BUY WEAPON', `${WEAPON_PRICES[id].toLocaleString()} CR. Delivered to stores. Installation requires a separate refit.`, `BUY ${getWeapon(id).name}?`); },
 			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${getFrame(id).name}?`); },
 			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${getFrame(id).name} WORK?`); },
@@ -870,13 +870,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const dry = Boolean(mount && !usableMount(mount));
 			const firing = Boolean(mount && !dry && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index] || touchFiring));
 			button.classList.toggle('empty', !mount || dry); button.classList.toggle('firing', firing); button.classList.toggle('locked', p.overheated);
-			button.setAttribute('aria-label', mount && weapon ? `${touchLayout ? 'Arm' : 'Fire'} mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, rank ${rankLabel(mount.level)}, ${weapon.ammunition ? `${mount.rounds} rounds remaining` : 'no ammunition required'}.${dry ? ' Empty ammunition.' : p.overheated ? ' Heat locked.' : ''} ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${controllerButtonLabel(controllerFamily, profile.settings.controller[binding.action])}.` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. Equip compatible purchased weapons in the Mech Bay.`);
+			button.setAttribute('aria-label', mount && weapon ? `${touchLayout ? 'Arm' : 'Fire'} mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, ${weapon.ammunition ? `${mount.rounds} rounds remaining` : 'no ammunition required'}.${dry ? ' Empty ammunition.' : p.overheated ? ' Heat locked.' : ''} ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${controllerButtonLabel(controllerFamily, profile.settings.controller[binding.action])}.` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. Equip compatible purchased weapons in the Mech Bay.`);
 			const location = button.querySelector('.weapon-mount'); if (location) location.textContent = `${hardpoint.name}${!touchLayout && mount ? ` · ${weapon?.ammunition ? `${mount.rounds} RDS` : 'ENERGY'}` : ''}`;
 			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${weapon.type}` : ' · Empty'}`;
 			const title = button.querySelector('b'); if (title) title.textContent = mount && weapon ? weapon.name : 'EMPTY';
-			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}${touchLayout && mount ? ` · ${rankLabel(mount.level)}` : ''}`;
+			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}`;
 			const prompt = button.querySelector('kbd'); if (prompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[binding.action]) : html`${touchLayout ? `${armedTouchMounts.has(index) ? 'ARMED' : 'OFF'} ${index + 1}` : combatKeyboardPrompt(binding.action)}`, prompt);
-			const ammunition = button.querySelector('.weapon-ammo'); if (ammunition) ammunition.textContent = mount && weapon ? weapon.ammunition ? `${mount.rounds} RDS` : 'ENERGY' : '';
+			const ammunitionLabel = !mount || !weapon ? '' : weapon.ammunition ? `${mount.rounds}${touchLayout ? '' : ' RDS'}` : 'ENERGY';
+			const ammunition = button.querySelector('.weapon-ammo'); if (ammunition) ammunition.textContent = ammunitionLabel && touchLayout && weapon ? `${ammunitionLabel} T${weapon.tier}` : ammunitionLabel;
 			const status = !mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : dry ? 'NO AMMO' : p.overheated ? 'HEAT LOCK' : mount.cooldown > 0 ? `CD ${mount.cooldown.toFixed(1)}s` : firing ? 'FIRING' : 'READY';
 			button.dataset['resourceState'] = dry ? 'dry' : p.overheated ? 'heat' : mount && mount.cooldown > 0 ? 'cooldown' : 'ready';
 			const label = button.querySelector('em'); if (label) label.textContent = status;
