@@ -5,7 +5,9 @@ Selected runtime file: `public/assets/mechs/warden/game-ready.glb` (SHA-256
 The owner approved this exact visual revision and demonstrated motion; see
 [approval.json](approval.json). The local opt-in procedural locomotion preview
 also has owner acceptance, recorded under validation limits below.
-Normal game startup remains procedural. Historical approvals retain their own scopes.
+Normal game startup now loads Warden A alongside Kestrel A and Maul A through
+`src/game-assets.ts`, including the rig handling playground. Loading failures or
+timeouts retain the procedural fallback. Historical approvals retain their own scopes.
 
 The file contains 39,748 triangles, 16 mesh sections, three materials, two shared
 128×128 images, twelve rigid motion groups, twenty firing/logical anchors plus eight attachment anchors and three
@@ -18,7 +20,8 @@ Three.js GLTFLoader without an additional decoder. MikkTSpace tangents are inclu
 `src/authored-game.ts` is an optional startup replacement for `src/main.ts`:
 it preloads the public GLB, installs its model factory and physical weapon rigs
 atomically, then imports the normal game. Existing save/gameplay contracts and
-six logical launcher tubes per bank are preserved. Ordinary startup stays procedural.
+six logical launcher tubes per bank are preserved. Normal startup uses the shared
+`src/game-assets.ts` loader; this optional entry remains available for isolated previews.
 
 For another entry point:
 

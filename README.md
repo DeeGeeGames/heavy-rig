@@ -600,3 +600,18 @@ experiments.deegeegames.com are not transferred automatically.
 
 Heavy Rig was extracted from DeeGeeGames/playground at commit
 `7e255d2b0676c80a79206f0a55c492d4b83cc692`, where it was named Iron Wake.
+
+### Rig handling playground
+
+Run `bun run test:rigs` to build and serve a dedicated playground on port 3003,
+bound to all network interfaces. Open `http://localhost:3003/` or use the host's
+LAN address from another device. The script stays running until Ctrl+C.
+
+Choose any of the 18 frame variants, Simulation or Arcade controls, and starter,
+fully loaded, or empty mounts. Switching a choice or pressing Reset starts a
+fresh run. Collapse the test panel for more battlefield space. Compare acceleration,
+coasting, braking, reversing, hull turning, independent aim, and firing while moving.
+Live readings show mass, speed, throttle, headings, and heat. This uses the mission
+input and fixed-step combat runtime, with enemy waves disabled. Ammo and heat retain
+their normal behavior until reset. Campaign and preference saves are disabled in
+this mode. Physical controller/touch feel and balance need human playtesting.

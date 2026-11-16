@@ -34,8 +34,8 @@
     },
     {
       "path": "design/mechs/assets/kestrel/game-ready/README.md",
-      "bytes": 4411,
-      "sha256": "74a80d7787df0754a23c29a098b2fd0e47fb2a6dab783dc572b51a1750f5a097"
+      "bytes": 4757,
+      "sha256": "2569781bed7cf6414a201ccb90cd346c28308a07a4baaa2b236ccae59d4009ee"
     },
     {
       "path": "design/mechs/assets/kestrel/game-ready/approval.json",
@@ -174,8 +174,8 @@
     },
     {
       "path": "design/mechs/assets/warden/game-ready/README.md",
-      "bytes": 12224,
-      "sha256": "bdc2268e2a4d11bc2959b60367d12a992c936c3453f4a48b136990a7272f8387"
+      "bytes": 12470,
+      "sha256": "121a8da358a96a965c289918374f2c1bec44a6f934ea730e944cc5230aae81b1"
     },
     {
       "path": "design/mechs/assets/warden/game-ready/approval.json",

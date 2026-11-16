@@ -8,6 +8,7 @@
 	},
 	"scripts": {
 		"dev": "bun --port ${PORT:-3000} --console index.html",
+		"test:rigs": "bun run build && RIG_TEST=1 PORT=3003 bun run preview",
 		"dev:stress": "bun --port ${PORT:-3002} --console warden-stress.html",
 		"dev:models": "bun --port ${PORT:-3001} --console models-preview.html",
 		"build": "bun run scripts/build.ts",

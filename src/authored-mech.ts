@@ -40,9 +40,9 @@ const wardenDescriptor: AuthoredDescriptor = { frame: 'warden', height: 101.75, 
 const kestrelDescriptor: AuthoredDescriptor = {
 	// Existing procedural Kestrel, posed neutrally on its own rig: floor0, roof74.82.
 	frame: 'kestrel', height: 74.82, weapons: kestrelWeaponSpecs,
-	// Kestrel's approved source cycle has a shorter stride and longer support
-	// fraction. The measured solver retains its own asymmetric pivots and soles.
-	locomotion: { walkStride: 0.45, walkExtension: 0.15, run: { cycleSeconds: 0.8, stanceFraction: 0.44, referenceSpeed: 30, enterSpeed: 25, exitSpeed: 20.5, swingLift: 5.6, bodyLift: 0.67, bodyRoll: 0.025, bodyPitch: 0.052, footPitch: 0.157 } },
+	// Short support and a longer recovery produce visible bounds. Torso rise shares
+	// the flight phase; measured pivots and soles still own planted contacts.
+	locomotion: { walkStride: 0.6, walkExtension: 0.2, run: { cycleSeconds: 1.05, stanceFraction: 0.26, referenceSpeed: 85, enterSpeed: 40, exitSpeed: 32, swingLift: 11, bodyLift: 4.4, bodyRoll: 0.025, bodyPitch: 0.052, footPitch: 0.22 } },
 };
 export const authoredKestrelUrl = function (): string {
 	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? './assets/mechs/kestrel/game-ready.glb';

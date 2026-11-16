@@ -1,4 +1,5 @@
 import ECSpresso from 'ecspresso';
+import { mountRigTest, rigTestEnabled } from './rig-test';
 import { html, render } from 'lit-html';
 import { createHangarPreview } from './hangar-preview';
 import { detectControllerFamily, controllerButtonLabel, renderControllerButton, renderGlyph, type ControllerFamily, type PromptDevice } from './input-prompts';
@@ -231,7 +232,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		updateWorkspaceLayout(); updateDialogLayout();
 	};
 	const save = function () {
-		element('storage-status').textContent = saveProfile(profile) ? 'Preferences are saved on this device.' : 'Device storage is unavailable. You can keep playing; records will last for this session.';
+		element('storage-status').textContent = rigTestEnabled ? 'Rig test preferences last for this session.' : saveProfile(profile) ? 'Preferences are saved on this device.' : 'Device storage is unavailable. You can keep playing; records will last for this session.';
 	};
 	const updateSettings = function () {
 		audio.setMix(profile.settings);
@@ -361,6 +362,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		campaignConflict = true; silenceAudio(); padInput.suspend(); transition(navigation.showAuxiliary('save-conflict'));
 	};
 	const persistCampaign = function (): boolean {
+		if (rigTestEnabled) return true;
 		if (campaignConflict) return false;
 		const current = savedSnapshot();
 		if (current !== undefined && campaignSnapshot !== undefined && current !== campaignSnapshot) { stopForConflict(); return false; }
@@ -580,6 +582,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('confirm-cancel', closeAuxiliary);
 	listen('reload-company', function () { window.location.reload(); });
 	window.addEventListener('storage', function (event) {
+		if (rigTestEnabled) return;
 		if ((event.key === CAMPAIGN_STORAGE_KEY || event.key === null) && savedSnapshot() !== campaignSnapshot) stopForConflict();
 	}, listenerOptions);
 	for (const id of ['pause-settings']) listen(id, function () { showAuxiliary('settings'); });
@@ -663,6 +666,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const rigCode = ['ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
 	let rigCodeInput: string[] = [];
 	window.addEventListener('keydown', function (event) {
+		if (rigTestEnabled && event.target instanceof Element && event.target.closest('#rig-test-panel')) return;
 		if (capture) rigCodeInput = [];
 		setInputMode('keyboard'); if (event.isTrusted) unlockSound();
 		if (capture && navigation.auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); if (event.code === 'Escape') { capture = undefined; renderMappings(); } else if (!event.repeat && validKey(event.code)) assignKey(event.code); return; }
@@ -1078,6 +1082,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	combatRuntime.setControls(function () { return runtimeInput.consume(makeInput()); });
 	combatRuntime.setHooks({
 		beforeStep: function () {
+			if (rigTestEnabled) { state.spawnIn = Infinity; state.intermission = 0; }
 			previousGaits = gaits; previousStage = training?.stage;
 			previousFrame = state.frame; previousMissionStage = state.mission?.stage;
 		},
@@ -1167,7 +1172,17 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		frame = requestAnimationFrame(tick);
 	};
 	updateSettings(); updateDifficulty(); refreshCampaign(); persistCampaign();
-	if (!campaignConflict && !campaign.introComplete) startIntro(); else syncScreen();
+	if (rigTestEnabled) {
+		const rigTest = mountRigTest(container, profile.settings, function (initial) {
+			training = undefined; escape = false;
+			state = combatRuntime.attach(initial); gaits = createGaits(state);
+			presentation.resetZoom(); pointer = undefined; aim = { x: 900, y: 450 };
+			aimMode = inputMode === 'gamepad' ? 'gamepad' : inputMode === 'touch' ? 'touch' : 'pointer';
+			message = ''; messageUntil = 0; terminalUntil = 0; tipDismissed = true;
+			audio.reset(); transition(navigation.setScreen('playing', true));
+		}, function () { return state; });
+		onCleanup(rigTest);
+	} else if (!campaignConflict && !campaign.introComplete) startIntro(); else syncScreen();
 	frame = requestAnimationFrame(tick);
 	return function () {
 		if (stopped) return; stopped = true;
