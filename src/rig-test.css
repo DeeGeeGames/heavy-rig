@@ -1,0 +1,8 @@
+#rig-test-panel { position: fixed; z-index: 100; top: 76px; left: 50%; transform: translateX(-50%); width: min(650px, calc(100% - 24px)); padding: 10px 14px; background: #101c22f5; border: 1px solid #799fa2; color: #d9e9e8; font: 12px monospace; }
+#rig-test-panel summary { cursor: pointer; color: #f4ca77; }
+.rig-test-options { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+#rig-test-panel select { min-width: 0; max-width: 100%; color: #d9e9e8; background: #1c3038; padding: 6px; border: 1px solid #799fa2; }
+#rig-test-panel button { padding: 6px; }
+#rig-test-panel output { display: block; line-height: 1.6; }
+#rig-test-panel p { margin: 6px 0 0; line-height: 1.5; }
+@media (max-width: 600px) { #rig-test-panel { top: 58px; } }
