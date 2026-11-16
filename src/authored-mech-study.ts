@@ -1,7 +1,7 @@
 import type { AuthoredPoseContext } from './authored-pose';
 import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Float32BufferAttribute, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh, MeshStandardMaterial, OrthographicCamera, PlaneGeometry, Scene, SphereGeometry, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { authoredMuzzleError, authoredWardenUrl, authoredKestrelUrl, loadAuthoredWarden, loadAuthoredKestrel } from './authored-mech';
+import { authoredMuzzleError, authoredWardenUrl, authoredKestrelUrl, authoredMaulUrl, loadAuthoredWarden, loadAuthoredKestrel, loadAuthoredMaul } from './authored-mech';
 import { advanceGait, createGait } from './gait';
 import { createMech } from './mech-3d';
 import { alignCamera } from './projection-3d';
@@ -20,10 +20,13 @@ const motions = ['idle', 'walk', 'run', 'backward', 'turn', 'aim', 'fire'] as co
 type Motion = typeof motions[number];
 const isMotion = function (value: string | undefined): value is Motion { return motions.some(function (name) { return name === value; }); };
 
-const frameId = document.documentElement.dataset['authoredFrame'] === 'kestrel' ? 'kestrel' : 'warden';
+const requestedFrame = document.documentElement.dataset['authoredFrame'];
+const frameId = requestedFrame === 'maul' ? 'maul' : requestedFrame === 'kestrel' ? 'kestrel' : 'warden';
+const studySpeeds = { warden: { walk: 38, run: 180, backward: -28, aim: 35 }, kestrel: { walk: 24, run: 125, backward: -65, aim: 24 }, maul: { walk: 30, run: 82, backward: -40, aim: 24 } };
+const frameNames = { warden: 'Warden', kestrel: 'Kestrel', maul: 'Maul' };
 const start = async function () {
-	const url = frameId === 'kestrel' ? authoredKestrelUrl() : authoredWardenUrl(); const assetLabel = url.startsWith('data:') ? `Embedded ${frameId} GLB` : url;
-	const factory = await (frameId === 'kestrel' ? loadAuthoredKestrel : loadAuthoredWarden)(url, { diagnostics: true }); const uninstall = factory.install();
+	const url = frameId === 'maul' ? authoredMaulUrl() : frameId === 'kestrel' ? authoredKestrelUrl() : authoredWardenUrl(); const assetLabel = url.startsWith('data:') ? `Embedded ${frameId} GLB` : url;
+	const factory = await (frameId === 'maul' ? loadAuthoredMaul : frameId === 'kestrel' ? loadAuthoredKestrel : loadAuthoredWarden)(url, { diagnostics: true }); const uninstall = factory.install();
 	const model = createMech(undefined, false, frameId);
 	const renderer = new WebGLRenderer({ canvas, antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 	renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
@@ -50,7 +53,7 @@ const start = async function () {
 		const gameView = view.value === 'game' || view.value === 'game-max'; orbit.enabled = !gameView;
 		if (gameView) alignCamera(camera, width, height, state, view.value === 'game-max' ? 2.5 : 1, { x: 0, y: 0 });
 		else {
-			const close = view.value.startsWith('joints-'); const legs = view.value === 'legs'; const halfHeight = legs ? 22 : close ? 40 : 75; const target = new Vector3(0, legs ? 18 : close ? 75 : 48, 0);
+			const close = view.value.startsWith('joints-'); const legs = view.value === 'legs'; const halfHeight = legs ? 22 : close ? 40 : frameId === 'maul' ? 100 : 75; const target = new Vector3(0, legs ? 18 : close ? frameId === 'maul' ? 110 : 75 : frameId === 'maul' ? factory.height / 2 : 48, 0);
 			const aspect = width / height; camera.left = -halfHeight * aspect; camera.right = halfHeight * aspect; camera.top = halfHeight; camera.bottom = -halfHeight;
 			const direction = view.value === 'front' || view.value === 'joints-front' ? new Vector3(1, 0.1, 0) : view.value === 'rear' ? new Vector3(-1, 0.1, 0) : view.value === 'joints-rear' ? new Vector3(-1, 0.2, 0.65) : view.value === 'joints-left' ? new Vector3(0, 0.1, -1) : view.value === 'side' || view.value === 'legs' || view.value === 'joints-right' ? new Vector3(0, 0.1, 1) : view.value === 'underside' || view.value === 'joints-underside' ? new Vector3(1, -0.65, 0.8) : new Vector3(1, 0.48, 1.2);
 			camera.position.copy(direction.normalize().multiplyScalar(350)).add(target); camera.lookAt(target); camera.updateProjectionMatrix(); orbit.target.copy(target); orbit.update();
@@ -82,7 +85,8 @@ const start = async function () {
 	};
 	const step = function () {
 		const dt = 1 / 60; authoredPose ??= factory.advancePose(undefined, body, time); time += dt;
-		const speed = motion === 'walk' ? frameId === 'kestrel' ? 24 : 38 : motion === 'run' ? frameId === 'kestrel' ? 125 : 180 : motion === 'backward' ? frameId === 'kestrel' ? -65 : -28 : motion === 'aim' ? frameId === 'kestrel' ? 24 : 35 : 0;
+		const speeds = studySpeeds[frameId];
+		const speed = motion === 'walk' ? speeds.walk : motion === 'run' ? speeds.run : motion === 'backward' ? speeds.backward : motion === 'aim' ? speeds.aim : 0;
 		const angle = body.angle + (motion === 'turn' ? dt * 0.7 : 0);
 		body = { x: body.x + Math.cos(angle) * speed * dt, y: body.y + Math.sin(angle) * speed * dt, angle };
 		authoredPose = factory.advancePose(authoredPose, body, time);
@@ -114,6 +118,6 @@ const start = async function () {
 	};
 	const onPageHide = function (event: PageTransitionEvent) { if (!event.persisted) dispose(); };
 	window.addEventListener('pagehide', onPageHide); if (import.meta.hot) import.meta.hot.dispose(dispose);
-	reset(); updateCamera(); assetState.textContent = `${frameId === 'kestrel' ? 'Kestrel' : 'Warden'} A · authored asset`; document.documentElement.dataset['authoredReady'] = 'true'; frame = requestAnimationFrame(tick);
+	reset(); updateCamera(); assetState.textContent = `${frameNames[frameId]} A · authored asset`; document.documentElement.dataset['authoredReady'] = 'true'; frame = requestAnimationFrame(tick);
 };
 start().catch(function (error: unknown) { const node = required('error'); node.hidden = false; node.textContent = error instanceof Error ? error.message : String(error); assetState.textContent = 'Asset unavailable'; console.error(error); });

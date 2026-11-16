@@ -1,0 +1,7 @@
+{
+  "status": "approved-for-local-repair",
+  "source": "design/mechs/assets/maul/generated-source/source.glb",
+  "sourceSha256": "1ecfb3a3e2b86f1ac1c27a21f7030ab89068fe6227a85e9c1954da3c15a7ed35",
+  "approval": "Owner said \"Approved\" to accepting the exact generated Maul shape as the basis for local repair and rigging, including the disclosed softer armor edges. Does not approve repaired geometry, articulation, materials or runtime appearance.",
+  "generation": "design/mechs/assets/maul/generated-source/generation.json"
+}

@@ -14,5 +14,29 @@
       "approval": "2026-11-13: owner selected Maul option 1: \"Add option 1. Then push these to the PR.\" Concept approval only; hidden surfaces and production model remain separate."
     }
   ],
-  "variants": []
+  "variants": [],
+  "activeTurnaround": "maul-a-turnaround",
+  "turnarounds": [
+    {
+      "status": "approved",
+      "manifest": "design/mechs/chassis/maul/turnaround/a/manifest.json",
+      "approval": "2026-11-15: Owner said \"Approved\" to the complete four-view turnaround set, including proposed rear armor and more upright stance. Directional-reference approval only; generated source, articulation and runtime acceptance remain separate.",
+      "id": "maul-a-turnaround"
+    }
+  ],
+  "generatedSource": "design/mechs/assets/maul/generated-source/approval.json",
+  "articulationBase": "design/mechs/assets/maul/articulation-base/approval.json",
+  "runtimeWalkReview": {
+    "status": "approved-walk-timing-and-foot-path",
+    "approval": "Owner said \"The walk looks good\" after the upright-torso revision. The later final run/reverse approval is recorded in the active game derivative.",
+    "assetSha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1",
+    "reviewedRuntimeSources": {
+      "src/authored-mech.ts": "bc5e0d874730d2224893f5c378ae187516d527991c01d0c46b0597187993b185",
+      "src/authored-gait.ts": "b6fdba46d4b58bc10779c6265862a4c028dc5660de729110cb9836e41c624ebc",
+      "src/authored-pose.ts": "1fddf2a21cebb1720d06b02835fa8b34c50e0ac307ba6c169230603eb58d6fec",
+      "src/authored-run.ts": "156e1cdcdaab041cf840cbf4168454dcf5262e9377459fea84794c6a8e966798",
+      "scripts/mech-design/blender/maul_motion.py": "8a848e17c8ff429ed0fe328a38b6b0f25d3181322de9f9bae297cbfeca4e8330"
+    }
+  },
+  "activeGameDerivative": "design/mechs/assets/maul/game-ready/manifest.json"
 }

@@ -1,0 +1,68 @@
+{
+  "status": "passed-byte-for-byte",
+  "scope": "Approved raw source plus frozen inventory and ownership reproduced the neutral repair byte for byte; locomotion, material authoring and pinned glTF Transform packaging also match the retained accepted exports.",
+  "outputs": {
+    "locomotion": {
+      "sha256": "5de82cc7fac9d4b3d1c205079e1ca293b0dec69b5e5c06c5b7ca42dacfa5f062",
+      "bytes": 1215364,
+      "identicalToRetainedOrApprovedAuthoring": true
+    },
+    "materialAuthoring": {
+      "sha256": "b788b1799843bcbf12a4e439fcb69da660e362d7255ed016bbcc159cad2cd089",
+      "bytes": 2906036,
+      "identicalToRetainedOrApprovedAuthoring": true
+    },
+    "packaged": {
+      "sha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1",
+      "bytes": 1783372,
+      "identicalToRetainedOrApprovedAuthoring": true
+    },
+    "neutralRepair": {
+      "sha256": "5860f1a6814c6c7da6ed5fb78a971de74b7e407a8cec11dad0c363a5a03cee41",
+      "bytes": 1176788,
+      "identicalToRetainedOrApprovedAuthoring": true
+    }
+  },
+  "tools": {
+    "blender": "5.2.0 LTS (Flatpak)",
+    "gltfTransform": "4.5.1"
+  },
+  "authoringScripts": [
+    {
+      "path": "scripts/mech-design/add-maul-motions.py",
+      "sha256": "15718ce870c74f0dd75f49e561a5312bceee6f369dd44af8a34224e7e0f98e78"
+    },
+    {
+      "path": "scripts/mech-design/blender/maul_motion.py",
+      "sha256": "8a848e17c8ff429ed0fe328a38b6b0f25d3181322de9f9bae297cbfeca4e8330"
+    },
+    {
+      "path": "scripts/mech-design/materialize-maul.py",
+      "sha256": "2bb0e675572788b41feb970e13f958b375c03a8d481abea23753ad639fa2a520"
+    },
+    {
+      "path": "scripts/mech-design/materialize-kestrel.py",
+      "sha256": "05a83c7f13139eed46d45649d06085dbfd0f2327d71854a83b0c9cdc46ef4bdd"
+    },
+    {
+      "path": "scripts/mech-design/package-optimized-glb.py",
+      "sha256": "df8e8cf6a64257f7dcca0431458624622308a5f6ba0fe1995041d9402c77c908"
+    },
+    {
+      "path": "scripts/mech-design/verify-kestrel-package.py",
+      "sha256": "fa2d163d391961aafe9b1c49c9dac428d7aafa0b45011bc455f2a9b75775ea4d"
+    },
+    {
+      "path": "scripts/mech-design/blender/build_maul_repair.py",
+      "sha256": "13920b48ce0bf2566a97ab0388a8fd923ef3fa6efbc728d5b6a67e5dd1a6ff44"
+    },
+    {
+      "path": "scripts/mech-design/blender/build_kestrel_repair.py",
+      "sha256": "125e416f652598242eed00c79475a26ca04c57f94837d9313105d4c4b3ee1e74"
+    },
+    {
+      "path": "scripts/mech-design/blender/source_inventory.py",
+      "sha256": "94fb80b31ae3b5956bbcb74f669966f08d2c6bc385f4e4de47ae483d6e451e2d"
+    }
+  ]
+}

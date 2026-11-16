@@ -15,6 +15,8 @@ export interface AuthoredLegNodes {
 export interface AuthoredLocomotionOptions {
 	readonly walkStride: number;
 	readonly walkExtension: number;
+	readonly walkLiftScale?: number;
+	readonly stableKneeBend?: boolean;
 	readonly run: AuthoredRunProfile;
 }
 const wardenLocomotion: AuthoredLocomotionOptions = { walkStride: 0.5, walkExtension: 0.4, run: WARDEN_RUN_PROFILE };
@@ -54,12 +56,18 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 		// keeping the per-step guard clearance check independent of mesh density.
 		const hull = shinPoints.length >= 4 ? new ConvexHull().setFromPoints(shinPoints) : undefined;
 		const guard = hull ? [...new Set(hull.faces.flatMap(function (face) { return [face.getEdge(0).head().point, face.getEdge(1).head().point, face.getEdge(2).head().point]; }))] : shinPoints;
+		const neutralAxis = ankle.clone().sub(hip).normalize();
+		const bendPole = knee.clone().sub(hip);
+		// The bend offset keeps its anatomical side as the foot passes forward.
+		// The full thigh vector can reverse when projected onto the moving axis.
+		bendPole.addScaledVector(neutralAxis, -bendPole.dot(neutralAxis));
+		if (options.stableKneeBend && bendPole.lengthSq() < 1e-10) throw new Error('Authored leg has no neutral knee bend direction');
 		return {
 			index: leg.index, hip, ankle, upper, lower, corners, guard,
 			hipPosition: leg.thigh.position.clone(), upperVector: leg.shin.position.clone(), lowerVector: leg.foot.position.clone(),
 			thighRotation: leg.thigh.quaternion.clone(), shinRotation: leg.shin.quaternion.clone(),
 			footRotation: leg.foot.getWorldQuaternion(new Quaternion()),
-			pole: knee.clone().sub(hip),
+			pole: options.stableKneeBend ? bendPole : knee.clone().sub(hip),
 		};
 	});
 	const average = function (read: (leg: typeof legs[number]) => number) { return legs.reduce(function (sum, leg) { return sum + read(leg); }, 0) / legs.length; };
@@ -78,7 +86,8 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 		const dx = contact.x - gait.body.x; const dz = contact.y - gait.body.y; const angle = gait.body.angle;
 		// Preserve source asymmetry without moving a supporting contact with the hull.
 		const offset = new Vector3(leg.ankle.x - rest.x, 0, leg.ankle.z - rest.y).applyAxisAngle(new Vector3(0, 1, 0), -relative);
-		const position = new Vector3(dx * Math.cos(angle) + dz * Math.sin(angle) + offset.x, contact.lift - support, -dx * Math.sin(angle) + dz * Math.cos(angle) + offset.z);
+		const lift = gait.running ? contact.lift : contact.lift * (options.walkLiftScale ?? 1);
+		const position = new Vector3(dx * Math.cos(angle) + dz * Math.sin(angle) + offset.x, lift - support, -dx * Math.sin(angle) + dz * Math.cos(angle) + offset.z);
 		return { position, rotation };
 	};
 	const advance = function (previous: AuthoredGait | undefined, body: WeaponBody, dt: number): AuthoredGait {

@@ -1,0 +1,37 @@
+{
+  "status": "owner-visual-review-pending",
+  "sourceSha256": "1ecfb3a3e2b86f1ac1c27a21f7030ab89068fe6227a85e9c1954da3c15a7ed35",
+  "reviewedViews": [
+    "front",
+    "back",
+    "own-left",
+    "own-right",
+    "oblique",
+    "underside"
+  ],
+  "sourceCosts": {
+    "rawTriangles": 47391,
+    "blenderImportedTriangles": 47385,
+    "repeatedIndexTriangles": 0,
+    "vertices": 26712,
+    "meshSections": 1,
+    "connectedComponents": 256,
+    "materials": 1,
+    "textures": 0,
+    "skins": 0,
+    "animations": 0,
+    "importNote": "Six geometric duplicate triangles explain the raw-to-Blender count difference; source bytes remain unchanged."
+  },
+  "observations": [
+    "Two forearm launcher assemblies retained; no extra shoulder weapons observed.",
+    "Overall broad shoulders, small cockpit, humanoid legs and broad feet retained.",
+    "Armor edges substantially softened relative to references.",
+    "Launcher fronts show capped-looking 3x3 arrays instead of the approved 4x4 open tubes.",
+    "Rear and underside contain proposed mechanical panels; attachment and motion clearance remain unvalidated.",
+    "Disconnected components are not yet assigned rigid ownership."
+  ],
+  "recommendedNextStep": "Accept overall source shape, then locally rebuild two 4x4 launcher fronts with real bores, audit source ownership and repair joint boundaries before rigging. Retain source triangle density until measured selective repair supports reduction.",
+  "creditsAuthorized": 100,
+  "creditsSpent": 100,
+  "additionalPaidOperations": 0
+}

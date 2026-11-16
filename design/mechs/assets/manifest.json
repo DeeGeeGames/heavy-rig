@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "Retained owner-approved advancing mech checkpoints and required reproduction inputs. Warden visual approval remains separately scoped; Kestrel A has exact-hash source, articulation, material and demonstrated runtime visual approval.",
+  "scope": "Retained owner-approved advancing mech checkpoints and required reproduction inputs. Warden visual approval remains separately scoped; Kestrel A and Maul A have exact-hash source, articulation, material and demonstrated runtime visual approvals.",
   "files": [
     {
       "path": "design/mechs/assets/kestrel/articulation-base/approval.json",
@@ -761,6 +761,126 @@
       "path": "public/assets/mechs/warden/game-ready.glb",
       "bytes": 1036424,
       "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de"
+    },
+    {
+      "path": "design/mechs/assets/maul/articulation-base/approval.json",
+      "bytes": 595,
+      "sha256": "2b0df168fc61af2bd037e0888abf46831d291aa97881a5f40d4f5440a414d92f"
+    },
+    {
+      "path": "design/mechs/assets/maul/articulation-base/maul.glb",
+      "bytes": 1176788,
+      "sha256": "5860f1a6814c6c7da6ed5fb78a971de74b7e407a8cec11dad0c363a5a03cee41"
+    },
+    {
+      "path": "design/mechs/assets/maul/articulation-base/recipe.json",
+      "bytes": 3436,
+      "sha256": "e213335a37f49a247e328b64f93a63c312849db031ea59aaed325fbd4c1fcd5e"
+    },
+    {
+      "path": "design/mechs/assets/maul/articulation-base/repair-report.json",
+      "bytes": 45664,
+      "sha256": "d769046fb78aaeb2348dfdedee004e1b7e0eed40dfc784ee6301332d8d30c605"
+    },
+    {
+      "path": "design/mechs/assets/maul/articulation-base/rig-contract.json",
+      "bytes": 10405,
+      "sha256": "20905a0729663742f5968a1cbe5e212c8e47a8b5c3ec52204149ece3f17d5270"
+    },
+    {
+      "path": "design/mechs/assets/maul/articulation-base/verification.json",
+      "bytes": 3455,
+      "sha256": "dd35f9ae0dc0769c20d2f87985239bb9ec89095d14d73b03c76ee04990f1e221"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/README.md",
+      "bytes": 5978,
+      "sha256": "c33c802b38cea218e51365e784d2b578acfa58b6084dc8e3f36cca0f505078f9"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/approval.json",
+      "bytes": 1262,
+      "sha256": "3d8a87eda7b37b4cf6b17ab0db933931b3a86ea01be4b45c22a6ee02177458da"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/locomotion.glb",
+      "bytes": 1215364,
+      "sha256": "5de82cc7fac9d4b3d1c205079e1ca293b0dec69b5e5c06c5b7ca42dacfa5f062"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/manifest.json",
+      "bytes": 3620,
+      "sha256": "fd1f3218b18277f565383734316d6efba58435f73ea97fedb967c43bcb6b2fac"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/material-recipe.json",
+      "bytes": 12102,
+      "sha256": "924494413d85245407834e6bb7af993b7e9bc5a144d0b02c2779063ba792a143"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/maul.glb",
+      "bytes": 1783372,
+      "sha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/motion-report.json",
+      "bytes": 5066,
+      "sha256": "7d992fcce39e246b767f6ede0770bfddd895ce7f2fc56d6dc1e360acac17e286"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/package-verification.json",
+      "bytes": 741,
+      "sha256": "246953f5a087928ed141295f59d360b520b38b75f14702e9e1bead7849511638"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/reproduction.json",
+      "bytes": 2578,
+      "sha256": "5b92b2d61a4e663fc1b38097fac2d0795064f4cb1927485d9fbd93ba12b0fd10"
+    },
+    {
+      "path": "design/mechs/assets/maul/game-ready/runtime-review.json",
+      "bytes": 3413,
+      "sha256": "7d81a25fa13d251145b30380bd1a01112ceaaeb0212ce2982b3e0fb78dea2235"
+    },
+    {
+      "path": "design/mechs/assets/maul/generated-source/README.md",
+      "bytes": 1336,
+      "sha256": "5de52569b22c2c4afb9fc3363f4f39edd337dc1962853eedc5ac076796af2488"
+    },
+    {
+      "path": "design/mechs/assets/maul/generated-source/approval.json",
+      "bytes": 530,
+      "sha256": "13d8056dd092aba4e068048f57588e053fc563d2d88eb81418bbe0eed34e86f0"
+    },
+    {
+      "path": "design/mechs/assets/maul/generated-source/export-audit.json",
+      "bytes": 451,
+      "sha256": "57a7c1e04bff2665bd90178e1b4b13fc5ae9b0d18553c0c21bb6b0fa2b9c5b3b"
+    },
+    {
+      "path": "design/mechs/assets/maul/generated-source/generation.json",
+      "bytes": 1913,
+      "sha256": "bbf4177fdcbfa129990252c584f67eada76c7521b415b58748d74dc038e355f3"
+    },
+    {
+      "path": "design/mechs/assets/maul/generated-source/inventory.json",
+      "bytes": 1238429,
+      "sha256": "9f56e8eb26d1b81145e3bb3fca885f9084b5098d4931b4ba314f7f3ce032696f"
+    },
+    {
+      "path": "design/mechs/assets/maul/generated-source/source-ownership.json",
+      "bytes": 12376,
+      "sha256": "68910465f5c9f600d7814bf1c0a0dc1101dc48c7a9cdf0f69d0ac4376a98886d"
+    },
+    {
+      "path": "design/mechs/assets/maul/generated-source/source.glb",
+      "bytes": 1210868,
+      "sha256": "1ecfb3a3e2b86f1ac1c27a21f7030ab89068fe6227a85e9c1954da3c15a7ed35"
+    },
+    {
+      "path": "design/mechs/assets/maul/generated-source/structural-review.json",
+      "bytes": 1545,
+      "sha256": "2fd392e760dea3735b7a1e9aba45d76c39287c0f5295839ed39b40d25484789b"
     }
   ]
 }

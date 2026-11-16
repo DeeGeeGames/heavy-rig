@@ -14,6 +14,7 @@ export interface AuthoredRunProfile {
 	readonly bodyRoll: number;
 	readonly bodyPitch: number;
 	readonly footPitch: number;
+	readonly landingLead?: number;
 }
 export const WARDEN_RUN_PROFILE: AuthoredRunProfile = {
 	cycleSeconds: 0.94, stanceFraction: 0.32, referenceSpeed: 90,
@@ -69,7 +70,7 @@ export const advanceAuthoredRun = function (previous: AuthoredGait, actual: Walk
 		const swing = old.swing ?? (!old.swingPhase && swingPhase ? { from: previous.feet[index], elapsed: 0, duration: (1 - local) * cycleSeconds } : undefined);
 		if (!swing) return { foot: previous.feet[index], leg: { swing: undefined, swingPhase } };
 		const elapsed = Math.min(swing.duration, swing.elapsed + dt * rate); const progress = elapsed / swing.duration;
-		const lead = (swing.duration - elapsed + cycleSeconds * stance / 2) / rate;
+		const lead = (swing.duration - elapsed + cycleSeconds * stance * (profile.landingLead ?? 0.5)) / rate;
 		const heading = body.angle + turn * lead; const side = index === 0 ? -1 : 1;
 		const forward = rig.footForward ?? rig.hipForward + 5; const width = rig.footWidth ?? rig.hipWidth;
 		const desired = { x: body.x + dx * lead + Math.cos(heading) * forward - Math.sin(heading) * side * width, y: body.y + dy * lead + Math.sin(heading) * forward + Math.cos(heading) * side * width, angle: heading };

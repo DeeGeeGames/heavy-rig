@@ -1,0 +1,67 @@
+{
+  "status": "approved",
+  "baselineId": "maul-a-baseline-v1",
+  "baselineImageSha256": "9549c80c62be16566eae62b558203dc09b0c7015a9cf919759299099365e9d84",
+  "contractSignature": "f5ff61ae5df9f6e2e835bc61ef028a4ad6cf1c618e216e62578cc14d23d53210",
+  "provider": "built-in imagegen",
+  "views": {
+    "front": {
+      "image": "front.png",
+      "sha256": "d8a21a6fd4dadf81ba7f4986d15ea5e891514adb0499a69f27bc7ebe351c236b",
+      "prompt": "front-prompt.txt",
+      "references": [
+        "approved concept"
+      ],
+      "approval": "2026-11-15: Owner said \"Approved\" to the complete four-view turnaround set, including proposed rear armor and more upright stance. Directional-reference approval only; generated source, articulation and runtime acceptance remain separate."
+    },
+    "back": {
+      "image": "back.png",
+      "sha256": "1bb706790c33801969130c5627b3772e044923b6a5805db526562b43d09426cc",
+      "prompt": "back-prompt.txt",
+      "references": [
+        "approved concept",
+        "front"
+      ],
+      "approval": "2026-11-15: Owner said \"Approved\" to the complete four-view turnaround set, including proposed rear armor and more upright stance. Directional-reference approval only; generated source, articulation and runtime acceptance remain separate."
+    },
+    "own-left": {
+      "image": "own-left.png",
+      "sha256": "da64721a36c877a575e0b796a5f042c43a6d565d8053a9208ee5f7494eb133f5",
+      "prompt": "own-left-prompt.txt",
+      "references": [
+        "approved concept",
+        "front",
+        "back"
+      ],
+      "approval": "2026-11-15: Owner said \"Approved\" to the complete four-view turnaround set, including proposed rear armor and more upright stance. Directional-reference approval only; generated source, articulation and runtime acceptance remain separate."
+    },
+    "own-right": {
+      "image": "own-right.png",
+      "sha256": "05e12fa3d0ef7da6de99e9892598cc906cbe4078b0915e37aef309d82f0b3479",
+      "prompt": "own-right-prompt.txt",
+      "references": [
+        "approved concept",
+        "front",
+        "back",
+        "own-left"
+      ],
+      "approval": "2026-11-15: Owner said \"Approved\" to the complete four-view turnaround set, including proposed rear armor and more upright stance. Directional-reference approval only; generated source, articulation and runtime acceptance remain separate."
+    }
+  },
+  "ownerApproval": "2026-11-15: Owner said \"Approved\" to the complete four-view turnaround set, including proposed rear armor and more upright stance. Directional-reference approval only; generated source, articulation and runtime acceptance remain separate.",
+  "tripoSubmitted": true,
+  "tripoCreditAuthorization": "Owner approved one Tripo Studio P2.0 multiview generation, geometry only, 50,000-triangle target, 100 Studio credits total, in response to the explicit spending proposal.",
+  "generationStatus": "completed-source-downloaded-awaiting-visual-review",
+  "generationPlan": {
+    "provider": "Tripo Studio",
+    "model": "P2.0",
+    "inputMode": "multiview",
+    "texture": false,
+    "targetTriangles": 50000,
+    "generationCount": 1,
+    "creditsAuthorized": 100,
+    "creditsSpent": 100,
+    "submissionConfirmed": true
+  },
+  "tripoJobUrl": "https://studio.tripo3d.ai/workspace/generate/835184b8-c465-4dd0-9494-a704f3bb6a6d"
+}
