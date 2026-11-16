@@ -67,11 +67,12 @@ test('Longbow auxiliary structure costs mass and mobility even with the secondar
 });
 
 test('separately purchased variants preserve independent equipment, reserves, damage and workshop orders', function () {
-	const company = buyWeapon(buyWeapon(buyFrame(buyFrame({ ...createCampaign(83), credits: 50000 }, 'kestrel-b'), 'kestrel-c'), 'laser:t1'), 'cluster-rockets');
+	const purchased = buyFrame(buyFrame({ ...createCampaign(83), credits: 50000 }, 'kestrel-b'), 'kestrel-c');
+	const company = buyWeapon(buyWeapon({ ...purchased, companyReputation: 250 }, 'laser:t1'), 'stream-rockets');
 	expect(company.fleet.map(function (mech) { return mech.frameId; })).toEqual(['kestrel', 'kestrel-b', 'kestrel-c']);
 	expect(company.inventory['machine-gun']).toBe(4);
 	expect(buyFrame(company, 'kestrel-b')).toBe(company);
-	const queued = queueRefit(queueRefit(company, 'kestrel-b', ['machine-gun', 'laser:t1'], [300, 0]), 'kestrel-c', ['machine-gun', 'cluster-rockets'], [400, 45]);
+	const queued = queueRefit(queueRefit(company, 'kestrel-b', ['machine-gun', 'laser:t1'], [300, 0]), 'kestrel-c', ['machine-gun', 'stream-rockets'], [400, 45]);
 	expect(queued.workOrders).toHaveLength(2);
 	const complete = advanceDays(parseCampaign(JSON.stringify(queued)), 1);
 	expect(getOwnedMech(complete, 'kestrel-b')?.reserves).toEqual([300, 0]);
@@ -92,5 +93,5 @@ test('separately purchased variants preserve independent equipment, reserves, da
 	if (!contract || !mech) throw new Error('Missing variant fixture');
 	const combat = createMissionState(contract, { frame: mech.frameId, loadout: mech.loadout, reserves: mech.reserves });
 	expect(combat.frame).toBe('kestrel-c');
-	expect(combat.loadout.map(function (mount) { return [mount.slot, mount.weapon, mount.rounds]; })).toEqual([[0, 'machine-gun', 400], [1, 'cluster-rockets', 45]]);
+	expect(combat.loadout.map(function (mount) { return [mount.slot, mount.weapon, mount.rounds]; })).toEqual([[0, 'machine-gun', 400], [1, 'stream-rockets', 45]]);
 });

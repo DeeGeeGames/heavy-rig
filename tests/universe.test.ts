@@ -25,7 +25,7 @@ describe('territory campaign', function () {
 			for (const world of PLANETS) {
 				const intel = getSystemIntel(campaign, world.id);
 				const contracts = getContracts(campaign, world.id);
-				expect(contracts.length).toBe(intel.conflict ? 4 : 0);
+				expect(contracts.length).toBe(intel.conflict ? 24 : 0);
 				for (const contract of contracts) {
 					expect(contract.employer).not.toBe(contract.opponent);
 					expect(intel.participants).toContain(contract.employer);
@@ -59,7 +59,7 @@ describe('territory campaign', function () {
 		expect(territoryScores(later, 40, 48)).not.toEqual(territoryScores(campaign, 40, 48));
 		for (const world of PLANETS) {
 			const intel = getSystemIntel(later, world.id);
-			expect(getContracts(later, world.id).length).toBe(intel.conflict ? 4 : 0);
+			expect(getContracts(later, world.id).length).toBe(intel.conflict ? 24 : 0);
 		}
 		const offer = getContracts(campaign)[0]; if (!offer) throw new Error('Missing offer');
 		const accepted = advanceDays(acceptContract(campaign, offer.id), 30);
@@ -77,7 +77,7 @@ describe('territory campaign', function () {
 		const accepted = acceptContract(campaign, offer.id);
 		for (const invalid of [{ ...accepted, version: 3 }, { ...accepted, universe: undefined }]) {
 			const restored = parseCampaign(JSON.stringify(invalid));
-			expect(restored.version).toBe(5); expect(restored.active).toBeUndefined();
+			expect(restored.version).toBe(6); expect(restored.active).toBeUndefined();
 			expect(restored.completed).toBe(0); expect(restored.day).toBe(1);
 		}
 	});

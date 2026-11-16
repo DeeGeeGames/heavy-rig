@@ -3,7 +3,7 @@ import { getWeapon } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
 import { ARENA, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
-import { FACILITY_TARGET_ID, EXTRACTION_SECONDS } from './missions';
+import { isPriorityTarget, FACILITY_TARGET_ID, EXTRACTION_SECONDS } from './missions';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
 export const targetElevation = function (target: Point): number {
@@ -147,14 +147,14 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const selected = state.enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
 	for (const enemy of state.enemies) {
 		const defense = getEnemyDefense(state, enemy);
-		if (enemy.hp >= enemy.maxHp && enemy !== selected && !enemy.commander && !defense.exposed) continue;
+		if (enemy.hp >= enemy.maxHp && enemy !== selected && !isPriorityTarget(state, enemy) && !defense.exposed) continue;
 		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol';
 		const labelHeight = options.enemyLabelHeights?.get(enemy.id) ?? (vehicle ? ENEMY_STATS[enemy.kind].elevation + 38 : (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind));
 		const anchor = at(enemy, labelHeight);
-		const barWidth = enemy.commander ? options.couchMode ? 100 : 76 : options.couchMode ? 56 : 42;
+		const barWidth = isPriorityTarget(state, enemy) ? options.couchMode ? 100 : 76 : options.couchMode ? 56 : 42;
 		ctx.fillStyle = '#0a151be6'; ctx.fillRect(anchor.x - barWidth / 2 - 1, anchor.y - 1, barWidth + 2, 5);
-		ctx.fillStyle = enemy.commander ? '#f3ad7e' : '#dfaa82'; ctx.fillRect(anchor.x - barWidth / 2, anchor.y, barWidth * Math.max(0, enemy.hp) / enemy.maxHp, 3);
-		if (enemy.commander) text(mission ? defense.enraged ? 'PRIORITY / OVERDRIVE' : 'PRIORITY TARGET' : defense.enraged ? 'IRON CROWN / OVERDRIVE' : 'IRON CROWN', enemy, labelHeight, '#ffd5a5', 11, -(minimumText + 6) / scale);
+		ctx.fillStyle = isPriorityTarget(state, enemy) ? '#f3ad7e' : '#dfaa82'; ctx.fillRect(anchor.x - barWidth / 2, anchor.y, barWidth * Math.max(0, enemy.hp) / enemy.maxHp, 3);
+		if (isPriorityTarget(state, enemy)) text(mission ? defense.enraged ? 'PRIORITY / OVERDRIVE' : 'PRIORITY TARGET' : defense.enraged ? 'IRON CROWN / OVERDRIVE' : 'IRON CROWN', enemy, labelHeight, '#ffd5a5', 11, -(minimumText + 6) / scale);
 		if (enemy.attack) {
 			const label = defense.exposed ? `EXPOSED ${enemy.attack.remaining.toFixed(1)}s` : 'BARRAGE COMMITTED';
 			text(label, enemy, labelHeight, defense.exposed ? '#adf7d7' : '#ffd5a5', 11, -(enemy.commander ? minimumText * 2 + 15 : minimumText + 6) / scale);
@@ -168,7 +168,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		bracket(ctx, anchor.x, anchor.y, size, size, 10);
 		const solution = targetSolution(state, selected, aim);
 		const defense = getEnemyDefense(state, selected);
-		const role = selected.commander ? 'COMMAND FRAME' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
+		const role = isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
 		text(role, selected, elevation, '#ffe1aa', 10, 48);
 		text(`${Math.round(distance(selected, state.player))} M / ${solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selected, elevation, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
 	}
@@ -195,7 +195,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			ctx.fillStyle = color; ctx.fillText(label, labelX, edge.point.y + 26);
 		}
 	};
-	for (const enemy of state.enemies) marker(enemy, enemy.commander ? '#ffd3a3' : '#eead7c');
+	for (const enemy of state.enemies) marker(enemy, isPriorityTarget(state, enemy) ? '#ffd3a3' : '#eead7c');
 	for (const warning of state.warnings) marker(warning, '#d29b66');
 	if (navigation) marker(navigation.point, navigation.color, `${navigation.label} ${Math.round(distance(navigation.point, state.player))} M`);
 	else marker(relay, '#a3ddd0', 'UPLINK');
@@ -226,7 +226,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.strokeStyle = '#c9d9c04d'; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(a.x, a.y); ctx.stroke();
 		ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(state.player.angle);
 		ctx.fillStyle = '#f1e4b9'; ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-3, -3); ctx.lineTo(-1, 0); ctx.lineTo(-3, 3); ctx.closePath(); ctx.fill(); ctx.restore();
-		for (const enemy of state.enemies) dot(enemy, enemy.commander ? '#ffd6a7' : ENEMY_STATS[enemy.kind].elevation > 42 ? '#8fd6da' : '#f2a571', enemy.commander ? 4 : enemy.heavy ? 3 : 2, ENEMY_STATS[enemy.kind].elevation > 42);
+		for (const enemy of state.enemies) dot(enemy, isPriorityTarget(state, enemy) ? '#ffd6a7' : ENEMY_STATS[enemy.kind].elevation > 42 ? '#8fd6da' : '#f2a571', isPriorityTarget(state, enemy) ? 4 : enemy.heavy ? 3 : 2, ENEMY_STATS[enemy.kind].elevation > 42);
 		for (const warning of state.warnings) dot(warning, '#e5a46f', 4, true);
 		for (const strike of state.strikes) dot(strike, '#ff8154', strike.radius / bounds.width * w, true);
 		ctx.restore();

@@ -24,7 +24,7 @@ test('v5 companies preserve escape completion and earlier campaign versions are 
 	const completed = { ...fresh, introComplete: true };
 	expect(parseCampaign(JSON.stringify(completed))).toEqual(completed);
 	const oldCompany = parseCampaign(JSON.stringify({ ...completed, version: 3, credits: 9000 }));
-	expect(oldCompany.version).toBe(5);
+	expect(oldCompany.version).toBe(6);
 	expect(oldCompany.introComplete).toBe(false);
 	expect(oldCompany.credits).toBe(0);
 });

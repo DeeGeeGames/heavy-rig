@@ -1,3 +1,5 @@
+import { getFrameOffer } from './market';
+import { companyRank } from './reputation';
 import ECSpresso from 'ecspresso';
 import { mountRigTest, rigTestEnabled } from './rig-test';
 import { html, render } from 'lit-html';
@@ -438,7 +440,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (days === 0) { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Ammunition load saved. 0 CR · no calendar time.', undefined, true); return; }
 				confirm(function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Refit queued. Advance the calendar to finish installation.', 'engineering', true); }, 'QUEUE REFIT', `${days} calendar days. Ready day ${campaign.day + days}. ${loadSummary(campaign.selectedFrame, editor.loadout, editor.reserves)} The frame cannot deploy until work finishes.`, 'QUEUE THIS REFIT?');
 			},
-			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its complete tier 0 loadout. Select it in the Mech Bay.`); }, 'BUY FRAME', `${getFrame(id).price.toLocaleString()} CR. Includes every stock weapon at tier 0 and standard ammunition; arrives ready to deploy.`, `BUY ${getFrame(id).name}?`); },
+			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its displayed weapon package. Select it in the Mech Bay.`); }, 'BUY FRAME', `${getFrameOffer(campaign, id).price.toLocaleString()} CR. Includes this complete package: ${getFrameOffer(campaign, id).loadout.map(function (weapon) { return getWeapon(weapon).name; }).join(', ')}. Standard ammunition included; arrives ready to deploy.`, `BUY ${getFrame(id).name}?`); },
 			buyWeapon: function (id) { confirm(function () { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); }, 'BUY WEAPON', `${WEAPON_PRICES[id].toLocaleString()} CR. Delivered to stores. Installation requires a separate refit.`, `BUY ${getWeapon(id).name}?`); },
 			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${getFrame(id).name}?`); },
 			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${getFrame(id).name} WORK?`); },
@@ -481,7 +483,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				}, 'ACCEPT CONTRACT', `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction. Success strengthens the employer on this front; failure or abort strengthens the opposition.`, 'ACCEPT THIS CONTRACT?');
 			},
 			deploy: function () { navigateShip('mechbay'); },
-			abandon: function () { confirm(function () { if (replaceCampaign(abandonContract(campaign))) toShip(); }, 'ABORT & RETURN TO SHIP', 'No payment or employer favor will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
+			abandon: function () { confirm(function () { if (replaceCampaign(abandonContract(campaign))) toShip(); }, 'ABORT & RETURN TO SHIP', 'No payment, employer favor, or company reputation will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
 			training: startTraining,
 			title: back,
 			settings: function () { showAuxiliary('settings'); },
@@ -651,7 +653,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	inputElement('controller-vibration').addEventListener('change', function () { profile.settings.vibration = inputElement('controller-vibration').checked; updateSettings(); save(); if (!profile.settings.vibration) void feedback.stop(); }, listenerOptions);
 	element('handbook').tabIndex = -1;
 	coarsePointer.addEventListener('change', updateSettings, listenerOptions);
-	window.addEventListener('resize', function () { if (inputMode === 'touch') resetInput(); }, listenerOptions);
+	window.addEventListener('resize', function () { if (inputMode === 'touch') resetInput(); if (navigation.screen === 'bridge') refreshCampaign(); else if (navigation.screen === 'market') refreshCompany(); }, listenerOptions);
 	const showResult = function (now: number) {
 		if (training || escape || !state.mission) return;
 		checkpoint();
@@ -666,7 +668,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'CONTRACT PAYMENT';
 		const stats = [[String(report.kills), 'ELIMINATED'], [formatTime(report.time), 'FIELD TIME'], [`${report.armor}%`, 'FRAME INTEGRITY'], [`+${campaign.lastResult?.favor ?? 0}`, 'EMPLOYER FAVOR']];
 		element('result-stats').replaceChildren(...stats.map(function ([value, label]) { const node = document.createElement('div'); const strong = document.createElement('b'); const small = document.createElement('small'); strong.textContent = value ?? ''; small.textContent = label ?? ''; node.append(strong, small); return node; }));
-		element('result-upgrades').textContent = `DAY ${campaign.day} · Equipment retained. Damage requires a repair work order. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
+		element('result-upgrades').textContent = `DAY ${campaign.day} · +${campaign.lastResult?.companyReputation ?? 0} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. Equipment retained. Damage requires a repair work order. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
 		element('restart').textContent = 'RETURN TO SHIP →'; element('result-briefing').hidden = true;
 		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
 		transition(navigation.setScreen('result'));

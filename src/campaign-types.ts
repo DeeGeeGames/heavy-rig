@@ -1,3 +1,4 @@
+import type { MissionTier } from './reputation';
 import type { Point } from './simulation';
 
 export type FactionId = 'freeholds' | 'combine' | 'accord';
@@ -17,7 +18,7 @@ export interface Contract {
 	reward: number;
 	favor: number;
 	hostility: number;
-	tier: number;
+	tier: MissionTier;
 	requiredReputation: number;
 }
 

@@ -1,7 +1,8 @@
+import { getMissionTier } from './reputation';
 import type { AuthoredPoseContext } from './authored-pose';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { consumeFire, coolReactor, frameWeight, loadedMounts, usableMount, weightMetrics, type ReactorState } from './combat-resources';
-import { createMount, getWeapon, getWeaponTier, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
+import { createMount, getWeapon, getWeaponTier, weaponIdForTier, type WeaponTier, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
 import { FRAMES, getFrame, type FrameId } from './frames';
 import { canEquipWeapon, createStarterLoadout, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
@@ -75,7 +76,7 @@ export const createMissionState = function (contract: Contract, options: Mission
 	state.coolantCharges = options.coolantCharges === undefined ? 2 : Number.isFinite(options.coolantCharges) ? Math.max(0, Math.min(3, Math.floor(options.coolantCharges))) : 0;
 	const map = generateMissionMap(contract);
 	const hostileCount = missionHostileCount(contract);
-	const structureHp = (350 + Math.max(1, Math.min(3, contract.tier)) * 100) * getDifficultyDefinition(state.difficulty).enemyArmor;
+	const structureHp = getMissionTier(contract.tier).objectiveHp * getDifficultyDefinition(state.difficulty).enemyArmor;
 	state.mission = {
 		contract, map, stage: 'active',
 		structure: contract.kind === 'demolition' ? { ...map.objective, hp: structureHp, maxHp: structureHp } : undefined,
@@ -99,9 +100,11 @@ const relayPosition = function (state: CombatStateView): Point | undefined {
 	return state.mission ? state.mission.contract.kind === 'defend' ? state.mission.map.objective : undefined : { x: ARENA.relayX, y: ARENA.relayY };
 };
 const createEnemy = function (state: CombatStateView, spawn: Point & { kind: EnemyKind; commander?: boolean }): Unit {
-	const hp = Math.round((spawn.commander ? 1680 : ENEMY_STATS[spawn.kind].hp) * getDifficultyDefinition(state.difficulty).enemyArmor);
+	const level = state.mission ? getMissionTier(state.mission.contract.tier) : undefined;
+	const commander = Boolean(spawn.commander && (!level || level.tier >= 4));
+	const hp = Math.round((spawn.commander ? level?.commanderHp ?? 1680 : ENEMY_STATS[spawn.kind].hp * (level?.armor ?? 1)) * getDifficultyDefinition(state.difficulty).enemyArmor);
 	const target = relayPosition(state) ?? state.player;
-	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege' || spawn.kind === 'tank', kind: spawn.kind, reactor: { heat: 0, overheated: false }, loadout: createEnemyLoadout(spawn.kind, spawn.commander), ...(spawn.commander ? { commander: true } : {}) };
+	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege' || spawn.kind === 'tank', kind: spawn.kind, reactor: { heat: 0, overheated: false }, loadout: createEnemyLoadout(spawn.kind, commander, level?.weaponTier ?? 0), ...(commander ? { commander: true } : {}) };
 };
 type CombatTarget = { id: number; kind: 'enemy'; body: Unit; radius: number } | { id: number; kind: 'structure'; body: NonNullable<MissionRuntime['structure']>; radius: number };
 const combatTargets = function (state: CombatStateView): CombatTarget[] {
@@ -135,10 +138,10 @@ const burst = function (state: CombatStateView, at: Point & { elevation?: number
 	const effect: Effect = { x: at.x, y: at.y, ...(at.elevation === undefined ? {} : { elevation: at.elevation }), size, color, life: 0.5, ...(source ? { source } : {}), ...(slot !== undefined ? { slot } : {}) };
 	state.effects.push(effect); return effect;
 };
-export const createEnemyLoadout = function (kind: EnemyKind, commander = false): WeaponMount[] {
+export const createEnemyLoadout = function (kind: EnemyKind, commander = false, tier: WeaponTier = 0): WeaponMount[] {
 	return getEnemyHardpoints(kind, commander).flatMap(function (hardpoint, slot) {
 		const weapon = hardpoint.family === 'launcher' ? 'stream-missiles' : hardpoint.weapons.includes('autocannon') ? 'autocannon' : 'machine-gun';
-		return hardpoint.weapons.includes(weapon) ? [{ ...createMount(weapon), slot }] : [];
+		return hardpoint.weapons.includes(weapon) ? [{ ...createMount(weaponIdForTier(weapon, tier)), slot }] : [];
 	});
 };
 const enemyMounts = function (enemy: Unit): WeaponMount[] {

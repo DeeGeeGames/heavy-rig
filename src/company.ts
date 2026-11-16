@@ -1,6 +1,10 @@
-import { WEAPONS, createWeaponRecord, getWeaponTier, type WeaponId, type WeaponModelId } from './arsenal';
+import { WEAPON_PRICES } from './equipment-prices';
+export { WEAPON_PRICES } from './equipment-prices';
+import { getFrameOffer } from './market';
+import { unlockedMissionTier } from './reputation';
+import { WEAPONS, createWeaponRecord, getWeapon, type WeaponId } from './arsenal';
 import { MAX_CREDITS, type Campaign } from './campaign';
-import { FRAMES, getFrame, type FrameId } from './frames';
+import { FRAMES, type FrameId } from './frames';
 import { createStarterLoadout, isFrameLoadout } from './hardpoints';
 import { defaultReserves, isReserveLoadout, loadedMounts, usableMount } from './combat-resources';
 
@@ -24,15 +28,6 @@ export interface CompanyState {
 
 export const MAX_DAY = 1_000_000_000;
 const MAX_INVENTORY = 1000;
-const MODEL_PRICES: Readonly<Record<WeaponModelId, number>> = {
-	'machine-gun': 500, autocannon: 750, laser: 800, 'stream-rockets': 850,
-	'stream-rockets-4': 1700, 'stream-rockets-6': 2550, 'stream-missiles-4': 2000, 'stream-missiles-6': 3000,
-	'cluster-rockets-4': 2400, 'cluster-rockets-6': 3600, 'cluster-missiles-4': 2800, 'cluster-missiles-6': 4200,
-	'stream-missiles': 1000, 'cluster-rockets': 1200, 'cluster-missiles': 1400, ppc: 1500,
-};
-export const WEAPON_PRICES: Readonly<Record<WeaponId, number>> = createWeaponRecord(function (weapon) {
-	return Math.round(MODEL_PRICES[weapon.modelId] * getWeaponTier(weapon.tier).price);
-});
 const emptyInventory = function (): Record<WeaponId, number> { return createWeaponRecord(function () { return 0; }); };
 
 const isObject = function (value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); };
@@ -103,12 +98,14 @@ export const selectFrame = function (campaign: Campaign, frameId: FrameId): Camp
 	return { ...campaign, selectedFrame: frameId };
 };
 export const buyFrame = function (campaign: Campaign, frameId: FrameId): Campaign {
-	if (campaign.deployed || !isFrameId(frameId) || getOwnedMech(campaign, frameId) || campaign.credits < getFrame(frameId).price) return campaign;
-	const mech = createOwnedMech(frameId);
+	if (campaign.deployed || !isFrameId(frameId) || getOwnedMech(campaign, frameId)) return campaign;
+	const offer = getFrameOffer(campaign, frameId);
+	if (campaign.credits < offer.price) return campaign;
+	const mech: OwnedMech = { frameId, integrity: 100, loadout: offer.loadout, reserves: offer.reserves };
 	const inventory = includeLoadout(campaign.inventory, mech.loadout);
 	if (!inventory) return campaign;
 	return {
-		...campaign, credits: campaign.credits - getFrame(frameId).price,
+		...campaign, credits: campaign.credits - offer.price,
 		fleet: [...campaign.fleet, mech], inventory,
 	};
 };
@@ -129,7 +126,7 @@ export const applyRigCheat = function (campaign: Campaign): Campaign {
 	return unlockAllRigs({ ...campaign, credits: Math.min(MAX_CREDITS, campaign.credits + 1_000_000) });
 };
 export const buyWeapon = function (campaign: Campaign, weapon: WeaponId): Campaign {
-	if (campaign.deployed || !isWeaponId(weapon) || campaign.credits < WEAPON_PRICES[weapon] || campaign.inventory[weapon] >= MAX_INVENTORY) return campaign;
+	if (campaign.deployed || !isWeaponId(weapon) || getWeapon(weapon).tier > unlockedMissionTier(campaign).weaponTier || campaign.credits < WEAPON_PRICES[weapon] || campaign.inventory[weapon] >= MAX_INVENTORY) return campaign;
 	return { ...campaign, credits: campaign.credits - WEAPON_PRICES[weapon], inventory: { ...campaign.inventory, [weapon]: campaign.inventory[weapon] + 1 } };
 };
 export const queueRepair = function (campaign: Campaign, frameId: FrameId): Campaign {

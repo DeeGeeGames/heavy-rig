@@ -1,6 +1,7 @@
+import { getFrameOffer } from '../src/market';
 import { describe, expect, test } from 'bun:test';
 import { WEAPONS, getWeapon } from '../src/arsenal';
-import { FRAMES, getFrame } from '../src/frames';
+import { FRAMES } from '../src/frames';
 import { defaultReserves, frameWeight, loadedMounts } from '../src/combat-resources';
 import { createMissionState } from '../src/simulation';
 import { abandonContract, acceptContract, createCampaign, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
@@ -13,6 +14,16 @@ const accept = function (campaign: Campaign): Campaign {
 	return acceptContract(campaign, contract.id);
 };
 const funded = function (): Campaign { return { ...createCampaign(23), credits: 30000 }; };
+const stockFrame = function (campaign: Campaign, frameId: Parameters<typeof buyFrame>[1]): Campaign {
+	const mech = getOwnedMech(unlockAllRigs(campaign), frameId);
+	if (!mech || getOwnedMech(campaign, frameId)) return campaign;
+	const inventory = { ...campaign.inventory };
+	for (const id of mech.loadout) if (id) inventory[id]++;
+	return { ...campaign, fleet: [...campaign.fleet, mech], inventory };
+};
+const stockedWeapon = function (campaign: Campaign, weapon: Parameters<typeof buyWeapon>[1]): Campaign {
+	return buyWeapon(weapon.includes(':t') && campaign.companyReputation < 9200 ? { ...campaign, companyReputation: 9200 } : campaign, weapon);
+};
 
 describe('Company ownership and workshop transactions', function () {
 	test('starts with a fully armed Kestrel and includes the complete stock package in each chassis purchase', function () {
@@ -25,9 +36,8 @@ describe('Company ownership and workshop transactions', function () {
 		expect(buyWeapon(fresh, 'laser')).toBe(fresh);
 		const company = funded(); const before = JSON.stringify(company);
 		const purchased = buyWeapon(buyFrame(company, 'warden'), 'laser');
-		expect(purchased.credits).toBe(company.credits - getFrame('warden').price - WEAPON_PRICES.laser);
-		expect(getOwnedMech(purchased, 'warden')?.loadout).toEqual(['autocannon', 'machine-gun', 'stream-missiles', 'stream-rockets']);
-		expect(purchased.inventory.autocannon).toBe(1);
+		expect(purchased.credits).toBe(company.credits - getFrameOffer(company, 'warden').price - WEAPON_PRICES.laser);
+		expect(getOwnedMech(purchased, 'warden')?.loadout).toEqual(getFrameOffer(company, 'warden').loadout);
 		expect(purchased.inventory.laser).toBe(1);
 		expect(buyFrame(purchased, 'warden')).toBe(purchased);
 		expect(JSON.stringify(company)).toBe(before);
@@ -35,7 +45,7 @@ describe('Company ownership and workshop transactions', function () {
 	});
 
 	test('refits reserve physical copies across mechs, keep existing slots until completion, and conserve inventory', function () {
-		const company = buyWeapon(buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun:t1'), 'stream-rockets');
+		const company = stockedWeapon(stockedWeapon(stockFrame(funded(), 'warden'), 'machine-gun:t1'), 'stream-rockets');
 		const target = ['machine-gun:t1', null, 'stream-rockets', null] as const;
 		const queued = queueRefit(company, 'warden', target);
 		expect(queued.workOrders[0]).toEqual({ kind: 'refit', frameId: 'warden', startedDay: 1, readyDay: 5, loadout: target, reserves: defaultReserves(target) });
@@ -58,7 +68,7 @@ describe('Company ownership and workshop transactions', function () {
 	});
 
 	test('cancellation releases incoming reservations without handing out outgoing equipment early', function () {
-		const company = buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun:t1');
+		const company = stockedWeapon(stockFrame(funded(), 'warden'), 'machine-gun:t1');
 		const queued = queueRefit(company, 'warden', ['machine-gun:t1', null, null, null]);
 		expect(availableWeapons(queued, 'autocannon')).toBe(0);
 		expect(availableWeapons(queued, 'machine-gun:t1')).toBe(0);
@@ -75,7 +85,7 @@ describe('Company ownership and workshop transactions', function () {
 	});
 
 	test('calendar days do not reroll postings, while travel and missions also complete spare-mech work', function () {
-		const company = buyWeapon(buyFrame(funded(), 'warden'), 'machine-gun');
+		const company = stockedWeapon(stockFrame(funded(), 'warden'), 'machine-gun');
 		const queued = queueRefit(company, 'warden', ['machine-gun', 'machine-gun', 'stream-missiles', 'stream-rockets']);
 		const waited = advanceDays(queued, 7);
 		expect(waited.day).toBe(8);
@@ -143,9 +153,9 @@ describe('Company ownership and workshop transactions', function () {
 	});
 
 	test('deployment locks workshop, purchasing, frame selection and time advancement, while an unarmed mech stays grounded', function () {
-		const company = buyFrame(funded(), 'warden');
+		const company = stockFrame(funded(), 'warden');
 		const deployed = checkpointDeployment(beginDeployment(accept(company)), 70, 1);
-		expect(buyWeapon(deployed, 'laser')).toBe(deployed);
+		expect(stockedWeapon(deployed, 'laser')).toBe(deployed);
 		expect(buyFrame(deployed, 'maul')).toBe(deployed);
 		expect(selectFrame(deployed, 'warden')).toBe(deployed);
 		expect(queueRepair(deployed, 'kestrel')).toBe(deployed);
@@ -160,7 +170,7 @@ describe('Company ownership and workshop transactions', function () {
 	});
 
 	test('old saves reset, and corrupt ownership, reservations, work dates and deployment states cannot restore', function () {
-		const company = buyWeapon(buyFrame(funded(), 'warden'), 'laser');
+		const company = stockedWeapon(stockFrame(funded(), 'warden'), 'laser');
 		const queued = queueRefit(company, 'kestrel', [null, 'machine-gun']);
 		const deployed = beginDeployment(accept(company));
 		const malformed: unknown[] = [
@@ -223,7 +233,7 @@ test('rig cheat adds credits on every entry while preserving deployment and vali
 });
 
 test('fresh campaign saves require every weapon inventory entry', function () {
-	const company = buyWeapon(buyFrame(funded(), 'maul'), 'cluster-rockets-6');
+	const company = stockedWeapon(stockFrame(funded(), 'maul'), 'cluster-rockets-6');
 	const inventory = Object.fromEntries(Object.entries(company.inventory).filter(function ([id]) { return !id.endsWith('-4') && !id.endsWith('-6'); }));
 	const restored = parseCampaign(JSON.stringify({ ...company, inventory }));
 	expect(restored.fleet).toEqual(createCampaign().fleet);
@@ -272,7 +282,7 @@ test('new-format saves reject invalid ammunition counts and loadout mismatches',
 		expect(setAmmunition(company, 'kestrel', reserves)).toBe(company);
 		expect(parseCampaign(JSON.stringify({ ...company, credits: 77, fleet: [{ ...mech, reserves }] })).credits).toBe(0);
 	}
-	const energy = buyFrame(funded(), 'longbow');
+	const energy = stockFrame(funded(), 'longbow');
 	expect(setAmmunition(energy, 'longbow', [1])).toBe(energy);
 	expect(canDeploy(accept(selectFrame(energy, 'longbow')))).toBe(true);
 	const pending = queueRefit(company, 'kestrel', [null, 'machine-gun'], [0, 23]);
@@ -323,18 +333,22 @@ test('all acquired variants include legal tier-zero equipment and every physical
 });
 
 test('a chassis purchase refuses the complete package atomically when a duplicate stock weapon would overflow', function () {
-	const company = { ...funded(), inventory: { ...funded().inventory, autocannon: 999 } };
+	const packageLoadout = getFrameOffer(funded(), 'maul-b').loadout;
+	const inventory = { ...funded().inventory };
+	for (const id of packageLoadout) inventory[id] = 1000;
+	const company = { ...funded(), inventory };
 	const before = JSON.stringify(company);
 	expect(buyFrame(company, 'maul-b')).toBe(company);
 	expect(JSON.stringify(company)).toBe(before);
-	const oneCopy = buyFrame(company, 'warden');
-	expect(oneCopy.inventory.autocannon).toBe(1000);
+	const offer = getFrameOffer(company, 'warden');
+	const oneCopy = buyFrame({ ...company, inventory: { ...funded().inventory } }, 'warden');
+	expect(getOwnedMech(oneCopy, 'warden')?.loadout).toEqual(offer.loadout);
 	expect(getOwnedMech(oneCopy, 'warden')?.loadout.every(function (id) { return id !== null; })).toBe(true);
 	expect(roundTrip(oneCopy)).toEqual(oneCopy);
 });
 
 test('tiers retain separate ownership and refit reservations through cancellation, completion and forged saves', function () {
-	const company = buyWeapon(buyFrame(funded(), 'kestrel-b'), 'machine-gun:t4');
+	const company = stockedWeapon(stockFrame(funded(), 'kestrel-b'), 'machine-gun:t4');
 	const queued = queueRefit(company, 'kestrel', ['machine-gun:t4', 'machine-gun']);
 	expect(queued.credits).toBe(company.credits);
 	expect(availableWeapons(queued, 'machine-gun:t4')).toBe(0);

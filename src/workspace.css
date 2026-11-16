@@ -363,3 +363,10 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.fleet-frame .hull-integrity-heading>strong { font-size: 22px; }
 	.fleet-frame .hull-integrity-track { height: 5px; margin: 3px 0; }
 }
+
+.workspace .company-rank { margin-left: 8px; color: var(--amber); font: 12px var(--mono); white-space: nowrap; }
+@media (max-width: 560px) {
+	#bridge.workspace.paired-workspace .workspace-body { grid-template-rows: minmax(215px, .85fr) minmax(0, 1fr); }
+	.mission-tiers>.eyebrow { display: none; }
+	.mission-tiers button { min-height: 32px; padding: 4px 2px; font-size: 10px; }
+}

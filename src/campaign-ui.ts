@@ -1,3 +1,5 @@
+import { companyRank, getMissionTier, MISSION_TIERS, reputationProgress, unlockedMissionTier } from './reputation';
+import { missionHostileCount } from './missions';
 import { getSystemIntel } from './universe';
 import { renderTerritoryMap } from './territory-map';
 import { selectWorkspacePane } from './workspace';
@@ -74,6 +76,7 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 };
 
 export const renderBridge = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, selection: string | undefined, saved: boolean, actions: BridgeActions) {
+	const compact = window.matchMedia('(max-width: 560px) and (max-height: 700px)').matches;
 	const planet = getPlanet(destination);
 	const forecast = destination === campaign.planetId ? campaign : travelTo(campaign, destination);
 	const contracts = getContracts(forecast, destination);
@@ -83,30 +86,37 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 	const panes: WorkspacePane[] = [
 		{ id: 'board', label: 'Contracts', items: [
 			...(!active && !contracts.length ? textItems(`No contracts at ${planet.name}. Use the Starmap to find a conflict zone and travel there for work.`) : []),
-			...(active ? [active] : contracts).map(function (contract) {
-				const employer = getFaction(contract.employer); const locked = campaign.reputation[contract.employer] < contract.requiredReputation;
-				return html`<button class="contract-card" aria-pressed=${contract.id === selected?.id} @click=${function () { actions.selectContract(contract.id); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]} <em>TIER ${contract.tier}</em></span><b>${contract.title}</b><span class="contract-employer" style="color:${employer.color}">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED' : locked ? `NEEDS ${signed(contract.requiredReputation)} REP` : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
+			...(active ? [active] : contracts.filter(function (contract) { return contract.tier === selected?.tier; })).map(function (contract) {
+				const employer = getFaction(contract.employer); const locked = companyRank(campaign) < getMissionTier(contract.tier).rank; const factionLocked = campaign.reputation[contract.employer] < contract.requiredReputation;
+				return html`<button class="contract-card" aria-pressed=${contract.id === selected?.id} @click=${function () { actions.selectContract(contract.id); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]} <em>TIER ${contract.tier}</em></span><b>${contract.title}</b><span class="contract-employer" style="color:${employer.color}">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED' : locked ? `NEEDS RANK ${getMissionTier(contract.tier).rank}` : factionLocked ? `NEEDS ${signed(contract.requiredReputation)} FACTION` : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
 			}),
 			...textItems(active ? `${getFaction(active.opponent).name}: −${active.hostility} reputation applied on acceptance. Review your owned frame and equipment before deployment.` : `Current postings on ${planet.name}. ${local ? 'Local uplink.' : `Arrival-day ${forecast.day} forecast; travel here to accept work.`}`),
-			...textItems('Postings follow the factions on the local front and change after a contract or jump. Favor unlocks higher-tier work and better rates; entry contracts stay available.'),
-		], actions: !active && !contracts.length ? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` : html`` },
+			...textItems('Postings follow the factions on the local front and change after a contract or jump. Company reputation unlocks mission tiers. Faction favor controls employer access and payment; local contracts stay available at hostile standings.'),
+		], actions: !active && contracts.length ? html`<div class="market-tiers mission-tiers"><span class="eyebrow">MISSION TIER / ${selected ? getMissionTier(selected.tier).name.toUpperCase() : 'LOCAL'}</span><div>${MISSION_TIERS.map(function (entry) { return html`<button data-mission-tier=${entry.tier} style="--tier-color:var(--amber)" aria-pressed=${entry.tier === selected?.tier} @click=${function () { const posting = contracts.find(function (contract) { return contract.tier === entry.tier; }); if (posting) actions.selectContract(posting.id); }}>T${entry.tier}${companyRank(campaign) < entry.rank ? ` / R${entry.rank}` : ''}</button>`; })}</div></div>` : !active && !contracts.length ? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` : html`` },
 		{ id: 'briefing', label: 'Briefing', items: selected ? [
 			html`<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span><h2>${selected.title}</h2>`,
 			...textItems(selected.briefing),
+			...textItems(`TIER ${selected.tier} / ${getMissionTier(selected.tier).name} · Requires company rank ${getMissionTier(selected.tier).rank}. ${missionHostileCount(selected)} hostiles. ${getMissionTier(selected.tier).opposition}`),
+			...textItems(`SUCCESS: +${getMissionTier(selected.tier).reputation} company reputation. ${reputationProgress(campaign)}.`),
 			...textItems('Success expands employer influence around this system. Failure or abort strengthens the opposition. Repeated victories can move the border and end a local conflict.'),
 			html`<span class="eyebrow">SURFACE OBJECTIVE</span>`, ...textItems(OBJECTIVES[selected.kind]),
 			html`<p class="stake-line"><small>EMPLOYER</small>${getFaction(selected.employer).name}<br><strong class="positive">+${selected.favor} on success</strong></p>`,
 			html`<p class="stake-line"><small>OPPOSITION</small>${getFaction(selected.opponent).name}<br><strong class="negative">−${selected.hostility} ${active ? 'applied on acceptance' : 'on acceptance'}</strong></p>`,
 			html`<p class="stake-line"><small>PAYMENT AFTER EXTRACTION</small>${selected.reward.toLocaleString()} CR</p>`,
 			...textItems('Persistent frame damage · installed company loadout. Failure or abort keeps the opposition penalty. Leaving or reloading a deployed sortie records an abort and retains damage.'),
-		] : textItems('Select a contract to review its briefing, or find an active conflict zone on the Starmap.'), actions: selected ? active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE MECH ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>` : html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canAcceptContract(campaign, selected)} @click=${function () { actions.accept(selected); }}>${!local ? 'TRAVEL HERE TO ACCEPT' : campaign.reputation[selected.employer] < selected.requiredReputation ? `NEEDS ${signed(selected.requiredReputation)} REP` : `ACCEPT · −${selected.hostility} OPPOSITION`} →</button>${!local ? html`<button @click=${function () { actions.navigate('starmap', 'system'); }}>STARMAP / JUMP →</button>` : ''}` : html`` },
-		{ id: 'factions', label: 'Factions', secondary: true, items: [
+		] : textItems('Select a contract to review its briefing, or find an active conflict zone on the Starmap.'), actions: selected ? active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE MECH ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>` : html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canAcceptContract(campaign, selected)} @click=${function () { actions.accept(selected); }}>${!local ? 'TRAVEL HERE TO ACCEPT' : companyRank(campaign) < getMissionTier(selected.tier).rank ? `NEEDS COMPANY RANK ${getMissionTier(selected.tier).rank}` : campaign.reputation[selected.employer] < selected.requiredReputation ? `NEEDS ${signed(selected.requiredReputation)} FACTION` : `ACCEPT · −${selected.hostility} OPPOSITION`} →</button>${!local ? html`<button @click=${function () { actions.navigate('starmap', 'system'); }}>STARMAP / JUMP →</button>` : ''}` : html`` },
+		{ id: 'factions', label: 'Reputation', secondary: true, items: [
+			html`<span class="eyebrow">COMPANY REPUTATION</span><h2>RANK ${companyRank(campaign)} / 15</h2>`,
+			...textItems(reputationProgress(campaign)),
+			...textItems(`Available: mission tiers 1–${unlockedMissionTier(campaign).tier} and weapon tiers 0–${unlockedMissionTier(campaign).weaponTier}. Only successful extractions earn company reputation. Failures and aborts retain your earned rank.`),
+			...MISSION_TIERS.flatMap(function (entry) { return textItems(`RANK ${entry.rank}: ${entry.name} missions T${entry.tier} · weapons T${entry.weaponTier}${companyRank(campaign) >= entry.rank ? ' · UNLOCKED' : ''}`); }),
 			...FACTIONS.map(function (faction) { const value = campaign.reputation[faction.id]; return html`<div class="faction-standing" style="--faction-color:${faction.color}"><div><b>${faction.name}</b><strong>${signed(value)}</strong></div><span>${reputationLabel(value)}</span><div class="reputation-track"><i style="left:${value < 0 ? 50 + value / 2 : 50}%;width:${Math.abs(value) / 2}%"></i></div></div>`; }),
-			...(campaign.lastResult ? textItems(`${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}: ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor`) : []),
+			...(campaign.lastResult ? textItems(`${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}: ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor · +${campaign.lastResult.companyReputation} company reputation`) : []),
 		] },
 	];
 	renderWorkspace(root, renderShipHeader(campaign, 'bridge', actions.navigate), panes, renderCampaignFooter(saved, actions), 'board', [
-		{ id: 'board', label: 'Board', panes: ['board', 'briefing'] },
-		{ id: 'factions', label: 'Factions', panes: ['factions'] },
+		{ id: 'board', label: 'Board', panes: compact ? ['board'] : ['board', 'briefing'] },
+		...(compact ? [{ id: 'briefing', label: 'Briefing', panes: ['briefing'] }] : []),
+		{ id: 'factions', label: 'Reputation', panes: ['factions'] },
 	]);
 };
