@@ -243,7 +243,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		inputElement('show-touch').checked = profile.settings.touchControls;
 		inputElement('large-interface').checked = profile.settings.couchUI;
 		inputElement('controller-vibration').checked = profile.settings.vibration;
-		const modeSelect = element('control-mode'); if (modeSelect instanceof HTMLSelectElement) modeSelect.value = profile.settings.controlMode;
+		element('control-mode').textContent = `CONTROL MODE: ${profile.settings.controlMode.toUpperCase()}`;
 		setInputMode(inputMode);
 	};
 	const menu = function () { return navigation.auxiliary ? element(navigation.auxiliary) : navigation.screen === 'playing' ? undefined : element(navigation.screen); };
@@ -625,9 +625,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		label.append(select); element('controller-mappings').append(label);
 	}
 	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'target-nearest' || action === 'target-next' || action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } updateMenuHint(); };
-	element('control-mode').addEventListener('change', function (event) {
-		const select = event.target; if (!(select instanceof HTMLSelectElement) || (select.value !== 'simulation' && select.value !== 'arcade')) return;
-		profile.settings.controlMode = select.value; capture = undefined; resetInput(); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; save(); renderMappings(); updateSettings();
+	element('control-mode').addEventListener('click', function () {
+		profile.settings.controlMode = profile.settings.controlMode === 'arcade' ? 'simulation' : 'arcade'; capture = undefined; resetInput(); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer'; save(); renderMappings(); updateSettings();
 	}, listenerOptions);
 	listen('reset-keyboard', function () { capture = undefined; profile.settings.keyboard = defaultKeyboard(); resetInput(); save(); renderMappings(); });
 	listen('reset-controller', function () { profile.settings.controller = defaultController(); resetInput(); save(); syncControllerMappings(); });
