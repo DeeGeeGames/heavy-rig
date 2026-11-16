@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "kestrel",
+  "background": "Transparent",
+  "details": "Turnaround input audit only: preserve the exact approved Kestrel A body and fitted two Rattler modules. No weapon or chassis changes.",
+  "loadout": [
+    {
+      "weaponId": "machine-gun",
+      "rounds": 600
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 600
+    }
+  ],
+  "baselineId": "kestrel-a-baseline-v4"
+}

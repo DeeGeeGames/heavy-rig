@@ -1,9 +1,10 @@
 # Retained mech authoring inputs
 
 The selected Warden A derivative is documented in
-[game-ready/README.md](warden/game-ready/README.md). Its manifest identifies the
-owner-approved visual revision; normal game startup remains procedural until
-in-game integration and acceptance.
+[game-ready/README.md](warden/game-ready/README.md); its in-game acceptance remains
+separate. The [approved Kestrel A](kestrel/game-ready/README.md) is installed by
+normal startup after material, scale and runtime visual approval. Its raw
+provider source and repaired articulation are retained as separate checkpoints.
 
 ```sh
 git lfs install --local
@@ -13,7 +14,7 @@ python scripts/mech-design/verify-assets.py
 ```
 
 `manifest.json` pins all retained assets by path, size and SHA-256. GLB and Blender
-files use Git LFS. The current build directly reads only:
+files use Git LFS. The Warden derivative's authoring build directly reads:
 
 - `warden/game-ready/source.glb`: unchanged P2.0 source generated from approved views.
 - `warden/optimization/{pod,right-pod}/pod.glb`: approved geometry and embedded bakes.

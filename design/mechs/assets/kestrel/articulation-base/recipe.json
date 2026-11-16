@@ -1,0 +1,925 @@
+{
+  "schemaVersion": 1,
+  "chassis": "kestrel",
+  "status": "candidate-recipe-not-owner-approved",
+  "scope": "Specific approved P2.0 source: bounded barrel/waist repair, exact component ownership, joint separation and neutral packaging; no global reduction target or production gait acceptance.",
+  "inputs": {
+    "source": {
+      "path": "design/mechs/assets/kestrel/generated-source/source.glb",
+      "sha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a"
+    },
+    "inventory": {
+      "path": "design/mechs/assets/kestrel/generated-source/inventory.json",
+      "sha256": "e0c68f75c5318d2ddd9f8654ed15b7dbc61979c7b5e3ca5a17455101b279fac9"
+    },
+    "ownership": {
+      "path": "design/mechs/assets/kestrel/generated-source/source-ownership.json",
+      "sha256": "dc8d26c1ce0784f7897739033d40eee5f3b45f1282122830efb872c5d08d8c84"
+    }
+  },
+  "normalCreaseDegrees": 65,
+  "componentOwners": {
+    "mesh:0/component:0": "rig_leg_right_foot",
+    "mesh:0/component:1": "rig_leg_right_foot",
+    "mesh:0/component:2": "rig_leg_right_foot",
+    "mesh:0/component:3": "rig_leg_right_foot",
+    "mesh:0/component:4": "rig_leg_right_foot",
+    "mesh:0/component:5": "rig_leg_right_foot",
+    "mesh:0/component:6": "rig_leg_right_foot",
+    "mesh:0/component:9": "rig_leg_right_foot",
+    "mesh:0/component:49": "rig_leg_right_foot",
+    "mesh:0/component:50": "rig_leg_right_foot",
+    "mesh:0/component:115": "rig_leg_left_foot",
+    "mesh:0/component:116": "rig_leg_left_foot",
+    "mesh:0/component:117": "rig_leg_left_foot",
+    "mesh:0/component:118": "rig_leg_left_foot",
+    "mesh:0/component:119": "rig_leg_left_foot",
+    "mesh:0/component:120": "rig_leg_left_foot",
+    "mesh:0/component:123": "rig_leg_left_foot",
+    "mesh:0/component:124": "rig_leg_left_foot",
+    "mesh:0/component:126": "rig_leg_left_foot",
+    "mesh:0/component:159": "rig_leg_left_foot",
+    "mesh:0/component:10": "rig_pelvis",
+    "mesh:0/component:11": "rig_pelvis",
+    "mesh:0/component:39": "rig_pelvis",
+    "mesh:0/component:55": "rig_pelvis",
+    "mesh:0/component:96": "rig_pelvis",
+    "mesh:0/component:125": "rig_pelvis",
+    "mesh:0/component:139": "rig_pelvis",
+    "mesh:0/component:160": "rig_pelvis",
+    "mesh:0/component:170": "rig_pelvis",
+    "mesh:0/component:28": "rig_torso",
+    "mesh:0/component:29": "rig_torso",
+    "mesh:0/component:30": "rig_torso",
+    "mesh:0/component:31": "rig_torso",
+    "mesh:0/component:32": "rig_torso",
+    "mesh:0/component:33": "rig_torso",
+    "mesh:0/component:34": "rig_torso",
+    "mesh:0/component:35": "rig_torso",
+    "mesh:0/component:36": "rig_torso",
+    "mesh:0/component:38": "rig_torso",
+    "mesh:0/component:132": "rig_torso",
+    "mesh:0/component:133": "rig_torso",
+    "mesh:0/component:134": "rig_torso",
+    "mesh:0/component:135": "rig_torso",
+    "mesh:0/component:141": "rig_torso",
+    "mesh:0/component:142": "rig_torso",
+    "mesh:0/component:144": "rig_torso",
+    "mesh:0/component:145": "rig_torso",
+    "mesh:0/component:146": "rig_torso",
+    "mesh:0/component:147": "rig_torso",
+    "mesh:0/component:149": "rig_torso",
+    "mesh:0/component:278": "rig_torso",
+    "mesh:0/component:12": "rig_mount_right-gun",
+    "mesh:0/component:13": "rig_mount_right-gun",
+    "mesh:0/component:14": "rig_mount_right-gun",
+    "mesh:0/component:15": "rig_mount_right-gun",
+    "mesh:0/component:16": "rig_mount_right-gun",
+    "mesh:0/component:17": "rig_mount_right-gun",
+    "mesh:0/component:18": "rig_mount_right-gun",
+    "mesh:0/component:19": "rig_mount_right-gun",
+    "mesh:0/component:20": "rig_mount_right-gun",
+    "mesh:0/component:21": "rig_mount_right-gun",
+    "mesh:0/component:22": "rig_mount_right-gun",
+    "mesh:0/component:57": "rig_mount_right-gun",
+    "mesh:0/component:58": "rig_mount_right-gun",
+    "mesh:0/component:59": "rig_mount_right-gun",
+    "mesh:0/component:60": "rig_mount_right-gun",
+    "mesh:0/component:61": "rig_mount_right-gun",
+    "mesh:0/component:62": "rig_mount_right-gun",
+    "mesh:0/component:63": "rig_mount_right-gun",
+    "mesh:0/component:64": "rig_mount_right-gun",
+    "mesh:0/component:65": "rig_mount_right-gun",
+    "mesh:0/component:66": "rig_mount_right-gun",
+    "mesh:0/component:67": "rig_mount_right-gun",
+    "mesh:0/component:68": "rig_mount_right-gun",
+    "mesh:0/component:69": "rig_mount_right-gun",
+    "mesh:0/component:70": "rig_mount_right-gun",
+    "mesh:0/component:71": "rig_mount_right-gun",
+    "mesh:0/component:72": "rig_mount_right-gun",
+    "mesh:0/component:74": "rig_mount_right-gun",
+    "mesh:0/component:75": "rig_mount_right-gun",
+    "mesh:0/component:76": "rig_mount_right-gun",
+    "mesh:0/component:77": "rig_mount_right-gun",
+    "mesh:0/component:87": "rig_mount_right-gun",
+    "mesh:0/component:88": "rig_mount_right-gun",
+    "mesh:0/component:89": "rig_mount_right-gun",
+    "mesh:0/component:239": "rig_mount_right-gun",
+    "mesh:0/component:240": "rig_mount_right-gun",
+    "mesh:0/component:241": "rig_mount_right-gun",
+    "mesh:0/component:242": "rig_mount_right-gun",
+    "mesh:0/component:243": "rig_mount_right-gun",
+    "mesh:0/component:244": "rig_mount_right-gun",
+    "mesh:0/component:245": "rig_mount_right-gun",
+    "mesh:0/component:246": "rig_mount_right-gun",
+    "mesh:0/component:247": "rig_mount_right-gun",
+    "mesh:0/component:248": "rig_mount_right-gun",
+    "mesh:0/component:129": "rig_mount_left-gun",
+    "mesh:0/component:130": "rig_mount_left-gun",
+    "mesh:0/component:143": "rig_mount_left-gun",
+    "mesh:0/component:148": "rig_mount_left-gun",
+    "mesh:0/component:150": "rig_mount_left-gun",
+    "mesh:0/component:152": "rig_mount_left-gun",
+    "mesh:0/component:153": "rig_mount_left-gun",
+    "mesh:0/component:154": "rig_mount_left-gun",
+    "mesh:0/component:155": "rig_mount_left-gun",
+    "mesh:0/component:156": "rig_mount_left-gun",
+    "mesh:0/component:157": "rig_mount_left-gun",
+    "mesh:0/component:158": "rig_mount_left-gun",
+    "mesh:0/component:181": "rig_mount_left-gun",
+    "mesh:0/component:187": "rig_mount_left-gun",
+    "mesh:0/component:188": "rig_mount_left-gun",
+    "mesh:0/component:189": "rig_mount_left-gun",
+    "mesh:0/component:190": "rig_mount_left-gun",
+    "mesh:0/component:191": "rig_mount_left-gun",
+    "mesh:0/component:192": "rig_mount_left-gun",
+    "mesh:0/component:193": "rig_mount_left-gun",
+    "mesh:0/component:194": "rig_mount_left-gun",
+    "mesh:0/component:195": "rig_mount_left-gun",
+    "mesh:0/component:203": "rig_mount_left-gun",
+    "mesh:0/component:204": "rig_mount_left-gun",
+    "mesh:0/component:205": "rig_mount_left-gun",
+    "mesh:0/component:206": "rig_mount_left-gun",
+    "mesh:0/component:207": "rig_mount_left-gun",
+    "mesh:0/component:208": "rig_mount_left-gun",
+    "mesh:0/component:209": "rig_mount_left-gun",
+    "mesh:0/component:210": "rig_mount_left-gun",
+    "mesh:0/component:211": "rig_mount_left-gun",
+    "mesh:0/component:212": "rig_mount_left-gun",
+    "mesh:0/component:213": "rig_mount_left-gun",
+    "mesh:0/component:214": "rig_mount_left-gun",
+    "mesh:0/component:302": "rig_mount_left-gun",
+    "mesh:0/component:313": "rig_mount_left-gun",
+    "mesh:0/component:314": "rig_mount_left-gun",
+    "mesh:0/component:315": "rig_mount_left-gun",
+    "mesh:0/component:316": "rig_mount_left-gun",
+    "mesh:0/component:317": "rig_mount_left-gun",
+    "mesh:0/component:318": "rig_mount_left-gun",
+    "mesh:0/component:319": "rig_mount_left-gun",
+    "mesh:0/component:320": "rig_mount_left-gun",
+    "mesh:0/component:23": "rig_torso",
+    "mesh:0/component:24": "rig_torso",
+    "mesh:0/component:25": "rig_torso",
+    "mesh:0/component:26": "rig_torso",
+    "mesh:0/component:27": "rig_torso",
+    "mesh:0/component:37": "rig_torso",
+    "mesh:0/component:42": "rig_torso",
+    "mesh:0/component:47": "rig_torso",
+    "mesh:0/component:48": "rig_torso",
+    "mesh:0/component:78": "rig_torso",
+    "mesh:0/component:79": "rig_torso",
+    "mesh:0/component:80": "rig_torso",
+    "mesh:0/component:81": "rig_torso",
+    "mesh:0/component:82": "rig_torso",
+    "mesh:0/component:83": "rig_torso",
+    "mesh:0/component:84": "rig_torso",
+    "mesh:0/component:85": "rig_torso",
+    "mesh:0/component:86": "rig_torso",
+    "mesh:0/component:91": "rig_torso",
+    "mesh:0/component:92": "rig_torso",
+    "mesh:0/component:97": "rig_torso",
+    "mesh:0/component:98": "rig_torso",
+    "mesh:0/component:99": "rig_torso",
+    "mesh:0/component:100": "rig_torso",
+    "mesh:0/component:101": "rig_torso",
+    "mesh:0/component:102": "rig_torso",
+    "mesh:0/component:103": "rig_torso",
+    "mesh:0/component:104": "rig_torso",
+    "mesh:0/component:105": "rig_torso",
+    "mesh:0/component:106": "rig_torso",
+    "mesh:0/component:107": "rig_torso",
+    "mesh:0/component:108": "rig_torso",
+    "mesh:0/component:109": "rig_torso",
+    "mesh:0/component:110": "rig_torso",
+    "mesh:0/component:111": "rig_torso",
+    "mesh:0/component:112": "rig_torso",
+    "mesh:0/component:113": "rig_torso",
+    "mesh:0/component:114": "rig_torso",
+    "mesh:0/component:127": "rig_torso",
+    "mesh:0/component:128": "rig_torso",
+    "mesh:0/component:131": "rig_torso",
+    "mesh:0/component:140": "rig_torso",
+    "mesh:0/component:151": "rig_torso",
+    "mesh:0/component:171": "rig_torso",
+    "mesh:0/component:172": "rig_torso",
+    "mesh:0/component:173": "rig_torso",
+    "mesh:0/component:174": "rig_torso",
+    "mesh:0/component:175": "rig_torso",
+    "mesh:0/component:176": "rig_torso",
+    "mesh:0/component:177": "rig_torso",
+    "mesh:0/component:178": "rig_torso",
+    "mesh:0/component:179": "rig_torso",
+    "mesh:0/component:182": "rig_torso",
+    "mesh:0/component:183": "rig_torso",
+    "mesh:0/component:184": "rig_torso",
+    "mesh:0/component:185": "rig_torso",
+    "mesh:0/component:186": "rig_torso",
+    "mesh:0/component:196": "rig_torso",
+    "mesh:0/component:197": "rig_torso",
+    "mesh:0/component:198": "rig_torso",
+    "mesh:0/component:199": "rig_torso",
+    "mesh:0/component:200": "rig_torso",
+    "mesh:0/component:201": "rig_torso",
+    "mesh:0/component:202": "rig_torso",
+    "mesh:0/component:218": "rig_torso",
+    "mesh:0/component:220": "rig_torso",
+    "mesh:0/component:221": "rig_torso",
+    "mesh:0/component:222": "rig_torso",
+    "mesh:0/component:223": "rig_torso",
+    "mesh:0/component:224": "rig_torso",
+    "mesh:0/component:225": "rig_torso",
+    "mesh:0/component:226": "rig_torso",
+    "mesh:0/component:227": "rig_torso",
+    "mesh:0/component:228": "rig_torso",
+    "mesh:0/component:229": "rig_torso",
+    "mesh:0/component:230": "rig_torso",
+    "mesh:0/component:231": "rig_torso",
+    "mesh:0/component:232": "rig_torso",
+    "mesh:0/component:233": "rig_torso",
+    "mesh:0/component:234": "rig_torso",
+    "mesh:0/component:249": "rig_torso",
+    "mesh:0/component:250": "rig_torso",
+    "mesh:0/component:251": "rig_torso",
+    "mesh:0/component:252": "rig_torso",
+    "mesh:0/component:253": "rig_torso",
+    "mesh:0/component:254": "rig_torso",
+    "mesh:0/component:255": "rig_torso",
+    "mesh:0/component:256": "rig_torso",
+    "mesh:0/component:257": "rig_torso",
+    "mesh:0/component:258": "rig_torso",
+    "mesh:0/component:259": "rig_torso",
+    "mesh:0/component:260": "rig_torso",
+    "mesh:0/component:261": "rig_torso",
+    "mesh:0/component:262": "rig_torso",
+    "mesh:0/component:263": "rig_torso",
+    "mesh:0/component:264": "rig_torso",
+    "mesh:0/component:265": "rig_torso",
+    "mesh:0/component:266": "rig_torso",
+    "mesh:0/component:272": "rig_torso",
+    "mesh:0/component:273": "rig_torso",
+    "mesh:0/component:275": "rig_torso",
+    "mesh:0/component:276": "rig_torso",
+    "mesh:0/component:277": "rig_torso",
+    "mesh:0/component:279": "rig_torso",
+    "mesh:0/component:280": "rig_torso",
+    "mesh:0/component:281": "rig_torso",
+    "mesh:0/component:282": "rig_torso",
+    "mesh:0/component:283": "rig_torso",
+    "mesh:0/component:284": "rig_torso",
+    "mesh:0/component:285": "rig_torso",
+    "mesh:0/component:286": "rig_torso",
+    "mesh:0/component:287": "rig_torso",
+    "mesh:0/component:288": "rig_torso",
+    "mesh:0/component:289": "rig_torso",
+    "mesh:0/component:295": "rig_torso",
+    "mesh:0/component:296": "rig_torso",
+    "mesh:0/component:297": "rig_torso",
+    "mesh:0/component:298": "rig_torso",
+    "mesh:0/component:299": "rig_torso",
+    "mesh:0/component:300": "rig_torso",
+    "mesh:0/component:301": "rig_torso",
+    "mesh:0/component:303": "rig_torso",
+    "mesh:0/component:304": "rig_torso",
+    "mesh:0/component:305": "rig_torso",
+    "mesh:0/component:306": "rig_torso",
+    "mesh:0/component:307": "rig_torso",
+    "mesh:0/component:308": "rig_torso",
+    "mesh:0/component:309": "rig_torso",
+    "mesh:0/component:310": "rig_torso",
+    "mesh:0/component:311": "rig_torso",
+    "mesh:0/component:312": "rig_torso",
+    "mesh:0/component:8": "rig_leg_right_shin",
+    "mesh:0/component:51": "rig_leg_right_thigh",
+    "mesh:0/component:52": "rig_leg_right_shin",
+    "mesh:0/component:53": "rig_leg_right_shin",
+    "mesh:0/component:54": "rig_leg_right_shin",
+    "mesh:0/component:56": "rig_leg_right_shin",
+    "mesh:0/component:73": "rig_leg_right_thigh",
+    "mesh:0/component:215": "rig_leg_right_shin",
+    "mesh:0/component:237": "rig_leg_right_shin",
+    "mesh:0/component:238": "rig_leg_right_shin",
+    "mesh:0/component:122": "rig_leg_left_shin",
+    "mesh:0/component:161": "rig_leg_left_shin",
+    "mesh:0/component:162": "rig_leg_left_shin",
+    "mesh:0/component:163": "rig_leg_left_shin",
+    "mesh:0/component:164": "rig_leg_left_thigh",
+    "mesh:0/component:165": "rig_leg_left_shin",
+    "mesh:0/component:180": "rig_leg_left_thigh",
+    "mesh:0/component:269": "rig_leg_left_shin",
+    "mesh:0/component:270": "rig_leg_left_shin",
+    "mesh:0/component:271": "rig_leg_left_shin",
+    "mesh:0/component:292": "rig_leg_left_shin",
+    "mesh:0/component:274": "rig_mount_left-gun",
+    "mesh:0/component:290": "rig_mount_left-gun",
+    "mesh:0/component:291": "rig_mount_left-gun",
+    "mesh:0/component:40": "rig_pelvis",
+    "mesh:0/component:41": "rig_pelvis",
+    "mesh:0/component:43": "rig_pelvis",
+    "mesh:0/component:44": "rig_pelvis",
+    "mesh:0/component:45": "rig_pelvis",
+    "mesh:0/component:46": "rig_pelvis",
+    "mesh:0/component:90": "rig_pelvis",
+    "mesh:0/component:93": "rig_pelvis",
+    "mesh:0/component:94": "rig_pelvis",
+    "mesh:0/component:95": "rig_pelvis",
+    "mesh:0/component:136": "rig_pelvis",
+    "mesh:0/component:137": "rig_pelvis",
+    "mesh:0/component:138": "rig_pelvis",
+    "mesh:0/component:166": "rig_pelvis",
+    "mesh:0/component:167": "rig_pelvis",
+    "mesh:0/component:168": "rig_pelvis",
+    "mesh:0/component:169": "rig_pelvis",
+    "mesh:0/component:219": "rig_torso"
+  },
+  "removedArtifacts": [
+    "mesh:0/component:216",
+    "mesh:0/component:217",
+    "mesh:0/component:235",
+    "mesh:0/component:236",
+    "mesh:0/component:267",
+    "mesh:0/component:268",
+    "mesh:0/component:293",
+    "mesh:0/component:294"
+  ],
+  "artifactDecision": "Eight detached positive-area marker quads all exactly .00048828125 square, measured 0.029..0.114 source units from neighboring skin. Three uncertain quads near the left barrels are retained.",
+  "barrels": {
+    "right": [
+      {
+        "id": "mesh:0/component:12",
+        "triangles": 418,
+        "worldMinimum": [
+          -0.3161620497703552,
+          -0.2531738877296448,
+          0.650390625
+        ],
+        "worldMaximum": [
+          -0.2922362983226776,
+          -0.01586918905377388,
+          0.6728515625
+        ],
+        "center": [
+          -0.3041991740465164,
+          -0.13452153839170933,
+          0.66162109375
+        ],
+        "outerRadiusEstimate": 0.011962875723838806
+      },
+      {
+        "id": "mesh:0/component:13",
+        "triangles": 418,
+        "worldMinimum": [
+          -0.3215331435203552,
+          -0.2531738877296448,
+          0.67236328125
+        ],
+        "worldMaximum": [
+          -0.2966308295726776,
+          -0.01586918719112873,
+          0.6943359375
+        ],
+        "center": [
+          -0.3090819865465164,
+          -0.13452153746038675,
+          0.683349609375
+        ],
+        "outerRadiusEstimate": 0.012451156973838806
+      },
+      {
+        "id": "mesh:0/component:14",
+        "triangles": 418,
+        "worldMinimum": [
+          -0.2976073622703552,
+          -0.2536621689796448,
+          0.63525390625
+        ],
+        "worldMaximum": [
+          -0.2736816108226776,
+          -0.01635746657848358,
+          0.65869140625
+        ],
+        "center": [
+          -0.2856444865465164,
+          -0.13500981777906418,
+          0.64697265625
+        ],
+        "outerRadiusEstimate": 0.011962875723838806
+      },
+      {
+        "id": "mesh:0/component:15",
+        "triangles": 418,
+        "worldMinimum": [
+          -0.2976073622703552,
+          -0.2536621689796448,
+          0.6611328125
+        ],
+        "worldMaximum": [
+          -0.2727050483226776,
+          -0.01635746657848358,
+          0.68408203125
+        ],
+        "center": [
+          -0.2851562052965164,
+          -0.13500981777906418,
+          0.672607421875
+        ],
+        "outerRadiusEstimate": 0.012451156973838806
+      },
+      {
+        "id": "mesh:0/component:16",
+        "triangles": 418,
+        "worldMinimum": [
+          -0.2790526747703552,
+          -0.2541504502296448,
+          0.650390625
+        ],
+        "worldMaximum": [
+          -0.2541503608226776,
+          -0.016845744103193283,
+          0.67333984375
+        ],
+        "center": [
+          -0.2666015177965164,
+          -0.13549809716641903,
+          0.661865234375
+        ],
+        "outerRadiusEstimate": 0.012451156973838806
+      },
+      {
+        "id": "mesh:0/component:17",
+        "triangles": 426,
+        "worldMinimum": [
+          -0.2756347060203552,
+          -0.2541504502296448,
+          0.67138671875
+        ],
+        "worldMaximum": [
+          -0.2492675483226776,
+          -0.016845742240548134,
+          0.69482421875
+        ],
+        "center": [
+          -0.2624511271715164,
+          -0.13549809623509645,
+          0.68310546875
+        ],
+        "outerRadiusEstimate": 0.013183578848838806
+      },
+      {
+        "id": "mesh:0/component:18",
+        "triangles": 420,
+        "worldMinimum": [
+          -0.2990722060203552,
+          -0.2536621689796448,
+          0.68505859375
+        ],
+        "worldMaximum": [
+          -0.2741698920726776,
+          -0.016357464715838432,
+          0.7080078125
+        ],
+        "center": [
+          -0.2866210490465164,
+          -0.1350098168477416,
+          0.696533203125
+        ],
+        "outerRadiusEstimate": 0.012451156973838806
+      }
+    ],
+    "left": [
+      {
+        "id": "mesh:0/component:129",
+        "triangles": 418,
+        "worldMinimum": [
+          0.24096685647964478,
+          -0.263916015625,
+          0.65087890625
+        ],
+        "worldMaximum": [
+          0.2648926079273224,
+          -0.02709958143532276,
+          0.6748046875
+        ],
+        "center": [
+          0.2529297322034836,
+          -0.14550779853016138,
+          0.662841796875
+        ],
+        "outerRadiusEstimate": 0.011962890625
+      },
+      {
+        "id": "mesh:0/component:130",
+        "triangles": 420,
+        "worldMinimum": [
+          0.23461918532848358,
+          -0.263916015625,
+          0.67236328125
+        ],
+        "worldMaximum": [
+          0.2609863579273224,
+          -0.02661130018532276,
+          0.6953125
+        ],
+        "center": [
+          0.24780277162790298,
+          -0.14526365790516138,
+          0.683837890625
+        ],
+        "outerRadiusEstimate": 0.013183586299419403
+      },
+      {
+        "id": "mesh:0/component:152",
+        "triangles": 425,
+        "worldMinimum": [
+          0.2590332627296448,
+          -0.264404296875,
+          0.6357421875
+        ],
+        "worldMaximum": [
+          0.2834472954273224,
+          -0.027587860822677612,
+          0.65966796875
+        ],
+        "center": [
+          0.2712402790784836,
+          -0.1459960788488388,
+          0.647705078125
+        ],
+        "outerRadiusEstimate": 0.012207016348838806
+      },
+      {
+        "id": "mesh:0/component:153",
+        "triangles": 419,
+        "worldMinimum": [
+          0.2585449814796448,
+          -0.264404296875,
+          0.66162109375
+        ],
+        "worldMaximum": [
+          0.2824707329273224,
+          -0.027587860822677612,
+          0.68505859375
+        ],
+        "center": [
+          0.2705078572034836,
+          -0.1459960788488388,
+          0.67333984375
+        ],
+        "outerRadiusEstimate": 0.011962875723838806
+      },
+      {
+        "id": "mesh:0/component:154",
+        "triangles": 418,
+        "worldMinimum": [
+          0.2775879502296448,
+          -0.265380859375,
+          0.65087890625
+        ],
+        "worldMaximum": [
+          0.3015137016773224,
+          -0.028076140210032463,
+          0.67333984375
+        ],
+        "center": [
+          0.2895508259534836,
+          -0.14672849979251623,
+          0.662109375
+        ],
+        "outerRadiusEstimate": 0.011962875723838806
+      },
+      {
+        "id": "mesh:0/component:155",
+        "triangles": 416,
+        "worldMinimum": [
+          0.2824707627296448,
+          -0.265380859375,
+          0.671875
+        ],
+        "worldMaximum": [
+          0.3068848252296448,
+          -0.028076138347387314,
+          0.6953125
+        ],
+        "center": [
+          0.2946777939796448,
+          -0.14672849886119366,
+          0.68359375
+        ],
+        "outerRadiusEstimate": 0.01220703125
+      },
+      {
+        "id": "mesh:0/component:156",
+        "triangles": 418,
+        "worldMinimum": [
+          0.2585449814796448,
+          -0.264404296875,
+          0.68505859375
+        ],
+        "worldMaximum": [
+          0.2839355766773224,
+          -0.027587858960032463,
+          0.708984375
+        ],
+        "center": [
+          0.2712402790784836,
+          -0.14599607791751623,
+          0.697021484375
+        ],
+        "outerRadiusEstimate": 0.012695297598838806
+      }
+    ]
+  },
+  "barrelSettings": {
+    "segments": 24,
+    "innerRadiusRatio": 0.64,
+    "boreDepth": 0.035
+  },
+  "waist": {
+    "sourceComponents": [],
+    "center": [
+      -0.00513,
+      0.0032,
+      0.5786
+    ],
+    "segments": 48,
+    "profiles": {
+      "rig_pelvis": [
+        [
+          0.5545,
+          0.052
+        ],
+        [
+          0.592,
+          0.052
+        ]
+      ]
+    },
+    "retainedSourceComponents": [
+      "mesh:0/component:40",
+      "mesh:0/component:41",
+      "mesh:0/component:43",
+      "mesh:0/component:44",
+      "mesh:0/component:45",
+      "mesh:0/component:46",
+      "mesh:0/component:90",
+      "mesh:0/component:93",
+      "mesh:0/component:94",
+      "mesh:0/component:95",
+      "mesh:0/component:136",
+      "mesh:0/component:137",
+      "mesh:0/component:138",
+      "mesh:0/component:166",
+      "mesh:0/component:167",
+      "mesh:0/component:168",
+      "mesh:0/component:169",
+      "mesh:0/component:219"
+    ],
+    "decision": "Retain the measured original flanges and external rib posts, add a closed internal bearing core within their envelope, and bind only the top cap to the rotating torso."
+  },
+  "legSplits": [
+    {
+      "component": "mesh:0/component:7",
+      "position": [
+        -0.15468419841132486,
+        0.17737248038254227,
+        0.3975340500526313
+      ],
+      "normal": [
+        0,
+        -0.6,
+        1
+      ],
+      "positiveOwner": "rig_leg_right_thigh",
+      "negativeOwner": "rig_leg_right_shin",
+      "scope": "A source-specific slanted tangent above the full knee shroud preserves the forward overhanging thigh armor, while separating the rear knee interface. Complete knee caps remain shin-owned; the internal eye/neck remains thigh-owned.",
+      "internalBearing": {
+        "pivot": [
+          -0.15468419841132486,
+          0.17737248038254227,
+          0.3335340500526313
+        ],
+        "axis": [
+          0.9740490726784928,
+          -0.21379418256276542,
+          -0.07429974102570683
+        ],
+        "axleHalfLength": 0.035,
+        "axleRadius": 0.022
+      }
+    },
+    {
+      "component": "mesh:0/component:121",
+      "position": [
+        0.14694964402310906,
+        0.171226133457372,
+        0.3974257440015609
+      ],
+      "normal": [
+        0,
+        -0.6,
+        1
+      ],
+      "positiveOwner": "rig_leg_left_thigh",
+      "negativeOwner": "rig_leg_left_shin",
+      "scope": "A source-specific slanted tangent above the full knee shroud preserves the forward overhanging thigh armor, while separating the rear knee interface. Complete knee caps remain shin-owned; the internal eye/neck remains thigh-owned.",
+      "internalBearing": {
+        "pivot": [
+          0.14694964402310906,
+          0.171226133457372,
+          0.3334257440015609
+        ],
+        "axis": [
+          0.9806045126259811,
+          0.1816930357370702,
+          0.07350122844013979
+        ],
+        "axleHalfLength": 0.035,
+        "axleRadius": 0.022
+      }
+    }
+  ],
+  "rig": {
+    "groups": [
+      {
+        "name": "rig_pelvis",
+        "parent": null,
+        "pivot": [
+          -0.00513,
+          0.0032,
+          0.5223
+        ]
+      },
+      {
+        "name": "rig_torso",
+        "parent": "rig_pelvis",
+        "pivot": [
+          -0.00513,
+          0.0032,
+          0.5786
+        ]
+      },
+      {
+        "name": "rig_leg_left_thigh",
+        "parent": "rig_pelvis",
+        "pivot": [
+          0.11718752235174179,
+          0.03064255904579822,
+          0.5222003201493355
+        ]
+      },
+      {
+        "name": "rig_leg_left_shin",
+        "parent": "rig_leg_left_thigh",
+        "pivot": [
+          0.14694964402310906,
+          0.171226133457372,
+          0.3334257440015609
+        ]
+      },
+      {
+        "name": "rig_leg_left_foot",
+        "parent": "rig_leg_left_shin",
+        "pivot": [
+          0.19140630215406418,
+          -0.02905273949727416,
+          0.0623779296875
+        ]
+      },
+      {
+        "name": "rig_mount_left-gun",
+        "parent": "rig_torso",
+        "pivot": [
+          0.205,
+          0.1,
+          0.695
+        ]
+      },
+      {
+        "name": "rig_leg_right_thigh",
+        "parent": "rig_pelvis",
+        "pivot": [
+          -0.1257323995232582,
+          0.03500180796918148,
+          0.5223657740413594
+        ]
+      },
+      {
+        "name": "rig_leg_right_shin",
+        "parent": "rig_leg_right_thigh",
+        "pivot": [
+          -0.15468419841132486,
+          0.17737248038254227,
+          0.3335340500526313
+        ]
+      },
+      {
+        "name": "rig_leg_right_foot",
+        "parent": "rig_leg_right_shin",
+        "pivot": [
+          -0.20324701815843582,
+          -0.0211182227358222,
+          0.0623779296875
+        ]
+      },
+      {
+        "name": "rig_mount_right-gun",
+        "parent": "rig_torso",
+        "pivot": [
+          -0.215,
+          0.1,
+          0.695
+        ]
+      }
+    ],
+    "anchors": [
+      {
+        "name": "socket_left-gun",
+        "parent": "rig_torso",
+        "worldPosition": [
+          0.205,
+          0.1,
+          0.695
+        ],
+        "direction": [
+          1,
+          0,
+          0
+        ],
+        "extras": {
+          "hardpointId": "left-gun",
+          "family": "ballistic",
+          "role": "mount-socket-not-muzzle"
+        }
+      },
+      {
+        "name": "socket_right-gun",
+        "parent": "rig_torso",
+        "worldPosition": [
+          -0.215,
+          0.1,
+          0.695
+        ],
+        "direction": [
+          -1,
+          0,
+          0
+        ],
+        "extras": {
+          "hardpointId": "right-gun",
+          "family": "ballistic",
+          "role": "mount-socket-not-muzzle"
+        }
+      }
+    ],
+    "neutralHeight": 0.99951171875
+  },
+  "hingeAxes": {
+    "rig_leg_left_thigh": [
+      1,
+      0,
+      0
+    ],
+    "rig_leg_left_shin": [
+      0.9806045126259811,
+      0.1816930357370702,
+      0.07350122844013979
+    ],
+    "rig_leg_left_foot": [
+      1,
+      0,
+      0
+    ],
+    "rig_leg_right_thigh": [
+      1,
+      0,
+      0
+    ],
+    "rig_leg_right_shin": [
+      0.9740490726784928,
+      -0.21379418256276542,
+      -0.07429974102570683
+    ],
+    "rig_leg_right_foot": [
+      1,
+      0,
+      0
+    ]
+  },
+  "jointFitEvidence": "design/mechs/assets/kestrel/generated-source/joint-measurements.json",
+  "featureDecisions": {
+    "keep": [
+      "Approved source silhouette, plates, joints, toe/talon geometry, weapon housings and supports",
+      "Original external waist rings and ribs"
+    ],
+    "rebuild": [
+      "Fourteen barrel tubes with real bores at measured extents",
+      "Closed waist core inside the retained ribs",
+      "Internal knee bearing castings and explicit joint boundaries"
+    ],
+    "remove": [
+      "Degenerate and duplicate triangles",
+      "Eight measured detached marker quads"
+    ],
+    "bake": [],
+    "budget": "No global triangle-reduction target is imposed at this structural repair checkpoint."
+  }
+}

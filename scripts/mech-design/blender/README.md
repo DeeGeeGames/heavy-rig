@@ -80,6 +80,13 @@ coverage remains accounted for. The Warden map inherits existing approval only
 through byte-for-byte equivalence with its selected asset; new source mappings
 require their own review. Do not copy Warden component IDs or spatial thresholds.
 
+BMesh may visit a component's vertices in a different order on an unchanged
+import. Before repairs, compare the fresh and retained snapshots with
+`verify_inventory_equivalence(fresh, frozen)`, then call
+`verify_ownership(frozen, mapping, source_sha256)`. This ignores only traversal
+order: geometry hashes, transforms, component IDs, vertex membership, faces and
+bounds still have to match. Existing frozen inventory fingerprints remain intact.
+
 After source-specific separation/repair, use `package_neutral_rig(source,
 contract, scene_name=..., generator=...)` from `rigid_packaging.py`. `source` is
 the GLB JSON returned with its buffer by `read_glb`; the contract declares
@@ -167,6 +174,47 @@ bun scripts/mech-design/optimization-review.ts \
 Substitute `right-pod` for the right package. Geometry-only evidence remains in
 its `review/geometry` folder. Render manifests pin GLB and PNG hashes; a different
 candidate requires fresh renders using `render_optimization_proof.py`.
+
+## Kestrel source-specific repair and materials
+
+The selected Kestrel source and articulation approvals are under
+`design/mechs/assets/kestrel/`. Reproduce the exact neutral checkpoint in a fresh
+ignored directory (substitute absolute repository path for `$PWD` when needed):
+
+```sh
+flatpak run org.blender.Blender --background --factory-startup --threads 4 --python-exit-code 1 --python "$PWD/scripts/mech-design/blender/build_kestrel_repair.py" -- --repo "$PWD" --recipe design/mechs/assets/kestrel/articulation-base/recipe.json --output design/mechs/generated/kestrel-reproduction
+```
+
+The adapter verifies frozen source, inventory and ownership hashes before edits.
+Its knee cuts, fitted internal bearings, waist closure and barrel bores are
+specific to this source. The retained recipe and producer hashes explain the
+exact accepted output; historical `candidate` labels in authoring data do not
+override the external approval. This is not a general segmentation algorithm.
+
+`../materialize-kestrel.py` applies an explicit source-component/face palette
+recipe to that approved GLB without changing ordered triangle positions,
+normals, nodes or animation samples. It verifies every face override applies
+exactly once. `../package-optimized-glb.py` uses the pinned glTF Transform
+dedup/prune/validate route, preserving empty anchors. Verify the actual result:
+
+```sh
+python3 scripts/mech-design/verify-kestrel-package.py MATERIAL_AUTHORING.glb PACKAGED.glb --report design/mechs/generated/NEW-packaging-report.json
+```
+
+This comparison resolves actual resources after index changes and normalizes
+only equivalent glTF defaults and translation-only matrices. It rejects changes
+to ordered triangle positions/normals/UVs, named hierarchy/anchors, clip samples,
+palette images, materials or texture sampling. No geometry quantization,
+decimation or runtime decoder is required for this pass. Material candidates
+remain under ignored `generated/` pending owner review.
+
+Use `render_kestrel_articulation.py --repo ... --input ... --output ...` for
+neutral export evidence; add `--materials` to inspect embedded finishes. Each
+render manifest pins the actual export hash and material mode. Build a portable
+runtime study and full-game preview with
+`bun scripts/mech-design/build-authored-preview.ts ASSET.glb NEW-GENERATED-DIR kestrel`.
+The runtime contact solver and owner control/appearance decision remain separate
+from the three approved in-place draft clips.
 
 ## Historical dense-master authoring
 

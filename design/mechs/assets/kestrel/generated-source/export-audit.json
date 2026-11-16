@@ -1,0 +1,32 @@
+{
+  "source": "design/mechs/generated/kestrel-source/source.glb",
+  "sha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a",
+  "bytes": 1175832,
+  "triangles": 45664,
+  "meshes": 1,
+  "meshSections": 1,
+  "nodes": 1,
+  "materials": [
+    {
+      "name": "material"
+    }
+  ],
+  "images": 0,
+  "textures": 0,
+  "skins": 0,
+  "animations": [],
+  "meshNames": [
+    "meshes[0]"
+  ],
+  "nodeNames": [
+    "tripo_node_a573decf-159b-4c85-b913-f4001917e43c"
+  ],
+  "extensionsUsed": [
+    "KHR_materials_volume",
+    "FB_ngon_encoding"
+  ],
+  "asset": {
+    "version": "2.0",
+    "generator": "Tripo"
+  }
+}

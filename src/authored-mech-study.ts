@@ -1,7 +1,7 @@
 import type { AuthoredPoseContext } from './authored-pose';
 import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Float32BufferAttribute, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh, MeshStandardMaterial, OrthographicCamera, PlaneGeometry, Scene, SphereGeometry, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { authoredMuzzleError, authoredWardenUrl, loadAuthoredWarden } from './authored-mech';
+import { authoredMuzzleError, authoredWardenUrl, authoredKestrelUrl, loadAuthoredWarden, loadAuthoredKestrel } from './authored-mech';
 import { advanceGait, createGait } from './gait';
 import { createMech } from './mech-3d';
 import { alignCamera } from './projection-3d';
@@ -13,16 +13,18 @@ const canvas = required('authored-canvas'); if (!(canvas instanceof HTMLCanvasEl
 const view = required('view'); const wireframe = required('wireframe'); const anchors = required('anchors');
 const aimTarget = required('aim-target');
 if (!(view instanceof HTMLSelectElement) || !(aimTarget instanceof HTMLSelectElement) || !(wireframe instanceof HTMLInputElement) || !(anchors instanceof HTMLInputElement)) throw new Error('Invalid authored study controls');
+const equipment = document.getElementById('equipment');
 const status = required('status'); const diagnostics = required('diagnostics');
 const assetState = required('asset-state'); const pauseButton = required('pause');
 const motions = ['idle', 'walk', 'run', 'backward', 'turn', 'aim', 'fire'] as const;
 type Motion = typeof motions[number];
 const isMotion = function (value: string | undefined): value is Motion { return motions.some(function (name) { return name === value; }); };
 
+const frameId = document.documentElement.dataset['authoredFrame'] === 'kestrel' ? 'kestrel' : 'warden';
 const start = async function () {
-	const url = authoredWardenUrl(); const assetLabel = url.startsWith('data:') ? 'Embedded Warden GLB' : url;
-	const factory = await loadAuthoredWarden(url, { diagnostics: true }); const uninstall = factory.install();
-	const model = createMech();
+	const url = frameId === 'kestrel' ? authoredKestrelUrl() : authoredWardenUrl(); const assetLabel = url.startsWith('data:') ? `Embedded ${frameId} GLB` : url;
+	const factory = await (frameId === 'kestrel' ? loadAuthoredKestrel : loadAuthoredWarden)(url, { diagnostics: true }); const uninstall = factory.install();
+	const model = createMech(undefined, false, frameId);
 	const renderer = new WebGLRenderer({ canvas, antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 	renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
 	const scene = new Scene(); scene.background = new Color('#102027'); scene.add(model.root);
@@ -34,11 +36,11 @@ const start = async function () {
 	const grid = new GridHelper(2400, 48, '#425451', '#3b4e4c'); grid.position.y = -0.15; scene.add(grid);
 	const camera = new OrthographicCamera(-130, 130, 130, -130, 0.1, 6000);
 	const orbit = new OrbitControls(camera, canvas); orbit.target.set(0, 48, 0); orbit.enablePan = false;
-	const state = createState();
+	const state = createState({ frame: frameId });
 	const markerGeometry = new SphereGeometry(0.8, 6, 4); const markerMaterial = new MeshStandardMaterial({ color: '#ffcf73', emissive: '#ffcf73', emissiveIntensity: 1 });
 	const markers = Array.from({ length: 16 }, function () { const mesh = new Mesh(markerGeometry, markerMaterial); mesh.visible = false; scene.add(mesh); return mesh; });
 	const shotGeometry = new BufferGeometry(); const shotPositions = new Float32Array(4 * 2 * 3); shotGeometry.setAttribute('position', new Float32BufferAttribute(shotPositions, 3));
-	const shotMaterial = new LineBasicMaterial({ color: '#ffbf78', transparent: true, opacity: 0.9 }); const shots = new LineSegments(shotGeometry, shotMaterial); shots.frustumCulled = false; scene.add(shots);
+	const shotMaterial = new LineBasicMaterial({ color: '#ffbf78', transparent: true, opacity: 0.9 }); const shots = new LineSegments(shotGeometry, shotMaterial); shots.frustumCulled = false; shotGeometry.setDrawRange(0, factory.weaponRigs.length * 2); scene.add(shots);
 	const abort = new AbortController();
 	let motion: Motion = 'idle'; let time = 0; let previous = 0; let accumulator = 0; let frame = 0; let paused = false; let disposed = false; let lost = false;
 	let body = { x: 0, y: 0, angle: 0 }; let gait = createGait(body); let heading = 0; let maxMuzzleError = 0; let rendered = 0;
@@ -57,26 +59,30 @@ const start = async function () {
 	const setWireframe = function () { model.root.traverse(function (node) { if (node instanceof Mesh) for (const material of Array.isArray(node.material) ? node.material : [node.material]) if (material instanceof MeshStandardMaterial) material.wireframe = wireframe.checked; }); };
 	let authoredPose: AuthoredPoseContext | undefined;
 	const pose = function () {
+		const equippedSlots = equipment instanceof HTMLSelectElement ? equipment.value === 'left' ? [0] : equipment.value === 'right' ? [1] : equipment.value === 'empty' ? [] : [0, 1] : undefined;
+		const activeSlots = equippedSlots ?? factory.weaponRigs.map(function (_rig, slot) { return slot; });
+		shotGeometry.setDrawRange(0, activeSlots.length * 2);
 		const range = aimTarget.value === 'sweep' ? 350 : 125;
 		const elevation = aimTarget.value === 'near-high' ? 220 : aimTarget.value === 'near-low' ? 0 : 80 + Math.sin(time * 0.7) * 60;
 		const target = motion === 'aim' ? { x: body.x + Math.cos(heading) * range, y: body.y + Math.sin(heading) * range, elevation } : undefined;
 		const recoil = motion === 'fire' ? Math.max(0, 1 - time % 0.5 / 0.18) : 0;
-		model.pose(gait, heading, { recoil, hit: 0, heat: motion === 'fire' ? 50 : 0, time, ...(authoredPose ? { authoredPose } : {}), ...(target ? { target } : {}) });
-		maxMuzzleError = Math.max(maxMuzzleError, authoredMuzzleError(model, getPlayerWeaponRig('warden'), gait, heading, target, authoredPose));
-		const points = [...model.muzzles, ...model.rocketMuzzles.flat()];
+		model.pose(gait, heading, { recoil, hit: 0, heat: motion === 'fire' ? 50 : 0, time, ...(equippedSlots ? { equippedSlots } : {}), ...(authoredPose ? { authoredPose } : {}), ...(target ? { target } : {}) });
+		maxMuzzleError = Math.max(maxMuzzleError, authoredMuzzleError(model, getPlayerWeaponRig(frameId), gait, heading, target, authoredPose, frameId));
+		const points = activeSlots.flatMap(function (slot) { const muzzle = model.muzzles[slot]; return muzzle ? [muzzle, ...(model.rocketMuzzles[slot] ?? [])] : []; });
 		for (const [index, marker] of markers.entries()) { const at = points[index]; marker.visible = anchors.checked && at !== undefined; if (at) marker.position.copy(at); }
-		shots.visible = recoil > 0;
-		if (shots.visible) for (const [slot, rig] of getPlayerWeaponRig('warden').entries()) {
-			const origin = getPlayerMuzzle('warden', slot, body, heading, rig.tubes.length ? Math.floor(time * 2) % 6 : undefined, target, authoredPose);
-			const direction = getPlayerFiringDirection('warden', slot, body, heading, origin, target); const position = shotGeometry.getAttribute('position');
-			position.setXYZ(slot * 2, origin.x - body.x, origin.elevation, origin.y - body.y);
-			position.setXYZ(slot * 2 + 1, origin.x - body.x + direction.x * (25 + recoil * 35), origin.elevation + direction.elevation * (25 + recoil * 35), origin.y - body.y + direction.y * (25 + recoil * 35)); position.needsUpdate = true;
+		shots.visible = recoil > 0 && activeSlots.length > 0;
+		if (shots.visible) for (const [line, slot] of activeSlots.entries()) {
+			const rig = factory.weaponRigs[slot]; if (!rig) throw new Error(`Missing study weapon rig ${slot}`);
+			const origin = getPlayerMuzzle(frameId, slot, body, heading, rig.tubes.length ? Math.floor(time * 2) % 6 : undefined, target, authoredPose);
+			const direction = getPlayerFiringDirection(frameId, slot, body, heading, origin, target); const position = shotGeometry.getAttribute('position');
+			position.setXYZ(line * 2, origin.x - body.x, origin.elevation, origin.y - body.y);
+			position.setXYZ(line * 2 + 1, origin.x - body.x + direction.x * (25 + recoil * 35), origin.elevation + direction.elevation * (25 + recoil * 35), origin.y - body.y + direction.y * (25 + recoil * 35)); position.needsUpdate = true;
 		}
 		grid.position.set(-body.x % 50, -0.15, -body.y % 50);
 	};
 	const step = function () {
 		const dt = 1 / 60; authoredPose ??= factory.advancePose(undefined, body, time); time += dt;
-		const speed = motion === 'walk' ? 38 : motion === 'run' ? 180 : motion === 'backward' ? -28 : motion === 'aim' ? 35 : 0;
+		const speed = motion === 'walk' ? frameId === 'kestrel' ? 24 : 38 : motion === 'run' ? frameId === 'kestrel' ? 125 : 180 : motion === 'backward' ? frameId === 'kestrel' ? -65 : -28 : motion === 'aim' ? frameId === 'kestrel' ? 24 : 35 : 0;
 		const angle = body.angle + (motion === 'turn' ? dt * 0.7 : 0);
 		body = { x: body.x + Math.cos(angle) * speed * dt, y: body.y + Math.sin(angle) * speed * dt, angle };
 		authoredPose = factory.advancePose(authoredPose, body, time);
@@ -87,6 +93,7 @@ const start = async function () {
 	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-motion]')) button.addEventListener('click', function () { const name = button.dataset['motion']; if (!isMotion(name)) return; motion = name; reset(); for (const sibling of document.querySelectorAll<HTMLButtonElement>('[data-motion]')) sibling.setAttribute('aria-pressed', String(sibling === button)); }, { signal: abort.signal });
 	pauseButton.addEventListener('click', function () { setPaused(!paused); }, { signal: abort.signal });
 	required('step').addEventListener('click', function () { setPaused(true); step(); }, { signal: abort.signal });
+	if (equipment instanceof HTMLSelectElement) equipment.addEventListener('change', pose, { signal: abort.signal });
 	required('reset').addEventListener('click', reset, { signal: abort.signal }); view.addEventListener('change', updateCamera, { signal: abort.signal }); aimTarget.addEventListener('change', pose, { signal: abort.signal }); wireframe.addEventListener('change', setWireframe, { signal: abort.signal }); anchors.addEventListener('change', pose, { signal: abort.signal });
 	window.addEventListener('keydown', function (event) { if (event.code === 'Space' && !(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLSelectElement)) { event.preventDefault(); setPaused(!paused); } }, { signal: abort.signal });
 	const observer = new ResizeObserver(updateCamera); observer.observe(canvas);
@@ -107,6 +114,6 @@ const start = async function () {
 	};
 	const onPageHide = function (event: PageTransitionEvent) { if (!event.persisted) dispose(); };
 	window.addEventListener('pagehide', onPageHide); if (import.meta.hot) import.meta.hot.dispose(dispose);
-	reset(); updateCamera(); assetState.textContent = 'Warden A · authored asset'; document.documentElement.dataset['authoredReady'] = 'true'; frame = requestAnimationFrame(tick);
+	reset(); updateCamera(); assetState.textContent = `${frameId === 'kestrel' ? 'Kestrel' : 'Warden'} A · authored asset`; document.documentElement.dataset['authoredReady'] = 'true'; frame = requestAnimationFrame(tick);
 };
 start().catch(function (error: unknown) { const node = required('error'); node.hidden = false; node.textContent = error instanceof Error ? error.message : String(error); assetState.textContent = 'Asset unavailable'; console.error(error); });

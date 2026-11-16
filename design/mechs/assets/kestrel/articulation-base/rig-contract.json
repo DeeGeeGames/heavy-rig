@@ -1,0 +1,371 @@
+{
+  "groups": [
+    {
+      "name": "rig_pelvis",
+      "parent": null,
+      "pivot": [
+        -0.00513,
+        0.0032,
+        0.5223
+      ]
+    },
+    {
+      "name": "rig_torso",
+      "parent": "rig_pelvis",
+      "pivot": [
+        -0.00513,
+        0.0032,
+        0.5786
+      ]
+    },
+    {
+      "name": "rig_leg_left_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        0.11718752235174179,
+        0.03064255904579822,
+        0.5222003201493355
+      ]
+    },
+    {
+      "name": "rig_leg_left_shin",
+      "parent": "rig_leg_left_thigh",
+      "pivot": [
+        0.14694964402310906,
+        0.171226133457372,
+        0.3334257440015609
+      ]
+    },
+    {
+      "name": "rig_leg_left_foot",
+      "parent": "rig_leg_left_shin",
+      "pivot": [
+        0.19140630215406418,
+        -0.02905273949727416,
+        0.0623779296875
+      ]
+    },
+    {
+      "name": "rig_mount_left-gun",
+      "parent": "rig_torso",
+      "pivot": [
+        0.205,
+        0.1,
+        0.695
+      ]
+    },
+    {
+      "name": "rig_leg_right_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        -0.1257323995232582,
+        0.03500180796918148,
+        0.5223657740413594
+      ]
+    },
+    {
+      "name": "rig_leg_right_shin",
+      "parent": "rig_leg_right_thigh",
+      "pivot": [
+        -0.15468419841132486,
+        0.17737248038254227,
+        0.3335340500526313
+      ]
+    },
+    {
+      "name": "rig_leg_right_foot",
+      "parent": "rig_leg_right_shin",
+      "pivot": [
+        -0.20324701815843582,
+        -0.0211182227358222,
+        0.0623779296875
+      ]
+    },
+    {
+      "name": "rig_mount_right-gun",
+      "parent": "rig_torso",
+      "pivot": [
+        -0.215,
+        0.1,
+        0.695
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "name": "socket_left-gun",
+      "parent": "rig_torso",
+      "worldPosition": [
+        0.205,
+        0.1,
+        0.695
+      ],
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "extras": {
+        "hardpointId": "left-gun",
+        "family": "ballistic",
+        "role": "mount-socket-not-muzzle"
+      }
+    },
+    {
+      "name": "socket_right-gun",
+      "parent": "rig_torso",
+      "worldPosition": [
+        -0.215,
+        0.1,
+        0.695
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "extras": {
+        "hardpointId": "right-gun",
+        "family": "ballistic",
+        "role": "mount-socket-not-muzzle"
+      }
+    },
+    {
+      "name": "physical_exit_right_gun_1",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.3041991740465164,
+        -0.2531738877296448,
+        0.66162109375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_2",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.3090819865465164,
+        -0.2531738877296448,
+        0.683349609375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_3",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2856444865465164,
+        -0.2536621689796448,
+        0.64697265625
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_4",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2851562052965164,
+        -0.2536621689796448,
+        0.672607421875
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_5",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2666015177965164,
+        -0.2541504502296448,
+        0.661865234375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_6",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2624511271715164,
+        -0.2541504502296448,
+        0.68310546875
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_7",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2866210490465164,
+        -0.2536621689796448,
+        0.696533203125
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "muzzle_right-gun",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2851562052965164,
+        -0.2536621689796448,
+        0.672607421875
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_1",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2529297322034836,
+        -0.263916015625,
+        0.662841796875
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_2",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.24780277162790298,
+        -0.263916015625,
+        0.683837890625
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_3",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2712402790784836,
+        -0.264404296875,
+        0.647705078125
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_4",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2705078572034836,
+        -0.264404296875,
+        0.67333984375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_5",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2895508259534836,
+        -0.265380859375,
+        0.662109375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_6",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2946777939796448,
+        -0.265380859375,
+        0.68359375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_7",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2712402790784836,
+        -0.264404296875,
+        0.697021484375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "muzzle_left-gun",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2705078572034836,
+        -0.264404296875,
+        0.67333984375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    }
+  ],
+  "neutralHeight": 0.99951171875,
+  "meshGroups": {
+    "kestrel_pelvis": "rig_pelvis",
+    "kestrel_torso": "rig_torso",
+    "kestrel_leg_left_thigh": "rig_leg_left_thigh",
+    "kestrel_leg_left_shin": "rig_leg_left_shin",
+    "kestrel_leg_left_foot": "rig_leg_left_foot",
+    "kestrel_mount_left-gun": "rig_mount_left-gun",
+    "kestrel_leg_right_thigh": "rig_leg_right_thigh",
+    "kestrel_leg_right_shin": "rig_leg_right_shin",
+    "kestrel_leg_right_foot": "rig_leg_right_foot",
+    "kestrel_mount_right-gun": "rig_mount_right-gun"
+  }
+}

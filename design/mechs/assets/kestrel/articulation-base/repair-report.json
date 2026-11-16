@@ -1,0 +1,2568 @@
+{
+  "sourceSha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a",
+  "recipeSha256": "69ded310be1321de08e6cfc628ef0bb3a87aa33c7d492bb49219e1b9746805ae",
+  "candidateSha256": "03e3d9386dcc445750780229c640e1165bf83b2701a245339afa7594d8108edd",
+  "candidateBytes": 1068864,
+  "blenderVersion": "5.2.0 LTS",
+  "sourceComponentCount": 321,
+  "sourceDecisions": [
+    {
+      "sourceComponent": "mesh:0/component:0",
+      "sourceTriangles": 111,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:1",
+      "sourceTriangles": 175,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:2",
+      "sourceTriangles": 140,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:3",
+      "sourceTriangles": 224,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:4",
+      "sourceTriangles": 111,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:5",
+      "sourceTriangles": 188,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:6",
+      "sourceTriangles": 230,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:7",
+      "sourceTriangles": 2079,
+      "decision": "separate-at-reviewed-joint",
+      "owners": [
+        "rig_leg_right_thigh",
+        "rig_leg_right_shin"
+      ]
+    },
+    {
+      "sourceComponent": "mesh:0/component:8",
+      "sourceTriangles": 176,
+      "decision": "retain",
+      "owner": "rig_leg_right_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:9",
+      "sourceTriangles": 250,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:10",
+      "sourceTriangles": 533,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:11",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:12",
+      "sourceTriangles": 418,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:13",
+      "sourceTriangles": 418,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:14",
+      "sourceTriangles": 418,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:15",
+      "sourceTriangles": 418,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:16",
+      "sourceTriangles": 418,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:17",
+      "sourceTriangles": 426,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:18",
+      "sourceTriangles": 420,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:19",
+      "sourceTriangles": 200,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:20",
+      "sourceTriangles": 218,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:21",
+      "sourceTriangles": 180,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:22",
+      "sourceTriangles": 78,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:23",
+      "sourceTriangles": 1578,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:24",
+      "sourceTriangles": 32,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:25",
+      "sourceTriangles": 91,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:26",
+      "sourceTriangles": 84,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:27",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:28",
+      "sourceTriangles": 60,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:29",
+      "sourceTriangles": 218,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:30",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:31",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:32",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:33",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:34",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:35",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:36",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:37",
+      "sourceTriangles": 513,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:38",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:39",
+      "sourceTriangles": 1041,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:40",
+      "sourceTriangles": 314,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:41",
+      "sourceTriangles": 498,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:42",
+      "sourceTriangles": 830,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:43",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:44",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:45",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:46",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:47",
+      "sourceTriangles": 48,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:48",
+      "sourceTriangles": 108,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:49",
+      "sourceTriangles": 309,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:50",
+      "sourceTriangles": 114,
+      "decision": "retain",
+      "owner": "rig_leg_right_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:51",
+      "sourceTriangles": 375,
+      "decision": "retain",
+      "owner": "rig_leg_right_thigh"
+    },
+    {
+      "sourceComponent": "mesh:0/component:52",
+      "sourceTriangles": 180,
+      "decision": "retain",
+      "owner": "rig_leg_right_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:53",
+      "sourceTriangles": 188,
+      "decision": "retain",
+      "owner": "rig_leg_right_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:54",
+      "sourceTriangles": 152,
+      "decision": "retain",
+      "owner": "rig_leg_right_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:55",
+      "sourceTriangles": 100,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:56",
+      "sourceTriangles": 180,
+      "decision": "retain",
+      "owner": "rig_leg_right_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:57",
+      "sourceTriangles": 525,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:58",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:59",
+      "sourceTriangles": 50,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:60",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:61",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:62",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:63",
+      "sourceTriangles": 795,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:64",
+      "sourceTriangles": 187,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:65",
+      "sourceTriangles": 834,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:66",
+      "sourceTriangles": 109,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:67",
+      "sourceTriangles": 34,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:68",
+      "sourceTriangles": 92,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:69",
+      "sourceTriangles": 92,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:70",
+      "sourceTriangles": 513,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:71",
+      "sourceTriangles": 96,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:72",
+      "sourceTriangles": 88,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:73",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_leg_right_thigh"
+    },
+    {
+      "sourceComponent": "mesh:0/component:74",
+      "sourceTriangles": 88,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:75",
+      "sourceTriangles": 88,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:76",
+      "sourceTriangles": 104,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:77",
+      "sourceTriangles": 98,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:78",
+      "sourceTriangles": 94,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:79",
+      "sourceTriangles": 72,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:80",
+      "sourceTriangles": 46,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:81",
+      "sourceTriangles": 96,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:82",
+      "sourceTriangles": 94,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:83",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:84",
+      "sourceTriangles": 90,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:85",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:86",
+      "sourceTriangles": 256,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:87",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:88",
+      "sourceTriangles": 102,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:89",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:90",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:91",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:92",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:93",
+      "sourceTriangles": 48,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:94",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:95",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:96",
+      "sourceTriangles": 106,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:97",
+      "sourceTriangles": 41,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:98",
+      "sourceTriangles": 100,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:99",
+      "sourceTriangles": 134,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:100",
+      "sourceTriangles": 11,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:101",
+      "sourceTriangles": 148,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:102",
+      "sourceTriangles": 48,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:103",
+      "sourceTriangles": 61,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:104",
+      "sourceTriangles": 86,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:105",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:106",
+      "sourceTriangles": 493,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:107",
+      "sourceTriangles": 102,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:108",
+      "sourceTriangles": 106,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:109",
+      "sourceTriangles": 222,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:110",
+      "sourceTriangles": 104,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:111",
+      "sourceTriangles": 92,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:112",
+      "sourceTriangles": 61,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:113",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:114",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:115",
+      "sourceTriangles": 250,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:116",
+      "sourceTriangles": 111,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:117",
+      "sourceTriangles": 112,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:118",
+      "sourceTriangles": 178,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:119",
+      "sourceTriangles": 188,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:120",
+      "sourceTriangles": 233,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:121",
+      "sourceTriangles": 1855,
+      "decision": "separate-at-reviewed-joint",
+      "owners": [
+        "rig_leg_left_thigh",
+        "rig_leg_left_shin"
+      ]
+    },
+    {
+      "sourceComponent": "mesh:0/component:122",
+      "sourceTriangles": 176,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:123",
+      "sourceTriangles": 140,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:124",
+      "sourceTriangles": 224,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:125",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:126",
+      "sourceTriangles": 317,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:127",
+      "sourceTriangles": 58,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:128",
+      "sourceTriangles": 84,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:129",
+      "sourceTriangles": 418,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:130",
+      "sourceTriangles": 420,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:131",
+      "sourceTriangles": 77,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:132",
+      "sourceTriangles": 218,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:133",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:134",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:135",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:136",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:137",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:138",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:139",
+      "sourceTriangles": 998,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:140",
+      "sourceTriangles": 513,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:141",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:142",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:143",
+      "sourceTriangles": 204,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:144",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:145",
+      "sourceTriangles": 1,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:146",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:147",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:148",
+      "sourceTriangles": 218,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:149",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:150",
+      "sourceTriangles": 180,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:151",
+      "sourceTriangles": 108,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:152",
+      "sourceTriangles": 425,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:153",
+      "sourceTriangles": 419,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:154",
+      "sourceTriangles": 418,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:155",
+      "sourceTriangles": 416,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:156",
+      "sourceTriangles": 418,
+      "decision": "replace"
+    },
+    {
+      "sourceComponent": "mesh:0/component:157",
+      "sourceTriangles": 78,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:158",
+      "sourceTriangles": 48,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:159",
+      "sourceTriangles": 114,
+      "decision": "retain",
+      "owner": "rig_leg_left_foot"
+    },
+    {
+      "sourceComponent": "mesh:0/component:160",
+      "sourceTriangles": 108,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:161",
+      "sourceTriangles": 180,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:162",
+      "sourceTriangles": 188,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:163",
+      "sourceTriangles": 150,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:164",
+      "sourceTriangles": 375,
+      "decision": "retain",
+      "owner": "rig_leg_left_thigh"
+    },
+    {
+      "sourceComponent": "mesh:0/component:165",
+      "sourceTriangles": 180,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:166",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:167",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:168",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:169",
+      "sourceTriangles": 24,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:170",
+      "sourceTriangles": 108,
+      "decision": "retain",
+      "owner": "rig_pelvis"
+    },
+    {
+      "sourceComponent": "mesh:0/component:171",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:172",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:173",
+      "sourceTriangles": 46,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:174",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:175",
+      "sourceTriangles": 256,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:176",
+      "sourceTriangles": 111,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:177",
+      "sourceTriangles": 39,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:178",
+      "sourceTriangles": 106,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:179",
+      "sourceTriangles": 16,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:180",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_leg_left_thigh"
+    },
+    {
+      "sourceComponent": "mesh:0/component:181",
+      "sourceTriangles": 538,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:182",
+      "sourceTriangles": 94,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:183",
+      "sourceTriangles": 74,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:184",
+      "sourceTriangles": 98,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:185",
+      "sourceTriangles": 92,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:186",
+      "sourceTriangles": 90,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:187",
+      "sourceTriangles": 108,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:188",
+      "sourceTriangles": 74,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:189",
+      "sourceTriangles": 100,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:190",
+      "sourceTriangles": 60,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:191",
+      "sourceTriangles": 795,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:192",
+      "sourceTriangles": 34,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:193",
+      "sourceTriangles": 108,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:194",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:195",
+      "sourceTriangles": 100,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:196",
+      "sourceTriangles": 134,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:197",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:198",
+      "sourceTriangles": 90,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:199",
+      "sourceTriangles": 102,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:200",
+      "sourceTriangles": 108,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:201",
+      "sourceTriangles": 90,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:202",
+      "sourceTriangles": 108,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:203",
+      "sourceTriangles": 214,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:204",
+      "sourceTriangles": 830,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:205",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:206",
+      "sourceTriangles": 110,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:207",
+      "sourceTriangles": 121,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:208",
+      "sourceTriangles": 136,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:209",
+      "sourceTriangles": 107,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:210",
+      "sourceTriangles": 513,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:211",
+      "sourceTriangles": 96,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:212",
+      "sourceTriangles": 98,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:213",
+      "sourceTriangles": 100,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:214",
+      "sourceTriangles": 100,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:215",
+      "sourceTriangles": 128,
+      "decision": "retain",
+      "owner": "rig_leg_right_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:216",
+      "sourceTriangles": 2,
+      "decision": "remove-detached-source-marker"
+    },
+    {
+      "sourceComponent": "mesh:0/component:217",
+      "sourceTriangles": 2,
+      "decision": "remove-detached-source-marker"
+    },
+    {
+      "sourceComponent": "mesh:0/component:218",
+      "sourceTriangles": 2,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:219",
+      "sourceTriangles": 96,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:220",
+      "sourceTriangles": 16,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:221",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:222",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:223",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:224",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:225",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:226",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:227",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:228",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:229",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:230",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:231",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:232",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:233",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:234",
+      "sourceTriangles": 22,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:235",
+      "sourceTriangles": 2,
+      "decision": "remove-detached-source-marker"
+    },
+    {
+      "sourceComponent": "mesh:0/component:236",
+      "sourceTriangles": 2,
+      "decision": "remove-detached-source-marker"
+    },
+    {
+      "sourceComponent": "mesh:0/component:237",
+      "sourceTriangles": 224,
+      "decision": "retain",
+      "owner": "rig_leg_right_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:238",
+      "sourceTriangles": 78,
+      "decision": "retain",
+      "owner": "rig_leg_right_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:239",
+      "sourceTriangles": 38,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:240",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:241",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:242",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:243",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:244",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:245",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:246",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:247",
+      "sourceTriangles": 2,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:248",
+      "sourceTriangles": 38,
+      "decision": "retain",
+      "owner": "rig_mount_right-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:249",
+      "sourceTriangles": 38,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:250",
+      "sourceTriangles": 112,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:251",
+      "sourceTriangles": 22,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:252",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:253",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:254",
+      "sourceTriangles": 16,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:255",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:256",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:257",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:258",
+      "sourceTriangles": 10,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:259",
+      "sourceTriangles": 18,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:260",
+      "sourceTriangles": 10,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:261",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:262",
+      "sourceTriangles": 10,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:263",
+      "sourceTriangles": 2,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:264",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:265",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:266",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:267",
+      "sourceTriangles": 2,
+      "decision": "remove-detached-source-marker"
+    },
+    {
+      "sourceComponent": "mesh:0/component:268",
+      "sourceTriangles": 2,
+      "decision": "remove-detached-source-marker"
+    },
+    {
+      "sourceComponent": "mesh:0/component:269",
+      "sourceTriangles": 224,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:270",
+      "sourceTriangles": 224,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:271",
+      "sourceTriangles": 128,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:272",
+      "sourceTriangles": 2,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:273",
+      "sourceTriangles": 2,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:274",
+      "sourceTriangles": 2,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:275",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:276",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:277",
+      "sourceTriangles": 16,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:278",
+      "sourceTriangles": 60,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:279",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:280",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:281",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:282",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:283",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:284",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:285",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:286",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:287",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:288",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:289",
+      "sourceTriangles": 6,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:290",
+      "sourceTriangles": 2,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:291",
+      "sourceTriangles": 2,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:292",
+      "sourceTriangles": 78,
+      "decision": "retain",
+      "owner": "rig_leg_left_shin"
+    },
+    {
+      "sourceComponent": "mesh:0/component:293",
+      "sourceTriangles": 2,
+      "decision": "remove-detached-source-marker"
+    },
+    {
+      "sourceComponent": "mesh:0/component:294",
+      "sourceTriangles": 2,
+      "decision": "remove-detached-source-marker"
+    },
+    {
+      "sourceComponent": "mesh:0/component:295",
+      "sourceTriangles": 112,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:296",
+      "sourceTriangles": 20,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:297",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:298",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:299",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:300",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:301",
+      "sourceTriangles": 38,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:302",
+      "sourceTriangles": 38,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:303",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:304",
+      "sourceTriangles": 10,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:305",
+      "sourceTriangles": 18,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:306",
+      "sourceTriangles": 10,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:307",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:308",
+      "sourceTriangles": 10,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:309",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:310",
+      "sourceTriangles": 12,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:311",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:312",
+      "sourceTriangles": 70,
+      "decision": "retain",
+      "owner": "rig_torso"
+    },
+    {
+      "sourceComponent": "mesh:0/component:313",
+      "sourceTriangles": 38,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:314",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:315",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:316",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:317",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:318",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:319",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    },
+    {
+      "sourceComponent": "mesh:0/component:320",
+      "sourceTriangles": 8,
+      "decision": "retain",
+      "owner": "rig_mount_left-gun"
+    }
+  ],
+  "removedDegeneratePolygons": 51,
+  "barrels": {
+    "right": [
+      {
+        "sourceComponent": "mesh:0/component:12",
+        "center": [
+          -0.3041991740465164,
+          -0.2531738877296448,
+          0.66162109375
+        ],
+        "outerRadius": 0.011596672236919403,
+        "innerRadius": 0.007421870231628418,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:13",
+        "center": [
+          -0.3090819865465164,
+          -0.2531738877296448,
+          0.683349609375
+        ],
+        "outerRadius": 0.011718742549419403,
+        "innerRadius": 0.0074999952316284185,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:14",
+        "center": [
+          -0.2856444865465164,
+          -0.2536621689796448,
+          0.64697265625
+        ],
+        "outerRadius": 0.011840812861919403,
+        "innerRadius": 0.0075781202316284185,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:15",
+        "center": [
+          -0.2851562052965164,
+          -0.2536621689796448,
+          0.672607421875
+        ],
+        "outerRadius": 0.011962883174419403,
+        "innerRadius": 0.007656245231628418,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:16",
+        "center": [
+          -0.2666015177965164,
+          -0.2541504502296448,
+          0.661865234375
+        ],
+        "outerRadius": 0.011962883174419403,
+        "innerRadius": 0.007656245231628418,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:17",
+        "center": [
+          -0.2624511271715164,
+          -0.2541504502296448,
+          0.68310546875
+        ],
+        "outerRadius": 0.012451164424419403,
+        "innerRadius": 0.007968745231628419,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:18",
+        "center": [
+          -0.2866210490465164,
+          -0.2536621689796448,
+          0.696533203125
+        ],
+        "outerRadius": 0.011962883174419403,
+        "innerRadius": 0.007656245231628418,
+        "depth": 0.035
+      }
+    ],
+    "left": [
+      {
+        "sourceComponent": "mesh:0/component:129",
+        "center": [
+          0.2529297322034836,
+          -0.263916015625,
+          0.662841796875
+        ],
+        "outerRadius": 0.011962883174419403,
+        "innerRadius": 0.007656245231628418,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:130",
+        "center": [
+          0.24780277162790298,
+          -0.263916015625,
+          0.683837890625
+        ],
+        "outerRadius": 0.012329097837209702,
+        "innerRadius": 0.007890622615814209,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:152",
+        "center": [
+          0.2712402790784836,
+          -0.264404296875,
+          0.647705078125
+        ],
+        "outerRadius": 0.012084953486919403,
+        "innerRadius": 0.007734370231628418,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:153",
+        "center": [
+          0.2705078572034836,
+          -0.264404296875,
+          0.67333984375
+        ],
+        "outerRadius": 0.011840812861919403,
+        "innerRadius": 0.0075781202316284185,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:154",
+        "center": [
+          0.2895508259534836,
+          -0.265380859375,
+          0.662109375
+        ],
+        "outerRadius": 0.011596672236919403,
+        "innerRadius": 0.007421870231628418,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:155",
+        "center": [
+          0.2946777939796448,
+          -0.265380859375,
+          0.68359375
+        ],
+        "outerRadius": 0.011962890625,
+        "innerRadius": 0.00765625,
+        "depth": 0.035
+      },
+      {
+        "sourceComponent": "mesh:0/component:156",
+        "center": [
+          0.2712402790784836,
+          -0.264404296875,
+          0.697021484375
+        ],
+        "outerRadius": 0.012329094111919403,
+        "innerRadius": 0.007890620231628419,
+        "depth": 0.035
+      }
+    ]
+  },
+  "exportedTriangleCleanup": [
+    {
+      "mesh": "kestrel_leg_left_foot_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "kestrel_leg_left_shin_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "kestrel_leg_left_thigh_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "kestrel_leg_right_foot_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "kestrel_leg_right_shin_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "kestrel_leg_right_thigh_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "kestrel_mount_left-gun_mesh",
+      "removedZeroAreaTriangles": 8
+    },
+    {
+      "mesh": "kestrel_mount_right-gun_mesh",
+      "removedZeroAreaTriangles": 9
+    },
+    {
+      "mesh": "kestrel_pelvis_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "kestrel_torso_mesh",
+      "removedZeroAreaTriangles": 18
+    }
+  ],
+  "jointConnections": [
+    {
+      "sourceComponent": "mesh:0/component:7",
+      "thighAttachment": [
+        -0.15300379693508148,
+        0.13568051159381866,
+        0.37251895666122437
+      ],
+      "pivot": [
+        -0.15468420088291168,
+        0.17737248539924622,
+        0.3335340619087219
+      ],
+      "scope": "A thigh-owned cast eye spans the upper cut contour and overlaps the complete shin-owned knee housing."
+    },
+    {
+      "sourceComponent": "mesh:0/component:121",
+      "thighAttachment": [
+        0.14292216300964355,
+        0.13163186609745026,
+        0.37366920709609985
+      ],
+      "pivot": [
+        0.1469496488571167,
+        0.1712261289358139,
+        0.33342573046684265
+      ],
+      "scope": "A thigh-owned cast eye spans the upper cut contour and overlaps the complete shin-owned knee housing."
+    }
+  ],
+  "ownedMeshNodes": {
+    "rig_pelvis": [
+      "geometry_kestrel_pelvis"
+    ],
+    "rig_torso": [
+      "geometry_kestrel_torso"
+    ],
+    "rig_leg_left_thigh": [
+      "geometry_kestrel_leg_left_thigh"
+    ],
+    "rig_leg_left_shin": [
+      "geometry_kestrel_leg_left_shin"
+    ],
+    "rig_leg_left_foot": [
+      "geometry_kestrel_leg_left_foot"
+    ],
+    "rig_mount_left-gun": [
+      "geometry_kestrel_mount_left-gun"
+    ],
+    "rig_leg_right_thigh": [
+      "geometry_kestrel_leg_right_thigh"
+    ],
+    "rig_leg_right_shin": [
+      "geometry_kestrel_leg_right_shin"
+    ],
+    "rig_leg_right_foot": [
+      "geometry_kestrel_leg_right_foot"
+    ],
+    "rig_mount_right-gun": [
+      "geometry_kestrel_mount_right-gun"
+    ]
+  },
+  "rigGroups": [
+    {
+      "name": "rig_pelvis",
+      "parent": null,
+      "pivot": [
+        -0.00513,
+        0.0032,
+        0.5223
+      ]
+    },
+    {
+      "name": "rig_torso",
+      "parent": "rig_pelvis",
+      "pivot": [
+        -0.00513,
+        0.0032,
+        0.5786
+      ]
+    },
+    {
+      "name": "rig_leg_left_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        0.11718752235174179,
+        0.03064255904579822,
+        0.5222003201493355
+      ]
+    },
+    {
+      "name": "rig_leg_left_shin",
+      "parent": "rig_leg_left_thigh",
+      "pivot": [
+        0.14694964402310906,
+        0.171226133457372,
+        0.3334257440015609
+      ]
+    },
+    {
+      "name": "rig_leg_left_foot",
+      "parent": "rig_leg_left_shin",
+      "pivot": [
+        0.19140630215406418,
+        -0.02905273949727416,
+        0.0623779296875
+      ]
+    },
+    {
+      "name": "rig_mount_left-gun",
+      "parent": "rig_torso",
+      "pivot": [
+        0.205,
+        0.1,
+        0.695
+      ]
+    },
+    {
+      "name": "rig_leg_right_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        -0.1257323995232582,
+        0.03500180796918148,
+        0.5223657740413594
+      ]
+    },
+    {
+      "name": "rig_leg_right_shin",
+      "parent": "rig_leg_right_thigh",
+      "pivot": [
+        -0.15468419841132486,
+        0.17737248038254227,
+        0.3335340500526313
+      ]
+    },
+    {
+      "name": "rig_leg_right_foot",
+      "parent": "rig_leg_right_shin",
+      "pivot": [
+        -0.20324701815843582,
+        -0.0211182227358222,
+        0.0623779296875
+      ]
+    },
+    {
+      "name": "rig_mount_right-gun",
+      "parent": "rig_torso",
+      "pivot": [
+        -0.215,
+        0.1,
+        0.695
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "name": "socket_left-gun",
+      "parent": "rig_torso",
+      "worldPosition": [
+        0.205,
+        0.1,
+        0.695
+      ],
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "extras": {
+        "hardpointId": "left-gun",
+        "family": "ballistic",
+        "role": "mount-socket-not-muzzle"
+      }
+    },
+    {
+      "name": "socket_right-gun",
+      "parent": "rig_torso",
+      "worldPosition": [
+        -0.215,
+        0.1,
+        0.695
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "extras": {
+        "hardpointId": "right-gun",
+        "family": "ballistic",
+        "role": "mount-socket-not-muzzle"
+      }
+    },
+    {
+      "name": "physical_exit_right_gun_1",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.3041991740465164,
+        -0.2531738877296448,
+        0.66162109375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_2",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.3090819865465164,
+        -0.2531738877296448,
+        0.683349609375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_3",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2856444865465164,
+        -0.2536621689796448,
+        0.64697265625
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_4",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2851562052965164,
+        -0.2536621689796448,
+        0.672607421875
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_5",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2666015177965164,
+        -0.2541504502296448,
+        0.661865234375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_6",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2624511271715164,
+        -0.2541504502296448,
+        0.68310546875
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_gun_7",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2866210490465164,
+        -0.2536621689796448,
+        0.696533203125
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "muzzle_right-gun",
+      "parent": "rig_mount_right-gun",
+      "worldPosition": [
+        -0.2851562052965164,
+        -0.2536621689796448,
+        0.672607421875
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_1",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2529297322034836,
+        -0.263916015625,
+        0.662841796875
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_2",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.24780277162790298,
+        -0.263916015625,
+        0.683837890625
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_3",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2712402790784836,
+        -0.264404296875,
+        0.647705078125
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_4",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2705078572034836,
+        -0.264404296875,
+        0.67333984375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_5",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2895508259534836,
+        -0.265380859375,
+        0.662109375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_6",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2946777939796448,
+        -0.265380859375,
+        0.68359375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_gun_7",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2712402790784836,
+        -0.264404296875,
+        0.697021484375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "muzzle_left-gun",
+      "parent": "rig_mount_left-gun",
+      "worldPosition": [
+        0.2705078572034836,
+        -0.264404296875,
+        0.67333984375
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    }
+  ],
+  "status": "candidate-needs-articulation-and-visual-review",
+  "authoringScripts": [
+    {
+      "path": "scripts/mech-design/blender/build_kestrel_repair.py",
+      "sha256": "125e416f652598242eed00c79475a26ca04c57f94837d9313105d4c4b3ee1e74"
+    },
+    {
+      "path": "scripts/mech-design/blender/kestrel_motion.py",
+      "sha256": "b7e993c9adc772d987426873f31de7510303a6a75606642e99d8189d664d481c"
+    },
+    {
+      "path": "scripts/mech-design/blender/source_inventory.py",
+      "sha256": "94fb80b31ae3b5956bbcb74f669966f08d2c6bc385f4e4de47ae483d6e451e2d"
+    },
+    {
+      "path": "scripts/mech-design/blender/rigid_packaging.py",
+      "sha256": "e51f1485eb35d4e7adf8595daa20a6b2136692222430adea1b9ce6cc232b83a2"
+    },
+    {
+      "path": "scripts/mech-design/blender/rigid_contract.py",
+      "sha256": "db5fcd7c4648a5fa980a3d8b20a4d4cd8560061f7f7b28f8f5e12c596f9159b0"
+    },
+    {
+      "path": "scripts/mech-design/blender/locomotion_trial.py",
+      "sha256": "717e99b713c403bdd9a8f26c3e1b12d333bdedee5a0910b3200e72f5d72c9e1a"
+    }
+  ]
+}

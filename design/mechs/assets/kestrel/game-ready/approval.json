@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-visual-approved-in-runtime",
+  "recordedDate": "2026-11-16",
+  "asset": {
+    "path": "public/assets/mechs/kestrel/game-ready.glb",
+    "sha256": "fbab677c30bd0181dcb4a6758ac78602d168a8ee2556bc75793aa2b256129f8b"
+  },
+  "ownerStatement": "Yes",
+  "ownerPrompt": "Export validation and browser checks pass. No additional credits were used. Do the materials, scale, and runtime motion look right before I finalize the asset and PR?",
+  "scope": "Exact Kestrel A material export, scale and demonstrated runtime appearance/motion, including fitted and empty gun mounts, in the interactive review and production-game capture.",
+  "reviewHtmlSha256": "a62df8ad0ab7c3292bbbb346e6a74f82d0d14642c7908ccc9ce807cb7c4af0d4",
+  "approvedRuntimeFiles": [
+    {
+      "path": "src/authored-mech.ts",
+      "sha256": "1d45206908a5d2e7963c64a325286364ea596e09d228be5fafb3ea76eef8687b"
+    },
+    {
+      "path": "src/authored-gait.ts",
+      "sha256": "8ec202c63736b65357fd698cd25d64b47902235cb962fa082d0ec7880995459d"
+    },
+    {
+      "path": "src/authored-run.ts",
+      "sha256": "156e1cdcdaab041cf840cbf4168454dcf5262e9377459fea84794c6a8e966798"
+    },
+    {
+      "path": "src/authored-mech-study.ts",
+      "sha256": "62ce42779d198c5f6622abaa856ef8c497415c5fc4dfbb3691e887635b100b9b"
+    },
+    {
+      "path": "src/hangar-preview.ts",
+      "sha256": "a8809e3ef30a8d09d5cccab1aab0a01d36184afcdbd7600956116fc35a6b25c4"
+    },
+    {
+      "path": "src/main.ts",
+      "sha256": "1a66e90ad522d59c68b80cec3c372ad7ea7c6a6e198d5e0ade845b04f8dd6294"
+    },
+    {
+      "path": "src/presentation.ts",
+      "sha256": "6cd491720ca8b8be17edc6747e85df6decd20308e301f8a9bdf327661e92280e"
+    },
+    {
+      "path": "src/mech-3d.ts",
+      "sha256": "f3828964c18fa52f9bff7b1e3ce9cd51d8c6f60f3e0b7f7b6a9ca503d226cf61"
+    }
+  ],
+  "delivery": "Normal startup installs this approved Kestrel factory before presentation; asset-load failure retains the procedural fallback. Body, material, scale and gait remain the reviewed revision. Warden and Kestrel B/C paths remain as before.",
+  "remainingAcceptance": [
+    "Physical controller/touch feel, audio and target-hardware performance were not established by software browser checks.",
+    "Piston stroke and exhaustive mechanical part collision are not engineering validation claims."
+  ],
+  "credits": {
+    "provider": "Tripo Studio",
+    "generations": 1,
+    "total": 100,
+    "additionalMaterialCredits": 0
+  }
+}

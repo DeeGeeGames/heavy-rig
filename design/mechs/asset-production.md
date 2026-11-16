@@ -77,7 +77,42 @@ superseded exports and verbose traces are recoverable using
 [the archive index](assets/warden/archived-outputs.json). They are not instructions
 to resume whole-body dense-master retopology. Previous independent mount/gimbal
 contact acceptance does not change the selected asset's rigid torso ownership.
-Kestrel and Maul currently have approved concepts only.
+Kestrel has an owner-approved concept, [four-view turnaround](chassis/kestrel/turnaround/a/manifest.json),
+[raw P2.0 source](assets/kestrel/generated-source/approval.json), and
+[repaired articulation draft](assets/kestrel/articulation-base/approval.json).
+The owner accepted the exact repaired geometry and three draft clips before
+materials, then approved the [final materials, scale and runtime appearance/motion](assets/kestrel/game-ready/approval.json).
+Its 42,796 triangles retain the source silhouette; fourteen real barrel bores,
+a closed inner waist and source-specific knee separation replace defective
+source geometry. Ten rigid sections preserve two interchangeable gun assemblies.
+No Warden anatomical thresholds or global decimation ratio define this repair.
+The exact recipe retains its historical candidate labels; the external approval
+record defines acceptance. Maul currently has an approved concept only.
+
+Kestrel's material pass uses one shared palette material and two tiny embedded
+textures. Component roles and cockpit/shaft face overrides are explicit for this
+source. Verify all expected overrides and actual ordered triangle positions and
+normals before packaging; then verify lossless graph, geometry, UV, animation
+and image equivalence after glTF Transform pruning. Candidate exports and
+previews remain ignored until owner approval. Local material authoring consumes
+no additional Studio credits.
+
+Normal startup now installs the approved Kestrel; a failed load or five-second
+startup timeout keeps the procedural fallback. `kestrel-preview.html` provides
+the same game entry; `kestrel-study.html` isolates equipment, camera and motion
+review. The runtime uses fixed-step contacts and measured IK with
+Kestrel-specific strides, rather than replaying the embedded draft leg tracks.
+Clip approval therefore does not approve runtime locomotion. Empty gun slots
+hide only their interchangeable assemblies; torso brackets and firing anchors
+remain. Other Kestrel weapon variants retain the procedural path.
+
+The material and neutral authoring exports reproduced byte for byte. This
+second-chassis run exercised the shared inventory and neutral rig packager;
+component ownership, tilted knee axes, fused-leg separation, geometry repairs,
+material face overrides and stride parameters remained source-specific. The
+pipeline is reusable with reviewed adapters, not automatic anatomy extraction.
+Physical control feel, audio and representative hardware performance are still
+unmeasured; no roster-wide polygon budget follows from this visual acceptance.
 
 ## Reproduction and acceptance
 

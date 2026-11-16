@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "authoringSha256": "351502e07efe8baf9b03f019dee7ea6a8b8ce729f3e7007409de6143300f901f",
+  "packagedSha256": "fbab677c30bd0181dcb4a6758ac78602d168a8ee2556bc75793aa2b256129f8b",
+  "authoringBytes": 2613304,
+  "packagedBytes": 1584884,
+  "triangles": 42796,
+  "meshSections": 10,
+  "materials": 1,
+  "textures": 2,
+  "verified": [
+    "Exact ordered triangle positions, normals and UVs",
+    "Named node graph, neutral transforms and anchors",
+    "Exact animation sample values and metadata",
+    "Exact embedded palette images, material and sampling definitions"
+  ],
+  "scope": "Lossless packaging equivalence; inherits approved articulation geometry checks. No game or hardware acceptance."
+}

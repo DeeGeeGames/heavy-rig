@@ -1,0 +1,3543 @@
+{
+  "schemaVersion": 1,
+  "defaultRole": "armor",
+  "newGeometryRole": "mechanism",
+  "palette": {
+    "armor": {
+      "color": [
+        149,
+        150,
+        147
+      ],
+      "roughness": 0.73,
+      "metallic": 0.22
+    },
+    "mechanism": {
+      "color": [
+        69,
+        73,
+        74
+      ],
+      "roughness": 0.6,
+      "metallic": 0.68
+    },
+    "vent": {
+      "color": [
+        48,
+        51,
+        51
+      ],
+      "roughness": 0.76,
+      "metallic": 0.4
+    },
+    "steel": {
+      "color": [
+        108,
+        115,
+        118
+      ],
+      "roughness": 0.42,
+      "metallic": 0.83
+    },
+    "chrome": {
+      "color": [
+        177,
+        188,
+        193
+      ],
+      "roughness": 0.25,
+      "metallic": 0.94
+    },
+    "glass": {
+      "color": [
+        37,
+        48,
+        55
+      ],
+      "roughness": 0.19,
+      "metallic": 0.32
+    },
+    "bore": {
+      "color": [
+        25,
+        27,
+        28
+      ],
+      "roughness": 0.75,
+      "metallic": 0.5
+    }
+  },
+  "componentRoles": {
+    "mesh:0/component:223": "vent",
+    "mesh:0/component:224": "vent",
+    "mesh:0/component:225": "vent",
+    "mesh:0/component:226": "vent",
+    "mesh:0/component:227": "vent",
+    "mesh:0/component:228": "vent",
+    "mesh:0/component:229": "vent",
+    "mesh:0/component:230": "vent",
+    "mesh:0/component:231": "vent",
+    "mesh:0/component:232": "vent",
+    "mesh:0/component:233": "vent",
+    "mesh:0/component:279": "vent",
+    "mesh:0/component:280": "vent",
+    "mesh:0/component:281": "vent",
+    "mesh:0/component:282": "vent",
+    "mesh:0/component:283": "vent",
+    "mesh:0/component:284": "vent",
+    "mesh:0/component:285": "vent",
+    "mesh:0/component:286": "vent",
+    "mesh:0/component:287": "vent",
+    "mesh:0/component:288": "vent",
+    "mesh:0/component:289": "vent",
+    "mesh:0/component:24": "vent",
+    "mesh:0/component:127": "vent",
+    "mesh:0/component:218": "vent",
+    "mesh:0/component:272": "vent",
+    "mesh:0/component:273": "vent",
+    "mesh:0/component:100": "vent",
+    "mesh:0/component:258": "vent",
+    "mesh:0/component:259": "vent",
+    "mesh:0/component:260": "vent",
+    "mesh:0/component:261": "vent",
+    "mesh:0/component:262": "vent",
+    "mesh:0/component:263": "vent",
+    "mesh:0/component:264": "vent",
+    "mesh:0/component:304": "vent",
+    "mesh:0/component:305": "vent",
+    "mesh:0/component:306": "vent",
+    "mesh:0/component:307": "vent",
+    "mesh:0/component:308": "vent",
+    "mesh:0/component:309": "vent",
+    "mesh:0/component:310": "vent",
+    "mesh:0/component:110": "vent",
+    "mesh:0/component:112": "vent",
+    "mesh:0/component:5": "mechanism",
+    "mesh:0/component:9": "mechanism",
+    "mesh:0/component:39": "mechanism",
+    "mesh:0/component:49": "mechanism",
+    "mesh:0/component:119": "mechanism",
+    "mesh:0/component:115": "mechanism",
+    "mesh:0/component:126": "mechanism",
+    "mesh:0/component:139": "mechanism",
+    "mesh:0/component:37": "mechanism",
+    "mesh:0/component:42": "mechanism",
+    "mesh:0/component:79": "mechanism",
+    "mesh:0/component:80": "mechanism",
+    "mesh:0/component:86": "mechanism",
+    "mesh:0/component:140": "mechanism",
+    "mesh:0/component:173": "mechanism",
+    "mesh:0/component:175": "mechanism",
+    "mesh:0/component:183": "mechanism",
+    "mesh:0/component:63": "mechanism",
+    "mesh:0/component:64": "mechanism",
+    "mesh:0/component:65": "mechanism",
+    "mesh:0/component:70": "mechanism",
+    "mesh:0/component:191": "mechanism",
+    "mesh:0/component:203": "mechanism",
+    "mesh:0/component:204": "mechanism",
+    "mesh:0/component:210": "mechanism",
+    "mesh:0/component:51": "mechanism",
+    "mesh:0/component:164": "mechanism",
+    "mesh:0/component:53": "mechanism",
+    "mesh:0/component:54": "mechanism",
+    "mesh:0/component:162": "mechanism",
+    "mesh:0/component:163": "mechanism",
+    "mesh:0/component:237": "mechanism",
+    "mesh:0/component:238": "mechanism",
+    "mesh:0/component:270": "mechanism",
+    "mesh:0/component:292": "mechanism",
+    "mesh:0/component:19": "mechanism",
+    "mesh:0/component:143": "mechanism",
+    "mesh:0/component:40": "mechanism",
+    "mesh:0/component:41": "mechanism",
+    "mesh:0/component:43": "mechanism",
+    "mesh:0/component:44": "mechanism",
+    "mesh:0/component:45": "mechanism",
+    "mesh:0/component:46": "mechanism",
+    "mesh:0/component:90": "mechanism",
+    "mesh:0/component:93": "mechanism",
+    "mesh:0/component:94": "mechanism",
+    "mesh:0/component:95": "mechanism",
+    "mesh:0/component:136": "mechanism",
+    "mesh:0/component:137": "mechanism",
+    "mesh:0/component:138": "mechanism",
+    "mesh:0/component:166": "mechanism",
+    "mesh:0/component:167": "mechanism",
+    "mesh:0/component:168": "mechanism",
+    "mesh:0/component:169": "mechanism",
+    "mesh:0/component:219": "mechanism",
+    "mesh:0/component:12": "steel",
+    "mesh:0/component:13": "steel",
+    "mesh:0/component:14": "steel",
+    "mesh:0/component:15": "steel",
+    "mesh:0/component:16": "steel",
+    "mesh:0/component:17": "steel",
+    "mesh:0/component:18": "steel",
+    "mesh:0/component:129": "steel",
+    "mesh:0/component:130": "steel",
+    "mesh:0/component:152": "steel",
+    "mesh:0/component:153": "steel",
+    "mesh:0/component:154": "steel",
+    "mesh:0/component:155": "steel",
+    "mesh:0/component:156": "steel",
+    "mesh:0/component:20": "steel",
+    "mesh:0/component:148": "steel",
+    "mesh:0/component:52": "steel",
+    "mesh:0/component:56": "steel",
+    "mesh:0/component:161": "steel",
+    "mesh:0/component:165": "steel",
+    "mesh:0/component:215": "chrome",
+    "mesh:0/component:269": "chrome",
+    "mesh:0/component:271": "chrome"
+  },
+  "sourceFaceOverrides": [
+    {
+      "vertices": [
+        4893,
+        4898,
+        4896
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 8978
+    },
+    {
+      "vertices": [
+        4903,
+        4896,
+        4898
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 8988
+    },
+    {
+      "vertices": [
+        4930,
+        4935,
+        4934
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9059
+    },
+    {
+      "vertices": [
+        4936,
+        4934,
+        4935
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9061
+    },
+    {
+      "vertices": [
+        4942,
+        4936,
+        4935
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9070
+    },
+    {
+      "vertices": [
+        4947,
+        4942,
+        4935
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9080
+    },
+    {
+      "vertices": [
+        4949,
+        4948,
+        4950
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9085
+    },
+    {
+      "vertices": [
+        4950,
+        4948,
+        4947
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9086
+    },
+    {
+      "vertices": [
+        4947,
+        4935,
+        4951
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9088
+    },
+    {
+      "vertices": [
+        4947,
+        4951,
+        4950
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9089
+    },
+    {
+      "vertices": [
+        4994,
+        4995,
+        4996
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9149
+    },
+    {
+      "vertices": [
+        4882,
+        4995,
+        4994
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9153
+    },
+    {
+      "vertices": [
+        4882,
+        4994,
+        4998
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9157
+    },
+    {
+      "vertices": [
+        4882,
+        4998,
+        5000
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9164
+    },
+    {
+      "vertices": [
+        4882,
+        5000,
+        5001
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9166
+    },
+    {
+      "vertices": [
+        5002,
+        5001,
+        5000
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9170
+    },
+    {
+      "vertices": [
+        5000,
+        5003,
+        5004
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9175
+    },
+    {
+      "vertices": [
+        5000,
+        5004,
+        5002
+      ],
+      "role": "glass",
+      "sourceBlenderFace": 9177
+    },
+    {
+      "vertices": [
+        24300,
+        24301,
+        24302
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43050
+    },
+    {
+      "vertices": [
+        24301,
+        24300,
+        24303
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43051
+    },
+    {
+      "vertices": [
+        24300,
+        24302,
+        24304
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43052
+    },
+    {
+      "vertices": [
+        24301,
+        24303,
+        24305
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43053
+    },
+    {
+      "vertices": [
+        24305,
+        24303,
+        24306
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43054
+    },
+    {
+      "vertices": [
+        24302,
+        24301,
+        24307
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43055
+    },
+    {
+      "vertices": [
+        24307,
+        24301,
+        24305
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43056
+    },
+    {
+      "vertices": [
+        24304,
+        24302,
+        24308
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43057
+    },
+    {
+      "vertices": [
+        24304,
+        24308,
+        24309
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43058
+    },
+    {
+      "vertices": [
+        24305,
+        24306,
+        24310
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43059
+    },
+    {
+      "vertices": [
+        24310,
+        24306,
+        24311
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43060
+    },
+    {
+      "vertices": [
+        24310,
+        24311,
+        24312
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43061
+    },
+    {
+      "vertices": [
+        24312,
+        24311,
+        24313
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43062
+    },
+    {
+      "vertices": [
+        24305,
+        24310,
+        24314
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43063
+    },
+    {
+      "vertices": [
+        24312,
+        24313,
+        24315
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43064
+    },
+    {
+      "vertices": [
+        24315,
+        24313,
+        24316
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43065
+    },
+    {
+      "vertices": [
+        24310,
+        24312,
+        24317
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43066
+    },
+    {
+      "vertices": [
+        24310,
+        24317,
+        24314
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43067
+    },
+    {
+      "vertices": [
+        24312,
+        24315,
+        24318
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43068
+    },
+    {
+      "vertices": [
+        24312,
+        24318,
+        24317
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43069
+    },
+    {
+      "vertices": [
+        24315,
+        24316,
+        24319
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43070
+    },
+    {
+      "vertices": [
+        24305,
+        24314,
+        24320
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43071
+    },
+    {
+      "vertices": [
+        24319,
+        24316,
+        24321
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43072
+    },
+    {
+      "vertices": [
+        24321,
+        24316,
+        24322
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43073
+    },
+    {
+      "vertices": [
+        24305,
+        24320,
+        24307
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43074
+    },
+    {
+      "vertices": [
+        24315,
+        24319,
+        24323
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43075
+    },
+    {
+      "vertices": [
+        24315,
+        24323,
+        24318
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43076
+    },
+    {
+      "vertices": [
+        24319,
+        24321,
+        24324
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43077
+    },
+    {
+      "vertices": [
+        24319,
+        24324,
+        24323
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43078
+    },
+    {
+      "vertices": [
+        24321,
+        24322,
+        24325
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43079
+    },
+    {
+      "vertices": [
+        24321,
+        24325,
+        24324
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43080
+    },
+    {
+      "vertices": [
+        24325,
+        24322,
+        24326
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43081
+    },
+    {
+      "vertices": [
+        24325,
+        24326,
+        24327
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43082
+    },
+    {
+      "vertices": [
+        24327,
+        24326,
+        24328
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43083
+    },
+    {
+      "vertices": [
+        24324,
+        24325,
+        24329
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43084
+    },
+    {
+      "vertices": [
+        24329,
+        24325,
+        24327
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43085
+    },
+    {
+      "vertices": [
+        24327,
+        24328,
+        24330
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43086
+    },
+    {
+      "vertices": [
+        24330,
+        24328,
+        24331
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43087
+    },
+    {
+      "vertices": [
+        24329,
+        24327,
+        24332
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43088
+    },
+    {
+      "vertices": [
+        24332,
+        24327,
+        24330
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43089
+    },
+    {
+      "vertices": [
+        24330,
+        24331,
+        24333
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43090
+    },
+    {
+      "vertices": [
+        24332,
+        24330,
+        24334
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43091
+    },
+    {
+      "vertices": [
+        24334,
+        24330,
+        24333
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43092
+    },
+    {
+      "vertices": [
+        24333,
+        24331,
+        24335
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43093
+    },
+    {
+      "vertices": [
+        24329,
+        24332,
+        24336
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43094
+    },
+    {
+      "vertices": [
+        24336,
+        24332,
+        24334
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43095
+    },
+    {
+      "vertices": [
+        24329,
+        24336,
+        24337
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43096
+    },
+    {
+      "vertices": [
+        24329,
+        24337,
+        24324
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43097
+    },
+    {
+      "vertices": [
+        24333,
+        24335,
+        24338
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43098
+    },
+    {
+      "vertices": [
+        24338,
+        24335,
+        24339
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43099
+    },
+    {
+      "vertices": [
+        24334,
+        24333,
+        24340
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43100
+    },
+    {
+      "vertices": [
+        24340,
+        24333,
+        24338
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43101
+    },
+    {
+      "vertices": [
+        24338,
+        24339,
+        24341
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43102
+    },
+    {
+      "vertices": [
+        24341,
+        24339,
+        24342
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43103
+    },
+    {
+      "vertices": [
+        24340,
+        24338,
+        24343
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43104
+    },
+    {
+      "vertices": [
+        24343,
+        24338,
+        24341
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43105
+    },
+    {
+      "vertices": [
+        24341,
+        24342,
+        24344
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43106
+    },
+    {
+      "vertices": [
+        24340,
+        24343,
+        24345
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43107
+    },
+    {
+      "vertices": [
+        24340,
+        24345,
+        24334
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43108
+    },
+    {
+      "vertices": [
+        24341,
+        24344,
+        24346
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43109
+    },
+    {
+      "vertices": [
+        24346,
+        24344,
+        24309
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43110
+    },
+    {
+      "vertices": [
+        24343,
+        24341,
+        24347
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43111
+    },
+    {
+      "vertices": [
+        24347,
+        24341,
+        24346
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43112
+    },
+    {
+      "vertices": [
+        24346,
+        24309,
+        24308
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43113
+    },
+    {
+      "vertices": [
+        24343,
+        24347,
+        24348
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43114
+    },
+    {
+      "vertices": [
+        24343,
+        24348,
+        24345
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43115
+    },
+    {
+      "vertices": [
+        24347,
+        24346,
+        24349
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43116
+    },
+    {
+      "vertices": [
+        24349,
+        24346,
+        24308
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43117
+    },
+    {
+      "vertices": [
+        24348,
+        24347,
+        24350
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43118
+    },
+    {
+      "vertices": [
+        24350,
+        24347,
+        24349
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43119
+    },
+    {
+      "vertices": [
+        24345,
+        24348,
+        24351
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43120
+    },
+    {
+      "vertices": [
+        24352,
+        24334,
+        24345
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43121
+    },
+    {
+      "vertices": [
+        24352,
+        24345,
+        24351
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43122
+    },
+    {
+      "vertices": [
+        24334,
+        24352,
+        24336
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43123
+    },
+    {
+      "vertices": [
+        24336,
+        24352,
+        24353
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43124
+    },
+    {
+      "vertices": [
+        24336,
+        24353,
+        24337
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43125
+    },
+    {
+      "vertices": [
+        24354,
+        24348,
+        24350
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43126
+    },
+    {
+      "vertices": [
+        24348,
+        24354,
+        24351
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43127
+    },
+    {
+      "vertices": [
+        24352,
+        24351,
+        24355
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43128
+    },
+    {
+      "vertices": [
+        24352,
+        24355,
+        24353
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43129
+    },
+    {
+      "vertices": [
+        24351,
+        24354,
+        24356
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43130
+    },
+    {
+      "vertices": [
+        24354,
+        24350,
+        24357
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43131
+    },
+    {
+      "vertices": [
+        24354,
+        24357,
+        24356
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43132
+    },
+    {
+      "vertices": [
+        24357,
+        24350,
+        24358
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43133
+    },
+    {
+      "vertices": [
+        24358,
+        24350,
+        24349
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43134
+    },
+    {
+      "vertices": [
+        24355,
+        24351,
+        24359
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43135
+    },
+    {
+      "vertices": [
+        24359,
+        24351,
+        24356
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43136
+    },
+    {
+      "vertices": [
+        24355,
+        24359,
+        24360
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43137
+    },
+    {
+      "vertices": [
+        24355,
+        24360,
+        24353
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43138
+    },
+    {
+      "vertices": [
+        24358,
+        24349,
+        24361
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43139
+    },
+    {
+      "vertices": [
+        24361,
+        24349,
+        24308
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43140
+    },
+    {
+      "vertices": [
+        24361,
+        24308,
+        24362
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43141
+    },
+    {
+      "vertices": [
+        24362,
+        24308,
+        24302
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43142
+    },
+    {
+      "vertices": [
+        24362,
+        24302,
+        24307
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43143
+    },
+    {
+      "vertices": [
+        24361,
+        24362,
+        24363
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43144
+    },
+    {
+      "vertices": [
+        24363,
+        24362,
+        24307
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43145
+    },
+    {
+      "vertices": [
+        24358,
+        24361,
+        24364
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43146
+    },
+    {
+      "vertices": [
+        24364,
+        24361,
+        24363
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43147
+    },
+    {
+      "vertices": [
+        24358,
+        24364,
+        24365
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43148
+    },
+    {
+      "vertices": [
+        24358,
+        24365,
+        24357
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43149
+    },
+    {
+      "vertices": [
+        24364,
+        24363,
+        24366
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43150
+    },
+    {
+      "vertices": [
+        24357,
+        24365,
+        24367
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43151
+    },
+    {
+      "vertices": [
+        24357,
+        24367,
+        24356
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43152
+    },
+    {
+      "vertices": [
+        24365,
+        24364,
+        24368
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43153
+    },
+    {
+      "vertices": [
+        24368,
+        24364,
+        24366
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43154
+    },
+    {
+      "vertices": [
+        24367,
+        24365,
+        24369
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43155
+    },
+    {
+      "vertices": [
+        24369,
+        24365,
+        24368
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43156
+    },
+    {
+      "vertices": [
+        24356,
+        24367,
+        24370
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43157
+    },
+    {
+      "vertices": [
+        24367,
+        24369,
+        24371
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43158
+    },
+    {
+      "vertices": [
+        24367,
+        24371,
+        24370
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43159
+    },
+    {
+      "vertices": [
+        24369,
+        24368,
+        24372
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43160
+    },
+    {
+      "vertices": [
+        24372,
+        24368,
+        24366
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43161
+    },
+    {
+      "vertices": [
+        24356,
+        24370,
+        24373
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43162
+    },
+    {
+      "vertices": [
+        24356,
+        24373,
+        24359
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43163
+    },
+    {
+      "vertices": [
+        24373,
+        24370,
+        24374
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43164
+    },
+    {
+      "vertices": [
+        24374,
+        24370,
+        24371
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43165
+    },
+    {
+      "vertices": [
+        24359,
+        24373,
+        24378
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43169
+    },
+    {
+      "vertices": [
+        24359,
+        24378,
+        24360
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43171
+    },
+    {
+      "vertices": [
+        24377,
+        24371,
+        24380
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43173
+    },
+    {
+      "vertices": [
+        24380,
+        24371,
+        24369
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43174
+    },
+    {
+      "vertices": [
+        24380,
+        24369,
+        24372
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43175
+    },
+    {
+      "vertices": [
+        24378,
+        24382,
+        24360
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43178
+    },
+    {
+      "vertices": [
+        24360,
+        24382,
+        24384
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43180
+    },
+    {
+      "vertices": [
+        24360,
+        24384,
+        24353
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43181
+    },
+    {
+      "vertices": [
+        24382,
+        24385,
+        24384
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43183
+    },
+    {
+      "vertices": [
+        24353,
+        24384,
+        24387
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43185
+    },
+    {
+      "vertices": [
+        24353,
+        24387,
+        24337
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43186
+    },
+    {
+      "vertices": [
+        24384,
+        24385,
+        24388
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43187
+    },
+    {
+      "vertices": [
+        24384,
+        24388,
+        24387
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43188
+    },
+    {
+      "vertices": [
+        24388,
+        24394,
+        24387
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43197
+    },
+    {
+      "vertices": [
+        24394,
+        24409,
+        24387
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43219
+    },
+    {
+      "vertices": [
+        24408,
+        24406,
+        24410
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43220
+    },
+    {
+      "vertices": [
+        24409,
+        24408,
+        24411
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43221
+    },
+    {
+      "vertices": [
+        24411,
+        24408,
+        24410
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43222
+    },
+    {
+      "vertices": [
+        24387,
+        24409,
+        24412
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43223
+    },
+    {
+      "vertices": [
+        24412,
+        24409,
+        24411
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43224
+    },
+    {
+      "vertices": [
+        24387,
+        24412,
+        24337
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43225
+    },
+    {
+      "vertices": [
+        24337,
+        24412,
+        24324
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43226
+    },
+    {
+      "vertices": [
+        24324,
+        24412,
+        24323
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43227
+    },
+    {
+      "vertices": [
+        24323,
+        24412,
+        24411
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43228
+    },
+    {
+      "vertices": [
+        24323,
+        24411,
+        24318
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43229
+    },
+    {
+      "vertices": [
+        24318,
+        24411,
+        24410
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43230
+    },
+    {
+      "vertices": [
+        24318,
+        24410,
+        24317
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43231
+    },
+    {
+      "vertices": [
+        24317,
+        24410,
+        24413
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43232
+    },
+    {
+      "vertices": [
+        24413,
+        24410,
+        24406
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43233
+    },
+    {
+      "vertices": [
+        24317,
+        24413,
+        24314
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43234
+    },
+    {
+      "vertices": [
+        24413,
+        24406,
+        24407
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43235
+    },
+    {
+      "vertices": [
+        24314,
+        24413,
+        24414
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43236
+    },
+    {
+      "vertices": [
+        24414,
+        24413,
+        24407
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43237
+    },
+    {
+      "vertices": [
+        24314,
+        24414,
+        24320
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43238
+    },
+    {
+      "vertices": [
+        24414,
+        24407,
+        24415
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43239
+    },
+    {
+      "vertices": [
+        24320,
+        24414,
+        24416
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43240
+    },
+    {
+      "vertices": [
+        24416,
+        24414,
+        24415
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43241
+    },
+    {
+      "vertices": [
+        24415,
+        24407,
+        24405
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43242
+    },
+    {
+      "vertices": [
+        24320,
+        24416,
+        24307
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43243
+    },
+    {
+      "vertices": [
+        24415,
+        24405,
+        24417
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43244
+    },
+    {
+      "vertices": [
+        24416,
+        24415,
+        24418
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43246
+    },
+    {
+      "vertices": [
+        24418,
+        24415,
+        24417
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43247
+    },
+    {
+      "vertices": [
+        24307,
+        24416,
+        24419
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43248
+    },
+    {
+      "vertices": [
+        24419,
+        24416,
+        24418
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43249
+    },
+    {
+      "vertices": [
+        24307,
+        24419,
+        24363
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43250
+    },
+    {
+      "vertices": [
+        24363,
+        24419,
+        24366
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43251
+    },
+    {
+      "vertices": [
+        24417,
+        24420,
+        24418
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43253
+    },
+    {
+      "vertices": [
+        24419,
+        24418,
+        24421
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43254
+    },
+    {
+      "vertices": [
+        24419,
+        24421,
+        24366
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43255
+    },
+    {
+      "vertices": [
+        24421,
+        24418,
+        24420
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43256
+    },
+    {
+      "vertices": [
+        24366,
+        24421,
+        24422
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43257
+    },
+    {
+      "vertices": [
+        24366,
+        24422,
+        24372
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43258
+    },
+    {
+      "vertices": [
+        24421,
+        24420,
+        24423
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43259
+    },
+    {
+      "vertices": [
+        24421,
+        24423,
+        24422
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43260
+    },
+    {
+      "vertices": [
+        24420,
+        24424,
+        24423
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43262
+    },
+    {
+      "vertices": [
+        24372,
+        24422,
+        24426
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43265
+    },
+    {
+      "vertices": [
+        24426,
+        24422,
+        24423
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43266
+    },
+    {
+      "vertices": [
+        24372,
+        24426,
+        24380
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43267
+    },
+    {
+      "vertices": [
+        24426,
+        24423,
+        24427
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43269
+    },
+    {
+      "vertices": [
+        24427,
+        24423,
+        24424
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 43270
+    },
+    {
+      "vertices": [
+        25081,
+        25082,
+        25083
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44163
+    },
+    {
+      "vertices": [
+        25081,
+        25083,
+        25084
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44164
+    },
+    {
+      "vertices": [
+        25084,
+        25083,
+        25085
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44165
+    },
+    {
+      "vertices": [
+        25082,
+        25081,
+        25086
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44166
+    },
+    {
+      "vertices": [
+        25082,
+        25086,
+        25087
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44167
+    },
+    {
+      "vertices": [
+        25086,
+        25081,
+        25088
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44168
+    },
+    {
+      "vertices": [
+        25087,
+        25086,
+        25089
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44169
+    },
+    {
+      "vertices": [
+        25089,
+        25086,
+        25088
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44170
+    },
+    {
+      "vertices": [
+        25087,
+        25089,
+        25090
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44171
+    },
+    {
+      "vertices": [
+        25090,
+        25089,
+        25091
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44172
+    },
+    {
+      "vertices": [
+        25090,
+        25091,
+        25092
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44173
+    },
+    {
+      "vertices": [
+        25091,
+        25089,
+        25093
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44174
+    },
+    {
+      "vertices": [
+        25093,
+        25089,
+        25088
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44175
+    },
+    {
+      "vertices": [
+        25092,
+        25091,
+        25094
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44176
+    },
+    {
+      "vertices": [
+        25092,
+        25094,
+        25095
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44177
+    },
+    {
+      "vertices": [
+        25095,
+        25094,
+        25096
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44178
+    },
+    {
+      "vertices": [
+        25094,
+        25091,
+        25097
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44179
+    },
+    {
+      "vertices": [
+        25097,
+        25091,
+        25093
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44180
+    },
+    {
+      "vertices": [
+        25096,
+        25094,
+        25098
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44181
+    },
+    {
+      "vertices": [
+        25096,
+        25098,
+        25099
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44182
+    },
+    {
+      "vertices": [
+        25094,
+        25097,
+        25100
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44183
+    },
+    {
+      "vertices": [
+        25094,
+        25100,
+        25098
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44184
+    },
+    {
+      "vertices": [
+        25097,
+        25093,
+        25101
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44185
+    },
+    {
+      "vertices": [
+        25097,
+        25101,
+        25100
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44186
+    },
+    {
+      "vertices": [
+        25098,
+        25100,
+        25102
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44187
+    },
+    {
+      "vertices": [
+        25099,
+        25098,
+        25103
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44188
+    },
+    {
+      "vertices": [
+        25099,
+        25103,
+        25104
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44189
+    },
+    {
+      "vertices": [
+        25098,
+        25102,
+        25105
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44190
+    },
+    {
+      "vertices": [
+        25098,
+        25105,
+        25103
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44191
+    },
+    {
+      "vertices": [
+        25102,
+        25100,
+        25106
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44192
+    },
+    {
+      "vertices": [
+        25102,
+        25106,
+        25105
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44193
+    },
+    {
+      "vertices": [
+        25104,
+        25103,
+        25107
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44194
+    },
+    {
+      "vertices": [
+        25104,
+        25107,
+        25108
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44195
+    },
+    {
+      "vertices": [
+        25103,
+        25105,
+        25109
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44196
+    },
+    {
+      "vertices": [
+        25103,
+        25109,
+        25107
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44197
+    },
+    {
+      "vertices": [
+        25108,
+        25107,
+        25110
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44198
+    },
+    {
+      "vertices": [
+        25108,
+        25110,
+        25111
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44199
+    },
+    {
+      "vertices": [
+        25107,
+        25109,
+        25112
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44200
+    },
+    {
+      "vertices": [
+        25107,
+        25112,
+        25110
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44201
+    },
+    {
+      "vertices": [
+        25111,
+        25110,
+        25113
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44202
+    },
+    {
+      "vertices": [
+        25113,
+        25110,
+        25112
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44203
+    },
+    {
+      "vertices": [
+        25111,
+        25113,
+        25114
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44204
+    },
+    {
+      "vertices": [
+        25114,
+        25113,
+        25115
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44205
+    },
+    {
+      "vertices": [
+        25114,
+        25115,
+        25116
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44206
+    },
+    {
+      "vertices": [
+        25113,
+        25112,
+        25117
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44207
+    },
+    {
+      "vertices": [
+        25113,
+        25117,
+        25115
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44208
+    },
+    {
+      "vertices": [
+        25116,
+        25115,
+        25118
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44209
+    },
+    {
+      "vertices": [
+        25116,
+        25118,
+        25119
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44210
+    },
+    {
+      "vertices": [
+        25119,
+        25118,
+        25120
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44211
+    },
+    {
+      "vertices": [
+        25118,
+        25115,
+        25121
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44212
+    },
+    {
+      "vertices": [
+        25118,
+        25121,
+        25120
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44213
+    },
+    {
+      "vertices": [
+        25119,
+        25120,
+        25122
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44214
+    },
+    {
+      "vertices": [
+        25121,
+        25115,
+        25123
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44215
+    },
+    {
+      "vertices": [
+        25123,
+        25115,
+        25117
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44216
+    },
+    {
+      "vertices": [
+        25121,
+        25123,
+        25124
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44217
+    },
+    {
+      "vertices": [
+        25123,
+        25117,
+        25125
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44218
+    },
+    {
+      "vertices": [
+        25123,
+        25125,
+        25124
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44219
+    },
+    {
+      "vertices": [
+        25125,
+        25117,
+        25126
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44220
+    },
+    {
+      "vertices": [
+        25126,
+        25117,
+        25112
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44221
+    },
+    {
+      "vertices": [
+        25124,
+        25125,
+        25127
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44222
+    },
+    {
+      "vertices": [
+        25127,
+        25125,
+        25126
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44223
+    },
+    {
+      "vertices": [
+        25121,
+        25124,
+        25128
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44224
+    },
+    {
+      "vertices": [
+        25126,
+        25112,
+        25129
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44225
+    },
+    {
+      "vertices": [
+        25129,
+        25112,
+        25109
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44226
+    },
+    {
+      "vertices": [
+        25129,
+        25109,
+        25130
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44227
+    },
+    {
+      "vertices": [
+        25130,
+        25109,
+        25105
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44228
+    },
+    {
+      "vertices": [
+        25126,
+        25129,
+        25131
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44229
+    },
+    {
+      "vertices": [
+        25131,
+        25129,
+        25130
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44230
+    },
+    {
+      "vertices": [
+        25130,
+        25105,
+        25132
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44231
+    },
+    {
+      "vertices": [
+        25132,
+        25105,
+        25106
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44232
+    },
+    {
+      "vertices": [
+        25130,
+        25132,
+        25133
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44233
+    },
+    {
+      "vertices": [
+        25132,
+        25106,
+        25134
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44234
+    },
+    {
+      "vertices": [
+        25132,
+        25134,
+        25133
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44235
+    },
+    {
+      "vertices": [
+        25130,
+        25133,
+        25135
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44236
+    },
+    {
+      "vertices": [
+        25130,
+        25135,
+        25131
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44237
+    },
+    {
+      "vertices": [
+        25135,
+        25133,
+        25136
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44238
+    },
+    {
+      "vertices": [
+        25135,
+        25136,
+        25137
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44239
+    },
+    {
+      "vertices": [
+        25135,
+        25137,
+        25131
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44240
+    },
+    {
+      "vertices": [
+        25136,
+        25133,
+        25138
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44241
+    },
+    {
+      "vertices": [
+        25138,
+        25133,
+        25134
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44242
+    },
+    {
+      "vertices": [
+        25136,
+        25138,
+        25139
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44243
+    },
+    {
+      "vertices": [
+        25136,
+        25139,
+        25137
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44244
+    },
+    {
+      "vertices": [
+        25139,
+        25138,
+        25140
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44245
+    },
+    {
+      "vertices": [
+        25138,
+        25134,
+        25141
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44246
+    },
+    {
+      "vertices": [
+        25138,
+        25141,
+        25140
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44247
+    },
+    {
+      "vertices": [
+        25141,
+        25134,
+        25142
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44248
+    },
+    {
+      "vertices": [
+        25142,
+        25134,
+        25106
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44249
+    },
+    {
+      "vertices": [
+        25141,
+        25142,
+        25143
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44250
+    },
+    {
+      "vertices": [
+        25142,
+        25106,
+        25144
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44251
+    },
+    {
+      "vertices": [
+        25144,
+        25106,
+        25100
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44252
+    },
+    {
+      "vertices": [
+        25144,
+        25100,
+        25101
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44253
+    },
+    {
+      "vertices": [
+        25142,
+        25144,
+        25145
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44254
+    },
+    {
+      "vertices": [
+        25145,
+        25144,
+        25101
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44255
+    },
+    {
+      "vertices": [
+        25142,
+        25145,
+        25143
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44256
+    },
+    {
+      "vertices": [
+        25145,
+        25101,
+        25146
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44257
+    },
+    {
+      "vertices": [
+        25145,
+        25146,
+        25143
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44258
+    },
+    {
+      "vertices": [
+        25147,
+        25141,
+        25143
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44259
+    },
+    {
+      "vertices": [
+        25141,
+        25147,
+        25140
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44260
+    },
+    {
+      "vertices": [
+        25140,
+        25147,
+        25148
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44261
+    },
+    {
+      "vertices": [
+        25140,
+        25150,
+        25139
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44264
+    },
+    {
+      "vertices": [
+        25148,
+        25147,
+        25151
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44265
+    },
+    {
+      "vertices": [
+        25151,
+        25147,
+        25143
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44266
+    },
+    {
+      "vertices": [
+        25139,
+        25153,
+        25137
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44270
+    },
+    {
+      "vertices": [
+        25153,
+        25155,
+        25137
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44272
+    },
+    {
+      "vertices": [
+        25159,
+        25151,
+        25143
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44276
+    },
+    {
+      "vertices": [
+        25151,
+        25159,
+        25157
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44277
+    },
+    {
+      "vertices": [
+        25159,
+        25143,
+        25146
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44279
+    },
+    {
+      "vertices": [
+        25163,
+        25137,
+        25155
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44282
+    },
+    {
+      "vertices": [
+        25163,
+        25155,
+        25161
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44283
+    },
+    {
+      "vertices": [
+        25137,
+        25163,
+        25131
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44284
+    },
+    {
+      "vertices": [
+        25163,
+        25161,
+        25166
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44287
+    },
+    {
+      "vertices": [
+        25163,
+        25166,
+        25131
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44288
+    },
+    {
+      "vertices": [
+        25161,
+        25167,
+        25166
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44290
+    },
+    {
+      "vertices": [
+        25131,
+        25166,
+        25168
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44291
+    },
+    {
+      "vertices": [
+        25168,
+        25166,
+        25167
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44292
+    },
+    {
+      "vertices": [
+        25131,
+        25168,
+        25126
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44293
+    },
+    {
+      "vertices": [
+        25126,
+        25168,
+        25127
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44294
+    },
+    {
+      "vertices": [
+        25127,
+        25168,
+        25167
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44295
+    },
+    {
+      "vertices": [
+        25167,
+        25169,
+        25127
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44297
+    },
+    {
+      "vertices": [
+        25127,
+        25174,
+        25124
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44305
+    },
+    {
+      "vertices": [
+        25124,
+        25174,
+        25175
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44306
+    },
+    {
+      "vertices": [
+        25124,
+        25175,
+        25128
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44308
+    },
+    {
+      "vertices": [
+        25128,
+        25175,
+        25178
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44312
+    },
+    {
+      "vertices": [
+        25188,
+        25189,
+        25191
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44335
+    },
+    {
+      "vertices": [
+        25191,
+        25189,
+        25190
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44336
+    },
+    {
+      "vertices": [
+        25190,
+        25157,
+        25192
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44337
+    },
+    {
+      "vertices": [
+        25190,
+        25192,
+        25191
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44338
+    },
+    {
+      "vertices": [
+        25192,
+        25157,
+        25159
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44339
+    },
+    {
+      "vertices": [
+        25192,
+        25159,
+        25146
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44340
+    },
+    {
+      "vertices": [
+        25191,
+        25192,
+        25193
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44341
+    },
+    {
+      "vertices": [
+        25193,
+        25192,
+        25146
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44342
+    },
+    {
+      "vertices": [
+        25188,
+        25191,
+        25194
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44343
+    },
+    {
+      "vertices": [
+        25194,
+        25191,
+        25193
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44344
+    },
+    {
+      "vertices": [
+        25188,
+        25194,
+        25195
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44345
+    },
+    {
+      "vertices": [
+        25188,
+        25195,
+        25187
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44346
+    },
+    {
+      "vertices": [
+        25194,
+        25193,
+        25196
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44347
+    },
+    {
+      "vertices": [
+        25194,
+        25196,
+        25195
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44348
+    },
+    {
+      "vertices": [
+        25193,
+        25146,
+        25197
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44349
+    },
+    {
+      "vertices": [
+        25193,
+        25197,
+        25196
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44350
+    },
+    {
+      "vertices": [
+        25197,
+        25146,
+        25198
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44351
+    },
+    {
+      "vertices": [
+        25198,
+        25146,
+        25101
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44352
+    },
+    {
+      "vertices": [
+        25198,
+        25101,
+        25093
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44353
+    },
+    {
+      "vertices": [
+        25198,
+        25093,
+        25088
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44354
+    },
+    {
+      "vertices": [
+        25198,
+        25088,
+        25197
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44355
+    },
+    {
+      "vertices": [
+        25199,
+        25195,
+        25196
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44356
+    },
+    {
+      "vertices": [
+        25197,
+        25088,
+        25200
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44357
+    },
+    {
+      "vertices": [
+        25197,
+        25200,
+        25196
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44358
+    },
+    {
+      "vertices": [
+        25200,
+        25088,
+        25081
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44359
+    },
+    {
+      "vertices": [
+        25200,
+        25081,
+        25084
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44360
+    },
+    {
+      "vertices": [
+        25196,
+        25200,
+        25201
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44361
+    },
+    {
+      "vertices": [
+        25201,
+        25200,
+        25084
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44362
+    },
+    {
+      "vertices": [
+        25196,
+        25201,
+        25199
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44363
+    },
+    {
+      "vertices": [
+        25202,
+        25195,
+        25199
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44364
+    },
+    {
+      "vertices": [
+        25202,
+        25199,
+        25201
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44365
+    },
+    {
+      "vertices": [
+        25195,
+        25202,
+        25187
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44366
+    },
+    {
+      "vertices": [
+        25187,
+        25202,
+        25178
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44367
+    },
+    {
+      "vertices": [
+        25201,
+        25084,
+        25203
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44368
+    },
+    {
+      "vertices": [
+        25201,
+        25203,
+        25202
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44369
+    },
+    {
+      "vertices": [
+        25203,
+        25084,
+        25204
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44370
+    },
+    {
+      "vertices": [
+        25204,
+        25084,
+        25085
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44371
+    },
+    {
+      "vertices": [
+        25204,
+        25085,
+        25122
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44372
+    },
+    {
+      "vertices": [
+        25204,
+        25122,
+        25205
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44373
+    },
+    {
+      "vertices": [
+        25204,
+        25205,
+        25203
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44374
+    },
+    {
+      "vertices": [
+        25205,
+        25122,
+        25120
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44375
+    },
+    {
+      "vertices": [
+        25203,
+        25205,
+        25206
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44376
+    },
+    {
+      "vertices": [
+        25203,
+        25206,
+        25202
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44377
+    },
+    {
+      "vertices": [
+        25206,
+        25205,
+        25120
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44378
+    },
+    {
+      "vertices": [
+        25207,
+        25178,
+        25202
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44379
+    },
+    {
+      "vertices": [
+        25207,
+        25202,
+        25206
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44380
+    },
+    {
+      "vertices": [
+        25178,
+        25207,
+        25128
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44381
+    },
+    {
+      "vertices": [
+        25206,
+        25120,
+        25208
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44382
+    },
+    {
+      "vertices": [
+        25206,
+        25208,
+        25207
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44383
+    },
+    {
+      "vertices": [
+        25207,
+        25208,
+        25128
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44384
+    },
+    {
+      "vertices": [
+        25208,
+        25120,
+        25121
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44385
+    },
+    {
+      "vertices": [
+        25208,
+        25121,
+        25128
+      ],
+      "role": "chrome",
+      "sourceBlenderFace": 44386
+    }
+  ],
+  "notes": [
+    "Technical material proposal matching approved neutral concept. No owner material approval implied.",
+    "Cockpit:18 source triangles isolated from fused component23, visually checked against real front/oblique renders. Frame and all outer hull remain armor.",
+    "Hinge collars, waist ribs, torso underside and feed hoses dark; exposed barrel collars steel; pistons chrome proposal pending complete material render.",
+    "All raw26116vertexindices match Blenderimport positions exactly after coordinate basis conversion; inventory mapping valid.",
+    "Source piston237/270:lower shaft faces belowBlenderZ.318 chrome; upper thicker eye remains mechanism. Confirmed actual highlighted component render. Ankle cuff8/122 kept armor."
+  ],
+  "inputs": {
+    "articulation": {
+      "path": "design/mechs/assets/kestrel/articulation-base/kestrel.glb",
+      "sha256": "03e3d9386dcc445750780229c640e1165bf83b2701a245339afa7594d8108edd"
+    },
+    "source": {
+      "path": "design/mechs/assets/kestrel/generated-source/source.glb",
+      "sha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a"
+    },
+    "inventory": {
+      "path": "design/mechs/assets/kestrel/generated-source/inventory.json",
+      "sha256": "e0c68f75c5318d2ddd9f8654ed15b7dbc61979c7b5e3ca5a17455101b279fac9"
+    },
+    "repair": {
+      "path": "design/mechs/assets/kestrel/articulation-base/repair-report.json",
+      "sha256": "383cb1163c4894268081253854441d0772ef3e2f2410af4b24721a5b3df968d9"
+    }
+  },
+  "status": "material-recipe-pending-owner-visual-review"
+}

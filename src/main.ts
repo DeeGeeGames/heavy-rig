@@ -1153,7 +1153,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 						catch (error: unknown) { modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Hangar preview unavailable', error); }
 					}
 				}
-				hangar?.view.setFrame(campaign.selectedFrame); hangar?.view.render();
+				hangar?.view.setFrame(campaign.selectedFrame, editor.loadout.flatMap(function (weapon, slot) { return weapon === null ? [] : [slot]; })); hangar?.view.render();
 			}
 		}
 		if (battlefieldVisible()) presentation.drawOverlay();

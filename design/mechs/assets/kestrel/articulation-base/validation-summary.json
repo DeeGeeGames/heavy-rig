@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-visual-approved-articulation-draft",
+  "sourceSha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a",
+  "candidateSha256": "03e3d9386dcc445750780229c640e1165bf83b2701a245339afa7594d8108edd",
+  "triangles": 42796,
+  "meshSections": 10,
+  "materials": 1,
+  "textures": 0,
+  "sourceComponentsAccounted": 321,
+  "sourceDecisions": {
+    "retain": 297,
+    "separate-at-reviewed-joint": 2,
+    "replace": 14,
+    "remove-detached-source-marker": 8
+  },
+  "actualExportChecks": {
+    "zeroAreaTriangles": 0,
+    "invalidNormals": 0,
+    "duplicateTriangles": 0,
+    "physicalBores": 14,
+    "boresAndExitRaysPassed": true,
+    "retainedSourceFaceChecks": 39619,
+    "missingRetainedFaces": 0,
+    "oppositeWindingSourceDuplicateRemoved": 1
+  },
+  "motions": [
+    {
+      "clip": "walk",
+      "duration": 1,
+      "samples": 121,
+      "maxTarget": 1.0318530454626629e-07,
+      "minFloor": -3.0901227470023635e-06,
+      "maxStanceSlip": 3.539236146543238e-06,
+      "maxFootTiltInStance": 4.4604031881975524e-07,
+      "maxGunRelative": 2.220446049250313e-16
+    },
+    {
+      "clip": "run",
+      "duration": 0.800000011920929,
+      "samples": 97,
+      "maxTarget": 1.066180071887556e-07,
+      "minFloor": -1.907296012231197e-05,
+      "maxStanceSlip": 2.1993753824629662e-05,
+      "maxFootTiltInStance": 2.6161618646808038e-06,
+      "maxGunRelative": 2.220446049250313e-16
+    },
+    {
+      "clip": "backward",
+      "duration": 1.2000000476837158,
+      "samples": 145,
+      "maxTarget": 9.831511704342985e-08,
+      "minFloor": -1.4949761501933426e-06,
+      "maxStanceSlip": 1.6824727369607935e-06,
+      "maxFootTiltInStance": 1.8848643661548975e-07,
+      "maxGunRelative": 2.220446049250313e-16
+    }
+  ],
+  "byteIdenticalIndependentBuilds": true,
+  "independentReview": "An independent review of the first derivative identified float32 zero-area export triangles and a sliced knee shroud. Both were repaired by the primary agent, with actual-export checks and regenerated pose views. This selected revision is not claimed to have a second independent signoff.",
+  "limitations": [
+    "Joint locations/axes are source-derived estimates verified in neutral and sampled poses, not physically engineered hardware.",
+    "Piston endpoint/stroke and exhaustive part collision validation remain open.",
+    "Virtual stance travel validates in-place clips only; runtime locomotion and player feel remain separate.",
+    "No materials, textures, module swap/empty runtime integration or hardware performance approval."
+  ],
+  "ownerApproval": "approval.json"
+}

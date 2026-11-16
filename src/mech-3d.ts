@@ -13,7 +13,7 @@ import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weap
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { getMechAssetBinding } from './mech-asset-registry';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; equippedSlots?: readonly number[] }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.

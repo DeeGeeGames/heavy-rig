@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "chassis": "kestrel",
+  "status": "owner-visual-approved-articulation-draft",
+  "asset": "design/mechs/assets/kestrel/articulation-base/kestrel.glb",
+  "sha256": "03e3d9386dcc445750780229c640e1165bf83b2701a245339afa7594d8108edd",
+  "approval": {
+    "date": "2026-11-16",
+    "response": "Yes. Proceed.",
+    "prompt": "The export passed geometry, firing-anchor, and sampled motion checks. No additional credits were used. Do the repaired geometry and three Motion clips\u2014walk, run, backward\u2014look right before I add materials?",
+    "scope": "Exact repaired geometry and three draft motion clips as the basis for materials and runtime work."
+  },
+  "authoringRecipe": "design/mechs/assets/kestrel/articulation-base/recipe.json",
+  "authoringRecipeSha256": "69ded310be1321de08e6cfc628ef0bb3a87aa33c7d492bb49219e1b9746805ae",
+  "limitations": [
+    "Authoring-time candidate status strings are preserved for exact reproduction; this external approval is authoritative for the scoped visual decision.",
+    "Piston stroke, exhaustive collision, runtime/gameplay appearance and hardware performance acceptance remain separate."
+  ]
+}

@@ -1,7 +1,122 @@
 {
   "schemaVersion": 1,
-  "scope": "Selected owner-visual-approved Warden A derivative, required inputs, reusable approved modules and retained editable historical checkpoints; archived derivative outputs are indexed separately. Includes bounded owner-approved selected-export modularity proof; no production promotion.",
+  "scope": "Retained owner-approved advancing mech checkpoints and required reproduction inputs. Warden visual approval remains separately scoped; Kestrel A has exact-hash source, articulation, material and demonstrated runtime visual approval.",
   "files": [
+    {
+      "path": "design/mechs/assets/kestrel/articulation-base/approval.json",
+      "bytes": 1165,
+      "sha256": "c9388ca14a3cb24b877063d99add22756185c5ffb3345ea5e971b11188295f10"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/articulation-base/kestrel.glb",
+      "bytes": 1068864,
+      "sha256": "03e3d9386dcc445750780229c640e1165bf83b2701a245339afa7594d8108edd"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/articulation-base/recipe.json",
+      "bytes": 29218,
+      "sha256": "69ded310be1321de08e6cfc628ef0bb3a87aa33c7d492bb49219e1b9746805ae"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/articulation-base/repair-report.json",
+      "bytes": 62638,
+      "sha256": "383cb1163c4894268081253854441d0772ef3e2f2410af4b24721a5b3df968d9"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/articulation-base/rig-contract.json",
+      "bytes": 7280,
+      "sha256": "b1fa6a3979a7efe6529ece4f8097ffd407980b791d32e6d52ef77bea4d3cf26f"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/articulation-base/validation-summary.json",
+      "bytes": 2631,
+      "sha256": "836293ba244831adafc81a4dfd7928278d24d82cb69d06bac60034e1469776b5"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/game-ready/README.md",
+      "bytes": 4411,
+      "sha256": "74a80d7787df0754a23c29a098b2fd0e47fb2a6dab783dc572b51a1750f5a097"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/game-ready/approval.json",
+      "bytes": 2488,
+      "sha256": "7393371b6f5b02a8804bba8157b60993db6d8085e58c772a50a9c1aaccb2b2c4"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/game-ready/manifest.json",
+      "bytes": 2366,
+      "sha256": "312824ea531a3b6311b7b9931e2e284628e5eaed75ee030715b84358cb3fcde5"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/game-ready/material-recipe.json",
+      "bytes": 59991,
+      "sha256": "f4a9d346d3d92d1729f016dc79286be2fd59ad15fc9c6a9bb21efb185d5a0483"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/game-ready/material-report.json",
+      "bytes": 1829,
+      "sha256": "1153011902cee8cf6ff0af02de06e21fcf72bf397797f2fdbc501634e5684ceb"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/game-ready/packaging-report.json",
+      "bytes": 741,
+      "sha256": "41076440a0a97bd31e5b1a8c8b1ea2905e4c6718e950e717eaf6de8cee012d6a"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/game-ready/validation-summary.json",
+      "bytes": 1600,
+      "sha256": "2390fd1ccef556100d0030ad5d52f96069db91feee3257c1b6ecf09e9b1259c1"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/approval.json",
+      "bytes": 979,
+      "sha256": "8ca0d13c79d5739a3d82e720e4fc7ecdd59c86d4497e4208fbffb37345d0585e"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/export-audit.json",
+      "bytes": 621,
+      "sha256": "849575f2106c6b71019f27431569961089ed9eb4b07b78b2bb5dadd8e433c60b"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/feature-measurements.json",
+      "bytes": 12478,
+      "sha256": "862c827ac5841e5ef815872720eab8339f96e1d0106d018c242a34a0190826c6"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/generation.json",
+      "bytes": 2165,
+      "sha256": "bef29bd0ecfa887cd50a3b58180f1b84431dd3a2766a1995aedb9d2ef5454887"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/input-manifest.json",
+      "bytes": 5684,
+      "sha256": "cb080bc47cb2d20d8db2483627d32f379dec5a2b0235214eb1c1557b26ff55a4"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/inventory.json",
+      "bytes": 1241492,
+      "sha256": "e0c68f75c5318d2ddd9f8654ed15b7dbc61979c7b5e3ca5a17455101b279fac9"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/joint-measurements.json",
+      "bytes": 5586,
+      "sha256": "47d65641912e550dc786325b6cc87c230d1606f1adf6bc0bc96554a064f5ecf2"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/source-ownership.json",
+      "bytes": 17873,
+      "sha256": "dc8d26c1ce0784f7897739033d40eee5f3b45f1282122830efb872c5d08d8c84"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/source.glb",
+      "bytes": 1175832,
+      "sha256": "1fde921c6c2058d549b27396b922b5371356162a46a9cb494aed973b39db316a"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/generated-source/structural-review.json",
+      "bytes": 2545,
+      "sha256": "47b830efdbe1914166b442a631659c1279114cf177c4dd4c47e17e024f3ba9a6"
+    },
     {
       "path": "design/mechs/assets/warden/archived-outputs.json",
       "bytes": 12341,
@@ -636,6 +751,11 @@
       "path": "design/mechs/assets/warden/repaired-chassis/warden-repair.blend",
       "bytes": 13684885,
       "sha256": "af8df2f7e839f2b1eb46b2cfc927ace98c7fa0293356ed84746209e1164c1761"
+    },
+    {
+      "path": "public/assets/mechs/kestrel/game-ready.glb",
+      "bytes": 1584884,
+      "sha256": "fbab677c30bd0181dcb4a6758ac78602d168a8ee2556bc75793aa2b256129f8b"
     },
     {
       "path": "public/assets/mechs/warden/game-ready.glb",
