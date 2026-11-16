@@ -1,12 +1,12 @@
 import type { CombatStateView, Point } from './simulation';
 import { distance } from './simulation';
-import { FACILITY_TARGET_ID } from './missions';
+import { FACILITY_TARGET_ID, isPriorityTarget } from './missions';
 import { targetElevation, type ScreenRect } from './overlay';
 
 export interface TouchContact { id: number; point: Point; screen: Point; label: string }
 export const visibleTouchContacts = function (state: CombatStateView, project: (point: Point, elevation: number) => Point, width: number, height: number, obstructions: readonly ScreenRect[]): TouchContact[] {
 	const contacts: TouchContact[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) {
-		return { id: enemy.id, point: enemy, screen: project(enemy, targetElevation(enemy)), label: enemy.commander ? 'PRIORITY TARGET' : enemy.kind.toUpperCase() };
+		return { id: enemy.id, point: enemy, screen: project(enemy, targetElevation(enemy)), label: isPriorityTarget(state, enemy) ? 'PRIORITY TARGET' : enemy.kind.toUpperCase() };
 	});
 	const facility = state.mission?.structure;
 	if (facility && facility.hp > 0) contacts.push({ id: FACILITY_TARGET_ID, point: facility, screen: project(facility, 45), label: 'FACILITY' });

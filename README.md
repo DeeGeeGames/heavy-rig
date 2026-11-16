@@ -18,7 +18,7 @@ Controls appear during live play; alarms sound through the escape, whose map now
 covers three times the original area with six guards along the route. Hold the
 green evacuation zone for three seconds to finish.
 The borrowed rig, combat damage, and kills do not carry into the company.
-Completion is saved per company; completed v5 companies bypass the prologue. REPLAY ESCAPE
+Completion is saved per company; completed v6 companies bypass the prologue. REPLAY ESCAPE
 on the title menu repeats the full sequence without changing company progress.
 
 Completing the escape boards the Wayfarer directly at the company bridge and
@@ -40,7 +40,7 @@ throughout:
 | --- | --- |
 | Contracts | Plot travel, review faction standings, accept work, and inspect the mission briefing. |
 | Mech Bay | Select an owned frame, inspect its condition, plan chassis-specific weapon hardpoints, and deploy. |
-| Market | Spend contract earnings on weapon copies or additional frames with complete tier 0 loadouts included. |
+| Market | Spend contract earnings on weapon copies or additional frames with complete reputation-scaled weapon packages included. |
 | Engineering | Schedule repairs, inspect or cancel work orders, and advance calendar days. |
 
 **LB/RB** switches departments; **LT/RT** switches pages within a department.
@@ -53,7 +53,7 @@ Purchases, work orders, calendar advances, travel, contract acceptance, and
 deployment show a confirmation with their cost or consequences first.
 
 Each variant can be purchased once; multiple variants of a chassis can be owned
-together. Every frame arrives with all hardpoints armed at tier 0 and standard
+together. Every market frame arrives with all hardpoints armed at the company’s unlocked quality and standard
 ammunition. The starting Kestrel has both Rattlers fitted. Purchases arrive
 immediately; replacing or moving fitted weapons requires a refit. Weapons are
 physical inventory copies shared across the fleet: a fitted or reserved copy cannot also be installed on another
@@ -131,12 +131,43 @@ completed or aborted before traveling.
 
 The Frontier Freeholds, Ferric Combine, and Signal Accord post work against
 one another. The briefing shows both sides, payment, and reputation changes
-before acceptance. Acceptance immediately costs 6–10 opposition reputation.
-Successful extraction earns 8–12 employer favor and the posted payment. Failure
-or abort earns neither and retains the original opposition penalty. Reputation
-is bounded to −100…100, modifies offered payment, and gates higher-tier work
-after the first two wins. Entry-tier contracts remain available even with
-hostile factions. Credits are spendable company funds.
+before acceptance. Acceptance immediately costs 6–16 opposition standing.
+Successful extraction earns 8–18 employer favor and the posted payment. Failure
+or abort earns neither and retains the original opposition penalty. Faction
+standing is bounded to −100…100, modifies offered payment, and gates employer
+access. Local-tier contracts remain available even with hostile factions.
+
+Company reputation is separate, permanent progression earned only by successful
+extraction. New companies start at rank 1 with mission tier 1 and weapon tier 0.
+Failures, aborts, travel, waiting, and training grant no company reputation;
+failed work does not remove earned reputation. Rank thresholds are 0, 100, 250,
+450, 700, 1000, 1400, 1900, 2500, 3200, 4000, 5000, 6200, 7600, and 9200.
+
+| Company rank | Mission tier | Weapon quality | Reputation per extraction |
+| --- | --- | --- | --- |
+| 1 | 1 · Local | 0 | 50 |
+| 3 | 2 · Frontier | 1 | 90 |
+| 6 | 3 · Veteran | 2 | 150 |
+| 9 | 4 · Heavy | 3 | 230 |
+| 12 | 5 · Elite | 4 | 330 |
+| 15 | 6 · Legendary | 5 | 450 |
+
+Each tier offers all four mission types, including previews of locked postings.
+The board’s tier selector shows company-rank requirements. Higher tiers increase
+force size, armor, commander and facility durability, enemy weapon quality, and
+payment. Local work fields scouts and helicopters; heavier contracts introduce
+strikers, tanks, missile VTOLs, and siege frames. The selected game difficulty
+continues to apply on top of the contract tier. Lower tiers remain available.
+
+Chassis have no reputation tier or purchase gate. Each sale listing includes a
+complete random package compatible with its hardpoints, with standard ammunition
+and weapons at the highest unlocked quality or one quality below it. Rank 1
+packages contain only tier 0 weapons. Packages stay fixed during browsing,
+purchasing, waiting, and reload; a jump, settled contract, or quality unlock
+refreshes the offers. Package mass stays within 110% of recommended operating
+weight. Prices include equipment above the base chassis package value, and the
+confirmation and purchased mech match the displayed offer. Owned mechs and the
+all-rigs cheat retain their existing equipment; the starter Kestrel stays fixed.
 
 | Contract | Surface objective |
 | --- | --- |
@@ -182,10 +213,10 @@ subsequent reloads do not duplicate rewards.
 
 The fleet contains six chassis with three separately purchasable variants each.
 Each variant has its own crew, equipment, ammunition settings, and condition;
-shared weapon inventory prevents double allocation. Purchases include a complete
-stock loadout with every hardpoint fitted at tier 0. The Market lists every
-included weapon, its ammunition reserve, and the resulting loaded weight before
-purchase. Included weapons remain ordinary inventory copies that can be removed
+shared weapon inventory prevents double allocation. Dealer purchases include a
+complete random loadout within unlocked weapon quality. The Market lists every
+included weapon, ammunition reserve, exact package price, and resulting loaded
+weight before purchase. The tables below describe baseline loadouts and base prices. Included weapons remain ordinary inventory copies that can be removed
 and refitted elsewhere.
 
 | Chassis | A | B | C |
@@ -212,7 +243,7 @@ the effective mobility and endurance of each fitted variant.
 
 Original A-variant specifications:
 
-| Frame | Ownership / price | Role / complete tier 0 loadout | Cruise / reverse | Cooling | Tradeoff |
+| Frame | Ownership / base price | Role / complete tier 0 loadout | Cruise / reverse | Cooling | Tradeoff |
 | --- | --- | --- | --- | --- | --- |
 | Kestrel 21 · 40T | Starting frame | Skirmisher / 2 Rattlers | 125 / 65 m/s | 10 heat/s | Fast tracking and acceleration; takes 30% more damage |
 | Warden 08 · 80T | 5,000 CR | Line fighter / AC/38, Rattler, Needle /2, Lance /2 | 90 / 48 m/s | 12 heat/s | Balanced armor and handling |
@@ -300,8 +331,8 @@ and existing spread. Continuous beams keep continuous fire. Hardware mass,
 round capacity, salvo size, splash radius, and hardpoint compatibility stay tied
 to the weapon model. Each model-and-tier combination is separate owned equipment;
 there is no combat rank or automatic equipment leveling. Replacing tier 0 with a
-higher tier requires buying that copy and completing a normal refit. All stock
-mechs, including the starting frame, arrive at tier 0.
+higher tier requires buying that copy and completing a normal refit. Fixed
+starting equipment and cheat-granted mechs use tier 0. Sale packages scale with company reputation.
 
 Initial ammunition and hardware tuning, in tonnes:
 
@@ -481,7 +512,7 @@ overlay stack. Pause and auxiliary dialogs retain the underlying combat entities
 simulation systems stop while browser input and permitted presentation continue.
 Transitions clear pending input and require controller neutral before resuming.
 Save conflicts remain locked to reload. Company transactions, save validation,
-and serialization remain ordinary domain functions, using the fresh v5 company
+and serialization remain ordinary domain functions, using the fresh v6 company
 and unchanged v1 preference formats. Mission replacement removes the previous entities;
 their view components release models. The application cleanup owner stops
 listeners and adapters, disposes the shared world, then releases its supplied
@@ -612,9 +643,9 @@ The Pages workflow deploys `master` after the complete check. Pull requests must
 satisfy live branch protection; workflow definitions alone do not establish
 merge readiness. The custom domain is configured in `CNAME`.
 
-Company progression uses **`heavy-rig:campaign:v5`**. Version 5 starts a fresh
-company with tier-specific equipment ownership, complete stock loadouts, and
-per-mount ammunition selections. Earlier campaign namespaces (v1–v4) are purged
+Company progression uses **`heavy-rig:campaign:v6`**. Version 6 starts a fresh
+company with company reputation, mission tiers, and tiered random sale packages,
+per the approved campaign reset. Earlier campaign namespaces (v1–v5) are purged
 when company data is read or saved; no migration is provided. Territory influence
 remains part of the company save.
 Preferences remain under `heavy-rig:profile:v1`; historical classic records in

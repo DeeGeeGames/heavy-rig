@@ -1,3 +1,4 @@
+import { getMissionTier } from './reputation';
 import { getPlanet } from './universe';
 import type { Contract, Landmark, MissionMap } from './campaign-types';
 import type { EnemyKind, Point, CombatStateView } from './simulation';
@@ -6,6 +7,10 @@ export const EXTRACTION_RADIUS = 150;
 export const EXTRACTION_SECONDS = 3;
 export const FACILITY_RADIUS = 65;
 export const FACILITY_TARGET_ID = -1;
+
+export const isPriorityTarget = function (state: CombatStateView, enemy: { id: number; commander?: boolean }): boolean {
+	return Boolean(enemy.commander) || state.mission?.targetId === enemy.id;
+};
 
 const randomSource = function (seed: number) {
 	let value = seed >>> 0;
@@ -44,17 +49,25 @@ export const generateMissionMap = function (contract: Contract): MissionMap {
 
 export interface MissionSpawn extends Point { kind: EnemyKind; commander?: boolean }
 export const missionHostileCount = function (contract: Contract): number {
-	const tier = Math.max(1, Math.min(3, contract.tier));
-	return contract.kind === 'defend' || contract.kind === 'clearance' ? 9 + tier * 3 : 5 + tier * 2;
+	const level = getMissionTier(contract.tier);
+	return contract.kind === 'defend' || contract.kind === 'clearance' ? level.assault : level.patrol;
 };
 export const missionSpawn = function (contract: Contract, map: MissionMap, index: number): MissionSpawn {
 	const random = randomSource((contract.seed + Math.imul(index + 1, 104729)) >>> 0);
 	const commander = contract.kind === 'assassination' && index === 0;
-	const site = contract.kind === 'clearance' ? map.sites[Math.floor(index / 4) % map.sites.length] ?? map.objective : map.objective;
+	const site = contract.kind === 'clearance' ? map.sites[index % map.sites.length] ?? map.objective : map.objective;
 	const angle = index * 2.399963 + random() * 0.6;
 	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 : 180 + random() * 250;
-	const roster: readonly EnemyKind[] = ['scout', 'helicopter', 'striker', 'tank', 'vtol', 'siege'];
-	const kind: EnemyKind = commander ? 'siege' : roster[index % roster.length] ?? 'scout';
+	const rosters: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = {
+		1: ['scout', 'helicopter', 'scout', 'scout'],
+		2: ['scout', 'helicopter', 'striker', 'scout'],
+		3: ['striker', 'tank', 'scout', 'vtol', 'striker', 'helicopter'],
+		4: ['striker', 'tank', 'siege', 'vtol', 'helicopter', 'scout'],
+		5: ['siege', 'tank', 'striker', 'vtol', 'siege'],
+		6: ['siege', 'tank', 'siege', 'vtol', 'striker', 'siege'],
+	};
+	const roster = rosters[contract.tier];
+	const kind: EnemyKind = commander ? contract.tier === 1 ? 'scout' : contract.tier < 4 ? 'striker' : 'siege' : roster[index % roster.length] ?? 'scout';
 	return { x: Math.max(100, Math.min(map.width - 100, site.x + Math.cos(angle) * radius)), y: Math.max(100, Math.min(map.height - 100, site.y + Math.sin(angle) * radius)), kind, ...(commander ? { commander: true } : {}) };
 };
 

@@ -15,7 +15,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		const contracts = getContracts(campaign);
 		expect(contracts).toEqual(getContracts(createCampaign(317)));
 		expect(new Set(contracts.map(function (entry) { return entry.kind; }))).toEqual(new Set(['defend', 'demolition', 'assassination', 'clearance']));
-		expect(contracts.every(function (entry) { return entry.employer !== entry.opponent && canAcceptContract(campaign, entry); })).toBe(true);
+		expect(contracts.every(function (entry) { return entry.employer !== entry.opponent && (canAcceptContract(campaign, entry) === (entry.tier === 1)); })).toBe(true);
 		const otherWorld = getContracts(campaign, 'borealis');
 		expect(otherWorld.every(function (contract) { return !canAcceptContract(campaign, contract); })).toBe(true);
 		expect(travelTo(campaign, 'meridian')).toBe(campaign);
@@ -57,7 +57,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(settled.credits).toBe(contract.reward);
 		expect(settled.completed).toBe(1);
 		expect(settled.failed).toBe(0);
-		expect(settled.lastResult).toEqual({ contract, won: true, aborted: false, payout: contract.reward, favor: contract.favor, day: 2 });
+		expect(settled.lastResult).toEqual({ contract, won: true, aborted: false, payout: contract.reward, favor: contract.favor, companyReputation: 50, day: 2 });
 		const restored = roundTrip(settled);
 		expect(restored).toEqual(settled);
 		expect(settleContract(restored, true)).toBe(restored);
@@ -87,10 +87,10 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 
 	test('reputation changes payout and gates high-tier work without removing recovery contracts', function () {
 		const campaign = createCampaign(123);
-		const hostile: Campaign = { ...campaign, day: 3, boardRevision: 2, completed: 2, reputation: { freeholds: -100, combine: -100, accord: -100 }, boardReputation: { freeholds: -100, combine: -100, accord: -100 } };
+		const hostile: Campaign = { ...campaign, day: 3, boardRevision: 2, completed: 2, companyReputation: 9200, reputation: { freeholds: -100, combine: -100, accord: -100 }, boardReputation: { freeholds: -100, combine: -100, accord: -100 } };
 		const friendly: Campaign = { ...hostile, reputation: { freeholds: 100, combine: 100, accord: 100 }, boardReputation: { freeholds: 100, combine: 100, accord: 100 } };
 		const offers = getContracts(hostile);
-		expect(offers.filter(function (entry) { return canAcceptContract(hostile, entry); })).toHaveLength(2);
+		expect(offers.filter(function (entry) { return canAcceptContract(hostile, entry); })).toHaveLength(4);
 		for (const contract of offers.filter(function (entry) { return entry.tier > 1; })) expect(acceptContract(hostile, contract.id)).toBe(hostile);
 		expect(getContracts(friendly).every(function (entry) { return canAcceptContract(friendly, entry); })).toBe(true);
 		expect(posted(friendly).reward).toBeGreaterThan(posted(hostile).reward);
@@ -132,7 +132,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 	});
 });
 
-test('v5 storage purges incompatible campaigns while preserving profile and unrelated browser data', async function () {
+test('v6 storage purges incompatible campaigns while preserving profile and unrelated browser data', async function () {
 	const { CAMPAIGN_STORAGE_KEY, readCampaign, saveCampaign } = await import('../src/campaign');
 	const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
 	const data = new Map<string, string>();
@@ -146,13 +146,13 @@ test('v5 storage purges incompatible campaigns while preserving profile and unre
 	};
 	Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
 	try {
-		for (const version of [1, 2, 3, 4]) storage.setItem(`heavy-rig:campaign:v${version}`, JSON.stringify({ ...createCampaign(72), version, credits: 900 }));
+		for (const version of [1, 2, 3, 4, 5]) storage.setItem(`heavy-rig:campaign:v${version}`, JSON.stringify({ ...createCampaign(72), version, credits: 900 }));
 		storage.setItem('heavy-rig:profile:v1', 'keep settings');
 		storage.setItem('other-game:campaign:v4', 'keep other game');
 		const fresh = readCampaign();
-		expect(fresh.version).toBe(5);
+		expect(fresh.version).toBe(6);
 		expect(fresh.credits).toBe(0);
-		for (const version of [1, 2, 3, 4]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
+		for (const version of [1, 2, 3, 4, 5]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
 		expect(storage.getItem('heavy-rig:profile:v1')).toBe('keep settings');
 		expect(storage.getItem('other-game:campaign:v4')).toBe('keep other game');
 		const current = createCampaign(84);

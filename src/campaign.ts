@@ -1,3 +1,4 @@
+import { companyRank, getMissionTier, isMissionTier, MAX_COMPANY_REPUTATION, MISSION_TIERS } from './reputation';
 import type { Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
 import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, PLANETS, type UniverseState } from './universe';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
@@ -27,11 +28,12 @@ export interface CampaignResult {
 	aborted: boolean;
 	payout: number;
 	favor: number;
+	companyReputation: number;
 	day: number;
 }
 
 export interface Campaign extends CompanyState {
-	version: 5;
+	version: 6;
 	introComplete: boolean;
 	universe: UniverseState;
 	seed: number;
@@ -39,6 +41,7 @@ export interface Campaign extends CompanyState {
 	day: number;
 	boardRevision: number;
 	credits: number;
+	companyReputation: number;
 	completed: number;
 	failed: number;
 	reputation: Record<FactionId, number>;
@@ -47,7 +50,7 @@ export interface Campaign extends CompanyState {
 	lastResult: CampaignResult | undefined;
 }
 
-export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v5';
+export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v6';
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance'];
 const MAX_COUNT = 1_000_000;
 export const MAX_CREDITS = 1_000_000_000_000;
@@ -65,8 +68,8 @@ const freshSeed = function () {
 
 export const createCampaign = function (seed?: number): Campaign {
 	return {
-		...createCompany(), version: 5, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
-		credits: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
+		...createCompany(), version: 6, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
+		credits: 0, companyReputation: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 	};
 };
 
@@ -88,33 +91,35 @@ const contractCopy: Readonly<Record<MissionKind, { title: string; briefing: stri
 
 // A board is a pure function of its campaign seed and revision. Acceptance keeps
 // its reputation snapshot, so posting terms cannot move after the pilot agrees.
-const getLegacyContracts = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
+const getContractTemplates = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
 	const planetIndex = ['meridian', 'cinder', 'borealis'].indexOf(planetId);
 	const boardSeed = mixSeed(mixSeed(campaign.seed, campaign.boardRevision + 1), planetIndex + 1);
-	return MISSION_KINDS.map(function (kind, index) {
-		const seed = mixSeed(boardSeed, index + 1);
-		const employerIndex = (boardSeed + index) % FACTION_IDS.length;
-		const employer = FACTION_IDS[employerIndex] ?? 'freeholds';
-		const opponent = FACTION_IDS[(employerIndex + 1 + seed % 2) % FACTION_IDS.length] ?? 'combine';
-		const tier = campaign.completed < 2 || index < 2 ? 1 : index === 2 ? 2 : 3;
-		const copy = contractCopy[kind];
-		const reward = Math.round(copy.reward * (1 + (tier - 1) * 0.55) * (1 + campaign.boardReputation[employer] * 0.0025));
-		return {
-			id: `${campaign.seed}-${campaign.boardRevision}-${planetId}-${kind}`, seed, planetId, kind, employer, opponent,
-			title: copy.title, briefing: copy.briefing, reward, favor: 8 + (tier - 1) * 2, hostility: 6 + (tier - 1) * 2,
-			tier, requiredReputation: tier === 1 ? -100 : tier === 2 ? 8 : 20,
-		};
+	return MISSION_TIERS.flatMap(function (level) {
+		return MISSION_KINDS.map(function (kind, index) {
+			const seed = mixSeed(mixSeed(boardSeed, level.tier), index + 1);
+			const employerIndex = (boardSeed + index) % FACTION_IDS.length;
+			const employer = FACTION_IDS[employerIndex] ?? 'freeholds';
+			const opponent = FACTION_IDS[(employerIndex + 1 + seed % 2) % FACTION_IDS.length] ?? 'combine';
+			const tier = level.tier;
+			const copy = contractCopy[kind];
+			const reward = Math.round(copy.reward * level.reward * (1 + campaign.boardReputation[employer] * 0.0025));
+			return {
+				id: `${campaign.seed}-${campaign.boardRevision}-${planetId}-${kind}-${tier}`, seed, planetId, kind, employer, opponent,
+				title: copy.title, briefing: copy.briefing, reward, favor: 8 + (tier - 1) * 2, hostility: 6 + (tier - 1) * 2,
+				tier, requiredReputation: level.standing,
+			};
+		});
 	});
 };
 
 // Accepted postings retain their front snapshot. Unaccepted work follows the
 // live front, including after Engineering advances the calendar.
 export const getContracts = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
-	if (campaign.universe.boardVersion === 1) return getLegacyContracts(campaign, planetId);
+	if (campaign.universe.boardVersion === 1) return getContractTemplates(campaign, planetId);
 	const intel = getSystemIntel({ ...campaign, day: campaign.active ? campaign.universe.boardDay : campaign.day }, planetId);
 	const [holder, challenger] = intel.participants;
 	if (!intel.conflict || !holder || !challenger) return [];
-	return getLegacyContracts(campaign, planetId).map(function (contract, index) {
+	return getContractTemplates(campaign, planetId).map(function (contract, index) {
 		const employer = contract.kind === 'defend' || index % 2 === 1 ? holder : challenger;
 		const opponent = employer === holder ? challenger : holder;
 		const faction = getFaction(employer); const rival = getFaction(opponent);
@@ -125,7 +130,7 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 			: `${faction.name} needs ${rival.name} patrols cleared from the contested approaches.`;
 		return { ...contract, employer, opponent,
 			seed: mixSeed(contract.seed, PLANETS.findIndex(function (world) { return world.id === planetId; }) + 1),
-			reward: Math.round(contractCopy[contract.kind].reward * (1 + (contract.tier - 1) * .55) * (1 + campaign.boardReputation[employer] * .0025)),
+			reward: Math.round(contractCopy[contract.kind].reward * getMissionTier(contract.tier).reward * (1 + campaign.boardReputation[employer] * .0025)),
 			briefing: `${context} ${contract.briefing}`,
 		};
 	});
@@ -133,6 +138,7 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 
 export const canAcceptContract = function (campaign: Campaign, contract: Contract): boolean {
 	return !campaign.active && !campaign.deployed && campaign.boardRevision < MAX_COUNT && campaign.day < MAX_DAY
+		&& companyRank(campaign) >= getMissionTier(contract.tier).rank
 		&& contract.planetId === campaign.planetId && campaign.reputation[contract.employer] >= contract.requiredReputation
 		&& getContracts(campaign).some(function (posted) { return posted.id === contract.id; });
 };
@@ -157,11 +163,12 @@ const finishContract = function (campaign: Campaign, won: boolean, aborted: bool
 	const favor = won ? Math.min(contract.favor, 100 - campaign.reputation[contract.employer]) : 0;
 	const payout = won ? Math.min(contract.reward, MAX_CREDITS - campaign.credits) : 0;
 	const reputation = { ...campaign.reputation, [contract.employer]: boundedReputation(campaign.reputation[contract.employer] + favor) };
+	const companyReputation = won ? Math.min(getMissionTier(contract.tier).reputation, MAX_COMPANY_REPUTATION - campaign.companyReputation) : 0;
 	const day = campaign.day + 1;
 	return advanceDays({
 		...campaign, universe: { ...applyMissionInfluence(campaign.universe, contract.planetId, contract.employer, contract.opponent, won), boardDay: day, boardVersion: 2 }, active: undefined, deployed: undefined, reputation, boardReputation: { ...reputation }, boardRevision: campaign.boardRevision + 1,
-		credits: campaign.credits + payout, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
-		lastResult: { contract, won, aborted, payout, favor, day },
+		credits: campaign.credits + payout, companyReputation: campaign.companyReputation + companyReputation, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
+		lastResult: { contract, won, aborted, payout, favor, companyReputation, day },
 	}, 1);
 };
 
@@ -179,7 +186,7 @@ const isContract = function (value: unknown): value is Contract {
 		&& isPlanetId(value['planetId']) && isMissionKind(value['kind']) && isFactionId(value['employer']) && isFactionId(value['opponent']) && value['employer'] !== value['opponent']
 		&& typeof value['title'] === 'string' && value['title'].length <= 100 && typeof value['briefing'] === 'string' && value['briefing'].length <= 500
 		&& isInteger(value['reward'], 0, 100_000) && isInteger(value['favor'], 0, 100) && isInteger(value['hostility'], 0, 100)
-		&& isInteger(value['tier'], 1, 3) && isInteger(value['requiredReputation'], -100, 100);
+		&& isMissionTier(value['tier']) && isInteger(value['requiredReputation'], -100, 100);
 };
 
 const isResult = function (value: unknown): value is CampaignResult {
@@ -187,6 +194,8 @@ const isResult = function (value: unknown): value is CampaignResult {
 	const contract = value['contract'];
 	return typeof value['won'] === 'boolean' && typeof value['aborted'] === 'boolean' && !(value['won'] && value['aborted'])
 		&& isInteger(value['payout'], 0, contract.reward) && isInteger(value['favor'], 0, contract.favor)
+		&& isInteger(value['companyReputation'], 0, getMissionTier(contract.tier).reputation)
+		&& (value['won'] || value['companyReputation'] === 0)
 		&& (value['won'] || value['payout'] === 0 && value['favor'] === 0) && isInteger(value['day'], 2, MAX_DAY);
 };
 
@@ -215,8 +224,9 @@ export const parseCampaign = function (raw: string | null): Campaign {
 	if (!raw) return createCampaign();
 	try {
 		const value: unknown = JSON.parse(raw);
-		if (!object(value) || value['version'] !== 5 || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
+		if (!object(value) || value['version'] !== 6 || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
+			|| !isInteger(value['companyReputation'], 0, MAX_COMPANY_REPUTATION)
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > value['boardRevision'] || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
 			|| value['active'] !== undefined && !isContract(value['active']) || value['lastResult'] !== undefined && !isResult(value['lastResult'])) return createCampaign();
@@ -225,8 +235,8 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
 		const campaign: Campaign = {
-			...company, version: 5, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
-			credits: value['credits'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
+			...company, version: 6, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
+			credits: value['credits'], companyReputation: value['companyReputation'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 		};
 		if (campaign.lastResult && campaign.lastResult.day > campaign.day) return createCampaign();
@@ -238,17 +248,17 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		if (active) {
 			if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT) return createCampaign();
 			const generated = getContracts(campaign).find(function (contract) { return contract.id === active.id; });
-			if (!generated || !sameContract(active, generated) || campaign.reputation[active.employer] < active.requiredReputation) return createCampaign();
+			if (!generated || !sameContract(active, generated) || companyRank(campaign) < getMissionTier(active.tier).rank || campaign.reputation[active.employer] < active.requiredReputation) return createCampaign();
 			campaign.active = generated;
 		}
 		return campaign;
 	} catch { return createCampaign(); }
 };
 
-// Equipment identity changed in v5. Remove obsolete campaigns rather than leave
-// incompatible progression in storage; input and presentation profiles are separate.
+// Reputation and mission terms changed in v6. Start fresh under the approved
+// reset policy; input and presentation profiles remain separate.
 const purgePreviousCampaigns = function () {
-	for (const version of [1, 2, 3, 4]) localStorage.removeItem(`heavy-rig:campaign:v${version}`);
+	for (const version of [1, 2, 3, 4, 5]) localStorage.removeItem(`heavy-rig:campaign:v${version}`);
 };
 export const readCampaign = function (): Campaign {
 	try { purgePreviousCampaigns(); return recoverInterruptedDeployment(parseCampaign(localStorage.getItem(CAMPAIGN_STORAGE_KEY))); } catch { return createCampaign(); }
