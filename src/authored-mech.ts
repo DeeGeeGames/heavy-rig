@@ -42,7 +42,7 @@ const kestrelDescriptor: AuthoredDescriptor = {
 	frame: 'kestrel', height: 74.82, weapons: kestrelWeaponSpecs,
 	// Short support and a longer recovery produce visible bounds. Torso rise shares
 	// the flight phase; measured pivots and soles still own planted contacts.
-	locomotion: { walkStride: 0.6, walkExtension: 0.2, run: { cycleSeconds: 0.95, stanceFraction: 0.24, referenceSpeed: 85, enterSpeed: 40, exitSpeed: 32, swingLift: 11, bodyLift: 5.5, bodyRoll: 0.025, bodyPitch: 0.052, footPitch: 0.157 } },
+	locomotion: { walkStride: 0.6, walkExtension: 0.2, run: { cycleSeconds: 1.05, stanceFraction: 0.26, referenceSpeed: 85, enterSpeed: 40, exitSpeed: 32, swingLift: 11, bodyLift: 4.4, bodyRoll: 0.025, bodyPitch: 0.052, footPitch: 0.22 } },
 };
 export const authoredKestrelUrl = function (): string {
 	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? './assets/mechs/kestrel/game-ready.glb';
