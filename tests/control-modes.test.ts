@@ -6,8 +6,10 @@ import { parseProfile } from '../src/profile';
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 900, y: 0 }, fire: [false, false, false, false], coolant: false };
 
 describe('control modes', function () {
-	test('old and invalid profiles default to Simulation while Arcade survives reload', function () {
-		for (const controlMode of [undefined, 'invalid', null]) expect(parseProfile(JSON.stringify({ settings: { controlMode } })).settings.controlMode).toBe('simulation');
+	test('new, old and invalid profiles default to Arcade while saved choices survive reload', function () {
+		expect(parseProfile(null).settings.controlMode).toBe('arcade');
+		for (const controlMode of [undefined, 'invalid', null]) expect(parseProfile(JSON.stringify({ settings: { controlMode } })).settings.controlMode).toBe('arcade');
+		expect(parseProfile(JSON.stringify({ settings: { controlMode: 'simulation' } })).settings.controlMode).toBe('simulation');
 		expect(parseProfile(JSON.stringify({ settings: { controlMode: 'arcade' } })).settings.controlMode).toBe('arcade');
 	});
 	test('rate aiming holds on release and uses each chassis turret speed', function () {
