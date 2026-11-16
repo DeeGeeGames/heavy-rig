@@ -51,7 +51,7 @@ export interface Campaign extends CompanyState {
 }
 
 export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v6';
-const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance'];
+const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition'];
 const MAX_COUNT = 1_000_000;
 export const MAX_CREDITS = 1_000_000_000_000;
 const isInteger = function (value: unknown, min: number, max: number): value is number {
@@ -59,7 +59,7 @@ const isInteger = function (value: unknown, min: number, max: number): value is 
 };
 const object = function (value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); };
 const isFactionId = function (value: unknown): value is FactionId { return value === 'freeholds' || value === 'combine' || value === 'accord'; };
-const isMissionKind = function (value: unknown): value is MissionKind { return value === 'defend' || value === 'demolition' || value === 'assassination' || value === 'clearance'; };
+const isMissionKind = function (value: unknown): value is MissionKind { return value === 'defend' || value === 'demolition' || value === 'assassination' || value === 'clearance' || value === 'raid' || value === 'recovery' || value === 'acquisition'; };
 const boundedReputation = function (value: number) { return Math.max(-100, Math.min(100, value)); };
 const zeroReputation = function (): Record<FactionId, number> { return { freeholds: 0, combine: 0, accord: 0 }; };
 const freshSeed = function () {
@@ -86,6 +86,9 @@ const contractCopy: Readonly<Record<MissionKind, { title: string; briefing: stri
 	defend: { title: 'Hold the signal', briefing: 'Defend the contracted uplink through the hostile assault. Keep its integrity above zero, then rendezvous with your dropship.', reward: 1200 },
 	demolition: { title: 'Break the supply line', briefing: 'Locate and destroy the marked processing facility. Its garrison is expendable; the facility is the objective. Reach extraction after demolition.', reward: 1400 },
 	assassination: { title: 'Cut the command link', briefing: 'Find and destroy the designated command frame. Supporting forces are optional targets. Leave the surface through the extraction zone.', reward: 1700 },
+	raid: { title: 'Sever the supply network', briefing: 'Destroy three marked supply installations in any order. Their defenders are optional. Return to extraction after all three are destroyed.', reward: 1700 },
+	recovery: { title: 'Recover the black box', briefing: 'Reach the marked cache and stay inside its zone for five uninterrupted seconds to recover the data. Fighting the guards is optional. Extract with the recovered data.', reward: 1500 },
+	acquisition: { title: 'Mark the strike corridor', briefing: 'Activate three targeting beacons within three minutes. Stay in each zone for three uninterrupted seconds; activated beacons remain active. Then return to extraction. Fighting defenders is optional.', reward: 1900 },
 	clearance: { title: 'Sweep the basin', briefing: 'Eliminate every hostile patrol across the marked sector. Once the region is clear, return to the extraction zone.', reward: 1600 },
 };
 
@@ -119,7 +122,9 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 	const intel = getSystemIntel({ ...campaign, day: campaign.active ? campaign.universe.boardDay : campaign.day }, planetId);
 	const [holder, challenger] = intel.participants;
 	if (!intel.conflict || !holder || !challenger) return [];
-	return getContractTemplates(campaign, planetId).map(function (contract, index) {
+	return getContractTemplates(campaign, planetId).map(function (contract) {
+		// Keep the original four kinds on their historical faction parity at every tier.
+		const index = (contract.tier - 1) * 4 + MISSION_KINDS.indexOf(contract.kind);
 		const employer = contract.kind === 'defend' || index % 2 === 1 ? holder : challenger;
 		const opponent = employer === holder ? challenger : holder;
 		const faction = getFaction(employer); const rival = getFaction(opponent);
@@ -127,6 +132,9 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 		const context = contract.kind === 'defend' ? `${faction.name} needs its ${asset} protected from a ${rival.name} assault.`
 			: contract.kind === 'demolition' ? `${faction.name} is disrupting ${rival.name} supply operations on this front.`
 			: contract.kind === 'assassination' ? `${faction.name} has identified a ${rival.name} commander coordinating the local offensive.`
+			: contract.kind === 'raid' ? `${faction.name} is targeting three ${rival.name} supply sites.`
+			: contract.kind === 'recovery' ? `${faction.name} needs data recovered from territory guarded by ${rival.name}.`
+			: contract.kind === 'acquisition' ? `${faction.name} needs targeting beacons established for a strike on ${rival.name}.`
 			: `${faction.name} needs ${rival.name} patrols cleared from the contested approaches.`;
 		return { ...contract, employer, opponent,
 			seed: mixSeed(contract.seed, PLANETS.findIndex(function (world) { return world.id === planetId; }) + 1),

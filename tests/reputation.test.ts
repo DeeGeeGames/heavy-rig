@@ -20,7 +20,7 @@ test('company milestones gate contract acceptance and both purchase paths, indep
 			const campaign = ranked(rank); const unlocked = rank >= milestone.rank;
 			expect(companyRank(campaign)).toBe(rank);
 			const contracts = getContracts(campaign).filter(function (contract) { return contract.tier === milestone.tier; });
-			expect(contracts).toHaveLength(4);
+			expect(contracts).toHaveLength(7);
 			for (const contract of contracts) {
 				expect(canAcceptContract(campaign, contract)).toBe(unlocked);
 				expect(acceptContract(campaign, contract.id) === campaign).toBe(!unlocked);
@@ -52,7 +52,7 @@ test('every reputation rank retains faction-hostile recovery work', function () 
 	for (const threshold of REPUTATION_RANKS) {
 		const hostile = { ...createCampaign(317), companyReputation: threshold, reputation: { freeholds: -100, combine: -100, accord: -100 }, boardReputation: { freeholds: -100, combine: -100, accord: -100 } };
 		const available = getContracts(hostile).filter(function (contract) { return canAcceptContract(hostile, contract); });
-		expect(available).toHaveLength(4);
+		expect(available).toHaveLength(7);
 		expect(available.every(function (contract) { return contract.tier === 1; })).toBe(true);
 	}
 });

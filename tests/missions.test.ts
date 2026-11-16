@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { createMount, WEAPONS } from '../src/arsenal';
 import type { Contract, MissionKind } from '../src/campaign-types';
-import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, generateMissionMap, missionHostileCount } from '../src/missions';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, missionStructures, generateMissionMap, missionHostileCount } from '../src/missions';
 import { ARENA, createState, createMissionState, distance, step, type Controls, type State } from '../src/simulation';
 
 const contract = function (kind: MissionKind, seed = 123): Contract {
@@ -116,4 +116,65 @@ describe('Heavy Rig surface contracts', function () {
 		state.shots = [{ x: enemy.x, y: enemy.y, vx: 0, vy: 0, life: 1, kind: 'rocket', target: undefined, damage: 30, splash: 80 }];
 		step(state, idle, 1 / 60); expect(structure.hp).toBeCloseTo(structure.maxHp - 138);
 	});
+});
+
+test('raid requires all three sites, supports every weapon and independent guidance identities, and allows surviving guards', function () {
+	for (const weapon of WEAPONS) {
+		const frame = createState({ starter: weapon.id }).frame;
+		const state = createMissionState(contract('raid'), { frame }); const mission = missionOf(state);
+		const targets = missionStructures(mission); expect(new Set(targets.map(function (target) { return target.id; })).size).toBe(3);
+		state.loadout = [createMount(weapon.id)];
+		for (const target of [...targets].reverse()) {
+			state.loadout = [createMount(weapon.id)]; state.player.heat = 0; state.player.overheated = false; state.shots = [];
+			// Isolate weapon/objective behavior from guards while retaining living opposition.
+			for (const enemy of state.enemies) { enemy.x = 50; enemy.y = 50; enemy.cooldown = 1000; }
+			state.player.x = target.body.x - 300; state.player.y = target.body.y; state.player.angle = 0; state.player.turret = 0;
+			const controls = { ...idle, aim: target.body, targetId: target.id, fire: [true, false, false, false] as const };
+			step(state, controls, 1 / 60);
+			if (weapon.kind === 'missile') expect(state.shots.filter(function (shot) { return shot.kind === 'missile'; }).every(function (shot) { return shot.target === target.id; })).toBe(true);
+			run(state, 2, controls); expect(target.body.hp).toBeLessThan(target.body.maxHp);
+			target.body.hp = 0; step(state, idle, 1 / 60);
+			expect(mission.stage).toBe(mission.progress === 3 ? 'extract' : 'active');
+		}
+		expect(state.enemies.length).toBeGreaterThan(0);
+		state.player.x = mission.map.extraction.x; state.player.y = mission.map.extraction.y;
+		run(state, EXTRACTION_SECONDS + .1); expect(state.outcome).toBe('won');
+	}
+});
+
+test('recovery requires an uninterrupted pickup and extraction rather than kills or merely visiting the cache', function () {
+	const state = createMissionState(contract('recovery')); const mission = missionOf(state);
+	const site = mission.captureSites?.[0]; if (!site) throw new Error('Missing cache');
+	for (const enemy of state.enemies) { enemy.x = 50; enemy.y = 50; }
+	state.player.x = mission.map.extraction.x; state.player.y = mission.map.extraction.y;
+	run(state, 4); expect(state.outcome).toBe('playing'); expect(mission.stage).toBe('active');
+	state.player.x = site.x; state.player.y = site.y;
+	run(state, 2); expect(site.complete).toBe(false); expect(site.holdTime).toBeGreaterThan(1);
+	state.player.x += CAPTURE_RADIUS + 1; step(state, idle, 1 / 60); expect(site.holdTime).toBe(0);
+	state.player.x = site.x; run(state, RECOVERY_SECONDS + .1);
+	expect(site.complete).toBe(true); expect(mission.stage).toBe('extract'); expect(state.kills).toBe(0);
+	state.player.x = mission.map.extraction.x; state.player.y = mission.map.extraction.y;
+	run(state, EXTRACTION_SECONDS + .1); expect(state.outcome).toBe('won');
+});
+
+test('acquisition preserves activated beacons, requires all three, stops its clock on completion, and loses on deadline', function () {
+	const state = createMissionState(contract('acquisition')); const mission = missionOf(state);
+	for (const enemy of state.enemies) { enemy.x = 50; enemy.y = 50; }
+	for (const site of [...mission.captureSites ?? []].reverse()) {
+		state.player.x = site.x; state.player.y = site.y; run(state, BEACON_SECONDS + .1);
+		expect(site.complete).toBe(true);
+		state.player.x += CAPTURE_RADIUS + 1; step(state, idle, 1 / 60);
+		expect(site.complete).toBe(true); expect(site.holdTime).toBe(BEACON_SECONDS);
+		expect(mission.stage).toBe(mission.progress === 3 ? 'extract' : 'active');
+	}
+	mission.acquisitionTime = .001; run(state, 1); expect(state.outcome).toBe('playing'); expect(mission.acquisitionTime).toBe(.001);
+	state.player.x = mission.map.extraction.x; state.player.y = mission.map.extraction.y;
+	run(state, EXTRACTION_SECONDS + .1); expect(state.outcome).toBe('won');
+	const expired = createMissionState(contract('acquisition')); const late = missionOf(expired);
+	late.acquisitionTime = .001; step(expired, idle, 1 / 60);
+	expect(expired.outcome).toBe('lost'); expect(expired.events).toContain('defeat'); expect(late.stage).toBe('active');
+	const fatal = createMissionState(contract('acquisition')); const final = missionOf(fatal);
+	final.progress = 2;
+	for (const [index, site] of (final.captureSites ?? []).entries()) { site.complete = index < 2; site.holdTime = BEACON_SECONDS - .001; fatal.player.x = site.x; fatal.player.y = site.y; }
+	fatal.player.hp = 0; step(fatal, idle, 1 / 60); expect(fatal.outcome).toBe('lost'); expect(final.stage).toBe('active');
 });

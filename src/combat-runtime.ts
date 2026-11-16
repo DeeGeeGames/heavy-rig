@@ -26,6 +26,7 @@ export interface CombatComponents {
 	warning: Warning;
 	artillery: ArtilleryStrike;
 	wreck: Wreck;
+	raidTargetIndex: number;
 	structure: NonNullable<MissionRuntime['structure']>;
 }
 export interface CombatResources {
@@ -129,13 +130,18 @@ export const createCombatRuntime = function () {
 			const strikes = collection<ArtilleryStrike>({ list: function () { return world.getEntitiesWithQuery(['artillery', 'combatOrder']).sort(function (a, b) { return a.components.combatOrder - b.components.combatOrder; }).map(function (entity) { return { id: entity.id, value: entity.components.artillery }; }); }, spawn: function (value) { world.spawn({ combatOwned: true, combatOrder: nextOrder(), artillery: value }); }, remove, setOrder });
 			const wrecks = collection<Wreck>({ list: function () { return world.getEntitiesWithQuery(['wreck', 'combatOrder']).sort(function (a, b) { return a.components.combatOrder - b.components.combatOrder; }).map(function (entity) { return { id: entity.id, value: entity.components.wreck }; }); }, spawn: function (value) { world.spawn({ combatOwned: true, combatOrder: nextOrder(), wreck: value }); }, remove, setOrder });
 			const bindMission = function (mission: MissionRuntime | undefined) {
-				const structure = mission?.structure;
+				const structure = mission?.structure; const raids = mission?.raidTargets;
 				for (const entity of world.getEntitiesWithQuery(['structure'])) remove(entity.id);
 				if (structure) world.spawn({ combatOwned: true, structure });
+				for (const [index, target] of (raids ?? []).entries()) world.spawn({ combatOwned: true, structure: target, raidTargetIndex: index });
+				if (mission && raids) Object.defineProperty(mission, 'raidTargets', {
+					configurable: true, enumerable: true,
+					get: function () { return world.getEntitiesWithQuery(['structure', 'raidTargetIndex']).sort(function (a, b) { return a.components.raidTargetIndex - b.components.raidTargetIndex; }).map(function (entity) { return entity.components.structure; }); },
+				});
 				if (mission) Object.defineProperty(mission, 'structure', {
 					configurable: true, enumerable: true,
-					get: function () { return world.getEntitiesWithQuery(['structure'])[0]?.components.structure; },
-					set: function (value: MissionRuntime['structure']) { for (const entity of world.getEntitiesWithQuery(['structure'])) remove(entity.id); if (value) world.spawn({ combatOwned: true, structure: value }); },
+					get: function () { return world.getEntitiesWithQuery(['structure']).find(function (entity) { return entity.components.raidTargetIndex === undefined; })?.components.structure; },
+					set: function (value: MissionRuntime['structure']) { for (const entity of world.getEntitiesWithQuery(['structure'])) if (entity.components.raidTargetIndex === undefined) remove(entity.id); if (value) world.spawn({ combatOwned: true, structure: value }); },
 				});
 				world.getResource('combatMission').value = mission;
 			};

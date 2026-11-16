@@ -1,6 +1,6 @@
 import { BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry, Group, InstancedMesh, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, RingGeometry, SRGBColorSpace, Texture } from 'three';
 import type { Biome, MissionMap, MissionRuntime } from './campaign-types';
-import { EXTRACTION_RADIUS, EXTRACTION_SECONDS } from './missions';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 
 interface SurfacePalette { ground: string; dust: string; rock: string; road: string; sky: string; haze: string; light: string }
 export const SURFACE_PALETTES: Readonly<Record<Biome, SurfacePalette>> = {
@@ -129,6 +129,20 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	const rubble = new Group(); rubble.name = 'facility-rubble'; facility.add(rubble);
 	box(rubble, dark, 0, 0, 0, 112, 7, 104);
 	for (let i = 0; i < 9; i++) { const piece = box(rubble, i % 2 ? steel : dark, Math.cos(i * 2.4) * 38, 7, Math.sin(i * 2.4) * 35, 18 + i * 2, 7 + i % 3 * 9, 23); piece.rotation.y = i * 1.8; }
+	const raidFacilities = map.sites.map(function (site, index) {
+		const value = facility.clone(true); value.name = `raid-site-${index + 1}`;
+		value.position.set(site.x, 0, site.y); root.add(value); return value;
+	});
+	const capturePads = map.sites.map(function (site, index) {
+		const value = pad(`capture-site-${index + 1}`, site, orange, CAPTURE_RADIUS);
+		const filled = new Mesh(geometry(new RingGeometry(CAPTURE_RADIUS - 12, CAPTURE_RADIUS - 7, 64)), green);
+		filled.rotation.x = -Math.PI / 2; filled.position.y = .2; value.add(filled);
+		const crate = new Group(); value.add(crate);
+		box(crate, dark, 0, 0, 0, 42, 25, 34); box(crate, paint, 0, 25, 0, 44, 4, 36);
+		const beacon = new Group(); value.add(beacon);
+		box(beacon, dark, 0, 0, 0, 28, 8, 28); box(beacon, steel, 0, 8, 0, 7, 65, 7); box(beacon, green, 0, 65, 0, 20, 9, 20);
+		return { value, filled, crate, beacon };
+	});
 	let disposed = false;
 	return {
 		root,
@@ -139,6 +153,19 @@ export const createMissionEnvironment = function (map: MissionMap) {
 			extraction.scale.setScalar(1 + Math.sin(time * 2) * 0.015);
 			progress.visible = mission.extractTime > 0;
 			progress.scale.setScalar(Math.max(0.03, Math.min(1, mission.extractTime / EXTRACTION_SECONDS)));
+			for (const [index, value] of raidFacilities.entries()) {
+				const target = mission.raidTargets?.[index]; value.visible = Boolean(target);
+				if (target) { const standing = value.getObjectByName('facility-intact'); const debris = value.getObjectByName('facility-rubble'); if (standing) standing.visible = target.hp > 0; if (debris) debris.visible = target.hp <= 0; }
+			}
+			for (const [index, pad] of capturePads.entries()) {
+				const site = mission.captureSites?.[index]; pad.value.visible = Boolean(site);
+				if (!site) continue;
+				pad.value.position.set(site.x, 0, site.y);
+				pad.crate.visible = mission.contract.kind === 'recovery' && !site.complete;
+				pad.beacon.visible = mission.contract.kind === 'acquisition';
+				pad.filled.visible = site.holdTime > 0;
+				pad.filled.scale.setScalar(Math.max(.03, site.holdTime / (mission.contract.kind === 'recovery' ? RECOVERY_SECONDS : BEACON_SECONDS)));
+			}
 			facility.visible = Boolean(mission.structure);
 			if (mission.structure) {
 				facility.position.set(mission.structure.x, 0, mission.structure.y);

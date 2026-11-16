@@ -34,7 +34,7 @@ import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, 
 import { focusTerritoryMap } from './territory-map';
 import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
-import { FACILITY_TARGET_ID, missionObjective } from './missions';
+import { missionStructures, missionObjective } from './missions';
 import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import type { Campaign } from './campaign';
@@ -661,7 +661,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!replaceCampaign(settleContract(campaign, won))) return;
 		terminalUntil = now + 1600;
 		element('result-title').textContent = won ? 'CONTRACT COMPLETE.' : 'CONTRACT FAILED.';
-		element('result-copy').textContent = won ? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} has confirmed the objective, released payment, and strengthened its influence around this system.` : `The sortie was lost. Your frame was recovered with ${report.armor}% integrity. No payment or employer favor was earned. ${getFaction(contract.opponent).name} gained local influence. Repair it in Engineering before its next deployment.`;
+		element('result-copy').textContent = won ? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} has confirmed the objective, released payment, and strengthened its influence around this system.` : `${state.mission?.acquisitionTime === 0 ? 'The targeting deadline expired.' : 'The sortie was lost.'} Your frame was recovered with ${report.armor}% integrity. No payment or employer favor was earned. ${getFaction(contract.opponent).name} gained local influence.${report.armor < 100 ? ' Repair it in Engineering before its next deployment.' : ''}`;
 		element('result-difficulty').textContent = `${getFrame(state.frame).name} · ${state.difficulty.toUpperCase()}`;
 		element('result-score').textContent = `${campaign.lastResult?.payout.toLocaleString() ?? '0'} CR`;
 		element('result-rank').textContent = won ? '✓' : '×';
@@ -1020,10 +1020,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (playing() && screenRevision === revisionAtFrame) {
 			if (pad.targetNearest) selectTarget('nearest');
 			if (pad.targetNext) selectTarget('cycle');
-			const facility = state.mission?.structure;
 			const aimTargets = [
 				...state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, point: enemy }; }),
-				...(facility && facility.hp > 0 ? [{ id: FACILITY_TARGET_ID, point: facility }] : []),
+				...missionStructures(state.mission).filter(function (target) { return target.body.hp > 0; }).map(function ({ id, body }) { return { id, point: body }; }),
 			];
 			if (!aimTargets.some(function (target) { return target.id === acquiredTargetId; })) acquiredTargetId = undefined;
 			if (aimMode === 'touch' || aimMode === 'target') {

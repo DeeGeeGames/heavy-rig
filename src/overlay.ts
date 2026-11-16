@@ -3,7 +3,7 @@ import { getWeapon } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
 import { ARENA, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
-import { isPriorityTarget, FACILITY_TARGET_ID, EXTRACTION_SECONDS } from './missions';
+import { isPriorityTarget, missionStructures, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
 export const targetElevation = function (target: Point): number {
@@ -56,9 +56,8 @@ export const targetSolution = function (state: CombatStateView, target: Unit, ai
 const solutionFor = function (state: CombatStateView, target: Point, id: number, aim: Point): { guided: boolean; inRange: boolean } {
 	const weapons = state.loadout.map(function (mount) { return getWeapon(mount.weapon); });
 	const range = distance(target, state.player);
-	const structure = state.mission?.structure;
 	const candidates: { point: Point; id: number }[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { point: enemy, id: enemy.id }; });
-	if (structure && structure.hp > 0) candidates.push({ point: structure, id: FACILITY_TARGET_ID });
+	for (const { id, body } of missionStructures(state.mission)) if (body.hp > 0) candidates.push({ point: body, id });
 	const guided = weapons.some(function (weapon) {
 		if (weapon.kind !== 'missile' || range > weapon.range) return false;
 		const lock = candidates.filter(function (candidate) { return distance(candidate.point, state.player) <= weapon.range && (state.player.targetId === undefined || candidate.id === state.player.targetId); })
@@ -71,6 +70,12 @@ const solutionFor = function (state: CombatStateView, target: Point, id: number,
 export const missionNavigation = function (state: CombatStateView): { point: Point; label: string; color: string } | undefined {
 	const mission = state.mission; if (!mission) return undefined;
 	if (mission.stage === 'extract') return { point: mission.map.extraction, label: 'EXTRACT', color: '#b9f5ca' };
+	if (mission.contract.kind === 'raid' || mission.captureSites) {
+		const sites = mission.contract.kind === 'raid' ? (mission.raidTargets ?? []).filter(function (site) { return site.hp > 0; })
+			: (mission.captureSites ?? []).filter(function (site) { return !site.complete; });
+		const point = sites.reduce<Point | undefined>(function (nearest, site) { return !nearest || distance(site, state.player) < distance(nearest, state.player) ? site : nearest; }, undefined);
+		if (point) return { point, label: mission.contract.kind === 'raid' ? 'RAID' : mission.contract.kind === 'recovery' ? 'RECOVER' : 'BEACON', color: '#ffd199' };
+	}
 	const target = mission.contract.kind === 'assassination' ? state.enemies.find(function (enemy) { return enemy.id === mission.targetId; })
 		: mission.contract.kind === 'clearance' ? state.enemies.reduce<Unit | undefined>(function (nearest, enemy) { return !nearest || distance(enemy, state.player) < distance(nearest, state.player) ? enemy : nearest; }, undefined) : undefined;
 	return { point: target ?? mission.structure ?? mission.map.objective, label: mission.contract.kind === 'defend' ? 'DEFEND' : mission.contract.kind === 'demolition' ? 'FACILITY' : mission.contract.kind === 'assassination' ? 'PRIORITY' : 'HOSTILE', color: mission.contract.kind === 'defend' ? '#a3ddd0' : '#ffd199' };
@@ -127,12 +132,17 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.fillStyle = '#112329dd'; ctx.fillRect(relayLabel.x - 31, relayLabel.y, 62, 3);
 		ctx.fillStyle = state.relay < 30 ? '#f49769' : '#9bccbc'; ctx.fillRect(relayLabel.x - 31, relayLabel.y, 62 * state.relay / 100, 3);
 	}
-	const facility = mission?.structure;
-	if (facility) {
-		text(facility.hp > 0 ? `TARGET FACILITY / ${Math.ceil(facility.hp / facility.maxHp * 100)}%` : 'FACILITY DESTROYED', facility, 124, facility.hp > 0 ? '#ffd199' : '#a5b6ac', 11);
+	const structures = missionStructures(mission);
+	for (const [index, { body: facility }] of structures.entries()) {
+		text(facility.hp > 0 ? `${mission?.contract.kind === 'raid' ? `RAID SITE ${index + 1}` : 'TARGET FACILITY'} / ${Math.ceil(facility.hp / facility.maxHp * 100)}%` : 'FACILITY DESTROYED', facility, 124, facility.hp > 0 ? '#ffd199' : '#a5b6ac', 11);
 		const label = at(facility, 114);
 		ctx.fillStyle = '#112329dd'; ctx.fillRect(label.x - 42, label.y, 84, 4);
 		ctx.fillStyle = '#e5a778'; ctx.fillRect(label.x - 42, label.y, 84 * Math.max(0, facility.hp / facility.maxHp), 4);
+	}
+	for (const [index, site] of (mission?.captureSites ?? []).entries()) {
+		const duration = mission?.contract.kind === 'recovery' ? RECOVERY_SECONDS : BEACON_SECONDS;
+		const label = mission?.contract.kind === 'recovery' ? 'DATA CACHE' : `BEACON ${index + 1}`;
+		text(site.complete ? `${label} / ${mission?.contract.kind === 'recovery' ? 'RECOVERED' : 'ACTIVE'}` : `${label} / ${site.holdTime > 0 ? `HOLD ${(duration - site.holdTime).toFixed(1)}s` : 'ENTER ZONE'}`, site, 90, site.complete ? '#b9f5ca' : '#ffd199', 11);
 	}
 	if (mission?.stage === 'extract') {
 		const remaining = Math.max(0, EXTRACTION_SECONDS - mission.extractTime);
@@ -143,7 +153,8 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		text(`IMPACT ${strike.life.toFixed(1)}`, strike, 8, '#ffd2a6', 11, -14);
 	}
-	const selectedFacility = facility && facility.hp > 0 && state.player.targetId === FACILITY_TARGET_ID ? facility : undefined;
+	const selectedStructure = structures.find(function (target) { return target.body.hp > 0 && target.id === state.player.targetId; });
+	const selectedFacility = selectedStructure?.body;
 	const selected = state.enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
 	for (const enemy of state.enemies) {
 		const defense = getEnemyDefense(state, enemy);
@@ -172,10 +183,10 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		text(role, selected, elevation, '#ffe1aa', 10, 48);
 		text(`${Math.round(distance(selected, state.player))} M / ${solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selected, elevation, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
 	}
-	if (selectedFacility) {
+	if (selectedFacility && selectedStructure) {
 		const anchor = at(selectedFacility, 45); ctx.strokeStyle = '#f3c37d'; ctx.lineWidth = 1.5;
 		bracket(ctx, anchor.x, anchor.y, 130 * scale, 110 * scale, 12);
-		const solution = solutionFor(state, selectedFacility, FACILITY_TARGET_ID, aim);
+		const solution = solutionFor(state, selectedFacility, selectedStructure.id, aim);
 		text(`${Math.round(distance(selectedFacility, state.player))} M / ${solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selectedFacility, 30, '#ebc184', 10, 55);
 	}
 	// A precise sight remains useful when aiming ahead of a moving contact.
@@ -190,7 +201,12 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-4, -4); ctx.lineTo(-2, 0); ctx.lineTo(-4, 4); ctx.closePath(); ctx.fill(); ctx.restore();
 		if (label) {
 			ctx.font = `${minimumText}px monospace`; ctx.textAlign = 'center'; const half = ctx.measureText(label).width / 2;
-			const labelX = Math.max(half + 8, Math.min(width - half - 8, edge.point.x));
+			const labelY = edge.point.y + 26;
+			const candidates = [edge.point.x, ...(options.obstructions ?? []).flatMap(function (rect) { return [rect.left - half - 8, rect.right + half + 8]; })];
+			const labelX = candidates.map(function (x) { return Math.max(half + 8, Math.min(width - half - 8, x)); }).find(function (x) {
+				return !(options.obstructions ?? []).some(function (rect) { return x + half + 3 > rect.left && x - half - 3 < rect.right && labelY + 5 > rect.top && labelY - minimumText < rect.bottom; });
+			});
+			if (labelX === undefined) return;
 			ctx.fillStyle = '#0b1c23ed'; ctx.fillRect(labelX - half - 3, edge.point.y + 13, half * 2 + 6, minimumText + 5);
 			ctx.fillStyle = color; ctx.fillText(label, labelX, edge.point.y + 26);
 		}
@@ -219,6 +235,8 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.save(); ctx.beginPath(); ctx.rect(x + 1, y + 1, w - 2, h - 2); ctx.clip();
 		if (showRelay) dot(relay, '#91c5b8', 4, true);
 		if (mission) {
+			for (const { body } of structures) dot(body, body.hp > 0 ? '#ffd199' : '#829c99', 4, true);
+			for (const site of mission.captureSites ?? []) dot(site, site.complete ? '#b9f5ca' : '#ffd199', 4, true);
 			dot(mission.map.drop, '#a5b6ac', 3, true);
 			if (navigation) dot(navigation.point, navigation.color, 6, true);
 		}
