@@ -1,0 +1,143 @@
+{
+  "triangles": 50718,
+  "anchors": [
+    {
+      "name": "physical_exit_left_0_0",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_0_1",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_0_2",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_0_3",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_1_0",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_1_1",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_1_2",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_1_3",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_2_0",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_2_1",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_2_2",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_2_3",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_3_0",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_3_1",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_3_2",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_left_3_3",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "muzzle_left-forearm_pod",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_0_0",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_0_1",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_0_2",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_0_3",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_1_0",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_1_1",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_1_2",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_1_3",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_2_0",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_2_1",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_2_2",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_2_3",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_3_0",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_3_1",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_3_2",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "physical_exit_right_3_3",
+      "floorDistance": 0.04699997198581696
+    },
+    {
+      "name": "muzzle_right-forearm_pod",
+      "floorDistance": 0.04699997198581696
+    }
+  ],
+  "animationSamples": 406,
+  "scope": "Actual GLB bore depth and finite transform validation; no collision or gait acceptance."
+}

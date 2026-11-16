@@ -1,0 +1,164 @@
+{
+  "status": "validated-authoring-locomotion-retained-as-material-input",
+  "input": "design/mechs/assets/maul/articulation-base/maul.glb",
+  "inputSha256": "5860f1a6814c6c7da6ed5fb78a971de74b7e407a8cec11dad0c363a5a03cee41",
+  "candidateSha256": "5de82cc7fac9d4b3d1c205079e1ca293b0dec69b5e5c06c5b7ca42dacfa5f062",
+  "candidateBytes": 1215364,
+  "restPivotsBlender": {
+    "rig_pelvis": [
+      0.0,
+      0.1300000697374344,
+      0.5699999928474426
+    ],
+    "rig_torso": [
+      0.0,
+      0.1300000697374344,
+      0.6499999761581421
+    ],
+    "rig_leg_left_thigh": [
+      0.15800000727176666,
+      0.14000007510185242,
+      0.5400000214576721
+    ],
+    "rig_leg_left_shin": [
+      0.17000000178813934,
+      0.09000005573034286,
+      0.375
+    ],
+    "rig_leg_left_foot": [
+      0.19499999284744263,
+      0.09000002592802048,
+      0.1249999925494194
+    ],
+    "rig_mount_left-pod": [
+      0.33500000834465027,
+      0.04500008001923561,
+      0.6600000262260437
+    ],
+    "rig_leg_right_thigh": [
+      -0.15800000727176666,
+      0.14000007510185242,
+      0.5400000214576721
+    ],
+    "rig_leg_right_shin": [
+      -0.17000000178813934,
+      0.09000005573034286,
+      0.375
+    ],
+    "rig_leg_right_foot": [
+      -0.19499999284744263,
+      0.09000002592802048,
+      0.1249999925494194
+    ],
+    "rig_mount_right-pod": [
+      -0.33500000834465027,
+      0.04500008001923561,
+      0.6600000262260437
+    ]
+  },
+  "analytical": {
+    "walk": {
+      "parameters": {
+        "frames": 72,
+        "travel": 0.11,
+        "stanceFraction": 0.68,
+        "swingLift": 0.025,
+        "toePointDegrees": 4,
+        "toeRecoveryDegrees": 3,
+        "lower": 0.025,
+        "bob": 0.003,
+        "lean": 0,
+        "profile": "maul-heavy-walk"
+      },
+      "fps": 60,
+      "duration": 1.2,
+      "maximumTargetError": 6.50593981019146e-08,
+      "maximumVirtualStanceSlip": 7.459888009168501e-08,
+      "minimumGroundHeight": -3.725290298461914e-08,
+      "scope": "Analytical authoring checks only; actual exported motion, actuator endpoints, clearance and owner feel need review."
+    },
+    "run": {
+      "parameters": {
+        "frames": 60,
+        "travel": 0.18,
+        "stanceFraction": 0.48,
+        "swingLift": 0.045,
+        "toePointDegrees": 6,
+        "toeRecoveryDegrees": 4,
+        "lower": 0.035,
+        "bob": 0.005,
+        "lean": 0,
+        "profile": "suspended-run"
+      },
+      "fps": 60,
+      "duration": 1.0,
+      "maximumTargetError": 5.4241045484546706e-08,
+      "maximumVirtualStanceSlip": 4.998001405968792e-08,
+      "minimumGroundHeight": -3.725290298461914e-08,
+      "scope": "Analytical authoring checks only; actual exported motion, actuator endpoints, clearance and owner feel need review."
+    },
+    "backward": {
+      "parameters": {
+        "frames": 84,
+        "travel": -0.08,
+        "stanceFraction": 0.7,
+        "swingLift": 0.022,
+        "toePointDegrees": 4,
+        "toeRecoveryDegrees": 3,
+        "lower": 0.024,
+        "bob": 0.002,
+        "lean": 0,
+        "profile": "backward-walk"
+      },
+      "fps": 60,
+      "duration": 1.4,
+      "maximumTargetError": 8.195638656616211e-08,
+      "maximumVirtualStanceSlip": 1.0667607980427409e-07,
+      "minimumGroundHeight": -3.725290298461914e-08,
+      "scope": "Analytical authoring checks only; actual exported motion, actuator endpoints, clearance and owner feel need review."
+    }
+  },
+  "actualExport": {
+    "walk": {
+      "samples": 289,
+      "minimumFootHeight": -1.8398429801891325e-06,
+      "maximumRigidExitError": 2.9802322387695312e-08,
+      "maximumLoopMatrixError": 0.0,
+      "maximumVirtualStanceSlip": 2.0017534664581237e-06
+    },
+    "run": {
+      "samples": 241,
+      "minimumFootHeight": -7.631258995388635e-06,
+      "maximumRigidExitError": 2.9802322387695312e-08,
+      "maximumLoopMatrixError": 0.0,
+      "maximumVirtualStanceSlip": 4.3843389574384586e-05
+    },
+    "backward": {
+      "samples": 337,
+      "minimumFootHeight": -9.181695759252761e-07,
+      "maximumRigidExitError": 2.9802322387695312e-08,
+      "maximumLoopMatrixError": 0.0,
+      "maximumVirtualStanceSlip": 3.870767863678085e-05
+    }
+  },
+  "unchangedNeutralHierarchyAndGeometry": true,
+  "authoringScripts": [
+    {
+      "path": "scripts/mech-design/add-maul-motions.py",
+      "sha256": "15718ce870c74f0dd75f49e561a5312bceee6f369dd44af8a34224e7e0f98e78"
+    },
+    {
+      "path": "scripts/mech-design/blender/maul_motion.py",
+      "sha256": "8a848e17c8ff429ed0fe328a38b6b0f25d3181322de9f9bae297cbfeca4e8330"
+    },
+    {
+      "path": "scripts/mech-design/blender/locomotion_trial.py",
+      "sha256": "717e99b713c403bdd9a8f26c3e1b12d333bdedee5a0910b3200e72f5d72c9e1a"
+    },
+    {
+      "path": "scripts/mech-design/blender/rigid_packaging.py",
+      "sha256": "e51f1485eb35d4e7adf8595daa20a6b2136692222430adea1b9ce6cc232b83a2"
+    }
+  ],
+  "scope": "Embedded authoring curves are reproduction input; approved runtime gait uses separate measured fixed-step IK. Geometry and neutral hierarchy are unchanged."
+}

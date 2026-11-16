@@ -1,0 +1,2067 @@
+{
+  "status": "owner-approved-neutral-articulation",
+  "sourceSha256": "1ecfb3a3e2b86f1ac1c27a21f7030ab89068fe6227a85e9c1954da3c15a7ed35",
+  "recipeSha256": "e213335a37f49a247e328b64f93a63c312849db031ea59aaed325fbd4c1fcd5e",
+  "candidateSha256": "5860f1a6814c6c7da6ed5fb78a971de74b7e407a8cec11dad0c363a5a03cee41",
+  "candidateBytes": 1176788,
+  "sourceDecisions": [
+    {
+      "component": "mesh:0/component:0",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 1149
+    },
+    {
+      "component": "mesh:0/component:1",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 99
+    },
+    {
+      "component": "mesh:0/component:2",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 62
+    },
+    {
+      "component": "mesh:0/component:3",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 140
+    },
+    {
+      "component": "mesh:0/component:4",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 204
+    },
+    {
+      "component": "mesh:0/component:5",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 82
+    },
+    {
+      "component": "mesh:0/component:6",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 157
+    },
+    {
+      "component": "mesh:0/component:7",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 56
+    },
+    {
+      "component": "mesh:0/component:8",
+      "decision": "remove-source-artifact",
+      "owner": "source_artifact",
+      "triangles": 45
+    },
+    {
+      "component": "mesh:0/component:9",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 490
+    },
+    {
+      "component": "mesh:0/component:10",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 20
+    },
+    {
+      "component": "mesh:0/component:11",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 477
+    },
+    {
+      "component": "mesh:0/component:12",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 128
+    },
+    {
+      "component": "mesh:0/component:13",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 131
+    },
+    {
+      "component": "mesh:0/component:14",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 124
+    },
+    {
+      "component": "mesh:0/component:15",
+      "decision": "retain",
+      "owner": "rig_leg_right_thigh",
+      "triangles": 436
+    },
+    {
+      "component": "mesh:0/component:16",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 7
+    },
+    {
+      "component": "mesh:0/component:17",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:18",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:19",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:20",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:21",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:22",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:23",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:24",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:25",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_right-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:26",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 63
+    },
+    {
+      "component": "mesh:0/component:27",
+      "decision": "retain",
+      "owner": "rig_pelvis",
+      "triangles": 625
+    },
+    {
+      "component": "mesh:0/component:28",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 1671
+    },
+    {
+      "component": "mesh:0/component:29",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 60
+    },
+    {
+      "component": "mesh:0/component:30",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 68
+    },
+    {
+      "component": "mesh:0/component:31",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 482
+    },
+    {
+      "component": "mesh:0/component:32",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 302
+    },
+    {
+      "component": "mesh:0/component:33",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 51
+    },
+    {
+      "component": "mesh:0/component:34",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 125
+    },
+    {
+      "component": "mesh:0/component:35",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 156
+    },
+    {
+      "component": "mesh:0/component:36",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 66
+    },
+    {
+      "component": "mesh:0/component:37",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 58
+    },
+    {
+      "component": "mesh:0/component:38",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 764
+    },
+    {
+      "component": "mesh:0/component:39",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 50
+    },
+    {
+      "component": "mesh:0/component:40",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 622
+    },
+    {
+      "component": "mesh:0/component:41",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 76
+    },
+    {
+      "component": "mesh:0/component:42",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 882
+    },
+    {
+      "component": "mesh:0/component:43",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 73
+    },
+    {
+      "component": "mesh:0/component:44",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 263
+    },
+    {
+      "component": "mesh:0/component:45",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 128
+    },
+    {
+      "component": "mesh:0/component:46",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 118
+    },
+    {
+      "component": "mesh:0/component:47",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 620
+    },
+    {
+      "component": "mesh:0/component:48",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 131
+    },
+    {
+      "component": "mesh:0/component:49",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 50
+    },
+    {
+      "component": "mesh:0/component:50",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 48
+    },
+    {
+      "component": "mesh:0/component:51",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 126
+    },
+    {
+      "component": "mesh:0/component:52",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 48
+    },
+    {
+      "component": "mesh:0/component:53",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 311
+    },
+    {
+      "component": "mesh:0/component:54",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 192
+    },
+    {
+      "component": "mesh:0/component:55",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 305
+    },
+    {
+      "component": "mesh:0/component:56",
+      "decision": "retain",
+      "owner": "rig_leg_right_thigh",
+      "triangles": 119
+    },
+    {
+      "component": "mesh:0/component:57",
+      "decision": "retain",
+      "owner": "rig_leg_right_thigh",
+      "triangles": 269
+    },
+    {
+      "component": "mesh:0/component:58",
+      "decision": "retain",
+      "owner": "rig_leg_right_thigh",
+      "triangles": 281
+    },
+    {
+      "component": "mesh:0/component:59",
+      "decision": "retain",
+      "owner": "rig_pelvis",
+      "triangles": 256
+    },
+    {
+      "component": "mesh:0/component:60",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 158
+    },
+    {
+      "component": "mesh:0/component:61",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 729
+    },
+    {
+      "component": "mesh:0/component:62",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 1067
+    },
+    {
+      "component": "mesh:0/component:63",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 334
+    },
+    {
+      "component": "mesh:0/component:64",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 140
+    },
+    {
+      "component": "mesh:0/component:65",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 326
+    },
+    {
+      "component": "mesh:0/component:66",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 210
+    },
+    {
+      "component": "mesh:0/component:67",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 133
+    },
+    {
+      "component": "mesh:0/component:68",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 212
+    },
+    {
+      "component": "mesh:0/component:69",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 88
+    },
+    {
+      "component": "mesh:0/component:70",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 72
+    },
+    {
+      "component": "mesh:0/component:71",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 89
+    },
+    {
+      "component": "mesh:0/component:72",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 29
+    },
+    {
+      "component": "mesh:0/component:73",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 29
+    },
+    {
+      "component": "mesh:0/component:74",
+      "decision": "retain",
+      "owner": "rig_pelvis",
+      "triangles": 290
+    },
+    {
+      "component": "mesh:0/component:75",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 134
+    },
+    {
+      "component": "mesh:0/component:76",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 60
+    },
+    {
+      "component": "mesh:0/component:77",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 34
+    },
+    {
+      "component": "mesh:0/component:78",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 477
+    },
+    {
+      "component": "mesh:0/component:79",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 37
+    },
+    {
+      "component": "mesh:0/component:80",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 495
+    },
+    {
+      "component": "mesh:0/component:81",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 435
+    },
+    {
+      "component": "mesh:0/component:82",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 497
+    },
+    {
+      "component": "mesh:0/component:83",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 42
+    },
+    {
+      "component": "mesh:0/component:84",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 211
+    },
+    {
+      "component": "mesh:0/component:85",
+      "decision": "retain",
+      "owner": "rig_pelvis",
+      "triangles": 358
+    },
+    {
+      "component": "mesh:0/component:86",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 219
+    },
+    {
+      "component": "mesh:0/component:87",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 153
+    },
+    {
+      "component": "mesh:0/component:88",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 37
+    },
+    {
+      "component": "mesh:0/component:89",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 44
+    },
+    {
+      "component": "mesh:0/component:90",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 107
+    },
+    {
+      "component": "mesh:0/component:91",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 374
+    },
+    {
+      "component": "mesh:0/component:92",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 96
+    },
+    {
+      "component": "mesh:0/component:93",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 442
+    },
+    {
+      "component": "mesh:0/component:94",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 74
+    },
+    {
+      "component": "mesh:0/component:95",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 119
+    },
+    {
+      "component": "mesh:0/component:96",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 64
+    },
+    {
+      "component": "mesh:0/component:97",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 209
+    },
+    {
+      "component": "mesh:0/component:98",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 84
+    },
+    {
+      "component": "mesh:0/component:99",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 172
+    },
+    {
+      "component": "mesh:0/component:100",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 88
+    },
+    {
+      "component": "mesh:0/component:101",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 33
+    },
+    {
+      "component": "mesh:0/component:102",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 30
+    },
+    {
+      "component": "mesh:0/component:103",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 78
+    },
+    {
+      "component": "mesh:0/component:104",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 35
+    },
+    {
+      "component": "mesh:0/component:105",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 172
+    },
+    {
+      "component": "mesh:0/component:106",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 38
+    },
+    {
+      "component": "mesh:0/component:107",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 30
+    },
+    {
+      "component": "mesh:0/component:108",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 48
+    },
+    {
+      "component": "mesh:0/component:109",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 43
+    },
+    {
+      "component": "mesh:0/component:110",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 42
+    },
+    {
+      "component": "mesh:0/component:111",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 157
+    },
+    {
+      "component": "mesh:0/component:112",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 140
+    },
+    {
+      "component": "mesh:0/component:113",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 82
+    },
+    {
+      "component": "mesh:0/component:114",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:115",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 56
+    },
+    {
+      "component": "mesh:0/component:116",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 479
+    },
+    {
+      "component": "mesh:0/component:117",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 128
+    },
+    {
+      "component": "mesh:0/component:118",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 20
+    },
+    {
+      "component": "mesh:0/component:119",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 490
+    },
+    {
+      "component": "mesh:0/component:120",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 131
+    },
+    {
+      "component": "mesh:0/component:121",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 124
+    },
+    {
+      "component": "mesh:0/component:122",
+      "decision": "retain",
+      "owner": "rig_leg_left_thigh",
+      "triangles": 438
+    },
+    {
+      "component": "mesh:0/component:123",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 204
+    },
+    {
+      "component": "mesh:0/component:124",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 1161
+    },
+    {
+      "component": "mesh:0/component:125",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 63
+    },
+    {
+      "component": "mesh:0/component:126",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 482
+    },
+    {
+      "component": "mesh:0/component:127",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 302
+    },
+    {
+      "component": "mesh:0/component:128",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 51
+    },
+    {
+      "component": "mesh:0/component:129",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 7
+    },
+    {
+      "component": "mesh:0/component:130",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:131",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:132",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:133",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:134",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:135",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:136",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:137",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:138",
+      "decision": "replace-launcher-front",
+      "owner": "rig_mount_left-pod",
+      "triangles": 46
+    },
+    {
+      "component": "mesh:0/component:139",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 126
+    },
+    {
+      "component": "mesh:0/component:140",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 153
+    },
+    {
+      "component": "mesh:0/component:141",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 764
+    },
+    {
+      "component": "mesh:0/component:142",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 126
+    },
+    {
+      "component": "mesh:0/component:143",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 50
+    },
+    {
+      "component": "mesh:0/component:144",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 624
+    },
+    {
+      "component": "mesh:0/component:145",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 48
+    },
+    {
+      "component": "mesh:0/component:146",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 73
+    },
+    {
+      "component": "mesh:0/component:147",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 262
+    },
+    {
+      "component": "mesh:0/component:148",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 131
+    },
+    {
+      "component": "mesh:0/component:149",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 118
+    },
+    {
+      "component": "mesh:0/component:150",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 66
+    },
+    {
+      "component": "mesh:0/component:151",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 622
+    },
+    {
+      "component": "mesh:0/component:152",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 128
+    },
+    {
+      "component": "mesh:0/component:153",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 58
+    },
+    {
+      "component": "mesh:0/component:154",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 55
+    },
+    {
+      "component": "mesh:0/component:155",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 48
+    },
+    {
+      "component": "mesh:0/component:156",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 76
+    },
+    {
+      "component": "mesh:0/component:157",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 882
+    },
+    {
+      "component": "mesh:0/component:158",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 303
+    },
+    {
+      "component": "mesh:0/component:159",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 193
+    },
+    {
+      "component": "mesh:0/component:160",
+      "decision": "retain",
+      "owner": "rig_leg_left_thigh",
+      "triangles": 118
+    },
+    {
+      "component": "mesh:0/component:161",
+      "decision": "retain",
+      "owner": "rig_leg_left_thigh",
+      "triangles": 281
+    },
+    {
+      "component": "mesh:0/component:162",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 312
+    },
+    {
+      "component": "mesh:0/component:163",
+      "decision": "retain",
+      "owner": "rig_leg_left_thigh",
+      "triangles": 269
+    },
+    {
+      "component": "mesh:0/component:164",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 134
+    },
+    {
+      "component": "mesh:0/component:165",
+      "decision": "retain",
+      "owner": "rig_pelvis",
+      "triangles": 358
+    },
+    {
+      "component": "mesh:0/component:166",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 60
+    },
+    {
+      "component": "mesh:0/component:167",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 219
+    },
+    {
+      "component": "mesh:0/component:168",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 34
+    },
+    {
+      "component": "mesh:0/component:169",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 477
+    },
+    {
+      "component": "mesh:0/component:170",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 153
+    },
+    {
+      "component": "mesh:0/component:171",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 44
+    },
+    {
+      "component": "mesh:0/component:172",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 374
+    },
+    {
+      "component": "mesh:0/component:173",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 107
+    },
+    {
+      "component": "mesh:0/component:174",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 211
+    },
+    {
+      "component": "mesh:0/component:175",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 42
+    },
+    {
+      "component": "mesh:0/component:176",
+      "decision": "retain",
+      "owner": "rig_pelvis",
+      "triangles": 290
+    },
+    {
+      "component": "mesh:0/component:177",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 39
+    },
+    {
+      "component": "mesh:0/component:178",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 497
+    },
+    {
+      "component": "mesh:0/component:179",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 158
+    },
+    {
+      "component": "mesh:0/component:180",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 435
+    },
+    {
+      "component": "mesh:0/component:181",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 497
+    },
+    {
+      "component": "mesh:0/component:182",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 1150
+    },
+    {
+      "component": "mesh:0/component:183",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 119
+    },
+    {
+      "component": "mesh:0/component:184",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 172
+    },
+    {
+      "component": "mesh:0/component:185",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 36
+    },
+    {
+      "component": "mesh:0/component:186",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 172
+    },
+    {
+      "component": "mesh:0/component:187",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 209
+    },
+    {
+      "component": "mesh:0/component:188",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 442
+    },
+    {
+      "component": "mesh:0/component:189",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 140
+    },
+    {
+      "component": "mesh:0/component:190",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 210
+    },
+    {
+      "component": "mesh:0/component:191",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 74
+    },
+    {
+      "component": "mesh:0/component:192",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 29
+    },
+    {
+      "component": "mesh:0/component:193",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 66
+    },
+    {
+      "component": "mesh:0/component:194",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 29
+    },
+    {
+      "component": "mesh:0/component:195",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 49
+    },
+    {
+      "component": "mesh:0/component:196",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 43
+    },
+    {
+      "component": "mesh:0/component:197",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 729
+    },
+    {
+      "component": "mesh:0/component:198",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 133
+    },
+    {
+      "component": "mesh:0/component:199",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 88
+    },
+    {
+      "component": "mesh:0/component:200",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 334
+    },
+    {
+      "component": "mesh:0/component:201",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 210
+    },
+    {
+      "component": "mesh:0/component:202",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 326
+    },
+    {
+      "component": "mesh:0/component:203",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 72
+    },
+    {
+      "component": "mesh:0/component:204",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 38
+    },
+    {
+      "component": "mesh:0/component:205",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:206",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:207",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:208",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:209",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:210",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:211",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:212",
+      "decision": "retain",
+      "owner": "rig_mount_right-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:213",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 6
+    },
+    {
+      "component": "mesh:0/component:214",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 6
+    },
+    {
+      "component": "mesh:0/component:215",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 6
+    },
+    {
+      "component": "mesh:0/component:216",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 6
+    },
+    {
+      "component": "mesh:0/component:217",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 6
+    },
+    {
+      "component": "mesh:0/component:218",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 6
+    },
+    {
+      "component": "mesh:0/component:219",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 28
+    },
+    {
+      "component": "mesh:0/component:220",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 54
+    },
+    {
+      "component": "mesh:0/component:221",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:222",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:223",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:224",
+      "decision": "retain",
+      "owner": "rig_leg_right_shin",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:225",
+      "decision": "retain",
+      "owner": "rig_leg_right_foot",
+      "triangles": 28
+    },
+    {
+      "component": "mesh:0/component:226",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 60
+    },
+    {
+      "component": "mesh:0/component:227",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 96
+    },
+    {
+      "component": "mesh:0/component:228",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 336
+    },
+    {
+      "component": "mesh:0/component:229",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 112
+    },
+    {
+      "component": "mesh:0/component:230",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 288
+    },
+    {
+      "component": "mesh:0/component:231",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:232",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:233",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 38
+    },
+    {
+      "component": "mesh:0/component:234",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:235",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:236",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:237",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:238",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:239",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:240",
+      "decision": "retain",
+      "owner": "rig_mount_left-pod",
+      "triangles": 14
+    },
+    {
+      "component": "mesh:0/component:241",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 54
+    },
+    {
+      "component": "mesh:0/component:242",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:243",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 28
+    },
+    {
+      "component": "mesh:0/component:244",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:245",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 6
+    },
+    {
+      "component": "mesh:0/component:246",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:247",
+      "decision": "retain",
+      "owner": "rig_leg_left_shin",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:248",
+      "decision": "retain",
+      "owner": "rig_leg_left_foot",
+      "triangles": 28
+    },
+    {
+      "component": "mesh:0/component:249",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 96
+    },
+    {
+      "component": "mesh:0/component:250",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 288
+    },
+    {
+      "component": "mesh:0/component:251",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:252",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 160
+    },
+    {
+      "component": "mesh:0/component:253",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 336
+    },
+    {
+      "component": "mesh:0/component:254",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 60
+    },
+    {
+      "component": "mesh:0/component:255",
+      "decision": "retain",
+      "owner": "rig_torso",
+      "triangles": 112
+    }
+  ],
+  "removedDegeneratePolygons": 0,
+  "exportedTriangleCleanup": [
+    {
+      "mesh": "maul_leg_left_foot_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_leg_left_shin_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_leg_left_thigh_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_leg_right_foot_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_leg_right_shin_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_leg_right_thigh_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_mount_left-pod_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_mount_right-pod_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_pelvis_mesh",
+      "removedZeroAreaTriangles": 0
+    },
+    {
+      "mesh": "maul_torso_mesh",
+      "removedZeroAreaTriangles": 0
+    }
+  ],
+  "anchors": [
+    {
+      "name": "physical_exit_left_0_0",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.28850000000000003,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_0_1",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_0_2",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.35050000000000003,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_0_3",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3815,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_1_0",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.28850000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_1_1",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_1_2",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.35050000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_1_3",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3815,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_2_0",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.28850000000000003,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_2_1",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_2_2",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.35050000000000003,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_2_3",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3815,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_3_0",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.28850000000000003,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_3_1",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_3_2",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.35050000000000003,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_3_3",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3815,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "muzzle_left-forearm pod",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_0_0",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3815,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_0_1",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_0_2",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3195,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_0_3",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.28850000000000003,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_1_0",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3815,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_1_1",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_1_2",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3195,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_1_3",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.28850000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_2_0",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3815,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_2_1",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_2_2",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3195,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_2_3",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.28850000000000003,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_3_0",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3815,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_3_1",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_3_2",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3195,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_3_3",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.28850000000000003,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "muzzle_right-forearm pod",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    }
+  ],
+  "blenderVersion": "5.2.0 LTS"
+}

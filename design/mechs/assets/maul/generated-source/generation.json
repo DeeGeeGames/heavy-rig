@@ -1,0 +1,40 @@
+{
+  "provider": "Tripo Studio",
+  "model": "P2.0",
+  "inputMode": "multiview",
+  "inputManifest": "design/mechs/chassis/maul/turnaround/a/manifest.json",
+  "viewOrder": [
+    "front",
+    "own-left",
+    "own-right",
+    "back"
+  ],
+  "viewHashes": {
+    "front": "d8a21a6fd4dadf81ba7f4986d15ea5e891514adb0499a69f27bc7ebe351c236b",
+    "own-left": "da64721a36c877a575e0b796a5f042c43a6d565d8053a9208ee5f7494eb133f5",
+    "own-right": "05e12fa3d0ef7da6de99e9892598cc906cbe4078b0915e37aef309d82f0b3479",
+    "back": "1bb706790c33801969130c5627b3772e044923b6a5805db526562b43d09426cc"
+  },
+  "topology": "Triangle",
+  "targetTriangles": 50000,
+  "texture": false,
+  "privacy": "Private",
+  "generationCount": 1,
+  "creditsAuthorized": 100,
+  "ownerSpendingApproval": "Owner approved one Tripo Studio P2.0 multiview generation, geometry only, 50,000-triangle target, 100 Studio credits total, in response to the explicit spending proposal.",
+  "preSubmitBalance": 2190,
+  "status": "owner-approved-shape-source-for-local-repair",
+  "preparedAt": "2026-11-16T02:26:51.527976+00:00",
+  "jobId": "835184b8-c465-4dd0-9494-a704f3bb6a6d",
+  "jobUrl": "https://studio.tripo3d.ai/workspace/generate/835184b8-c465-4dd0-9494-a704f3bb6a6d",
+  "creditsSpent": 100,
+  "postSubmitBalance": 2090,
+  "submittedAt": "2026-11-16T02:27:16.245575+00:00",
+  "rawExport": "design/mechs/assets/maul/generated-source/source.glb",
+  "rawExportSha256": "1ecfb3a3e2b86f1ac1c27a21f7030ab89068fe6227a85e9c1954da3c15a7ed35",
+  "rawExportBytes": 1210868,
+  "providerReportedTriangles": 47391,
+  "providerReportedVertices": 26712,
+  "completedAt": "2026-11-16T02:29:37.482867+00:00",
+  "ownerSourceApproval": "Owner said \"Approved\" to accepting the exact generated Maul shape as the basis for local repair and rigging, including the disclosed softer armor edges. Does not approve repaired geometry, articulation, materials or runtime appearance."
+}

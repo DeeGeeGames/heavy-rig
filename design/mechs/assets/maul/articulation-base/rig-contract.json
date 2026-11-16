@@ -1,0 +1,584 @@
+{
+  "groups": [
+    {
+      "name": "rig_pelvis",
+      "parent": null,
+      "pivot": [
+        0,
+        0.13,
+        0.57
+      ]
+    },
+    {
+      "name": "rig_torso",
+      "parent": "rig_pelvis",
+      "pivot": [
+        0,
+        0.13,
+        0.65
+      ]
+    },
+    {
+      "name": "rig_leg_left_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        0.158,
+        0.14,
+        0.54
+      ]
+    },
+    {
+      "name": "rig_leg_left_shin",
+      "parent": "rig_leg_left_thigh",
+      "pivot": [
+        0.17,
+        0.09,
+        0.375
+      ]
+    },
+    {
+      "name": "rig_leg_left_foot",
+      "parent": "rig_leg_left_shin",
+      "pivot": [
+        0.195,
+        0.09,
+        0.125
+      ]
+    },
+    {
+      "name": "rig_mount_left-pod",
+      "parent": "rig_torso",
+      "pivot": [
+        0.335,
+        0.045,
+        0.66
+      ]
+    },
+    {
+      "name": "rig_leg_right_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        -0.158,
+        0.14,
+        0.54
+      ]
+    },
+    {
+      "name": "rig_leg_right_shin",
+      "parent": "rig_leg_right_thigh",
+      "pivot": [
+        -0.17,
+        0.09,
+        0.375
+      ]
+    },
+    {
+      "name": "rig_leg_right_foot",
+      "parent": "rig_leg_right_shin",
+      "pivot": [
+        -0.195,
+        0.09,
+        0.125
+      ]
+    },
+    {
+      "name": "rig_mount_right-pod",
+      "parent": "rig_torso",
+      "pivot": [
+        -0.335,
+        0.045,
+        0.66
+      ]
+    }
+  ],
+  "meshGroups": {
+    "maul_pelvis": "rig_pelvis",
+    "maul_torso": "rig_torso",
+    "maul_leg_left_thigh": "rig_leg_left_thigh",
+    "maul_leg_left_shin": "rig_leg_left_shin",
+    "maul_leg_left_foot": "rig_leg_left_foot",
+    "maul_mount_left-pod": "rig_mount_left-pod",
+    "maul_leg_right_thigh": "rig_leg_right_thigh",
+    "maul_leg_right_shin": "rig_leg_right_shin",
+    "maul_leg_right_foot": "rig_leg_right_foot",
+    "maul_mount_right-pod": "rig_mount_right-pod"
+  },
+  "anchors": [
+    {
+      "name": "physical_exit_left_0_0",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.28850000000000003,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_0_1",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_0_2",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.35050000000000003,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_0_3",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3815,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_1_0",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.28850000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_1_1",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_1_2",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.35050000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_1_3",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3815,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_2_0",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.28850000000000003,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_2_1",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_2_2",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.35050000000000003,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_2_3",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3815,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_3_0",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.28850000000000003,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_3_1",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_3_2",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.35050000000000003,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_left_3_3",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3815,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "muzzle_left-forearm pod",
+      "parent": "rig_mount_left-pod",
+      "worldPosition": [
+        0.3195,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_0_0",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3815,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_0_1",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_0_2",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3195,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_0_3",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.28850000000000003,
+        -0.329,
+        0.5305
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_1_0",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3815,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_1_1",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_1_2",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3195,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_1_3",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.28850000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_2_0",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3815,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_2_1",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_2_2",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3195,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_2_3",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.28850000000000003,
+        -0.329,
+        0.5924999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_3_0",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3815,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_3_1",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_3_2",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.3195,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "physical_exit_right_3_3",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.28850000000000003,
+        -0.329,
+        0.6234999999999999
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "muzzle_right-forearm pod",
+      "parent": "rig_mount_right-pod",
+      "worldPosition": [
+        -0.35050000000000003,
+        -0.329,
+        0.5615
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ]
+    }
+  ]
+}

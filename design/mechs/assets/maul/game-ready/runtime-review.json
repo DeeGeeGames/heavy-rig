@@ -1,0 +1,79 @@
+{
+  "status": "owner-approved-runtime-visuals",
+  "assetSha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1",
+  "runtimeSources": {
+    "src/authored-gait.ts": "c9148f54765d3c3c1f9ff7d08a5b562be0f8bd41d7bac26eb9855a013231cd12",
+    "src/authored-run.ts": "be108574b9809b12c12e0eae84654d5cbe1622c4a3c57e8afb7b8b6938c4ae6f",
+    "src/authored-mech.ts": "c4d692cb3ba16e006caa82610b56db2b0837a08977ebcd4e130d952303ad2c03",
+    "src/authored-pose.ts": "1fddf2a21cebb1720d06b02835fa8b34c50e0ac307ba6c169230603eb58d6fec",
+    "tests/authored-maul.test.ts": "e7f98598a6463efa34ab16caff600889f1471ed4be1155e871015ce4055e87a6"
+  },
+  "diagnosis": "Knee pole projected from full thigh vector could reverse as ankle passed forward; rendered knee bend remained30degrees, so apparent locking was direction reversal.",
+  "changes": [
+    "Maul-only neutral knee bend pole; existing Warden and Kestrel behavior unchanged.",
+    "Run landing forward prediction0.8 of stance; stance36percent, cycle1.15seconds, referenceSpeed65, bodyLift2.4, swingLift8.",
+    "Walk timing and foot path unchanged; upright torso preserved.",
+    "Reverse uses stable anatomical knee bend without changing its step timing."
+  ],
+  "metricsBefore": [
+    {
+      "name": "walk",
+      "minBend": 29.999999999999915,
+      "maxJump": 1.4332743734566313,
+      "inverted": 0,
+      "minForward": -9.383550566361793,
+      "maxForward": 15.218051917547335,
+      "landings": 10
+    },
+    {
+      "name": "run",
+      "minBend": 29.999999999999904,
+      "maxJump": 15.48618128458509,
+      "inverted": 177,
+      "minForward": -9.758683095685534,
+      "maxForward": 24.06959313430609,
+      "landings": 15
+    },
+    {
+      "name": "backward",
+      "minBend": 29.999999999999915,
+      "maxJump": 9.136407891733999,
+      "inverted": 67,
+      "minForward": -0.176514956923278,
+      "maxForward": 25.62789873479592,
+      "landings": 13
+    }
+  ],
+  "metricsAfter": [
+    {
+      "name": "walk",
+      "minBend": 29.999999999999915,
+      "maxJump": 1.4332422922096688,
+      "inverted": 0,
+      "minForward": -9.383550566361796,
+      "maxForward": 15.218051917547328,
+      "landings": 10
+    },
+    {
+      "name": "run",
+      "minBend": 29.999999999999915,
+      "maxJump": 3.1909134062390647,
+      "inverted": 0,
+      "minForward": -7.1072506990965145,
+      "maxForward": 31.97634438322732,
+      "landings": 13
+    },
+    {
+      "name": "backward",
+      "minBend": 29.99999999999993,
+      "maxJump": 1.2379556564901413,
+      "inverted": 0,
+      "minForward": -0.17651495692329222,
+      "maxForward": 25.627898734795924,
+      "landings": 13
+    }
+  ],
+  "validation": "441 tests, typecheck, lint and build pass. Follow-up guard validation passed9focusedtests and typecheck. Planted feet, floor and muzzle checks pass.",
+  "scope": "Owner-approved Maul A appearance and demonstrated numeric runtime gait; not exhaustive collision or actuator-stroke proof, physical input acceptance, audio acceptance or hardware/crowd performance acceptance.",
+  "approval": "Owner said \"Approved\" after the revised bounding run and stable reverse preview. Earlier owner said \"The walk looks good\" after the upright-torso revision. Approval covers this exact asset, material finish, scale and demonstrated runtime movement. Physical controller/touch feel, audio and representative hardware performance remain separate."
+}

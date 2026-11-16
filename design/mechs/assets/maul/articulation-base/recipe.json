@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "chassis": "maul",
+  "status": "candidate-not-owner-approved",
+  "inputs": {
+    "source": {
+      "path": "design/mechs/assets/maul/generated-source/source.glb",
+      "sha256": "1ecfb3a3e2b86f1ac1c27a21f7030ab89068fe6227a85e9c1954da3c15a7ed35"
+    },
+    "inventory": {
+      "path": "design/mechs/assets/maul/generated-source/inventory.json",
+      "sha256": "9f56e8eb26d1b81145e3bb3fca885f9084b5098d4931b4ba314f7f3ce032696f"
+    },
+    "ownership": {
+      "path": "design/mechs/assets/maul/generated-source/source-ownership.json",
+      "sha256": "68910465f5c9f600d7814bf1c0a0dc1101dc48c7a9cdf0f69d0ac4376a98886d"
+    }
+  },
+  "groups": [
+    {
+      "name": "rig_pelvis",
+      "parent": null,
+      "pivot": [
+        0,
+        0.13,
+        0.57
+      ]
+    },
+    {
+      "name": "rig_torso",
+      "parent": "rig_pelvis",
+      "pivot": [
+        0,
+        0.13,
+        0.65
+      ]
+    },
+    {
+      "name": "rig_leg_left_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        0.158,
+        0.14,
+        0.54
+      ]
+    },
+    {
+      "name": "rig_leg_left_shin",
+      "parent": "rig_leg_left_thigh",
+      "pivot": [
+        0.17,
+        0.09,
+        0.375
+      ]
+    },
+    {
+      "name": "rig_leg_left_foot",
+      "parent": "rig_leg_left_shin",
+      "pivot": [
+        0.195,
+        0.09,
+        0.125
+      ]
+    },
+    {
+      "name": "rig_mount_left-pod",
+      "parent": "rig_torso",
+      "pivot": [
+        0.335,
+        0.045,
+        0.66
+      ]
+    },
+    {
+      "name": "rig_leg_right_thigh",
+      "parent": "rig_pelvis",
+      "pivot": [
+        -0.158,
+        0.14,
+        0.54
+      ]
+    },
+    {
+      "name": "rig_leg_right_shin",
+      "parent": "rig_leg_right_thigh",
+      "pivot": [
+        -0.17,
+        0.09,
+        0.375
+      ]
+    },
+    {
+      "name": "rig_leg_right_foot",
+      "parent": "rig_leg_right_shin",
+      "pivot": [
+        -0.195,
+        0.09,
+        0.125
+      ]
+    },
+    {
+      "name": "rig_mount_right-pod",
+      "parent": "rig_torso",
+      "pivot": [
+        -0.335,
+        0.045,
+        0.66
+      ]
+    }
+  ],
+  "replaceComponents": [
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138
+  ],
+  "removeArtifacts": [
+    8
+  ],
+  "launcher": {
+    "columns": 4,
+    "rows": 4,
+    "centerX": 0.335,
+    "centerZ": 0.577,
+    "pitch": 0.031,
+    "radius": 0.012,
+    "frontY": -0.329,
+    "boreDepth": 0.045,
+    "segments": 16
+  },
+  "featureDecisions": {
+    "body": "Keep source geometry and approved soft armor; no global decimation.",
+    "launcherFronts": "Replace source capped arrays and their backing plane with 4x4 real blind bores.",
+    "legs": "Retain source geometry per explicitly reviewed component ownership; inspect motion before accepting pivots.",
+    "artifact8": "Remove the thin disconnected strip spanning between independently moving feet.",
+    "waist": "Add a closed pelvis-owned internal bearing inside the source waist to cover the open interface during torso yaw."
+  },
+  "waistBearing": {
+    "center": [
+      0,
+      0.13
+    ],
+    "profile": [
+      [
+        0.61,
+        0.085
+      ],
+      [
+        0.62,
+        0.103
+      ],
+      [
+        0.672,
+        0.103
+      ],
+      [
+        0.683,
+        0.085
+      ]
+    ],
+    "segments": 32
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "status": "approved-neutral-geometry-and-diagnostic-articulation",
+  "asset": "design/mechs/assets/maul/articulation-base/maul.glb",
+  "sha256": "5860f1a6814c6c7da6ed5fb78a971de74b7e407a8cec11dad0c363a5a03cee41",
+  "approval": "Owner said \"Approved\" to the repaired geometry and diagnostic joint motion for the gait and materials pass. Covers exact neutral repaired model and demonstrated joint sweeps; gait, materials, runtime appearance and performance remain separate.",
+  "triangles": 50718,
+  "meshSections": 10,
+  "recipe": "design/mechs/assets/maul/articulation-base/recipe.json"
+}

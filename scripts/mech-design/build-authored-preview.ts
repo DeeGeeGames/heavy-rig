@@ -5,8 +5,8 @@ import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 const root = resolve(import.meta.dir, '../..');
 const assetArgument = process.argv[2]; const outputArgument = process.argv[3];
 const frameArgument = process.argv[4] ?? 'warden';
-if (frameArgument !== 'warden' && frameArgument !== 'kestrel') throw new Error('Authored preview chassis must be warden or kestrel');
-if (!assetArgument || !outputArgument) throw new Error('Usage: bun scripts/mech-design/build-authored-preview.ts asset.glb new-generated-output [warden|kestrel]');
+if (frameArgument !== 'warden' && frameArgument !== 'kestrel' && frameArgument !== 'maul') throw new Error('Authored preview chassis must be warden, kestrel or maul');
+if (!assetArgument || !outputArgument) throw new Error('Usage: bun scripts/mech-design/build-authored-preview.ts asset.glb new-generated-output [warden|kestrel|maul]');
 const asset = resolve(root, assetArgument); const output = resolve(root, outputArgument);
 const relativeOutput = relative(join(root, 'design/mechs/generated'), output);
 if (!relativeOutput || relativeOutput.startsWith('..') || isAbsolute(relativeOutput)) throw new Error('Preview output must be a new directory inside design/mechs/generated');
@@ -22,7 +22,7 @@ const bundle = async function (path: string) {
 };
 const injectAsset = function (html: string) { return html.replace('<html lang="en"', `<html lang="en" data-authored-asset="${assetUrl}"`); };
 const studyScript = await bundle('src/authored-mech-study.ts');
-const study = injectAsset((await Bun.file(join(root, frameArgument === 'kestrel' ? 'kestrel-study.html' : 'authored-mech-study.html')).text()).replace('<script type="module" src="./src/authored-mech-study.ts"></script>', function () { return `<script type="module">${studyScript}</script>`; }));
+const study = injectAsset((await Bun.file(join(root, frameArgument === 'maul' ? 'maul-study.html' : frameArgument === 'kestrel' ? 'kestrel-study.html' : 'authored-mech-study.html')).text()).replace('<script type="module" src="./src/authored-mech-study.ts"></script>', function () { return `<script type="module">${studyScript}</script>`; }));
 await Bun.write(join(output, 'study.html'), study);
 let game = await Bun.file(join(root, 'index.html')).text();
 for (const match of game.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)">/g)) {
@@ -37,8 +37,8 @@ for (const match of game.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)">/g)
 	game = game.replace(match[0], function () { return `<style>${css}</style>`; });
 }
 game = game.replace('src="./public/brand/heavy-rig.png"', `src="data:image/png;base64,${Buffer.from(await Bun.file(join(root, 'public/brand/heavy-rig.png')).arrayBuffer()).toString('base64')}"`);
-const gameScript = await bundle(frameArgument === 'kestrel' ? 'src/kestrel-game.ts' : 'src/authored-game.ts');
-const gameEntry = /<script type="module" src="\.\/src\/(?:main|kestrel-game)\.ts"><\/script>/;
+const gameScript = await bundle(frameArgument === 'maul' ? 'src/maul-game.ts' : frameArgument === 'kestrel' ? 'src/kestrel-game.ts' : 'src/authored-game.ts');
+const gameEntry = /<script type="module" src="\.\/src\/(?:main|kestrel-game|game-assets)\.ts"><\/script>/;
 if (!gameEntry.test(game)) throw new Error('Expected one game bootstrap script');
 game = injectAsset(game.replace(gameEntry, function () { return `<script type="module">${gameScript}</script>`; }));
 await Bun.write(join(output, 'game.html'), game);

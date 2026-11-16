@@ -1,0 +1,14 @@
+{
+  "sha256": "1ecfb3a3e2b86f1ac1c27a21f7030ab89068fe6227a85e9c1954da3c15a7ed35",
+  "bytes": 1210868,
+  "triangles": 47391,
+  "meshes": 1,
+  "primitives": 1,
+  "materials": 1,
+  "images": 0,
+  "animations": 0,
+  "skins": 0,
+  "duplicateGeometricTriangles": 6,
+  "blenderImportedTriangles": 47385,
+  "importNote": "The raw GLB contains six geometric duplicate triangles. Blender removes those duplicates on import; raw source is retained unchanged."
+}

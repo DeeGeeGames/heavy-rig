@@ -2,7 +2,8 @@
 
 Start with [the selected Warden package](../../../design/mechs/assets/warden/game-ready/README.md)
 and [the optimization procedure](../../../design/mechs/game-optimization.md).
-Normal game startup is unchanged. Derive candidates into a new ignored
+Normal startup installs approved Kestrel A and Maul A; Warden remains opt-in.
+Derive candidates into a new ignored
 `design/mechs/generated/` directory; promote only after the required review.
 
 ## Restore and rebuild the selected derivative
@@ -249,3 +250,19 @@ actual exported module/socket/muzzle geometry through shared Three.js motion.
 The exact alternate and empty exports are owner-approved for bounded proof
 retention (2026-11-15). The linked record includes fresh-checkout LFS retrieval,
 byte-for-byte rebuilding and preview reconstruction from retained stills.
+
+## Reproduce the approved Maul A package
+
+Use the [Maul checkpoint instructions](../../../design/mechs/assets/maul/game-ready/README.md)
+for exact commands and expected hashes. `add-maul-motions.py` and
+`blender/maul_motion.py` measure the approved Maul neutral hierarchy and soles;
+`materialize-maul.py` applies its reviewed source-component palette without
+changing ordered triangle positions/normals or animation bytes. The retained
+locomotion input and material recipe keep the complete reproduction chain
+available after cloning.
+
+Maul's source ownership, rigid pivots, rebuilt 4×4 bores, closed waist bearing
+and forward knee-bend pole are source-specific decisions. Do not copy its
+component IDs, spatial classifications or run settings into another chassis.
+Owner runtime visual approval remains distinct from the embedded authoring
+curves, physical controls and hardware performance.

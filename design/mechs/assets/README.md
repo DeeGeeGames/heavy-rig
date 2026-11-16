@@ -5,6 +5,8 @@ The selected Warden A derivative is documented in
 separate. The [approved Kestrel A](kestrel/game-ready/README.md) is installed by
 normal startup after material, scale and runtime visual approval. Its raw
 provider source and repaired articulation are retained as separate checkpoints.
+The [approved Maul A](maul/game-ready/README.md) follows the same retention policy
+and is installed by normal startup with its reviewed upright runtime gait.
 
 ```sh
 git lfs install --local

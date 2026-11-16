@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-visual-approved-in-runtime",
+  "chassis": "maul",
+  "variant": "maul-a",
+  "asset": {
+    "path": "public/assets/mechs/maul/game-ready.glb",
+    "retainedPath": "design/mechs/assets/maul/game-ready/maul.glb",
+    "sha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1",
+    "bytes": 1783372,
+    "triangles": 50718,
+    "meshSections": 10,
+    "materials": 1,
+    "textureImages": 2,
+    "textureDimensions": [
+      [
+        8,
+        1
+      ],
+      [
+        8,
+        1
+      ]
+    ],
+    "rigGroups": 10,
+    "physicalLauncherExits": 32,
+    "logicalWeaponSlots": 2,
+    "logicalTubesPerPod": 6,
+    "clips": [
+      "diagnostic-articulation",
+      "walk",
+      "run",
+      "backward"
+    ],
+    "coordinateSystem": "glTF Y-up, +Z-forward, +X-own-left; native height approximately one unit",
+    "extensionsRequired": []
+  },
+  "source": "design/mechs/assets/maul/generated-source/approval.json",
+  "articulation": "design/mechs/assets/maul/articulation-base/approval.json",
+  "approval": "design/mechs/assets/maul/game-ready/approval.json",
+  "materialRecipe": "design/mechs/assets/maul/game-ready/material-recipe.json",
+  "materialRecipeSha256": "924494413d85245407834e6bb7af993b7e9bc5a144d0b02c2779063ba792a143",
+  "locomotionInput": "design/mechs/assets/maul/game-ready/locomotion.glb",
+  "locomotionInputSha256": "5de82cc7fac9d4b3d1c205079e1ca293b0dec69b5e5c06c5b7ca42dacfa5f062",
+  "runtimeAdapter": "src/authored-mech.ts",
+  "runtimeHeight": 153.65404829172167,
+  "equipment": "Two interchangeable forearm launcher pods. Empty slots hide pod assemblies while torso-owned connectors remain. Maul B/C retain procedural models.",
+  "logicalTubeMapping": [
+    "1_0",
+    "2_0",
+    "1_1",
+    "2_1",
+    "1_3",
+    "2_3"
+  ],
+  "motion": "Runtime uses measured fixed-step contacts/IK and Maul-specific stride/run settings, stable forward knee bend and vertical torso. Embedded authoring curves are separate reproduction inputs, not the runtime leg tracks.",
+  "collision": "Existing simulation-owned gameplay proxies remain authoritative; visual triangles are not physics colliders.",
+  "lighting": "Existing dynamic game lighting with an opaque shared palette.",
+  "lod": "Single accepted geometry level; no hardware or universal roster budget inferred.",
+  "authoring": [
+    {
+      "path": "scripts/mech-design/add-maul-motions.py",
+      "sha256": "15718ce870c74f0dd75f49e561a5312bceee6f369dd44af8a34224e7e0f98e78"
+    },
+    {
+      "path": "scripts/mech-design/blender/maul_motion.py",
+      "sha256": "8a848e17c8ff429ed0fe328a38b6b0f25d3181322de9f9bae297cbfeca4e8330"
+    },
+    {
+      "path": "scripts/mech-design/materialize-maul.py",
+      "sha256": "2bb0e675572788b41feb970e13f958b375c03a8d481abea23753ad639fa2a520"
+    },
+    {
+      "path": "scripts/mech-design/materialize-kestrel.py",
+      "sha256": "05a83c7f13139eed46d45649d06085dbfd0f2327d71854a83b0c9cdc46ef4bdd"
+    },
+    {
+      "path": "scripts/mech-design/package-optimized-glb.py",
+      "sha256": "df8e8cf6a64257f7dcca0431458624622308a5f6ba0fe1995041d9402c77c908"
+    },
+    {
+      "path": "scripts/mech-design/verify-kestrel-package.py",
+      "sha256": "fa2d163d391961aafe9b1c49c9dac428d7aafa0b45011bc455f2a9b75775ea4d"
+    }
+  ],
+  "startup": "src/game-assets.ts",
+  "startupBehavior": "Normal startup loads Kestrel and Maul independently before synchronous presentation; each has a five-second deadline and retains its procedural fallback on failure. Late results are disposed.",
+  "reproduction": "design/mechs/assets/maul/game-ready/reproduction.json"
+}

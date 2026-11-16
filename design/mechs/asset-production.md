@@ -87,7 +87,7 @@ a closed inner waist and source-specific knee separation replace defective
 source geometry. Ten rigid sections preserve two interchangeable gun assemblies.
 No Warden anatomical thresholds or global decimation ratio define this repair.
 The exact recipe retains its historical candidate labels; the external approval
-record defines acceptance. Maul currently has an approved concept only.
+record defines acceptance. Maul has an owner-approved concept, four-view turnaround, P2.0 source shape, repaired neutral geometry and diagnostic articulation. Its [accepted game package](assets/maul/game-ready/README.md) now records owner approval of the material finish, procedural-equivalent scale and demonstrated upright runtime motion. The source inventory and ownership mapping remain source-specific under `assets/maul/generated-source/`; the approved neutral repair remains in `assets/maul/articulation-base/`.
 
 Kestrel's material pass uses one shared palette material and two tiny embedded
 textures. Component roles and cockpit/shaft face overrides are explicit for this
@@ -165,3 +165,22 @@ a rough authoring proof. Indexed-triangle housing probes, physical exit checks
 and 915 comparative motion states support this specific interface. This is not
 a universal segmentation recipe, production art approval, runtime equipment
 integration, exhaustive collision proof or second-chassis validation.
+
+## Maul runtime knee-direction repair
+
+The Maul run/reverse review exposed knee-direction reversals even though the
+solver retained a 30-degree knee bend. Projecting the complete neutral thigh
+vector against a moving hip-to-ankle direction allowed its pole to cross sides.
+Maul now uses the neutral knee offset from the neutral hip-to-ankle line, then
+projects that bend direction against the current solve axis. This source-specific
+option preserves the established Warden/Kestrel behavior. The accepted walk
+timing and foot path remain, while run uses more forward landing reach and a
+longer flight interval. The torso remains vertical through walking, running,
+reverse and independent aiming.
+
+The exact accepted GLB and runtime file hashes are in the
+[Maul approval record](assets/maul/game-ready/approval.json). The embedded
+authoring leg tracks and runtime numeric IK remain separate motion paths.
+Physical input feel, audio, exhaustive collision/actuator review and representative
+hardware/crowd performance have not been established by these visual and
+software checks. No roster-wide polygon or animation budget follows from this run.

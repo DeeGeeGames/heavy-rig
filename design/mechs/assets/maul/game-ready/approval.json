@@ -1,0 +1,19 @@
+{
+  "status": "owner-visual-approved-in-runtime",
+  "asset": "design/mechs/assets/maul/game-ready/maul.glb",
+  "sha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1",
+  "approval": "Owner said \"Approved\" after the revised bounding run and stable reverse preview. Earlier owner said \"The walk looks good\" after the upright-torso revision. Approval covers this exact asset, material finish, scale and demonstrated runtime movement. Physical controller/touch feel, audio and representative hardware performance remain separate.",
+  "reviewedRuntimeSources": {
+    "src/authored-mech.ts": "c4d692cb3ba16e006caa82610b56db2b0837a08977ebcd4e130d952303ad2c03",
+    "src/authored-gait.ts": "c9148f54765d3c3c1f9ff7d08a5b562be0f8bd41d7bac26eb9855a013231cd12",
+    "src/authored-run.ts": "be108574b9809b12c12e0eae84654d5cbe1622c4a3c57e8afb7b8b6938c4ae6f",
+    "src/authored-pose.ts": "1fddf2a21cebb1720d06b02835fa8b34c50e0ac307ba6c169230603eb58d6fec"
+  },
+  "runtimeReview": "design/mechs/assets/maul/game-ready/runtime-review.json",
+  "remainingAcceptance": [
+    "Physical keyboard/controller/touch feel",
+    "Audio",
+    "Representative hardware GPU/CPU and crowd performance",
+    "Exhaustive joint collision and actuator-stroke review"
+  ]
+}
