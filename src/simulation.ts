@@ -7,7 +7,7 @@ import { FRAMES, getFrame, type FrameId } from './frames';
 import { canEquipWeapon, createStarterLoadout, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionRuntime } from './campaign-types';
-import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, FACILITY_TARGET_ID, generateMissionMap, missionHostileCount, missionSpawn } from './missions';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionMap, missionHostileCount, missionSpawn } from './missions';
 import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint } from './weapon-rig';
 import { enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
 import { planSquads, squadApproach, type SquadOrder } from './enemy-squads';
@@ -80,7 +80,10 @@ export const createMissionState = function (contract: Contract, options: Mission
 	state.mission = {
 		contract, map, stage: 'active',
 		structure: contract.kind === 'demolition' ? { ...map.objective, hp: structureHp, maxHp: structureHp } : undefined,
-		targetId: undefined, progress: 0, required: contract.kind === 'defend' || contract.kind === 'clearance' ? hostileCount : 1, extractTime: 0,
+		...(contract.kind === 'raid' ? { raidTargets: map.sites.map(function (site) { return { ...site, hp: structureHp * .6, maxHp: structureHp * .6 }; }) } : {}),
+		...(contract.kind === 'recovery' || contract.kind === 'acquisition' ? { captureSites: (contract.kind === 'recovery' ? [map.objective] : map.sites).map(function (site) { return { ...site, holdTime: 0, complete: false }; }) } : {}),
+		...(contract.kind === 'acquisition' ? { acquisitionTime: ACQUISITION_SECONDS } : {}),
+		targetId: undefined, progress: 0, required: contract.kind === 'defend' || contract.kind === 'clearance' ? hostileCount : contract.kind === 'raid' || contract.kind === 'acquisition' ? 3 : 1, extractTime: 0,
 	};
 	const heading = Math.atan2(map.objective.y - map.drop.y, map.objective.x - map.drop.x);
 	state.player.x = map.drop.x; state.player.y = map.drop.y; state.player.angle = heading; state.player.turret = heading;
@@ -109,8 +112,7 @@ const createEnemy = function (state: CombatStateView, spawn: Point & { kind: Ene
 type CombatTarget = { id: number; kind: 'enemy'; body: Unit; radius: number } | { id: number; kind: 'structure'; body: NonNullable<MissionRuntime['structure']>; radius: number };
 const combatTargets = function (state: CombatStateView): CombatTarget[] {
 	const enemies: CombatTarget[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, kind: 'enemy', body: enemy, radius: 25 }; });
-	const structure = state.mission?.structure;
-	return structure && structure.hp > 0 ? [...enemies, { id: FACILITY_TARGET_ID, kind: 'structure', body: structure, radius: FACILITY_RADIUS }] : enemies;
+	return [...enemies, ...missionStructures(state.mission).filter(function (target) { return target.body.hp > 0; }).map(function ({ id, body }): CombatTarget { return { id, kind: 'structure', body, radius: FACILITY_RADIUS }; })];
 };
 export const distance = function (a: Point, b: Point) { return Math.hypot(a.x - b.x, a.y - b.y); };
 export const angleDelta = function (from: number, to: number) { return Math.atan2(Math.sin(to - from), Math.cos(to - from)); };
@@ -636,8 +638,22 @@ export const outcomeStep = function (state: CombatStateView, dt: number) {
 	const quota = mission ? missionHostileCount(mission.contract) : getWaveDefinition(state.wave).enemies.length;
 	if (p.hp <= 0 || relay && state.relay <= 0) { state.outcome = 'lost'; state.events.push('defeat'); }
 	else if (mission) {
-		mission.progress = mission.contract.kind === 'demolition' ? Number(mission.structure?.hp === 0)
+		if (mission.stage === 'active' && mission.captureSites) {
+			const duration = mission.contract.kind === 'recovery' ? RECOVERY_SECONDS : BEACON_SECONDS;
+			for (const site of mission.captureSites) {
+				if (site.complete) continue;
+				site.holdTime = distance(p, site) <= CAPTURE_RADIUS ? Math.min(duration, site.holdTime + dt) : 0;
+				if (site.holdTime >= duration) { site.complete = true; burst(state, site, 130, '#93e9e1'); }
+			}
+		}
+		mission.progress = mission.contract.kind === 'raid' ? mission.raidTargets?.filter(function (site) { return site.hp <= 0; }).length ?? 0
+			: mission.captureSites ? mission.captureSites.filter(function (site) { return site.complete; }).length
+			: mission.contract.kind === 'demolition' ? Number(mission.structure?.hp === 0)
 			: mission.contract.kind === 'assassination' ? Number(mission.targetId !== undefined && !state.enemies.some(function (enemy) { return enemy.id === mission.targetId; })) : state.kills;
+		if (mission.stage === 'active' && mission.acquisitionTime !== undefined) {
+			mission.acquisitionTime = Math.max(0, mission.acquisitionTime - dt);
+			if (mission.acquisitionTime === 0) { state.outcome = 'lost'; state.events.push('defeat'); return; }
+		}
 		if (mission.stage === 'active' && mission.progress >= mission.required && (mission.contract.kind !== 'defend' || state.spawned === quota && state.warnings.length === 0)) {
 			mission.stage = 'extract'; mission.extractTime = 0;
 			burst(state, mission.map.extraction, 180, '#93e9e1'); state.events.push('objective-complete');

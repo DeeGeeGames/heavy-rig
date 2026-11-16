@@ -14,7 +14,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		const campaign = createCampaign(317);
 		const contracts = getContracts(campaign);
 		expect(contracts).toEqual(getContracts(createCampaign(317)));
-		expect(new Set(contracts.map(function (entry) { return entry.kind; }))).toEqual(new Set(['defend', 'demolition', 'assassination', 'clearance']));
+		expect(new Set(contracts.map(function (entry) { return entry.kind; }))).toEqual(new Set(['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition']));
 		expect(contracts.every(function (entry) { return entry.employer !== entry.opponent && (canAcceptContract(campaign, entry) === (entry.tier === 1)); })).toBe(true);
 		const otherWorld = getContracts(campaign, 'borealis');
 		expect(otherWorld.every(function (contract) { return !canAcceptContract(campaign, contract); })).toBe(true);
@@ -90,7 +90,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		const hostile: Campaign = { ...campaign, day: 3, boardRevision: 2, completed: 2, companyReputation: 9200, reputation: { freeholds: -100, combine: -100, accord: -100 }, boardReputation: { freeholds: -100, combine: -100, accord: -100 } };
 		const friendly: Campaign = { ...hostile, reputation: { freeholds: 100, combine: 100, accord: 100 }, boardReputation: { freeholds: 100, combine: 100, accord: 100 } };
 		const offers = getContracts(hostile);
-		expect(offers.filter(function (entry) { return canAcceptContract(hostile, entry); })).toHaveLength(4);
+		expect(offers.filter(function (entry) { return canAcceptContract(hostile, entry); })).toHaveLength(7);
 		for (const contract of offers.filter(function (entry) { return entry.tier > 1; })) expect(acceptContract(hostile, contract.id)).toBe(hostile);
 		expect(getContracts(friendly).every(function (entry) { return canAcceptContract(friendly, entry); })).toBe(true);
 		expect(posted(friendly).reward).toBeGreaterThan(posted(hostile).reward);
@@ -166,5 +166,23 @@ test('v6 storage purges incompatible campaigns while preserving profile and unre
 	} finally {
 		if (original) Object.defineProperty(globalThis, 'localStorage', original);
 		else Reflect.deleteProperty(globalThis, 'localStorage');
+	}
+});
+
+test('an accepted v6 contract from the four-kind board still restores its exact original terms', async function () {
+	const raw = await Bun.file(new URL('./fixtures/accepted-contract-v6.json', import.meta.url)).text();
+	const restored = parseCampaign(raw);
+	expect(restored.active?.kind).toBe('demolition'); expect(restored.active?.tier).toBe(2);
+	expect(JSON.stringify(restored)).toBe(raw.trim());
+});
+
+test('new mission contracts restore and settle their payment exactly once', function () {
+	for (const kind of ['raid', 'recovery', 'acquisition'] as const) {
+		const campaign = createCampaign(317); const offer = posted(campaign, kind);
+		const accepted = roundTrip(acceptContract(campaign, offer.id));
+		expect(accepted.active).toEqual(offer);
+		const settled = roundTrip(settleContract(accepted, true));
+		expect(settled.credits).toBe(offer.reward); expect(settled.completed).toBe(1);
+		expect(settleContract(settled, true)).toBe(settled);
 	}
 });

@@ -152,7 +152,7 @@ failed work does not remove earned reputation. Rank thresholds are 0, 100, 250,
 | 12 | 5 · Elite | 4 | 330 |
 | 15 | 6 · Legendary | 5 | 450 |
 
-Each tier offers all four mission types, including previews of locked postings.
+Each tier offers all seven mission types, including previews of locked postings.
 The board’s tier selector shows company-rank requirements. Higher tiers increase
 force size, armor, commander and facility durability, enemy weapon quality, and
 payment. Local work fields scouts and helicopters; heavier contracts introduce
@@ -175,6 +175,9 @@ all-rigs cheat retain their existing equipment; the starter Kestrel stays fixed.
 | Facility demolition | Destroy the marked installation; surviving guards are optional. |
 | Priority target | Destroy the designated command frame; surviving escorts are optional. |
 | Area clearance | Eliminate every hostile across three deployment sites. |
+| Raid | Destroy three supply installations in any order; surviving defenders are optional. |
+| Recovery | Hold the marked cache zone for five uninterrupted seconds, then extract with its data. |
+| Target acquisition | Activate three beacons within three minutes. Hold each zone for three uninterrupted seconds; activated beacons stay active. The deadline stops once all three are active. |
 
 Completing the objective opens extraction. Reach the marked landing zone and
 remain within 150 meters for three uninterrupted seconds. Combat and incoming

@@ -215,3 +215,26 @@ test('rocket volleys stagger by 0.1 seconds, finish on release, and freeze durin
 		expect(state.stats.shotsFired).toBe(2);
 	} finally { await world.dispose(); }
 });
+
+test('new mission objectives run in ECS, pause their timers, and release raid structures on replacement', async function () {
+	const contract: Contract = { id: 'objectives', seed: 123, planetId: 'meridian', kind: 'raid', employer: 'freeholds', opponent: 'combine', title: 'Objectives', briefing: 'Test', reward: 100, favor: 8, hostility: 5, tier: 1, requiredReputation: -100 };
+	const { world, combat, state } = await harness(createMissionState(contract));
+	try {
+		expect(world.getEntitiesWithQuery(['structure'])).toHaveLength(3);
+		for (const target of state.mission?.raidTargets ?? []) target.hp = 0;
+		world.update(1 / 60); expect(state.mission?.stage).toBe('extract');
+		for (const kind of ['recovery', 'acquisition'] as const) {
+			const next = combat.attach(createMissionState({ ...contract, kind }));
+			expect(world.getEntitiesWithQuery(['structure'])).toHaveLength(0);
+			const site = next.mission?.captureSites?.[0]; if (!site) throw new Error('Missing capture site');
+			next.player.x = site.x; next.player.y = site.y; next.enemies = [];
+			combat.setEnabled(true); world.update(1 / 60);
+			const snapshot = JSON.stringify(next.mission); combat.setEnabled(false);
+			for (let i = 0; i < 60; i++) world.update(1 / 60);
+			expect(JSON.stringify(next.mission)).toBe(snapshot);
+			combat.setEnabled(true); for (let i = 0; i < 301; i++) world.update(1 / 60);
+			expect(site.complete).toBe(true);
+		}
+		combat.attach(createState()); expect(world.getEntitiesWithQuery(['structure'])).toHaveLength(0);
+	} finally { await world.dispose(); }
+});

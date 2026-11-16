@@ -77,3 +77,35 @@ test('mission navigation follows the remaining objective and missile feedback ac
 	clearance.enemies = [far];
 	expect(missionNavigation(clearance)?.point).toBe(far);
 });
+
+test('raid and capture rendering and navigation follow remaining sites and transition to extraction', function () {
+	const scene = new Scene(); const world = createWorldObjects(scene);
+	try {
+		const state = createMissionState({ ...contract, kind: 'raid' }); const mission = state.mission;
+		const targets = mission?.raidTargets; if (!mission || !targets) throw new Error('Missing raid');
+		for (const [index, target] of targets.entries()) {
+			state.player.x = target.x; state.player.y = target.y;
+			expect(missionNavigation(state)?.point).toBe(target);
+			target.hp = 0; world.update(state);
+			const model = scene.getObjectByName(`raid-site-${index + 1}`);
+			expect(model?.visible).toBe(true);
+			expect(model?.getObjectByName('facility-intact')?.visible).toBe(false);
+			expect(model?.getObjectByName('facility-rubble')?.visible).toBe(true);
+			if (index < 2) expect(missionNavigation(state)?.point).not.toBe(target);
+		}
+		for (const kind of ['recovery', 'acquisition'] as const) {
+			const capture = createMissionState({ ...contract, kind }); const runtime = capture.mission;
+			if (!runtime?.captureSites) throw new Error('Missing capture sites');
+			for (const [index, site] of runtime.captureSites.entries()) {
+				capture.player.x = site.x; capture.player.y = site.y;
+				expect(missionNavigation(capture)?.point).toBe(site); world.update(capture);
+				expect(scene.getObjectByName(`capture-site-${index + 1}`)?.visible).toBe(true);
+				site.complete = true;
+				if (index < runtime.captureSites.length - 1) expect(missionNavigation(capture)?.point).not.toBe(site);
+			}
+			runtime.stage = 'extract'; world.update(capture);
+			expect(scene.getObjectByName('extraction-zone')?.visible).toBe(true);
+			expect(missionNavigation(capture)?.point).toBe(runtime.map.extraction);
+		}
+	} finally { world.dispose(); }
+});

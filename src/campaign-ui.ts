@@ -13,11 +13,15 @@ import { getFrame } from './frames';
 
 export const MISSION_NAMES: Readonly<Record<MissionKind, string>> = {
 	defend: 'Garrison defense', demolition: 'Facility demolition', assassination: 'Priority target', clearance: 'Area clearance',
+	raid: 'Raid', recovery: 'Recovery', acquisition: 'Target acquisition',
 };
 const OBJECTIVES: Readonly<Record<MissionKind, string>> = {
 	defend: 'Hold the relay against the assault. Keep its integrity above zero, then return to extraction.',
 	demolition: 'Find and destroy the marked installation. Its garrison is optional; extraction is required.',
 	assassination: 'Track down the marked command frame. Destroy it and reach extraction alive.',
+	raid: 'Destroy all three marked installations in any order, then extract. Defenders are optional.',
+	recovery: 'Hold the cache zone for five uninterrupted seconds, then extract with the data. Guards are optional.',
+	acquisition: 'Activate three beacons within three minutes: hold each zone for three seconds. Activated beacons stay active. Then extract.',
 	clearance: 'Sweep the marked sectors and eliminate every hostile. Extract once the area is clear.',
 };
 const signed = function (value: number) { return `${value > 0 ? '+' : ''}${value}`; };

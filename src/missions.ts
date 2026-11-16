@@ -1,12 +1,24 @@
 import { getMissionTier } from './reputation';
 import { getPlanet } from './universe';
-import type { Contract, Landmark, MissionMap } from './campaign-types';
+import type { Contract, Landmark, MissionMap, MissionRuntime, MissionStructure } from './campaign-types';
 import type { EnemyKind, Point, CombatStateView } from './simulation';
 
 export const EXTRACTION_RADIUS = 150;
 export const EXTRACTION_SECONDS = 3;
 export const FACILITY_RADIUS = 65;
 export const FACILITY_TARGET_ID = -1;
+export const CAPTURE_RADIUS = 100;
+export const RECOVERY_SECONDS = 5;
+export const BEACON_SECONDS = 3;
+export const ACQUISITION_SECONDS = 180;
+
+// Negative identities never collide with enemy IDs; demolition keeps its old ID.
+export const missionStructures = function (mission: MissionRuntime | undefined): { id: number; body: MissionStructure }[] {
+	return [
+		...(mission?.structure ? [{ id: FACILITY_TARGET_ID, body: mission.structure }] : []),
+		...(mission?.raidTargets ?? []).map(function (body, index) { return { id: -2 - index, body }; }),
+	];
+};
 
 export const isPriorityTarget = function (state: CombatStateView, enemy: { id: number; commander?: boolean }): boolean {
 	return Boolean(enemy.commander) || state.mission?.targetId === enemy.id;
@@ -55,7 +67,7 @@ export const missionHostileCount = function (contract: Contract): number {
 export const missionSpawn = function (contract: Contract, map: MissionMap, index: number): MissionSpawn {
 	const random = randomSource((contract.seed + Math.imul(index + 1, 104729)) >>> 0);
 	const commander = contract.kind === 'assassination' && index === 0;
-	const site = contract.kind === 'clearance' ? map.sites[index % map.sites.length] ?? map.objective : map.objective;
+	const site = contract.kind === 'clearance' || contract.kind === 'raid' || contract.kind === 'acquisition' ? map.sites[index % map.sites.length] ?? map.objective : map.objective;
 	const angle = index * 2.399963 + random() * 0.6;
 	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 : 180 + random() * 250;
 	const rosters: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = {
@@ -77,6 +89,15 @@ export const missionObjective = function (state: CombatStateView): string {
 	if (mission.stage === 'extract') return mission.extractTime > 0
 		? `Extraction ${Math.ceil(EXTRACTION_SECONDS - mission.extractTime)}s · hold the landing zone`
 		: `Return to extraction · ${Math.round(separation(state.player, mission.map.extraction))} m`;
+	if (mission.contract.kind === 'raid') return `Destroy supply sites · ${mission.progress}/3 destroyed`;
+	if (mission.contract.kind === 'recovery' || mission.contract.kind === 'acquisition') {
+		const holding = mission.captureSites?.find(function (site) { return !site.complete && site.holdTime > 0; });
+		const duration = mission.contract.kind === 'recovery' ? RECOVERY_SECONDS : BEACON_SECONDS;
+		const action = holding ? ` · hold ${(duration - holding.holdTime).toFixed(1)}s` : ' · enter a marked zone';
+		return mission.contract.kind === 'recovery' ? `Recover the data${action}`
+			: (mission.acquisitionTime ?? 0) <= 0 ? 'Target acquisition failed · deadline expired'
+			: `Beacons ${mission.progress}/3 · ${Math.ceil(mission.acquisitionTime ?? 0)}s remaining${action}`;
+	}
 	if (mission.contract.kind === 'defend') return `Protect the relay · ${mission.progress}/${mission.required} hostiles eliminated`;
 	if (mission.contract.kind === 'demolition') return `Destroy the facility · ${Math.ceil(Math.max(0, mission.structure?.hp ?? 0) / (mission.structure?.maxHp ?? 1) * 100)}% integrity`;
 	if (mission.contract.kind === 'assassination') return 'Hunt the marked command frame';
