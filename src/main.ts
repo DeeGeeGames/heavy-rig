@@ -96,7 +96,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	let campaignSnapshot = savedSnapshot();
 	let campaign = readCampaign();
-	const returningCompany = campaignSnapshot !== null && campaignSnapshot !== undefined;
+	let returningCompany = campaignSnapshot !== null && campaignSnapshot !== undefined;
 	let campaignSaved = false;
 	let campaignConflict = false;
 	let destination: PlanetId = campaign.planetId;
@@ -267,7 +267,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		container.classList.toggle('training-active', Boolean(training));
 		container.classList.toggle('menu-open', modal); container.dataset['screen'] = navigation.auxiliary ?? navigation.screen;
 		updateMenuHint();
-		element('title-save-status').textContent = `${campaignSaved ? 'LOCAL COMPANY' : 'SESSION ONLY · STORAGE UNAVAILABLE'} / DAY ${String(campaign.day).padStart(2, '0')} / ${getPlanet(campaign.planetId).name.toUpperCase()}`;
+		element('title-save-status').textContent = !returningCompany ? 'NO COMPANY STARTED' : `${campaignSaved ? 'LOCAL COMPANY' : 'SESSION ONLY · STORAGE UNAVAILABLE'} / DAY ${String(campaign.day).padStart(2, '0')} / ${getPlanet(campaign.planetId).name.toUpperCase()}`;
 		if (navigation.screen === 'title') showTitleScene();
 		element('hud').inert = modal; canvas.inert = modal;
 		resetInput(); lastHud = 0;
@@ -383,7 +383,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const installedChanged = current?.frameId !== upcoming?.frameId || current?.loadout.some(function (weapon, index) { return weapon !== upcoming?.loadout[index]; }) || current?.reserves.some(function (rounds, index) { return rounds !== upcoming?.reserves[index]; });
 		campaign = next;
 		if (installedChanged) resetEditor();
-		return persistCampaign();
+		const persisted = persistCampaign();
+		if (persisted) returningCompany = true;
+		return persisted;
 	};
 	const updateCompany = function (next: Campaign, notice: string, nextScreen?: ShipScreen, clearDraft = false) {
 		if (next === campaign || !replaceCampaign(next)) return;
@@ -504,6 +506,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const toShip = function () { destination = campaign.planetId; selectedContract = undefined; navigateShip('starmap', 'route', true); };
 	const toTitle = function () {
+		element('title-continue').hidden = !returningCompany;
 		element('title-company-label').textContent = campaign.introComplete ? 'CONTINUE COMPANY' : 'CONTINUE ESCAPE';
 		training = undefined; escape = false; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state); audio.reset(); transition(navigation.setScreen('title'));
 	};
@@ -525,15 +528,21 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
 	listen('title-continue', function () { if (campaign.introComplete) toShip(); else startIntro(); });
-	listen('title-new-campaign', function () {
-		confirm(function () {
-			if (!replaceCampaign(createCampaign())) return;
+	const startCompany = function (career: boolean) {
+		const start = function () {
+			if (!replaceCampaign({ ...createCampaign(), introComplete: career })) return;
+			returningCompany = true;
+			element('title-continue').hidden = false;
 			destination = campaign.planetId; selectedContract = undefined;
 			resetEditor();
-			element('title-company-label').textContent = 'CONTINUE COMPANY';
-			startIntro();
-		}, 'START NEW CAMPAIGN', 'This replaces your current company on this device, including its contracts, fleet, credits, reputation, and progress. This cannot be undone. Your settings are kept.', 'START A NEW CAMPAIGN?');
-	});
+			if (career) toShip(); else startIntro();
+		};
+		if (!returningCompany) { start(); return; }
+		const mode = career ? 'CAREER' : 'CAMPAIGN';
+		confirm(start, `START NEW ${mode}`, 'This replaces your current company on this device, including its contracts, fleet, credits, reputation, and progress. This cannot be undone. Your settings are kept.', `START A NEW ${mode}?`);
+	};
+	listen('title-new-campaign', function () { startCompany(false); });
+	listen('title-new-career', function () { startCompany(true); });
 	listen('title-training', startTraining);
 	listen('title-intro', startIntro);
 	listen('intro-begin', function () {
@@ -551,7 +560,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	});
 	listen('title-settings', function () { showAuxiliary('settings'); });
 	listen('title-handbook', function () { showAuxiliary('handbook'); });
-	const titleChoices = ['title-continue', 'title-new-campaign', 'title-training', 'title-intro', 'title-settings', 'title-handbook'];
+	const titleChoices = ['title-continue', 'title-new-campaign', 'title-new-career', 'title-training', 'title-intro', 'title-settings', 'title-handbook'];
 	const describeTitleChoice = function (selected: string) {
 		for (const id of titleChoices) element(`${id}-description`).hidden = id !== selected;
 	};
@@ -560,10 +569,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element(id).addEventListener('pointerenter', function () { describeTitleChoice(id); }, listenerOptions);
 		element(id).addEventListener('pointerleave', function () {
 			const focusedId = document.activeElement instanceof HTMLElement ? document.activeElement.id : '';
-			describeTitleChoice(titleChoices.includes(focusedId) ? focusedId : 'title-continue');
+			describeTitleChoice(titleChoices.includes(focusedId) ? focusedId : returningCompany ? 'title-continue' : 'title-new-campaign');
 		}, listenerOptions);
 	}
-	element('title-company-label').textContent = returningCompany ? 'CONTINUE COMPANY' : 'START COMPANY';
+	element('title-continue').hidden = !returningCompany;
+	element('title-company-label').textContent = campaign.introComplete ? 'CONTINUE COMPANY' : 'CONTINUE ESCAPE';
+	describeTitleChoice(returningCompany ? 'title-continue' : 'title-new-campaign');
 	listen('training-deploy', function () { if (campaign.active) navigateShip('mechbay'); else toShip(); });
 	listen('training-briefing', function () { if (trainingOrigin === 'title') toTitle(); else toShip(); }); listen('restart', toShip);
 	listen('resume', function () { setPaused(false); });
@@ -1172,7 +1183,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		world.update(elapsed);
 		frame = requestAnimationFrame(tick);
 	};
-	updateSettings(); updateDifficulty(); refreshCampaign(); persistCampaign();
+	updateSettings(); updateDifficulty(); refreshCampaign();
+	if (returningCompany) persistCampaign();
 	if (rigTestEnabled) {
 		const rigTest = mountRigTest(container, profile.settings, function (initial) {
 			training = undefined; escape = false;
@@ -1183,7 +1195,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			audio.reset(); transition(navigation.setScreen('playing', true));
 		}, function () { return state; });
 		onCleanup(rigTest);
-	} else if (!campaignConflict && !campaign.introComplete) startIntro(); else syncScreen();
+	} else syncScreen();
 	frame = requestAnimationFrame(tick);
 	return function () {
 		if (stopped) return; stopped = true;
