@@ -44,7 +44,7 @@ describe('Heavy Rig frame combat', function () {
 			state.shots.push({ x: state.player.x, y: state.player.y, vx: 0, vy: 0, life: 1, kind: 'enemy', target: undefined, damage: 20 });
 			run(state, 2, { ...idle, drive: 1, turn: 0.2 });
 		}
-		expect(warden.player.speed).toBeGreaterThan(kestrel.player.speed);
+		expect(kestrel.player.speed).toBeGreaterThan(warden.player.speed);
 		expect(kestrel.player.angle).toBeGreaterThan(warden.player.angle);
 		expect(maul.player.angle).toBeLessThan(warden.player.angle);
 		expect(maul.player.hp).toBeGreaterThan(warden.player.hp);
