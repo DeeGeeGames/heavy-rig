@@ -1,4 +1,4 @@
-import { authoredKestrelUrl, loadAuthoredKestrel, loadAuthoredMaul } from './authored-mech';
+import { authoredKestrelUrl, loadAuthoredKestrel, loadAuthoredMaul, loadAuthoredWarden } from './authored-mech';
 
 // Install accepted visual assets before presentation creates synchronous models.
 // Each load has an independent deadline and retains the procedural fallback.
@@ -24,6 +24,7 @@ const loadWithDeadline = async function (label: string, url: string, load: typeo
 	return factory;
 };
 const factories = await Promise.all([
+	loadWithDeadline('Warden', './assets/mechs/warden/game-ready.glb', loadAuthoredWarden),
 	loadWithDeadline('Kestrel', authoredKestrelUrl(), loadAuthoredKestrel),
 	loadWithDeadline('Maul', './assets/mechs/maul/game-ready.glb', loadAuthoredMaul),
 ]);
