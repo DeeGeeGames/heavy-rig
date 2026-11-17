@@ -44,6 +44,25 @@ export const createTouchTargeting = function () {
 	};
 };
 
+// A free aim is a world heading, reprojected from the moving player each step.
+export const createTouchFacing = function () {
+	let heading: number | undefined;
+	let tracking = false;
+	return {
+		clear: function () { heading = undefined; tracking = false; },
+		select: function (point: Point, origin: Point) {
+			heading = Math.atan2(point.y - origin.y, point.x - origin.x);
+			tracking = false;
+		},
+		resolve: function (origin: Point, facing: number, target: Point | undefined): Point {
+			if (target) { tracking = true; return { ...target }; }
+			if (tracking || heading === undefined) heading = facing;
+			tracking = false;
+			return { x: origin.x + Math.cos(heading) * 600, y: origin.y + Math.sin(heading) * 600 };
+		},
+	};
+};
+
 export const createTouchDrive = function () {
 	let owner: number | undefined;
 	let drive = 0; let turn = 0; let cruise = false;
