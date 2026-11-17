@@ -1,3 +1,4 @@
+import { acquireMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import { edgeMarker, targetSolution } from '../src/overlay';
 import { createMount } from '../src/arsenal';
@@ -44,14 +45,14 @@ test('target feedback follows fitted weapon range and actual guidance acquisitio
 	expect(targetSolution(state, target, target)).toEqual({ guided: false, inRange: true });
 	state.frame = 'longbow'; state.loadout = [createMount('laser')];
 	expect(targetSolution(state, target, target)).toEqual({ guided: false, inRange: false });
-	state.frame = 'morrow'; state.loadout = [createMount('stream-missiles')];
+	state.frame = 'morrow'; state.loadout = [createMount('stream-missiles')]; acquireMissileTarget(state, target.id);
 	expect(targetSolution(state, target, target)).toEqual({ guided: true, inRange: true });
 	const nearer = { ...target, id: 2, x: target.x + 40 };
 	state.enemies.push(nearer);
 	// A closer cursor contact cannot silently replace the acquired target.
 	expect(targetSolution(state, target, nearer).guided).toBe(true);
 	expect(targetSolution(state, nearer, nearer).guided).toBe(false);
-	state.player.targetId = nearer.id;
+	acquireMissileTarget(state, nearer.id);
 	expect(targetSolution(state, target, target).guided).toBe(false);
 	expect(targetSolution(state, nearer, target).guided).toBe(true);
 	state.player.targetId = target.id;
@@ -60,7 +61,7 @@ test('target feedback follows fitted weapon range and actual guidance acquisitio
 	// An unavailable selection must not promise a fallback lock on another unit.
 	expect(targetSolution(state, nearer, nearer).guided).toBe(false);
 	delete state.player.targetId;
-	expect(targetSolution(state, nearer, nearer).guided).toBe(true);
+	expect(targetSolution(state, nearer, nearer).guided).toBe(false);
 	nearer.hp = 0;
 	expect(targetSolution(state, nearer, nearer).guided).toBe(false);
 });

@@ -3,7 +3,7 @@ import { inFiringArc } from './torso-arc';
 import { getWeapon } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
-import { ARENA, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
+import { ARENA, missileTracking, missileLockLabel, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
 import { isPriorityTarget, missionStructures, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
@@ -50,22 +50,22 @@ export const edgeMarker = function (point: Point, width: number, height: number,
 	return { point: { x: origin.x + dx * factor, y: origin.y + dy * factor }, angle: Math.atan2(dy, dx) };
 };
 
-// Match each fitted guidance system's actual acquisition range and aim choice.
-export const targetSolution = function (state: CombatStateView, target: Unit, aim: Point): { guided: boolean; inRange: boolean } {
-	return solutionFor(state, target, target.id, aim);
+// Keep the existing presentation helper signature for callers. Guidance follows selection.
+export const targetSolution = function (state: CombatStateView, target: Unit, _aim: Point): { guided: boolean; inRange: boolean } {
+	void _aim;
+	return solutionFor(state, target, target.id);
 };
-const solutionFor = function (state: CombatStateView, target: Point, id: number, aim: Point): { guided: boolean; inRange: boolean } {
+const solutionFor = function (state: CombatStateView, target: Point, id: number): { guided: boolean; inRange: boolean } {
 	const weapons = state.loadout.map(function (mount) { return getWeapon(mount.weapon); });
 	const range = distance(target, state.player);
-	const candidates: { point: Point; id: number }[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { point: enemy, id: enemy.id }; });
-	for (const { id, body } of missionStructures(state.mission)) if (body.hp > 0) candidates.push({ point: body, id });
-	const guided = weapons.some(function (weapon) {
-		if (weapon.kind !== 'missile' || range > weapon.range || !inFiringArc(state.player, state.player.angle, target)) return false;
-		const lock = candidates.filter(function (candidate) { return inFiringArc(state.player, state.player.angle, candidate.point) && distance(candidate.point, state.player) <= weapon.range && (state.player.targetId === undefined || candidate.id === state.player.targetId); })
-			.reduce<{ point: Point; id: number } | undefined>(function (nearest, candidate) { return !nearest || distance(candidate.point, aim) < distance(nearest.point, aim) ? candidate : nearest; }, undefined);
-		return lock?.id === id;
-	});
+	const guided = missileTracking(state, id) === 'TRACKING' && state.player.targetId === id && state.player.missileLock?.targetId === id && state.player.missileLock.progress >= 1 - 1e-9;
 	return { guided, inRange: weapons.some(function (weapon) { return range <= weapon.range; }) };
+};
+
+const getWeaponFeedback = function (state: CombatStateView, target: Point, id: number): string {
+	if (state.loadout.some(function (mount) { return getWeapon(mount.weapon).kind === 'missile'; })) return missileLockLabel(state, id);
+	if (!inFiringArc(state.player, state.player.angle, target)) return 'OUT OF ARC';
+	return solutionFor(state, target, id).inRange ? 'IN RANGE' : 'OUT OF RANGE';
 };
 
 export const missionNavigation = function (state: CombatStateView): { point: Point; label: string; color: string } | undefined {
@@ -182,13 +182,19 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const defense = getEnemyDefense(state, selected);
 		const role = isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
 		text(role, selected, elevation, '#ffe1aa', 10, 48);
-		text(`${Math.round(distance(selected, state.player))} M / ${!inFiringArc(state.player, state.player.angle, selected) ? 'OUT OF ARC' : solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selected, elevation, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
+		text(`${Math.round(distance(selected, state.player))} M / ${getWeaponFeedback(state, selected, selected.id)}`, selected, elevation, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
 	}
 	if (selectedFacility && selectedStructure) {
 		const anchor = at(selectedFacility, 45); ctx.strokeStyle = '#f3c37d'; ctx.lineWidth = 1.5;
 		bracket(ctx, anchor.x, anchor.y, 130 * scale, 110 * scale, 12);
-		const solution = solutionFor(state, selectedFacility, selectedStructure.id, aim);
-		text(`${Math.round(distance(selectedFacility, state.player))} M / ${!inFiringArc(state.player, state.player.angle, selectedFacility) ? 'OUT OF ARC' : solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selectedFacility, 30, '#ebc184', 10, 55);
+		text(`${Math.round(distance(selectedFacility, state.player))} M / ${getWeaponFeedback(state, selectedFacility, selectedStructure.id)}`, selectedFacility, 30, '#ebc184', 10, 55);
+	}
+	const lockTarget = selected ?? selectedFacility;
+	if (lockTarget && state.player.missileLock) {
+		const anchor = at(lockTarget, selected ? ENEMY_STATS[selected.kind].elevation : 45);
+		const progress = state.player.missileLock.progress;
+		ctx.fillStyle = '#112329ee'; ctx.fillRect(anchor.x - 40, anchor.y + 48 * scale + minimumText + 14, 80, 5);
+		ctx.fillStyle = progress >= 1 - 1e-9 ? '#b9f5ca' : '#f3c37d'; ctx.fillRect(anchor.x - 40, anchor.y + 48 * scale + minimumText + 14, 80 * progress, 5);
 	}
 	// A precise sight remains useful when aiming ahead of a moving contact.
 	const cursor = at(aim, 0);

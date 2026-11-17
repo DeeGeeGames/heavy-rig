@@ -1,3 +1,4 @@
+import { addMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
 import { createMount, getWeapon, WEAPON_MODELS, WEAPON_TIERS, weaponIdForTier, type WeaponModelId, type WeaponTier } from '../src/arsenal';
@@ -78,12 +79,12 @@ test('upgraded six-round volleys can sustain their advertised cycle at the fixed
 	const dt = 1 / 60;
 	for (const model of ['stream-missiles-6', 'stream-rockets-6', 'cluster-rockets-6'] as const) {
 		const weapon = getWeapon(weaponIdForTier(model, 5));
-		const state = createState({ starter: weapon.id });
-		weaponsStep(state, fire, dt);
+		const state = createState({ starter: weapon.id }); const contact = addMissileTarget(state);
+		weaponsStep(state, { ...fire, targetId: contact.id }, dt);
 		let elapsed = 0;
 		while (state.stats.shotsFired <= weapon.projectiles && elapsed < weapon.interval + 1) {
 			coolingStep(state, fire, dt);
-			weaponsStep(state, fire, dt);
+			weaponsStep(state, { ...fire, targetId: contact.id }, dt);
 			elapsed += dt;
 		}
 		expect(state.stats.shotsFired).toBe(weapon.projectiles + 1);

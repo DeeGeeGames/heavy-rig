@@ -1,3 +1,4 @@
+import { acquireMissileTarget } from './missile-fixture';
 import { describe, expect, test } from 'bun:test';
 import { createMount, WEAPONS } from '../src/arsenal';
 import type { Contract, MissionKind } from '../src/campaign-types';
@@ -96,7 +97,8 @@ describe('Heavy Rig surface contracts', function () {
 			if (!structure) throw new Error('Missing facility');
 			state.enemies = []; state.loadout = [createMount(weapon.id)];
 			state.player.x = structure.x - 300; state.player.y = structure.y; state.player.angle = 0; state.player.turret = 0;
-			const input = { ...idle, aim: structure, fire: [true, false, false, false] as const };
+			acquireMissileTarget(state, FACILITY_TARGET_ID);
+			const input = { ...idle, targetId: FACILITY_TARGET_ID, aim: structure, fire: [true, false, false, false] as const };
 			step(state, input, 1 / 60);
 			if (weapon.kind === 'missile') expect(state.shots.every(function (shot) { return shot.target === FACILITY_TARGET_ID; })).toBe(true);
 			run(state, 2, input); expect(structure.hp).toBeLessThan(structure.maxHp);

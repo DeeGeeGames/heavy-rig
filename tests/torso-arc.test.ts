@@ -1,3 +1,4 @@
+import { acquireMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
 import { createMount, type WeaponId } from '../src/arsenal';
@@ -63,19 +64,22 @@ test('out-of-arc selection blocks every weapon without spending ammo, heat or co
 		expect(state.shots).toHaveLength(0); expect(state.beams).toHaveLength(0);
 		expect(JSON.stringify(state.loadout)).toBe(supplies); expect(p.heat).toBe(0); expect(p.targetId).toBe(1);
 		expect(targetSolution(state, target, target).guided).toBe(false);
-		target.x = p.x + 150; p.turret = 0;
+		target.x = p.x + 150; p.turret = 0; acquireMissileTarget(state, 1);
 		weaponsStep(state, { ...idle, targetId: 1, fire: [true, true, true, true] }, dt);
 		expect(state.shots.length + state.beams.length).toBeGreaterThan(0); expect(p.heat).toBeGreaterThan(0);
 	}
 });
 
-test('blind-sector free aim cannot fire, and automatic missile acquisition excludes rear targets', function () {
+test('blind-sector free aim cannot fire and missiles require explicit selected acquisition', function () {
 	const state = createState({ starter: 'stream-missiles' }); const p = state.player; p.angle = 0; p.turret = 0;
 	const rear = enemy(1, 'scout', p.x - 100, p.y); const front = enemy(2, 'scout', p.x + 400, p.y);
 	state.enemies = [rear, front];
 	weaponsStep(state, { ...idle, aim: rear, fire: [true, true, true, true] }, dt);
 	expect(state.shots).toHaveLength(0);
 	weaponsStep(state, { ...idle, fire: [true, true, true, true] }, dt);
+	expect(state.shots).toHaveLength(0);
+	acquireMissileTarget(state, 2);
+	weaponsStep(state, { ...idle, targetId: 2, fire: [true, true, true, true] }, dt);
 	expect(state.shots[0]?.target).toBe(2);
 	// Both boundaries are inclusive; stepping beyond either one blocks acquisition.
 	for (const side of [-1, 1]) {
@@ -89,7 +93,7 @@ test('blind-sector free aim cannot fire, and automatic missile acquisition exclu
 test('player salvos cancel remaining rounds when a tracked target leaves the arc', function () {
 	for (const starter of ['cluster-rockets', 'stream-missiles-4'] as const) {
 		const state = createState({ starter }); const p = state.player; p.angle = 0; p.turret = 0;
-		const target = enemy(1, 'scout'); state.enemies = [target];
+		const target = enemy(1, 'scout'); state.enemies = [target]; acquireMissileTarget(state, 1);
 		weaponsStep(state, { ...idle, targetId: 1, fire: [true, true, true, true] }, dt);
 		const mount = state.loadout[0]; if (!mount?.rocketVolley) throw new Error('Missing salvo');
 		const rounds = mount.rounds; const heat = p.heat; const launched = state.shots.length;

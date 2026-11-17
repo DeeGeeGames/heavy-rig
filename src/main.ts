@@ -1037,7 +1037,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const projected = presentation.toGround({ x: origin.x + pad.aimX / length * 380, y: origin.y + pad.aimY / length * 380 });
 				if (projected) aim = projected;
 				const targets = aimTargets.map(function (target) { const at = presentation.toScreen(target.point, targetElevation(target.point)); const dx = at.x - origin.x; const dy = at.y - origin.y; return { ...target, alignment: (dx * pad.aimX + dy * pad.aimY) / Math.max(1, Math.hypot(dx, dy) * length) }; }).filter(function (target) { return target.alignment > 0.975 && distance(target.point, state.player) < 850; }).sort(function (a, b) { return b.alignment - a.alignment; });
-				const target = targets[0]; acquiredTargetId = target?.id;
+				const target = targets[0]; acquiredTargetId ??= target?.id;
 				if (target) aim = { x: target.point.x, y: target.point.y };
 			} else if (pointer && aimMode === 'pointer') {
 				aim = presentation.toGround(pointer) ?? aim;
@@ -1045,7 +1045,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const targetScreen = function (target: Point) { return presentation.toScreen(target, targetElevation(target)); };
 				const picked = aimTargets.sort(function (a, b) { return distance(targetScreen(a.point), cursor) - distance(targetScreen(b.point), cursor); })[0];
 				const target = picked && distance(targetScreen(picked.point), cursor) < 42 * viewScale(width, height) ? picked : undefined;
-				acquiredTargetId = target?.id;
+				acquiredTargetId ??= target?.id;
 				if (target) aim = { x: target.point.x, y: target.point.y };
 			}
 			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') {
@@ -1055,7 +1055,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					const dx = candidate.point.x - state.player.x; const dy = candidate.point.y - state.player.y;
 					return { ...candidate, along: dx * forwardX + dy * forwardY, across: Math.abs(dx * forwardY - dy * forwardX) };
 				}).filter(function (candidate) { return candidate.along > 0 && candidate.along < 850 && candidate.across <= 25; }).sort(function (a, b) { return a.along - b.along; })[0];
-				acquiredTargetId = target?.id;
+				acquiredTargetId ??= target?.id;
 			} else if (aimMode === 'gamepad' && acquiredTargetId !== undefined) {
 				const target = aimTargets.find(function (candidate) { return candidate.id === acquiredTargetId; });
 				if (target) aim = { x: target.point.x, y: target.point.y };

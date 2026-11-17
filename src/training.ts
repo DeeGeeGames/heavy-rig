@@ -133,7 +133,7 @@ export const trainingCopy = function (training: Training, controller: boolean, m
 		neutral: ['BRING IT TO NEUTRAL', `${controls.stop} until the frame settles. Neutral cuts engine demand; eighty tons still need time to stop.`],
 		steer: ['TURN THE HULL', `${controls.steer}. The hull and your turret turn independently.`],
 		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; use ${controls.cannon}. Ammunition is finite; this simulator reloads dry weapons for retries.`],
-		missiles: ['GUIDED FIRE', `${controls.aim}; use ${controls.missile}. Trident follows a locked target. Firing ammunition sheds weight and improves speed.`],
+		missiles: ['GUIDED FIRE', `${controls.aim}; use ${controls.missile}. Select the target with NEXT / nearest, hold it in the firing arc for 1.5 seconds, then fire. Trident follows the acquired target. Firing ammunition sheds weight and improves speed.`],
 		combined: ['COMBINE YOUR FIRE', mappings.touch ? 'Tap at least two mount chips to arm them, then hold FIRE. All mounts share reactor heat.' : 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. Warden has two ballistic guns and two launcher pods; all share reactor heat.'],
 		heat: ['FEEL THE REACTOR', `Switched to Longbow: ARC needs no ammunition but produces much more heat. Hold ${controls.laser} to build heat to 45%.`],
 		coolant: ['VENT THE HEAT', `Press ${controls.coolant}. One charge purges 55 heat. At 100% heat, weapons lock until heat falls to 35%.`],

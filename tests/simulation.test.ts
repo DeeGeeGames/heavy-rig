@@ -1,3 +1,4 @@
+import { acquireMissileTarget } from './missile-fixture';
 import { describe, expect, test } from 'bun:test';
 import { getEnemyDefense, angleDelta, createState, ENEMY_STATS, step, type Controls, type EnemyKind, type State } from '../src/simulation';
 import { getWaveDefinition, WAVES, type Difficulty } from '../src/operation';
@@ -49,11 +50,11 @@ describe('Heavy Rig combat', function () {
 		expect(state.cannonIn).toBe(0); expect(state.player.heat).toBeLessThan(heat);
 		run(state, 7); expect(state.player.overheated).toBe(false);
 	});
-	test('missiles lock closest to aim and salvo cannot spam', function () {
-		const state = createCombatState(); target(state); target(state, 1000, 550);
-		step(state, { ...idle, fire: [false, false, true, false], aim: { x: 1000, y: 550 } }, 1 / 60);
+	test('missiles lock the selected target and salvo cannot spam', function () {
+		const state = createCombatState(); target(state); target(state, 1000, 550); acquireMissileTarget(state, 2);
+		step(state, { ...idle, targetId: 2, fire: [false, false, true, false], aim: { x: 1000, y: 550 } }, 1 / 60);
 		expect(state.shots).toHaveLength(2); expect(state.shots.every(function (shot) { return shot.target === 2; })).toBe(true);
-		step(state, { ...idle, fire: [false, false, true, false] }, 1 / 60); expect(state.shots).toHaveLength(2);
+		step(state, { ...idle, targetId: 2, fire: [false, false, true, false] }, 1 / 60); expect(state.shots).toHaveLength(2);
 	});
 	test('relay destruction loses and terminal states freeze', function () {
 		const state = createCombatState(); state.relay = 0; step(state, idle, 1 / 60);
