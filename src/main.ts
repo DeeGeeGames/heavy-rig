@@ -10,7 +10,7 @@ import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
 import { createCombatRuntime } from './combat-runtime';
 import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-navigation';
 import { createRuntimeInput } from './runtime-input';
-import { createTouchTargeting, mountTouchDrive, visibleTouchContacts } from './touch-controls';
+import { createTouchFacing, createTouchTargeting, mountTouchDrive, visibleTouchContacts } from './touch-controls';
 import { mountMobileFullscreen } from './mobile-fullscreen';
 import { mountFullscreenViewport } from './fullscreen-viewport';
 import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey, type Action } from './bindings';
@@ -174,6 +174,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let acquiredTargetId: number | undefined;
 	let aim: Point = { x: 900, y: 450 }; let pointer: Point | undefined; let aimMode: 'pointer' | 'gamepad' | 'touch' | 'target' = 'pointer';
 	const touchTargeting = createTouchTargeting();
+	const touchFacing = createTouchFacing();
 	const armedTouchMounts = new Set([0, 1, 2, 3]);
 	let touchLoadout = state.loadout;
 	let frame = 0; let previous = 0; let lastHud = 0;
@@ -194,7 +195,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
 	const companyNavigationReady = function () { return companyOpen() && !navigation.transitioning && editor.slot === null && !campaignConflict && !contextLost; };
 	let lastSoundState = '';
-	const resetInput = function () { acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
+	const resetInput = function () { acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); touchFacing.clear(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const playing = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
 	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing, element('touch-cruise'), element('touch-drive-hint'));
 	const touchContacts = function () {
@@ -790,7 +791,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			setInputMode('touch'); aimMode = 'touch'; pointer = undefined;
 			if (revealingDock) { const next = canvas.getBoundingClientRect(); refreshHudObstructions(); presentation.resize(state, next.width, next.height); }
 			const locked = touchTargeting.resolve(contacts);
-			aim = locked ? { ...locked.point } : ground ?? aim;
+			if (!locked && ground) touchFacing.select(ground, state.player);
+			aim = touchFacing.resolve(state.player, state.player.turret, locked?.point);
 			return;
 		}
 		setInputMode('keyboard');
@@ -1059,7 +1061,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (!aimTargets.some(function (target) { return target.id === acquiredTargetId; })) acquiredTargetId = undefined;
 			if (aimMode === 'touch' || aimMode === 'target') {
 				const locked = touchTargeting.resolve(touchContacts()); acquiredTargetId = locked?.id;
-				if (locked) aim = { ...locked.point };
+				if (aimMode === 'touch') aim = touchFacing.resolve(state.player, state.player.turret, locked?.point);
+				else if (locked) aim = { ...locked.point };
 			}
 			if (profile.settings.controlMode === 'simulation' && pad.aimX !== 0) {
 				aimMode = 'gamepad';
@@ -1093,6 +1096,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (target) aim = { x: target.point.x, y: target.point.y };
 			}
 			makeInput = function (): Controls {
+				if (aimMode === 'touch' && acquiredTargetId === undefined) aim = touchFacing.resolve(state.player, state.player.turret, undefined);
 				const arcade = profile.settings.controlMode === 'arcade' || inputMode === 'touch';
 				if (active('stop') || pad.stop) touchDrive.stop();
 				const touch = touchDrive.read();
@@ -1166,7 +1170,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const locked = aimMode === 'touch' || aimMode === 'target' ? touchTargeting.resolve(contacts) : undefined;
 			const marker = element('touch-lock-marker'); marker.hidden = !locked || !playing();
 			if (locked) { const rect = canvas.getBoundingClientRect(); marker.style.left = `${rect.left - container.getBoundingClientRect().left + locked.screen.x}px`; marker.style.top = `${rect.top - container.getBoundingClientRect().top + locked.screen.y}px`; }
-			element('touch-target-status').textContent = locked ? `TRACKING / ${locked.label}` : 'MANUAL / TAP A HOSTILE';
+			element('touch-target-status').textContent = locked ? `TRACKING / ${locked.label}` : aimMode === 'touch' ? 'FACING LOCK / TAP TO AIM' : 'MANUAL / TAP A HOSTILE';
 			for (const action of ['target-nearest', 'target-next'] as const) {
 				element(action).toggleAttribute('disabled', contacts.length === 0);
 				const prompt = element(action).querySelector('kbd');

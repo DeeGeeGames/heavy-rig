@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { createTouchDrive, createTouchTargeting, visibleTouchContacts, type TouchContact } from '../src/touch-controls';
+import { createTouchFacing, createTouchDrive, createTouchTargeting, visibleTouchContacts, type TouchContact } from '../src/touch-controls';
 import { createMissionState, type Point } from '../src/simulation';
 import { FACILITY_TARGET_ID } from '../src/missions';
 
@@ -99,4 +99,19 @@ test('only the owning pointer can cancel Cruise while driving', function () {
 	const stick = createTouchDrive(); stick.start(1); stick.move(1, 0, -1); stick.toggleCruise();
 	stick.cancel(2); expect(stick.isCruising()).toBe(true); expect(stick.read().drive).toBe(1);
 	stick.cancel(1); expect(stick.isCruising()).toBe(false); expect(stick.read()).toEqual({ drive: 0, turn: 0 });
+});
+
+// Moving through the tapped point must never reverse free aim; losing a target
+// must hold the actual torso heading even when it was still turning to track.
+test('touch facing survives translation and target loss without reacquiring a stale point', function () {
+	const facing = createTouchFacing();
+	facing.select({ x: 100, y: 100 }, { x: 0, y: 100 });
+	expect(facing.resolve({ x: 200, y: 300 }, 1, undefined)).toEqual({ x: 800, y: 300 });
+	expect(facing.resolve({ x: 200, y: 300 }, 1, { x: 400, y: 600 })).toEqual({ x: 400, y: 600 });
+	expect(facing.resolve({ x: 200, y: 300 }, Math.PI / 2, undefined).x).toBeCloseTo(200);
+	expect(facing.resolve({ x: 900, y: 700 }, 0, undefined).y).toBeCloseTo(1300);
+	facing.select({ x: 0, y: 700 }, { x: 900, y: 700 });
+	expect(facing.resolve({ x: 100, y: 700 }, 0, undefined).x).toBeCloseTo(-500);
+	facing.clear();
+	expect(facing.resolve({ x: 0, y: 0 }, 0, undefined)).toEqual({ x: 600, y: 0 });
 });
