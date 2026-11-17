@@ -106,6 +106,8 @@ test('player salvos cancel remaining rounds when a tracked target leaves the arc
 test('enemy mechs hold their rear side, refuse guns, missiles and artillery, and resume inside the arc', function () {
 	for (const kind of ['scout', 'striker', 'siege'] as const) {
 		const state = createState(); const unit = enemy(1, kind, 900, 780); state.enemies = [unit];
+		// Isolate the firing arc from mobile enemies choosing to turn their legs.
+		unit.stationary = true;
 		unit.angle = TORSO_LIMIT;
 		for (const behind of [3.13, -3.13]) {
 			Object.assign(state.player, point(unit, behind, 100));

@@ -11,7 +11,8 @@ import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructur
 import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint } from './weapon-rig';
 import { enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
 import { inFiringArc, turnTorso } from './torso-arc';
-import { planSquads, squadApproach, type SquadOrder } from './enemy-squads';
+import { planSquads, type SquadOrder } from './enemy-squads';
+import { planGroundTactics, type EnemyTactics } from './enemy-tactics';
 
 export interface Point { x: number; y: number }
 export interface Beam extends Point { slot: number; elevation?: number; origin?: SpatialPoint }
@@ -19,7 +20,7 @@ export type MechEnemyKind = 'scout' | 'striker' | 'siege';
 export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
-export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: SquadOrder }
+export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: SquadOrder; tactics?: EnemyTactics; stationary?: true }
 export interface Shot extends Point { elevation?: number; vElevation?: number; origin?: SpatialPoint; age?: number; vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[]; weapon?: WeaponId; slot?: number; owner?: number; enemyTarget?: 'player' | 'relay' }
 export interface Effect extends Point { life: number; size: number; color: string; elevation?: number; source?: 'muzzle'; slot?: number }
 export interface Warning extends Point { kind: EnemyKind; life: number; commander?: boolean }
@@ -53,8 +54,8 @@ export interface State extends CombatStateView {
 export const ARENA = { width: 1800, height: 1200, relayX: 900, relayY: 600 };
 interface EnemyStats { mass: number; recommendedMass: number; cooling: number; hp: number; speed: number; range: number; reload: number; damage: number; aggro: number; elevation: number; score: number }
 export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
-	scout: { mass: 35, recommendedMass: 42, cooling: 10, hp: 600, speed: 66, range: 170, reload: 2, damage: 3.5, aggro: 650, elevation: 42, score: 200 },
-	striker: { mass: 70, recommendedMass: 112, cooling: 12, hp: 1600, speed: 44, range: 240, reload: 2.5, damage: 4, aggro: 440, elevation: 42, score: 300 },
+	scout: { mass: 35, recommendedMass: 42, cooling: 10, hp: 600, speed: 66, range: 310, reload: 2, damage: 3.5, aggro: 650, elevation: 42, score: 200 },
+	striker: { mass: 70, recommendedMass: 112, cooling: 12, hp: 1600, speed: 44, range: 420, reload: 2.5, damage: 4, aggro: 440, elevation: 42, score: 300 },
 	siege: { mass: 105, recommendedMass: 158, cooling: 11, hp: 2600, speed: 28, range: 550, reload: 1.8, damage: 5, aggro: 650, elevation: 42, score: 500 },
 	helicopter: { mass: 18, recommendedMass: 22, cooling: 9, hp: 140, speed: 105, range: 310, reload: 0.75, damage: 2, aggro: 800, elevation: 112, score: 250 },
 	vtol: { mass: 30, recommendedMass: 62, cooling: 10, hp: 260, speed: 82, range: 440, reload: 2.8, damage: 4, aggro: 850, elevation: 147, score: 400 },
@@ -466,12 +467,25 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 		if (enemy.hp > 0 && (distance(enemy, p) < Math.max(850, ENEMY_STATS[enemy.kind].aggro) || enemy.hp < enemy.maxHp)) enemy.engaged = true;
 	}
 	const orders = planSquads(enemies.filter(function (enemy) {
-		return enemy.hp > 0 && enemyMounts(enemy).some(usableMount) && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && (!mission || relay !== undefined || enemy.engaged);
+		return enemy.hp > 0 && !enemy.stationary && enemyMounts(enemy).some(usableMount) && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && (!mission || relay !== undefined || enemy.engaged);
 	}).map(function (enemy) { return { id: enemy.id, x: enemy.x, y: enemy.y, aggro: ENEMY_STATS[enemy.kind].aggro, ...(enemy.squad ? { order: enemy.squad } : {}) }; }), p, relay, dt);
+	const tactics = planGroundTactics(enemies.filter(function (enemy) {
+		return enemy.hp > 0 && !enemy.stationary && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && enemyMounts(enemy).some(usableMount) && (!mission || relay !== undefined || enemy.engaged);
+	}).map(function (enemy) {
+		const stats = ENEMY_STATS[enemy.kind]; const order = orders.get(enemy.id);
+		const target = order?.target ?? (!relay || distance(enemy, p) < stats.aggro ? 'player' : 'relay');
+		const readyIn = Math.max(enemy.cooldown, Math.min(...enemyMounts(enemy).filter(usableMount).map(function (mount) { return mount.cooldown; })));
+		return { id: enemy.id, x: enemy.x, y: enemy.y, hp: enemy.hp, maxHp: enemy.maxHp, angle: enemy.hullAngle ?? enemy.angle,
+			range: stats.range, speed: stats.speed * enemyWeight(enemy).modifier, readyIn, overheated: enemyReactor(enemy).overheated,
+			target, at: target === 'relay' && relay ? relay : p, ...(order ? { squad: order } : {}), ...(enemy.tactics ? { tactics: enemy.tactics } : {}) };
+	}), bounds, dt);
 	for (const enemy of enemies) {
 		const order = orders.get(enemy.id);
 		if (order) enemy.squad = order;
 		else delete enemy.squad;
+		const tactic = tactics.get(enemy.id);
+		if (tactic) enemy.tactics = tactic;
+		else delete enemy.tactics;
 		if (enemy.hp <= 0) continue;
 		const mech = isEnemyMech(enemy);
 		if (mech) {
@@ -495,7 +509,7 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 			}
 			continue;
 		}
-		if (!mounts.some(usableMount)) {
+		if (!enemy.stationary && !mounts.some(usableMount)) {
 			// Local disengagement keeps dry units inside the map and targetable.
 			const away = Math.atan2(enemy.y - target.y, enemy.x - target.x);
 			const heading = enemy.hullAngle ?? enemy.angle;
@@ -532,17 +546,18 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 				enemy.x = clamp(enemy.x + Math.cos(enemy.hullAngle) * dt * speed, 35, bounds.width - 35);
 				enemy.y = clamp(enemy.y + Math.sin(enemy.hullAngle) * dt * speed, 35, bounds.height - 35);
 			}
-		} else if (order) {
-			const destination = squadApproach(enemy, order, target, range, bounds);
+		} else if (tactic) {
+			const destination = tactic.destination;
 			const travel = distance(enemy, destination);
-			if (travel > 12) {
+			const heading = enemy.hullAngle ?? enemy.angle;
+			const bearing = tactic.phase === 'advance' && travel > 12 ? Math.atan2(destination.y - enemy.y, destination.x - enemy.x) : targetAngle;
+			enemy.hullAngle = heading + clamp(angleDelta(heading, bearing), -dt * 2, dt * 2);
+			if (tactic.phase !== 'engage' && travel > 12) {
 				const amount = Math.min(dt * speed, travel) / travel;
-				const heading = enemy.hullAngle ?? enemy.angle;
-				enemy.hullAngle = heading + clamp(angleDelta(heading, Math.atan2(destination.y - enemy.y, destination.x - enemy.x)), -dt * 2, dt * 2);
 				enemy.x = clamp(enemy.x + (destination.x - enemy.x) * amount, 35, bounds.width - 35);
 				enemy.y = clamp(enemy.y + (destination.y - enemy.y) * amount, 35, bounds.height - 35);
 			}
-		} else if (separation > range) {
+		} else if (!enemy.stationary && separation > range) {
 			const heading = enemy.hullAngle ?? enemy.angle;
 			enemy.hullAngle = heading + clamp(angleDelta(heading, targetAngle), -dt * (turnRate ?? 2), dt * (turnRate ?? 2));
 			enemy.x = clamp(enemy.x + Math.cos(enemy.hullAngle) * dt * speed, 35, bounds.width - 35);
@@ -564,7 +579,7 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 			if (volley.remaining === 0) delete mount.rocketVolley;
 		}
 		enemy.cooldown -= dt;
-		if (enemyCanFire(enemy, target) && !reactor.overheated && enemy.cooldown <= 0 && distance(enemy, target) < range + 50 && Math.abs(angleDelta(enemy.angle, Math.atan2(target.y - enemy.y, target.x - enemy.x))) < 0.3) {
+		if (tactic?.phase !== 'recover' && enemyCanFire(enemy, target) && !reactor.overheated && enemy.cooldown <= 0 && distance(enemy, target) < range + 50 && Math.abs(angleDelta(enemy.angle, Math.atan2(target.y - enemy.y, target.x - enemy.x))) < 0.3) {
 			const ready = mounts.filter(function (mount) { return usableMount(mount) && mount.cooldown <= 0 && !mount.rocketVolley; });
 			const artillery = enemy.kind === 'siege' || enemy.commander ? ready.find(function (mount) { return getEnemyHardpoints(enemy.kind, enemy.commander)[mount.slot ?? 0]?.id === 'dorsal-artillery'; }) : undefined;
 			let fired = artillery;

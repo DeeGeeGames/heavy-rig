@@ -28,8 +28,9 @@ test('nearby scouts and strikers share a target, commit through aggro changes, a
 });
 
 test('flankers spread to opposite sides, keep aiming at the target, and fire from their positions', function () {
-	const state = scenario(); state.player.y = 930;
-	for (let tick = 0; tick < 900; tick++) enemiesStep(state, 1 / 60);
+	const state = scenario(); state.player.y = 600;
+	for (const enemy of state.enemies) enemy.y -= 330;
+	for (let tick = 0; tick < 2700; tick++) enemiesStep(state, 1 / 60);
 	const center = state.enemies[0]; const left = state.enemies[1]; const right = state.enemies[2];
 	if (!center || !left || !right) throw new Error('Missing squad');
 	expect(left.y).toBeGreaterThan(state.player.y + 60);

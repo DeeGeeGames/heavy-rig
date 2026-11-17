@@ -61,7 +61,7 @@ export const planSquads = function (candidates: readonly SquadCandidate[], playe
 export const squadApproach = function (enemy: Point, order: SquadOrder, target: Point, range: number, bounds: { width: number; height: number }): Point {
 	// Rotate the whole approach inward when either flank would lose its standoff
 	// at a wall. Use the same radius for both chassis so their slots stay distinct.
-	const flankRadius = 240 * 0.85;
+	const flankRadius = Math.max(420, range) * 0.85;
 	const clampX = function (x: number) { return Math.max(35, Math.min(bounds.width - 35, x)); };
 	const clampY = function (y: number) { return Math.max(35, Math.min(bounds.height - 35, y)); };
 	const cramped = [-0.75, 0.75].some(function (offset) {
@@ -76,6 +76,5 @@ export const squadApproach = function (enemy: Point, order: SquadOrder, target: 
 		x: clampX(target.x + Math.cos(bearing) * radius),
 		y: clampY(target.y + Math.sin(bearing) * radius),
 	};
-	// The center unit presses directly. Flankers spread even after entering range.
-	return order.slot === 'center' ? distance(enemy, target) > range ? target : enemy : destination;
+	return distance(enemy, destination) > 12 ? destination : { x: enemy.x, y: enemy.y };
 };
