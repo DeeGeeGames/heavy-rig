@@ -1,5 +1,6 @@
 import { defaultKeyboard, defaultController, parseKeyboard, parseController, type KeyboardBindings, type ControllerBindings } from './bindings';
 import type { Difficulty } from './operation';
+import { isMechSkinId, type MechSkinId } from './mech-skin';
 export type ControlMode = 'simulation' | 'arcade';
 export interface Settings {
 	controlMode: ControlMode;
@@ -12,6 +13,7 @@ export interface Settings {
 	couchUI: boolean;
 	vibration: boolean;
 	difficulty: Difficulty;
+	mechSkin: MechSkinId;
 }
 export interface OperationRecord {
 	difficulty: Difficulty;
@@ -26,7 +28,7 @@ export interface OperationRecord {
 export interface Profile { settings: Settings; records: OperationRecord[]; bests: OperationRecord[] }
 const STORAGE_KEY = 'heavy-rig:profile:v1';
 export const defaultSettings = function (): Settings {
-	return { controlMode: 'arcade', keyboard: defaultKeyboard(), controller: defaultController(), master: 0.8, music: 0.55, effects: 0.85, touchControls: false, couchUI: false, vibration: true, difficulty: 'standard' };
+	return { controlMode: 'arcade', keyboard: defaultKeyboard(), controller: defaultController(), master: 0.8, music: 0.55, effects: 0.85, touchControls: false, couchUI: false, vibration: true, difficulty: 'standard', mechSkin: 'freeholds' };
 };
 export const isDifficulty = function (value: unknown): value is Difficulty { return value === 'story' || value === 'standard' || value === 'veteran'; };
 const object = function (value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); };
@@ -59,6 +61,7 @@ export const parseProfile = function (raw: string | null): Profile {
 			touchControls: settings['touchControls'] === true,
 			couchUI: settings['couchUI'] === true, vibration: settings['vibration'] !== false,
 			difficulty: isDifficulty(settings['difficulty']) ? settings['difficulty'] : 'standard',
+			mechSkin: isMechSkinId(settings['mechSkin']) ? settings['mechSkin'] : defaults.settings.mechSkin,
 		};
 		const records = parsed['records'];
 		if (Array.isArray(records)) defaults.records = records.filter(isRecord).slice(0, 8);

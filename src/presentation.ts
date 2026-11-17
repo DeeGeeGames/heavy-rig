@@ -14,6 +14,7 @@ import type { SpatialPoint } from './weapon-rig';
 import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
+import { factionMechSkin, type MechSkinId } from './mech-skin';
 
 interface CombatEntities {
 	entityForPlayer: () => number | undefined;
@@ -24,10 +25,11 @@ interface MechView {
 	kind: EnemyKind | undefined;
 	commander: boolean;
 	frame: FrameId;
+	skin: MechSkinId;
 	damage: { hp: number | undefined; hitAt: number };
 }
 interface ViewBindings {
-	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId) => MechView;
+	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechSkinId) => MechView;
 	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, state: CombatStateView, recoil?: number, target?: SpatialPoint) => void;
 	scale: (id: number, scale: number) => void;
 }
@@ -80,6 +82,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let overlay: OverlayFrame | undefined;
 		let width = 1; let height = 1; let disposed = false; let previousState: CombatStateView | undefined; let previousStateTime = 0;
 		let zoom = 1;
+		let playerSkin: MechSkinId = 'original';
 		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
 		let cameraOffset: Point = { x: 0, y: 0 };
 		let cameraSample: { state: CombatStateView; time: number; position: Point } | undefined;
@@ -95,11 +98,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				world.installPlugin(createRenderer3DPlugin({ renderer, scene, camera, startLoop: false }));
 				world.registerDispose('mechView', function ({ value }) { value.model.dispose(); });
 				views = {
-					ensure: function (id, kind, commander = false, frame: FrameId = 'warden') {
+					ensure: function (id, kind, commander = false, frame: FrameId = 'warden', skin: MechSkinId = 'original') {
 						const previous = world.getComponent(id, 'mechView');
-						if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame) return previous;
+						if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame && previous.skin === skin) return previous;
 						if (previous) { world.removeComponent(id, 'group'); world.removeComponent(id, 'mechView'); }
-						const view: MechView = { model: createMech(kind, commander, frame), kind, commander, frame, damage: { hp: undefined, hitAt: -10 } };
+						const view: MechView = { model: createMech(kind, commander, frame, skin), kind, commander, frame, skin, damage: { hp: undefined, hitAt: -10 } };
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
@@ -168,10 +171,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			resetZoom: function () { zoom = 1; },
 			toGround: function (point: Point) { return toGround(point, camera, width, height); },
 			toScreen: function (point: Point, elevation = 0) { return toScreen(point, camera, width, height, elevation); },
+			setSkin: function (skin: MechSkinId) { playerSkin = skin; },
 			prepare: function (state: CombatStateView, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false) {
 				if (disposed || !views || !combat || width <= 0 || height <= 0) { overlay = undefined; return; }
 				const playerId = combat.entityForPlayer();
-				const player = playerId === undefined ? undefined : views.ensure(playerId, undefined, false, state.frame);
+				const player = playerId === undefined ? undefined : views.ensure(playerId, undefined, false, state.frame, playerSkin);
 				if (biome !== state.mission?.map.biome) {
 					biome = state.mission?.map.biome;
 					const palette = biome ? SURFACE_PALETTES[biome] : undefined;
@@ -209,7 +213,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				for (const enemy of state.enemies) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
-					const view = views.ensure(id, enemy.kind, Boolean(enemy.commander));
+					const view = views.ensure(id, enemy.kind, Boolean(enemy.commander), 'warden', factionMechSkin(state.mission?.contract.opponent));
 					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind)), enemy.angle, enemy.hp, state, weaponRecoil(enemy.loadout ?? []), enemyAimPoint(state, enemy));
 					if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}

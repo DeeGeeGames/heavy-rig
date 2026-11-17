@@ -104,6 +104,12 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace .hangar-heading h2 { margin: 5px 0 0; font: 34px/1 var(--display); }
 .hangar-heading h2 small { color: var(--muted); font-size: 22px; }
 .hangar-heading .eyebrow { font-size: 10px; }
+.workspace .hangar-livery { flex: none; padding: 8px 10px; font: 11px var(--mono); }
+.mech-livery { display: grid; gap: 10px; }
+.mech-livery>div { display: flex; flex-wrap: wrap; gap: 6px; }
+.workspace .mech-livery button { padding: 10px 12px; font: 12px var(--mono); }
+.mech-livery button[aria-pressed='true'] { border-color: var(--cyan); color: var(--cyan); background: #153239; }
+.mech-livery small { font: 10px var(--mono); color: var(--muted); }
 .hangar-model { flex: 1; min-height: 0; position: relative; overflow: clip; }
 #game #mechbay .hangar-model canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 1; pointer-events: none; }
 .hangar-fallback { position: absolute; left: 15px; bottom: 12px; color: var(--muted); font: 12px var(--mono); pointer-events: none; }

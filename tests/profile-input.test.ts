@@ -11,6 +11,15 @@ const claimedInput = function () {
 	return input;
 };
 describe('Heavy Rig player preferences and input boundaries', function () {
+	test('skin choices survive reload while historical preferences and invalid skin values stay usable', function () {
+		const old = parseProfile(JSON.stringify({ settings: { master: 0.35, controlMode: 'simulation' } }));
+		expect(old.settings.mechSkin).toBe('freeholds'); expect(old.settings.master).toBe(0.35); expect(old.settings.controlMode).toBe('simulation');
+		for (const mechSkin of ['original', 'freeholds', 'accord'] as const) {
+			const profile = { ...old, settings: { ...old.settings, mechSkin } };
+			expect(parseProfile(JSON.stringify(profile)).settings).toEqual(profile.settings);
+		}
+		for (const mechSkin of ['combine', null, {}, 7]) expect(parseProfile(JSON.stringify({ settings: { mechSkin } })).settings.mechSkin).toBe('freeholds');
+	});
 	test('corrupt or partial storage cannot prevent deployment or introduce invalid settings', function () {
 		expect(parseProfile('{broken')).toEqual({ settings: defaultSettings(), records: [], bests: [] });
 		const profile = parseProfile(JSON.stringify({ settings: { master: 90, music: -5, effects: 'loud', difficulty: 'impossible', touchControls: 'false' }, records: [{ score: 100 }, null] }));

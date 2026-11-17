@@ -93,6 +93,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const feedback = createControllerFeedback();
 	onCleanup(feedback.dispose);
 	const profile = readProfile();
+	presentation.setSkin(profile.settings.mechSkin);
 	const savedSnapshot = function (): string | null | undefined {
 		try { return localStorage.getItem(CAMPAIGN_STORAGE_KEY); } catch { return undefined; }
 	};
@@ -436,6 +437,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const root = element(navigation.screen); const previousFocus = document.activeElement;
 		const focusIndex = focusable(root).findIndex(function (item) { return item === previousFocus; });
 		renderCompany(root, campaign, navigation.screen, editor, campaignSaved, {
+			skin: profile.settings.mechSkin,
+			selectSkin: function (skin) { profile.settings.mechSkin = skin; presentation.setSkin(skin); save(); refreshCompany(); focusCompany(`[data-mech-skin="${skin}"]`); },
 			navigate: navigateShip,
 			selectFrame: function (id) { const select = function () { updateCompany(selectFrame(campaign, id), 'Frame selected.'); }; if (hasRefitDraft() && id !== campaign.selectedFrame) confirm(select, 'DISCARD & SELECT FRAME', 'Changing frames discards this unqueued refit. Installed equipment is unchanged.', 'DISCARD REFIT DRAFT?'); else select(); },
 			editSlot: function (slot) {
@@ -1183,10 +1186,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (!modelCanvas || modelCanvas.dataset['hangarFailed'] === 'true') continue;
 				let view = rigPreviews.get(id);
 				if (!view) {
-					try { view = createHangarPreview(modelCanvas); view.setFrame(id); rigPreviews.set(id, view); }
+					try { view = createHangarPreview(modelCanvas); rigPreviews.set(id, view); }
 					catch (error: unknown) { view?.dispose(); view = undefined; modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Rig preview unavailable', error); }
 				}
-				view?.render();
+				view?.setFrame(id, undefined, profile.settings.mechSkin); view?.render();
 			}
 		}
 		if (navigation.screen === 'mechbay' && !navigation.auxiliary && focused && !document.hidden) {
@@ -1199,7 +1202,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 						catch (error: unknown) { modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Hangar preview unavailable', error); }
 					}
 				}
-				hangar?.view.setFrame(campaign.selectedFrame, editor.loadout.flatMap(function (weapon, slot) { return weapon === null ? [] : [slot]; })); hangar?.view.render();
+				hangar?.view.setFrame(campaign.selectedFrame, editor.loadout.flatMap(function (weapon, slot) { return weapon === null ? [] : [slot]; }), profile.settings.mechSkin); hangar?.view.render();
 			}
 		}
 		if (battlefieldVisible()) presentation.drawOverlay();

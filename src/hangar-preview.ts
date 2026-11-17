@@ -3,6 +3,7 @@ import { FRAME_RIGS } from './frame-rig';
 import { getFrame, type FrameId } from './frames';
 import { createGait } from './gait';
 import { createMech } from './mech-3d';
+import { supportsMechSkin, type MechSkinId } from './mech-skin';
 
 // This view owns no campaign state, input listeners, or animation loop. Its
 // caller renders only while the Mech Bay is visible and disposes it on teardown.
@@ -62,10 +63,12 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 		renderer.forceContextLoss();
 		canvas.dataset['hangarState'] = 'disposed';
 	};
-	const setFrame = function (frameId: FrameId, equippedSlots?: readonly number[]) {
+	let selectedSkin: MechSkinId = 'original';
+	const setFrame = function (frameId: FrameId, equippedSlots?: readonly number[], skin: MechSkinId = 'original') {
 		const slots = equippedSlots?.join(',') ?? 'all';
-		if (disposed || frameId === selectedFrame && slots === selectedSlots) return;
-		const next = createMech(undefined, false, frameId);
+		const finish = supportsMechSkin(frameId) ? skin : 'original';
+		if (disposed || frameId === selectedFrame && slots === selectedSlots && finish === selectedSkin) return;
+		const next = createMech(undefined, false, frameId, finish);
 		try {
 			next.pose(createGait({ x: 0, y: 0, angle: 0 }, getFrame(frameId).size, FRAME_RIGS[frameId]), 0,
 				{ recoil: 0, hit: 0, heat: 0, time: 0, ...(equippedSlots ? { equippedSlots } : {}) });
@@ -76,11 +79,13 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 		model = next;
 		selectedFrame = frameId;
 		selectedSlots = slots;
+		selectedSkin = finish;
 		scene.add(next.root);
 		invalidated = true;
 		failed = false;
 		renderer.shadowMap.needsUpdate = true;
 		canvas.dataset['hangarFrame'] = frameId;
+		canvas.dataset['hangarSkin'] = finish;
 	};
 	const frameCamera = function () {
 		bounds.getCenter(center);

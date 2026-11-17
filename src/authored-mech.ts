@@ -7,6 +7,8 @@ import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } f
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
 import { prepareAuthoredLocomotion, type AuthoredLocomotionOptions } from './authored-gait';
 import type { FrameId } from './frames';
+import type { MechSkinId } from './mech-skin';
+import { applyMechSkinMaterial, type SkinSurface } from './mech-skin-material';
 
 export const MAUL_LOGICAL_TUBE_MAPPING = ['1_0', '2_0', '1_1', '2_1', '1_3', '2_3'] as const;
 export const WARDEN_LOGICAL_TUBE_MAPPING = ['lower_1', 'lower_2', 'lower_4', 'upper_1', 'upper_3', 'upper_4'] as const;
@@ -180,18 +182,33 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		if (installation?.closing) { installation.remove(); installation = undefined; }
 		if (closed) { releaseSource?.(); releaseSource = undefined; }
 	};
-	const create = function (): MechAssetModel {
+	const create = function (skin: MechSkinId = 'original'): MechAssetModel {
 		if (closed) throw new Error(`Authored ${descriptor.frame} factory is disposed`);
 		if (installation?.closing) throw new Error(`Authored ${descriptor.frame} installation is closing; dispose existing models first`);
 		const { root, hull, scene } = makeGraph();
-		const ownedMaterials = new Map<Material, Material>();
-		const cloneMaterial = function (source: Material) {
-			const previous = ownedMaterials.get(source); if (previous) return previous;
-			const material = source.clone(); ownedMaterials.set(source, material); return material;
+		root.userData['mechSkin'] = skin;
+		const ownedMaterials = new Map<string, Material>();
+		const cloneMaterial = function (source: Material, node: Mesh) {
+			const key = skin === 'original' ? source.uuid : `${source.uuid}:${node.uuid}`;
+			const previous = ownedMaterials.get(key); if (previous) return previous;
+			const material = source.clone(); ownedMaterials.set(key, material);
+			if (skin !== 'original' && material instanceof MeshStandardMaterial && source.name !== 'Warden vent recess') {
+				const secondary = ['_shin', '_foot', '_mount_'].some(function (part) { return node.name.includes(part); });
+				const surface: SkinSurface = descriptor.frame !== 'warden' ? secondary ? 'palette-secondary' : 'palette-primary'
+					: source.name === 'Warden shared pod atlas' ? 'pod'
+						: node.name.includes('mount_connections') || node.name.includes('_pelvis') ? 'mechanism'
+							: node.name.includes('-gun') ? 'gun' : secondary ? 'secondary' : 'primary';
+				const nativeScale = node.getWorldScale(new Vector3()).divideScalar(scale);
+				const positions = node.geometry.getAttribute('position');
+				let min = Infinity; let max = -Infinity;
+				if (surface === 'gun') for (let index = 0; index < positions.count; index++) { const z = positions.getZ(index); min = Math.min(min, z); max = Math.max(max, z); }
+				applyMechSkinMaterial(material, skin, { surface, scale: nativeScale, ...(surface === 'gun' ? { barrelCutoff: -(max - (max - min) * 0.38) * nativeScale.z } : {}) });
+			}
+			return material;
 		};
 		scene.traverse(function (node) {
 			if (!(node instanceof Mesh)) return;
-			node.material = Array.isArray(node.material) ? node.material.map(cloneMaterial) : cloneMaterial(node.material);
+			node.material = Array.isArray(node.material) ? node.material.map(function (material) { return cloneMaterial(material, node); }) : cloneMaterial(node.material, node);
 			node.castShadow = true; node.receiveShadow = true;
 		});
 		const torso = named(scene, 'rig_torso');
