@@ -1,7 +1,7 @@
 import { getFrameOffer } from './market';
 import { companyRank, reputationProgress, unlockedMissionTier, weaponUnlockRank } from './reputation';
 import { html } from 'lit-html';
-import { renderWorkspace, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
+import { renderWorkspace, revealWorkspaceElement, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
 import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_TIERS, WEAPON_FAMILY_LABELS, type WeaponDefinition, type WeaponId } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getPlanet, type Campaign } from './campaign';
@@ -9,6 +9,7 @@ import { availableWeapons, canDeploy, canRefit, getOwnedMech, refitDays, repairD
 import { FRAMES, getFrame, type FrameDefinition, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary } from './loadout-ui';
 import { frameWeight, loadedMounts, usableMount } from './combat-resources';
+import { MECH_SKINS, supportsMechSkin, type MechSkinId } from './mech-skin';
 
 export type CompanyScreen = 'mechbay' | 'market' | 'engineering';
 export type ShipScreen = 'starmap' | 'bridge' | CompanyScreen;
@@ -19,6 +20,8 @@ export interface CompanyEditor {
 	notice: string;
 }
 export interface CompanyActions {
+	skin: MechSkinId;
+	selectSkin: (skin: MechSkinId) => void;
 	navigate: (screen: ShipScreen) => void;
 	selectFrame: (frameId: FrameId) => void;
 	editSlot: (slot: number) => void;
@@ -143,6 +146,7 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 		{ id: 'condition', label: 'Condition', items: [
 			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName}</p></div>`,
 			renderHullIntegrity(mech.integrity),
+			...(supportsMechSkin(frame.id) ? [html`<div class="mech-livery"><span class="eyebrow">COMPANY LIVERY</span><div>${MECH_SKINS.map(function (skin) { return html`<button data-mech-skin=${skin.id} aria-label=${skin.name} aria-pressed=${actions.skin === skin.id} ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.selectSkin(skin.id); }}>${skin.label}</button>`; })}</div><small>FREE REPAINT · NO WORKSHOP TIME</small></div>`] : []),
 			html`<dl class="frame-specifications"><dt>CRUISE</dt><dd>${frame.speed} m/s</dd><dt>COOLING</dt><dd>${frame.cooling} heat/s</dd><dt>BASE MASS</dt><dd>${massLabel(frame.mass)} incl. fixed equipment</dd><dt>RECOMMENDED</dt><dd>${massLabel(frame.recommendedMass)}</dd></dl>`,
 			...textItems(`INSTALLED: ${loadSummary(frame.id, mech.loadout, mech.reserves)}`),
 			...textItems(hardpointSummary(frame.id)), ...textItems(frame.tradeoff),
@@ -249,7 +253,7 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	const installedWeight = mech && frame ? frameWeight(frame.id, loadedMounts(mech.loadout, mech.reserves)) : undefined;
 	const hero = screen === 'mechbay' && mech && frame ? html`
-		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${frame.chassisName} ${frame.variant} <small>/ ${frame.designation}</small></h2></div><span class="eyebrow">ACTIVE FRAME</span></div>
+		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${frame.chassisName} ${frame.variant} <small>/ ${frame.designation}</small></h2></div>${supportsMechSkin(frame.id) ? html`<button class="hangar-livery" ?disabled=${locked} @click=${function () { selectWorkspacePane(root, 'condition', true); const target = root.querySelector<HTMLElement>('[data-mech-skin][aria-pressed="true"]'); if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); } }}>LIVERY</button>` : html`<span class="eyebrow">ACTIVE FRAME</span>`}</div>
 		<div class="hangar-model"><canvas data-hangar-frame=${frame.id} aria-label=${`${frame.name} frame preview`}></canvas><span class="hangar-fallback">${frame.name} / ${frame.role}</span></div>
 		<div class="hangar-service">
 			${renderHullIntegrity(mech.integrity)}

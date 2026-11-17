@@ -53,6 +53,37 @@ const fixture = function (connections = false) {
 	return { scene, animations, geometry, geometries, material };
 };
 
+test('simultaneous faction skins share source geometry, preserve muzzle poses and release only their own materials', function () {
+	const asset = fixture(true); const factory = prepareAuthoredWarden(asset); const uninstall = factory.install();
+	const models = (['original', 'freeholds', 'accord'] as const).map(function (skin) { return factory.create(skin); });
+	const sourceMaterials = new Set<unknown>(); asset.scene.traverse(function (node) { if (node instanceof Mesh) sourceMaterials.add(node.material); });
+	const owned = new Set<MeshStandardMaterial>();
+	const body = { x: 400, y: 500, angle: -0.7 }; const gait = createGait(body);
+	let released = 0; let sourceReleased = false;
+	asset.material.addEventListener('dispose', function () { sourceReleased = true; });
+	try {
+		for (const [index, model] of models.entries()) {
+			model.root.traverse(function (node) {
+				if (!(node instanceof Mesh)) return;
+				expect(asset.geometries.includes(node.geometry)).toBe(true);
+				for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+					expect(sourceMaterials.has(material)).toBe(false);
+					if (material instanceof MeshStandardMaterial && !owned.has(material)) { owned.add(material); material.addEventListener('dispose', function () { released++; }); }
+					if (index > 0) expect(material.userData['mechSkin']).toBe(index === 1 ? 'freeholds' : 'accord');
+				}
+			});
+			for (const heading of [-1.3, 0, 1.6]) {
+				model.root.position.set(body.x, 0, body.y);
+				model.pose(gait, heading, { recoil: 0.4, hit: 0, heat: 10, time: 0 });
+				expect(authoredMuzzleError(model, factory.weaponRigs, gait, heading)).toBeLessThan(1e-7);
+			}
+		}
+		asset.scene.traverse(function (node) { if (node instanceof Mesh) expect(sourceMaterials.has(node.material)).toBe(true); });
+		for (const model of models) { model.dispose(); model.dispose(); }
+		expect(released).toBe(owned.size); expect(sourceReleased).toBe(false);
+	} finally { for (const model of models) model.dispose(); uninstall(); factory.dispose(); for (const geometry of asset.geometries) geometry.dispose(); asset.material.dispose(); }
+});
+
 test('non-collinear authored hinges keep physical muzzle and six selected exits aligned through aim', function () {
 	const rig: WeaponRig = { pivot: { x: 10, y: 2, elevation: 8 }, muzzle: { x: 30, y: 5, elevation: 11 }, tubes: [{ x: 1, y: -2, elevation: 4 }] };
 	expect(rigMuzzle(rig, { x: 100, y: 200 }, 0)).toEqual({ x: 130, y: 205, elevation: 11 });

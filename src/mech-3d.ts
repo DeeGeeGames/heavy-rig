@@ -12,6 +12,8 @@ import { articulateWeapons } from './weapon-articulation';
 import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { getMechAssetBinding } from './mech-asset-registry';
+import { SKIN_PALETTES, supportsMechSkin, type MechSkinId } from './mech-skin';
+import { applyMechSkinMaterial } from './mech-skin-material';
 
 export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; equippedSlots?: readonly number[] }
 
@@ -30,17 +32,19 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[]): number {
 
 // Weapon geometry shares its stable rig with combat. Suspension and leg motion
 // remain presentation data; every view uses this same production factory.
-export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden') {
+export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechSkinId = 'original') {
 	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind);
 	const authored = kind ? undefined : getMechAssetBinding(frame);
-	if (authored) return authored.create();
+	const finish = kind || supportsMechSkin(frame) ? skin : 'original';
+	if (authored) return authored.create(finish);
 	const definition = getFrame(frame); const chassis = definition.chassisId; const size = kind ? mechScale(kind) : definition.size;
 	const rig = kind ? STANDARD_LEG_RIG : FRAME_RIGS[frame]; const suspension = kind ? 1 : definition.suspension;
 	const root = new Group(); root.name = kind ? `${commander ? 'commander' : kind}-frame` : `${frame}-frame`;
 	const anatomy = new Group(); anatomy.name = 'anatomy'; anatomy.scale.setScalar(size); root.add(anatomy);
 	const enemyColors = { scout: '#9c6f4e', striker: '#8d5350', siege: '#6b5f60' };
 	const frameColors = { warden: '#738986', kestrel: '#597a73', maul: '#896650', longbow: '#6b6b89', morrow: '#6a7961', rook: '#667a8a' };
-	const parts = createLowPolyParts({ steel: commander ? '#772f2d' : kind ? enemyColors[kind] : frameColors[chassis], accent: commander ? '#bdb6a0' : kind ? '#aa7454' : definition.color, trim: kind ? '#c3b6a0' : '#c8cec0', glass: kind ? '#ffae7e' : '#9fe5e7' });
+	const paint = finish === 'original' ? undefined : SKIN_PALETTES[finish];
+	const parts = createLowPolyParts({ steel: paint?.primary[1] ?? (commander ? '#772f2d' : kind ? enemyColors[kind] : frameColors[chassis]), accent: paint?.secondary[1] ?? (commander ? '#bdb6a0' : kind ? '#aa7454' : definition.color), trim: paint?.secondary[1] ?? (kind ? '#c3b6a0' : '#c8cec0'), glass: kind ? '#ffae7e' : '#9fe5e7' });
 	const { group, housing, cylinder, steel, dark, trim, accent, piston } = parts;
 	const hull = group(anatomy, 'hull'); const turret = group(anatomy, 'turret');
 	cylinder(hull, 'waist-bearing', rig.hipWidth, 8, dark, rig.hipForward, rig.hipHeight - 2, 0);
@@ -87,6 +91,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	turret.position.y = rig.hipHeight;
 	const poseWeapons = articulateWeapons(root, hardware.assemblies, kind ? getEnemyWeaponRig(kind, commander) : getPlayerWeaponRig(frame));
 	parts.batch(root);
+	if (finish !== 'original') applyMechSkinMaterial(parts.solid, finish, { surface: 'procedural', scale: new Vector3(0.01, 0.01, 0.01) });
+	root.userData['mechSkin'] = finish;
 	const bounds: { part: Mesh; corners: Vector3[] }[] = [];
 	root.traverse(function (object) {
 		if (!(object instanceof Mesh)) return;
