@@ -56,7 +56,7 @@ test('squads stay small and local, preserve surviving slots, and release a lone 
 	third.hp = 0; state.enemies = [first, second, third];
 	const before = { x: second.x, y: second.y };
 	enemiesStep(state, 1 / 60);
-	expect(second.squad).toBeUndefined(); expect(second.hullAngle).toBeUndefined();
+	expect(second.squad).toBeUndefined(); expect(second.hullAngle).toBeDefined();
 	expect(distance(second, before)).toBeGreaterThan(0);
 });
 

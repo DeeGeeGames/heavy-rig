@@ -205,6 +205,8 @@ test('hostile guns and launchers fire only compatible fitted slots without multi
 		state.warnings.push({ kind, x: state.player.x - 150, y: state.player.y, life: 0.001 });
 		step(state, idle, 1 / 60);
 		const enemy = state.enemies[0]; if (!enemy?.loadout) throw new Error('Missing equipped enemy');
+		// Isolate weapon sequencing from the now rate-limited torso traverse.
+		enemy.angle = enemy.hullAngle = Math.atan2(state.player.y - enemy.y, state.player.x - enemy.x);
 		const expected = kind === 'scout' ? ['machine-gun', 'machine-gun'] as const : ['autocannon', 'autocannon', 'stream-missiles', 'stream-missiles'] as const;
 		for (const [slot, weapon] of expected.entries()) {
 			state.shots = []; enemy.cooldown = 0;
