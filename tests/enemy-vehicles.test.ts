@@ -27,7 +27,7 @@ test('campaign rosters deploy mixed forces at every difficulty and keep the assa
 			expect(state.enemies).toEqual(repeated.enemies);
 			if (kind === 'defend') {
 				const deployed = new Set<string>();
-				for (let tick = 0; tick < 60 * 150 && state.kills < missionHostileCount(contract); tick++) {
+				for (let tick = 0; tick < 60 * 360 && state.kills < missionHostileCount(contract); tick++) {
 					for (const enemy of state.enemies) { deployed.add(enemy.kind); enemy.hp = 0; }
 					step(state, idle, 1 / 60);
 				}
@@ -83,7 +83,7 @@ test('gunships circle and VTOLs strafe while firing; tanks stop and aim independ
 });
 
 test('tank frontal protection follows the hull even when the cannon faces the rear', function () {
-	for (const [origin, damage] of [[100, 45], [-100, 100]] as const) {
+	for (const [origin, damage] of [[100, 65], [-100, 100]] as const) {
 		const state = createState(); const enemy = vehicle(state, 'tank', 300); enemy.hullAngle = 0; enemy.angle = Math.PI;
 		state.shots.push({ x: enemy.x + origin, y: enemy.y, vx: -Math.sign(origin) * 10000, vy: 0, life: 1, kind: 'cannon', target: undefined, damage: 100 });
 		projectilesStep(state, 0.02);

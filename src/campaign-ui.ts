@@ -1,5 +1,5 @@
 import { companyRank, getMissionTier, MISSION_TIERS, reputationProgress, unlockedMissionTier } from './reputation';
-import { missionHostileCount } from './missions';
+import { ACQUISITION_SECONDS, missionHostileCount } from './missions';
 import { getSystemIntel } from './universe';
 import { renderTerritoryMap } from './territory-map';
 import { selectWorkspacePane } from './workspace';
@@ -21,7 +21,7 @@ const OBJECTIVES: Readonly<Record<MissionKind, string>> = {
 	assassination: 'Track down the marked command frame. Destroy it and reach extraction alive.',
 	raid: 'Destroy all three marked installations in any order, then extract. Defenders are optional.',
 	recovery: 'Hold the cache zone for five uninterrupted seconds, then extract with the data. Guards are optional.',
-	acquisition: 'Activate three beacons within three minutes: hold each zone for three seconds. Activated beacons stay active. Then extract.',
+	acquisition: `Activate three beacons within ${ACQUISITION_SECONDS / 60} minutes: hold each zone for three seconds. Activated beacons stay active. Then extract.`,
 	clearance: 'Sweep the marked sectors and eliminate every hostile. Extract once the area is clear.',
 };
 const signed = function (value: number) { return `${value > 0 ? '+' : ''}${value}`; };

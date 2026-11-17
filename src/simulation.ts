@@ -50,12 +50,12 @@ export interface State extends CombatStateView {
 export const ARENA = { width: 1800, height: 1200, relayX: 900, relayY: 600 };
 interface EnemyStats { mass: number; recommendedMass: number; cooling: number; hp: number; speed: number; range: number; reload: number; damage: number; aggro: number; elevation: number; score: number }
 export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
-	scout: { mass: 35, recommendedMass: 42, cooling: 10, hp: 480, speed: 66, range: 170, reload: 2, damage: 5, aggro: 650, elevation: 42, score: 200 },
-	striker: { mass: 70, recommendedMass: 112, cooling: 12, hp: 760, speed: 44, range: 240, reload: 2.5, damage: 7, aggro: 440, elevation: 42, score: 300 },
-	siege: { mass: 105, recommendedMass: 158, cooling: 11, hp: 500, speed: 28, range: 550, reload: 1.8, damage: 10, aggro: 650, elevation: 42, score: 500 },
-	helicopter: { mass: 18, recommendedMass: 22, cooling: 9, hp: 220, speed: 105, range: 310, reload: 0.75, damage: 3, aggro: 800, elevation: 112, score: 250 },
-	vtol: { mass: 30, recommendedMass: 62, cooling: 10, hp: 360, speed: 82, range: 440, reload: 2.8, damage: 9, aggro: 850, elevation: 147, score: 400 },
-	tank: { mass: 60, recommendedMass: 72, cooling: 11, hp: 900, speed: 32, range: 390, reload: 3.4, damage: 14, aggro: 600, elevation: 30, score: 450 },
+	scout: { mass: 35, recommendedMass: 42, cooling: 10, hp: 600, speed: 66, range: 170, reload: 2, damage: 3.5, aggro: 650, elevation: 42, score: 200 },
+	striker: { mass: 70, recommendedMass: 112, cooling: 12, hp: 1600, speed: 44, range: 240, reload: 2.5, damage: 4, aggro: 440, elevation: 42, score: 300 },
+	siege: { mass: 105, recommendedMass: 158, cooling: 11, hp: 2600, speed: 28, range: 550, reload: 1.8, damage: 5, aggro: 650, elevation: 42, score: 500 },
+	helicopter: { mass: 18, recommendedMass: 22, cooling: 9, hp: 140, speed: 105, range: 310, reload: 0.75, damage: 2, aggro: 800, elevation: 112, score: 250 },
+	vtol: { mass: 30, recommendedMass: 62, cooling: 10, hp: 260, speed: 82, range: 440, reload: 2.8, damage: 4, aggro: 850, elevation: 147, score: 400 },
+	tank: { mass: 60, recommendedMass: 72, cooling: 11, hp: 480, speed: 32, range: 390, reload: 3.4, damage: 9, aggro: 600, elevation: 30, score: 450 },
 };
 export interface MissionDeployment {
 	difficulty?: Difficulty;
@@ -106,7 +106,7 @@ const relayPosition = function (state: CombatStateView): Point | undefined {
 const createEnemy = function (state: CombatStateView, spawn: Point & { kind: EnemyKind; commander?: boolean }): Unit {
 	const level = state.mission ? getMissionTier(state.mission.contract.tier) : undefined;
 	const commander = Boolean(spawn.commander && (!level || level.tier >= 4));
-	const hp = Math.round((spawn.commander ? level?.commanderHp ?? 1680 : ENEMY_STATS[spawn.kind].hp * (level?.armor ?? 1)) * getDifficultyDefinition(state.difficulty).enemyArmor);
+	const hp = Math.round((spawn.commander ? level?.commanderHp ?? 4200 : ENEMY_STATS[spawn.kind].hp * (level?.armor ?? 1)) * getDifficultyDefinition(state.difficulty).enemyArmor);
 	const target = relayPosition(state) ?? state.player;
 	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege' || spawn.kind === 'tank', kind: spawn.kind, reactor: { heat: 0, overheated: false }, loadout: createEnemyLoadout(spawn.kind, commander, level?.weaponTier ?? 0), ...(commander ? { commander: true } : {}) };
 };
@@ -218,7 +218,7 @@ const launchWeapon = function (state: CombatStateView, weapon: WeaponDefinition,
 };
 export const getEnemyDefense = function (state: CombatStateView, enemy: Unit): { frontalMultiplier: number; exposed: boolean; enraged: boolean } {
 	return {
-		frontalMultiplier: enemy.kind === 'tank' ? state.difficulty === 'story' ? 0.85 : 0.45 : enemy.kind !== 'siege' ? 1 : state.difficulty === 'story' ? 0.8 : enemy.commander ? 0.24 : 0.35,
+		frontalMultiplier: enemy.kind === 'tank' ? state.difficulty === 'story' ? 0.85 : 0.65 : enemy.kind !== 'siege' ? 1 : state.difficulty === 'story' ? 0.8 : enemy.commander ? 0.5 : 0.6,
 		exposed: enemy.kind === 'siege' && enemy.attack?.phase === 'recovery',
 		enraged: Boolean(enemy.commander) && enemy.hp < enemy.maxHp * 0.5,
 	};
@@ -258,7 +258,7 @@ const commitBarrage = function (state: CombatStateView, enemy: Unit, target: Poi
 	const permissive = state.difficulty === 'story';
 	const duration = commander ? 3.2 : 2.8;
 	const radius = commander ? 82 : 62;
-	const damage = (commander ? 16 : 10) * getDifficultyDefinition(state.difficulty).enemyDamage * getWeaponTier(getWeapon(mount.weapon).tier).damage;
+	const damage = (commander ? 12 : 6) * getDifficultyDefinition(state.difficulty).enemyDamage * getWeaponTier(getWeapon(mount.weapon).tier).damage;
 	const addStrike = function (at: Point, delay: number, size = radius) {
 		if (!enemyCanFire(enemy, at) || !consumeFire(mount, enemyReactor(enemy))) return;
 		state.strikes.push({ id: state.nextId++, x: at.x, y: at.y, life: delay, duration: delay, radius: size, damage, owner: enemy.id, slot: mount.slot ?? 4, weapon: mount.weapon });
@@ -403,15 +403,18 @@ export const spawningStep = function (state: CombatStateView, dt: number) {
 	state.spawnIn -= dt;
 	if (state.spawned < quota && state.spawnIn <= 0 && (!mission || mission.contract.kind === 'defend' && mission.stage === 'active')) {
 		if (mission) {
-			state.warnings.push({ ...missionSpawn(mission.contract, mission.map, state.spawned), life: 3 });
-			state.spawned++; state.spawnIn = state.spawned % 3 === 0 ? 14 : 5;
+			const spawn = missionSpawn(mission.contract, mission.map, state.spawned);
+			state.warnings.push({ ...spawn, life: 3 });
+			// Heavy contacts need room for an armor/exposure cycle before the next arrival.
+			const interval = spawn.kind === 'siege' ? 28 : spawn.kind === 'striker' ? 16 : 8;
+			state.spawned++; state.spawnIn = interval * (state.spawned % 3 === 0 ? 1.5 : 1);
 		} else {
 			const spawn = wave.enemies[state.spawned];
 			if (!spawn) throw new Error('Missing wave spawn');
 			const theta = state.spawned * 2.4 + wave.bearing;
 			state.warnings.push({ x: 900 + Math.cos(theta) * 840, y: 600 + Math.sin(theta) * 530, ...spawn, life: spawn.commander ? 3 : 2 });
 			if (state.spawned === 0 && state.wave === 1) state.events.push('wave');
-			state.spawned++; state.spawnIn = state.wave === 1 ? wave.interval : state.spawned % 3 === 0 ? wave.interval * 2.4 : 1.8;
+			state.spawned++; state.spawnIn = state.wave === 1 ? wave.interval : state.spawned % 3 === 0 ? wave.interval * 2.4 : 4;
 		}
 	}
 	for (const warning of state.warnings) {
