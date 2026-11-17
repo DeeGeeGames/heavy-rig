@@ -204,7 +204,7 @@ describe('Heavy Rig combat', function () {
 test('hostile guns and launchers fire only compatible fitted slots without multiplying attack damage', function () {
 	for (const kind of ['scout', 'striker'] as const) {
 		const state = createState(); state.spawnIn = 3600;
-		state.warnings.push({ kind, x: state.player.x - 150, y: state.player.y, life: 0.001 });
+		state.warnings.push({ kind, x: state.player.x - ENEMY_STATS[kind].range * 0.85, y: state.player.y, life: 0.001 });
 		step(state, idle, 1 / 60);
 		const enemy = state.enemies[0]; if (!enemy?.loadout) throw new Error('Missing equipped enemy');
 		// Isolate weapon sequencing from the now rate-limited torso traverse.

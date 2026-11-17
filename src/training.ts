@@ -29,7 +29,7 @@ const placeTarget = function (state: CombatStateView) {
 	const p = state.player;
 	const x = Math.max(80, Math.min(1720, p.x + Math.cos(p.turret) * 140));
 	const y = Math.max(80, Math.min(1120, p.y + Math.sin(p.turret) * 140));
-	state.enemies = [{ id: state.nextId++, x, y, angle: Math.atan2(p.y - y, p.x - x), hp: 150, maxHp: 150, cooldown: 3600, heavy: false, kind: 'scout', loadout: createEnemyLoadout('scout'), reactor: { heat: 0, overheated: false } }];
+	state.enemies = [{ id: state.nextId++, x, y, angle: Math.atan2(p.y - y, p.x - x), hp: 150, maxHp: 150, cooldown: 3600, heavy: false, kind: 'scout', stationary: true, loadout: createEnemyLoadout('scout'), reactor: { heat: 0, overheated: false } }];
 };
 
 const advance = function (training: Training, stage: TrainingStage) {
