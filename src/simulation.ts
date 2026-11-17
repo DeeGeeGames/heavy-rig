@@ -30,11 +30,14 @@ export interface Controls { heading?: number; throttleTarget?: number; turretTur
 export interface CombatCollection<T> extends ReadonlyArray<T> {
 	push(...items: T[]): number;
 }
+export const MISSILE_LOCK_SECONDS = 1.5;
+export const MISSILE_LOCK_GRACE = 0.3;
+export interface MissileLock { targetId: number; progress: number; interrupted: number }
 export interface CombatStateView {
 	authoredPose?: AuthoredPoseContext | undefined;
 	mission?: MissionRuntime;
 	frame: FrameId; difficulty: Difficulty; phase: 'combat'; loadout: WeaponMount[]; seed: number; stats: CombatStats; strikes: CombatCollection<ArtilleryStrike>;
-	player: Point & { angle: number; turret: number; targetId?: number | undefined; throttle: number; speed: number; hp: number; heat: number; overheated: boolean };
+	player: Point & { angle: number; turret: number; missileLock?: MissileLock | undefined; targetId?: number | undefined; throttle: number; speed: number; hp: number; heat: number; overheated: boolean };
 	relay: number; enemies: CombatCollection<Unit>; shots: CombatCollection<Shot>; effects: CombatCollection<Effect>; wave: number; spawned: number; spawnIn: number;
 	intermission: number; cannonIn: number; time: number; kills: number; shake: number;
 	beams: Beam[]; beam: (Point & { slot?: number; elevation?: number }) | undefined; outcome: 'playing' | 'won' | 'lost'; nextId: number;
@@ -162,6 +165,23 @@ export const enemyWeight = function (enemy: Unit) {
 	return weightMetrics(stats.mass, stats.recommendedMass, enemyMounts(enemy));
 };
 const targetVolume = function (target: CombatTarget): HitVolume { return target.kind === 'enemy' ? enemyVolume(target.body) : facilityVolume(target.body, target.radius); };
+// Guidance shares combat geometry; decorative scenery has no collision volume.
+export const missileTracking = function (state: CombatStateView, id: number): 'NO GUIDANCE' | 'OUT OF RANGE' | 'OUT OF ARC' | 'BLOCKED' | 'TRACKING' {
+	const target = combatTargets(state).find(function (candidate) { return candidate.id === id; });
+	const weapons = state.loadout.filter(function (mount, index) { return canEquipWeapon(state.frame, mount.slot ?? index, mount.weapon); }).map(function (mount) { return getWeapon(mount.weapon); }).filter(function (weapon) { return weapon.kind === 'missile'; });
+	if (!target || weapons.length === 0) return 'NO GUIDANCE';
+	if (!weapons.some(function (weapon) { return distance(state.player, target.body) <= weapon.range; })) return 'OUT OF RANGE';
+	if (!inFiringArc(state.player, state.player.angle, target.body)) return 'OUT OF ARC';
+	const origin = playerVolume(state.player, state.frame);
+	if (combatTargets(state).some(function (other) { return other.id !== id && hitVolumeFraction(origin, targetVolume(target), targetVolume(other)) !== undefined; })) return 'BLOCKED';
+	return 'TRACKING';
+};
+export const missileLockLabel = function (state: CombatStateView, id: number): string {
+	const status = missileTracking(state, id);
+	const value = state.player.missileLock?.targetId === id ? state.player.missileLock.progress : 0;
+	const progress = value >= 1 - 1e-9 ? 1 : value;
+	return `${status === 'TRACKING' ? progress >= 1 ? 'LOCKED' : 'ACQUIRING' : status} ${Math.floor(progress * 100)}%`;
+};
 export const playerAimPoint = function (state: CombatStateView): SpatialPoint | undefined {
 	const target = combatTargets(state).find(function (candidate) { return candidate.id === state.player.targetId; });
 	return target ? projectAim(state.player, state.player.turret, targetVolume(target)) : undefined;
@@ -343,6 +363,15 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 	const p = state.player;
 	p.targetId = combatTargets(state).find(function (target) { return target.id === input.targetId; })?.id;
 	const selected = combatTargets(state).find(function (target) { return target.id === p.targetId; });
+	const tracking = selected ? missileTracking(state, selected.id) : 'NO GUIDANCE';
+	const previous = p.missileLock;
+	if (!selected || tracking === 'NO GUIDANCE') p.missileLock = undefined;
+	else {
+		const lock = previous?.targetId === selected.id ? previous : { targetId: selected.id, progress: 0, interrupted: 0 };
+		const interrupted = tracking === 'TRACKING' ? 0 : lock.interrupted + dt;
+		const decayTime = Math.max(0, interrupted - MISSILE_LOCK_GRACE) - Math.max(0, lock.interrupted - MISSILE_LOCK_GRACE);
+		p.missileLock = { targetId: selected.id, interrupted, progress: clamp(lock.progress + (tracking === 'TRACKING' ? dt : -decayTime) / MISSILE_LOCK_SECONDS, 0, 1) };
+	}
 	const canFire = inFiringArc(p, p.angle, selected?.body ?? (input.turretTurn === undefined ? input.aim : { x: p.x + Math.cos(p.turret), y: p.y + Math.sin(p.turret) }));
 	const wasOverheated = p.overheated;
 	state.beams = [];
@@ -352,13 +381,13 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 		if (!canEquipWeapon(state.frame, slot, mount.weapon) || firingSlots.has(slot)) return;
 		firingSlots.add(slot);
 		const weapon = getWeapon(mount.weapon);
-		if (!canFire) { delete mount.rocketVolley; return; }
+		if (!canFire || weapon.kind === 'missile' && (tracking !== 'TRACKING' || (p.missileLock?.progress ?? 0) < 1 - 1e-9 || !selected || distance(p, selected.body) > weapon.range)) { delete mount.rocketVolley; return; }
 		const volley = mount.rocketVolley;
 		if (volley && (weapon.kind === 'rocket' || weapon.stream)) {
 			volley.nextIn -= dt;
 			while (volley.remaining > 0 && volley.nextIn <= 1e-9) {
 				if (!consumeFire(mount, p)) { volley.remaining = 0; break; }
-				const target = weapon.kind === 'missile' ? combatTargets(state).filter(function (candidate) { return inFiringArc(p, p.angle, candidate.body) && distance(candidate.body, p) <= weapon.range && (p.targetId === undefined || candidate.id === p.targetId); }).reduce<CombatTarget | undefined>(function (best, candidate) { return !best || distance(candidate.body, input.aim) < distance(best.body, input.aim) ? candidate : best; }, undefined) : undefined;
+				const target = weapon.kind === 'missile' ? selected : undefined;
 				launchWeapon(state, weapon, p.turret, slot, target?.id);
 				volley.remaining--; volley.nextIn += volleySpacing(weapon); mount.firing = true;
 				state.events.push(weapon.kind === 'missile' ? 'missile' : 'rocket');
@@ -381,7 +410,7 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 			return;
 		}
 		if (mount.cooldown > 0) return;
-		const target = weapon.kind === 'missile' ? combatTargets(state).filter(function (candidate) { return inFiringArc(p, p.angle, candidate.body) && distance(candidate.body, p) <= weapon.range && (p.targetId === undefined || candidate.id === p.targetId); }).reduce<CombatTarget | undefined>(function (best, candidate) { return !best || distance(candidate.body, input.aim) < distance(best.body, input.aim) ? candidate : best; }, undefined) : undefined;
+		const target = weapon.kind === 'missile' ? selected : undefined;
 		for (let projectile = 0; projectile < (weapon.kind === 'rocket' || weapon.stream ? 1 : weapon.projectiles); projectile++) {
 			if (!consumeFire(mount, p)) break;
 			const spread = weapon.projectiles === 1 ? Math.sin(state.stats.shotsFired * 2.4) * weapon.spread : (projectile - (weapon.projectiles - 1) / 2) * weapon.spread;

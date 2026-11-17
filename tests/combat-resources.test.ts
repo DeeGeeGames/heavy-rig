@@ -1,3 +1,4 @@
+import { addMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
 import { createMount, getWeapon, WEAPONS } from '../src/arsenal';
@@ -42,14 +43,14 @@ test('all equipment has finite mass and energy sustained heat exceeds ballistic 
 
 test('partial simultaneous and staggered salvos consume exactly emitted rounds and never refill', function () {
 	for (const weapon of WEAPONS.filter(function (weapon) { return weapon.ammunition !== null; })) {
-		const state = createState({ starter: weapon.id });
+		const state = createState({ starter: weapon.id }); const contact = addMissileTarget(state);
 		const mount = state.loadout[0]; if (!mount) throw new Error('Missing mount');
 		mount.rounds = Math.min(3, weapon.projectiles);
 		const supplied = mount.rounds;
-		weaponsStep(state, fire, 1 / 60);
-		for (let tick = 0; tick < 20; tick++) weaponsStep(state, idle, 1 / 60);
+		weaponsStep(state, { ...fire, targetId: contact.id }, 1 / 60);
+		for (let tick = 0; tick < 20; tick++) weaponsStep(state, { ...idle, targetId: contact.id }, 1 / 60);
 		expect(state.stats.shotsFired).toBe(supplied); expect(mount.rounds).toBe(0);
-		for (let tick = 0; tick < 100; tick++) { mount.cooldown = 0; weaponsStep(state, fire, 1 / 60); }
+		for (let tick = 0; tick < 100; tick++) { mount.cooldown = 0; weaponsStep(state, { ...fire, targetId: contact.id }, 1 / 60); }
 		expect(state.stats.shotsFired).toBe(supplied); expect(mount.rounds).toBe(0);
 	}
 });

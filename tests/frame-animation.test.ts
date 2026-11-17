@@ -1,3 +1,4 @@
+import { addMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import { Mesh, MeshStandardMaterial } from 'three';
 import { FRAMES } from '../src/frames';
@@ -89,7 +90,8 @@ for (const frame of FRAMES) {
 			// Hardware can recoil as one assembly; compare visible world poses,
 			// including parent transforms rather than only each mesh's local pose.
 			const rest = parts.map(function (part) { return part.matrixWorld.clone(); });
-			step(state, { ...idle, fire: [true, false, false, false] }, dt);
+			const contact = addMissileTarget(state);
+			step(state, { ...idle, targetId: contact.id, fire: [true, false, false, false] }, dt);
 			const recoil = weaponRecoil(state.loadout);
 			expect(recoil).toBeGreaterThan(0);
 			model.pose(gait, state.player.turret, { recoil, hit: 0, heat: state.player.heat, time: state.time });

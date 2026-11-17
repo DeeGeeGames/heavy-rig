@@ -1,3 +1,4 @@
+import { acquireMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import { Mesh, Scene, type BufferGeometry, type Material } from 'three';
 import { createMount } from '../src/arsenal';
@@ -63,8 +64,9 @@ test('mission navigation follows the remaining objective and missile feedback ac
 	// The facility and enemy both sit within range. The aimed facility wins;
 	// claiming guidance on the nearby mech would contradict combat targeting.
 	expect(targetSolution(state, enemy, facility).guided).toBe(false);
-	expect(targetSolution(state, enemy, enemy).guided).toBe(true);
-	step(state, { drive: 0, stop: true, turn: 0, aim: facility, fire: [true, false, false, false], coolant: false }, 1 / 60);
+	expect(targetSolution(state, enemy, enemy).guided).toBe(false);
+	acquireMissileTarget(state, FACILITY_TARGET_ID);
+	step(state, { drive: 0, stop: true, turn: 0, targetId: FACILITY_TARGET_ID, aim: facility, fire: [true, false, false, false], coolant: false }, 1 / 60);
 	expect(state.shots.find(function (shot) { return shot.kind === 'missile'; })?.target).toBe(FACILITY_TARGET_ID);
 	expect(waypoint.point).toBe(facility);
 	mission.stage = 'extract';

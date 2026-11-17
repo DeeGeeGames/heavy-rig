@@ -1,3 +1,4 @@
+import { acquireMissileTarget } from './missile-fixture';
 import { describe, expect, test } from 'bun:test';
 import { WEAPONS, createMount, getWeapon } from '../src/arsenal';
 import { createMissionState, createState, step, type Controls, type State } from '../src/simulation';
@@ -57,8 +58,8 @@ describe('Heavy Rig arsenal', function () {
 	test('four slots fire concurrently, keep separate cooldowns, and respect the shared heat lock', function () {
 		const state = createState(); state.spawnIn = 3600;
 		state.loadout = [createMount('autocannon'), createMount('machine-gun'), createMount('stream-missiles'), createMount('stream-rockets')];
-		target(state, 900, 600);
-		step(state, { ...idle, fire: [true, true, true, true] }, 1 / 60);
+		const contact = target(state, 900, 600); acquireMissileTarget(state, contact.id);
+		step(state, { ...idle, targetId: contact.id, fire: [true, true, true, true] }, 1 / 60);
 		expect(state.shots.map(function (shot) { return shot.kind; }).sort()).toEqual(['bullet', 'cannon', 'missile', 'rocket']);
 		expect(state.loadout.every(function (mount) { return mount.firing; })).toBe(true);
 		const fired = state.stats.shotsFired;
@@ -75,8 +76,8 @@ describe('Heavy Rig arsenal', function () {
 	test('missiles steer toward the aimed target while rockets retain their launch heading', function () {
 		const state = createState({ frame: 'maul' }); state.spawnIn = 3600;
 		state.loadout = [createMount('stream-missiles'), createMount('stream-rockets')];
-		const enemy = target(state, 1050, 580);
-		step(state, { ...idle, aim: enemy, fire: [true, true, false, false] }, 1 / 60);
+		const enemy = target(state, 1050, 580); acquireMissileTarget(state, enemy.id);
+		step(state, { ...idle, targetId: enemy.id, aim: enemy, fire: [true, true, false, false] }, 1 / 60);
 		const missile = state.shots.find(function (shot) { return shot.kind === 'missile'; });
 		const rocket = state.shots.find(function (shot) { return shot.kind === 'rocket'; });
 		if (!missile || !rocket) throw new Error('Missing projectiles');
@@ -102,7 +103,7 @@ describe('Heavy Rig arsenal', function () {
 	test('cluster volleys apply area damage beyond the directly struck frame', function () {
 		for (const weapon of ['cluster-rockets', 'cluster-missiles'] as const) {
 			const state = createState({ starter: weapon }); state.spawnIn = 3600;
-			const direct = target(state, 900, 700); const neighbor = target(state, 930, 700);
+			const direct = target(state, 900, 700); const neighbor = target(state, 930, 700); acquireMissileTarget(state, direct.id);
 			step(state, { ...idle, targetId: direct.id, aim: direct, fire: [true, false, false, false] }, 1 / 60);
 			expect(state.stats.shotsFired).toBe(weapon === 'cluster-rockets' ? 1 : getWeapon(weapon).projectiles);
 			advance(state, 0.4, { ...idle, targetId: direct.id, aim: direct });
@@ -136,10 +137,10 @@ test('deployment and combat reject incompatible weapons and nonexistent chassis 
 test('all launcher varieties fire their advertised count once per trigger cycle', function () {
 	for (const weapon of WEAPONS.filter(function (candidate) { return candidate.family === 'launcher'; })) {
 		const state = createState({ frame: 'maul', starter: weapon.id }); state.spawnIn = 3600;
-		const enemy = target(state, state.player.x + 400, state.player.y - 400);
-		step(state, { ...idle, aim: enemy, fire: [true, false, false, false] }, 1 / 60);
+		const enemy = target(state, state.player.x + 400, state.player.y - 400); acquireMissileTarget(state, enemy.id);
+		step(state, { ...idle, targetId: enemy.id, aim: enemy, fire: [true, false, false, false] }, 1 / 60);
 		expect(state.stats.shotsFired).toBe(weapon.kind === 'rocket' || weapon.stream ? 1 : weapon.projectiles);
-		advance(state, 0.6, { ...idle, aim: enemy });
+		advance(state, 0.6, { ...idle, targetId: enemy.id, aim: enemy });
 		expect(state.stats.shotsFired).toBe(weapon.projectiles);
 		expect(state.loadout[0]?.rocketVolley).toBeUndefined();
 		if (weapon.kind === 'missile') expect(state.shots.every(function (shot) { return shot.target === enemy.id; })).toBe(true);

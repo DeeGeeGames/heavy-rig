@@ -1,3 +1,4 @@
+import { acquireMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
 import { createMount } from '../src/arsenal';
@@ -46,6 +47,7 @@ test('3D swept collision hits fast acquired rounds and intercepts a closer unit 
 
 test('target elevation preserves turret traverse and dead acquisition returns to horizontal fire', function () {
 	const state = setup(); const target = enemy(1, 500, 'vtol'); state.enemies = [target];
+	acquireMissileTarget(state, 1);
 	weaponsStep(state, { ...idle, targetId: 1, fire: [true, false, false, false] }, 1 / 60);
 	expect(state.shots[0]?.vx).toBeGreaterThan(0);
 	target.hp = 0; state.loadout = [createMount('autocannon')];
@@ -55,6 +57,7 @@ test('target elevation preserves turret traverse and dead acquisition returns to
 
 test('guided missiles steer vertically while beams stop at the first 3D contact', function () {
 	const state = createState({ frame: 'morrow' }); state.player.turret = 0; const target = enemy(1, 1300, 'vtol'); state.enemies = [target];
+	acquireMissileTarget(state, 1);
 	weaponsStep(state, { ...idle, targetId: 1, fire: [true, false, false, false] }, 1 / 60);
 	const missile = state.shots[0]; if (!missile) throw new Error('Missing missile'); const before = missile.vElevation;
 	target.kind = 'tank'; projectilesStep(state, 0.05); expect(missile.vElevation).toBeLessThan(before ?? 0);
@@ -92,6 +95,7 @@ test('missiles can turn around and ground contact still resolves on the final li
 
 test('close acquired aircraft remain hittable without a global convergence distance', function () {
 	const state = setup(); const target = enemy(1, state.player.x + 60, 'helicopter'); state.enemies = [target];
+	acquireMissileTarget(state, 1);
 	weaponsStep(state, { ...idle, targetId: 1, fire: [true, false, false, false] }, 1 / 60);
 	for (let tick = 0; tick < 20; tick++) projectilesStep(state, 1 / 60);
 	expect(target.hp).toBeLessThan(1000);
