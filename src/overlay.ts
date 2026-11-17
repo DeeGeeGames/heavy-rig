@@ -3,7 +3,7 @@ import { inFiringArc } from './torso-arc';
 import { getWeapon } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
-import { ARENA, missileTracking, missileLockLabel, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
+import { ARENA, missileTracking, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
 import { isPriorityTarget, missionStructures, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
@@ -63,7 +63,8 @@ const solutionFor = function (state: CombatStateView, target: Point, id: number)
 };
 
 const getWeaponFeedback = function (state: CombatStateView, target: Point, id: number): string {
-	if (state.loadout.some(function (mount) { return getWeapon(mount.weapon).kind === 'missile'; })) return missileLockLabel(state, id);
+	const tracking = missileTracking(state, id);
+	if (tracking !== 'NO GUIDANCE') return tracking === 'TRACKING' ? solutionFor(state, target, id).guided ? 'LOCKED' : 'ACQUIRING' : tracking;
 	if (!inFiringArc(state.player, state.player.angle, target)) return 'OUT OF ARC';
 	return solutionFor(state, target, id).inRange ? 'IN RANGE' : 'OUT OF RANGE';
 };
@@ -133,10 +134,51 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.fillStyle = '#112329dd'; ctx.fillRect(relayLabel.x - 31, relayLabel.y, 62, 3);
 		ctx.fillStyle = state.relay < 30 ? '#f49769' : '#9bccbc'; ctx.fillRect(relayLabel.x - 31, relayLabel.y, 62 * state.relay / 100, 3);
 	}
+	const drawTargetReticle = function (target: Point, id: number, elevation: number, targetWidth: number, targetHeight: number) {
+		const anchor = at(target, elevation);
+		const tracking = missileTracking(state, id);
+		const guided = tracking !== 'NO GUIDANCE';
+		const lock = state.player.missileLock;
+		const progress = lock?.targetId === id ? Math.max(0, Math.min(1, lock.progress)) : 0;
+		const locked = guided && tracking === 'TRACKING' && progress >= 1 - 1e-9;
+		ctx.strokeStyle = guided ? '#91ada480' : '#f3c37d'; ctx.lineWidth = 1.5;
+		bracket(ctx, anchor.x, anchor.y, targetWidth, targetHeight, 10);
+		if (!guided) return { locked, guided, labelOffset: targetHeight / 2 + 11 * scale };
+		const radius = Math.max(targetWidth, targetHeight) * 0.85 * (1.35 - 0.35 * progress);
+		ctx.strokeStyle = locked ? '#ff6863' : '#f3c37d'; ctx.lineWidth = options.couchMode ? 2.5 : 2;
+		ctx.beginPath();
+		if (locked) {
+			ctx.moveTo(anchor.x, anchor.y - radius); ctx.lineTo(anchor.x + radius, anchor.y);
+			ctx.lineTo(anchor.x, anchor.y + radius); ctx.lineTo(anchor.x - radius, anchor.y); ctx.closePath();
+			ctx.moveTo(anchor.x + radius + 5, anchor.y); ctx.lineTo(anchor.x + radius + 13, anchor.y);
+			ctx.moveTo(anchor.x - radius - 5, anchor.y); ctx.lineTo(anchor.x - radius - 13, anchor.y);
+		} else {
+			// Invalid tracking must open the diamond immediately, including during grace.
+			const closure = 0.15 + 0.85 * (tracking === 'TRACKING' ? progress : Math.min(progress, 0.88));
+			for (let corner = 0; corner < 4; corner++) {
+				const angle = corner * Math.PI / 2 - Math.PI / 2;
+				const tip = { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+				const previous = { x: Math.cos(angle - Math.PI / 2) * radius, y: Math.sin(angle - Math.PI / 2) * radius };
+				const next = { x: Math.cos(angle + Math.PI / 2) * radius, y: Math.sin(angle + Math.PI / 2) * radius };
+				ctx.moveTo(anchor.x + tip.x + (previous.x - tip.x) * closure / 2, anchor.y + tip.y + (previous.y - tip.y) * closure / 2);
+				ctx.lineTo(anchor.x + tip.x, anchor.y + tip.y);
+				ctx.lineTo(anchor.x + tip.x + (next.x - tip.x) * closure / 2, anchor.y + tip.y + (next.y - tip.y) * closure / 2);
+			}
+		}
+		ctx.stroke();
+		return { locked, guided, labelOffset: radius + minimumText + 6 };
+	};
 	const structures = missionStructures(mission);
-	for (const [index, { body: facility }] of structures.entries()) {
-		text(facility.hp > 0 ? `${mission?.contract.kind === 'raid' ? `RAID SITE ${index + 1}` : 'TARGET FACILITY'} / ${Math.ceil(facility.hp / facility.maxHp * 100)}%` : 'FACILITY DESTROYED', facility, 124, facility.hp > 0 ? '#ffd199' : '#a5b6ac', 11);
-		const label = at(facility, 114);
+	const selectedStructure = structures.find(function (target) { return target.body.hp > 0 && target.id === state.player.targetId; });
+	const selectedFacility = selectedStructure?.body;
+	const selected = state.enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
+	const selectedSize = (selected?.commander ? 90 : 74) * scale;
+	const selectedReticle = selected ? drawTargetReticle(selected, selected.id, ENEMY_STATS[selected.kind].elevation, selectedSize, selectedSize) : undefined;
+	const facilityReticle = selectedFacility && selectedStructure ? drawTargetReticle(selectedFacility, selectedStructure.id, 45, 130 * scale, 110 * scale) : undefined;
+	for (const [index, { id, body: facility }] of structures.entries()) {
+		const labelHeight = id === selectedStructure?.id && facilityReticle?.guided ? Math.max(124, 45 + facilityReticle.labelOffset / scale) : 124;
+		text(facility.hp > 0 ? `${mission?.contract.kind === 'raid' ? `RAID SITE ${index + 1}` : 'TARGET FACILITY'} / ${Math.ceil(facility.hp / facility.maxHp * 100)}%` : 'FACILITY DESTROYED', facility, labelHeight, facility.hp > 0 ? '#ffd199' : '#a5b6ac', 11);
+		const label = at(facility, labelHeight - 10);
 		ctx.fillStyle = '#112329dd'; ctx.fillRect(label.x - 42, label.y, 84, 4);
 		ctx.fillStyle = '#e5a778'; ctx.fillRect(label.x - 42, label.y, 84 * Math.max(0, facility.hp / facility.maxHp), 4);
 	}
@@ -154,14 +196,12 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		text(`IMPACT ${strike.life.toFixed(1)}`, strike, 8, '#ffd2a6', 11, -14);
 	}
-	const selectedStructure = structures.find(function (target) { return target.body.hp > 0 && target.id === state.player.targetId; });
-	const selectedFacility = selectedStructure?.body;
-	const selected = state.enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
 	for (const enemy of state.enemies) {
 		const defense = getEnemyDefense(state, enemy);
 		if (enemy.hp >= enemy.maxHp && enemy !== selected && !isPriorityTarget(state, enemy) && !defense.exposed) continue;
 		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol';
-		const labelHeight = options.enemyLabelHeights?.get(enemy.id) ?? (vehicle ? ENEMY_STATS[enemy.kind].elevation + 38 : (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind));
+		const modelLabelHeight = options.enemyLabelHeights?.get(enemy.id) ?? (vehicle ? ENEMY_STATS[enemy.kind].elevation + 38 : (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind));
+		const labelHeight = enemy === selected && selectedReticle?.guided ? Math.max(modelLabelHeight, ENEMY_STATS[enemy.kind].elevation + selectedReticle.labelOffset / scale) : modelLabelHeight;
 		const anchor = at(enemy, labelHeight);
 		const barWidth = isPriorityTarget(state, enemy) ? options.couchMode ? 100 : 76 : options.couchMode ? 56 : 42;
 		ctx.fillStyle = '#0a151be6'; ctx.fillRect(anchor.x - barWidth / 2 - 1, anchor.y - 1, barWidth + 2, 5);
@@ -172,29 +212,18 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			text(label, enemy, labelHeight, defense.exposed ? '#adf7d7' : '#ffd5a5', 11, -(enemy.commander ? minimumText * 2 + 15 : minimumText + 6) / scale);
 		}
 	}
-	if (selected) {
+	if (selected && selectedReticle) {
 		const elevation = ENEMY_STATS[selected.kind].elevation;
-		const anchor = at(selected, elevation);
-		const size = (selected.commander ? 90 : 74) * scale;
-		ctx.strokeStyle = '#f3c37d'; ctx.lineWidth = 1.5;
-		bracket(ctx, anchor.x, anchor.y, size, size, 10);
+		const reticle = selectedReticle;
 		const solution = targetSolution(state, selected, aim);
 		const defense = getEnemyDefense(state, selected);
 		const role = isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
-		text(role, selected, elevation, '#ffe1aa', 10, 48);
-		text(`${Math.round(distance(selected, state.player))} M / ${getWeaponFeedback(state, selected, selected.id)}`, selected, elevation, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
+		text(role, selected, elevation, '#ffe1aa', 10, reticle.labelOffset / scale);
+		text(`${Math.round(distance(selected, state.player))} M / ${getWeaponFeedback(state, selected, selected.id)}`, selected, elevation, reticle.locked ? '#ff6863' : solution.inRange ? '#ebc184' : '#98a8a7', 8, (reticle.labelOffset + minimumText + 7) / scale);
 	}
-	if (selectedFacility && selectedStructure) {
-		const anchor = at(selectedFacility, 45); ctx.strokeStyle = '#f3c37d'; ctx.lineWidth = 1.5;
-		bracket(ctx, anchor.x, anchor.y, 130 * scale, 110 * scale, 12);
-		text(`${Math.round(distance(selectedFacility, state.player))} M / ${getWeaponFeedback(state, selectedFacility, selectedStructure.id)}`, selectedFacility, 30, '#ebc184', 10, 55);
-	}
-	const lockTarget = selected ?? selectedFacility;
-	if (lockTarget && state.player.missileLock) {
-		const anchor = at(lockTarget, selected ? ENEMY_STATS[selected.kind].elevation : 45);
-		const progress = state.player.missileLock.progress;
-		ctx.fillStyle = '#112329ee'; ctx.fillRect(anchor.x - 40, anchor.y + 48 * scale + minimumText + 14, 80, 5);
-		ctx.fillStyle = progress >= 1 - 1e-9 ? '#b9f5ca' : '#f3c37d'; ctx.fillRect(anchor.x - 40, anchor.y + 48 * scale + minimumText + 14, 80 * progress, 5);
+	if (selectedFacility && selectedStructure && facilityReticle) {
+		const reticle = facilityReticle;
+		text(`${Math.round(distance(selectedFacility, state.player))} M / ${getWeaponFeedback(state, selectedFacility, selectedStructure.id)}`, selectedFacility, 45, reticle.locked ? '#ff6863' : '#ebc184', 10, reticle.labelOffset / scale);
 	}
 	// A precise sight remains useful when aiming ahead of a moving contact.
 	const cursor = at(aim, 0);
