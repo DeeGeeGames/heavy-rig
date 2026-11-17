@@ -166,6 +166,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			bind: function (entities: CombatEntities) { combat = entities; },
 			resize,
 			zoomWithWheel: function (event: Pick<WheelEvent, 'deltaY' | 'deltaMode'>) { zoom = zoomForWheel(zoom, event, height); },
+			getZoom: function () { return zoom; },
+			setZoom: function (value: number) { if (Number.isFinite(value)) zoom = Math.max(0.5, Math.min(2.5, value)); },
 			resetZoom: function () { zoom = 1; },
 			toGround: function (point: Point) { return toGround(point, camera, width, height); },
 			toScreen: function (point: Point, elevation = 0) { return toScreen(point, camera, width, height, elevation); },

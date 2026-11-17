@@ -25,7 +25,7 @@
 	<div id="hud" inert>
 		<header class="mission-bar">
 			<div class="mission-heading"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow" id="mission-name">LAST TRANSMISSION</span><b id="phase">01 / FIRST CONTACT</b><span id="status">Protect Relay 09</span></div></div>
-			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="pause">PAUSE <kbd></kbd></button></div>
+			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><div id="touch-zoom" class="touch-zoom"><button id="zoom-toggle" aria-expanded="false" aria-controls="zoom-panel">ZOOM</button><div id="zoom-panel" class="zoom-panel" hidden><label for="camera-zoom">CAMERA <output id="zoom-value" for="camera-zoom">1.0×</output></label><div class="zoom-range"><span>−</span><input id="camera-zoom" type="range" min="0.5" max="2.5" step="0.05" value="1" aria-label="Camera zoom"><span>+</span></div><button id="zoom-reset">RESET</button></div></div><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="pause">PAUSE <kbd></kbd></button></div>
 		</header>
 		<div id="training-guide" class="training-guide" hidden><span id="training-progress" class="eyebrow"></span><b id="training-title"></b><p id="training-copy"></p><small>SAFE TRAINING · PAUSE TO EXIT</small></div>
 		<div id="message" class="field-message" role="status" aria-live="polite"></div>

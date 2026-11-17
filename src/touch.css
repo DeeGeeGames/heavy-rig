@@ -146,3 +146,14 @@
 	.training-active.touch-enabled .left-instruments { width: 220px; }
 	.touch-enabled .weapon-console #weapon-hint { display: none; }
 }
+
+/* Camera controls sit with the system tools, away from drive and fire. */
+.touch-zoom { display: none; position: relative; }
+.touch-enabled .touch-zoom { display: block; }
+.touch-enabled #zoom-toggle { min-height: 44px; }
+.zoom-panel { position: absolute; z-index: 5; top: calc(100% + 8px); right: 0; width: min(240px, calc(100vw - 40px)); padding: 12px; background: #10211ff5; border: 1px solid var(--border); box-shadow: 0 6px 20px #0008; }
+.zoom-panel label { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--paper); }
+.zoom-panel output { color: var(--cyan); }
+.zoom-range { display: flex; align-items: center; gap: 8px; }
+.zoom-range input { width: 100%; min-width: 0; height: 44px; padding: 0; accent-color: var(--cyan); touch-action: none; }
+.touch-enabled #zoom-reset { width: 100%; min-height: 44px; }
