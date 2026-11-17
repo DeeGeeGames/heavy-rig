@@ -11,6 +11,7 @@ import { createCombatRuntime } from './combat-runtime';
 import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-navigation';
 import { createRuntimeInput } from './runtime-input';
 import { createTouchFacing, createTouchTargeting, mountTouchDrive, visibleTouchContacts } from './touch-controls';
+import { mountTouchZoom } from './touch-zoom';
 import { mountMobileFullscreen } from './mobile-fullscreen';
 import { mountFullscreenViewport } from './fullscreen-viewport';
 import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey, type Action } from './bindings';
@@ -123,31 +124,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		coolant: element('coolant-value'), message: element('message'),
 		sound: element('sound'), hint: element('pilot-hint'), hintCopy: element('hint-copy'), inputMode: element('input-mode'),
 	};
-	const zoomToggle = element('zoom-toggle');
-	const zoomPanel = element('zoom-panel');
-	const zoomSlider = inputElement('camera-zoom');
-	const syncZoom = function () {
-		const value = presentation.getZoom();
-		zoomSlider.value = String(value);
-		element('zoom-value').textContent = `${value.toFixed(2).replace(/0$/, '')}×`;
-	};
-	const closeZoom = function () { zoomPanel.hidden = true; zoomToggle.setAttribute('aria-expanded', 'false'); };
-	zoomToggle.addEventListener('click', function () {
-		if (!playing()) return;
-		syncZoom(); zoomPanel.hidden = !zoomPanel.hidden;
-		zoomToggle.setAttribute('aria-expanded', String(!zoomPanel.hidden));
-	}, listenerOptions);
-	zoomSlider.addEventListener('input', function () {
-		if (!playing()) return;
-		presentation.setZoom(zoomSlider.valueAsNumber); syncZoom();
-	}, listenerOptions);
-	element('zoom-reset').addEventListener('click', function () {
-		if (!playing()) return;
-		presentation.resetZoom(); syncZoom();
-	}, listenerOptions);
-	container.addEventListener('pointerdown', function (event) {
-		if (event.target instanceof Node && !element('touch-zoom').contains(event.target)) closeZoom();
-	}, listenerOptions);
 	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.mission-bar, .left-instruments, .weapon-console, .touch-drive-cluster, .touch-fire-cluster, #training-guide, #escape-guide')];
 	let hudObstructions: ScreenRect[] = [];
 	const refreshHudObstructions = function () {
@@ -195,8 +171,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
 	const companyNavigationReady = function () { return companyOpen() && !navigation.transitioning && editor.slot === null && !campaignConflict && !contextLost; };
 	let lastSoundState = '';
-	const resetInput = function () { acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); touchFacing.clear(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
+	const resetInput = function () { touchZoom.reset(); acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); touchFacing.clear(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const playing = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
+	const touchZoom = mountTouchZoom(element('zoom-hold'), element('zoom-panel'), element('zoom-value'), element('zoom-knob'), abort.signal, playing, presentation);
 	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing, element('touch-cruise'), element('touch-drive-hint'));
 	const touchContacts = function () {
 		const rect = canvas.getBoundingClientRect();
@@ -245,7 +222,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const setInputMode = function (value: typeof inputMode) {
 		const touchLayout = value === 'touch' || value === 'keyboard' && profile.settings.touchControls;
 		if (container.classList.contains('touch-enabled') === touchLayout && inputMode === value && container.dataset['input'] === value && container.dataset['promptDevice'] === promptDevice() && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
-		if (!touchLayout) closeZoom();
+		if (!touchLayout) touchZoom.reset();
 		if (value !== 'touch') { touchTargeting.clear(); touchDrive.reset(); held.forEach(function (action, id) { if (action === 'touch-fire') held.delete(id); }); pending.delete('touch-fire'); }
 		if (container.classList.contains('touch-enabled') !== touchLayout) { held.clear(); pending.clear(); }
 		container.classList.toggle('touch-enabled', touchLayout);
@@ -294,7 +271,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		}
 		if (navigation.screen !== 'rig-bay') clearRigPreviews();
 		const modal = navigation.screen !== 'playing' || Boolean(navigation.auxiliary);
-		if (modal) closeZoom();
+		if (modal) touchZoom.reset();
 		container.classList.toggle('training-active', Boolean(training));
 		container.classList.toggle('menu-open', modal); container.dataset['screen'] = navigation.auxiliary ?? navigation.screen;
 		updateMenuHint();
@@ -710,8 +687,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let rigCodeInput: string[] = [];
 	window.addEventListener('keydown', function (event) {
 		if (rigTestEnabled && event.target instanceof Element && event.target.closest('#rig-test-panel')) return;
-		if (event.target instanceof Element && event.target.closest('#touch-zoom') && event.code !== 'Escape') return;
-		if (!zoomPanel.hidden && event.code === 'Escape') { event.preventDefault(); closeZoom(); zoomToggle.focus(); return; }
 		if (capture) rigCodeInput = [];
 		setInputMode('keyboard'); if (event.isTrusted) unlockSound();
 		if (capture && navigation.auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); if (event.code === 'Escape') { capture = undefined; renderMappings(); } else if (!event.repeat && validKey(event.code)) assignKey(event.code); return; }
@@ -802,7 +777,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	canvas.addEventListener('pointermove', updatePointer, listenerOptions);
 	canvas.addEventListener('wheel', function (event) {
 		if (!playing() || event.ctrlKey || event.metaKey) return;
-		event.preventDefault(); presentation.zoomWithWheel(event); syncZoom(); setInputMode('keyboard');
+		event.preventDefault(); presentation.zoomWithWheel(event); setInputMode('keyboard');
 	}, { ...listenerOptions, passive: false });
 	// Keep native long-press menus, selection, and dragging off the game UI.
 	for (const type of ['contextmenu', 'selectstart', 'dragstart']) {

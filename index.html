@@ -25,7 +25,7 @@
 	<div id="hud" inert>
 		<header class="mission-bar">
 			<div class="mission-heading"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow" id="mission-name">LAST TRANSMISSION</span><b id="phase">01 / FIRST CONTACT</b><span id="status">Protect Relay 09</span></div></div>
-			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><div id="touch-zoom" class="touch-zoom"><button id="zoom-toggle" aria-expanded="false" aria-controls="zoom-panel">ZOOM</button><div id="zoom-panel" class="zoom-panel" hidden><label for="camera-zoom">CAMERA <output id="zoom-value" for="camera-zoom">1.0×</output></label><div class="zoom-range"><span>−</span><input id="camera-zoom" type="range" min="0.5" max="2.5" step="0.05" value="1" aria-label="Camera zoom"><span>+</span></div><button id="zoom-reset">RESET</button></div></div><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="pause">PAUSE <kbd></kbd></button></div>
+			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="pause">PAUSE <kbd></kbd></button></div>
 		</header>
 		<div id="training-guide" class="training-guide" hidden><span id="training-progress" class="eyebrow"></span><b id="training-title"></b><p id="training-copy"></p><small>SAFE TRAINING · PAUSE TO EXIT</small></div>
 		<div id="message" class="field-message" role="status" aria-live="polite"></div>
@@ -48,6 +48,7 @@
 		<div id="pilot-hint" class="pilot-hint"><span id="hint-copy"></span><button id="dismiss-hint" aria-label="Dismiss piloting tip">×</button></div>
 		<div id="touch-lock-marker" hidden><span>TRACKING</span></div>
 		<nav id="touch" aria-label="Touch combat controls">
+			<div id="touch-zoom" class="touch-zoom"><div id="zoom-panel" class="zoom-panel" hidden><output id="zoom-value">1.0×</output><span class="zoom-plus">+</span><i class="zoom-track"></i><i id="zoom-knob"></i><span class="zoom-minus">−</span></div><button id="zoom-hold" aria-label="Hold and drag up to zoom in or down to zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7 10h6M10 7v6"/></svg><small>ZOOM</small></button></div>
 			<div class="touch-drive-cluster"><span class="touch-control-label">HEADING / SPEED</span><button id="touch-drive" aria-label="Drag toward a heading; push farther for speed; release to slow"><span class="touch-up">↑</span><span class="touch-down">↓</span><span class="touch-left">‹</span><span class="touch-right">›</span><i id="touch-drive-knob"></i></button><small id="touch-drive-hint">RELEASE TO SLOW</small><button id="touch-cruise" aria-pressed="false">CRUISE<small>OFF</small></button><button id="touch-stop" data-control="stop">STOP<small>NEUTRAL</small></button></div>
 			<div class="touch-fire-cluster"><span id="touch-target-status" class="touch-control-label">MANUAL AIM</span><button id="touch-nearest">NEAREST</button><button id="touch-next">NEXT</button><button id="touch-fire" data-control="touch-fire">FIRE<small>HOLD</small></button><button id="touch-coolant" data-control="coolant">VENT<small id="touch-coolant-value">2 LEFT</small></button></div>
 		</nav>

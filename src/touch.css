@@ -134,13 +134,18 @@
 	.touch-enabled .weapon-console #weapon-hint { display: none; }
 }
 
-/* Camera controls sit with the system tools, away from drive and fire. */
-.touch-zoom { display: none; position: relative; }
-.touch-enabled .touch-zoom { display: block; }
-.touch-enabled #zoom-toggle { min-height: 44px; }
-.zoom-panel { position: absolute; z-index: 5; top: calc(100% + 8px); right: 0; width: min(240px, calc(100vw - 40px)); padding: 12px; background: #10211ff5; border: 1px solid var(--border); box-shadow: 0 6px 20px #0008; }
-.zoom-panel label { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--paper); }
-.zoom-panel output { color: var(--cyan); }
-.zoom-range { display: flex; align-items: center; gap: 8px; }
-.zoom-range input { width: 100%; min-width: 0; height: 44px; padding: 0; accent-color: var(--cyan); touch-action: none; }
-.touch-enabled #zoom-reset { width: 100%; min-height: 44px; }
+/* Hold and drag zoom belongs to the combat overlay. */
+.touch-zoom { position: absolute; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 64px); width: 52px; height: 52px; transform: translateX(-50%); z-index: 3; }
+.touch-enabled #zoom-hold { position: absolute; inset: 0; width: 52px; height: 52px; min-height: 52px; padding: 0; border: 1px solid var(--cyan); border-radius: 50%; background: #10211ff5; color: var(--cyan); display: grid; align-content: center; justify-items: center; gap: 3px; cursor: ns-resize; }
+#zoom-hold svg { width: 17px; height: 17px; pointer-events: none; }
+#touch #zoom-hold small { font: 8px var(--mono); color: var(--cyan); pointer-events: none; }
+.touch-zoom:has(.zoom-panel:not([hidden])) #zoom-hold { opacity: 0; }
+.zoom-panel { position: absolute; top: -26px; left: 0; width: 52px; height: 104px; border: 1px solid var(--cyan); border-radius: 28px; background: #10211ff5; box-shadow: 0 5px 20px #0005; pointer-events: none; }
+.zoom-panel output { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 5px 8px; background: #10211ff5; border: 1px solid var(--border); color: var(--cyan); font: 11px var(--mono); white-space: nowrap; }
+.zoom-plus, .zoom-minus { position: absolute; left: 0; right: 0; text-align: center; color: var(--cyan); font: 15px var(--mono); }
+.zoom-plus { top: 3px; }.zoom-minus { bottom: 3px; }
+.zoom-track { position: absolute; left: 24px; top: 20px; bottom: 20px; width: 2px; background: #69897d; }
+#zoom-knob { position: absolute; left: 16px; top: 42px; width: 18px; height: 18px; border-radius: 50%; background: var(--cyan); }
+@media (orientation: portrait) {
+	.touch-zoom { left: calc(50% + 26px); bottom: calc(max(14px, env(safe-area-inset-bottom)) + 14px); }
+}
