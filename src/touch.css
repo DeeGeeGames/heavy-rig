@@ -66,28 +66,27 @@
 #fullscreen-status { position: absolute; top: 66px; right: 14px; z-index: 20; max-width: 230px; padding: 8px; background: #10211ff2; font: 11px/1.5 var(--mono); }
 #fullscreen-status:empty { display: none; }
 
-/* The renderer resize hook writes inline canvas dimensions. The portrait dock
-   owns its CSS height, including after fullscreen and orientation changes. */
+/* The portrait dock owns canvas height despite inline renderer dimensions.
+   Keep control geometry independent of browser chrome and fullscreen height. */
 @media (orientation: portrait) {
-	.touch-enabled:not(.menu-open) { --touch-dock: calc(296px + env(safe-area-inset-bottom)); }
+	.touch-enabled:not(.menu-open) { --touch-dock: calc(256px + env(safe-area-inset-bottom)); }
 	.touch-enabled:not(.menu-open) #battlefield, .touch-enabled:not(.menu-open) .world-labels { height: calc(100% - var(--touch-dock)) !important; }
 	.touch-enabled #touch { height: var(--touch-dock, 270px); background: #0c1b19f5; border-top: 1px solid #7e9c7a55; }
-	.touch-drive-cluster, .touch-fire-cluster { width: 150px; height: 204px; bottom: max(14px, env(safe-area-inset-bottom)); }
+	.touch-drive-cluster, .touch-fire-cluster { width: 138px; height: 182px; bottom: max(14px, env(safe-area-inset-bottom)); }
 	.touch-drive-cluster { left: max(16px, env(safe-area-inset-left)); }.touch-fire-cluster { right: max(16px, env(safe-area-inset-right)); }
-	.touch-enabled #touch-drive, .touch-enabled #touch-fire { width: 112px; height: 112px; top: 19px; }
-	.touch-drive-cluster>.touch-control-label, .touch-drive-cluster>small { width: 112px; }
-	.touch-drive-cluster>small { top: 137px; font-size: 7px; }
-	.touch-enabled #touch-stop { right: 10px; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
+	.touch-enabled #touch-drive, .touch-enabled #touch-fire { width: 104px; height: 104px; top: 19px; }
+	.touch-drive-cluster>.touch-control-label, .touch-drive-cluster>small { width: 104px; }
+	.touch-drive-cluster>small { top: 127px; font-size: 7px; }
+	.touch-enabled #touch-stop { right: 0; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
 	.touch-enabled #touch-coolant { left: auto; right: 0; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
 	.touch-enabled #touch-cruise { left: 0; right: auto; top: auto; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
-	.touch-enabled #touch-nearest { left: -26px; top: 8px; width: 48px; height: 48px; min-height: 48px; font-size: 9px; }
-	.touch-enabled #touch-next { left: -26px; top: 67px; width: 48px; height: 48px; min-height: 48px; }
+	.touch-enabled #touch-nearest { left: -28px; top: 8px; width: 48px; height: 48px; min-height: 48px; font-size: 9px; }
+	.touch-enabled #touch-next { left: -28px; top: 67px; width: 48px; height: 48px; min-height: 48px; }
 	.touch-fire-cluster>.touch-control-label { font-size: 7px; }
-	.touch-enabled .weapon-console { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 223px); left: 16px; right: 16px; max-width: none; width: auto; }
-	.touch-enabled .weapon-console-heading { float: left; width: 48px; padding: 10px 0; }
-	.touch-enabled .weapon-console-heading .eyebrow { font-size: 8px; letter-spacing: .5px; }.touch-enabled .weapon-console-heading .eyebrow::after { content: ' / ARM'; }
+	.touch-enabled .weapon-console { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 197px); left: 16px; right: 16px; max-width: none; width: auto; }
+	.touch-enabled .weapon-console-heading { display: none; }
 	.touch-enabled #weapon-hint { display: none; }
-	.touch-enabled .weapon-bank { justify-content: flex-end; gap: 5px; }
+	.touch-enabled .weapon-bank { justify-content: center; gap: 5px; }
 	.touch-enabled .weapon { width: 54px; height: 48px; min-height: 48px; }
 	.touch-enabled .mission-bar { padding: max(14px, env(safe-area-inset-top)) 14px 10px; }
 	.touch-enabled .mission-heading { min-width: 0; }.touch-enabled .mission-heading>div { min-width: 0; }.touch-enabled .mission-heading .eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -106,9 +105,9 @@
 	.training-active.touch-enabled .training-guide b { font-size: 16px; line-height: 1.1; margin: 18px 0 0; }
 	.training-active.touch-enabled .training-guide p { font-size: 11px; line-height: 1.4; margin: 6px 0; }
 	.training-active.touch-enabled .left-instruments { top: 116px; }
-	.training-active.touch-enabled:not(.menu-open) :is(#battlefield, .world-labels) { position: absolute; top: 180px; height: calc(100% - var(--touch-dock) - 180px) !important; }
+	.training-active.touch-enabled:not(.menu-open) :is(#battlefield, .world-labels) { position: absolute; top: 160px; height: calc(100% - var(--touch-dock) - 160px) !important; }
 }
-@media (orientation: landscape) and (max-height: 450px) {
+@media (orientation: landscape) {
 	.touch-drive-cluster, .touch-fire-cluster { bottom: max(10px, env(safe-area-inset-bottom)); height: 162px; }
 	.touch-enabled #touch-drive, .touch-enabled #touch-fire { width: 112px; height: 112px; top: 20px; }
 	.touch-drive-cluster>small { top: 139px; width: 112px; font-size: 7px; }
@@ -125,18 +124,6 @@
 	.touch-enabled .field-message { top: 120px; }
 }
 
-@media (orientation: portrait) and (max-height: 700px) {
-	.touch-enabled:not(.menu-open) { --touch-dock: calc(256px + env(safe-area-inset-bottom)); }
-	.touch-drive-cluster, .touch-fire-cluster { height: 182px; width: 138px; }
-	.touch-enabled #touch-drive, .touch-enabled #touch-fire { width: 104px; height: 104px; }
-	.touch-drive-cluster>small { top: 127px; width: 104px; }
-	.touch-enabled #touch-stop { right: 0; }.touch-enabled #touch-next, .touch-enabled #touch-nearest { left: -28px; }
-	.touch-enabled .weapon-console { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 197px); }
-	.touch-enabled .weapon-console-heading { display: none; }
-	.touch-enabled .weapon-bank { justify-content: center; }
-	.training-active.touch-enabled .left-instruments { top: 116px; }
-	.training-active.touch-enabled:not(.menu-open) :is(#battlefield, .world-labels) { top: 160px; height: calc(100% - var(--touch-dock) - 160px) !important; }
-}
 @media (orientation: landscape) {
 	.training-active.touch-enabled .mission-heading { display: none; }
 	.training-active.touch-enabled .system-buttons { margin-left: auto; }
