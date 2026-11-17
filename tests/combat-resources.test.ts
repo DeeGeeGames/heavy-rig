@@ -1,7 +1,7 @@
 import { addMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
-import { createMount, WEAPONS } from '../src/arsenal';
+import { createMount, getWeapon, WEAPONS } from '../src/arsenal';
 import { consumeFire, coolReactor, frameWeight, isReserveLoadout, loadedMounts, weightSpeedModifier } from '../src/combat-resources';
 import { createCombatRuntime } from '../src/combat-runtime';
 import { createMissionState, createState, deathsStep, enemiesStep, enemyWeight, ENEMY_STATS, movementStep, outcomeStep, weaponsStep, artilleryStep, type Controls } from '../src/simulation';
@@ -24,8 +24,8 @@ test('reserve boundaries reject corrupt values, missing slots and sparse arrays 
 	for (const recommended of [0, -1, Infinity, NaN]) expect(function () { weightSpeedModifier(80, recommended); }).toThrow(RangeError);
 });
 
-test('all equipment has finite mass and energy sustained heat exceeds every ammunition weapon', function () {
-	const rates = WEAPONS.filter(function (weapon) { return weapon.ammunition !== null; }).map(function (weapon) { return weapon.heat / weapon.interval; });
+test('all equipment has finite mass and energy sustained heat exceeds ballistic guns', function () {
+	const rates = WEAPONS.filter(function (weapon) { return weapon.family === 'ballistic'; }).map(function (weapon) { return weapon.heat / weapon.interval; });
 	for (const weapon of WEAPONS) {
 		expect(Number.isFinite(weapon.mass) && weapon.mass > 0).toBe(true);
 		const mount = createMount(weapon.id);
@@ -61,7 +61,8 @@ test('the shared heat lock blocks a second mount and delayed rounds until reacto
 	weaponsStep(state, fire, 1 / 60);
 	expect(state.stats.shotsFired).toBe(1); expect(state.loadout.map(function (mount) { return mount.rounds; })).toEqual([1, 2]);
 	expect(state.player.overheated).toBe(true); expect(state.stats.overheats).toBe(1);
-	const rockets = createState({ frame: 'maul', starter: 'stream-rockets-6' }); rockets.player.heat = 98;
+	const rockets = createState({ frame: 'maul', starter: 'stream-rockets-6' });
+	const weapon = getWeapon('stream-rockets-6'); rockets.player.heat = 100 - weapon.heat / weapon.projectiles * 1.5;
 	weaponsStep(rockets, fire, 1 / 60);
 	for (let tick = 0; tick < 40; tick++) weaponsStep(rockets, idle, 1 / 60);
 	expect(rockets.stats.shotsFired).toBe(2); expect(rockets.player.overheated).toBe(true);

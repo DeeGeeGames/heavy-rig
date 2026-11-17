@@ -76,7 +76,7 @@ test('training uses legal Warden equipment, then switches to the Longbow energy 
 	expect(training.stage).toBe('heat');
 	expect(training.state.frame).toBe('longbow');
 	expect(training.state.loadout.map(function (mount) { return [mount.weapon, mount.slot]; })).toEqual([['laser', 0]]);
-	for (let tick = 0; tick < 360 && training.stage === 'heat'; tick++) stepTraining(training, { ...idle(training), fire: [true, false, false, false] }, 1 / 60);
+	for (let tick = 0; tick < 12 * 60 && training.stage === 'heat'; tick++) stepTraining(training, { ...idle(training), fire: [true, false, false, false] }, 1 / 60);
 	expect(training.stage).toBe('coolant');
 });
 

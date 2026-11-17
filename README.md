@@ -177,7 +177,7 @@ all-rigs cheat retain their existing equipment; the starter Kestrel stays fixed.
 | Area clearance | Eliminate every hostile across three deployment sites. |
 | Raid | Destroy three supply installations in any order; surviving defenders are optional. |
 | Recovery | Hold the marked cache zone for five uninterrupted seconds, then extract with its data. |
-| Target acquisition | Activate three beacons within three minutes. Hold each zone for three uninterrupted seconds; activated beacons stay active. The deadline stops once all three are active. |
+| Target acquisition | Activate three beacons within four minutes. Hold each zone for three uninterrupted seconds; activated beacons stay active. The deadline stops once all three are active. |
 
 Completing the objective opens extraction. Reach the marked landing zone and
 remain within 150 meters for three uninterrupted seconds. Combat and incoming
@@ -190,8 +190,10 @@ and fire guided missiles. Tanks advance slowly and track targets with a separate
 cannon turret. Their frontal hull armor rewards flanking, even while the turret
 turns. Aircraft remain targetable with every weapon family; aim at their visible
 bodies or lead their movement. Air contacts use hollow cyan radar markers. The
-priority command target remains a Siege mech. Seeded mission layouts and hostile
-counts are unchanged; each roster now includes ground and air vehicles.
+priority command target becomes a Siege mech on Heavy and higher contracts.
+Seeded mission layouts mix ground and air vehicles. Longer mech engagements use
+smaller mission rosters, and defense reinforcements leave more time after heavy
+contacts. Frontal armor still rewards flanking and siege cooling windows.
 
 Contract seeds generate bounded fields 4,200–4,800 by 3,000–3,600 meters. Drop
 side, objective and patrol sites, extraction point, and low terrain landmarks

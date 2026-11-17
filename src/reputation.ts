@@ -20,12 +20,12 @@ export interface MissionTierDefinition {
 	readonly opposition: string;
 }
 export const MISSION_TIERS: readonly MissionTierDefinition[] = [
-	{ tier: 1, name: 'Local', rank: 1, weaponTier: 0, standing: -100, reputation: 50, reward: 1, armor: .75, commanderHp: 420, objectiveHp: 450, assault: 8, patrol: 5, opposition: 'Light scouts and helicopters; a scout leads priority targets.' },
-	{ tier: 2, name: 'Frontier', rank: 3, weaponTier: 1, standing: -15, reputation: 90, reward: 1.6, armor: .9, commanderHp: 700, objectiveHp: 600, assault: 11, patrol: 7, opposition: 'Scout screens, striker frames, and helicopter support.' },
-	{ tier: 3, name: 'Veteran', rank: 6, weaponTier: 2, standing: 0, reputation: 150, reward: 2.5, armor: 1, commanderHp: 1000, objectiveHp: 800, assault: 14, patrol: 9, opposition: 'Mixed striker formations with tanks and missile VTOLs.' },
-	{ tier: 4, name: 'Heavy', rank: 9, weaponTier: 3, standing: 8, reputation: 230, reward: 3.8, armor: 1.15, commanderHp: 1400, objectiveHp: 1050, assault: 18, patrol: 12, opposition: 'Heavy tanks and siege frames with air support.' },
-	{ tier: 5, name: 'Elite', rank: 12, weaponTier: 4, standing: 20, reputation: 330, reward: 5.5, armor: 1.3, commanderHp: 1800, objectiveHp: 1350, assault: 22, patrol: 15, opposition: 'Armored siege formations with upgraded weapons.' },
-	{ tier: 6, name: 'Legendary', rank: 15, weaponTier: 5, standing: 35, reputation: 450, reward: 8, armor: 1.5, commanderHp: 2300, objectiveHp: 1700, assault: 27, patrol: 18, opposition: 'Massed siege frames, heavy armor, and exceptional weapons.' },
+	{ tier: 1, name: 'Local', rank: 1, weaponTier: 0, standing: -100, reputation: 50, reward: 1, armor: .75, commanderHp: 900, objectiveHp: 450, assault: 6, patrol: 4, opposition: 'Light scouts and helicopters; a scout leads priority targets.' },
+	{ tier: 2, name: 'Frontier', rank: 3, weaponTier: 1, standing: -15, reputation: 90, reward: 1.6, armor: .9, commanderHp: 1800, objectiveHp: 600, assault: 8, patrol: 5, opposition: 'Scout screens, striker frames, and helicopter support.' },
+	{ tier: 3, name: 'Veteran', rank: 6, weaponTier: 2, standing: 0, reputation: 150, reward: 2.5, armor: 1, commanderHp: 2800, objectiveHp: 800, assault: 10, patrol: 6, opposition: 'Mixed striker formations with tanks and missile VTOLs.' },
+	{ tier: 4, name: 'Heavy', rank: 9, weaponTier: 3, standing: 8, reputation: 230, reward: 3.8, armor: 1.15, commanderHp: 3800, objectiveHp: 1050, assault: 11, patrol: 7, opposition: 'Heavy tanks and siege frames with air support.' },
+	{ tier: 5, name: 'Elite', rank: 12, weaponTier: 4, standing: 20, reputation: 330, reward: 5.5, armor: 1.3, commanderHp: 4800, objectiveHp: 1350, assault: 12, patrol: 8, opposition: 'Armored siege formations with upgraded weapons.' },
+	{ tier: 6, name: 'Legendary', rank: 15, weaponTier: 5, standing: 35, reputation: 450, reward: 8, armor: 1.5, commanderHp: 6000, objectiveHp: 1700, assault: 13, patrol: 9, opposition: 'Massed siege frames, heavy armor, and exceptional weapons.' },
 ];
 export const isMissionTier = function (value: unknown): value is MissionTier {
 	return MISSION_TIERS.some(function (entry) { return entry.tier === value; });

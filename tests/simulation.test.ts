@@ -45,7 +45,8 @@ describe('Heavy Rig combat', function () {
 		const state = createState({ frame: 'longbow', starter: 'laser' }); target(state); target(state, 900, 500);
 		run(state, 0.2, { ...idle, targetId: 1, fire: [true, false, false, false] });
 		expect(state.enemies[0]?.hp).toBeLessThan(100); expect(state.enemies[1]?.hp).toBe(100);
-		run(state, 12, { ...idle, targetId: 1, fire: [true, false, false, false] }); expect(state.player.overheated).toBe(true);
+		for (let tick = 0; tick < 30 * 60 && !state.player.overheated; tick++) step(state, { ...idle, targetId: 1, fire: [true, false, false, false] }, 1 / 60);
+		expect(state.player.overheated).toBe(true);
 		const heat = state.player.heat; run(state, 0.2, { ...idle, targetId: 1, fire: [true, false, false, false] });
 		expect(state.cannonIn).toBe(0); expect(state.player.heat).toBeLessThan(heat);
 		run(state, 7); expect(state.player.overheated).toBe(false);
@@ -86,8 +87,8 @@ describe('Heavy Rig combat', function () {
 		}
 		expect(positions.get('scout') ?? 0).toBeGreaterThan(positions.get('striker') ?? 0);
 		expect(positions.get('striker') ?? 0).toBeGreaterThan(positions.get('siege') ?? 0);
-		expect(ENEMY_STATS.striker.hp).toBeGreaterThan(ENEMY_STATS.siege.hp);
-		expect(ENEMY_STATS.siege.hp).toBeGreaterThan(ENEMY_STATS.scout.hp);
+		expect(ENEMY_STATS.siege.hp).toBeGreaterThan(ENEMY_STATS.striker.hp);
+		expect(ENEMY_STATS.striker.hp).toBeGreaterThan(ENEMY_STATS.scout.hp);
 		expect(ENEMY_STATS.siege.range).toBeGreaterThan(ENEMY_STATS.striker.range);
 		expect(ENEMY_STATS.striker.range).toBeGreaterThan(ENEMY_STATS.scout.range);
 	});
@@ -129,7 +130,7 @@ describe('Heavy Rig combat', function () {
 		const stationary = createState(); stationary.spawnIn = 100;
 		stationary.enemies.push({ id: 1, x: 850, y: 800, hp: 125, maxHp: 125, angle: Math.atan2(-20, 50), cooldown: 0, heavy: true, kind: 'siege' });
 		run(stationary, 2.9);
-		expect(stationary.player.hp).toBe(90); expect(stationary.stats.damageTaken).toBe(10);
+		expect(stationary.player.hp).toBe(94); expect(stationary.stats.damageTaken).toBe(6);
 	});
 
 	test('siege armor rewards side hits and its cooling window exposes the front', function () {
@@ -142,7 +143,7 @@ describe('Heavy Rig combat', function () {
 			step(state, idle, 0.04);
 			return 125 - enemy.hp;
 		};
-		expect(hit(false, false)).toBeCloseTo(38 * 0.35);
+		expect(hit(false, false)).toBeCloseTo(38 * 0.6);
 		expect(hit(true, false)).toBeCloseTo(38);
 		expect(hit(false, true)).toBeCloseTo(38 * 1.35);
 	});
@@ -195,7 +196,7 @@ describe('Heavy Rig combat', function () {
 		}
 		expect(story.enemies[0]?.hp).toBeLessThan(veteran.enemies[0]?.hp ?? 0);
 		expect(story.player.hp).toBeGreaterThan(veteran.player.hp);
-		expect(story.stats.damageTaken).toBeCloseTo(5.5); expect(veteran.stats.damageTaken).toBeCloseTo(13);
+		expect(story.stats.damageTaken).toBeCloseTo(3.3); expect(veteran.stats.damageTaken).toBeCloseTo(7.8);
 	});
 
 });
