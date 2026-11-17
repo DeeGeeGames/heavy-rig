@@ -1,4 +1,5 @@
 import type { OrthographicCamera } from 'three';
+import { inFiringArc } from './torso-arc';
 import { getWeapon } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
@@ -59,8 +60,8 @@ const solutionFor = function (state: CombatStateView, target: Point, id: number,
 	const candidates: { point: Point; id: number }[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { point: enemy, id: enemy.id }; });
 	for (const { id, body } of missionStructures(state.mission)) if (body.hp > 0) candidates.push({ point: body, id });
 	const guided = weapons.some(function (weapon) {
-		if (weapon.kind !== 'missile' || range > weapon.range) return false;
-		const lock = candidates.filter(function (candidate) { return distance(candidate.point, state.player) <= weapon.range && (state.player.targetId === undefined || candidate.id === state.player.targetId); })
+		if (weapon.kind !== 'missile' || range > weapon.range || !inFiringArc(state.player, state.player.angle, target)) return false;
+		const lock = candidates.filter(function (candidate) { return inFiringArc(state.player, state.player.angle, candidate.point) && distance(candidate.point, state.player) <= weapon.range && (state.player.targetId === undefined || candidate.id === state.player.targetId); })
 			.reduce<{ point: Point; id: number } | undefined>(function (nearest, candidate) { return !nearest || distance(candidate.point, aim) < distance(nearest.point, aim) ? candidate : nearest; }, undefined);
 		return lock?.id === id;
 	});
@@ -181,16 +182,17 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const defense = getEnemyDefense(state, selected);
 		const role = isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
 		text(role, selected, elevation, '#ffe1aa', 10, 48);
-		text(`${Math.round(distance(selected, state.player))} M / ${solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selected, elevation, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
+		text(`${Math.round(distance(selected, state.player))} M / ${!inFiringArc(state.player, state.player.angle, selected) ? 'OUT OF ARC' : solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selected, elevation, solution.inRange ? '#ebc184' : '#98a8a7', 8, 48 + (minimumText + 7) / scale);
 	}
 	if (selectedFacility && selectedStructure) {
 		const anchor = at(selectedFacility, 45); ctx.strokeStyle = '#f3c37d'; ctx.lineWidth = 1.5;
 		bracket(ctx, anchor.x, anchor.y, 130 * scale, 110 * scale, 12);
 		const solution = solutionFor(state, selectedFacility, selectedStructure.id, aim);
-		text(`${Math.round(distance(selectedFacility, state.player))} M / ${solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selectedFacility, 30, '#ebc184', 10, 55);
+		text(`${Math.round(distance(selectedFacility, state.player))} M / ${!inFiringArc(state.player, state.player.angle, selectedFacility) ? 'OUT OF ARC' : solution.guided ? 'GUIDED LOCK' : solution.inRange ? 'IN RANGE' : 'OUT OF RANGE'}`, selectedFacility, 30, '#ebc184', 10, 55);
 	}
 	// A precise sight remains useful when aiming ahead of a moving contact.
 	const cursor = at(aim, 0);
+	if (!selected && !selectedFacility && !inFiringArc(state.player, state.player.angle, aim)) text('OUT OF ARC', aim, 0, '#ffd199', 10, 24);
 	ctx.strokeStyle = selected || selectedFacility ? '#f6c77c' : '#d9e5d1'; ctx.lineWidth = 1;
 	bracket(ctx, cursor.x, cursor.y, 15, 15, 4);
 	ctx.fillStyle = '#f1e9c7'; ctx.fillRect(cursor.x - 1, cursor.y - 1, 2, 2);
