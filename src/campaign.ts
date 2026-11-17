@@ -1,4 +1,5 @@
 import { companyRank, getMissionTier, isMissionTier, MAX_COMPANY_REPUTATION, MISSION_TIERS } from './reputation';
+import { ACQUISITION_SECONDS } from './missions';
 import type { Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
 import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, PLANETS, type UniverseState } from './universe';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
@@ -88,7 +89,7 @@ const contractCopy: Readonly<Record<MissionKind, { title: string; briefing: stri
 	assassination: { title: 'Cut the command link', briefing: 'Find and destroy the designated command frame. Supporting forces are optional targets. Leave the surface through the extraction zone.', reward: 1700 },
 	raid: { title: 'Sever the supply network', briefing: 'Destroy three marked supply installations in any order. Their defenders are optional. Return to extraction after all three are destroyed.', reward: 1700 },
 	recovery: { title: 'Recover the black box', briefing: 'Reach the marked cache and stay inside its zone for five uninterrupted seconds to recover the data. Fighting the guards is optional. Extract with the recovered data.', reward: 1500 },
-	acquisition: { title: 'Mark the strike corridor', briefing: 'Activate three targeting beacons within three minutes. Stay in each zone for three uninterrupted seconds; activated beacons remain active. Then return to extraction. Fighting defenders is optional.', reward: 1900 },
+	acquisition: { title: 'Mark the strike corridor', briefing: `Activate three targeting beacons within ${ACQUISITION_SECONDS / 60} minutes. Stay in each zone for three uninterrupted seconds; activated beacons remain active. Then return to extraction. Fighting defenders is optional.`, reward: 1900 },
 	clearance: { title: 'Sweep the basin', briefing: 'Eliminate every hostile patrol across the marked sector. Once the region is clear, return to the extraction zone.', reward: 1600 },
 };
 
@@ -208,8 +209,12 @@ const isResult = function (value: unknown): value is CampaignResult {
 };
 
 const sameContract = function (saved: Contract, generated: Contract): boolean {
+	// Recognize accepted v6 acquisition postings with the original three-minute briefing.
+	// The longer deadline must not invalidate an otherwise unchanged company save.
+	const sameBriefing = saved.briefing === generated.briefing || saved.kind === 'acquisition'
+		&& saved.briefing === generated.briefing.replace(`within ${ACQUISITION_SECONDS / 60} minutes.`, 'within three minutes.');
 	return saved.id === generated.id && saved.seed === generated.seed && saved.planetId === generated.planetId && saved.kind === generated.kind
-		&& saved.employer === generated.employer && saved.opponent === generated.opponent && saved.title === generated.title && saved.briefing === generated.briefing
+		&& saved.employer === generated.employer && saved.opponent === generated.opponent && saved.title === generated.title && sameBriefing
 		&& saved.reward === generated.reward && saved.favor === generated.favor && saved.hostility === generated.hostility
 		&& saved.tier === generated.tier && saved.requiredReputation === generated.requiredReputation;
 };

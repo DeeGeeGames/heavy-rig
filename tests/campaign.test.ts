@@ -186,3 +186,23 @@ test('new mission contracts restore and settle their payment exactly once', func
 		expect(settleContract(settled, true)).toBe(settled);
 	}
 });
+
+test('accepted acquisition saves survive the extended deadline without accepting altered contract terms', function () {
+	for (const boardVersion of [1, 2] as const) {
+		const campaign = { ...createCampaign(317), credits: 12500 };
+		campaign.universe = { ...campaign.universe, boardVersion };
+		const accepted = acceptContract(campaign, posted(campaign, 'acquisition').id);
+		const contract = accepted.active;
+		if (!contract) throw new Error('Missing accepted acquisition');
+		const legacy = { ...accepted, active: { ...contract, briefing: contract.briefing.replace('within 4 minutes.', 'within three minutes.') } };
+		expect(roundTrip(legacy)).toEqual(accepted);
+		const settled = settleContract(roundTrip(legacy), true);
+		expect(settled.credits).toBe(campaign.credits + contract.reward);
+		expect(settleContract(settled, true)).toBe(settled);
+		for (const active of [{ ...legacy.active, reward: contract.reward + 1 }, { ...legacy.active, briefing: `${legacy.active.briefing} Changed terms.` }]) {
+			const rejected = roundTrip({ ...legacy, active });
+			expect(rejected.active).toBeUndefined();
+			expect(rejected.credits).toBe(0);
+		}
+	}
+});

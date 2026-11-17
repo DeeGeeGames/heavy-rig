@@ -10,7 +10,7 @@ export const FACILITY_TARGET_ID = -1;
 export const CAPTURE_RADIUS = 100;
 export const RECOVERY_SECONDS = 5;
 export const BEACON_SECONDS = 3;
-export const ACQUISITION_SECONDS = 180;
+export const ACQUISITION_SECONDS = 240;
 
 // Negative identities never collide with enemy IDs; demolition keeps its old ID.
 export const missionStructures = function (mission: MissionRuntime | undefined): { id: number; body: MissionStructure }[] {
