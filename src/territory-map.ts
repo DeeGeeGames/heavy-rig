@@ -66,7 +66,7 @@ export const focusTerritoryMap = function (root: HTMLElement, planetId: PlanetId
 	view.pointers.clear();
 	updateTransform(root);
 };
-export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, select: (id: PlanetId) => void, details: TemplateResult) {
+export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, select: (id: PlanetId) => void, details: TemplateResult, storyPlanets: readonly PlanetId[]) {
 	const paths = territoryPaths(campaign); const selected = getPlanet(destination); const current = getPlanet(campaign.planetId);
 	const view = viewFor(root);
 	let observer: ResizeObserver | undefined;
@@ -138,8 +138,9 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 				<span class="unclaimed-label">UNCLAIMED SPACE</span>
 				${PLANETS.map(function (world) {
 					const intel = getSystemIntel(campaign, world.id); const faction = intel.owner ? getFaction(intel.owner) : undefined;
-					const label = world.id === destination || world.id === campaign.planetId || !world.id.startsWith('system-');
-					return html`<button class="system-marker ${intel.conflict ? 'conflict-system' : ''} ${world.id === campaign.planetId ? 'current-system' : ''}" style="left:${world.x}%;top:${world.y}%;--system-color:${faction?.color ?? '#7c96a0'}" data-system=${world.id} aria-label="${world.name} · ${faction?.name ?? 'Unclaimed'} · ${intel.conflict ? 'Conflict zone' : 'No conflict'}" aria-pressed=${world.id === destination} ?disabled=${Boolean(campaign.active)} title="${world.name} · ${intel.conflict ? 'CONFLICT ZONE' : faction?.shortName ?? 'UNCLAIMED'}" @click=${function (event: MouseEvent) { if (event.detail > 0 && view.suppressClick) return; select(world.id); const popover = root.querySelector<HTMLElement>('.planet-popover'); if (popover) { popover.showPopover(); positionPlanetPopover(root); } }}><i></i>${label ? html`<span>${world.name}${world.id === campaign.planetId ? html`<small>WAYFARER</small>` : ''}</span>` : ''}</button>`;
+					const story = storyPlanets.includes(world.id);
+					const label = story || world.id === destination || world.id === campaign.planetId || !world.id.startsWith('system-');
+					return html`<button class="system-marker ${intel.conflict ? 'conflict-system' : ''} ${world.id === campaign.planetId ? 'current-system' : ''} ${story ? 'story-system' : ''}" style="left:${world.x}%;top:${world.y}%;--system-color:${faction?.color ?? '#7c96a0'}" data-system=${world.id} aria-label="${world.name} · ${faction?.name ?? 'Unclaimed'} · ${intel.conflict ? 'Conflict zone' : 'No conflict'}${story ? ' · Campaign signal' : ''}" aria-pressed=${world.id === destination} ?disabled=${Boolean(campaign.active)} title="${world.name} · ${story ? 'CAMPAIGN SIGNAL' : intel.conflict ? 'CONFLICT ZONE' : faction?.shortName ?? 'UNCLAIMED'}" @click=${function (event: MouseEvent) { if (event.detail > 0 && view.suppressClick) return; select(world.id); const popover = root.querySelector<HTMLElement>('.planet-popover'); if (popover) { popover.showPopover(); positionPlanetPopover(root); } }}><i></i>${label ? html`<span>${world.name}${story ? html`<small>◆ SIGNAL</small>` : world.id === campaign.planetId ? html`<small>WAYFARER</small>` : ''}</span>` : ''}</button>`;
 				})}
 			</div>
 		</div>

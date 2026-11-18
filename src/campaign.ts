@@ -1,6 +1,7 @@
 import { companyRank, getMissionTier, isMissionTier, MAX_COMPANY_REPUTATION, MISSION_TIERS } from './reputation';
 import { ACQUISITION_SECONDS } from './missions';
 import type { Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
+import { createOpeningProgress, getAuthoredStep, getChainStatus, isAuthoredContract, parseChainProgress, type ChainProgress } from './contract-chains';
 import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, PLANETS, type UniverseState } from './universe';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
 
@@ -36,6 +37,8 @@ export interface CampaignResult {
 export interface Campaign extends CompanyState {
 	version: 6;
 	introComplete: boolean;
+	mode?: 'campaign' | 'career';
+	story?: ChainProgress;
 	universe: UniverseState;
 	seed: number;
 	planetId: PlanetId;
@@ -67,10 +70,12 @@ const freshSeed = function () {
 	try { return crypto.getRandomValues(new Uint32Array(1))[0] ?? 1; } catch { return Date.now() >>> 0; }
 };
 
-export const createCampaign = function (seed?: number): Campaign {
+export const createCampaign = function (seed?: number, mode?: Campaign['mode']): Campaign {
 	return {
 		...createCompany(), version: 6, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
 		credits: 0, companyReputation: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
+		...(mode ? { mode, introComplete: mode === 'career' } : {}),
+		...(mode === 'campaign' ? { story: createOpeningProgress() } : {}),
 	};
 };
 
@@ -145,19 +150,31 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 	});
 };
 
+export const getTransmission = function (campaign: Campaign) {
+	return getChainStatus(campaign.mode === 'campaign' && campaign.introComplete ? campaign.story : undefined);
+};
+
+const findPosting = function (campaign: Campaign, id: string): Contract | undefined {
+	const story = getTransmission(campaign)?.offers.find(function (step) {
+		return step.contract.id === id && step.contract.planetId === campaign.planetId;
+	});
+	return story ? { ...story.contract } : getContracts(campaign).find(function (posted) { return posted.id === id; });
+};
+
 export const canAcceptContract = function (campaign: Campaign, contract: Contract): boolean {
 	return !campaign.active && !campaign.deployed && campaign.boardRevision < MAX_COUNT && campaign.day < MAX_DAY
 		&& companyRank(campaign) >= getMissionTier(contract.tier).rank
 		&& contract.planetId === campaign.planetId && campaign.reputation[contract.employer] >= contract.requiredReputation
-		&& getContracts(campaign).some(function (posted) { return posted.id === contract.id; });
+		&& Boolean(findPosting(campaign, contract.id));
 };
 
 export const acceptContract = function (campaign: Campaign, contractId: string): Campaign {
-	const contract = getContracts(campaign).find(function (posted) { return posted.id === contractId; });
+	const contract = findPosting(campaign, contractId);
 	if (!contract || !canAcceptContract(campaign, contract)) return campaign;
 	return {
 		...campaign, universe: { ...campaign.universe, boardDay: campaign.day }, active: contract,
 		reputation: { ...campaign.reputation, [contract.opponent]: boundedReputation(campaign.reputation[contract.opponent] - contract.hostility) },
+		...(campaign.story && isAuthoredContract(contract) ? { story: { ...campaign.story, committed: contract.id } } : {}),
 	};
 };
 
@@ -174,10 +191,12 @@ const finishContract = function (campaign: Campaign, won: boolean, aborted: bool
 	const reputation = { ...campaign.reputation, [contract.employer]: boundedReputation(campaign.reputation[contract.employer] + favor) };
 	const companyReputation = won ? Math.min(getMissionTier(contract.tier).reputation, MAX_COMPANY_REPUTATION - campaign.companyReputation) : 0;
 	const day = campaign.day + 1;
+	const story = campaign.story;
 	return advanceDays({
 		...campaign, universe: { ...applyMissionInfluence(campaign.universe, contract.planetId, contract.employer, contract.opponent, won), boardDay: day, boardVersion: 2 }, active: undefined, deployed: undefined, reputation, boardReputation: { ...reputation }, boardRevision: campaign.boardRevision + 1,
 		credits: campaign.credits + payout, companyReputation: campaign.companyReputation + companyReputation, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
 		lastResult: { contract, won, aborted, payout, favor, companyReputation, day },
+		...(won && story?.committed === contract.id ? { story: { id: story.id, completed: [...story.completed, contract.id] } } : {}),
 	}, 1);
 };
 
@@ -213,8 +232,10 @@ const sameContract = function (saved: Contract, generated: Contract): boolean {
 	// The longer deadline must not invalidate an otherwise unchanged company save.
 	const sameBriefing = saved.briefing === generated.briefing || saved.kind === 'acquisition'
 		&& saved.briefing === generated.briefing.replace(`within ${ACQUISITION_SECONDS / 60} minutes.`, 'within three minutes.');
+	// Authored copy can be revised while a pilot still has the original terms.
+	const sameCopy = isAuthoredContract(generated) || saved.title === generated.title && sameBriefing;
 	return saved.id === generated.id && saved.seed === generated.seed && saved.planetId === generated.planetId && saved.kind === generated.kind
-		&& saved.employer === generated.employer && saved.opponent === generated.opponent && saved.title === generated.title && sameBriefing
+		&& saved.employer === generated.employer && saved.opponent === generated.opponent && sameCopy
 		&& saved.reward === generated.reward && saved.favor === generated.favor && saved.hostility === generated.hostility
 		&& saved.tier === generated.tier && saved.requiredReputation === generated.requiredReputation;
 };
@@ -247,12 +268,27 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		if (!universe) return createCampaign();
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
+		// An unmarked v6 save could be either starting mode. Its original
+		// escape flag and ordinary contracts already describe how it resumes.
+		const mode = value['mode'];
+		if (mode !== undefined && mode !== 'campaign' && mode !== 'career') return createCampaign();
+		const story = parseChainProgress(value['story']);
+		if (mode === 'campaign') {
+			if (!story || story.completed.length > value['completed'] || !value['introComplete'] && (story.completed.length > 0 || story.committed)) return createCampaign();
+		} else if (value['story'] !== undefined) return createCampaign();
 		const campaign: Campaign = {
 			...company, version: 6, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], companyReputation: value['companyReputation'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
+			...(mode ? { mode } : {}), ...(story ? { story } : {}),
 		};
-		if (campaign.lastResult && campaign.lastResult.day > campaign.day) return createCampaign();
+		const result = campaign.lastResult;
+		if (result && result.day > campaign.day) return createCampaign();
+		if (result && isAuthoredContract(result.contract)) {
+			const step = getAuthoredStep(story, result.contract);
+			const reported = result.won ? story?.completed.at(-1) : story?.committed;
+			if (!step || reported !== result.contract.id || !sameContract(result.contract, step.contract)) return createCampaign();
+		}
 		if (!FACTION_IDS.every(function (id) {
 			const expected = campaign.active?.opponent === id ? boundedReputation(campaign.boardReputation[id] - campaign.active.hostility) : campaign.boardReputation[id];
 			return campaign.reputation[id] === expected;
@@ -260,7 +296,8 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		const active = campaign.active;
 		if (active) {
 			if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT) return createCampaign();
-			const generated = getContracts(campaign).find(function (contract) { return contract.id === active.id; });
+			if (isAuthoredContract(active) && story?.committed !== active.id) return createCampaign();
+			const generated = findPosting(campaign, active.id);
 			if (!generated || !sameContract(active, generated) || companyRank(campaign) < getMissionTier(active.tier).rank || campaign.reputation[active.employer] < active.requiredReputation) return createCampaign();
 			campaign.active = generated;
 		}

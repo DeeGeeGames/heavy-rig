@@ -6,10 +6,10 @@ refits, accept faction contracts, and extract from surface missions. Persistent
 throttle and independent turret tracking remain the combat core.
 
 A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,
-its Rattler machine gun fitted in mount 1. Its second machine-gun hardpoint is empty.
+with a Rattler machine gun fitted to each of its two mounts.
 Campaign missions and a separate Frame Training simulator are the playable modes.
 
-New companies begin with a black-screen prologue, a choice of Kestrel or Longbow,
+New Campaign begins with a black-screen prologue, a choice of Kestrel or Longbow,
 and a short escape from the northwest Rig Bay to a southeast evacuation point.
 Each narrative line types at ten characters per second with terminal chirps, holds
 for two seconds, and fades over one second. A first-input prompt enables browser
@@ -21,8 +21,15 @@ The borrowed rig, combat damage, and kills do not carry into the company.
 Completion is saved per company; completed v6 companies bypass the prologue. REPLAY ESCAPE
 on the title menu repeats the full sequence without changing company progress.
 
-Completing the escape boards the Wayfarer directly at the company bridge and
-contract board. On later launches, the game opens on a console-style title menu
+Completing a new Campaign escape opens a Bridge transmission. Its optional
+contract chain, **The Cinder Signal**, offers a recorder recovery on Cinder.
+Extract with the recorder to receive competing defense and demolition offers.
+Accepting one commits the company to that contact. You can repair, take ordinary
+contracts, and return to the signal later. A failed or aborted story sortie
+leaves the same job available to retry. New Career opens directly on the Starmap.
+Existing companies saved before this feature keep their original starting flow.
+
+On later launches, the game opens on a console-style title menu
 with a rendered Wayfarer hangar. Choose **Continue Company** to board the ship
 with existing progress. Frame Training, Settings, and the Pilot Handbook
 are also available here. Up/down or Tab selects a menu item; Enter confirms.
@@ -120,7 +127,8 @@ Calendar pressure is bounded and does not erase mission influence. Repeated wins
 can change system control or quiet a front; new conflicts can open elsewhere.
 These are initial campaign rules, with balance still requiring playtesting.
 
-Only conflict zones post new missions. The two factions with competing local
+Only conflict zones post ordinary contracts. Story transmissions can offer work
+in quiet systems. The two factions with competing local
 influence supply employers and opponents; briefings describe their settlement,
 industrial, or relay interests. Quiet interiors and unclaimed systems away from
 a contested front have no military work. Accepted contracts keep their factions,

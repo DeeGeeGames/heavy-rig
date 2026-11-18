@@ -24,6 +24,8 @@
 .system-marker.conflict-system>i:after { content: ''; position: absolute; width: 3px; height: 3px; background: #fff0d0; border-radius: 50%; left: 5px; top: 5px; }
 .system-marker>span { position: absolute; top: 21px; left: 50%; transform: translateX(-50%); font: 10px var(--mono); color: #d4e3df; white-space: nowrap; text-shadow: 0 1px 4px #000; pointer-events: none; }
 .system-marker small { display: block; color: var(--amber); font-size: 7px; letter-spacing: 1px; margin-top: 2px; }
+.system-marker.story-system small, .workspace .system-transmission { color: var(--cyan); }
+.workspace .system-transmission { font: 11px/1.4 var(--mono); letter-spacing: .5px; }
 .workspace .system-marker[aria-pressed='true'] { outline: 1px solid var(--amber); outline-offset: 1px; border-radius: 50%; background: #f3b35b22; z-index: 2; }
 .workspace .system-marker.current-system>i { background: var(--amber); }
 .workspace .system-marker:focus { z-index: 3; border-radius: 50%; box-shadow: none; }
