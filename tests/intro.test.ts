@@ -17,14 +17,14 @@ test('narrative finishes typing before its full hold and fade, then starts the n
 	expect(narrativeFrame(INTRO_LINES, duration + 0.01).done).toBe(true);
 });
 
-test('v5 companies preserve escape completion and earlier campaign versions are ignored', function () {
+test('current companies preserve escape completion and earlier campaign versions are ignored', function () {
 	const fresh = createCampaign(123);
 	expect(fresh.introComplete).toBe(false);
 	expect(parseCampaign(JSON.stringify(fresh)).introComplete).toBe(false);
 	const completed = { ...fresh, introComplete: true };
 	expect(parseCampaign(JSON.stringify(completed))).toEqual(completed);
 	const oldCompany = parseCampaign(JSON.stringify({ ...completed, version: 3, credits: 9000 }));
-	expect(oldCompany.version).toBe(6);
+	expect(oldCompany.version).toBe(fresh.version);
 	expect(oldCompany.introComplete).toBe(false);
 	expect(oldCompany.credits).toBe(0);
 });

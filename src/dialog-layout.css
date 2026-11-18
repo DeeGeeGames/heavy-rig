@@ -40,6 +40,14 @@
 #game .dialog-body .result-stats { padding: 15px 0; }
 #game .dialog-body .result-stats small { font-size: 8px; }
 #game .dialog-body .report-upgrades { font: 11px/1.6 var(--mono); }
+.sortie-rig { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 12px; align-items: center; border-inline-start: 2px solid var(--cyan); background: #0b2023; padding: 6px 9px; }
+.sortie-rig strong, .sortie-rig small { display: block; }
+.sortie-rig strong { font: 16px/1.1 var(--display); letter-spacing: .04em; text-transform: uppercase; }
+.sortie-rig small, .sortie-rig output, .sortie-rig button { font: 10px/1.35 var(--mono); }
+.sortie-rig small { color: var(--muted); }
+.sortie-rig[data-condition='disabled'] { border-color: var(--danger); }
+.sortie-rig[data-condition='damaged'] { border-color: var(--amber); }
+.sortie-rig button { padding: 7px 8px; }
 #game.couch-ui .dialog-body p, #game.couch-ui .manual-binding span { font-size: 17px; }
 #game.couch-ui .manual-binding b, #game.couch-ui .dialog-tabs button, #game.couch-ui .dialog-pager button { font-size: 13px; }
 #game.couch-ui .dialog-body .toggle-setting, #game.couch-ui .dialog-body .slider-setting { font-size: 13px; }

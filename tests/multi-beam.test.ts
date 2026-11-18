@@ -4,7 +4,8 @@ import { Mesh, Scene, Vector3, type Object3D } from 'three';
 import { getWeapon } from '../src/arsenal';
 import { loadedMounts } from '../src/combat-resources';
 import { createCombatRuntime } from '../src/combat-runtime';
-import { createState, weaponsStep, type Controls } from '../src/simulation';
+import { createCampaign, getContracts } from '../src/campaign';
+import { createMissionState, createState, weaponsStep, type Controls } from '../src/simulation';
 import { createWorldObjects } from '../src/world-3d';
 
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 1100, y: 780 }, fire: [false, false, false, false], coolant: false };
@@ -88,4 +89,25 @@ test('beam rendering follows each exact muzzle slot and clears every beam on res
 		for (const name of ['laser', 'laser-1', 'laser-2', 'laser-3']) expect(scene.getObjectByName(name)?.visible).toBe(false);
 	} finally { world.dispose(); world.dispose(); }
 	expect(scene.children).toHaveLength(0);
+});
+
+test('a squadmate firing the same laser slot as the player retains its own beam origin', function () {
+	const contract = getContracts(createCampaign(12))[0];
+	if (!contract) throw new Error('Missing contract');
+	const state = createMissionState(contract, { squadmates: [{ pilotId: 'flint', callsign: 'Flint', specialty: 'marksman', frameId: 'warden-b', loadout: [null, null, 'laser', null], reserves: [0, 0, 0, 0], integrity: 100 }] });
+	const scene = new Scene(); const world = createWorldObjects(scene);
+	state.beams = [
+		{ slot: 2, x: 1150, y: 500, elevation: 40, origin: { x: 940, y: 470, elevation: 62 }, squadmateId: 'flint' },
+		{ slot: 2, x: 1100, y: 500, elevation: 42, origin: { x: 930, y: 600, elevation: 54 } },
+	];
+	try {
+		world.update(state); scene.updateMatrixWorld(true);
+		const playerBeam = scene.getObjectByName('laser-2'); const mateBeam = scene.getObjectByName('squad-laser-flint-2');
+		expect(playerBeam?.visible).toBe(true); expect(mateBeam?.visible).toBe(true);
+		expect(beamEnds(playerBeam)[0].distanceTo(new Vector3(930, 54, 600))).toBeLessThan(1e-6);
+		expect(beamEnds(mateBeam)[0].distanceTo(new Vector3(940, 62, 470))).toBeLessThan(1e-6);
+		world.update(createState());
+		expect(scene.getObjectByName('squad-laser-flint-2')).toBeUndefined();
+		expect(playerBeam?.visible).toBe(false);
+	} finally { world.dispose(); }
 });

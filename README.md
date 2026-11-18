@@ -18,7 +18,7 @@ Controls appear during live play; alarms sound through the escape, whose map now
 covers three times the original area with six guards along the route. Hold the
 green evacuation zone for three seconds to finish.
 The borrowed rig, combat damage, and kills do not carry into the company.
-Completion is saved per company; completed v6 companies bypass the prologue. REPLAY ESCAPE
+Completion is saved per company. REPLAY ESCAPE
 on the title menu repeats the full sequence without changing company progress.
 
 Completing a new Campaign escape opens a Bridge transmission. Its optional
@@ -27,7 +27,6 @@ Extract with the recorder to receive competing defense and demolition offers.
 Accepting one commits the company to that contact. You can repair, take ordinary
 contracts, and return to the signal later. A failed or aborted story sortie
 leaves the same job available to retry. New Career opens directly on the Starmap.
-Existing companies saved before this feature keep their original starting flow.
 
 On later launches, the game opens on a console-style title menu
 with a rendered Wayfarer hangar. Choose **Continue Company** to board the ship
@@ -40,13 +39,15 @@ from the title can return directly to it.
 
 ## Company operations
 
-The ship has four departments, with company funds and the calendar visible
-throughout:
+Company funds and the calendar are visible across the ship:
 
 | Screen | Purpose |
 | --- | --- |
-| Contracts | Plot travel, review faction standings, accept work, and inspect the mission briefing. |
-| Mech Bay | Select an owned frame, inspect its condition, plan chassis-specific weapon hardpoints, and deploy. |
+| Starmap | Inspect systems and plot travel. |
+| Contracts | Review faction standings, inspect mission briefings, and accept work. |
+| Deploy | Assign the commander and up to three squadmates to ready rigs, then launch. |
+| Pilots | Inspect the roster and hire or dismiss squadmates. |
+| Mech Bay | Inspect and refit owned rigs and see their pilot assignments. |
 | Market | Spend contract earnings on weapon copies or additional frames with complete reputation-scaled weapon packages included. |
 | Engineering | Schedule repairs, inspect or cancel work orders, and advance calendar days. |
 
@@ -58,6 +59,16 @@ keys move focus; longer content uses visible Previous/Next page buttons.
 Pages remember their focus and refit drafts survive department changes.
 Purchases, work orders, calendar advances, travel, contract acceptance, and
 deployment show a confirmation with their cost or consequences first.
+
+Accept a contract to open Deploy. The commander is the only player-controlled
+pilot. Hire squadmates for 500 CR each in Pilots, then assign them available rigs
+in one lineup. Bench an unused pilot to free their rig. The lineup persists
+between contracts. Squadmates fight alongside the commander, can complete
+objectives, and regroup at extraction. Any operating rig can hold the pickup
+zone for three seconds. The dropship leaves once the hold is complete and the
+commander is inside the zone. Stragglers and disabled rigs are recovered with
+their recorded damage. A disabled commander ends the sortie, and all pilots
+survive. The debrief lists each deployed rig and links damaged rigs to repairs.
 
 Each variant can be purchased once; multiple variants of a chassis can be owned
 together. Every market frame arrives with all hardpoints armed at the company’s unlocked quality and standard
@@ -208,19 +219,16 @@ side, objective and patrol sites, extraction point, and low terrain landmarks
 vary. Scenery is traversable; it provides no collision cover. Radar and edge
 markers show actual map bounds, the active objective, and extraction.
 
-A sortie uses the selected frame's saved integrity and installed weapons. There
+A sortie uses each assigned frame's saved integrity and installed weapons. There
 are **no random weapon drafts, combat repair/coolant pickups, or field-service
-upgrades**. Every deployment carries two coolant charges. Cooling and venting
+upgrades**. Every rig carries two coolant charges. Cooling and venting
 manage reactor heat; neither repairs frame damage. Difficulty settings affect
 the next deployment's hostile armor and damage.
 
-Damage and spent coolant are checkpointed during combat. Aborting retains the
-frame and equipment at their current condition and takes one recovery day.
-Reloading during a deployment recovers the frame, aborts the contract, preserves
-saved damage, and advances that same recovery day once. Reload does not resume
-the battlefield or grant a fresh frame. Accepted contracts that have not yet
-deployed survive reload without a second acceptance penalty. Success pays once;
-subsequent reloads do not duplicate rewards.
+Damage and the commander's spent coolant are checkpointed during combat. A live
+abort or reload recovers the squad with its recorded damage and advances one
+recovery day. Accepted contracts that are awaiting deployment survive reload
+with their original terms. Successful extraction pays once.
 
 ## Frames and variants
 
@@ -507,8 +515,8 @@ DOM interfaces with responsive layouts and visible focus and selection states.
 `main.ts` composes one ECSpresso application world for combat, screens, input
 handoff, and renderer integration. Its single frame driver calls `world.update`;
 ECSpresso owns the 60 Hz accumulator. `combat-runtime.ts` owns live player
-capabilities, enemies, ordnance, spawn warnings, facilities, effects, and wrecks.
-Explicit system references preserve cooling → movement → weapons → spawning →
+capabilities, squadmates, enemies, ordnance, spawn warnings, facilities, effects,
+and wrecks. Explicit system references preserve cooling → movement → weapons → squadmates → spawning →
 enemy attacks → artillery → projectiles → deaths → effects → mission outcome.
 New ordnance is visible to later systems in the same tick, and fatal damage
 still takes precedence over extraction. Training runs those same systems with
@@ -525,8 +533,7 @@ overlay stack. Pause and auxiliary dialogs retain the underlying combat entities
 simulation systems stop while browser input and permitted presentation continue.
 Transitions clear pending input and require controller neutral before resuming.
 Save conflicts remain locked to reload. Company transactions, save validation,
-and serialization remain ordinary domain functions, using the fresh v6 company
-and unchanged v1 preference formats. Mission replacement removes the previous entities;
+and serialization remain ordinary domain functions. Mission replacement removes the previous entities;
 their view components release models. The application cleanup owner stops
 listeners and adapters, disposes the shared world, then releases its supplied
 renderer, including after partial initialization failure.
@@ -656,11 +663,9 @@ The Pages workflow deploys `master` after the complete check. Pull requests must
 satisfy live branch protection; workflow definitions alone do not establish
 merge readiness. The custom domain is configured in `CNAME`.
 
-Company progression uses **`heavy-rig:campaign:v6`**. Version 6 starts a fresh
-company with company reputation, mission tiers, and tiered random sale packages,
-per the approved campaign reset. Earlier campaign namespaces (v1–v5) are purged
-when company data is read or saved; no migration is provided. Territory influence
-remains part of the company save.
+Company progression uses **`heavy-rig:campaign:v7`**. Version 7 starts a fresh
+company with a pilot roster, deployable lineup, and per-rig damage checkpoints.
+Earlier campaign namespaces (v1–v6) are purged when company data is read or saved.
 Preferences remain under `heavy-rig:profile:v1`; historical classic records in
 that profile are retained but the classic operation is no longer a playable mode.
 

@@ -3,7 +3,10 @@ import ECSpresso from 'ecspresso';
 import { createMount, getWeapon } from '../src/arsenal';
 import { createCombatRuntime } from '../src/combat-runtime';
 import type { Contract } from '../src/campaign-types';
-import { createMissionState, createState, step, type CombatStateView, type Controls } from '../src/simulation';
+import { defaultReserves } from '../src/combat-resources';
+import { createStarterLoadout } from '../src/hardpoints';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS } from '../src/missions';
+import { createMissionState, createState, distance, step, type CombatStateView, type Controls, type SquadmateOptions } from '../src/simulation';
 import { createTraining, stepTraining } from '../src/training';
 
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 900, y: 500 }, fire: [false, false, false, false], coolant: false };
@@ -236,5 +239,67 @@ test('new mission objectives run in ECS, pause their timers, and release raid st
 			expect(site.complete).toBe(true);
 		}
 		combat.attach(createState()); expect(world.getEntitiesWithQuery(['structure'])).toHaveLength(0);
+	} finally { await world.dispose(); }
+});
+
+test('live squadmates take field damage, recover the objective, and prepare pickup for the player', async function () {
+	const contract: Contract = { id: 'squad-recovery', seed: 123, planetId: 'meridian', kind: 'recovery', employer: 'freeholds', opponent: 'combine', title: 'Recover', briefing: 'Recover the data', reward: 100, favor: 8, hostility: 5, tier: 1, requiredReputation: -100 };
+	const loadout = createStarterLoadout('kestrel');
+	const mate: SquadmateOptions = { pilotId: 'rook', callsign: 'Rook', specialty: 'marksman', frameId: 'kestrel', loadout, reserves: defaultReserves(loadout), integrity: 80 };
+	const secondLoadout = createStarterLoadout('warden');
+	const second: SquadmateOptions = { ...mate, pilotId: 'kite', callsign: 'Kite', frameId: 'warden', loadout: secondLoadout, reserves: defaultReserves(secondLoadout), integrity: 71 };
+	const { world, combat, state } = await harness(createMissionState(contract, { squadmates: [mate, second] }));
+	try {
+		const [wing, straggler] = state.squadmates;
+		const mission = state.mission;
+		const site = mission?.captureSites?.[0];
+		if (!wing || !straggler || !mission || !site) throw new Error('Missing recovery squad or its mission');
+		expect(world.getEntitiesWithQuery(['squadmate'])).toHaveLength(2);
+		expect(combat.entityForSquadmate(wing.pilotId)).toBeDefined();
+		state.enemies = [];
+		Object.assign(state.player, { x: site.x + 240, y: site.y });
+		Object.assign(wing, { x: site.x, y: site.y });
+		state.shots.push({ x: site.x - 70, y: site.y, elevation: 40, vx: 6000, vy: 0, life: 1, kind: 'enemy', target: undefined, damage: 10 });
+		world.update(1 / 60);
+		expect(wing.hp).toBeLessThan(mate.integrity);
+		expect(state.player.hp).toBe(100);
+		for (let i = 0; i < 301; i++) world.update(1 / 60);
+		expect(site.complete).toBe(true);
+		expect(mission.stage).toBe('extract');
+		Object.assign(wing, mission.map.extraction);
+		for (let i = 0; i < 181; i++) world.update(1 / 60);
+		expect(mission.extractTime).toBe(EXTRACTION_SECONDS);
+		expect(state.outcome).toBe('playing');
+		expect(distance(straggler, mission.map.extraction)).toBeGreaterThan(EXTRACTION_RADIUS);
+		Object.assign(state.player, mission.map.extraction);
+		world.update(1 / 60);
+		expect(state.outcome).toBe('won');
+		expect(straggler.hp).toBe(second.integrity);
+		combat.attach(createState());
+		expect(combat.entityForSquadmate(wing.pilotId)).toBeUndefined();
+	} finally { await world.dispose(); }
+});
+
+test('squad rocket volleys use their own sparse mount and leave player accuracy alone', async function () {
+	const contract: Contract = { id: 'squad-fire', seed: 123, planetId: 'meridian', kind: 'clearance', employer: 'freeholds', opponent: 'combine', title: 'Clear', briefing: 'Clear the site', reward: 100, favor: 8, hostility: 5, tier: 1, requiredReputation: -100 };
+	const { world, state } = await harness(createMissionState(contract, { squadmates: [
+		{ pilotId: 'kite', callsign: 'Kite', specialty: 'marksman', frameId: 'warden', loadout: [null, null, 'stream-rockets-4', null], reserves: [0, 0, 4, 0], integrity: 100 },
+	] }));
+	try {
+		const wing = state.squadmates[0]; if (!wing) throw new Error('Missing squadmate');
+		Object.assign(state.player, { x: 1000, y: 1000, angle: 0 });
+		Object.assign(wing, { x: 880, y: 915, angle: 0, turret: 0 });
+		const target = { id: state.nextId++, x: 1280, y: 915, hp: 1000, maxHp: 1000, kind: 'scout', heavy: false, angle: 0, cooldown: 3600, stationary: true } as const;
+		state.enemies = [{ ...target }];
+		const shots = new Set(state.shots);
+		for (let i = 0; i < 50; i++) {
+			world.update(1 / 60);
+			for (const shot of state.shots) shots.add(shot);
+		}
+		expect([...shots].map(function (shot) { return [shot.kind, shot.slot, shot.squadmateId]; })).toEqual(Array.from({ length: 4 }, function () { return ['rocket', 2, wing.pilotId]; }));
+		expect(state.enemies[0]?.hp).toBeLessThan(target.hp);
+		expect(wing.loadout[0]?.rounds).toBe(0);
+		expect(state.stats.shotsFired).toBe(0);
+		expect(state.stats.shotsHit).toBe(0);
 	} finally { await world.dispose(); }
 });

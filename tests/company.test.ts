@@ -5,7 +5,8 @@ import { FRAMES } from '../src/frames';
 import { defaultReserves, frameWeight, loadedMounts } from '../src/combat-resources';
 import { createMissionState } from '../src/simulation';
 import { abandonContract, acceptContract, createCampaign, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
-import { advanceDays, applyRigCheat, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, setAmmunition, unlockAllRigs, WEAPON_PRICES } from '../src/company';
+import { advanceDays, applyRigCheat, assignPilot, assignRig, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, setAmmunition, unlockAllRigs, WEAPON_PRICES } from '../src/company';
+import { dismissPilot, hirePilot } from '../src/pilots';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
 const accept = function (campaign: Campaign): Campaign {
@@ -24,6 +25,37 @@ const stockFrame = function (campaign: Campaign, frameId: Parameters<typeof buyF
 const stockedWeapon = function (campaign: Campaign, weapon: Parameters<typeof buyWeapon>[1]): Campaign {
 	return buyWeapon(weapon.includes(':t') && campaign.companyReputation < 9200 ? { ...campaign, companyReputation: 9200 } : campaign, weapon);
 };
+
+test('squad departures reserve unique pilot and rig pairs and recover every rig exactly once', function () {
+	const fresh = createCampaign(23);
+	expect(hirePilot(fresh, 'flint')).toBe(fresh);
+	const fundedCompany = stockFrame(stockFrame(funded(), 'kestrel-b'), 'kestrel-c');
+	const hired = hirePilot(hirePilot(fundedCompany, 'flint'), 'kite');
+	expect(hired.credits).toBe(fundedCompany.credits - 1000);
+	expect(hirePilot(hired, 'flint')).toBe(hired);
+	expect(assignPilot(hired, 0, 'kite')).toBe(hired);
+	const incomplete = assignPilot(accept(hired), 1, 'flint');
+	expect(assignRig(incomplete, 1, 'kestrel')).toBe(incomplete);
+	expect(assignPilot(incomplete, 2, 'flint')).toBe(incomplete);
+	expect(canDeploySquad(incomplete)).toBe(false);
+	const assigned = assignRig(incomplete, 1, 'kestrel-b');
+	const docked = queueRefit(assigned, 'kestrel-b', [null, 'laser']);
+	expect(canDeploySquad(docked)).toBe(false);
+	const selected = selectFrame(assigned, 'kestrel-c');
+	const launched = beginDeployment(roundTrip(selected));
+	expect(launched.deployed?.frameId).toBe('kestrel');
+	expect(dismissPilot(launched, 'flint')).toBe(launched);
+	const damaged = checkpointDeployment(launched, 71, 1, [{ frameId: 'kestrel-b', hp: 0 }, { frameId: 'kestrel-c', hp: 25 }]);
+	expect(getOwnedMech(damaged, 'kestrel-c')?.integrity).toBe(100);
+	const recovered = recoverInterruptedDeployment(roundTrip(damaged));
+	expect(recovered.lastResult?.squad?.map(function (member) { return [member.pilotId, member.integrity]; })).toEqual([['player', 71], ['flint', 0]]);
+	expect(getOwnedMech(recovered, 'kestrel-b')?.integrity).toBe(0);
+	expect(recovered.pilots).toEqual(['player', 'flint', 'kite']);
+	expect(recoverInterruptedDeployment(roundTrip(recovered))).toEqual(recovered);
+	const dismissed = dismissPilot(recovered, 'flint');
+	expect(dismissed.lineup[1]).toEqual({ pilotId: null, frameId: null });
+	expect(dismissed.credits).toBe(recovered.credits);
+});
 
 describe('Company ownership and workshop transactions', function () {
 	test('starts with a fully armed Kestrel and includes the complete stock package in each chassis purchase', function () {

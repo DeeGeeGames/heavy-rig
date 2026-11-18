@@ -37,6 +37,12 @@
 #game:not(.touch-enabled) .throttle-track { display: block; width: auto; margin-top: 6px; }
 #game:not(.touch-enabled) .drive-assist { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; font: 8px/1.5 var(--mono); color: var(--muted); }
 .drive-assist>span:last-child { white-space: nowrap; }
+.squad-readout { display: flex; flex-wrap: wrap; gap: 4px 6px; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 8px; grid-column: 1 / -1; }
+.squad-contact { display: flex; align-items: baseline; gap: 4px; color: var(--cyan); font: 10px/1.2 var(--mono); text-transform: uppercase; }
+.squad-contact strong { font: inherit; font-weight: 700; color: var(--paper); }
+.squad-contact[data-disabled='true'] strong { color: var(--danger); }
+.touch-enabled .squad-readout { margin-top: 0; }
+.touch-enabled .squad-contact { font-size: 8px; }
 #game:not(.touch-enabled) .drive-assist kbd { font-size: var(--cockpit-label); color: var(--paper); }
 #game:not(.touch-enabled).hull-critical .frame-readout { border-top-color: var(--danger); }
 #game:not(.touch-enabled).hull-critical #armor-value, #game:not(.touch-enabled).reactor-locked #heat-value { color: var(--danger); }

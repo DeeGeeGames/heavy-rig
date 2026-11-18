@@ -77,7 +77,7 @@ describe('territory campaign', function () {
 		const accepted = acceptContract(campaign, offer.id);
 		for (const invalid of [{ ...accepted, version: 3 }, { ...accepted, universe: undefined }]) {
 			const restored = parseCampaign(JSON.stringify(invalid));
-			expect(restored.version).toBe(6); expect(restored.active).toBeUndefined();
+			expect(restored.version).toBe(campaign.version); expect(restored.active).toBeUndefined();
 			expect(restored.completed).toBe(0); expect(restored.day).toBe(1);
 		}
 	});

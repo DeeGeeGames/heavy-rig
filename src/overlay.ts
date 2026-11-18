@@ -4,7 +4,7 @@ import { getWeapon } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
 import { ARENA, missileTracking, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
-import { isPriorityTarget, missionStructures, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
+import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
 export const targetElevation = function (target: Point): number {
@@ -14,6 +14,7 @@ export const targetElevation = function (target: Point): number {
 };
 export interface OverlayOptions {
 	enemyLabelHeights?: ReadonlyMap<number, number>;
+	squadmateLabelHeights?: ReadonlyMap<string, number>;
 	obstructions?: readonly ScreenRect[];
 	showRadar: boolean;
 	gaits: Gaits;
@@ -189,7 +190,11 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	}
 	if (mission?.stage === 'extract') {
 		const remaining = Math.max(0, EXTRACTION_SECONDS - mission.extractTime);
-		text(mission.extractTime > 0 ? `LIFT IN ${remaining.toFixed(1)}s · HOLD POSITION` : 'EXTRACTION / ENTER THE GREEN ZONE', mission.map.extraction, 40, '#b9f5ca', 12);
+		const outside = distance(state.player, mission.map.extraction) > EXTRACTION_RADIUS;
+		const label = mission.extractTime === 0 ? 'EXTRACTION / ENTER THE GREEN ZONE'
+			: outside ? remaining === 0 ? 'PICKUP READY / ENTER THE ZONE' : `SQUAD HOLDING ${remaining.toFixed(1)}s / ENTER THE ZONE`
+				: `LIFT IN ${remaining.toFixed(1)}s · HOLD POSITION`;
+		text(label, mission.map.extraction, 40, '#b9f5ca', 12);
 	}
 	for (const warning of state.warnings) text(warning.commander ? 'COMMAND SIGNAL' : `INBOUND ${warning.kind.toUpperCase()}`, warning, 10, '#f3bd80', 10, -20);
 	for (const [index, strike] of state.strikes.entries()) {
@@ -211,6 +216,15 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			const label = defense.exposed ? `EXPOSED ${enemy.attack.remaining.toFixed(1)}s` : 'BARRAGE COMMITTED';
 			text(label, enemy, labelHeight, defense.exposed ? '#adf7d7' : '#ffd5a5', 11, -(enemy.commander ? minimumText * 2 + 15 : minimumText + 6) / scale);
 		}
+	}
+	for (const mate of state.squadmates) {
+		const heightAboveRig = options.squadmateLabelHeights?.get(mate.pilotId);
+		if (heightAboveRig === undefined) continue;
+		const anchor = at(mate, heightAboveRig);
+		if (anchor.x < 0 || anchor.x > width || anchor.y < 0 || anchor.y > height) continue;
+		if (options.obstructions?.some(function (rect) { return anchor.x >= rect.left && anchor.x <= rect.right && anchor.y >= rect.top && anchor.y <= rect.bottom; })) continue;
+		const active = mate.hp > 0;
+		text(`${mate.callsign.toUpperCase()}${active ? '' : ' / OFFLINE'}`, mate, heightAboveRig, active ? '#84e3eb' : '#a8bcc0', 9);
 	}
 	if (selected && selectedReticle) {
 		const elevation = ENEMY_STATS[selected.kind].elevation;
@@ -281,6 +295,11 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.strokeStyle = '#c9d9c04d'; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(a.x, a.y); ctx.stroke();
 		ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(state.player.angle);
 		ctx.fillStyle = '#f1e4b9'; ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-3, -3); ctx.lineTo(-1, 0); ctx.lineTo(-3, 3); ctx.closePath(); ctx.fill(); ctx.restore();
+		for (const mate of state.squadmates) {
+			const at = point(mate);
+			if (mate.hp > 0) { ctx.fillStyle = '#84e3eb'; ctx.fillRect(at.x - 2, at.y - 2, 5, 5); }
+			else { ctx.strokeStyle = '#a8bcc0'; ctx.lineWidth = 1; ctx.strokeRect(at.x - 2, at.y - 2, 5, 5); }
+		}
 		for (const enemy of state.enemies) dot(enemy, isPriorityTarget(state, enemy) ? '#ffd6a7' : ENEMY_STATS[enemy.kind].elevation > 42 ? '#8fd6da' : '#f2a571', isPriorityTarget(state, enemy) ? 4 : enemy.heavy ? 3 : 2, ENEMY_STATS[enemy.kind].elevation > 42);
 		for (const warning of state.warnings) dot(warning, '#e5a46f', 4, true);
 		for (const strike of state.strikes) dot(strike, '#ff8154', strike.radius / bounds.width * w, true);

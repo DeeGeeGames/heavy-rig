@@ -17,7 +17,7 @@ export interface WalkerGait {
 	nextFoot: FootIndex;
 	travelSpeed?: number;
 }
-export interface Gaits { player: WalkerGait; enemies: ReadonlyMap<number, WalkerGait>; time: number }
+export interface Gaits { player: WalkerGait; squadmates: ReadonlyMap<string, WalkerGait>; enemies: ReadonlyMap<number, WalkerGait>; time: number }
 interface Joint extends Point { z: number }
 
 const clamp = function (value: number, min: number, max: number) { return Math.max(min, Math.min(max, value)); };
@@ -204,7 +204,12 @@ export const legJoints = function (body: Body, foot: Foot, index: FootIndex, siz
 };
 
 export const createGaits = function (state: CombatStateView): Gaits {
-	return { player: createGait(state.player, getFrame(state.frame).size, FRAME_RIGS[state.frame]), enemies: new Map(state.enemies.map(function (enemy) { return [enemy.id, createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind))]; })), time: state.time };
+	return {
+		player: createGait(state.player, getFrame(state.frame).size, FRAME_RIGS[state.frame]),
+		squadmates: new Map(state.squadmates.map(function (mate) { return [mate.pilotId, createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId])]; })),
+		enemies: new Map(state.enemies.map(function (enemy) { return [enemy.id, createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind))]; })),
+		time: state.time,
+	};
 };
 export const advanceGaits = function (gaits: Gaits, state: CombatStateView): Gaits {
 	const dt = state.time - gaits.time;
@@ -212,6 +217,11 @@ export const advanceGaits = function (gaits: Gaits, state: CombatStateView): Gai
 	if (dt === 0) return gaits;
 	return {
 		player: advanceGait(gaits.player, state.player, dt, getFrame(state.frame).size, getFrame(state.frame).stride, FRAME_RIGS[state.frame]), time: state.time,
+		squadmates: new Map(state.squadmates.map(function (mate) {
+			const frame = getFrame(mate.frameId); const rig = FRAME_RIGS[mate.frameId];
+			const prior = gaits.squadmates.get(mate.pilotId);
+			return [mate.pilotId, prior ? advanceGait(prior, mate, dt, frame.size, frame.stride, rig) : createGait(mate, frame.size, rig)];
+		})),
 		enemies: new Map(state.enemies.map(function (enemy) {
 			const size = mechScale(enemy.kind);
 			const body = { x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle };

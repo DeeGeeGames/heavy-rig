@@ -5,7 +5,7 @@ import { createOpeningProgress, getAuthoredStep, getChainStatus, isAuthoredContr
 import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, PLANETS, type UniverseState } from './universe';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
 
-import { advanceDays, createCompany, MAX_DAY, parseCompany, type CompanyState } from './company';
+import { advanceDays, createCompany, isDeployedSquad, MAX_DAY, parseCompany, type CompanyState, type DeployedPilot } from './company';
 
 export interface FactionDefinition {
 	id: FactionId;
@@ -32,10 +32,11 @@ export interface CampaignResult {
 	favor: number;
 	companyReputation: number;
 	day: number;
+	squad?: readonly DeployedPilot[];
 }
 
 export interface Campaign extends CompanyState {
-	version: 6;
+	version: 7;
 	introComplete: boolean;
 	mode?: 'campaign' | 'career';
 	story?: ChainProgress;
@@ -54,7 +55,8 @@ export interface Campaign extends CompanyState {
 	lastResult: CampaignResult | undefined;
 }
 
-export const CAMPAIGN_STORAGE_KEY = 'heavy-rig:campaign:v6';
+const CAMPAIGN_VERSION = 7;
+export const CAMPAIGN_STORAGE_KEY = `heavy-rig:campaign:v${CAMPAIGN_VERSION}`;
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition'];
 const MAX_COUNT = 1_000_000;
 export const MAX_CREDITS = 1_000_000_000_000;
@@ -72,7 +74,7 @@ const freshSeed = function () {
 
 export const createCampaign = function (seed?: number, mode?: Campaign['mode']): Campaign {
 	return {
-		...createCompany(), version: 6, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
+		...createCompany(), version: CAMPAIGN_VERSION, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
 		credits: 0, companyReputation: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 		...(mode ? { mode, introComplete: mode === 'career' } : {}),
 		...(mode === 'campaign' ? { story: createOpeningProgress() } : {}),
@@ -192,10 +194,12 @@ const finishContract = function (campaign: Campaign, won: boolean, aborted: bool
 	const companyReputation = won ? Math.min(getMissionTier(contract.tier).reputation, MAX_COMPANY_REPUTATION - campaign.companyReputation) : 0;
 	const day = campaign.day + 1;
 	const story = campaign.story;
+	const deployed = campaign.deployed;
+	const squad: readonly DeployedPilot[] | undefined = deployed ? [{ pilotId: 'player', frameId: deployed.frameId, integrity: deployed.integrity, startingIntegrity: deployed.startingIntegrity }, ...deployed.wing] : undefined;
 	return advanceDays({
 		...campaign, universe: { ...applyMissionInfluence(campaign.universe, contract.planetId, contract.employer, contract.opponent, won), boardDay: day, boardVersion: 2 }, active: undefined, deployed: undefined, reputation, boardReputation: { ...reputation }, boardRevision: campaign.boardRevision + 1,
 		credits: campaign.credits + payout, companyReputation: campaign.companyReputation + companyReputation, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
-		lastResult: { contract, won, aborted, payout, favor, companyReputation, day },
+		lastResult: { contract, won, aborted, payout, favor, companyReputation, day, ...(squad ? { squad } : {}) },
 		...(won && story?.committed === contract.id ? { story: { id: story.id, completed: [...story.completed, contract.id] } } : {}),
 	}, 1);
 };
@@ -224,16 +228,13 @@ const isResult = function (value: unknown): value is CampaignResult {
 		&& isInteger(value['payout'], 0, contract.reward) && isInteger(value['favor'], 0, contract.favor)
 		&& isInteger(value['companyReputation'], 0, getMissionTier(contract.tier).reputation)
 		&& (value['won'] || value['companyReputation'] === 0)
+		&& (value['squad'] === undefined || isDeployedSquad(value['squad']))
 		&& (value['won'] || value['payout'] === 0 && value['favor'] === 0) && isInteger(value['day'], 2, MAX_DAY);
 };
 
 const sameContract = function (saved: Contract, generated: Contract): boolean {
-	// Recognize accepted v6 acquisition postings with the original three-minute briefing.
-	// The longer deadline must not invalidate an otherwise unchanged company save.
-	const sameBriefing = saved.briefing === generated.briefing || saved.kind === 'acquisition'
-		&& saved.briefing === generated.briefing.replace(`within ${ACQUISITION_SECONDS / 60} minutes.`, 'within three minutes.');
 	// Authored copy can be revised while a pilot still has the original terms.
-	const sameCopy = isAuthoredContract(generated) || saved.title === generated.title && sameBriefing;
+	const sameCopy = isAuthoredContract(generated) || saved.title === generated.title && saved.briefing === generated.briefing;
 	return saved.id === generated.id && saved.seed === generated.seed && saved.planetId === generated.planetId && saved.kind === generated.kind
 		&& saved.employer === generated.employer && saved.opponent === generated.opponent && sameCopy
 		&& saved.reward === generated.reward && saved.favor === generated.favor && saved.hostility === generated.hostility
@@ -258,7 +259,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 	if (!raw) return createCampaign();
 	try {
 		const value: unknown = JSON.parse(raw);
-		if (!object(value) || value['version'] !== 6 || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
+		if (!object(value) || value['version'] !== CAMPAIGN_VERSION || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['companyReputation'], 0, MAX_COMPANY_REPUTATION)
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
@@ -268,8 +269,6 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		if (!universe) return createCampaign();
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
-		// An unmarked v6 save could be either starting mode. Its original
-		// escape flag and ordinary contracts already describe how it resumes.
 		const mode = value['mode'];
 		if (mode !== undefined && mode !== 'campaign' && mode !== 'career') return createCampaign();
 		const story = parseChainProgress(value['story']);
@@ -277,7 +276,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			if (!story || story.completed.length > value['completed'] || !value['introComplete'] && (story.completed.length > 0 || story.committed)) return createCampaign();
 		} else if (value['story'] !== undefined) return createCampaign();
 		const campaign: Campaign = {
-			...company, version: 6, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
+			...company, version: CAMPAIGN_VERSION, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], companyReputation: value['companyReputation'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 			...(mode ? { mode } : {}), ...(story ? { story } : {}),
@@ -305,10 +304,8 @@ export const parseCampaign = function (raw: string | null): Campaign {
 	} catch { return createCampaign(); }
 };
 
-// Reputation and mission terms changed in v6. Start fresh under the approved
-// reset policy; input and presentation profiles remain separate.
 const purgePreviousCampaigns = function () {
-	for (const version of [1, 2, 3, 4, 5]) localStorage.removeItem(`heavy-rig:campaign:v${version}`);
+	for (let version = 1; version < CAMPAIGN_VERSION; version++) localStorage.removeItem(`heavy-rig:campaign:v${version}`);
 };
 export const readCampaign = function (): Campaign {
 	try { purgePreviousCampaigns(); return recoverInterruptedDeployment(parseCampaign(localStorage.getItem(CAMPAIGN_STORAGE_KEY))); } catch { return createCampaign(); }

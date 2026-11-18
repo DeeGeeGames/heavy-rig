@@ -86,14 +86,19 @@ export const missionSpawn = function (contract: Contract, map: MissionMap, index
 export const missionObjective = function (state: CombatStateView): string {
 	const mission = state.mission;
 	if (!mission) return 'Protect Relay 09';
-	if (mission.stage === 'extract') return mission.extractTime > 0
-		? `Extraction ${Math.ceil(EXTRACTION_SECONDS - mission.extractTime)}s · hold the landing zone`
-		: `Return to extraction · ${Math.round(separation(state.player, mission.map.extraction))} m`;
+	if (mission.stage === 'extract') {
+		const range = separation(state.player, mission.map.extraction);
+		if (mission.extractTime >= EXTRACTION_SECONDS) return `Extraction ready · reach pickup ${Math.round(range)} m`;
+		if (mission.extractTime > 0) return range <= EXTRACTION_RADIUS
+			? `Extraction ${Math.ceil(EXTRACTION_SECONDS - mission.extractTime)}s · hold the landing zone`
+			: `Squad holding pickup · ${Math.round(range)} m to extraction`;
+		return `Return to extraction · ${Math.round(range)} m`;
+	}
 	if (mission.contract.kind === 'raid') return `Destroy supply sites · ${mission.progress}/3 destroyed`;
 	if (mission.contract.kind === 'recovery' || mission.contract.kind === 'acquisition') {
 		const holding = mission.captureSites?.find(function (site) { return !site.complete && site.holdTime > 0; });
 		const duration = mission.contract.kind === 'recovery' ? RECOVERY_SECONDS : BEACON_SECONDS;
-		const action = holding ? ` · hold ${(duration - holding.holdTime).toFixed(1)}s` : ' · enter a marked zone';
+		const action = holding ? ` · ${separation(state.player, holding) <= CAPTURE_RADIUS ? 'hold' : 'squad holding'} ${(duration - holding.holdTime).toFixed(1)}s` : ' · enter a marked zone';
 		return mission.contract.kind === 'recovery' ? `Recover the data${action}`
 			: (mission.acquisitionTime ?? 0) <= 0 ? 'Target acquisition failed · deadline expired'
 			: `Beacons ${mission.progress}/3 · ${Math.ceil(mission.acquisitionTime ?? 0)}s remaining${action}`;
