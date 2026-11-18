@@ -1,9 +1,9 @@
 import type { Campaign } from './campaign';
-import type { FrameId } from './frames';
+import type { RigId } from './rigs';
 
 export interface PilotAssignment {
 	readonly pilotId: PilotId | null;
-	readonly frameId: FrameId | null;
+	readonly frameId: RigId | null;
 }
 
 export interface Pilot {

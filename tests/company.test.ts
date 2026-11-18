@@ -1,3 +1,4 @@
+import { rigFrameId } from '../src/rigs';
 import { getFrameOffer } from '../src/market';
 import { describe, expect, test } from 'bun:test';
 import { WEAPONS, getWeapon } from '../src/arsenal';
@@ -71,7 +72,7 @@ describe('Company ownership and workshop transactions', function () {
 		expect(purchased.credits).toBe(company.credits - getFrameOffer(company, 'warden').price - WEAPON_PRICES.laser);
 		expect(getOwnedMech(purchased, 'warden')?.loadout).toEqual(getFrameOffer(company, 'warden').loadout);
 		expect(purchased.inventory.laser).toBe(1);
-		expect(buyFrame(purchased, 'warden')).toBe(purchased);
+		expect(getOwnedMech(buyFrame(purchased, 'warden'), 'warden#2')?.loadout).toEqual(getFrameOffer(purchased, 'warden').loadout);
 		expect(JSON.stringify(company)).toBe(before);
 		expect(roundTrip(purchased)).toEqual(purchased);
 	});
@@ -339,7 +340,7 @@ test('sorties consume independent runtime supplies and replenish selected reserv
 			: outcome === 'abort' ? abandonContract(damaged) : settleContract(damaged, outcome === 'success');
 		const nextMech = getOwnedMech(finished);
 		if (!nextMech) throw new Error('Missing settled mech');
-		const state = createMissionState(contract, { frame: nextMech.frameId, loadout: nextMech.loadout, reserves: nextMech.reserves });
+		const state = createMissionState(contract, { frame: rigFrameId(nextMech.frameId), loadout: nextMech.loadout, reserves: nextMech.reserves });
 		expect(state.loadout[0]?.rounds).toBe(37);
 		expect(getOwnedMech(roundTrip(finished))?.reserves).toEqual([37, 0]);
 		expect(finished.credits).toBe(outcome === 'success' ? contract.reward : 0);
@@ -352,7 +353,7 @@ test('all acquired variants include legal tier-zero equipment and every physical
 	for (const mech of company.fleet) {
 		expect(mech.loadout.every(function (weapon) { return weapon !== null && getWeapon(weapon).tier === 0; })).toBe(true);
 		expect(mech.reserves).toEqual(defaultReserves(mech.loadout));
-		const weight = frameWeight(mech.frameId, loadedMounts(mech.loadout, mech.reserves));
+		const weight = frameWeight(rigFrameId(mech.frameId), loadedMounts(mech.loadout, mech.reserves));
 		expect(weight.total).toBeLessThanOrEqual(weight.recommended * 1.1);
 	}
 	for (const weapon of WEAPONS) {
@@ -399,5 +400,46 @@ test('tiers retain separate ownership and refit reservations through cancellatio
 	for (const id of ['machine-gun:t0', 'machine-gun:t6', 'machine-gun:t1.5', 'laser:t4']) {
 		const fleet = complete.fleet.map(function (mech) { return mech.frameId === 'kestrel' ? { ...mech, loadout: [id, 'machine-gun'] } : mech; });
 		expect(parseCampaign(JSON.stringify({ ...complete, credits: 81, fleet })).credits).toBe(0);
+	}
+});
+
+test('same-type rigs retain separate equipment, squad damage and workshop jobs through saves', function () {
+	const original = funded();
+	const price = getFrameOffer(original, 'kestrel').price;
+	const purchased = buyFrame(buyFrame(original, 'kestrel'), 'kestrel');
+	expect(purchased.fleet.map(function (mech) { return mech.frameId; })).toEqual(['kestrel', 'kestrel#2', 'kestrel#3']);
+	expect(purchased.credits).toBe(original.credits - price * 2);
+	expect(roundTrip(purchased)).toEqual(purchased);
+	const hired = hirePilot(purchased, 'flint');
+	const assigned = assignRig(assignPilot(accept(hired), 1, 'flint'), 1, 'kestrel#2');
+	expect(assignRig(assigned, 1, 'kestrel')).toBe(assigned);
+	const launched = beginDeployment(roundTrip(selectFrame(assigned, 'kestrel#3')));
+	expect(launched.deployed?.wing[0]?.frameId).toBe('kestrel#2');
+	const damaged = checkpointDeployment(launched, 61, 1, [{ frameId: 'kestrel#2', hp: 23 }]);
+	expect(getOwnedMech(damaged, 'kestrel')?.integrity).toBe(61);
+	expect(getOwnedMech(damaged, 'kestrel#2')?.integrity).toBe(23);
+	expect(getOwnedMech(damaged, 'kestrel#3')?.integrity).toBe(100);
+	const returned = recoverInterruptedDeployment(roundTrip(damaged));
+	const repairing = queueRepair(returned, 'kestrel#2');
+	const refitting = queueRefit(repairing, 'kestrel#3', [null, null]);
+	expect(roundTrip(refitting)).toEqual(refitting);
+	const refitted = advanceDays(roundTrip(refitting), 2);
+	expect(getOwnedMech(refitted, 'kestrel#3')?.loadout).toEqual([null, null]);
+	expect(getOwnedMech(refitted, 'kestrel#2')?.integrity).toBe(23);
+	const repaired = advanceDays(roundTrip(refitted), 2);
+	expect(getOwnedMech(repaired, 'kestrel#2')?.integrity).toBe(100);
+	expect(getOwnedMech(repaired, 'kestrel')?.integrity).toBe(61);
+	expect(getOwnedMech(repaired, 'kestrel')?.loadout).toEqual(['machine-gun', 'machine-gun']);
+	expect(roundTrip(repaired)).toEqual(repaired);
+});
+
+test('rig save validation accepts fleets beyond the catalogue and rejects forged copy keys', function () {
+	const full = unlockAllRigs(funded());
+	const expanded = buyFrame(full, 'kestrel');
+	expect(expanded.fleet.length).toBe(FRAMES.length + 1);
+	expect(roundTrip(expanded)).toEqual(expanded);
+	for (const id of ['kestrel#0', 'kestrel#1', 'kestrel#02', 'kestrel#NaN', 'unknown#2', 'kestrel#9007199254740992']) {
+		const forged = { ...expanded, fleet: expanded.fleet.map(function (mech) { return mech.frameId === 'kestrel#2' ? { ...mech, frameId: id } : mech; }) };
+		expect(parseCampaign(JSON.stringify(forged)).credits).toBe(0);
 	}
 });
