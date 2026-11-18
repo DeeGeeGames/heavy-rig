@@ -1,9 +1,9 @@
 import { rigFrameId, rigName, type RigId } from './rigs';
 import { getFrameOffer } from './market';
-import { companyRank, reputationProgress, unlockedMissionTier, weaponUnlockRank } from './reputation';
+import { companyRank, reputationProgress, unlockedMissionTier } from './reputation';
 import { html } from 'lit-html';
 import { renderWorkspace, revealWorkspaceElement, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
-import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_TIERS, WEAPON_FAMILY_LABELS, type WeaponDefinition, type WeaponId } from './arsenal';
+import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_FAMILY_LABELS, type WeaponId, type WeaponModelId } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getPlanet, type Campaign } from './campaign';
 import { getAuthoredStep } from './contract-chains';
@@ -105,7 +105,7 @@ const frameSchematic = function (frame: FrameDefinition) {
 	</svg>`;
 };
 
-interface CompanyView { kind: 'weapons' | 'frames'; weapon: WeaponId; frame: FrameId; slot: number | null; assignment?: AssignmentPicker }
+interface CompanyView { kind: 'weapons' | 'frames'; weapon: WeaponModelId; frame: FrameId; slot: number | null; assignment?: AssignmentPicker }
 const views = new WeakMap<HTMLElement, CompanyView>();
 const assignedPilot = function (campaign: Campaign, frame: RigId) {
 	const pilotId = campaign.lineup.find(function (entry) { return entry.frameId === frame; })?.pilotId;
@@ -179,22 +179,12 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 	];
 };
 
-const comparisonPercent = function (value: number, baseline: number): string {
-	return `${value >= baseline ? '+' : ''}${Math.round((value / baseline - 1) * 100)}%`;
-};
-const tierComparison = function (weapon: WeaponDefinition): string {
-	if (weapon.tier === 0) return 'Standard equipment. Higher tiers improve combat performance while keeping the same hardware mass, ammunition capacity, and hardpoint requirements.';
-	const base = getWeapon(weapon.modelId);
-	return `Against tier 0: ${comparisonPercent(weapon.damage, base.damage)} damage, ${comparisonPercent(weapon.range, base.range)} range, ${comparisonPercent(weapon.heat, base.heat)} heat per ${weapon.kind === 'laser' ? 'second' : 'salvo'}${base.interval > 0 ? `, ${comparisonPercent(weapon.interval, base.interval)} firing interval` : ''}.`;
-};
-
 const marketPanes = function (root: HTMLElement, campaign: Campaign, view: CompanyView, actions: CompanyActions, refresh: () => void): WorkspacePane[] {
-	const weapon = getWeapon(view.weapon); const frame = getFrame(view.frame);
-	const quality = getWeaponTier(weapon.tier);
+	const tier = unlockedMissionTier(campaign).weaponTier;
+	const weapon = getWeapon(weaponIdForTier(view.weapon, tier)); const frame = getFrame(view.frame);
+	const quality = getWeaponTier(tier);
 	const offer = getFrameOffer(campaign, frame.id);
 	const stock = offer.loadout; const stockReserves = offer.reserves;
-	const ceiling = unlockedMissionTier(campaign).weaponTier;
-	const reputationLocked = weapon.tier > ceiling;
 	const weaponMarket = view.kind === 'weapons';
 	const price = weaponMarket ? WEAPON_PRICES[weapon.id] : offer.price;
 	const owned = campaign.fleet.filter(function (mech) { return rigFrameId(mech.frameId) === frame.id; }).length;
@@ -202,30 +192,29 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 	const select = function () { refresh(); selectWorkspacePane(root, 'details', true); };
 	return [
 		{ id: 'catalogue', label: 'Catalogue', items: [
-			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === weapon.tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.id; select(); }}><span><b>${item.name}</b><small>${item.tier > ceiling ? `LOCKED · RANK ${weaponUnlockRank(item.tier)}` : `${WEAPON_FAMILY_LABELS[item.family]} · ${campaign.inventory[item.id]} owned`}</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${creditsLabel(getFrameOffer(campaign, item.id).price)}</span></button>`; })),
-			...textItems('Weapon purchases arrive in stores; install them through a Mech Bay refit. Frame purchases include the displayed random weapon package and standard ammunition. Packages refresh after a jump or contract, and stay fixed while browsing or waiting. Buy multiple copies of any variant; each rig is managed separately.'),
-		], actions: html`${weaponMarket ? html`<div class="market-tiers"><span class="eyebrow">WEAPON QUALITY / ${quality.name.toUpperCase()}</span><div>${WEAPON_TIERS.map(function (entry) { return html`<button data-market-tier=${entry.tier} style="--tier-color:${entry.color}" aria-label=${`Show ${tierLabel(entry.tier)} weapons`} aria-pressed=${weapon.tier === entry.tier} @click=${function () { view.weapon = weaponIdForTier(weapon.modelId, entry.tier); refresh(); selectWorkspacePane(root, 'catalogue', true); root.querySelector<HTMLButtonElement>(`[data-market-tier="${entry.tier}"]`)?.focus({ preventScroll: true }); }}>T${entry.tier}${entry.tier > ceiling ? ` / R${weaponUnlockRank(entry.tier)}` : ''}</button>`; })}</div></div>` : ''}<button class="secondary market-equip" @click=${function () { actions.navigate('mechbay'); }}>EQUIP PURCHASES →</button>` },
+			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.modelId; select(); }}><span><b>${item.name}</b><small>${WEAPON_FAMILY_LABELS[item.family]} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${creditsLabel(getFrameOffer(campaign, item.id).price)}</span></button>`; })),
+			...textItems(weaponMarket ? 'Weapon purchases arrive in stores. Install them through a Mech Bay refit.' : 'Frames include the displayed weapons and standard ammunition. Packages refresh after a jump or contract. You can buy multiple copies of any variant.'),
+		] },
 		{ id: 'details', label: 'Item details', items: weaponMarket ? [
-			html`<span class="eyebrow weapon-quality" style="--tier-color:${quality.color}">${tierLabel(weapon.tier).toUpperCase()} / ${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
+			html`<span class="eyebrow">${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
 			...textItems(`${WEAPON_FAMILY_LABELS[weapon.family]} weapon. ${weapon.description}`),
 			html`<dl class="frame-specifications"><dt>${weapon.kind === 'laser' ? 'DAMAGE / SECOND' : 'DAMAGE / ROUND'}</dt><dd>${weapon.damage.toFixed(1)}</dd><dt>FIRING CYCLE</dt><dd>${weapon.kind === 'laser' ? 'Continuous beam' : `${weapon.interval.toFixed(3)} s / ${weapon.projectiles} round${weapon.projectiles === 1 ? '' : 's'}`}</dd><dt>RANGE</dt><dd>${weapon.range.toFixed(0)} m</dd></dl>`,
-			...textItems(tierComparison(weapon)),
 			html`<dl class="frame-specifications"><dt>HEAT / SUSTAINED</dt><dd>${sustainedHeat(weapon).toFixed(1)} / second</dd><dt>HARDWARE</dt><dd>${massLabel(weapon.mass)}</dd><dt>${weapon.kind === 'laser' ? 'BEAM' : 'PROJECTILE SPEED'}</dt><dd>${weapon.kind === 'laser' ? 'Instant' : `${weapon.speed.toFixed(0)} m/s`}</dd><dt>SPREAD</dt><dd>${weapon.spread > 0 ? `${(weapon.spread * 180 / Math.PI).toFixed(2)}°` : 'Precise'}</dd></dl>`,
 			...textItems(weapon.ammunition ? `AMMUNITION: ${weapon.ammunition.defaultLoad} standard / ${weapon.ammunition.capacity} maximum rounds per mount. ${massLabel(weapon.ammunition.mass)} per round; ${massLabel(weapon.ammunition.defaultLoad * weapon.ammunition.mass)} standard reserve. Free replenishment between sorties.` : 'AMMUNITION INDEPENDENT: no rounds required. Weapons lock at 100 heat and recover at 35.'),
 			...FRAMES.filter(function (definition) { return definition.variant === 'A'; }).flatMap(function (chassis) {
 				const compatible = FRAMES.filter(function (definition) { return definition.chassisId === chassis.chassisId && getHardpoints(definition.id).some(function (_hardpoint, slot) { return canEquipWeapon(definition.id, slot, weapon.id); }); });
 				return compatible.length ? textItems(`Compatible: ${chassis.chassisName} ${compatible.map(function (definition) { return definition.variant; }).join(' / ')}.`) : [];
 			}),
-			html`<dl class="frame-specifications"><dt>OWNED / THIS TIER</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES / THIS TIER</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
-			...textItems(reputationLocked ? `Requires company rank ${weaponUnlockRank(weapon.tier)}. Current rank: ${companyRank(campaign)}. Complete contracts to unlock this quality.` : affordable ? `${creditsLabel(price)}. Each purchase is one copy of this model and tier.` : `Price ${creditsLabel(price)}. Need ${creditsLabel(price - campaign.credits)} more.`),
+			html`<dl class="frame-specifications"><dt>OWNED</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
+			...(!affordable ? textItems(`Need ${creditsLabel(price - campaign.credits)} more.`) : []),
 		] : [
 			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName}</p></div>`, frameSchematic(frame),
 			...textItems(frame.description), ...textItems(`BASE MASS: ${massLabel(frame.mass)} including fixed equipment. RECOMMENDED OPERATING WEIGHT: ${massLabel(frame.recommendedMass)}. Weapons and ammunition add to base mass.`), ...textItems(hardpointSummary(frame.id)), ...textItems(frame.tradeoff),
-			html`<span class="eyebrow">COMPLETE SALE LOADOUT / UP TO T${ceiling}</span>`,
+			html`<span class="eyebrow">INCLUDED LOADOUT</span>`,
 			...getHardpoints(frame.id).flatMap(function (hardpoint, index) { const id = stock[index]; const item = id ? getWeapon(id) : undefined; return textItems(`${index + 1}. ${hardpoint.name}: ${item?.name ?? 'Empty'}${item?.ammunition ? ` / ${stockReserves[index] ?? 0} rounds` : ' / energy'}.`); }),
 			...textItems(`STOCK: ${loadSummary(frame.id, stock, stockReserves)}`),
-			html`<p class="workspace-copy">All stock weapons and ammunition are included. ${creditsLabel(price)}${!weaponMarket && owned ? ` · ${owned} owned` : ''}</p>`,
-		], actions: html`<button class="secondary" @click=${function () { selectWorkspacePane(root, view.kind); }}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${!affordable || weaponMarket && reputationLocked || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>${weaponMarket && reputationLocked ? `REQUIRES RANK ${weaponUnlockRank(weapon.tier)}` : `BUY · ${creditsLabel(price)}`}</button>` },
+			html`<p class="workspace-copy">All stock weapons and ammunition are included. ${creditsLabel(price)}${owned ? ` · ${owned} owned` : ''}</p>`,
+		], actions: html`<button class="secondary" @click=${function () { selectWorkspacePane(root, view.kind); }}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${!affordable || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>BUY · ${creditsLabel(price)}</button>` },
 	];
 };
 
