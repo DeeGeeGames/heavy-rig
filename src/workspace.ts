@@ -137,7 +137,8 @@ export const revealWorkspaceElement = function (target: HTMLElement) {
 		const content = target.closest<HTMLElement>('.paged-content');
 		if (content) {
 			const viewport = content.getBoundingClientRect();
-			const item = target.getBoundingClientRect();
+			const group = target.closest('.page-item')?.getBoundingClientRect();
+			const item = group && group.height <= viewport.height ? group : target.getBoundingClientRect();
 			if (item.top < viewport.top) content.scrollTop -= viewport.top - item.top;
 			else if (item.bottom > viewport.bottom) content.scrollTop += item.bottom - viewport.bottom;
 		}
