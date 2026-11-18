@@ -70,9 +70,9 @@ commander is inside the zone. Stragglers and disabled rigs are recovered with
 their recorded damage. A disabled commander ends the sortie, and all pilots
 survive. The debrief lists each deployed rig and links damaged rigs to repairs.
 
-Each variant can be purchased once; multiple variants of a chassis can be owned
-together. Every market frame arrives with all hardpoints armed at the company’s unlocked quality and standard
-ammunition. The starting Kestrel has both Rattlers fitted. Purchases arrive
+You can buy multiple copies of a variant and manage each rig separately. Every
+market frame arrives with a complete weapon loadout and standard ammunition.
+The starting Kestrel has both Rattlers fitted. Purchases arrive
 immediately; replacing or moving fitted weapons requires a refit. Weapons are
 physical inventory copies shared across the fleet: a fitted or reserved copy cannot also be installed on another
 frame. Model and tier identify each copy: a tier 0 Rattler cannot satisfy a
@@ -171,12 +171,15 @@ failed work does not remove earned reputation. Rank thresholds are 0, 100, 250,
 | 12 | 5 · Elite | 4 | 330 |
 | 15 | 6 · Legendary | 5 | 450 |
 
-Each tier offers all seven mission types, including previews of locked postings.
-The board’s tier selector shows company-rank requirements. Higher tiers increase
-force size, armor, commander and facility durability, enemy weapon quality, and
-payment. Local work fields scouts and helicopters; heavier contracts introduce
-strikers, tanks, missile VTOLs, and siege frames. The selected game difficulty
-continues to apply on top of the contract tier. Lower tiers remain available.
+In conflict zones, the board shows one posting per mission type. It uses the
+highest tier your company rank and employer standing allow, with local work
+available even at hostile standing. The briefing describes the opposing forces.
+Tougher contracts increase force size, armor, commander and facility durability,
+enemy weapon quality, and payment. The selected game difficulty continues to
+apply on top of the contract tier.
+
+The weapon catalogue stocks each model at the highest tier unlocked by your
+company rank. The listing and item details show the tier alongside the name.
 
 Chassis have no reputation tier or purchase gate. Each sale listing includes a
 complete random package compatible with its hardpoints, with standard ammunition
@@ -333,10 +336,9 @@ missile consumes one round. A partly loaded launcher fires only its remaining
 rounds; staggered rounds obey heat lock at emission. Already launched ordnance
 continues to resolve.
 
-Weapon quality runs from **tier 0 through tier 5**. The Market keeps one tier
-selected at a time and shows the same 16 weapon models at that quality. Changing
-tier preserves the selected model. The item panel displays damage, firing cycle,
-range, sustained heat, projectile speed, spread, and comparison with tier 0.
+Weapon quality runs from **tier 0 through tier 5**. The Market shows the same
+16 weapon models as your company advances. The item panel displays damage,
+firing cycle, range, sustained heat, projectile speed, and spread.
 
 | Tier | Quality | Price multiplier |
 | --- | --- | --- |

@@ -1,5 +1,5 @@
 import { rigName } from './rigs';
-import { companyRank, getMissionTier, MISSION_TIERS, reputationProgress, unlockedMissionTier } from './reputation';
+import { companyRank, getMissionTier, reputationProgress, unlockedMissionTier } from './reputation';
 import { ACQUISITION_SECONDS, missionHostileCount } from './missions';
 import { getSystemIntel } from './universe';
 import { renderTerritoryMap } from './territory-map';
@@ -123,33 +123,38 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 	const compact = window.matchMedia('(max-width: 560px) and (max-height: 700px)').matches;
 	const planet = getPlanet(destination);
 	const forecast = destination === campaign.planetId ? campaign : travelTo(campaign, destination);
-	const contracts = getContracts(forecast, destination);
+	const unlocked = unlockedMissionTier(campaign);
+	const postings = new Map<MissionKind, Contract>();
+	for (const contract of getContracts(forecast, destination)) {
+		if (contract.tier > unlocked.tier || campaign.reputation[contract.employer] < contract.requiredReputation) continue;
+		if (contract.tier > (postings.get(contract.kind)?.tier ?? 0)) postings.set(contract.kind, contract);
+	}
+	const active = campaign.active;
+	const contracts = active ? [active] : [...postings.values()];
 	const transmission = getTransmission(campaign);
 	const storyOffer = transmission?.offers.find(function ({ contract }) { return contract.id === selection && contract.planetId === destination; });
-	const selected = campaign.active ?? storyOffer?.contract ?? contracts.find(function (contract) { return contract.id === selection; }) ?? contracts.find(function (contract) { return canAcceptContract(campaign, contract); }) ?? contracts[0];
+	const selected = active ?? storyOffer?.contract ?? contracts.find(function (contract) { return contract.id === selection; }) ?? contracts[0];
 	const local = destination === campaign.planetId;
-	const active = campaign.active;
 	const storyStep = selected ? getAuthoredStep(campaign.story, selected) : undefined;
 	const localSignal = transmission?.offers.some(function ({ contract }) { return contract.planetId === campaign.planetId; });
 	const signalCopy = `A campaign contract is available at ${getPlanet(campaign.planetId).name}. Open Signal to review the offer.`;
 	const signalAction = localSignal ? html`<button class="primary" @click=${function () { actions.navigate('bridge', 'transmission'); }}>OPEN LOCAL SIGNAL →</button>` : undefined;
-	const emptyBoard = !active && !contracts.length;
+	const emptyBoard = contracts.length === 0;
 	const panes: WorkspacePane[] = [
 		...(transmission ? [transmissionPane(root, campaign, transmission, actions)] : []),
 		{ id: 'board', label: 'Contracts', items: [
 			...(emptyBoard ? textItems(localSignal ? `No ordinary postings at ${planet.name}. ${signalCopy}` : `No contracts at ${planet.name}. Use the Starmap to find a conflict zone and travel there for work.`) : []),
-			...(active ? [active] : contracts.filter(function (contract) { return contract.tier === selected?.tier; })).map(function (contract) {
-				const employer = getFaction(contract.employer); const locked = companyRank(campaign) < getMissionTier(contract.tier).rank; const factionLocked = campaign.reputation[contract.employer] < contract.requiredReputation;
-				return html`<button class="contract-card" aria-pressed=${contract.id === selected?.id} @click=${function () { actions.selectContract(contract.id); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]} <em>TIER ${contract.tier}</em></span><b>${contract.title}</b><span class="contract-employer" style="color:${employer.color}">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED' : locked ? `NEEDS RANK ${getMissionTier(contract.tier).rank}` : factionLocked ? `NEEDS ${signed(contract.requiredReputation)} FACTION` : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
+			...contracts.map(function (contract) {
+				const employer = getFaction(contract.employer);
+				return html`<button class="contract-card" aria-pressed=${contract.id === selected?.id} @click=${function () { actions.selectContract(contract.id); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]}</span><b>${contract.title}</b><span class="contract-employer" style="color:${employer.color}">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED' : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
 			}),
 			...(!emptyBoard ? textItems(active ? `${getFaction(active.opponent).name}: −${active.hostility} reputation applied on acceptance. Assign pilots and rigs before deployment.` : `Current postings on ${planet.name}. ${local ? 'Local uplink.' : `Arrival-day ${forecast.day} forecast; travel here to accept work.`}`) : []),
-			...textItems('Postings follow the factions on the local front and change after a contract or jump. Company reputation unlocks mission tiers. Faction favor controls employer access and payment; local contracts stay available at hostile standings.'),
-		], actions: emptyBoard ? signalAction ?? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` : !active ? html`<div class="market-tiers mission-tiers"><span class="eyebrow">MISSION TIER / ${selected ? getMissionTier(selected.tier).name.toUpperCase() : 'LOCAL'}</span><div>${MISSION_TIERS.map(function (entry) { return html`<button data-mission-tier=${entry.tier} style="--tier-color:var(--amber)" aria-pressed=${entry.tier === selected?.tier} @click=${function () { const posting = contracts.find(function (contract) { return contract.tier === entry.tier; }); if (posting) actions.selectContract(posting.id); }}>T${entry.tier}${companyRank(campaign) < entry.rank ? ` / R${entry.rank}` : ''}</button>`; })}</div></div>` : html`` },
+		], ...(emptyBoard ? { actions: signalAction ?? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` } : {}) },
 		{ id: 'briefing', label: 'Briefing', items: selected ? [
 			html`<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span><h2>${selected.title}</h2>`,
 			...(storyStep ? [html`<span class="eyebrow">${storyStep.contact}</span>`, ...textItems(storyStep.pitch)] : []),
 			...textItems(selected.briefing),
-			...textItems(`TIER ${selected.tier} / ${getMissionTier(selected.tier).name} · Requires company rank ${getMissionTier(selected.tier).rank}. ${missionHostileCount(selected)} hostiles. ${getMissionTier(selected.tier).opposition}`),
+			...textItems(`${missionHostileCount(selected)} hostiles. ${getMissionTier(selected.tier).opposition}`),
 			...textItems(`SUCCESS: +${getMissionTier(selected.tier).reputation} company reputation. ${reputationProgress(campaign)}.`),
 			...textItems('Success expands employer influence around this system. Failure or abort strengthens the opposition. Repeated victories can move the border and end a local conflict.'),
 			...(storyStep ? [] : [html`<span class="eyebrow">SURFACE OBJECTIVE</span>`, ...textItems(OBJECTIVES[selected.kind])]),
@@ -162,8 +167,7 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 		{ id: 'factions', label: 'Reputation', secondary: true, items: [
 			html`<span class="eyebrow">COMPANY REPUTATION</span><h2>RANK ${companyRank(campaign)} / 15</h2>`,
 			...textItems(reputationProgress(campaign)),
-			...textItems(`Available: mission tiers 1–${unlockedMissionTier(campaign).tier} and weapon tiers 0–${unlockedMissionTier(campaign).weaponTier}. Only successful extractions earn company reputation. Failures and aborts retain your earned rank.`),
-			...MISSION_TIERS.flatMap(function (entry) { return textItems(`RANK ${entry.rank}: ${entry.name} missions T${entry.tier} · weapons T${entry.weaponTier}${companyRank(campaign) >= entry.rank ? ' · UNLOCKED' : ''}`); }),
+			...textItems('Successful extractions build company reputation. Higher rank opens tougher contracts and better weapons. Faction standing affects which jobs each employer offers.'),
 			...FACTIONS.map(function (faction) { const value = campaign.reputation[faction.id]; return html`<div class="faction-standing" style="--faction-color:${faction.color}"><div><b>${faction.name}</b><strong>${signed(value)}</strong></div><span>${reputationLabel(value)}</span><div class="reputation-track"><i style="left:${value < 0 ? 50 + value / 2 : 50}%;width:${Math.abs(value) / 2}%"></i></div></div>`; }),
 			...(campaign.lastResult ? textItems(`${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}: ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor · +${campaign.lastResult.companyReputation} company reputation`) : []),
 		] },

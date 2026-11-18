@@ -381,8 +381,6 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 .workspace .company-rank { margin-left: 8px; color: var(--amber); font: 12px var(--mono); white-space: nowrap; }
 @media (max-width: 560px) {
 	#bridge.workspace.paired-workspace .workspace-body { grid-template-rows: minmax(215px, .85fr) minmax(0, 1fr); }
-	.mission-tiers>.eyebrow { display: none; }
-	.mission-tiers button { min-height: 32px; padding: 4px 2px; font-size: 10px; }
 }
 
 .pilot-record { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(0, 1.4fr) auto; align-items: center; gap: 12px 20px; padding: 14px; border: 1px solid var(--border); border-inline-start: 3px solid var(--cyan); background: #14262c; }
