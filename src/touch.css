@@ -134,8 +134,8 @@
 	.touch-enabled .weapon-console #weapon-hint { display: none; }
 }
 
-/* Hold and drag zoom belongs to the combat overlay. */
-.touch-zoom { position: absolute; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 64px); width: 52px; height: 52px; transform: translateX(-50%); z-index: 3; }
+/* Keep zoom with the right-hand controls, clear of the central playfield. */
+.touch-zoom { position: absolute; left: -64px; bottom: 0; width: 52px; height: 52px; z-index: 3; }
 .touch-enabled #zoom-hold { position: absolute; inset: 0; width: 52px; height: 52px; min-height: 52px; padding: 0; border: 1px solid var(--cyan); border-radius: 50%; background: #10211ff5; color: var(--cyan); display: grid; align-content: center; justify-items: center; gap: 3px; cursor: ns-resize; }
 #zoom-hold svg { width: 17px; height: 17px; pointer-events: none; }
 #touch #zoom-hold small { font: 8px var(--mono); color: var(--cyan); pointer-events: none; }
@@ -147,5 +147,5 @@
 .zoom-track { position: absolute; left: 24px; top: 20px; bottom: 20px; width: 2px; background: #69897d; }
 #zoom-knob { position: absolute; left: 16px; top: 42px; width: 18px; height: 18px; border-radius: 50%; background: var(--cyan); }
 @media (orientation: portrait) {
-	.touch-zoom { left: calc(50% + 26px); bottom: calc(max(14px, env(safe-area-inset-bottom)) + 14px); }
+	.touch-zoom { left: auto; right: 64px; }
 }
