@@ -31,14 +31,14 @@ import { createGamepadInput, type PadInput } from './gamepad';
 import { createControllerFeedback } from './controller-feedback';
 import { createTraining, trainingCopy, type Training } from './training';
 import { isDifficulty, readProfile, saveProfile } from './profile';
-import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, readCampaign, saveCampaign, settleContract, travelTo } from './campaign';
+import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getTransmission, readCampaign, saveCampaign, settleContract, travelTo, type Campaign, type CampaignResult } from './campaign';
 import { focusTerritoryMap } from './territory-map';
-import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions } from './campaign-ui';
+import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions, type ShipView } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
+import { getAuthoredStep } from './contract-chains';
 import { missionStructures, missionObjective } from './missions';
-import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
+import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor } from './company';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
-import type { Campaign } from './campaign';
 import { createTitleScene } from './title-scene';
 import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane, focusWorkspace, rememberWorkspaceFocus, moveWorkspaceFocus, cycleWorkspaceView } from './workspace';
 import { mountDialogLayout } from './dialog-layout';
@@ -105,7 +105,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let campaignConflict = false;
 	let destination: PlanetId = campaign.planetId;
 	let selectedContract: string | undefined;
-	let jumpUntil = 0;
+	let guidedCourse: PlanetId | undefined;
+	let jumpArrival: { until: number; transmission: boolean } | undefined;
 	const abort = new AbortController(); const listenerOptions = { signal: abort.signal };
 	onCleanup(function () { abort.abort(); });
 	const updateWorkspaceLayout = mountWorkspaceLayout(container, abort.signal);
@@ -470,28 +471,54 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const refreshCampaign = function () {
 		const actions: BridgeActions = {
 			navigate: navigateShip,
-			selectPlanet: function (id) { if (campaign.active) return; destination = id; selectedContract = undefined; refreshCampaign(); },
-			selectContract: function (id) { selectedContract = id; refreshCampaign(); selectWorkspacePane(element('bridge'), 'briefing', true); const target = element('bridge').querySelector<HTMLElement>('[data-pane="briefing"] .pane-actions button:not(:disabled), [data-pane="briefing"] .paged-content'); target?.focus({ preventScroll: true }); },
+			selectPlanet: function (id) {
+				if (campaign.active) return;
+				if (id !== destination) guidedCourse = undefined;
+				destination = id; selectedContract = undefined;
+				refreshCampaign();
+			},
+			selectContract: function (id) {
+				if (getTransmission(campaign)?.offers.some(function (step) { return step.contract.id === id; })) destination = campaign.planetId;
+				selectedContract = id;
+				refreshCampaign();
+				const bridge = element('bridge');
+				selectWorkspacePane(bridge, 'briefing', true);
+				const briefing = bridge.querySelector('[data-pane="briefing"]');
+				(briefing?.querySelector<HTMLElement>('.pane-actions button:not(:disabled)') ?? briefing?.querySelector<HTMLElement>('.paged-content'))?.focus({ preventScroll: true });
+			},
+			plotStoryCourse: function (planet) {
+				if (campaign.active) return;
+				guidedCourse = planet;
+				destination = planet; selectedContract = undefined;
+				navigateShip('starmap', 'route', true);
+			},
 			travel: function () {
 				if (navigation.screen !== 'starmap' || navigation.auxiliary || contextLost) return;
+				const target = destination;
+				const transmission = guidedCourse === target;
+				// The plotted course is consumed by this confirmation, even if cancelled.
+				guidedCourse = undefined;
 				confirm(function () {
-					const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, destination); if (next === campaign) return;
+					const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, target); if (next === campaign) return;
 					if (!replaceCampaign(next)) return;
 					element('jump-destination').textContent = getPlanet(campaign.planetId).name.toUpperCase();
 					element('jump-copy').textContent = `${origin.name} → ${getPlanet(campaign.planetId).name} · DAY ${campaign.day} · APPROACHING ORBIT`;
-					jumpUntil = performance.now() + 2200; transition(navigation.setScreen('jump'), function () { syncScreen(); element('jump').focus({ preventScroll: true }); });
-				}, 'CONFIRM JUMP', `One calendar day · 0 CR. Arrive at ${getPlanet(destination).name} on day ${campaign.day + 1}. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
+					jumpArrival = { until: performance.now() + 2200, transmission };
+					transition(navigation.setScreen('jump'), function () { syncScreen(); element('jump').focus({ preventScroll: true }); });
+				}, 'CONFIRM JUMP', `One calendar day · 0 CR. Arrive at ${getPlanet(target).name} on day ${campaign.day + 1}. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
 			},
 			accept: function (contract) {
 				if (navigation.screen !== 'bridge' || navigation.auxiliary || destination !== campaign.planetId) return;
+				const step = getAuthoredStep(campaign.story, contract);
+				const commitment = step && (getTransmission(campaign)?.offers.length ?? 0) > 1 ? `Choosing ${step.label.toLowerCase()} commits you to ${step.contact}. The other offer closes.` : '';
 				confirm(function () {
 					const next = acceptContract(campaign, contract.id); if (next === campaign) return;
 					if (!replaceCampaign(next)) return; refreshCampaign(); syncScreen();
 					selectWorkspacePane(element('bridge'), 'briefing'); element('bridge-deploy').focus({ preventScroll: true });
-				}, 'ACCEPT CONTRACT', `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction. Success strengthens the employer on this front; failure or abort strengthens the opposition.`, 'ACCEPT THIS CONTRACT?');
+				}, commitment ? `ACCEPT ${step?.label.toUpperCase()}` : 'ACCEPT CONTRACT', [commitment, `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction. Success strengthens the employer on this front; failure or abort strengthens the opposition.`].filter(Boolean).join(' '), 'ACCEPT THIS CONTRACT?');
 			},
-			deploy: function () { navigateShip('mechbay'); },
-			abandon: function () { confirm(function () { if (replaceCampaign(abandonContract(campaign))) toShip(); }, 'ABORT & RETURN TO SHIP', 'No payment, employer favor, or company reputation will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
+			deploy: function () { navigateShip('mechbay', campaign.active && getAuthoredStep(campaign.story, campaign.active) ? 'loadout' : undefined); },
+			abandon: function () { confirm(abortSortie, 'ABORT & RETURN TO SHIP', 'No payment, employer favor, or company reputation will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
 			training: startTraining,
 			title: back,
 			settings: function () { showAuxiliary('settings'); },
@@ -500,8 +527,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, actions);
 		renderStarmap(element('starmap'), campaign, destination, campaignSaved, actions);
 	};
-	const navigateShip = function (target: ShipScreen, view?: 'board' | 'route' | 'system', focusCurrent = false) {
+	const navigateShip = function (target: ShipScreen, view?: ShipView, focusRoute = false) {
 		if (campaignConflict || navigation.auxiliary || navigation.transitioning || editor.slot !== null) return;
+		if (target !== 'starmap') guidedCourse = undefined;
 		if (isShipScreen(navigation.screen)) rememberWorkspaceFocus(element(navigation.screen));
 		training = undefined; escape = false; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state);
 		editor = { ...editor, slot: null };
@@ -510,12 +538,22 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (target === 'bridge' || target === 'starmap') refreshCampaign();
 			else refreshCompany();
 			syncScreen();
-			if (view) selectWorkspacePane(element(target), view);
-			if (focusCurrent) focusTerritoryMap(element('starmap'), campaign.planetId);
+			const root = element(target);
+			if (view) selectWorkspacePane(root, view, view === 'transmission' || view === 'loadout');
+			if (view === 'transmission') root.querySelector<HTMLElement>('[data-pane="transmission"] .pane-actions button')?.focus({ preventScroll: true });
+			if (focusRoute) {
+				focusTerritoryMap(root, destination);
+				if (destination !== campaign.planetId) {
+					root.querySelector<HTMLButtonElement>(`[data-system="${destination}"]`)?.click();
+					root.querySelector<HTMLElement>('.planet-popover:popover-open .planet-actions .primary')?.focus({ preventScroll: true });
+				}
+			}
 		});
 	};
-	const toShip = function () { destination = campaign.planetId; selectedContract = undefined; navigateShip('starmap', 'route', true); };
+	const toShip = function () { guidedCourse = undefined; destination = campaign.planetId; selectedContract = undefined; navigateShip('starmap', 'route', true); };
+	const toTransmission = function () { destination = campaign.planetId; selectedContract = undefined; navigateShip('bridge', 'transmission'); };
 	const toTitle = function () {
+		guidedCourse = undefined;
 		element('title-continue').hidden = !returningCompany;
 		element('title-company-label').textContent = campaign.introComplete ? 'CONTINUE COMPANY' : 'CONTINUE ESCAPE';
 		training = undefined; escape = false; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state); audio.reset(); transition(navigation.setScreen('title'));
@@ -537,10 +575,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		setPaused(navigation.screen === 'playing');
 	};
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
-	listen('title-continue', function () { if (campaign.introComplete) toShip(); else startIntro(); });
+	listen('title-continue', function () {
+		if (!campaign.introComplete) startIntro();
+		else if (getTransmission(campaign)?.offers.length) toTransmission();
+		else toShip();
+	});
 	const startCompany = function (career: boolean) {
 		const start = function () {
-			if (!replaceCampaign({ ...createCampaign(), introComplete: career })) return;
+			if (!replaceCampaign(createCampaign(undefined, career ? 'career' : 'campaign'))) return;
 			returningCompany = true;
 			element('title-continue').hidden = false;
 			destination = campaign.planetId; selectedContract = undefined;
@@ -586,16 +628,26 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	element('title-company-label').textContent = campaign.introComplete ? 'CONTINUE COMPANY' : 'CONTINUE ESCAPE';
 	describeTitleChoice(returningCompany ? 'title-continue' : 'title-new-campaign');
 	listen('training-deploy', function () { if (campaign.active) navigateShip('mechbay'); else toShip(); });
-	listen('training-briefing', function () { if (trainingOrigin === 'title') toTitle(); else toShip(); }); listen('restart', toShip);
+	listen('training-briefing', function () { if (trainingOrigin === 'title') toTitle(); else toShip(); });
+	listen('restart', function () {
+		const contract = campaign.lastResult?.contract;
+		if (contract && getAuthoredStep(campaign.story, contract)) toTransmission();
+		else toShip();
+	});
 	listen('resume', function () { setPaused(false); });
 	listen('pause', function () { setPaused(true); });
 	listen('reset', function () { if (escape) confirm(startEscape, 'RESTART ESCAPE'); else if (training) confirm(startTraining, 'RESTART TRAINING'); });
 	listen('leave', function () {
 		if (escape) confirm(toTitle, 'RETURN TO TITLE', 'The escape can be restarted from the title screen. Company progress is untouched.', 'LEAVE THE ESCAPE?');
-		else if (state.mission && !training) confirm(function () { checkpoint(); if (replaceCampaign(abandonContract(campaign))) toShip(); }, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
+		else if (state.mission && !training) confirm(abortSortie, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
 		else confirm(trainingOrigin === 'title' ? toTitle : toShip, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
 	});
-	listen('result-briefing', toShip);
+	listen('result-company', function () {
+		if ((getOwnedMech(campaign)?.integrity ?? 100) < 100) {
+			navigateShip('engineering', workOrderFor(campaign, campaign.selectedFrame) ? 'calendar' : 'condition');
+		} else navigateShip('mechbay', 'loadout');
+	});
+	listen('result-starmap', toShip);
 	listen('confirm-action', function () {
 		const action = confirmedAction; confirmedAction = undefined;
 		transition(navigation.closeAuxiliary(), function () { syncScreen(false); action?.(); if (!navigation.transitioning) { const root = menu(); if (root?.classList.contains('workspace')) focusWorkspace(root); updateMenuHint(); } });
@@ -662,24 +714,48 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	element('handbook').tabIndex = -1;
 	coarsePointer.addEventListener('change', updateSettings, listenerOptions);
 	window.addEventListener('resize', function () { if (inputMode === 'touch') resetInput(); if (navigation.screen === 'bridge') refreshCampaign(); else if (navigation.screen === 'market') refreshCompany(); }, listenerOptions);
+	const showDebrief = function (result: CampaignResult, now: number, report?: ReturnType<typeof getOperationReport>) {
+		const { contract, won, aborted, payout, favor, companyReputation } = result;
+		const step = getAuthoredStep(campaign.story, contract);
+		const integrity = getOwnedMech(campaign)?.integrity ?? 100;
+		const armor = report?.armor ?? Math.ceil(integrity);
+		terminalUntil = now + 1600;
+		element('result-title').textContent = won ? 'CONTRACT COMPLETE.' : aborted ? 'CONTRACT ABORTED.' : 'CONTRACT FAILED.';
+		element('result-story').hidden = !step;
+		element('result-story').textContent = step ? won ? step.success : `${step.contact} is holding the job for you. Retry from the Bridge when ready.` : '';
+		const failure = aborted ? 'The company withdrew.' : state.mission?.acquisitionTime === 0 ? 'The targeting deadline expired.' : 'The sortie was lost.';
+		element('result-copy').textContent = won
+			? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} released payment and strengthened its local influence.`
+			: `${failure} Frame integrity: ${armor}%. ${getFaction(contract.opponent).name} gained local influence.${integrity < 100 ? ' Schedule free repairs in Engineering, then wait in Calendar.' : ''}`;
+		element('result-difficulty').textContent = report ? `${getFrame(state.frame).name} · ${state.difficulty.toUpperCase()}` : getFrame(campaign.selectedFrame).name;
+		element('result-score').textContent = `${payout.toLocaleString()} CR`;
+		element('result-rank').textContent = won ? '✓' : '×';
+		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'CONTRACT PAYMENT';
+		const stats = [...(report ? [[String(report.kills), 'ELIMINATED'], [formatTime(report.time), 'FIELD TIME']] : []), [`${armor}%`, 'FRAME INTEGRITY'], [`+${favor}`, 'EMPLOYER FAVOR']];
+		element('result-stats').replaceChildren(...stats.map(function ([value, label]) { const node = document.createElement('div'); const strong = document.createElement('b'); const small = document.createElement('small'); strong.textContent = value ?? ''; small.textContent = label ?? ''; node.append(strong, small); return node; }));
+		const funds = step ? `COMPANY FUNDS ${campaign.credits.toLocaleString()} CR · ` : '';
+		element('result-upgrades').textContent = `${funds}DAY ${campaign.day} · +${companyReputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
+		element('restart').textContent = step ? 'BRIDGE / SIGNAL →' : 'RETURN TO SHIP →';
+		element('result-company').hidden = !step;
+		element('result-company').textContent = integrity < 100 ? 'ENGINEERING →' : 'MECH BAY →';
+		element('result-starmap').hidden = !step;
+		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
+		transition(navigation.setScreen('result'));
+	};
 	const showResult = function (now: number) {
 		if (training || escape || !state.mission) return;
 		checkpoint();
-		const report = getOperationReport(state); const won = state.outcome === 'won'; const contract = state.mission.contract;
-		if (!replaceCampaign(settleContract(campaign, won))) return;
-		terminalUntil = now + 1600;
-		element('result-title').textContent = won ? 'CONTRACT COMPLETE.' : 'CONTRACT FAILED.';
-		element('result-copy').textContent = won ? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} has confirmed the objective, released payment, and strengthened its influence around this system.` : `${state.mission?.acquisitionTime === 0 ? 'The targeting deadline expired.' : 'The sortie was lost.'} Your frame was recovered with ${report.armor}% integrity. No payment or employer favor was earned. ${getFaction(contract.opponent).name} gained local influence.${report.armor < 100 ? ' Repair it in Engineering before its next deployment.' : ''}`;
-		element('result-difficulty').textContent = `${getFrame(state.frame).name} · ${state.difficulty.toUpperCase()}`;
-		element('result-score').textContent = `${campaign.lastResult?.payout.toLocaleString() ?? '0'} CR`;
-		element('result-rank').textContent = won ? '✓' : '×';
-		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'CONTRACT PAYMENT';
-		const stats = [[String(report.kills), 'ELIMINATED'], [formatTime(report.time), 'FIELD TIME'], [`${report.armor}%`, 'FRAME INTEGRITY'], [`+${campaign.lastResult?.favor ?? 0}`, 'EMPLOYER FAVOR']];
-		element('result-stats').replaceChildren(...stats.map(function ([value, label]) { const node = document.createElement('div'); const strong = document.createElement('b'); const small = document.createElement('small'); strong.textContent = value ?? ''; small.textContent = label ?? ''; node.append(strong, small); return node; }));
-		element('result-upgrades').textContent = `DAY ${campaign.day} · +${campaign.lastResult?.companyReputation ?? 0} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. Equipment retained. Damage requires a repair work order. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
-		element('restart').textContent = 'RETURN TO SHIP →'; element('result-briefing').hidden = true;
-		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
-		transition(navigation.setScreen('result'));
+		const next = settleContract(campaign, state.outcome === 'won');
+		if (next !== campaign && next.lastResult && replaceCampaign(next)) showDebrief(next.lastResult, now, getOperationReport(state));
+	};
+	const abortSortie = function () {
+		const report = campaign.deployed && state.mission ? getOperationReport(state) : undefined;
+		checkpoint();
+		const next = abandonContract(campaign);
+		if (next === campaign || !replaceCampaign(next)) return;
+		const result = next.lastResult;
+		if (result && getAuthoredStep(next.story, result.contract)) showDebrief(result, performance.now(), report);
+		else toShip();
 	};
 	container.addEventListener('focusin', function (event) { if (event.target instanceof HTMLElement && !event.target.closest('.menu-controls')) updateMenuHint(); }, listenerOptions);
 	container.addEventListener('workspacechange', updateMenuHint, listenerOptions);
@@ -970,7 +1046,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	});
 	world.addSystem('browser-input').inPhase('preUpdate').setProcess(function () {
 		const now = frameTime;
-		if (!navigation.transitioning && navigation.screen === 'jump' && focused && !document.hidden && now >= jumpUntil) toShip();
+		if (!navigation.transitioning && navigation.screen === 'jump' && focused && !document.hidden && jumpArrival && now >= jumpArrival.until) {
+			const { transmission } = jumpArrival;
+			jumpArrival = undefined;
+			if (transmission && getTransmission(campaign)?.offers.some(function (step) { return step.contract.planetId === campaign.planetId; })) toTransmission();
+			else toShip();
+		}
 		const revisionAtFrame = screenRevision;
 		const rect = canvas.getBoundingClientRect(); const width = rect.width; const height = rect.height;
 		presentation.resize(state, width, height);
@@ -1125,8 +1206,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (state.mission?.stage === 'extract' && previousMissionStage !== 'extract') { message = 'OBJECTIVE COMPLETE · REACH EXTRACTION AND HOLD FOR 3 SECONDS'; messageUntil = state.time + 7; }
 			if (state.events.includes('coolant')) { message = 'COOLANT PURGE / REACTOR STABILIZING'; messageUntil = state.time + 2; }
 			if (escape && state.outcome === 'won') {
+				const opening = !campaign.introComplete && campaign.mode === 'campaign';
 				if (!campaign.introComplete && !replaceCampaign({ ...campaign, introComplete: true })) return;
-				toShip();
+				if (opening) toTransmission();
+				else toShip();
 			}
 			else if (escape && state.outcome === 'lost') { audio.reset(); transition(navigation.setScreen('escape-result')); }
 			else if (training?.stage === 'complete') transition(navigation.setScreen('training-result'));

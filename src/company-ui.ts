@@ -5,6 +5,7 @@ import { renderWorkspace, revealWorkspaceElement, selectWorkspacePane, textItems
 import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_TIERS, WEAPON_FAMILY_LABELS, type WeaponDefinition, type WeaponId } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getPlanet, type Campaign } from './campaign';
+import { getAuthoredStep } from './contract-chains';
 import { availableWeapons, canDeploy, canRefit, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
 import { FRAMES, getFrame, type FrameDefinition, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary } from './loadout-ui';
@@ -111,7 +112,8 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 	const selectedHardpoint = slot === null ? undefined : hardpoints[slot];
 	const equipment = slot !== null && selectedHardpoint !== undefined && !order;
 	const ready = canDeploy(campaign);
-	const status = draft ? 'Apply or discard your loadout changes before deployment.' : order ? `Your frame will be ready on day ${order.readyDay}. It cannot deploy while work is in progress.` : mech.integrity <= 0 ? 'This frame needs repairs before it can deploy.' : !loadedMounts(mech.loadout, mech.reserves).some(usableMount) ? 'This frame has no usable weapons. Load ammunition or fit an energy weapon before deployment.' : campaign.active ? `${frame.name} will deploy at ${integrityLabel(mech.integrity)} integrity with its installed weapons.` : 'Choose and accept a contract from the command bridge.';
+	const story = campaign.active && getAuthoredStep(campaign.story, campaign.active);
+	const status = draft ? 'Apply or discard your loadout changes before deployment.' : order ? `Your frame will be ready on day ${order.readyDay}. It cannot deploy while work is in progress.` : mech.integrity <= 0 ? 'Schedule a free repair and advance the Engineering calendar to deploy this frame.' : !loadedMounts(mech.loadout, mech.reserves).some(usableMount) ? 'This frame has no usable weapons. Load ammunition or fit an energy weapon before deployment.' : campaign.active ? `${frame.name} will deploy at ${integrityLabel(mech.integrity)} integrity with its installed weapons.` : 'Choose and accept a contract from the command bridge.';
 	const mounts = hardpoints.map(function (hardpoint, index) {
 		const weaponId = editor.loadout[index]; const weapon = weaponId ? getWeapon(weaponId) : undefined;
 		const different = weaponId !== mech.loadout[index] || editor.reserves[index] !== mech.reserves[index];
@@ -152,6 +154,7 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 			...textItems(hardpointSummary(frame.id)), ...textItems(frame.tradeoff),
 		] },
 		{ id: 'loadout', label: equipment && slot !== null ? `Mount ${slot + 1}` : 'Loadout', items: equipment ? choices : [
+			...(story ? [html`<span class="eyebrow">CAMPAIGN / ${story.contract.title}</span>`, ...textItems(story.contract.briefing), ...textItems(status)] : []),
 			...textItems(`INSTALLED: ${loadSummary(frame.id, mech.loadout, mech.reserves)}`),
 			...(draft ? textItems(`DRAFT: ${loadSummary(frame.id, editor.loadout, editor.reserves)}`) : []),
 			...(order?.kind === 'refit' ? textItems(`PENDING DAY ${order.readyDay}: ${loadSummary(frame.id, order.loadout, order.reserves)}`) : []),
@@ -159,7 +162,7 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 			...textItems('Ammunition refills free before each sortie. Reserve changes alone cost 0 CR and no workshop time. Extra rounds add weight; firing sheds it.'),
 			...textItems(order ? `${order.kind === 'repair' ? 'Repairs' : 'Refit'} underway. Ready day ${order.readyDay} · ${daysLabel(order.readyDay - campaign.day)} remaining.` : changed > 0 ? `Fitting estimate: ${daysLabel(changed)}. Ready day ${campaign.day + changed}. Parts are reserved when queued. Installed weapons stay in place until work finishes.` : `${hardpointSummary(frame.id)} Select a mount to fit a compatible owned weapon. Each changed mount takes one calendar day.`),
 			...(changed > 0 && !editor.loadout.some(function (weapon) { return weapon !== null; }) ? textItems('An unarmed frame cannot deploy. Removed equipment returns to stores when the refit finishes.') : []),
-			html`<span class="eyebrow">${campaign.active ? `ACCEPTED / ${campaign.active.title}` : 'NO CONTRACT ACCEPTED'}</span>`, ...textItems(status),
+			...(story ? [] : [html`<span class="eyebrow">${campaign.active ? `ACCEPTED / ${campaign.active.title}` : 'NO CONTRACT ACCEPTED'}</span>`, ...textItems(status)]),
 		], actions: equipment ? html`<button class="secondary" @click=${actions.closePicker}>BACK TO MOUNTS</button><button class="text-button" @click=${function () { actions.navigate('market'); }}>MARKET →</button>` : draft ? html`<button id="queue-refit" class="primary" ?disabled=${!canRefit(campaign, mech.frameId, editor.loadout, editor.reserves)} @click=${actions.queueRefit}>${changed > 0 ? `QUEUE ${daysLabel(changed)} REFIT →` : 'APPLY AMMUNITION · FREE'}</button><button class="text-button" data-discard-refit @click=${actions.discardRefit}>DISCARD DRAFT</button>` : order ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW ENGINEERING →</button>` : !campaign.active ? html`<button class="primary" @click=${function () { actions.navigate('bridge'); }}>FIND A CONTRACT →</button>` : html`<button id="company-deploy" class="primary" ?disabled=${!ready} @click=${actions.deploy}>DEPLOY ${frame.name} ↘</button>` },
 	];
 };

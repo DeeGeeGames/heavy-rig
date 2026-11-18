@@ -32,6 +32,10 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .paged-content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow: clip; outline: none; }
 .page-item { flex: none; min-width: 0; }
 .page-item>p, .workspace-copy { margin: 0; font: 14px/1.6 Arial, sans-serif; color: var(--muted); }
+.signal-heading .workspace-copy { color: var(--paper); }
+.signal-contact { border-inline-start: 2px solid var(--cyan); padding: 4px 12px; }
+.signal-contact .workspace-copy { color: var(--paper); margin: 3px 0; }
+.signal-contact small { display: block; font: 11px var(--mono); color: var(--amber); }
 .workspace .page-item h2 { margin: 3px 0 8px; font-size: 32px; }
 .workspace .page-item h3 { margin: 0 0 6px; font: 25px var(--display); }
 .workspace .page-item .eyebrow { font-size: 10px; letter-spacing: 1px; }
@@ -236,6 +240,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	#game[data-screen='mechbay'] #menu-input-hint { gap: 5px 8px; }
 }
 @media (max-height: 520px) and (min-width: 561px) {
+	.workspace .signal-heading h2 { margin: 2px 0 4px; font-size: 25px; }
 	#game .workspace { padding: max(5px, env(safe-area-inset-top)) 12px 0; gap: 5px; }
 	.workspace .bridge-header { padding: 0; }
 	.workspace .bridge-brand .eyebrow, .workspace .bridge-brand .insignia, .workspace .career-stats small, .command-heading { display: none; }

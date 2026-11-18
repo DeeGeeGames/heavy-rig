@@ -16,6 +16,7 @@
 [data-dialog-topic] { height: 100%; display: flex; flex-direction: column; gap: 14px; }
 [data-dialog-topic] > * { flex: none; margin: 0; }
 [data-dialog-topic] > p { font: 14px/1.6 Arial, sans-serif; color: var(--muted); }
+[data-dialog-topic] > .result-story { color: var(--paper); border-inline-start: 2px solid var(--cyan); padding-inline-start: 10px; }
 [data-dialog-topic] > h3 { font-size: 11px; }
 .dialog-item-offpage, .dialog-source-split { display: none !important; }
 .dialog-pager { flex: none; min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
