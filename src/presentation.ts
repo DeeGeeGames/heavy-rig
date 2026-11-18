@@ -15,6 +15,7 @@ import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
 import { factionMechSkin, type MechSkinId } from './mech-skin';
+import { createFiringArc } from './firing-arc-3d';
 
 interface CombatEntities {
 	entityForPlayer: () => number | undefined;
@@ -61,6 +62,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		allocated.push(function () { renderer.dispose(); });
 		renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
 		renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap;
+		renderer.localClippingEnabled = true;
 		canvas.after(labels);
 		const scene = new Scene(); allocated.push(function () { scene.clear(); }); scene.background = new Color('#142329'); scene.fog = new Fog('#1c3035', 1700, 3200);
 		const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
@@ -71,6 +73,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		sun.shadow.normalBias = 2; sun.shadow.bias = -0.0003; scene.add(sun, sun.target);
 		const fill = new DirectionalLight('#a3d1d8', 1.05); scene.add(fill, fill.target);
 		const objects = createWorldObjects(scene); allocated.push(function () { objects.dispose(); });
+		const firingArc = createFiringArc(); allocated.push(firingArc.dispose); scene.add(firingArc.mesh);
 		const reticleGeometry = new RingGeometry(17, 18.5, 48); allocated.push(function () { reticleGeometry.dispose(); });
 		const reticleMaterial = new MeshBasicMaterial({ color: '#d8f2de', transparent: true, opacity: 0.85, depthWrite: false }); allocated.push(function () { reticleMaterial.dispose(); });
 		const reticle = new Mesh(reticleGeometry, reticleMaterial); reticle.rotation.x = -Math.PI / 2; scene.add(reticle);
@@ -221,6 +224,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				objects.update(state, player ? {
 					muzzles: player.model.muzzles.map(worldAnchor), exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
 				} : undefined);
+				firingArc.update(state, Boolean(player) && !attract && !hangar);
 				reticle.visible = barrel.visible = !attract;
 				reticle.position.set(aim.x, 0.25, aim.y);
 				const positions = barrelGeometry.getAttribute('position'); const p = state.player;
