@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { acceptContract, abandonContract, createCampaign, getContracts, parseCampaign, type Campaign } from '../src/campaign';
-import { advanceDays, beginDeployment, buyFrame, buyWeapon, canRefit, checkpointDeployment, getOwnedMech, isFrameId, queueRefit, queueRepair, selectFrame } from '../src/company';
+import { advanceDays, assignRig, beginDeployment, buyFrame, buyWeapon, canRefit, checkpointDeployment, getOwnedMech, isFrameId, queueRefit, queueRepair, selectFrame } from '../src/company';
 import { frameWeight, loadedMounts } from '../src/combat-resources';
 import { CHASSIS_IDS, FRAMES, getFrame } from '../src/frames';
 import { canEquipWeapon, createStarterLoadout, getHardpoints, isFrameLoadout } from '../src/hardpoints';
@@ -77,7 +77,7 @@ test('separately purchased variants preserve independent equipment, reserves, da
 	const complete = advanceDays(parseCampaign(JSON.stringify(queued)), 1);
 	expect(getOwnedMech(complete, 'kestrel-b')?.reserves).toEqual([300, 0]);
 	expect(getOwnedMech(complete, 'kestrel-c')?.reserves).toEqual([400, 45]);
-	const deployed = beginDeployment(accept(selectFrame(complete, 'kestrel-b')));
+	const deployed = beginDeployment(accept(assignRig(selectFrame(complete, 'kestrel-b'), 0, 'kestrel-b')));
 	expect(deployed.deployed?.frameId).toBe('kestrel-b');
 	const damaged = checkpointDeployment(deployed, 53, 1);
 	expect(getOwnedMech(damaged, 'kestrel-b')?.integrity).toBe(53);

@@ -132,7 +132,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 	});
 });
 
-test('v6 storage purges incompatible campaigns while preserving profile and unrelated browser data', async function () {
+test('v7 storage purges incompatible campaigns while preserving profile and unrelated browser data', async function () {
 	const { CAMPAIGN_STORAGE_KEY, readCampaign, saveCampaign } = await import('../src/campaign');
 	const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
 	const data = new Map<string, string>();
@@ -146,13 +146,13 @@ test('v6 storage purges incompatible campaigns while preserving profile and unre
 	};
 	Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
 	try {
-		for (const version of [1, 2, 3, 4, 5]) storage.setItem(`heavy-rig:campaign:v${version}`, JSON.stringify({ ...createCampaign(72), version, credits: 900 }));
+		for (const version of [1, 2, 3, 4, 5, 6]) storage.setItem(`heavy-rig:campaign:v${version}`, JSON.stringify({ ...createCampaign(72), version, credits: 900 }));
 		storage.setItem('heavy-rig:profile:v1', 'keep settings');
 		storage.setItem('other-game:campaign:v4', 'keep other game');
 		const fresh = readCampaign();
-		expect(fresh.version).toBe(6);
+		expect(fresh.version).toBe(7);
 		expect(fresh.credits).toBe(0);
-		for (const version of [1, 2, 3, 4, 5]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
+		for (const version of [1, 2, 3, 4, 5, 6]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
 		expect(storage.getItem('heavy-rig:profile:v1')).toBe('keep settings');
 		expect(storage.getItem('other-game:campaign:v4')).toBe('keep other game');
 		const current = createCampaign(84);
@@ -169,11 +169,12 @@ test('v6 storage purges incompatible campaigns while preserving profile and unre
 	}
 });
 
-test('an accepted v6 contract from the four-kind board still restores its exact original terms', async function () {
+test('an accepted v6 contract is discarded with the rest of the old company', async function () {
 	const raw = await Bun.file(new URL('./fixtures/accepted-contract-v6.json', import.meta.url)).text();
 	const restored = parseCampaign(raw);
-	expect(restored.active?.kind).toBe('demolition'); expect(restored.active?.tier).toBe(2);
-	expect(JSON.stringify(restored)).toBe(raw.trim());
+	expect(restored.active).toBeUndefined();
+	expect(restored.pilots).toEqual(['player']);
+	expect(restored.credits).toBe(0);
 });
 
 test('new mission contracts restore and settle their payment exactly once', function () {
@@ -187,20 +188,19 @@ test('new mission contracts restore and settle their payment exactly once', func
 	}
 });
 
-test('accepted acquisition saves survive the extended deadline without accepting altered contract terms', function () {
+test('accepted acquisition saves preserve their current deadline and reject altered terms', function () {
 	for (const boardVersion of [1, 2] as const) {
 		const campaign = { ...createCampaign(317), credits: 12500 };
 		campaign.universe = { ...campaign.universe, boardVersion };
 		const accepted = acceptContract(campaign, posted(campaign, 'acquisition').id);
 		const contract = accepted.active;
 		if (!contract) throw new Error('Missing accepted acquisition');
-		const legacy = { ...accepted, active: { ...contract, briefing: contract.briefing.replace('within 4 minutes.', 'within three minutes.') } };
-		expect(roundTrip(legacy)).toEqual(accepted);
-		const settled = settleContract(roundTrip(legacy), true);
+		expect(roundTrip(accepted)).toEqual(accepted);
+		const settled = settleContract(roundTrip(accepted), true);
 		expect(settled.credits).toBe(campaign.credits + contract.reward);
 		expect(settleContract(settled, true)).toBe(settled);
-		for (const active of [{ ...legacy.active, reward: contract.reward + 1 }, { ...legacy.active, briefing: `${legacy.active.briefing} Changed terms.` }]) {
-			const rejected = roundTrip({ ...legacy, active });
+		for (const active of [{ ...contract, reward: contract.reward + 1 }, { ...contract, briefing: contract.briefing.replace('within 4 minutes.', 'within three minutes.') }]) {
+			const rejected = roundTrip({ ...accepted, active });
 			expect(rejected.active).toBeUndefined();
 			expect(rejected.credits).toBe(0);
 		}

@@ -6,6 +6,7 @@ export interface WorkspacePane {
 	items: readonly TemplateResult[];
 	actions?: TemplateResult;
 	secondary?: boolean;
+	scrollable?: boolean;
 }
 export interface WorkspaceView {
 	id: string;
@@ -90,7 +91,7 @@ export const refreshWorkspace = function (root: HTMLElement, preserveFocus = tru
 	const panes = [...root.querySelectorAll<HTMLElement>('.workspace-pane')];
 	for (const pane of panes) { pane.hidden = !view.panes.includes(pane.dataset['pane'] ?? ''); pane.inert = pane.hidden; }
 	for (const pane of panes) {
-		if (pane.hidden) continue;
+		if (pane.hidden || pane.dataset['scrollable'] === 'true') continue;
 		const content = pane.querySelector<HTMLElement>('.paged-content'); if (!content) continue;
 		const items = [...content.children].filter(function (item): item is HTMLElement { return item instanceof HTMLElement; });
 		for (const item of items) { item.hidden = false; item.inert = false; }
@@ -132,6 +133,16 @@ export const revealWorkspaceElement = function (target: HTMLElement) {
 	if (!root || !pane) return;
 	const state = stateFor(root); const id = pane.dataset['pane'] ?? '';
 	if (!state.views.find(function (view) { return view.id === state.active; })?.panes.includes(id)) selectWorkspacePane(root, id);
+	if (pane.dataset['scrollable'] === 'true') {
+		const content = target.closest<HTMLElement>('.paged-content');
+		if (content) {
+			const viewport = content.getBoundingClientRect();
+			const item = target.getBoundingClientRect();
+			if (item.top < viewport.top) content.scrollTop -= viewport.top - item.top;
+			else if (item.bottom > viewport.bottom) content.scrollTop += item.bottom - viewport.bottom;
+		}
+		return;
+	}
 	const groups = state.groups.get(id) ?? [];
 	const page = groups.findIndex(function (group) { return group.some(function (item) { return item.contains(target); }); });
 	if (page >= 0) setPage(root, pane, page);
@@ -157,17 +168,17 @@ export const renderWorkspace = function (root: HTMLElement, header: TemplateResu
 	root.classList.add('workspace'); root.classList.toggle('has-hangar', Boolean(hero));
 	const locked = root.dataset['picker'] === 'true';
 	render(html`${header}
-		<nav class="workspace-tabs" aria-label="Department pages">
+		${views.length > 1 ? html`<nav class="workspace-tabs" aria-label="Department pages">
 			<button class="nav-step" data-view-step="-1" ?disabled=${locked} aria-label="Previous department page" @click=${function () { cycleWorkspaceView(root, -1); }}><span data-menu-glyph="previousPage"></span></button>
 			${views.map(function (view) { return html`<button data-pane-target=${view.id} aria-pressed=${state.active === view.id} ?disabled=${locked} @click=${function () { selectWorkspacePane(root, view.id); }}>${view.label}</button>`; })}
 			<button class="nav-step" data-view-step="1" ?disabled=${locked} aria-label="Next department page" @click=${function () { cycleWorkspaceView(root, 1); }}><span data-menu-glyph="nextPage"></span></button>
-		</nav>
-		${root.id === 'starmap' ? '' : html`<div class="command-heading"><div><span class="eyebrow">WAYFARER / COMPANY OPERATIONS</span><h2>${root.id === 'mechbay' ? 'Ready your rig.' : root.id === 'bridge' ? 'Your next sortie.' : root.id === 'market' ? 'Stock the company.' : 'Keep the company running.'}</h2></div><span class="command-location" data-view-label></span></div>`}
+		</nav>` : ''}
+		${root.id === 'starmap' ? '' : html`<div class="command-heading"><div><span class="eyebrow">WAYFARER / COMPANY OPERATIONS</span><h2>${root.id === 'mechbay' ? 'Ready your rig.' : root.id === 'bridge' ? 'Your next sortie.' : root.id === 'market' ? 'Stock the company.' : root.id === 'pilots' ? 'Pilots' : root.id === 'deploy' ? 'Deploy' : 'Keep the company running.'}</h2></div><span class="command-location" data-view-label></span></div>`}
 		<div class="workspace-body">${hero ? html`<aside class="hangar-inspection">${hero}</aside>` : ''}${panes.map(function (pane) { return html`
-			<section class="workspace-pane" data-pane=${pane.id} aria-label=${pane.label}>
+			<section class="workspace-pane" data-pane=${pane.id} data-scrollable=${String(Boolean(pane.scrollable))} aria-label=${pane.label}>
 				<h2 class="pane-heading">${pane.label}</h2>
 				<div class="paged-content" tabindex="-1">${pane.items.map(function (item) { return html`<div class="page-item">${item}</div>`; })}</div>
-				<nav class="page-controls" aria-label="${pane.label} content pages"><button data-page-previous aria-label="Previous ${pane.label} content page" @click=${function () { const element = root.querySelector<HTMLElement>(`[data-pane="${pane.id}"]`); if (element) { setPage(root, element, (state.pages.get(pane.id) ?? 0) - 1); changed(root); } }}>← PREV</button><span data-page-count role="status"></span><button data-page-next aria-label="Next ${pane.label} content page" @click=${function () { const element = root.querySelector<HTMLElement>(`[data-pane="${pane.id}"]`); if (element) { setPage(root, element, (state.pages.get(pane.id) ?? 0) + 1); changed(root); } }}>NEXT →</button></nav>
+				${pane.scrollable ? '' : html`<nav class="page-controls" aria-label="${pane.label} content pages"><button data-page-previous aria-label="Previous ${pane.label} content page" @click=${function () { const element = root.querySelector<HTMLElement>(`[data-pane="${pane.id}"]`); if (element) { setPage(root, element, (state.pages.get(pane.id) ?? 0) - 1); changed(root); } }}>← PREV</button><span data-page-count role="status"></span><button data-page-next aria-label="Next ${pane.label} content page" @click=${function () { const element = root.querySelector<HTMLElement>(`[data-pane="${pane.id}"]`); if (element) { setPage(root, element, (state.pages.get(pane.id) ?? 0) + 1); changed(root); } }}>NEXT →</button></nav>`}
 				${pane.actions ? html`<div class="pane-actions">${pane.actions}</div>` : ''}
 			</section>`; })}</div>${footer}`, root);
 	state.renderedView = state.active; refreshWorkspace(root); changed(root);

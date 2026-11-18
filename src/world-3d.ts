@@ -1,5 +1,5 @@
 import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, Group, InstancedMesh, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector3 } from 'three';
-import { ARENA, getEnemyDefense, type Effect, type Shot, type CombatStateView } from './simulation';
+import { ARENA, getEnemyDefense, type Beam, type Effect, type Point, type Shot, type CombatStateView } from './simulation';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
 import { createMissionEnvironment } from './mission-environment';
@@ -7,6 +7,7 @@ import type { MissionMap } from './campaign-types';
 import { createProjectileSmoke } from './projectile-smoke';
 import { createWeaponVfx } from './weapon-vfx';
 import { getWeapon } from './arsenal';
+import { getFrame } from './frames';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
 interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
@@ -138,6 +139,7 @@ export const createWorldObjects = function (scene: Scene) {
 	const beams = Array.from({ length: 4 }, function (_unused, slot) {
 		const beam = weaponVfx.createBeam(slot); root.add(beam.root); return beam;
 	});
+	const squadmateBeams: ReturnType<typeof weaponVfx.createBeam>[] = [];
 	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); root.add(smoke);
 	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0);
 	const flashes = new WeakMap<Effect, Vector3>();
@@ -146,6 +148,15 @@ export const createWorldObjects = function (scene: Scene) {
 		delta.subVectors(to, from); const length = delta.length();
 		mesh.visible = length > 0.0001; if (!mesh.visible) return;
 		mesh.position.copy(from).add(to).multiplyScalar(0.5); mesh.scale.set(width, length, width); mesh.quaternion.setFromUnitVectors(up, delta.normalize());
+	};
+	const updateBeam = function (beam: ReturnType<typeof weaponVfx.createBeam>, endpoint: Beam | undefined, rig: Point, time: number, muzzle?: Vector3) {
+		beam.root.visible = endpoint !== undefined;
+		if (!endpoint) return;
+		from.set(rig.x, 42, rig.y); to.set(endpoint.x, endpoint.elevation ?? 42, endpoint.y);
+		if (endpoint.origin) from.set(endpoint.origin.x, endpoint.origin.elevation, endpoint.origin.y);
+		else if (muzzle) from.copy(muzzle);
+		segment(beam.halo, 7); segment(beam.core, 0.75);
+		weaponVfx.updateBeam(beam, from, to, time, from.distanceTo(to) < getWeapon('laser').range - 0.5);
 	};
 	let disposed = false;
 	return {
@@ -191,9 +202,13 @@ export const createWorldObjects = function (scene: Scene) {
 				value.surface.opacity = 0.12 + (1 - strike.life / strike.duration) * 0.18;
 				value.shell.visible = strike.life < 0.7; value.shell.position.y = 20 + strike.life * 600;
 			});
-			sync(shadows, state.enemies.length + 1, function () { const value = new Group(); value.name = 'mech-shadow'; disc(value, shadow, 35); return { root: value }; }, function (value, index) {
-				const unit = index === 0 ? state.player : state.enemies[index - 1]; if (!unit) return;
-				value.root.position.set(unit.x, 0.05, unit.y); value.root.scale.setScalar('kind' in unit ? mechScale(unit.kind) : 1);
+			sync(shadows, state.enemies.length + state.squadmates.length + 1, function () { const value = new Group(); value.name = 'mech-shadow'; disc(value, shadow, 35); return { root: value }; }, function (value, index) {
+				const enemy = state.enemies[index - 1];
+				const mate = state.squadmates[index - state.enemies.length - 1];
+				const unit = index === 0 ? state.player : enemy ?? mate;
+				if (!unit) return;
+				const scale = enemy ? mechScale(enemy.kind) : mate ? getFrame(mate.frameId).size : 1;
+				value.root.position.set(unit.x, 0.05, unit.y); value.root.scale.setScalar(scale);
 			});
 			const smokePositions = new Map<Shot, Vector3>();
 			sync(shots, state.shots.length, createShot, function (value, index) {
@@ -211,7 +226,7 @@ export const createWorldObjects = function (scene: Scene) {
 			sync(effects, state.effects.length, createEffect, function (value, index) {
 				const effect = state.effects[index]; if (!effect) return;
 				value.root.position.set(effect.x, effect.elevation ?? 36, effect.y);
-				if (effect.source === 'muzzle' && effect.elevation === undefined && muzzles.length > 0) {
+				if (effect.source === 'muzzle' && effect.squadmateId === undefined && effect.elevation === undefined && muzzles.length > 0) {
 					let origin = flashes.get(effect);
 					if (!origin) {
 						origin = muzzles[effect.slot ?? nextFlashMuzzle++ % muzzles.length]?.clone();
@@ -222,14 +237,18 @@ export const createWorldObjects = function (scene: Scene) {
 				weaponVfx.updateEffect(value, effect);
 			});
 			beams.forEach(function (beam, slot) {
-				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot; });
-				beam.root.visible = endpoint !== undefined;
-				if (!endpoint) return;
-				from.set(state.player.x, 42, state.player.y); to.set(endpoint.x, endpoint.elevation ?? 42, endpoint.y);
-				if (endpoint.origin) from.set(endpoint.origin.x, endpoint.origin.elevation, endpoint.origin.y);
-				else { const muzzle = muzzles[slot]; if (muzzle) from.copy(muzzle); }
-				segment(beam.halo, 7); segment(beam.core, 0.75);
-				weaponVfx.updateBeam(beam, from, to, state.time, from.distanceTo(to) < getWeapon('laser').range - 0.5);
+				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot && candidate.squadmateId === undefined; });
+				updateBeam(beam, endpoint, state.player, state.time, muzzles[slot]);
+			});
+			const squadmateSlots = state.squadmates.flatMap(function (mate) {
+				return mate.loadout.flatMap(function (mount, index) { return getWeapon(mount.weapon).kind === 'laser' ? [{ mate, slot: mount.slot ?? index }] : []; });
+			});
+			sync(squadmateBeams, squadmateSlots.length, function () { return weaponVfx.createBeam(0); }, function (beam, index) {
+				const entry = squadmateSlots[index]; if (!entry) return;
+				const { mate, slot } = entry;
+				beam.root.name = `squad-laser-${mate.pilotId}-${slot}`;
+				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot && candidate.squadmateId === mate.pilotId; });
+				updateBeam(beam, endpoint, mate, state.time);
 			});
 			smoke.visible = state.player.heat > 60;
 			if (smoke.visible) {
@@ -245,6 +264,7 @@ export const createWorldObjects = function (scene: Scene) {
 			for (const effect of effects) effect.dispose();
 			for (const shot of shots) shot.dispose();
 			for (const beam of beams) beam.dispose();
+			for (const beam of squadmateBeams) beam.dispose();
 			weaponVfx.dispose();
 			for (const strike of strikes) strike.dispose();
 			for (const batch of relayBatches) batch.dispose();

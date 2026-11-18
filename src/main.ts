@@ -18,10 +18,10 @@ import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey
 import { getWeapon, isReserve, WEAPON_FAMILY_LABELS } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getFrame } from './frames';
-import { MOUNTS, loadSummary, massLabel, supplySummary } from './loadout-ui';
+import { MOUNTS, loadSummary, massLabel } from './loadout-ui';
 import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
-import { createMissionState, createState, distance, getOperationReport, type Controls, type Point } from './simulation';
+import { createMissionState, createState, distance, getOperationReport, type Controls, type Point, type SquadmateOptions } from './simulation';
 import { createPresentation } from './presentation';
 import { advanceGaits, createGaits } from './gait';
 import { viewScale } from './projection-3d';
@@ -31,13 +31,14 @@ import { createGamepadInput, type PadInput } from './gamepad';
 import { createControllerFeedback } from './controller-feedback';
 import { createTraining, trainingCopy, type Training } from './training';
 import { isDifficulty, readProfile, saveProfile } from './profile';
-import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getTransmission, readCampaign, saveCampaign, settleContract, travelTo, type Campaign, type CampaignResult } from './campaign';
+import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getTransmission, parseCampaign, readCampaign, saveCampaign, settleContract, travelTo, type Campaign, type CampaignResult } from './campaign';
 import { focusTerritoryMap } from './territory-map';
 import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions, type ShipView } from './campaign-ui';
 import type { PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
 import { missionStructures, missionObjective } from './missions';
-import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, beginDeployment, buyFrame, buyWeapon, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor } from './company';
+import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
+import { dismissPilot, getPilot, hirePilot } from './pilots';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import { createTitleScene } from './title-scene';
 import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane, focusWorkspace, rememberWorkspaceFocus, moveWorkspaceFocus, cycleWorkspaceView } from './workspace';
@@ -100,6 +101,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	let campaignSnapshot = savedSnapshot();
 	let campaign = readCampaign();
+	let interruptedResult = campaignSnapshot && parseCampaign(campaignSnapshot).deployed ? campaign.lastResult : undefined;
 	let returningCompany = campaignSnapshot !== null && campaignSnapshot !== undefined;
 	let campaignSaved = false;
 	let campaignConflict = false;
@@ -121,7 +123,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const ui = {
 		phase: element('phase'), status: element('status'), armor: element('armor-value'), armorFill: element('armor-fill'),
 		relay: element('relay-value'), relayFill: element('relay-fill'), heat: element('heat-value'), heatFill: element('heat-fill'),
-		drive: element('drive-value'), throttleFill: element('throttle-fill'), speed: element('speed-value'),
+		drive: element('drive-value'), throttleFill: element('throttle-fill'), speed: element('speed-value'), squad: element('squad-readout'),
 		coolant: element('coolant-value'), message: element('message'),
 		sound: element('sound'), hint: element('pilot-hint'), hintCopy: element('hint-copy'), inputMode: element('input-mode'),
 	};
@@ -195,6 +197,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
 	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false, theme: escape ? 'pursuit' : 'standard' }); };
 	const unlockSound = function () { void audio.unlock(); };
+	const assignmentBack = function () {
+		const deploy = element('deploy');
+		return navigation.screen === 'deploy' && deploy.dataset['view'] === 'assignment' ? deploy.querySelector<HTMLButtonElement>('[data-close-assignment]') : null;
+	};
 	const updateMenuHint = function () {
 		const device = promptDevice();
 		refreshNavigationGlyphs(container, device);
@@ -215,7 +221,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		render(html`
 			${device !== 'touch' ? html`<span class="menu-key">${renderGlyph(device, 'move')}<span class="key-label">Move</span></span>` : ''}
 			${target ? html`<button class="menu-key" @click=${function () { target.click(); }}>${renderGlyph(device, 'confirm')}<span class="key-label">${label}</span></button>` : ''}
-			${navigation.screen !== 'title' || navigation.auxiliary ? html`<button class="menu-key" @click=${back}>${renderGlyph(device, 'back')}<span class="key-label">${onCompany && editor.slot === null ? 'Title' : 'Back'}</span></button>` : ''}
+			${navigation.screen !== 'title' || navigation.auxiliary ? html`<button class="menu-key" @click=${back}>${renderGlyph(device, 'back')}<span class="key-label">${onCompany && editor.slot === null && !assignmentBack() ? 'Title' : 'Back'}</span></button>` : ''}
 			${onCompany && editor.slot === null ? html`<button class="menu-key" @click=${function () { showAuxiliary('handbook'); }}>${renderGlyph(device, 'help')}<span class="key-label">Button guide</span></button>` : ''}
 			${onCompany && editor.slot === null && hasRefitDraft() ? html`<button class="menu-key" @click=${discardDraft}>${renderGlyph(device, 'discard')}<span class="key-label">Discard draft</span></button>` : ''}
 		`, element('menu-input-hint'));
@@ -265,8 +271,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('leave').textContent = escape ? 'RETURN TO TITLE' : state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('training-deploy').textContent = campaign.active ? 'REVIEW CONTRACT LOADOUT →' : 'RETURN TO SHIP →';
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
-		element('pause-copy').textContent = escape ? 'The escape is paused. Resume when ready. This borrowed rig does not affect your company.' : training ? 'Training is paused. The simulator does not affect your company.' : 'Your throttle and mission are preserved. Aborting or reloading returns the mech with its current damage.';
-		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'jump', 'pause-panel', 'result', 'training-result', 'settings', 'handbook', 'confirm', 'save-conflict']) {
+		element('pause-copy').textContent = escape ? 'The escape is paused. Resume when ready. This borrowed rig does not affect your company.' : training ? 'Training is paused. The simulator does not affect your company.' : 'Your throttle and mission are preserved. Aborting or reloading returns the squad with its current damage.';
+		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'pause-panel', 'result', 'training-result', 'settings', 'handbook', 'confirm', 'save-conflict']) {
 			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
@@ -299,17 +305,26 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		for (const input of container.querySelectorAll<HTMLInputElement>('input[data-difficulty]')) input.checked = input.value === profile.settings.difficulty;
 	};
 	const start = function () {
-		if (contextLost || navigation.auxiliary || navigation.screen !== 'mechbay') return;
+		if (contextLost || navigation.auxiliary || navigation.screen !== 'deploy') return;
 		const next = beginDeployment(campaign);
 		if (next === campaign || !next.active || !next.deployed) return;
-		const mech = getOwnedMech(next);
+		const mech = getOwnedMech(next, next.deployed.frameId);
 		if (!mech) return;
+		const squadmates: SquadmateOptions[] = [];
+		for (const member of next.deployed.wing) {
+			const rig = getOwnedMech(next, member.frameId);
+			const { callsign, specialty } = getPilot(member.pilotId);
+			if (!rig || specialty === 'commander') return;
+			squadmates.push({ pilotId: member.pilotId, callsign, specialty, frameId: rig.frameId, loadout: rig.loadout, reserves: rig.reserves, integrity: member.integrity });
+		}
 		if (!replaceCampaign(next)) return;
 		presentation.resetZoom(); training = undefined;
-		state = combatRuntime.attach(createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: mech.frameId, loadout: mech.loadout, reserves: mech.reserves, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges }));
+		state = combatRuntime.attach(createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: mech.frameId, loadout: mech.loadout, reserves: mech.reserves, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges, squadmates }));
 		gaits = createGaits(state); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer';
 		aim = state.mission ? { ...state.mission.map.objective } : { ...state.player };
-		pointer = undefined; message = `${getFrame(mech.frameId).name} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`; messageUntil = 5; tipDismissed = false;
+		pointer = undefined;
+		message = squadmates.length ? '' : `${getFrame(mech.frameId).name} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`;
+		messageUntil = message ? 5 : 0; tipDismissed = false;
 		terminalUntil = 0; audio.reset(); transition(navigation.setScreen('playing')); unlockSound();
 	};
 	const startTraining = function () {
@@ -381,7 +396,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const checkpoint = function () {
 		if (training || escape || !state.mission || !campaign.deployed) return;
-		const next = checkpointDeployment(campaign, state.player.hp, state.coolantCharges);
+		const next = checkpointDeployment(campaign, state.player.hp, state.coolantCharges, state.squadmates);
 		if (next !== campaign) { if (!replaceCampaign(next)) return; }
 	};
 	const resetEditor = function (notice = '') {
@@ -412,7 +427,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); }
 	};
 	const refreshCompany = function () {
-		if (navigation.screen !== 'mechbay' && navigation.screen !== 'market' && navigation.screen !== 'engineering') return;
+		if (!isShipScreen(navigation.screen) || navigation.screen === 'bridge' || navigation.screen === 'starmap') return;
 		const root = element(navigation.screen); const previousFocus = document.activeElement;
 		const focusIndex = focusable(root).findIndex(function (item) { return item === previousFocus; });
 		renderCompany(root, campaign, navigation.screen, editor, campaignSaved, {
@@ -454,12 +469,23 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${getFrame(id).name}?`); },
 			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${getFrame(id).name} WORK?`); },
 			advanceDays: function (days) { confirm(function () { updateCompany(advanceDays(campaign, days), `${days} calendar ${days === 1 ? 'day' : 'days'} elapsed. Due work orders are complete.`); }, `ADVANCE ${days} ${days === 1 ? 'DAY' : 'DAYS'}`, `Move from day ${campaign.day} to day ${campaign.day + days}. All work orders progress. No credit fee; contract postings remain unchanged.`, 'ADVANCE SHIP CALENDAR?'); },
+			hire: function (id) {
+				const pilot = getPilot(id);
+				confirm(function () { updateCompany(hirePilot(campaign, id), `${pilot.callsign} joined the roster.`); }, 'HIRE PILOT', `${pilot.name} · ${pilot.price.toLocaleString()} CR one-time fee. Assign a rig on the Deploy screen.`, `HIRE ${pilot.callsign.toUpperCase()}?`);
+			},
+			dismiss: function (id) {
+				const pilot = getPilot(id);
+				confirm(function () { updateCompany(dismissPilot(campaign, id), `${pilot.callsign} left the roster.`); }, 'DISMISS PILOT', `${pilot.callsign} leaves the company and frees their rig assignment. The hiring fee is spent.`, `DISMISS ${pilot.callsign.toUpperCase()}?`);
+			},
+			assignPilot: function (slot, id) { updateCompany(assignPilot(campaign, slot, id), id ? `${getPilot(id).callsign} assigned.` : 'Squad slot cleared.'); },
+			assignRig: function (slot, id) { updateCompany(assignRig(campaign, slot, id), id ? `${getFrame(id).name} assigned.` : 'Rig assignment cleared.'); },
 			deploy: function () {
-				const mech = getOwnedMech(campaign);
-				if (hasRefitDraft()) {
-					editor = { ...editor, notice: 'Queue or discard your staged loadout before deployment.' }; refreshCompany(); return;
+				if (!canDeploySquad(campaign)) return;
+				if (hasRefitDraft() && campaign.lineup.some(function (slot) { return slot.frameId === campaign.selectedFrame; })) {
+					confirm(function () { navigateShip('mechbay', 'loadout'); }, 'OPEN MECH BAY', 'Queue or discard the staged loadout before deploying that rig.', 'REFIT DRAFT PENDING'); return;
 				}
-				confirm(start, 'DEPLOY FRAME', `${getFrame(campaign.selectedFrame).name} · ${Math.ceil(mech?.integrity ?? 0)}% integrity. ${mech ? `${loadSummary(mech.frameId, mech.loadout, mech.reserves)} ${supplySummary(mech.loadout, mech.reserves)}.` : ''} Selected ammunition replenishes free; no resupply on the surface. Damage persists.`, 'DEPLOY ON THIS CONTRACT?');
+				const squad = campaign.lineup.flatMap(function (slot) { return slot.pilotId && slot.frameId ? [`${getPilot(slot.pilotId).callsign} / ${getFrame(slot.frameId).name}`] : []; });
+				confirm(start, 'DEPLOY SQUAD', `${squad.join(' · ')}. Rigs load their selected ammunition and retain damage after the sortie.`, 'DEPLOY ON THIS CONTRACT?');
 			},
 			settings: function () { showAuxiliary('settings'); },
 			handbook: function () { showAuxiliary('handbook'); },
@@ -513,11 +539,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const commitment = step && (getTransmission(campaign)?.offers.length ?? 0) > 1 ? `Choosing ${step.label.toLowerCase()} commits you to ${step.contact}. The other offer closes.` : '';
 				confirm(function () {
 					const next = acceptContract(campaign, contract.id); if (next === campaign) return;
-					if (!replaceCampaign(next)) return; refreshCampaign(); syncScreen();
-					selectWorkspacePane(element('bridge'), 'briefing'); element('bridge-deploy').focus({ preventScroll: true });
+					if (replaceCampaign(next)) navigateShip('deploy', 'squad');
 				}, commitment ? `ACCEPT ${step?.label.toUpperCase()}` : 'ACCEPT CONTRACT', [commitment, `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction. Success strengthens the employer on this front; failure or abort strengthens the opposition.`].filter(Boolean).join(' '), 'ACCEPT THIS CONTRACT?');
 			},
-			deploy: function () { navigateShip('mechbay', campaign.active && getAuthoredStep(campaign.story, campaign.active) ? 'loadout' : undefined); },
+			deploy: function () { navigateShip('deploy', 'squad'); },
 			abandon: function () { confirm(abortSortie, 'ABORT & RETURN TO SHIP', 'No payment, employer favor, or company reputation will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
 			training: startTraining,
 			title: back,
@@ -527,7 +552,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, actions);
 		renderStarmap(element('starmap'), campaign, destination, campaignSaved, actions);
 	};
-	const navigateShip = function (target: ShipScreen, view?: ShipView, focusRoute = false) {
+	const navigateShip = function (target: ShipScreen, view?: ShipView, focusRoute = false, reveal?: string) {
 		if (campaignConflict || navigation.auxiliary || navigation.transitioning || editor.slot !== null) return;
 		if (target !== 'starmap') guidedCourse = undefined;
 		if (isShipScreen(navigation.screen)) rememberWorkspaceFocus(element(navigation.screen));
@@ -541,6 +566,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const root = element(target);
 			if (view) selectWorkspacePane(root, view, view === 'transmission' || view === 'loadout');
 			if (view === 'transmission') root.querySelector<HTMLElement>('[data-pane="transmission"] .pane-actions button')?.focus({ preventScroll: true });
+			const action = reveal ? root.querySelector<HTMLElement>(reveal) : undefined;
+			if (action) { revealWorkspaceElement(action); action.focus({ preventScroll: true }); }
 			if (focusRoute) {
 				focusTerritoryMap(root, destination);
 				if (destination !== campaign.planetId) {
@@ -569,6 +596,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		}
 		if (navigation.screen === 'intro' || navigation.screen === 'rig-bay' || navigation.screen === 'escape-result') { confirm(toTitle, 'RETURN TO TITLE', 'The escape will restart from the beginning when you return. Company progress is untouched.', 'LEAVE THE ESCAPE?'); return; }
 		if (navigation.screen === 'mechbay' && editor.slot !== null) { const slot = editor.slot; editor = { ...editor, slot: null }; refreshCompany(); focusCompany(`[data-loadout-slot="${slot}"]`); return; }
+		const closeAssignment = assignmentBack();
+		if (closeAssignment) { closeAssignment.click(); return; }
 		if (navigation.screen === 'training-result' && trainingOrigin === 'title') { toTitle(); return; }
 		if (isShipScreen(navigation.screen)) { confirm(toTitle, 'RETURN TO TITLE', hasRefitDraft() ? 'Company progress is saved. Your unqueued refit draft is kept while this session remains open.' : 'Company progress is saved on this device.', 'RETURN TO TITLE?'); return; }
 		if (navigation.screen === 'training-result') { toShip(); return; }
@@ -577,12 +606,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
 	listen('title-continue', function () {
 		if (!campaign.introComplete) startIntro();
+		else if (interruptedResult) { showDebrief(interruptedResult, performance.now()); interruptedResult = undefined; }
+		else if (campaign.active) navigateShip('deploy');
 		else if (getTransmission(campaign)?.offers.length) toTransmission();
 		else toShip();
 	});
 	const startCompany = function (career: boolean) {
 		const start = function () {
 			if (!replaceCampaign(createCampaign(undefined, career ? 'career' : 'campaign'))) return;
+			interruptedResult = undefined;
 			returningCompany = true;
 			element('title-continue').hidden = false;
 			destination = campaign.planetId; selectedContract = undefined;
@@ -627,7 +659,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	element('title-continue').hidden = !returningCompany;
 	element('title-company-label').textContent = campaign.introComplete ? 'CONTINUE COMPANY' : 'CONTINUE ESCAPE';
 	describeTitleChoice(returningCompany ? 'title-continue' : 'title-new-campaign');
-	listen('training-deploy', function () { if (campaign.active) navigateShip('mechbay'); else toShip(); });
+	listen('training-deploy', function () { if (campaign.active) navigateShip('deploy'); else toShip(); });
 	listen('training-briefing', function () { if (trainingOrigin === 'title') toTitle(); else toShip(); });
 	listen('restart', function () {
 		const contract = campaign.lastResult?.contract;
@@ -639,13 +671,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('reset', function () { if (escape) confirm(startEscape, 'RESTART ESCAPE'); else if (training) confirm(startTraining, 'RESTART TRAINING'); });
 	listen('leave', function () {
 		if (escape) confirm(toTitle, 'RETURN TO TITLE', 'The escape can be restarted from the title screen. Company progress is untouched.', 'LEAVE THE ESCAPE?');
-		else if (state.mission && !training) confirm(abortSortie, 'ABORT & RETURN TO SHIP', 'Current mech damage is retained. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
+		else if (state.mission && !training) confirm(abortSortie, 'ABORT & RETURN TO SHIP', 'The squad returns with its current damage. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
 		else confirm(trainingOrigin === 'title' ? toTitle : toShip, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
 	});
 	listen('result-company', function () {
-		if ((getOwnedMech(campaign)?.integrity ?? 100) < 100) {
-			navigateShip('engineering', workOrderFor(campaign, campaign.selectedFrame) ? 'calendar' : 'condition');
-		} else navigateShip('mechbay', 'loadout');
+		if (campaign.lastResult?.squad?.some(function (member) { return member.integrity < 100; })) navigateShip('engineering', 'condition');
+		else navigateShip('mechbay', 'loadout');
 	});
 	listen('result-starmap', toShip);
 	listen('confirm-action', function () {
@@ -717,8 +748,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const showDebrief = function (result: CampaignResult, now: number, report?: ReturnType<typeof getOperationReport>) {
 		const { contract, won, aborted, payout, favor, companyReputation } = result;
 		const step = getAuthoredStep(campaign.story, contract);
-		const integrity = getOwnedMech(campaign)?.integrity ?? 100;
-		const armor = report?.armor ?? Math.ceil(integrity);
+		const squad = result.squad ?? [];
+		const damage = squad.some(function (member) { return member.integrity < 100; });
 		terminalUntil = now + 1600;
 		element('result-title').textContent = won ? 'CONTRACT COMPLETE.' : aborted ? 'CONTRACT ABORTED.' : 'CONTRACT FAILED.';
 		element('result-story').hidden = !step;
@@ -726,18 +757,28 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const failure = aborted ? 'The company withdrew.' : state.mission?.acquisitionTime === 0 ? 'The targeting deadline expired.' : 'The sortie was lost.';
 		element('result-copy').textContent = won
 			? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} released payment and strengthened its local influence.`
-			: `${failure} Frame integrity: ${armor}%. ${getFaction(contract.opponent).name} gained local influence.${integrity < 100 ? ' Schedule free repairs in Engineering, then wait in Calendar.' : ''}`;
-		element('result-difficulty').textContent = report ? `${getFrame(state.frame).name} · ${state.difficulty.toUpperCase()}` : getFrame(campaign.selectedFrame).name;
+			: `${failure} ${getFaction(contract.opponent).name} gained local influence.`;
+		element('result-difficulty').textContent = report ? state.difficulty.toUpperCase() : '';
 		element('result-score').textContent = `${payout.toLocaleString()} CR`;
 		element('result-rank').textContent = won ? '✓' : '×';
 		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'CONTRACT PAYMENT';
-		const stats = [...(report ? [[String(report.kills), 'ELIMINATED'], [formatTime(report.time), 'FIELD TIME']] : []), [`${armor}%`, 'FRAME INTEGRITY'], [`+${favor}`, 'EMPLOYER FAVOR']];
+		const stats = [...(report ? [[String(report.kills), 'ELIMINATED'], [formatTime(report.time), 'FIELD TIME']] : []), [`+${favor}`, 'EMPLOYER FAVOR']];
 		element('result-stats').replaceChildren(...stats.map(function ([value, label]) { const node = document.createElement('div'); const strong = document.createElement('b'); const small = document.createElement('small'); strong.textContent = value ?? ''; small.textContent = label ?? ''; node.append(strong, small); return node; }));
+		const upgrades = element('result-upgrades');
+		for (const row of element('result').querySelectorAll<HTMLElement>('.sortie-rig')) { render(null, row); row.remove(); }
+		for (const member of squad) {
+			const row = document.createElement('article');
+			row.className = 'sortie-rig';
+			row.dataset['condition'] = member.integrity <= 0 ? 'disabled' : member.integrity < 100 ? 'damaged' : 'intact';
+			const integrity = `${Math.ceil(member.startingIntegrity)}% → ${Math.ceil(member.integrity)}%`;
+			render(html`<div><strong>${getPilot(member.pilotId).callsign}</strong><small>${getFrame(member.frameId).name} · ${member.integrity <= 0 ? 'DISABLED / RECOVERED' : 'RETURNED'}</small></div><output>${integrity}</output>${member.integrity < 100 ? html`<button class="secondary" @click=${function () { navigateShip('engineering', 'condition', false, `[data-repair-frame="${member.frameId}"]`); }}>REPAIR →</button>` : ''}`, row);
+			upgrades.before(row);
+		}
 		const funds = step ? `COMPANY FUNDS ${campaign.credits.toLocaleString()} CR · ` : '';
-		element('result-upgrades').textContent = `${funds}DAY ${campaign.day} · +${companyReputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
+		upgrades.textContent = `${funds}DAY ${campaign.day} · +${companyReputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
 		element('restart').textContent = step ? 'BRIDGE / SIGNAL →' : 'RETURN TO SHIP →';
-		element('result-company').hidden = !step;
-		element('result-company').textContent = integrity < 100 ? 'ENGINEERING →' : 'MECH BAY →';
+		element('result-company').hidden = !step && !damage;
+		element('result-company').textContent = damage ? 'ENGINEERING →' : 'MECH BAY →';
 		element('result-starmap').hidden = !step;
 		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
 		transition(navigation.setScreen('result'));
@@ -754,7 +795,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const next = abandonContract(campaign);
 		if (next === campaign || !replaceCampaign(next)) return;
 		const result = next.lastResult;
-		if (result && getAuthoredStep(next.story, result.contract)) showDebrief(result, performance.now(), report);
+		if (result && (result.squad || getAuthoredStep(next.story, result.contract))) showDebrief(result, performance.now(), report);
 		else toShip();
 	};
 	container.addEventListener('focusin', function (event) { if (event.target instanceof HTMLElement && !event.target.closest('.menu-controls')) updateMenuHint(); }, listenerOptions);
@@ -909,6 +950,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		return [mouse ? mouseNames[mouse] ?? keyLabel(mouse) : undefined, key ? keyLabel(key) : undefined].filter(Boolean).join(' / ') || 'UNBOUND';
 	};
 	const updateHud = function () {
+		const squad = state.squadmates;
+		ui.squad.hidden = squad.length === 0;
+		render(html`${squad.map(function (member) {
+			return html`<div class="squad-contact" data-disabled=${member.hp <= 0}><span>${member.callsign}</span><strong>${member.hp <= 0 ? 'DOWN' : `${Math.ceil(member.hp)}%`}</strong></div>`;
+		})}`, ui.squad);
 		refreshHudObstructions();
 		const p = state.player;
 		const touchLayout = container.classList.contains('touch-enabled');

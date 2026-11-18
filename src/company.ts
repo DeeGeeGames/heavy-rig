@@ -7,6 +7,7 @@ import { MAX_CREDITS, type Campaign } from './campaign';
 import { FRAMES, type FrameId } from './frames';
 import { createStarterLoadout, isFrameLoadout } from './hardpoints';
 import { defaultReserves, isReserveLoadout, loadedMounts, usableMount } from './combat-resources';
+import { isPilotId, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
 
 export type Loadout = readonly (WeaponId | null)[];
 export interface OwnedMech {
@@ -17,10 +18,14 @@ export interface OwnedMech {
 }
 interface WorkOrderDates { frameId: FrameId; startedDay: number; readyDay: number }
 export type WorkOrder = (WorkOrderDates & { kind: 'repair' }) | (WorkOrderDates & { kind: 'refit'; loadout: Loadout; reserves: readonly number[] });
-export interface Deployment { frameId: FrameId; integrity: number; coolantCharges: number }
+export interface DeployedRig { frameId: FrameId; integrity: number; startingIntegrity: number }
+export interface DeployedPilot extends DeployedRig { pilotId: PilotId }
+export interface Deployment extends DeployedRig { coolantCharges: number; wing: readonly DeployedPilot[] }
 export interface CompanyState {
 	fleet: readonly OwnedMech[];
 	selectedFrame: FrameId;
+	pilots: readonly PilotId[];
+	lineup: readonly PilotAssignment[];
 	inventory: Record<WeaponId, number>;
 	workOrders: readonly WorkOrder[];
 	deployed: Deployment | undefined;
@@ -57,7 +62,10 @@ export const createCompany = function (): CompanyState {
 	const mech = createOwnedMech('kestrel');
 	const inventory = includeLoadout(emptyInventory(), mech.loadout);
 	if (!inventory) throw new RangeError('Starter loadout exceeds inventory capacity');
-	return { fleet: [mech], selectedFrame: 'kestrel', inventory, workOrders: [], deployed: undefined };
+	const lineup = Array.from({ length: SQUAD_SIZE }, function (_, index): PilotAssignment {
+		return index === 0 ? { pilotId: 'player', frameId: mech.frameId } : { pilotId: null, frameId: null };
+	});
+	return { fleet: [mech], selectedFrame: 'kestrel', pilots: ['player'], lineup, inventory, workOrders: [], deployed: undefined };
 };
 
 export const getOwnedMech = function (campaign: CompanyState, frameId: FrameId = campaign.selectedFrame): OwnedMech | undefined {
@@ -87,10 +95,39 @@ export const canRefit = function (campaign: Campaign, frameId: FrameId, target: 
 	return (days > 0 ? campaign.day + days < MAX_DAY : desired.some(function (rounds, slot) { return rounds !== mech.reserves[slot]; }))
 		&& WEAPONS.every(function (weapon) { return countWeapon(target, weapon.id) <= availableWeapons(campaign, weapon.id, frameId); });
 };
-export const canDeploy = function (campaign: Campaign, frameId: FrameId = campaign.selectedFrame): boolean {
+export const deploymentIssue = function (campaign: CompanyState, frameId: FrameId): string | undefined {
 	const mech = getOwnedMech(campaign, frameId);
-	return Boolean(campaign.active) && !campaign.deployed && Boolean(mech && mech.integrity > 0 && isFrameLoadout(frameId, mech.loadout) && isReserveLoadout(mech.loadout, mech.reserves) && loadedMounts(mech.loadout, mech.reserves).some(usableMount))
-		&& !workOrderFor(campaign, frameId) && campaign.day < MAX_DAY;
+	if (!mech) return 'Rig is unavailable.';
+	const order = workOrderFor(campaign, frameId);
+	if (order) return `In Engineering until day ${order.readyDay}.`;
+	if (mech.integrity <= 0) return 'Disabled. Schedule repairs in Engineering.';
+	if (!isFrameLoadout(frameId, mech.loadout) || !isReserveLoadout(mech.loadout, mech.reserves) || !loadedMounts(mech.loadout, mech.reserves).some(usableMount)) return 'No usable weapons. Check the loadout in the Mech Bay.';
+	return undefined;
+};
+
+export const canDeploy = function (campaign: Campaign, frameId: FrameId = campaign.selectedFrame): boolean {
+	return Boolean(campaign.active) && !campaign.deployed && campaign.day < MAX_DAY && !deploymentIssue(campaign, frameId);
+};
+
+export const canDeploySquad = function (campaign: Campaign): boolean {
+	const player = campaign.lineup[0];
+	return Boolean(player?.frameId && canDeploy(campaign, player.frameId)) && campaign.lineup.slice(1).every(function ({ pilotId, frameId }) {
+		return pilotId === null || Boolean(frameId && !deploymentIssue(campaign, frameId));
+	});
+};
+
+export const assignPilot = function (campaign: Campaign, index: number, pilotId: PilotId | null): Campaign {
+	const slot = campaign.lineup[index];
+	if (campaign.deployed || !slot || index === 0 || pilotId === 'player' || slot.pilotId === pilotId) return campaign;
+	if (pilotId && (!campaign.pilots.includes(pilotId) || campaign.lineup.some(function (entry) { return entry.pilotId === pilotId; }))) return campaign;
+	return { ...campaign, lineup: campaign.lineup.map(function (entry, i) { return i === index ? { pilotId, frameId: pilotId ? entry.frameId : null } : entry; }) };
+};
+
+export const assignRig = function (campaign: Campaign, index: number, frameId: FrameId | null): Campaign {
+	const slot = campaign.lineup[index];
+	if (campaign.deployed || !slot?.pilotId || slot.frameId === frameId) return campaign;
+	if (frameId && (!getOwnedMech(campaign, frameId) || campaign.lineup.some(function (entry) { return entry.frameId === frameId; }))) return campaign;
+	return { ...campaign, lineup: campaign.lineup.map(function (entry, i) { return i === index ? { ...entry, frameId } : entry; }) };
 };
 
 export const selectFrame = function (campaign: Campaign, frameId: FrameId): Campaign {
@@ -165,19 +202,35 @@ export const advanceDays = function (campaign: Campaign, days: number): Campaign
 	return { ...campaign, day, fleet, workOrders: campaign.workOrders.filter(function (order) { return order.readyDay > day; }) };
 };
 export const beginDeployment = function (campaign: Campaign): Campaign {
-	const mech = getOwnedMech(campaign);
-	if (!mech || !canDeploy(campaign)) return campaign;
-	return { ...campaign, deployed: { frameId: mech.frameId, integrity: mech.integrity, coolantCharges: 2 } };
+	const frameId = campaign.lineup[0]?.frameId;
+	if (!frameId || !canDeploySquad(campaign)) return campaign;
+	const snapshot = function (mech: OwnedMech): DeployedRig { return { frameId: mech.frameId, integrity: mech.integrity, startingIntegrity: mech.integrity }; };
+	const mech = getOwnedMech(campaign, frameId);
+	if (!mech) return campaign;
+	const wing = campaign.lineup.slice(1).flatMap(function (slot): DeployedPilot[] {
+		const rig = slot.frameId ? getOwnedMech(campaign, slot.frameId) : undefined;
+		return rig && slot.pilotId ? [{ ...snapshot(rig), pilotId: slot.pilotId }] : [];
+	});
+	return { ...campaign, deployed: { ...snapshot(mech), coolantCharges: 2, wing } };
 };
-export const checkpointDeployment = function (campaign: Campaign, integrity: number, coolantCharges: number): Campaign {
+export const checkpointDeployment = function (campaign: Campaign, integrity: number, coolantCharges: number, wing: readonly { frameId: FrameId; hp: number }[] = []): Campaign {
 	const deployed = campaign.deployed;
 	if (!deployed || !Number.isFinite(integrity) || !isInteger(coolantCharges, 0, 2)) return campaign;
 	const remainingIntegrity = Math.min(deployed.integrity, Math.max(0, integrity));
 	const remainingCoolant = Math.min(deployed.coolantCharges, coolantCharges);
-	if (remainingIntegrity === deployed.integrity && remainingCoolant === deployed.coolantCharges) return campaign;
+	const remainingWing = deployed.wing.map(function (rig) {
+		const hp = wing.find(function (sample) { return sample.frameId === rig.frameId; })?.hp;
+		const remaining = hp === undefined || !Number.isFinite(hp) ? rig.integrity : Math.min(rig.integrity, Math.max(0, hp));
+		return remaining === rig.integrity ? rig : { ...rig, integrity: remaining };
+	});
+	if (remainingIntegrity === deployed.integrity && remainingCoolant === deployed.coolantCharges && remainingWing.every(function (rig, index) { return rig === deployed.wing[index]; })) return campaign;
+	const next = { ...deployed, integrity: remainingIntegrity, coolantCharges: remainingCoolant, wing: remainingWing };
 	return {
-		...campaign, deployed: { ...deployed, integrity: remainingIntegrity, coolantCharges: remainingCoolant },
-		fleet: campaign.fleet.map(function (mech) { return mech.frameId === deployed.frameId ? { ...mech, integrity: remainingIntegrity } : mech; }),
+		...campaign, deployed: next,
+		fleet: campaign.fleet.map(function (mech) {
+			const rig = mech.frameId === next.frameId ? next : remainingWing.find(function (member) { return member.frameId === mech.frameId; });
+			return rig && rig.integrity !== mech.integrity ? { ...mech, integrity: rig.integrity } : mech;
+		}),
 	};
 };
 
@@ -188,8 +241,25 @@ const isWorkOrder = function (value: unknown): value is WorkOrder {
 	return isObject(value) && isFrameId(value['frameId']) && isInteger(value['startedDay'], 1, MAX_DAY) && isInteger(value['readyDay'], 2, MAX_DAY - 1)
 		&& value['readyDay'] > value['startedDay'] && (value['kind'] === 'repair' || value['kind'] === 'refit' && isFrameLoadout(value['frameId'], value['loadout']) && isReserveLoadout(value['loadout'], value['reserves']));
 };
+const isDeployedRig = function (value: Record<string, unknown>): boolean {
+	return isFrameId(value['frameId']) && isIntegrity(value['integrity']) && isIntegrity(value['startingIntegrity']) && value['startingIntegrity'] > 0 && value['startingIntegrity'] >= value['integrity'];
+};
+const isDeployedPilot = function (value: unknown): value is DeployedPilot {
+	return isObject(value) && isPilotId(value['pilotId']) && isDeployedRig(value);
+};
+export const isDeployedSquad = function (value: unknown): value is readonly DeployedPilot[] {
+	return Array.isArray(value) && value.length >= 1 && value.length <= SQUAD_SIZE && value.every(isDeployedPilot)
+		&& value[0]?.pilotId === 'player'
+		&& new Set(value.map(function (pilot) { return pilot.pilotId; })).size === value.length
+		&& new Set(value.map(function (pilot) { return pilot.frameId; })).size === value.length;
+};
 const isDeployment = function (value: unknown): value is Deployment {
-	return isObject(value) && isFrameId(value['frameId']) && isIntegrity(value['integrity']) && isInteger(value['coolantCharges'], 0, 2);
+	return isObject(value) && isDeployedRig(value) && isInteger(value['coolantCharges'], 0, 2)
+		&& Array.isArray(value['wing']) && value['wing'].length < SQUAD_SIZE && isDeployedSquad([{ ...value, pilotId: 'player' }, ...value['wing']]);
+};
+const isAssignment = function (value: unknown): value is PilotAssignment {
+	return isObject(value) && (value['pilotId'] === null || isPilotId(value['pilotId']))
+		&& (value['frameId'] === null || value['pilotId'] !== null && isFrameId(value['frameId']));
 };
 const isInventory = function (value: unknown): value is Record<WeaponId, number> {
 	return isObject(value) && WEAPONS.every(function (weapon) { return isInteger(value[weapon.id], 0, MAX_INVENTORY); });
@@ -199,6 +269,13 @@ const isInventory = function (value: unknown): value is Record<WeaponId, number>
 export const parseCompany = function (value: Record<string, unknown>, day: number, active: boolean): CompanyState | undefined {
 	const fleet = value['fleet']; const workOrders = value['workOrders']; const savedInventory = value['inventory'];
 	const inventory = savedInventory; const selectedFrame = value['selectedFrame']; const deployed = value['deployed'];
+	const pilots = value['pilots']; const lineup = value['lineup'];
+	if (!Array.isArray(pilots) || !pilots.every(isPilotId) || !pilots.includes('player') || new Set(pilots).size !== pilots.length
+		|| !Array.isArray(lineup) || lineup.length !== SQUAD_SIZE || !lineup.every(isAssignment) || lineup[0]?.pilotId !== 'player') return undefined;
+	const assignedPilots = lineup.flatMap(function (slot) { return slot.pilotId ? [slot.pilotId] : []; });
+	const assignedFrames = lineup.flatMap(function (slot) { return slot.frameId ? [slot.frameId] : []; });
+	if (new Set(assignedPilots).size !== assignedPilots.length || !assignedPilots.every(function (id) { return pilots.includes(id); })
+		|| new Set(assignedFrames).size !== assignedFrames.length) return undefined;
 	if (!Array.isArray(fleet) || fleet.length < 1 || fleet.length > FRAMES.length || !fleet.every(isOwnedMech)
 		|| !Array.isArray(workOrders) || workOrders.length > fleet.length || !workOrders.every(isWorkOrder)
 		|| !isInventory(inventory) || !isFrameId(selectedFrame) || deployed !== undefined && !isDeployment(deployed)) return undefined;
@@ -206,13 +283,14 @@ export const parseCompany = function (value: Record<string, unknown>, day: numbe
 		|| new Set(workOrders.map(function (order) { return order.frameId; })).size !== workOrders.length
 		|| !fleet.some(function (mech) { return mech.frameId === 'kestrel'; })) return undefined;
 	const company: CompanyState = {
-		fleet: fleet.map(function (mech) { return { frameId: mech.frameId, integrity: mech.integrity, loadout: [...mech.loadout], reserves: [...mech.reserves] }; }), selectedFrame,
+		fleet: fleet.map(function (mech) { return { frameId: mech.frameId, integrity: mech.integrity, loadout: [...mech.loadout], reserves: [...mech.reserves] }; }), selectedFrame, pilots, lineup,
 		inventory: { ...inventory }, workOrders: workOrders.map(function (order) { return order.kind === 'repair'
 			? { kind: 'repair', frameId: order.frameId, startedDay: order.startedDay, readyDay: order.readyDay }
 			: { kind: 'refit', frameId: order.frameId, startedDay: order.startedDay, readyDay: order.readyDay, loadout: [...order.loadout], reserves: [...order.reserves] }; }),
-		deployed: deployed ? { frameId: deployed.frameId, integrity: deployed.integrity, coolantCharges: deployed.coolantCharges } : undefined,
+		deployed,
 	};
-	if (!getOwnedMech(company, selectedFrame) || WEAPONS.some(function (weapon) { return availableWeapons(company, weapon.id) < 0; })) return undefined;
+	if (!getOwnedMech(company, selectedFrame) || !assignedFrames.every(function (id) { return getOwnedMech(company, id); })
+		|| WEAPONS.some(function (weapon) { return availableWeapons(company, weapon.id) < 0; })) return undefined;
 	if (workOrders.some(function (order) {
 		const mech = getOwnedMech(company, order.frameId);
 		if (!mech || order.startedDay > day || order.readyDay <= day) return true;
@@ -220,9 +298,13 @@ export const parseCompany = function (value: Record<string, unknown>, day: numbe
 		return duration === 0 || order.readyDay !== order.startedDay + duration;
 	})) return undefined;
 	if (deployed) {
-		const mech = getOwnedMech(company, deployed.frameId);
-		if (!active || !mech || deployed.frameId !== selectedFrame || mech.integrity !== deployed.integrity || !loadedMounts(mech.loadout, mech.reserves).some(usableMount)
-			|| workOrderFor(company, deployed.frameId)) return undefined;
+		const members = lineup.filter(function (slot) { return slot.pilotId !== null; });
+		const deployedPilots = [{ ...deployed, pilotId: 'player' }, ...deployed.wing];
+		if (!active || members.length !== deployedPilots.length || !deployedPilots.every(function (member, index) {
+			const mech = getOwnedMech(company, member.frameId);
+			return members[index]?.pilotId === member.pilotId && members[index]?.frameId === member.frameId && mech?.integrity === member.integrity
+				&& loadedMounts(mech.loadout, mech.reserves).some(usableMount) && !workOrderFor(company, member.frameId);
+		})) return undefined;
 	}
 	return company;
 };

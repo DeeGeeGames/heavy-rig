@@ -32,6 +32,8 @@ const screens: ScreenConfiguratorFn<RuntimeScreens> = function (configurator) {
 		.add('mechbay', definition)
 		.add('market', definition)
 		.add('engineering', definition)
+		.add('pilots', definition)
+		.add('deploy', definition)
 		.add('jump', definition)
 		.add('playing', definition)
 		.add('training', definition)

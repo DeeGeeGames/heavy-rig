@@ -9,8 +9,10 @@ import { createMech, weaponRecoil } from './mech-3d';
 import { drawOverlay, type ScreenRect } from './overlay';
 import { alignCamera, toGround, toScreen, viewScale } from './projection-3d';
 import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset } from './camera-follow';
-import { playerAimPoint, enemyAimPoint, type EnemyKind, type Point, type CombatStateView } from './simulation';
+import { playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView } from './simulation';
 import type { SpatialPoint } from './weapon-rig';
+import type { AuthoredPoseContext } from './authored-pose';
+import type { WeaponMount } from './arsenal';
 import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
@@ -20,6 +22,7 @@ import { createFiringArc } from './firing-arc-3d';
 interface CombatEntities {
 	entityForPlayer: () => number | undefined;
 	entityForEnemy: (id: number) => number | undefined;
+	entityForSquadmate: (pilotId: string) => number | undefined;
 }
 interface MechView {
 	model: ReturnType<typeof createMech>;
@@ -31,13 +34,20 @@ interface MechView {
 }
 interface ViewBindings {
 	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechSkinId) => MechView;
-	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, state: CombatStateView, recoil?: number, target?: SpatialPoint) => void;
+	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, time: number, pose: MechPose) => void;
 	scale: (id: number, scale: number) => void;
+}
+interface MechPose {
+	loadout: readonly WeaponMount[];
+	heat?: number;
+	target?: SpatialPoint | undefined;
+	authoredPose?: AuthoredPoseContext | undefined;
 }
 interface OverlayFrame {
 	state: CombatStateView; aim: Point; gaits: Gaits; obstructions: readonly ScreenRect[]; couchMode: boolean;
 	player: MechView | undefined;
 	enemyLabelHeights: ReadonlyMap<number, number>;
+	squadmateLabelHeights: ReadonlyMap<string, number>;
 }
 
 // This adapter contributes renderer/view components to the application world.
@@ -109,14 +119,18 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
-					pose: function (id, view, gait, heading, hp, state, recoil = 0, target) {
-						if (view.damage.hp !== undefined && hp < view.damage.hp) view.damage.hitAt = state.time;
+					pose: function (id, view, gait, heading, hp, time, { loadout, heat = 0, authoredPose, target }) {
+						if (view.damage.hp !== undefined && hp < view.damage.hp) view.damage.hitAt = time;
 						view.damage.hp = hp;
 						const transform = world.getComponent(id, 'localTransform3D');
 						if (!transform) return;
 						transform.x = gait.body.x; transform.z = gait.body.y;
 						world.markChanged(id, 'localTransform3D');
-						view.model.pose(gait, heading, { hit: Math.max(0, 1 - (state.time - view.damage.hitAt) / 0.16), recoil, heat: view.kind ? 0 : state.player.heat, time: state.time, ...(!view.kind ? { equippedSlots: state.loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}), ...(!view.kind && state.authoredPose ? { authoredPose: state.authoredPose } : {}), ...(target ? { target } : {}) });
+						view.model.pose(gait, heading, {
+							hit: Math.max(0, 1 - (time - view.damage.hitAt) / 0.16), recoil: weaponRecoil(loadout), heat, time,
+							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
+							...(authoredPose ? { authoredPose } : {}), ...(target ? { target } : {}),
+						});
 					},
 					scale: function (id, scale) {
 						const transform = world.getComponent(id, 'localTransform3D');
@@ -209,15 +223,30 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				if (player && playerId !== undefined) {
 					const heading = attract ? Math.PI / 4 - 0.22 : state.player.turret;
 					const gait = attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player;
-					views.pose(playerId, player, gait, heading, state.player.hp, state, weaponRecoil(state.loadout), attract || hangar ? undefined : playerAimPoint(state));
+					views.pose(playerId, player, gait, heading, state.player.hp, state.time, {
+						loadout: state.loadout, heat: state.player.heat, authoredPose: state.authoredPose,
+						target: attract || hangar ? undefined : playerAimPoint(state),
+					});
 					views.scale(playerId, hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1);
+				}
+				const squadmateLabelHeights = new Map<string, number>();
+				for (const mate of state.squadmates) {
+					const id = combat.entityForSquadmate(mate.pilotId);
+					if (id === undefined) continue;
+					const view = views.ensure(id, undefined, false, mate.frameId, playerSkin);
+					const gait = gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
+					views.pose(id, view, gait, mate.turret, mate.hp, state.time, {
+						loadout: mate.loadout, heat: mate.heat, authoredPose: mate.authoredPose,
+						target: mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
+					});
+					squadmateLabelHeights.set(mate.pilotId, view.model.labelHeight + 12);
 				}
 				const enemyLabelHeights = new Map<number, number>();
 				for (const enemy of state.enemies) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
 					const view = views.ensure(id, enemy.kind, Boolean(enemy.commander), 'warden', factionMechSkin(state.mission?.contract.opponent));
-					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind)), enemy.angle, enemy.hp, state, weaponRecoil(enemy.loadout ?? []), enemyAimPoint(state, enemy));
+					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind)), enemy.angle, enemy.hp, state.time, { loadout: enemy.loadout ?? [], target: enemyAimPoint(state, enemy) });
 					if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
@@ -229,12 +258,12 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				reticle.position.set(aim.x, 0.25, aim.y);
 				const positions = barrelGeometry.getAttribute('position'); const p = state.player;
 				positions.setXYZ(0, p.x, 0.25, p.y); positions.setXYZ(1, p.x + Math.cos(p.turret) * 110, 0.25, p.y + Math.sin(p.turret) * 110); positions.needsUpdate = true;
-				overlay = { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights };
+				overlay = { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights };
 			},
 			drawOverlay: function () {
 				if (disposed || !overlay || width <= 0 || height <= 0) return;
-				const { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights } = overlay;
-				drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode, enemyLabelHeights,
+				const { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights } = overlay;
+				drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode, enemyLabelHeights, squadmateLabelHeights,
 					armorHit: Math.max(0, 1 - (state.time - (player?.damage.hitAt ?? -10)) / 0.9),
 					...(player && getFrame(state.frame).chassisId !== 'warden' ? { armorHitHeight: player.model.labelHeight + 20 } : {}),
 					relayHit: Math.max(0, 1 - (state.time - relayHitAt) / 1.6) });

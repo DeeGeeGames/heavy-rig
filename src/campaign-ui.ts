@@ -16,7 +16,7 @@ export const MISSION_NAMES: Readonly<Record<MissionKind, string>> = {
 	defend: 'Garrison defense', demolition: 'Facility demolition', assassination: 'Priority target', clearance: 'Area clearance',
 	raid: 'Raid', recovery: 'Recovery', acquisition: 'Target acquisition',
 };
-export type ShipView = 'board' | 'transmission' | 'route' | 'system' | 'loadout' | 'condition' | 'calendar';
+export type ShipView = 'board' | 'transmission' | 'route' | 'system' | 'loadout' | 'condition' | 'calendar' | 'squad';
 const OBJECTIVES: Readonly<Record<MissionKind, string>> = {
 	defend: 'Hold the relay against the assault. Keep its integrity above zero, then return to extraction.',
 	demolition: 'Find and destroy the marked installation. Its garrison is optional; extraction is required.',
@@ -53,7 +53,8 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 	const intel = getSystemIntel(forecast, destination);
 	const local = destination === campaign.planetId;
 	const active = campaign.active;
-	const mech = getOwnedMech(campaign);
+	const playerFrame = campaign.lineup[0]?.frameId;
+	const mech = playerFrame ? getOwnedMech(campaign, playerFrame) : undefined;
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	const storyPlanets = getTransmission(campaign)?.offers.map(function (step) { return step.contract.planetId; }) ?? [];
 	const storyHere = storyPlanets.includes(destination);
@@ -78,7 +79,7 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 			...textItems(intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No ordinary contracts posted.'),
 			...textItems(planet.description),
 			...textItems('Fronts move with calendar days. Victories strengthen the employer locally; defeat or abort strengthens the opposition.'),
-			...textItems(order ? `Frame in Engineering until day ${order.readyDay}.` : mech ? `${getFrame(mech.frameId).name} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Select a company frame before deployment.'),
+			...textItems(order ? `Player rig in Engineering until day ${order.readyDay}.` : mech ? `${getFrame(mech.frameId).name} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Assign a rig to the player pilot before deploying.'),
 		], actions: html`${local && storyHere ? html`<button class="primary" @click=${openTransmission}>OPEN SIGNAL →</button>` : html`<button id="bridge-travel" class="primary" ?disabled=${local || Boolean(active)} @click=${actions.travel}>${local ? 'ORBIT ESTABLISHED' : active ? 'CONTRACT ACTIVE' : `JUMP TO ${planet.name.toUpperCase()} →`}</button>`}<button @click=${function () { actions.navigate('bridge', 'board'); }}>CONTRACTS →</button>` },
 	];
 	renderWorkspace(root, renderShipHeader(campaign, 'starmap', actions.navigate), panes, renderCampaignFooter(saved, actions), 'route', [
@@ -91,7 +92,8 @@ const transmissionPane = function (root: HTMLElement, campaign: Campaign, transm
 	const { title, last, offers, committed } = transmission;
 	const active = campaign.active;
 	const retry = committed && !active;
-	const damaged = (getOwnedMech(campaign)?.integrity ?? 100) < 100;
+	const playerFrame = campaign.lineup[0]?.frameId;
+	const damaged = playerFrame ? (getOwnedMech(campaign, playerFrame)?.integrity ?? 100) < 100 : false;
 	const choice = offers.length > 1;
 	const opening = !last && !committed ? offers[0] : undefined;
 	const board = function () { selectWorkspacePane(root, 'board', true); };
@@ -140,7 +142,7 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 				const employer = getFaction(contract.employer); const locked = companyRank(campaign) < getMissionTier(contract.tier).rank; const factionLocked = campaign.reputation[contract.employer] < contract.requiredReputation;
 				return html`<button class="contract-card" aria-pressed=${contract.id === selected?.id} @click=${function () { actions.selectContract(contract.id); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]} <em>TIER ${contract.tier}</em></span><b>${contract.title}</b><span class="contract-employer" style="color:${employer.color}">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED' : locked ? `NEEDS RANK ${getMissionTier(contract.tier).rank}` : factionLocked ? `NEEDS ${signed(contract.requiredReputation)} FACTION` : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
 			}),
-			...(!emptyBoard ? textItems(active ? `${getFaction(active.opponent).name}: −${active.hostility} reputation applied on acceptance. Review your owned frame and equipment before deployment.` : `Current postings on ${planet.name}. ${local ? 'Local uplink.' : `Arrival-day ${forecast.day} forecast; travel here to accept work.`}`) : []),
+			...(!emptyBoard ? textItems(active ? `${getFaction(active.opponent).name}: −${active.hostility} reputation applied on acceptance. Assign pilots and rigs before deployment.` : `Current postings on ${planet.name}. ${local ? 'Local uplink.' : `Arrival-day ${forecast.day} forecast; travel here to accept work.`}`) : []),
 			...textItems('Postings follow the factions on the local front and change after a contract or jump. Company reputation unlocks mission tiers. Faction favor controls employer access and payment; local contracts stay available at hostile standings.'),
 		], actions: emptyBoard ? signalAction ?? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` : !active ? html`<div class="market-tiers mission-tiers"><span class="eyebrow">MISSION TIER / ${selected ? getMissionTier(selected.tier).name.toUpperCase() : 'LOCAL'}</span><div>${MISSION_TIERS.map(function (entry) { return html`<button data-mission-tier=${entry.tier} style="--tier-color:var(--amber)" aria-pressed=${entry.tier === selected?.tier} @click=${function () { const posting = contracts.find(function (contract) { return contract.tier === entry.tier; }); if (posting) actions.selectContract(posting.id); }}>T${entry.tier}${companyRank(campaign) < entry.rank ? ` / R${entry.rank}` : ''}</button>`; })}</div></div>` : html`` },
 		{ id: 'briefing', label: 'Briefing', items: selected ? [
@@ -155,8 +157,8 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			html`<p class="stake-line"><small>EMPLOYER</small>${getFaction(selected.employer).name}<br><strong class="positive">+${selected.favor} on success</strong></p>`,
 			html`<p class="stake-line"><small>OPPOSITION</small>${getFaction(selected.opponent).name}<br><strong class="negative">−${selected.hostility} ${active ? 'applied on acceptance' : 'on acceptance'}</strong></p>`,
 			html`<p class="stake-line"><small>PAYMENT AFTER EXTRACTION</small>${selected.reward.toLocaleString()} CR</p>`,
-			...textItems('Persistent frame damage · installed company loadout. Failure or abort keeps the opposition penalty. Leaving or reloading a deployed sortie records an abort and retains damage.'),
-		] : textItems(localSignal ? signalCopy : 'Select a contract to review its briefing, or find an active conflict zone on the Starmap.'), actions: selected ? active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE MECH ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>` : html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canAcceptContract(campaign, selected)} @click=${function () { actions.accept(selected); }}>${!local ? 'TRAVEL HERE TO ACCEPT' : companyRank(campaign) < getMissionTier(selected.tier).rank ? `NEEDS COMPANY RANK ${getMissionTier(selected.tier).rank}` : campaign.reputation[selected.employer] < selected.requiredReputation ? `NEEDS ${signed(selected.requiredReputation)} FACTION` : `ACCEPT · −${selected.hostility} OPPOSITION`} →</button>${!local ? html`<button @click=${function () { actions.navigate('starmap', 'system'); }}>STARMAP / JUMP →</button>` : ''}` : signalAction ?? html`` },
+			...textItems('Damage carries over for every deployed rig. Failure or abort keeps the opposition penalty. Leaving or reloading a deployed sortie records an abort and retains damage.'),
+		] : textItems(localSignal ? signalCopy : 'Select a contract to review its briefing, or find an active conflict zone on the Starmap.'), actions: selected ? active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE SQUAD ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>` : html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canAcceptContract(campaign, selected)} @click=${function () { actions.accept(selected); }}>${!local ? 'TRAVEL HERE TO ACCEPT' : companyRank(campaign) < getMissionTier(selected.tier).rank ? `NEEDS COMPANY RANK ${getMissionTier(selected.tier).rank}` : campaign.reputation[selected.employer] < selected.requiredReputation ? `NEEDS ${signed(selected.requiredReputation)} FACTION` : `ACCEPT · −${selected.hostility} OPPOSITION`} →</button>${!local ? html`<button @click=${function () { actions.navigate('starmap', 'system'); }}>STARMAP / JUMP →</button>` : ''}` : signalAction ?? html`` },
 		{ id: 'factions', label: 'Reputation', secondary: true, items: [
 			html`<span class="eyebrow">COMPANY REPUTATION</span><h2>RANK ${companyRank(campaign)} / 15</h2>`,
 			...textItems(reputationProgress(campaign)),
