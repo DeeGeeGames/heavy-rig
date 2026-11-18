@@ -1,3 +1,4 @@
+import { rigFrameId, rigName, type RigId } from './rigs';
 import { getFrameOffer } from './market';
 import { companyRank, reputationProgress, unlockedMissionTier, weaponUnlockRank } from './reputation';
 import { html } from 'lit-html';
@@ -26,7 +27,7 @@ export interface CompanyActions {
 	skin: MechSkinId;
 	selectSkin: (skin: MechSkinId) => void;
 	navigate: (screen: ShipScreen) => void;
-	selectFrame: (frameId: FrameId) => void;
+	selectFrame: (frameId: RigId) => void;
 	editSlot: (slot: number) => void;
 	setWeapon: (weapon: WeaponId | null) => void;
 	setReserve: (slot: number, rounds: number) => void;
@@ -35,13 +36,13 @@ export interface CompanyActions {
 	queueRefit: () => void;
 	buyFrame: (frameId: FrameId) => void;
 	buyWeapon: (weapon: WeaponId) => void;
-	repair: (frameId: FrameId) => void;
-	cancelWork: (frameId: FrameId) => void;
+	repair: (frameId: RigId) => void;
+	cancelWork: (frameId: RigId) => void;
 	advanceDays: (days: number) => void;
 	hire: (id: PilotId) => void;
 	dismiss: (id: PilotId) => void;
 	assignPilot: (slot: number, id: PilotId | null) => void;
-	assignRig: (slot: number, id: FrameId | null) => void;
+	assignRig: (slot: number, id: RigId | null) => void;
 	deploy: () => void;
 	settings: () => void;
 	handbook: () => void;
@@ -106,7 +107,7 @@ const frameSchematic = function (frame: FrameDefinition) {
 
 interface CompanyView { kind: 'weapons' | 'frames'; weapon: WeaponId; frame: FrameId; slot: number | null; assignment?: AssignmentPicker }
 const views = new WeakMap<HTMLElement, CompanyView>();
-const assignedPilot = function (campaign: Campaign, frame: FrameId) {
+const assignedPilot = function (campaign: Campaign, frame: RigId) {
 	const pilotId = campaign.lineup.find(function (entry) { return entry.frameId === frame; })?.pilotId;
 	return pilotId ? getPilot(pilotId).callsign : undefined;
 };
@@ -114,7 +115,7 @@ const assignedPilot = function (campaign: Campaign, frame: FrameId) {
 const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, actions: CompanyActions): WorkspacePane[] {
 	const mech = getOwnedMech(campaign);
 	if (!mech) return [{ id: 'fleet', label: 'Fleet', items: textItems('No frame is selected.') }];
-	const frame = getFrame(mech.frameId);
+	const frame = getFrame(rigFrameId(mech.frameId));
 	const order = workOrderFor(campaign, mech.frameId);
 	const changed = refitDays(mech.loadout, editor.loadout);
 	const ammoChanged = editor.reserves.some(function (rounds, index) { return rounds !== mech.reserves[index]; });
@@ -152,12 +153,12 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 	];
 	return [
 		{ id: 'fleet', label: 'Fleet', items: [
-			html`<span class="eyebrow">${campaign.fleet.length} / ${FRAMES.length} VARIANTS OWNED</span>`,
-			...campaign.fleet.map(function (owned) { const definition = getFrame(owned.frameId); const job = workOrderFor(campaign, owned.frameId); const pilot = assignedPilot(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${definition.chassisName} ${definition.variant}</b><small>${definition.variantName}${pilot ? ` · ${pilot}` : ''}</small>${renderHullIntegrity(owned.integrity)}<small>${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
-			...textItems('Each variant is a separate purchase with its own equipment, condition, ammunition settings, and workshop crew. Market frames arrive with complete compatible weapon packages scaled to company reputation and standard ammunition.'),
+			html`<span class="eyebrow">${campaign.fleet.length} RIGS OWNED</span>`,
+			...campaign.fleet.map(function (owned) { const definition = getFrame(rigFrameId(owned.frameId)); const job = workOrderFor(campaign, owned.frameId); const pilot = assignedPilot(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${rigName(owned.frameId)}</b><small>${definition.variantName}${pilot ? ` · ${pilot}` : ''}</small>${renderHullIntegrity(owned.integrity)}<small>${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
+			...textItems('Each rig has its own equipment, condition, ammunition settings, and workshop crew. Market frames arrive with complete compatible weapon packages scaled to company reputation and standard ammunition.'),
 		], actions: html`<button class="secondary" @click=${function () { actions.navigate('market'); }}>ACQUIRE FRAME →</button><button class="secondary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
 		{ id: 'condition', label: 'Condition', items: [
-			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName} · ${assignedPilot(campaign, mech.frameId) ?? 'Unassigned'}</p></div>`,
+			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${rigName(mech.frameId)}</h2><p class="workspace-copy">${frame.variantName} · ${assignedPilot(campaign, mech.frameId) ?? 'Unassigned'}</p></div>`,
 			renderHullIntegrity(mech.integrity),
 			...(supportsMechSkin(frame.id) ? [html`<div class="mech-livery"><span class="eyebrow">COMPANY LIVERY</span><div>${MECH_SKINS.map(function (skin) { return html`<button data-mech-skin=${skin.id} aria-label=${skin.name} aria-pressed=${actions.skin === skin.id} ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.selectSkin(skin.id); }}>${skin.label}</button>`; })}</div><small>FREE REPAINT · NO WORKSHOP TIME</small></div>`] : []),
 			html`<dl class="frame-specifications"><dt>CRUISE</dt><dd>${frame.speed} m/s</dd><dt>COOLING</dt><dd>${frame.cooling} heat/s</dd><dt>BASE MASS</dt><dd>${massLabel(frame.mass)} incl. fixed equipment</dd><dt>RECOMMENDED</dt><dd>${massLabel(frame.recommendedMass)}</dd></dl>`,
@@ -196,13 +197,13 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 	const reputationLocked = weapon.tier > ceiling;
 	const weaponMarket = view.kind === 'weapons';
 	const price = weaponMarket ? WEAPON_PRICES[weapon.id] : offer.price;
-	const owned = !weaponMarket && Boolean(getOwnedMech(campaign, frame.id));
+	const owned = campaign.fleet.filter(function (mech) { return rigFrameId(mech.frameId) === frame.id; }).length;
 	const affordable = campaign.credits >= price;
 	const select = function () { refresh(); selectWorkspacePane(root, 'details', true); };
 	return [
 		{ id: 'catalogue', label: 'Catalogue', items: [
-			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === weapon.tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.id; select(); }}><span><b>${item.name}</b><small>${item.tier > ceiling ? `LOCKED · RANK ${weaponUnlockRank(item.tier)}` : `${WEAPON_FAMILY_LABELS[item.family]} · ${campaign.inventory[item.id]} owned`}</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${getOwnedMech(campaign, item.id) ? 'OWNED' : creditsLabel(getFrameOffer(campaign, item.id).price)}</span></button>`; })),
-			...textItems('Weapon purchases arrive in stores; install them through a Mech Bay refit. Frame purchases include the displayed random weapon package and standard ammunition. Packages refresh after a jump or contract, and stay fixed while browsing or waiting. Each variant can be purchased once.'),
+			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === weapon.tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.id; select(); }}><span><b>${item.name}</b><small>${item.tier > ceiling ? `LOCKED · RANK ${weaponUnlockRank(item.tier)}` : `${WEAPON_FAMILY_LABELS[item.family]} · ${campaign.inventory[item.id]} owned`}</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${creditsLabel(getFrameOffer(campaign, item.id).price)}</span></button>`; })),
+			...textItems('Weapon purchases arrive in stores; install them through a Mech Bay refit. Frame purchases include the displayed random weapon package and standard ammunition. Packages refresh after a jump or contract, and stay fixed while browsing or waiting. Buy multiple copies of any variant; each rig is managed separately.'),
 		], actions: html`${weaponMarket ? html`<div class="market-tiers"><span class="eyebrow">WEAPON QUALITY / ${quality.name.toUpperCase()}</span><div>${WEAPON_TIERS.map(function (entry) { return html`<button data-market-tier=${entry.tier} style="--tier-color:${entry.color}" aria-label=${`Show ${tierLabel(entry.tier)} weapons`} aria-pressed=${weapon.tier === entry.tier} @click=${function () { view.weapon = weaponIdForTier(weapon.modelId, entry.tier); refresh(); selectWorkspacePane(root, 'catalogue', true); root.querySelector<HTMLButtonElement>(`[data-market-tier="${entry.tier}"]`)?.focus({ preventScroll: true }); }}>T${entry.tier}${entry.tier > ceiling ? ` / R${weaponUnlockRank(entry.tier)}` : ''}</button>`; })}</div></div>` : ''}<button class="secondary market-equip" @click=${function () { actions.navigate('mechbay'); }}>EQUIP PURCHASES →</button>` },
 		{ id: 'details', label: 'Item details', items: weaponMarket ? [
 			html`<span class="eyebrow weapon-quality" style="--tier-color:${quality.color}">${tierLabel(weapon.tier).toUpperCase()} / ${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
@@ -223,8 +224,8 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 			html`<span class="eyebrow">COMPLETE SALE LOADOUT / UP TO T${ceiling}</span>`,
 			...getHardpoints(frame.id).flatMap(function (hardpoint, index) { const id = stock[index]; const item = id ? getWeapon(id) : undefined; return textItems(`${index + 1}. ${hardpoint.name}: ${item?.name ?? 'Empty'}${item?.ammunition ? ` / ${stockReserves[index] ?? 0} rounds` : ' / energy'}.`); }),
 			...textItems(`STOCK: ${loadSummary(frame.id, stock, stockReserves)}`),
-			html`<p class="workspace-copy">All stock weapons and ammunition are included. ${owned ? 'ALREADY IN YOUR HANGAR' : creditsLabel(price)}</p>`,
-		], actions: html`<button class="secondary" @click=${function () { selectWorkspacePane(root, view.kind); }}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${owned || !affordable || weaponMarket && reputationLocked || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>${owned ? 'OWNED' : weaponMarket && reputationLocked ? `REQUIRES RANK ${weaponUnlockRank(weapon.tier)}` : `BUY · ${creditsLabel(price)}`}</button>` },
+			html`<p class="workspace-copy">All stock weapons and ammunition are included. ${creditsLabel(price)}${!weaponMarket && owned ? ` · ${owned} owned` : ''}</p>`,
+		], actions: html`<button class="secondary" @click=${function () { selectWorkspacePane(root, view.kind); }}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${!affordable || weaponMarket && reputationLocked || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>${weaponMarket && reputationLocked ? `REQUIRES RANK ${weaponUnlockRank(weapon.tier)}` : `BUY · ${creditsLabel(price)}`}</button>` },
 	];
 };
 
@@ -234,19 +235,19 @@ const engineeringPanes = function (campaign: Campaign, actions: CompanyActions):
 	return [
 		{ id: 'calendar', label: 'Calendar', items: [
 			html`<span class="eyebrow">SHIP CALENDAR</span><h2>DAY ${String(campaign.day).padStart(2, '0')}</h2>`,
-			...textItems(next ? `Next completion: ${getFrame(next.frameId).name} on day ${next.readyDay}. ${ordered.length} active work orders.` : 'No scheduled work. Your crews are standing by.'),
+			...textItems(next ? `Next completion: ${rigName(next.frameId)} on day ${next.readyDay}. ${ordered.length} active work orders.` : 'No scheduled work. Your crews are standing by.'),
 			...textItems('Ammunition reserve changes take no workshop time. Selected loads replenish free at deployment; no ammunition is bought or stocked.'),
 			...textItems('Each frame has its own crew. Repairs and refits progress in parallel, completing on the ship calendar.'),
 			...textItems('Each jump or sortie also advances work by one day. Waiting does not charge credits or refresh contract postings.'),
 		], actions: html`<button id="advance-day" class="secondary" ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.advanceDays(1); }}>ADVANCE 1 DAY</button><button id="advance-work" class="primary" ?disabled=${!next || Boolean(campaign.deployed)} @click=${function () { if (next) actions.advanceDays(next.readyDay - campaign.day); }}>${next ? `WAIT ${daysLabel(next.readyDay - campaign.day)}` : 'NO WORK PENDING'}</button>` },
 		{ id: 'orders', label: 'Work orders', items: ordered.length === 0 ? [html`<div class="company-empty"><b>ALL BAYS CLEAR</b><p>Schedule repairs in Condition or plan a refit in the Mech Bay.</p></div>`] : ordered.flatMap(function (order) {
-			const frame = getFrame(order.frameId); const total = order.readyDay - order.startedDay;
-			return [html`<article class="work-order" data-work-order=${order.frameId}><div class="work-order-heading"><div><span class="eyebrow">${order.kind === 'repair' ? 'RESTORATION' : 'WEAPON REFIT'}</span><h3>${frame.name}</h3></div><strong>${daysLabel(order.readyDay - campaign.day)}</strong></div><div class="work-order-dates"><span>STARTED ${order.startedDay}</span><b>READY DAY ${order.readyDay}</b></div><div class="track"><i style="width:${total > 0 ? (campaign.day - order.startedDay) / total * 100 : 100}%"></i></div></article>`, html`<button class="secondary" data-cancel-work=${order.frameId} @click=${function () { actions.cancelWork(order.frameId); }}>CANCEL ${frame.name} ORDER</button>`, ...textItems(order.kind === 'repair' ? `${frame.name}: restore integrity to 100%. Weapons stay installed.` : `${frame.name} refit: ${order.loadout.map(function (weapon, index) { const hardpoint = getHardpoints(frame.id)[index]; return `${index + 1}. ${hardpoint?.name ?? 'Mount'} (${hardpoint ? WEAPON_FAMILY_LABELS[hardpoint.family] : ''}): ${weapon ? getWeapon(weapon).name : 'Empty'}`; }).join(' · ')}`), ...(order.kind === 'refit' ? textItems(`PENDING: ${loadSummary(frame.id, order.loadout, order.reserves)} ${supplySummary(order.loadout, order.reserves)}`) : [])];
+			const frame = getFrame(rigFrameId(order.frameId)); const total = order.readyDay - order.startedDay;
+			return [html`<article class="work-order" data-work-order=${order.frameId}><div class="work-order-heading"><div><span class="eyebrow">${order.kind === 'repair' ? 'RESTORATION' : 'WEAPON REFIT'}</span><h3>${rigName(order.frameId)}</h3></div><strong>${daysLabel(order.readyDay - campaign.day)}</strong></div><div class="work-order-dates"><span>STARTED ${order.startedDay}</span><b>READY DAY ${order.readyDay}</b></div><div class="track"><i style="width:${total > 0 ? (campaign.day - order.startedDay) / total * 100 : 100}%"></i></div></article>`, html`<button class="secondary" data-cancel-work=${order.frameId} @click=${function () { actions.cancelWork(order.frameId); }}>CANCEL ${rigName(order.frameId)} ORDER</button>`, ...textItems(order.kind === 'repair' ? `${frame.name}: restore integrity to 100%. Weapons stay installed.` : `${frame.name} refit: ${order.loadout.map(function (weapon, index) { const hardpoint = getHardpoints(frame.id)[index]; return `${index + 1}. ${hardpoint?.name ?? 'Mount'} (${hardpoint ? WEAPON_FAMILY_LABELS[hardpoint.family] : ''}): ${weapon ? getWeapon(weapon).name : 'Empty'}`; }).join(' · ')}`), ...(order.kind === 'refit' ? textItems(`PENDING: ${loadSummary(frame.id, order.loadout, order.reserves)} ${supplySummary(order.loadout, order.reserves)}`) : [])];
 		}).concat(textItems('Cancellation keeps the original condition and installed loadout. Elapsed days are not refunded.')) },
 		{ id: 'condition', label: 'Condition', scrollable: true, items: [
 			...campaign.fleet.map(function (mech) {
-				const frame = getFrame(mech.frameId); const order = workOrderFor(campaign, mech.frameId); const days = repairDays(mech.integrity);
-				return html`<div class="maintenance-entry"><article class="maintenance-frame" data-maintenance-frame=${mech.frameId}><div><b>${frame.name}</b></div>${renderHullIntegrity(mech.integrity)}<p>${order ? `${order.kind === 'repair' ? 'Repair' : 'Refit'} underway · ready day ${order.readyDay}` : mech.integrity >= 100 ? 'Fully serviced.' : `${daysLabel(days)} to restore · ready day ${campaign.day + days}`}</p></article><button class="secondary" data-repair-frame=${mech.frameId} ?disabled=${Boolean(order) || mech.integrity >= 100 || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>${frame.name} · ${order ? 'WORK IN PROGRESS' : mech.integrity >= 100 ? 'FRAME INTACT' : `REPAIR · ${daysLabel(days)}`}</button></div>`;
+				const order = workOrderFor(campaign, mech.frameId); const days = repairDays(mech.integrity);
+				return html`<div class="maintenance-entry"><article class="maintenance-frame" data-maintenance-frame=${mech.frameId}><div><b>${rigName(mech.frameId)}</b></div>${renderHullIntegrity(mech.integrity)}<p>${order ? `${order.kind === 'repair' ? 'Repair' : 'Refit'} underway · ready day ${order.readyDay}` : mech.integrity >= 100 ? 'Fully serviced.' : `${daysLabel(days)} to restore · ready day ${campaign.day + days}`}</p></article><button class="secondary" data-repair-frame=${mech.frameId} ?disabled=${Boolean(order) || mech.integrity >= 100 || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>${rigName(mech.frameId)} · ${order ? 'WORK IN PROGRESS' : mech.integrity >= 100 ? 'FRAME INTACT' : `REPAIR · ${daysLabel(days)}`}</button></div>`;
 			}), ...textItems('Your own crews repair without a credit fee. Every 20 missing integrity takes one day; a wrecked frame needs five days.'),
 		], actions: html`<button class="secondary" @click=${function () { actions.navigate('mechbay'); }}>MECH BAY →</button>` },
 	];
@@ -275,11 +276,11 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 	const locked = screen === 'mechbay' && editor.slot !== null;
 	root.dataset['picker'] = String(locked);
 	const footer = html`<footer class="bridge-footer"><div><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class="company-notice" role="status">${editor.notice}</span><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'}>${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span></footer>`;
-	const mech = getOwnedMech(campaign); const frame = mech ? getFrame(mech.frameId) : undefined;
+	const mech = getOwnedMech(campaign); const frame = mech ? getFrame(rigFrameId(mech.frameId)) : undefined;
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	const installedWeight = mech && frame ? frameWeight(frame.id, loadedMounts(mech.loadout, mech.reserves)) : undefined;
 	const hero = screen === 'mechbay' && mech && frame ? html`
-		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${frame.chassisName} ${frame.variant} <small>/ ${frame.designation}</small></h2></div>${supportsMechSkin(frame.id) ? html`<button class="hangar-livery" ?disabled=${locked} @click=${function () { selectWorkspacePane(root, 'condition', true); const target = root.querySelector<HTMLElement>('[data-mech-skin][aria-pressed="true"]'); if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); } }}>LIVERY</button>` : html`<span class="eyebrow">${assignedPilot(campaign, frame.id) ?? 'UNASSIGNED'}</span>`}</div>
+		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${rigName(mech.frameId)} <small>/ ${frame.designation}</small></h2></div>${supportsMechSkin(frame.id) ? html`<button class="hangar-livery" ?disabled=${locked} @click=${function () { selectWorkspacePane(root, 'condition', true); const target = root.querySelector<HTMLElement>('[data-mech-skin][aria-pressed="true"]'); if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); } }}>LIVERY</button>` : html`<span class="eyebrow">${assignedPilot(campaign, mech.frameId) ?? 'UNASSIGNED'}</span>`}</div>
 		<div class="hangar-model"><canvas data-hangar-frame=${frame.id} aria-label=${`${frame.name} frame preview`}></canvas><span class="hangar-fallback">${frame.name} / ${frame.role}</span></div>
 		<div class="hangar-service">
 			${renderHullIntegrity(mech.integrity)}

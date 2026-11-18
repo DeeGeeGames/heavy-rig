@@ -1,3 +1,4 @@
+import { rigFrameId, rigName } from './rigs';
 import { getFrameOffer } from './market';
 import { companyRank } from './reputation';
 import ECSpresso from 'ecspresso';
@@ -315,15 +316,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const rig = getOwnedMech(next, member.frameId);
 			const { callsign, specialty } = getPilot(member.pilotId);
 			if (!rig || specialty === 'commander') return;
-			squadmates.push({ pilotId: member.pilotId, callsign, specialty, frameId: rig.frameId, loadout: rig.loadout, reserves: rig.reserves, integrity: member.integrity });
+			squadmates.push({ pilotId: member.pilotId, callsign, specialty, frameId: rigFrameId(rig.frameId), loadout: rig.loadout, reserves: rig.reserves, integrity: member.integrity });
 		}
 		if (!replaceCampaign(next)) return;
 		presentation.resetZoom(); training = undefined;
-		state = combatRuntime.attach(createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: mech.frameId, loadout: mech.loadout, reserves: mech.reserves, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges, squadmates }));
+		state = combatRuntime.attach(createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: rigFrameId(mech.frameId), loadout: mech.loadout, reserves: mech.reserves, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges, squadmates }));
 		gaits = createGaits(state); aimMode = inputMode === 'gamepad' ? 'gamepad' : 'pointer';
 		aim = state.mission ? { ...state.mission.map.objective } : { ...state.player };
 		pointer = undefined;
-		message = squadmates.length ? '' : `${getFrame(mech.frameId).name} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`;
+		message = squadmates.length ? '' : `${rigName(mech.frameId)} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`;
 		messageUntil = message ? 5 : 0; tipDismissed = false;
 		terminalUntil = 0; audio.reset(); transition(navigation.setScreen('playing')); unlockSound();
 	};
@@ -396,7 +397,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const checkpoint = function () {
 		if (training || escape || !state.mission || !campaign.deployed) return;
-		const next = checkpointDeployment(campaign, state.player.hp, state.coolantCharges, state.squadmates);
+		const next = checkpointDeployment(campaign, state.player.hp, state.coolantCharges, state.squadmates.flatMap(function (mate) {
+			const rig = campaign.deployed?.wing.find(function (member) { return member.pilotId === mate.pilotId; });
+			return rig ? [{ frameId: rig.frameId, hp: mate.hp }] : [];
+		}));
 		if (next !== campaign) { if (!replaceCampaign(next)) return; }
 	};
 	const resetEditor = function (notice = '') {
@@ -436,13 +440,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			navigate: navigateShip,
 			selectFrame: function (id) { const select = function () { updateCompany(selectFrame(campaign, id), 'Frame selected.'); }; if (hasRefitDraft() && id !== campaign.selectedFrame) confirm(select, 'DISCARD & SELECT FRAME', 'Changing frames discards this unqueued refit. Installed equipment is unchanged.', 'DISCARD REFIT DRAFT?'); else select(); },
 			editSlot: function (slot) {
-				if (!getHardpoints(campaign.selectedFrame)[slot]) return;
+				if (!getHardpoints(rigFrameId(campaign.selectedFrame))[slot]) return;
 				editor = { ...editor, slot }; refreshCompany(); focusCompany('.equipment-choice[aria-pressed="true"]:not(:disabled)', '.equipment-choice:not(:disabled)');
 			},
 			setWeapon: function (weapon) {
-				if (editor.slot === null || !getHardpoints(campaign.selectedFrame)[editor.slot]) return;
+				if (editor.slot === null || !getHardpoints(rigFrameId(campaign.selectedFrame))[editor.slot]) return;
 				const slot = editor.slot;
-				if (weapon !== null && !canEquipWeapon(campaign.selectedFrame, slot, weapon)) {
+				if (weapon !== null && !canEquipWeapon(rigFrameId(campaign.selectedFrame), slot, weapon)) {
 					editor = { ...editor, notice: 'This weapon does not fit the selected hardpoint.' }; refreshCompany(); return;
 				}
 				editor = { ...editor, reserves: editor.reserves.map(function (rounds, index) { return index !== slot || editor.loadout[slot] === weapon ? rounds : weapon === null ? 0 : getWeapon(weapon).ammunition?.defaultLoad ?? 0; }), loadout: editor.loadout.map(function (current, index) { return index === slot ? weapon : current; }), slot: null, notice: 'Refit staged. Queue the work order to fit these weapons.' }; refreshCompany();
@@ -462,12 +466,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			queueRefit: function () {
 				const days = refitDays(getOwnedMech(campaign)?.loadout ?? [], editor.loadout);
 				if (days === 0) { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Ammunition load saved. 0 CR · no calendar time.', undefined, true); return; }
-				confirm(function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Refit queued. Advance the calendar to finish installation.', 'engineering', true); }, 'QUEUE REFIT', `${days} calendar days. Ready day ${campaign.day + days}. ${loadSummary(campaign.selectedFrame, editor.loadout, editor.reserves)} The frame cannot deploy until work finishes.`, 'QUEUE THIS REFIT?');
+				confirm(function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Refit queued. Advance the calendar to finish installation.', 'engineering', true); }, 'QUEUE REFIT', `${days} calendar days. Ready day ${campaign.day + days}. ${loadSummary(rigFrameId(campaign.selectedFrame), editor.loadout, editor.reserves)} The frame cannot deploy until work finishes.`, 'QUEUE THIS REFIT?');
 			},
-			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${getFrame(id).name} purchased with its displayed weapon package. Select it in the Mech Bay.`); }, 'BUY FRAME', `${getFrameOffer(campaign, id).price.toLocaleString()} CR. Includes this complete package: ${getFrameOffer(campaign, id).loadout.map(function (weapon) { return getWeapon(weapon).name; }).join(', ')}. Standard ammunition included; arrives ready to deploy.`, `BUY ${getFrame(id).name}?`); },
+			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${rigName(id)} purchased with its displayed weapon package. Select it in the Mech Bay.`); }, 'BUY FRAME', `${getFrameOffer(campaign, id).price.toLocaleString()} CR. Includes this complete package: ${getFrameOffer(campaign, id).loadout.map(function (weapon) { return getWeapon(weapon).name; }).join(', ')}. Standard ammunition included; arrives ready to deploy.`, `BUY ${rigName(id)}?`); },
 			buyWeapon: function (id) { confirm(function () { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); }, 'BUY WEAPON', `${WEAPON_PRICES[id].toLocaleString()} CR. Delivered to stores. Installation requires a separate refit.`, `BUY ${getWeapon(id).name}?`); },
-			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${getFrame(id).name}?`); },
-			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${getFrame(id).name} WORK?`); },
+			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${rigName(id)}?`); },
+			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${rigName(id)} WORK?`); },
 			advanceDays: function (days) { confirm(function () { updateCompany(advanceDays(campaign, days), `${days} calendar ${days === 1 ? 'day' : 'days'} elapsed. Due work orders are complete.`); }, `ADVANCE ${days} ${days === 1 ? 'DAY' : 'DAYS'}`, `Move from day ${campaign.day} to day ${campaign.day + days}. All work orders progress. No credit fee; contract postings remain unchanged.`, 'ADVANCE SHIP CALENDAR?'); },
 			hire: function (id) {
 				const pilot = getPilot(id);
@@ -478,13 +482,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				confirm(function () { updateCompany(dismissPilot(campaign, id), `${pilot.callsign} left the roster.`); }, 'DISMISS PILOT', `${pilot.callsign} leaves the company and frees their rig assignment. The hiring fee is spent.`, `DISMISS ${pilot.callsign.toUpperCase()}?`);
 			},
 			assignPilot: function (slot, id) { updateCompany(assignPilot(campaign, slot, id), id ? `${getPilot(id).callsign} assigned.` : 'Squad slot cleared.'); },
-			assignRig: function (slot, id) { updateCompany(assignRig(campaign, slot, id), id ? `${getFrame(id).name} assigned.` : 'Rig assignment cleared.'); },
+			assignRig: function (slot, id) { updateCompany(assignRig(campaign, slot, id), id ? `${rigName(id)} assigned.` : 'Rig assignment cleared.'); },
 			deploy: function () {
 				if (!canDeploySquad(campaign)) return;
 				if (hasRefitDraft() && campaign.lineup.some(function (slot) { return slot.frameId === campaign.selectedFrame; })) {
 					confirm(function () { navigateShip('mechbay', 'loadout'); }, 'OPEN MECH BAY', 'Queue or discard the staged loadout before deploying that rig.', 'REFIT DRAFT PENDING'); return;
 				}
-				const squad = campaign.lineup.flatMap(function (slot) { return slot.pilotId && slot.frameId ? [`${getPilot(slot.pilotId).callsign} / ${getFrame(slot.frameId).name}`] : []; });
+				const squad = campaign.lineup.flatMap(function (slot) { return slot.pilotId && slot.frameId ? [`${getPilot(slot.pilotId).callsign} / ${rigName(slot.frameId)}`] : []; });
 				confirm(start, 'DEPLOY SQUAD', `${squad.join(' · ')}. Rigs load their selected ammunition and retain damage after the sortie.`, 'DEPLOY ON THIS CONTRACT?');
 			},
 			settings: function () { showAuxiliary('settings'); },
@@ -771,7 +775,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			row.className = 'sortie-rig';
 			row.dataset['condition'] = member.integrity <= 0 ? 'disabled' : member.integrity < 100 ? 'damaged' : 'intact';
 			const integrity = `${Math.ceil(member.startingIntegrity)}% → ${Math.ceil(member.integrity)}%`;
-			render(html`<div><strong>${getPilot(member.pilotId).callsign}</strong><small>${getFrame(member.frameId).name} · ${member.integrity <= 0 ? 'DISABLED / RECOVERED' : 'RETURNED'}</small></div><output>${integrity}</output>${member.integrity < 100 ? html`<button class="secondary" @click=${function () { navigateShip('engineering', 'condition', false, `[data-repair-frame="${member.frameId}"]`); }}>REPAIR →</button>` : ''}`, row);
+			render(html`<div><strong>${getPilot(member.pilotId).callsign}</strong><small>${rigName(member.frameId)} · ${member.integrity <= 0 ? 'DISABLED / RECOVERED' : 'RETURNED'}</small></div><output>${integrity}</output>${member.integrity < 100 ? html`<button class="secondary" @click=${function () { navigateShip('engineering', 'condition', false, `[data-repair-frame="${member.frameId}"]`); }}>REPAIR →</button>` : ''}`, row);
 			upgrades.before(row);
 		}
 		const funds = step ? `COMPANY FUNDS ${campaign.credits.toLocaleString()} CR · ` : '';
@@ -1310,7 +1314,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 						catch (error: unknown) { modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Hangar preview unavailable', error); }
 					}
 				}
-				hangar?.view.setFrame(campaign.selectedFrame, editor.loadout.flatMap(function (weapon, slot) { return weapon === null ? [] : [slot]; }), profile.settings.mechSkin); hangar?.view.render();
+				hangar?.view.setFrame(rigFrameId(campaign.selectedFrame), editor.loadout.flatMap(function (weapon, slot) { return weapon === null ? [] : [slot]; }), profile.settings.mechSkin); hangar?.view.render();
 			}
 		}
 		if (battlefieldVisible()) presentation.drawOverlay();

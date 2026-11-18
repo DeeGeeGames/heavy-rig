@@ -1,3 +1,4 @@
+import { rigName } from './rigs';
 import { companyRank, getMissionTier, MISSION_TIERS, reputationProgress, unlockedMissionTier } from './reputation';
 import { ACQUISITION_SECONDS, missionHostileCount } from './missions';
 import { getSystemIntel } from './universe';
@@ -10,7 +11,6 @@ import type { Contract, MissionKind, PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
 import { getOwnedMech, workOrderFor } from './company';
 import { renderShipHeader, type ShipScreen } from './company-ui';
-import { getFrame } from './frames';
 
 export const MISSION_NAMES: Readonly<Record<MissionKind, string>> = {
 	defend: 'Garrison defense', demolition: 'Facility demolition', assassination: 'Priority target', clearance: 'Area clearance',
@@ -79,7 +79,7 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 			...textItems(intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No ordinary contracts posted.'),
 			...textItems(planet.description),
 			...textItems('Fronts move with calendar days. Victories strengthen the employer locally; defeat or abort strengthens the opposition.'),
-			...textItems(order ? `Player rig in Engineering until day ${order.readyDay}.` : mech ? `${getFrame(mech.frameId).name} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Assign a rig to the player pilot before deploying.'),
+			...textItems(order ? `Player rig in Engineering until day ${order.readyDay}.` : mech ? `${rigName(mech.frameId)} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Assign a rig to the player pilot before deploying.'),
 		], actions: html`${local && storyHere ? html`<button class="primary" @click=${openTransmission}>OPEN SIGNAL →</button>` : html`<button id="bridge-travel" class="primary" ?disabled=${local || Boolean(active)} @click=${actions.travel}>${local ? 'ORBIT ESTABLISHED' : active ? 'CONTRACT ACTIVE' : `JUMP TO ${planet.name.toUpperCase()} →`}</button>`}<button @click=${function () { actions.navigate('bridge', 'board'); }}>CONTRACTS →</button>` },
 	];
 	renderWorkspace(root, renderShipHeader(campaign, 'starmap', actions.navigate), panes, renderCampaignFooter(saved, actions), 'route', [

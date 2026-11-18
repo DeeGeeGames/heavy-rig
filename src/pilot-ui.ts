@@ -1,9 +1,9 @@
+import { rigName } from './rigs';
 import { html } from 'lit-html';
 import { getWeapon } from './arsenal';
 import type { Campaign } from './campaign';
 import { canDeploySquad, deploymentIssue, getOwnedMech, type OwnedMech } from './company';
 import type { CompanyActions } from './company-ui';
-import { getFrame } from './frames';
 import { getPilot, getRecruitOffers, type Pilot } from './pilots';
 import { textItems, type WorkspacePane } from './workspace';
 
@@ -26,7 +26,7 @@ export const pilotPanes = function (campaign: Campaign, actions: CompanyActions)
 		{ id: 'roster', label: 'Roster', items: campaign.pilots.map(function (id) {
 			const pilot = getPilot(id);
 			const assignment = campaign.lineup.find(function (entry) { return entry.pilotId === id; });
-			const frame = assignment?.frameId ? getFrame(assignment.frameId).name : undefined;
+			const frame = assignment?.frameId ? rigName(assignment.frameId) : undefined;
 			return html`<article class="pilot-record" data-roster-pilot=${id}>
 				<div><span class="eyebrow">${pilotRole(pilot)}</span><h3>${pilot.callsign}</h3><p>${pilot.name}</p></div>
 				<div><p>${pilot.description}</p><small>${frame ? `ASSIGNED · ${frame}` : assignment ? 'AWAITING RIG' : 'ON THE BENCH'}</small></div>
@@ -60,7 +60,7 @@ const squadPane = function (campaign: Campaign, actions: CompanyActions, pick: (
 				<span class="eyebrow">${slotName(slot)}</span>
 				${slot === 0 ? html`<strong class="squad-player">${pilot?.callsign ?? 'Player'}</strong>` : html`<button class="squad-seat-choice" data-choose-pilot=${slot} aria-label=${pilot ? `${pilot.callsign} · change pilot` : `${slotName(slot)} · add pilot`} ?disabled=${Boolean(campaign.deployed)} @click=${function () { pick({ slot, kind: 'pilot' }); }}><b>${pilot?.callsign ?? 'Add pilot'}</b><small>${pilot ? pilotRole(pilot) : 'EMPTY SLOT'}</small></button>`}
 				${pilot ? html`
-					<button class="squad-seat-choice squad-rig-choice" data-choose-rig=${slot} aria-label=${mech ? `${getFrame(mech.frameId).name} · change rig` : `${slotName(slot)} · assign rig`} ?disabled=${Boolean(campaign.deployed)} @click=${function () { pick({ slot, kind: 'rig' }); }}><b>${mech ? getFrame(mech.frameId).name : 'Assign rig'}</b>${mech ? html`<small>${Math.ceil(mech.integrity)}% INTEGRITY</small>` : ''}</button>
+					<button class="squad-seat-choice squad-rig-choice" data-choose-rig=${slot} aria-label=${mech ? `${rigName(mech.frameId)} · change rig` : `${slotName(slot)} · assign rig`} ?disabled=${Boolean(campaign.deployed)} @click=${function () { pick({ slot, kind: 'rig' }); }}><b>${mech ? rigName(mech.frameId) : 'Assign rig'}</b>${mech ? html`<small>${Math.ceil(mech.integrity)}% INTEGRITY</small>` : ''}</button>
 					${mech ? html`<p>${frameKit(mech)}</p>` : ''}
 					${issue || !mech ? html`<p class="squad-readiness">${issue ?? 'Rig required or bench this pilot.'}</p>` : ''}
 				` : ''}
@@ -89,7 +89,7 @@ export const deploymentPanes = function (campaign: Campaign, actions: CompanyAct
 		const id = mech.frameId;
 		const other = campaign.lineup.find(function (entry, index) { return index !== slot && entry.frameId === id; });
 		const issue = deploymentIssue(campaign, id);
-		return html`<button class="equipment-choice" data-assign-rig=${id} aria-label=${`Assign ${getFrame(id).name}`} aria-pressed=${selected.frameId === id} ?disabled=${Boolean(other || issue)} @click=${function () { close(); actions.assignRig(slot, id); }}><span><b>${getFrame(id).name}</b><small>${frameKit(mech)}</small></span><small>${other?.pilotId ? `Assigned to ${getPilot(other.pilotId).callsign}` : issue ?? `${Math.ceil(mech.integrity)}% integrity`}</small></button>`;
+		return html`<button class="equipment-choice" data-assign-rig=${id} aria-label=${`Assign ${rigName(id)}`} aria-pressed=${selected.frameId === id} ?disabled=${Boolean(other || issue)} @click=${function () { close(); actions.assignRig(slot, id); }}><span><b>${rigName(id)}</b><small>${frameKit(mech)}</small></span><small>${other?.pilotId ? `Assigned to ${getPilot(other.pilotId).callsign}` : issue ?? `${Math.ceil(mech.integrity)}% integrity`}</small></button>`;
 	});
 	return [lineup, {
 		id: 'assignment', label: `${slotName(slot)} / ${selectPilot ? 'Select pilot' : 'Select rig'}`, scrollable: true,

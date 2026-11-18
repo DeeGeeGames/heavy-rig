@@ -1,3 +1,4 @@
+import { rigFrameId } from '../src/rigs';
 import { expect, test } from 'bun:test';
 import { acceptContract, createCampaign, getContracts, parseCampaign } from '../src/campaign';
 import { advanceDays, buyWeapon, canDeploy, canRefit, getOwnedMech, queueRefit, selectFrame, unlockAllRigs } from '../src/company';
@@ -46,12 +47,12 @@ test('company rejects incompatible equipment and forged saves without spending o
 
 test('owned chassis and refits persist exactly their visible hardpoint count', function () {
 	const company = unlockAllRigs(createCampaign(42));
-	expect(company.fleet.filter(function (mech) { return getFrame(mech.frameId).variant === 'A' && mech.frameId !== 'rook'; }).map(function (mech) { return [mech.frameId, mech.loadout.length]; })).toEqual([
+	expect(company.fleet.filter(function (mech) { return getFrame(rigFrameId(mech.frameId)).variant === 'A' && mech.frameId !== 'rook'; }).map(function (mech) { return [mech.frameId, mech.loadout.length]; })).toEqual([
 		['kestrel', 2], ['warden', 4], ['maul', 2], ['longbow', 1], ['morrow', 2],
 	]);
 	for (const mech of company.fleet) {
-		expect(mech.loadout).toHaveLength(getHardpoints(mech.frameId).length);
-		expect(isFrameLoadout(mech.frameId, mech.loadout)).toBe(true);
+		expect(mech.loadout).toHaveLength(getHardpoints(rigFrameId(mech.frameId)).length);
+		expect(isFrameLoadout(rigFrameId(mech.frameId), mech.loadout)).toBe(true);
 	}
 	expect(parseCampaign(JSON.stringify(company))).toEqual(company);
 });
