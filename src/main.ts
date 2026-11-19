@@ -1120,7 +1120,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			setInputMode('gamepad');
 		}
 		container.dataset['controllerState'] = pad.connected ? 'connected' : controllerLost ? 'disconnected' : pad.available ? 'available' : 'none';
-		const availablePad = pads.find(function (candidate) { return candidate?.connected && candidate.mapping === 'standard'; });
+		const availablePad = pads.find(function (candidate) { return candidate?.connected; });
 		const availableFamily = detectControllerFamily(availablePad?.id ?? '');
 		const claimLabel = controllerButtonLabel(availableFamily, 0); const menuLabel = controllerButtonLabel(availableFamily, 9);
 		const controllerStatus = pad.connected ? 'CONTROLLER CONNECTED' : controllerLost ? `CONTROLLER LOST · ${claimLabel} / ${menuLabel} TO RECONNECT` : pad.available ? `PRESS ${claimLabel} / ${menuLabel} TO CONNECT` : 'CONTROLLER OPTIONAL';

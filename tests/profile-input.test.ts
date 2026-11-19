@@ -11,6 +11,35 @@ const claimedInput = function () {
 	return input;
 };
 describe('Heavy Rig player preferences and input boundaries', function () {
+	test('unmapped browser controllers can claim, navigate and fight while retaining neutral and reconnect safety', function () {
+		const input = createGamepadInput();
+		const raw = function (buttons: number[] = [], axes = [0, 0, 0, 0]): GamepadSnapshot {
+			return { ...pad(buttons, axes), mapping: '', id: 'GC101 Controller 1.03 (Vendor: 20bc Product: 5656)' };
+		};
+		const exposed = input.read([raw([0, 7])], 0);
+		expect(exposed.available).toBe(true); expect(exposed.connected).toBe(false);
+		input.read([raw()], 16);
+		const claim = input.read([raw([0, 7])], 32);
+		expect(claim.claimed).toBe(true); expect(claim.confirm).toBe(false); expect(claim.fire[0]).toBe(false);
+		expect(input.read([raw([7], [0, -1, 0, 0])], 48).ready).toBe(false);
+		input.read([raw()], 64);
+		const active = input.read([raw([0, 1, 4, 5, 6, 7, 9, 13], [1, -1, 1, -1])], 80);
+		expect(active.confirm).toBe(true); expect(active.back).toBe(true); expect(active.pause).toBe(true); expect(active.direction).toBe('up');
+		expect(active.fire).toEqual([true, true, true, true]); expect(active.coolant).toBe(true);
+		expect(active.drive).toBe(1); expect(active.turn).toBe(1); expect(active.aimX).toBe(1); expect(active.aimY).toBe(-1);
+		input.requireNeutral();
+		expect(input.read([raw([7])], 96).fire[0]).toBe(false);
+		input.read([raw()], 112);
+		const remapped = { ...defaultSettings().controller, 'mount-0': 3 };
+		expect(input.read([raw([3])], 128, remapped).fire[0]).toBe(true);
+		expect(input.read([raw([7])], 144, remapped).fire[0]).toBe(false);
+		const lost = input.read([], 160);
+		expect(lost.lost).toBe(true); expect(lost.fire).toEqual([false, false, false, false]);
+		expect(input.read([raw([9])], 176).claimed).toBe(false);
+		input.read([raw()], 192);
+		const reclaim = input.read([raw([9])], 208);
+		expect(reclaim.claimed).toBe(true); expect(reclaim.pause).toBe(false);
+	});
 	test('skin choices survive reload while historical preferences and invalid skin values stay usable', function () {
 		const old = parseProfile(JSON.stringify({ settings: { master: 0.35, controlMode: 'simulation' } }));
 		expect(old.settings.mechSkin).toBe('freeholds'); expect(old.settings.master).toBe(0.35); expect(old.settings.controlMode).toBe('simulation');
