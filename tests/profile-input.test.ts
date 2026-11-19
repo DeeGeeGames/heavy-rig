@@ -10,15 +10,27 @@ const claimedInput = function () {
 	const input = createGamepadInput(); input.read([pad()], 0); input.read([pad([0])], 4); input.read([pad()], 8);
 	return input;
 };
+// Gamepad exposes its fields as prototype accessors in the browser.
+class NativeGamepadSnapshot implements GamepadSnapshot {
+	private readonly snapshot: GamepadSnapshot;
+	constructor(snapshot: GamepadSnapshot) { this.snapshot = snapshot; }
+	get axes() { return this.snapshot.axes; }
+	get buttons() { return this.snapshot.buttons; }
+	get connected() { return this.snapshot.connected; }
+	get id() { return this.snapshot.id; }
+	get index() { return this.snapshot.index; }
+	get mapping() { return this.snapshot.mapping; }
+}
 describe('Heavy Rig player preferences and input boundaries', function () {
 	test('the raw GC101 uses A for confirm, X for stop, and its hat axes for navigation and driving', function () {
 		const input = createGamepadInput();
 		const raw = function (buttons: number[] = [], axes = [0, 0, 0, 0, 0, 0]): GamepadSnapshot {
 			const snapshot = pad(buttons, axes);
-			return { ...snapshot, buttons: snapshot.buttons.slice(0, 13), mapping: '', id: 'GC101 Controller 1.03 (Vendor: 20bc Product: 5656)' };
+			return new NativeGamepadSnapshot({ ...snapshot, buttons: snapshot.buttons.slice(0, 13), mapping: '', id: 'GC101 Controller 1.03 (Vendor: 20bc Product: 5656)' });
 		};
 		const claim = input.read([raw([7])], 0);
 		expect(claim.claimed).toBe(true); expect(claim.confirm).toBe(false); expect(claim.fire[0]).toBe(false);
+		expect(claim.id).toBe(raw().id); expect(claim.index).toBe(0);
 		expect(input.read([raw([], [0, 0, 0, 0, 0, -1])], 16).ready).toBe(false);
 		input.read([raw()], 32);
 		const x = input.read([raw([0])], 48);

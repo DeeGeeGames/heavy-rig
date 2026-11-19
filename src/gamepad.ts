@@ -39,29 +39,26 @@ const deadZone = function (value: number, zone = 0.18) {
 };
 const identity = function (pad: GamepadSnapshot) { return `${pad.index}:${pad.id}`; };
 const digitalButton = function (pressed: boolean): GamepadButton { return { pressed, touched: pressed, value: Number(pressed) }; };
-const normalizeGamepad = function (pad: GamepadSnapshot): GamepadSnapshot {
+const gamepadButtons = function (pad: GamepadSnapshot): readonly GamepadButton[] {
 	// Chromium on Linux exposes this GC101/GameSir layout as 13 raw buttons
 	// and six axes. The last two axes are the horizontal and vertical HID hat.
-	if (pad.mapping || pad.axes.length !== 6 || pad.buttons.length !== 13 || !isGc101(pad.id)) return pad;
+	if (pad.mapping || pad.axes.length !== 6 || pad.buttons.length !== 13 || !isGc101(pad.id)) return pad.buttons;
 	const [,,,, hatX = 0, hatY = 0] = pad.axes;
-	return {
-		...pad,
-		buttons: [
-			...[1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(function (index) { return pad.buttons[index] ?? digitalButton(false); }),
-			digitalButton(hatY < -.5), digitalButton(hatY > .5),
-			digitalButton(hatX < -.5), digitalButton(hatX > .5),
-			pad.buttons[12] ?? digitalButton(false),
-		],
-	};
+	return [
+		...[1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(function (index) { return pad.buttons[index] ?? digitalButton(false); }),
+		digitalButton(hatY < -.5), digitalButton(hatY > .5),
+		digitalButton(hatX < -.5), digitalButton(hatX > .5),
+		pad.buttons[12] ?? digitalButton(false),
+	];
 };
-const pressedButtons = function (pad: GamepadSnapshot) {
+const pressedButtons = function (gamepadButtons: readonly GamepadButton[]) {
 	const buttons = new Set<number>();
-	pad.buttons.forEach(function (button, index) { if (button.pressed || button.value > 0.35) buttons.add(index); });
+	gamepadButtons.forEach(function (button, index) { if (button.pressed || button.value > 0.35) buttons.add(index); });
 	return buttons;
 };
-const pressedMenuButtons = function (pad: GamepadSnapshot, previous: ReadonlySet<number> | undefined) {
+const pressedMenuButtons = function (gamepadButtons: readonly GamepadButton[], previous: ReadonlySet<number> | undefined) {
 	const buttons = new Set<number>();
-	pad.buttons.forEach(function (button, index) {
+	gamepadButtons.forEach(function (button, index) {
 		// Analog triggers must release well below their press threshold before
 		// navigating again. Combat retains its existing sampling threshold.
 		const threshold = index === 6 || index === 7 ? previous?.has(index) ? .2 : .55 : .35;
@@ -88,10 +85,10 @@ export const createGamepadInput = function () {
 		// An empty mapping still exposes usable browser inputs.
 		// Use their positional indices as a fallback, keeping saved combat bindings.
 		const connected = pads.filter(function (candidate): candidate is GamepadSnapshot { return candidate !== null && candidate.connected; });
-		const samples = connected.map(function (raw) {
-			const pad = normalizeGamepad(raw);
+		const samples = connected.map(function (pad) {
 			const key = identity(pad);
-			return { pad, key, buttons: pressedButtons(pad), menuButtons: pressedMenuButtons(pad, previousMenu.get(key)) };
+			const buttons = gamepadButtons(pad);
+			return { pad, key, buttons: pressedButtons(buttons), menuButtons: pressedMenuButtons(buttons, previousMenu.get(key)) };
 		});
 		let sample = samples.find(function (candidate) { return candidate.key === owner; });
 		const lost = owner !== undefined && !sample;
