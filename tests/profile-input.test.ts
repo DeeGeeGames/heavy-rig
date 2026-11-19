@@ -11,22 +11,26 @@ const claimedInput = function () {
 	return input;
 };
 describe('Heavy Rig player preferences and input boundaries', function () {
-	test('unmapped browser controllers can claim, navigate and fight while retaining neutral and reconnect safety', function () {
+	test('the raw GC101 uses A for confirm, X for stop, and its hat axes for navigation and driving', function () {
 		const input = createGamepadInput();
-		const raw = function (buttons: number[] = [], axes = [0, 0, 0, 0]): GamepadSnapshot {
-			return { ...pad(buttons, axes), mapping: '', id: 'GC101 Controller 1.03 (Vendor: 20bc Product: 5656)' };
+		const raw = function (buttons: number[] = [], axes = [0, 0, 0, 0, 0, 0]): GamepadSnapshot {
+			const snapshot = pad(buttons, axes);
+			return { ...snapshot, buttons: snapshot.buttons.slice(0, 13), mapping: '', id: 'GC101 Controller 1.03 (Vendor: 20bc Product: 5656)' };
 		};
-		const exposed = input.read([raw([0, 7])], 0);
-		expect(exposed.available).toBe(true); expect(exposed.connected).toBe(false);
-		input.read([raw()], 16);
-		const claim = input.read([raw([0, 7])], 32);
+		const claim = input.read([raw([7])], 0);
 		expect(claim.claimed).toBe(true); expect(claim.confirm).toBe(false); expect(claim.fire[0]).toBe(false);
-		expect(input.read([raw([7], [0, -1, 0, 0])], 48).ready).toBe(false);
-		input.read([raw()], 64);
-		const active = input.read([raw([0, 1, 4, 5, 6, 7, 9, 13], [1, -1, 1, -1])], 80);
+		expect(input.read([raw([], [0, 0, 0, 0, 0, -1])], 16).ready).toBe(false);
+		input.read([raw()], 32);
+		const x = input.read([raw([0])], 48);
+		expect(x.confirm).toBe(false); expect(x.discard).toBe(true); expect(x.stop).toBe(true);
+		const active = input.read([raw([1, 2, 4, 5, 6, 7, 9], [0, 0, 1, -1, 1, -1])], 64);
 		expect(active.confirm).toBe(true); expect(active.back).toBe(true); expect(active.pause).toBe(true); expect(active.direction).toBe('up');
 		expect(active.fire).toEqual([true, true, true, true]); expect(active.coolant).toBe(true);
 		expect(active.drive).toBe(1); expect(active.turn).toBe(1); expect(active.aimX).toBe(1); expect(active.aimY).toBe(-1);
+		for (const [direction, hatX, hatY] of [['down', 0, 1], ['left', -1, 0], ['right', 1, 0]] as const) {
+			const move = input.read([raw([], [0, 0, 0, 0, hatX, hatY])], 80);
+			expect(move.direction).toBe(direction); expect(move.drive).toBe(-hatY || 0); expect(move.turn).toBe(hatX);
+		}
 		input.requireNeutral();
 		expect(input.read([raw([7])], 96).fire[0]).toBe(false);
 		input.read([raw()], 112);
@@ -133,12 +137,20 @@ describe('Heavy Rig player preferences and input boundaries', function () {
 		expect(resumed.fire[0]).toBe(true); expect(resumed.drive).toBe(1); expect(resumed.aimX).toBe(1);
 		expect(input.read([pad([], [0, 0, 0, 1])], 80).scroll).toBe(1);
 	});
-	test('connection with a held confirm requires release before it can claim or activate a menu', function () {
+	test('any browser-exposed button can claim on first exposure or after a neutral sample, without activating controls', function () {
+		for (const button of pad().buttons.keys()) {
+			for (const exposedBeforePress of [false, true]) {
+				const input = createGamepadInput();
+				input.requireNeutral();
+				if (exposedBeforePress) expect(input.read([pad()], 0).connected).toBe(false);
+				const claim = input.read([pad([button])], 16);
+				expect(claim.claimed).toBe(true); expect(claim.ready).toBe(false);
+				expect(claim.confirm).toBe(false); expect(claim.pause).toBe(false); expect(claim.navigate).toBe(0);
+				expect(claim.fire).toEqual([false, false, false, false]);
+			}
+		}
 		const input = createGamepadInput();
-		expect(input.read([pad([0, 7])], 0).connected).toBe(false);
-		expect(input.read([pad([0, 7])], 16).connected).toBe(false);
-		input.read([pad()], 32);
-		const claim = input.read([pad([0])], 48); expect(claim.claimed).toBe(true); expect(claim.confirm).toBe(false);
+		expect(input.read([pad([0])], 48).confirm).toBe(false);
 		expect(input.read([pad([0])], 64).confirm).toBe(false);
 		input.read([pad()], 80); expect(input.read([pad([0])], 96).confirm).toBe(true);
 	});

@@ -416,23 +416,21 @@ accepted contract's loadout review.
 
 ## Controls
 
-Press the south face button (A / cross / Nintendo B) or Menu to claim a
-connected controller. The claiming
-press is consumed; confirm again to act. Ownership stays with that controller
+Press any button to register a connected controller. The first press registers
+the controller. Release it and press A / cross / Nintendo B to confirm. Ownership stays with that controller
 when another connects. Losing it pauses combat; a replacement must be claimed
-and the mission explicitly resumed. Release sticks and triggers after menu
+and the mission explicitly resumed. Release the controller inputs after menu
 transitions to arm combat controls.
 
-Controllers without a browser-provided standard mapping use the browser's button
-and axis indices. They do not require a setup step. The table
-below describes the standard layout; an unmapped device may use different physical
-buttons. Settings retains the existing combat button assignments.
+Heavy Rig maps the GC101 / GameSir T4w (20bc:5656) raw layout used by Chrome
+on Linux to the standard layout below. Other controllers without a
+browser-provided mapping keep their browser button and axis indices.
 
 | Action | Keyboard / mouse | Standard gamepad | Touch |
 | --- | --- | --- | --- |
-| Raise/lower persistent throttle | W/S or up/down | Left stick up/down | Drag left stick up/down |
+| Raise/lower persistent throttle | W/S or up/down | D-pad or left stick up/down | Drag left stick up/down |
 | Neutral; momentum decays | X | X / square | STOP |
-| Turn hull | A/D or left/right | Left stick left/right | Drag left stick left/right |
+| Turn hull | A/D or left/right | D-pad or left stick left/right | Drag left stick left/right |
 | Aim independent turret | Mouse | Right stick left/right rotates torso | Tap a hostile or NEXT to track; empty ground aims manually |
 | Camera zoom | Mouse wheel | — | — |
 | Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Arm mount 1; hold FIRE |
@@ -464,9 +462,9 @@ volume slider. Touch controls
 activate on touch-first devices or through Settings. Optional recoil/damage
 vibration depends on browser and controller support.
 
-**Settings → Controls → Control Mode** selects **Simulation** (default) or
-**Arcade**, saved on this device. The table above describes Simulation. In
-Arcade, the left stick or WASD / mapped movement keys selects screen-relative
+**Settings → Controls → Control Mode** selects **Simulation** or
+**Arcade** (default), saved on this device. The table above describes Simulation. In
+Arcade, the D-pad, left stick, or WASD / mapped movement keys select screen-relative
 leg facing and forward throttle demand; release returns throttle gradually to
 neutral. The right stick selects absolute torso facing, as before. Both modes
 retain each chassis’s leg and torso rotation speeds. Mouse aiming works in
