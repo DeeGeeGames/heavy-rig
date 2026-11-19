@@ -102,6 +102,42 @@ test('settled enemies still withdraw from incoming damage after multiple ordinar
 	expect(distance(enemy, enemy.tactics.destination)).toBeGreaterThan(20);
 });
 
+test('clustered Recovery scouts make space and return fire during their damage response', function () {
+	const state = createMissionState({ ...contract, kind: 'recovery' });
+	state.player.x = 900; state.player.y = 600;
+	state.enemies = [unit(1, 'scout', 700, 574), unit(2, 'scout', 700, 600), unit(3, 'scout', 700, 626)];
+	for (const enemy of state.enemies) enemy.cooldown = 0.1;
+	enemiesStep(state, 1 / 60);
+	for (const enemy of state.enemies) enemy.hp -= enemy.maxHp * 0.1;
+	const firedWhileMoving = new Set<number>();
+	for (let tick = 0; tick < 120; tick++) {
+		enemiesStep(state, 1 / 60);
+		for (const enemy of state.enemies) {
+			if (enemy.tactics?.phase === 'recover' && distance(enemy, enemy.tactics.destination) > 12 && state.shots.some(function (shot) { return shot.owner === enemy.id; })) firedWhileMoving.add(enemy.id);
+		}
+		state.shots = [];
+	}
+	expect(firedWhileMoving.size).toBeGreaterThan(0);
+	for (const enemy of state.enemies) {
+		for (const other of state.enemies) if (other.id !== enemy.id) expect(distance(enemy, other)).toBeGreaterThanOrEqual(80);
+	}
+});
+
+test('two squads cannot reserve the same firing position', function () {
+	const state = scenario();
+	const first = unit(1, 'scout', 500, 530);
+	const second = unit(3, 'scout', 510, 700);
+	state.enemies = [first, unit(2, 'scout', 420, 480), second, unit(4, 'scout', 420, 790)];
+	state.enemies.forEach(function (enemy, index) {
+		enemy.squad = { id: index < 2 ? 1 : 3, slot: index % 2 === 0 ? 'center' : 'left', target: 'player', bearing: Math.PI, reconsiderIn: 3 };
+	});
+	enemiesStep(state, 1 / 60);
+	expect(first.tactics?.phase).toBe('advance');
+	expect(second.tactics?.phase).toBe('advance');
+	if (!first.tactics || !second.tactics) throw new Error('Missing firing plans');
+	expect(distance(first.tactics.destination, second.tactics.destination)).toBeGreaterThanOrEqual(80);
+});
+
 test('tactical allocation gives identical outcomes when the enemy collection order changes', function () {
 	const forward = scenario(); const reverse = scenario(); reverse.enemies.reverse();
 	for (let tick = 0; tick < 900; tick++) { enemiesStep(forward, 1 / 60); enemiesStep(reverse, 1 / 60); }
