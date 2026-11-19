@@ -12,7 +12,7 @@ import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDir
 import { enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
 import { inFiringArc, turnTorso } from './torso-arc';
 import { planSquads, type SquadOrder } from './enemy-squads';
-import { planGroundTactics, type EnemyTactics } from './enemy-tactics';
+import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './enemy-tactics';
 import { SQUAD_SIZE, type Pilot } from './pilots';
 
 export interface Point { x: number; y: number }
@@ -606,20 +606,19 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 	if (mission && !relay) for (const enemy of enemies) {
 		if (enemy.hp > 0 && (distance(enemy, nearestRig?.get(enemy.id) ?? p) < Math.max(850, ENEMY_STATS[enemy.kind].aggro) || enemy.hp < enemy.maxHp)) enemy.engaged = true;
 	}
-	const orders = planSquads(enemies.filter(function (enemy) {
-		return enemy.hp > 0 && !enemy.stationary && enemyMounts(enemy).some(usableMount) && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && (!mission || relay !== undefined || enemy.engaged);
-	}).map(function (enemy) { return { id: enemy.id, x: enemy.x, y: enemy.y, aggro: ENEMY_STATS[enemy.kind].aggro, ...(enemy.squad ? { order: enemy.squad } : {}) }; }), p, relay, dt);
-	const tactics = planGroundTactics(enemies.filter(function (enemy) {
-		return enemy.hp > 0 && !enemy.stationary && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && enemyMounts(enemy).some(usableMount) && (!mission || relay !== undefined || enemy.engaged);
-	}).map(function (enemy) {
+	const ground = enemies.filter(function (enemy) { return enemy.hp > 0 && enemy.kind !== 'helicopter' && enemy.kind !== 'vtol'; });
+	const skirmishers = ground.filter(function (enemy) {
+		return !enemy.stationary && !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker') && enemyMounts(enemy).some(usableMount) && (!mission || relay !== undefined || enemy.engaged);
+	});
+	const orders = planSquads(skirmishers.map(function (enemy) { return { id: enemy.id, x: enemy.x, y: enemy.y, aggro: ENEMY_STATS[enemy.kind].aggro, ...(enemy.squad ? { order: enemy.squad } : {}) }; }), p, relay, dt);
+	const tactics = planGroundTactics(skirmishers.map(function (enemy) {
 		const stats = ENEMY_STATS[enemy.kind]; const order = orders.get(enemy.id);
 		const rig = nearestRig?.get(enemy.id) ?? p;
 		const target = order?.target ?? (!relay || distance(enemy, rig) < stats.aggro ? 'player' : 'relay');
-		const readyIn = Math.max(enemy.cooldown, Math.min(...enemyMounts(enemy).filter(usableMount).map(function (mount) { return mount.cooldown; })));
 		return { id: enemy.id, x: enemy.x, y: enemy.y, hp: enemy.hp, maxHp: enemy.maxHp, angle: enemy.hullAngle ?? enemy.angle,
-			range: stats.range, speed: stats.speed * enemyWeight(enemy).modifier, readyIn, overheated: enemyReactor(enemy).overheated,
+			range: stats.range, speed: stats.speed * enemyWeight(enemy).modifier, overheated: enemyReactor(enemy).overheated,
 			target, at: target === 'relay' && relay ? relay : rig, ...(order ? { squad: order } : {}), ...(enemy.tactics ? { tactics: enemy.tactics } : {}) };
-	}), bounds, dt);
+	}), ground, bounds, dt);
 	for (const enemy of enemies) {
 		const order = orders.get(enemy.id);
 		if (order) enemy.squad = order;
@@ -721,7 +720,7 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 			if (volley.remaining === 0) delete mount.rocketVolley;
 		}
 		enemy.cooldown -= dt;
-		if (tactic?.phase !== 'recover' && enemyCanFire(enemy, target) && !reactor.overheated && enemy.cooldown <= 0 && distance(enemy, target) < range + 50 && Math.abs(angleDelta(enemy.angle, Math.atan2(target.y - enemy.y, target.x - enemy.x))) < 0.3) {
+		if (enemyCanFire(enemy, target) && !reactor.overheated && enemy.cooldown <= 0 && distance(enemy, target) < range + ENEMY_FIRING_MARGIN && Math.abs(angleDelta(enemy.angle, Math.atan2(target.y - enemy.y, target.x - enemy.x))) < 0.3) {
 			const ready = mounts.filter(function (mount) { return usableMount(mount) && mount.cooldown <= 0 && !mount.rocketVolley; });
 			const artillery = enemy.kind === 'siege' || enemy.commander ? ready.find(function (mount) { return getEnemyHardpoints(enemy.kind, enemy.commander)[mount.slot ?? 0]?.id === 'dorsal-artillery'; }) : undefined;
 			let fired = artillery;
