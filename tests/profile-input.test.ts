@@ -22,26 +22,26 @@ class NativeGamepadSnapshot implements GamepadSnapshot {
 	get mapping() { return this.snapshot.mapping; }
 }
 describe('Heavy Rig player preferences and input boundaries', function () {
-	test('the raw GC101 uses A for confirm, X for stop, and its hat axes for navigation and driving', function () {
+	test('native gamepads with an empty mapping use standard button and axis indices', function () {
 		const input = createGamepadInput();
 		const raw = function (buttons: number[] = [], axes = [0, 0, 0, 0, 0, 0]): GamepadSnapshot {
-			const snapshot = pad(buttons, axes);
-			return new NativeGamepadSnapshot({ ...snapshot, buttons: snapshot.buttons.slice(0, 13), mapping: '', id: 'GC101 Controller 1.03 (Vendor: 20bc Product: 5656)' });
+			return new NativeGamepadSnapshot({ ...pad(buttons, axes), mapping: '' });
 		};
 		const claim = input.read([raw([7])], 0);
 		expect(claim.claimed).toBe(true); expect(claim.confirm).toBe(false); expect(claim.fire[0]).toBe(false);
 		expect(claim.id).toBe(raw().id); expect(claim.index).toBe(0);
-		expect(input.read([raw([], [0, 0, 0, 0, 0, -1])], 16).ready).toBe(false);
+		expect(input.read([raw([12])], 16).ready).toBe(false);
 		input.read([raw()], 32);
-		const x = input.read([raw([0])], 48);
+		const x = input.read([raw([2], [0, 0, 0, 0, 0, -1])], 48);
 		expect(x.confirm).toBe(false); expect(x.discard).toBe(true); expect(x.stop).toBe(true);
-		const active = input.read([raw([1, 2, 4, 5, 6, 7, 9], [0, 0, 1, -1, 1, -1])], 64);
+		expect(x.direction).toBeUndefined(); expect(x.drive).toBe(0);
+		const active = input.read([raw([0, 1, 4, 5, 6, 7, 9, 12, 15], [0, 0, 1, -1])], 64);
 		expect(active.confirm).toBe(true); expect(active.back).toBe(true); expect(active.pause).toBe(true); expect(active.direction).toBe('up');
 		expect(active.fire).toEqual([true, true, true, true]); expect(active.coolant).toBe(true);
 		expect(active.drive).toBe(1); expect(active.turn).toBe(1); expect(active.aimX).toBe(1); expect(active.aimY).toBe(-1);
-		for (const [direction, hatX, hatY] of [['down', 0, 1], ['left', -1, 0], ['right', 1, 0]] as const) {
-			const move = input.read([raw([], [0, 0, 0, 0, hatX, hatY])], 80);
-			expect(move.direction).toBe(direction); expect(move.drive).toBe(-hatY || 0); expect(move.turn).toBe(hatX);
+		for (const [button, direction, drive, turn] of [[13, 'down', -1, 0], [14, 'left', 0, -1], [15, 'right', 0, 1]] as const) {
+			const move = input.read([raw([button])], 80);
+			expect(move.direction).toBe(direction); expect(move.drive).toBe(drive); expect(move.turn).toBe(turn);
 		}
 		input.requireNeutral();
 		expect(input.read([raw([7])], 96).fire[0]).toBe(false);
