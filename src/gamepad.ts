@@ -2,7 +2,6 @@ import { defaultController, type ControllerBindings } from './bindings';
 import type { FireInputs } from './arsenal';
 
 export type GamepadSnapshot = Pick<Gamepad, 'axes' | 'buttons' | 'connected' | 'index' | 'mapping' | 'id'>;
-export const isGc101 = function (id: string) { return /vendor:\s*20bc\s+product:\s*5656\b/i.test(id); };
 export interface PadInput {
 	connected: boolean;
 	available: boolean;
@@ -38,19 +37,6 @@ const deadZone = function (value: number, zone = 0.18) {
 	return !Number.isFinite(value) || Math.abs(value) <= zone ? 0 : Math.sign(value) * (Math.min(1, Math.abs(value)) - zone) / (1 - zone);
 };
 const identity = function (pad: GamepadSnapshot) { return `${pad.index}:${pad.id}`; };
-const digitalButton = function (pressed: boolean): GamepadButton { return { pressed, touched: pressed, value: Number(pressed) }; };
-const gamepadButtons = function (pad: GamepadSnapshot): readonly GamepadButton[] {
-	// Chromium on Linux exposes this GC101/GameSir layout as 13 raw buttons
-	// and six axes. The last two axes are the horizontal and vertical HID hat.
-	if (pad.mapping || pad.axes.length !== 6 || pad.buttons.length !== 13 || !isGc101(pad.id)) return pad.buttons;
-	const [,,,, hatX = 0, hatY = 0] = pad.axes;
-	return [
-		...[1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(function (index) { return pad.buttons[index] ?? digitalButton(false); }),
-		digitalButton(hatY < -.5), digitalButton(hatY > .5),
-		digitalButton(hatX < -.5), digitalButton(hatX > .5),
-		pad.buttons[12] ?? digitalButton(false),
-	];
-};
 const pressedButtons = function (gamepadButtons: readonly GamepadButton[]) {
 	const buttons = new Set<number>();
 	gamepadButtons.forEach(function (button, index) { if (button.pressed || button.value > 0.35) buttons.add(index); });
@@ -82,12 +68,12 @@ export const createGamepadInput = function () {
 	const suspend = function () { previous.clear(); previousMenu.clear(); promptAxes = undefined; suspended = true; requireNeutral(); };
 	const reset = function () { suspend(); owner = undefined; hasClaimed = false; repeatAt = 0; };
 	const read = function (pads: readonly (GamepadSnapshot | null)[], now: number, bindings: ControllerBindings = defaultController()): PadInput {
-		// An empty mapping still exposes usable browser inputs.
-		// Use their positional indices as a fallback, keeping saved combat bindings.
+		// Interpret browser indices using the standard layout, including pads
+		// that expose compatible inputs with an empty mapping.
 		const connected = pads.filter(function (candidate): candidate is GamepadSnapshot { return candidate !== null && candidate.connected; });
 		const samples = connected.map(function (pad) {
 			const key = identity(pad);
-			const buttons = gamepadButtons(pad);
+			const buttons = pad.buttons;
 			return { pad, key, buttons: pressedButtons(buttons), menuButtons: pressedMenuButtons(buttons, previousMenu.get(key)) };
 		});
 		let sample = samples.find(function (candidate) { return candidate.key === owner; });

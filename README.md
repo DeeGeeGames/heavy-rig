@@ -422,9 +422,9 @@ when another connects. Losing it pauses combat; a replacement must be claimed
 and the mission explicitly resumed. Release the controller inputs after menu
 transitions to arm combat controls.
 
-Heavy Rig maps the GC101 / GameSir T4w (20bc:5656) raw layout used by Chrome
-on Linux to the standard layout below. Other controllers without a
-browser-provided mapping keep their browser button and axis indices.
+Heavy Rig reads the browser's button and axis indices using the standard layout
+below. The system and browser supply the mapping from the physical controller
+to those indices.
 
 | Action | Keyboard / mouse | Standard gamepad | Touch |
 | --- | --- | --- | --- |
