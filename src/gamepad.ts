@@ -66,7 +66,9 @@ export const createGamepadInput = function () {
 	const suspend = function () { previous.clear(); previousMenu.clear(); promptAxes = undefined; requireNeutral(); };
 	const reset = function () { suspend(); owner = undefined; repeatAt = 0; };
 	const read = function (pads: readonly (GamepadSnapshot | null)[], now: number, bindings: ControllerBindings = defaultController()): PadInput {
-		const connected = pads.filter(function (candidate): candidate is GamepadSnapshot { return candidate !== null && candidate.connected && candidate.mapping === 'standard'; });
+		// An empty mapping still exposes usable browser inputs.
+		// Use their positional indices as a fallback, keeping saved combat bindings.
+		const connected = pads.filter(function (candidate): candidate is GamepadSnapshot { return candidate !== null && candidate.connected; });
 		const samples = connected.map(function (pad) {
 			const key = identity(pad);
 			return { pad, key, buttons: pressedButtons(pad), menuButtons: pressedMenuButtons(pad, previousMenu.get(key)) };

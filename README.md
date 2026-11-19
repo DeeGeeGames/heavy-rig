@@ -417,11 +417,16 @@ accepted contract's loadout review.
 ## Controls
 
 Press the south face button (A / cross / Nintendo B) or Menu to claim a
-connected standard controller. The claiming
+connected controller. The claiming
 press is consumed; confirm again to act. Ownership stays with that controller
 when another connects. Losing it pauses combat; a replacement must be claimed
 and the mission explicitly resumed. Release sticks and triggers after menu
 transitions to arm combat controls.
+
+Controllers without a browser-provided standard mapping use the browser's button
+and axis indices. They do not require a setup step. The table
+below describes the standard layout; an unmapped device may use different physical
+buttons. Settings retains the existing combat button assignments.
 
 | Action | Keyboard / mouse | Standard gamepad | Touch |
 | --- | --- | --- | --- |
