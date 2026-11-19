@@ -1,4 +1,5 @@
 import { html, type TemplateResult } from 'lit-html';
+import { isGc101 } from './gamepad';
 
 export type ControllerFamily = 'xbox' | 'playstation' | 'switch' | 'steamdeck' | 'generic';
 export type PromptDevice = 'keyboard' | 'touch' | ControllerFamily;
@@ -10,7 +11,7 @@ export const detectControllerFamily = function (gamepadId: string): ControllerFa
 	if (/steam\s?deck|valve|28de/.test(id)) return 'steamdeck';
 	if (/playstation|dualshock|dualsense|054c|\bps[345]\b/.test(id)) return 'playstation';
 	if (/nintendo|switch|joy-?con|057e/.test(id)) return 'switch';
-	if (/xbox|x-box|xinput|microsoft|045e/.test(id)) return 'xbox';
+	if (/xbox|x-box|xinput|microsoft|045e/.test(id) || isGc101(id)) return 'xbox';
 	return 'generic';
 };
 

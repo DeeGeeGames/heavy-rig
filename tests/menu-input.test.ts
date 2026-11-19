@@ -76,10 +76,12 @@ test('direction preserves spatial intent, including turning from left to up with
 	const input = claimed();
 	const left = input.read([pad([14])], 10);
 	expect(left.navigate).toBe(-1); expect(left.direction).toBe('left'); expect(left.adjust).toBe(-1);
+	expect(left.turn).toBe(-1);
 	const held = input.read([pad([14])], 20);
 	expect(held.direction).toBeUndefined(); expect(held.navigate).toBe(0);
 	const up = input.read([pad([12])], 30);
 	expect(up.navigate).toBe(-1); expect(up.direction).toBe('up'); expect(up.adjust).toBe(0);
+	expect(up.drive).toBe(1);
 	const down = input.read([pad([], [0, 1, 0, 0])], 40);
 	expect(down.navigate).toBe(1); expect(down.direction).toBe('down'); expect(down.adjust).toBe(0);
 });
