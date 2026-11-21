@@ -699,3 +699,9 @@ Live readings show mass, speed, throttle, headings, and heat. This uses the miss
 input and fixed-step combat runtime, with enemy waves disabled. Ammo and heat retain
 their normal behavior until reset. Campaign and preference saves are disabled in
 this mode. Physical controller/touch feel and balance need human playtesting.
+
+Open `/?rig-test=kestrel` for the blue Kestrel A solid-ink playtest, or select
+Kestrel A in the playground and enable **Blue Kestrel · solid ink**. Walk and
+reverse target eight contact-timed poses per second, and running targets twelve.
+Chassis travel and turret aim stay live. Toggle **Lighter gun housing** during
+a run to compare the receiver finish at the same speed and zoom.

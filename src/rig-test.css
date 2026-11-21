@@ -6,3 +6,5 @@
 #rig-test-panel output { display: block; line-height: 1.6; }
 #rig-test-panel p { margin: 6px 0 0; line-height: 1.5; }
 @media (max-width: 600px) { #rig-test-panel { top: 58px; } }
+.rig-test-finishes:not([hidden]) { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 8px 0; }
+.rig-test-finishes label { display: inline-flex; align-items: center; gap: 4px; }

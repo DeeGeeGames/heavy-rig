@@ -6,6 +6,7 @@ import type { MechFeedback } from './mech-3d';
 import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
 import { prepareAuthoredLocomotion, type AuthoredLocomotionOptions } from './authored-gait';
+import { KESTREL_RUN_PROFILE } from './authored-run';
 import type { FrameId } from './frames';
 import type { MechSkinId } from './mech-skin';
 import { applyMechSkinMaterial, type SkinSurface } from './mech-skin-material';
@@ -44,7 +45,7 @@ const kestrelDescriptor: AuthoredDescriptor = {
 	frame: 'kestrel', height: 74.82, weapons: kestrelWeaponSpecs,
 	// Short support and a longer recovery produce visible bounds. Torso rise shares
 	// the flight phase; measured pivots and soles still own planted contacts.
-	locomotion: { walkStride: 0.6, walkExtension: 0.2, run: { cycleSeconds: 1.05, stanceFraction: 0.26, referenceSpeed: 85, enterSpeed: 40, exitSpeed: 32, swingLift: 11, bodyLift: 4.4, bodyRoll: 0.025, bodyPitch: 0.052, footPitch: 0.22 } },
+	locomotion: { walkStride: 0.6, walkExtension: 0.2, run: KESTREL_RUN_PROFILE },
 };
 export const authoredKestrelUrl = function (): string {
 	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? './assets/mechs/kestrel/game-ready.glb';

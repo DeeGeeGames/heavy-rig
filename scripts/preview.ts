@@ -16,8 +16,12 @@ const server = Bun.serve({
 		if (request.method !== 'GET' && request.method !== 'HEAD') {
 			return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
 		}
-		const pathname = new URL(request.url).pathname;
-		if (pathname === '/' && Bun.env['RIG_TEST'] === '1') return Response.redirect(new URL('/index.html?rig-test', request.url), 302);
+		const url = new URL(request.url);
+		const { pathname } = url;
+		if (pathname === '/' && Bun.env['RIG_TEST'] === '1' && !url.searchParams.has('rig-test')) {
+			url.pathname = '/index.html'; url.searchParams.set('rig-test', '');
+			return Response.redirect(url, 302);
+		}
 		const file = files.get(pathname === '/' ? '/index.html' : pathname);
 		return file
 			? new Response(request.method === 'HEAD' ? null : file, { headers: { 'Content-Type': file.type, 'Cache-Control': 'no-store' } })
