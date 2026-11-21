@@ -408,17 +408,19 @@ fight.
 
 ## Frame Training
 
-Training uses legal Warden equipment for the gun, missile, and combined-fire drills,
-then switches to a Longbow laser for heat and coolant in a separate, unscored simulator. Nine drills cover cruise, neutral, turning, cannon aim,
-guided missiles, combined fire, heat, coolant, and artillery evasion. It uses
-the same controls and simulation as missions, supports safe retries, and does
-not change company equipment, damage, credits, reputation, or calendar days.
-The simulator alone reloads dry drill weapons once launched ordnance resolves,
-clears heat, and places a fresh target so repeated misses cannot strand a drill.
-Both borrowed escape rigs can reach evacuation without firing or killing guards;
-Kestrel starts with finite machine-gun reserves, while Longbow uses energy heat.
-Pause can restart or leave training. Completion returns to the ship or the
-accepted contract's loadout review.
+Open Frame Training from the title, Bridge, or Starmap. Choose any frame
+variant, fit compatible weapons of any tier, and set ammunition to empty,
+standard, or full. Enter Range to practice against stationary targets. Pause
+and choose Change Loadout to swap equipment, or Reset Range to restart with the
+same fit and replenish supplies. Training remembers each frame's fit while the
+page is open. Company equipment, condition, and progression stay untouched.
+
+Guided Drills teach cruise, neutral, steering, cannon aim, guided missiles,
+combined fire, heat, coolant, and artillery evasion. The drills use a Warden
+for guns and launchers and switch to a Longbow for heat and coolant. Dry drill
+weapons reload after launched ordnance resolves so you can retry. On completion,
+choose Change Loadout to enter the range, return to where you opened Training,
+or review an accepted contract's loadout.
 
 ## Controls
 
