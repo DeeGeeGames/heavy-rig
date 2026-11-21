@@ -3,7 +3,7 @@ import type { SpatialPoint } from './weapon-rig';
 
 /** Centred, axis-aligned footprints in mission metres. Fissures are below grade. */
 export interface TerrainObstacle extends Readonly<Point> {
-	readonly kind: 'fissure' | 'shed';
+	readonly kind: 'fissure' | 'shed' | 'tree';
 	readonly width: number;
 	readonly depth: number;
 	readonly height: number;
@@ -64,6 +64,11 @@ const firstContact = function (from: Point, to: Point, boxes: readonly Bounds[])
 };
 const clear = function (from: Point, to: Point, boxes: readonly Bounds[]) {
 	return !boxes.some(function (box) { return contact(from, to, box) !== undefined; });
+};
+// Placement checks arbitrary clearances once. Only moving bodies need the
+// persistent per-radius navigation cache used by sweeps and waypoints.
+export const terrainPointClear = function (terrain: FieldTerrain, point: Point, radius: number): boolean {
+	return terrain.obstacles.every(function (obstacle) { return !inside(point, bounds(obstacle, radius)); });
 };
 export const terrainPathClear = function (terrain: FieldTerrain, from: Point, to: Point, radius: number): boolean {
 	const { boxes } = clearanceFor(terrain, radius);

@@ -7,7 +7,7 @@ import { FRAMES, getFrame, type FrameId } from './frames';
 import { canEquipWeapon, createStarterLoadout, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionMap, MissionRuntime } from './campaign-types';
-import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionMap, missionHostileCount, missionSpawn } from './missions';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionMap, missionHostileCount, missionSpawn, missionDeploymentSlot, squadDestination } from './missions';
 import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint } from './weapon-rig';
 import { ENEMY_RADIUS, RIG_RADIUS, enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
 import { moveOnTerrain, terrainShotFraction, terrainWaypoint, type FieldTerrain } from './field-terrain';
@@ -100,11 +100,6 @@ export interface MissionDeployment {
 	coolantCharges?: number;
 	squadmates?: readonly SquadmateOptions[];
 }
-const squadDestination = function (anchor: Point, heading: number, index: number, back: number, spread: number): Point {
-	const side = index === 0 ? -spread : index === 1 ? spread : 0;
-	const trail = index === 2 ? back + spread : back;
-	return { x: anchor.x - Math.cos(heading) * trail - Math.sin(heading) * side, y: anchor.y - Math.sin(heading) * trail + Math.cos(heading) * side };
-};
 export const createMissionState = function (contract: Contract, options: MissionDeployment = {}): State {
 	const squadmates = options.squadmates ?? [];
 	if (squadmates.length >= SQUAD_SIZE || new Set(squadmates.map(function (mate) { return mate.pilotId; })).size !== squadmates.length) throw new RangeError('Invalid squad deployment');
@@ -132,7 +127,7 @@ export const createMissionState = function (contract: Contract, options: Mission
 	state.player.x = map.drop.x; state.player.y = map.drop.y; state.player.angle = heading; state.player.turret = heading;
 	state.squadmates = squadmates.map(function ({ pilotId, callsign, specialty, frameId, loadout, reserves, integrity }, index) {
 		if (!isFrameLoadout(frameId, loadout)) throw new RangeError(`Invalid loadout for ${frameId}`);
-		const at = squadDestination(map.drop, heading, index, 80, 95);
+		const at = missionDeploymentSlot(map, index);
 		return {
 			pilotId, callsign, specialty, frameId, loadout: loadedMounts(loadout, reserves),
 			x: clamp(at.x, 35, map.width - 35), y: clamp(at.y, 35, map.height - 35), angle: heading, turret: heading,
@@ -205,7 +200,7 @@ const travelTerrain = function (terrain: FieldTerrain | undefined, enemy: Unit):
 	const levels = flightTerrainCache.get(terrain) ?? new Map<number, FieldTerrain>();
 	let level = levels.get(clearance);
 	if (!level) {
-		level = { ...terrain, obstacles: terrain.obstacles.filter(function (obstacle) { return obstacle.kind === 'shed' && obstacle.height >= clearance; }) };
+		level = { ...terrain, obstacles: terrain.obstacles.filter(function (obstacle) { return obstacle.height >= clearance; }) };
 		levels.set(clearance, level); flightTerrainCache.set(terrain, levels);
 	}
 	return level.obstacles.length ? level : undefined;
