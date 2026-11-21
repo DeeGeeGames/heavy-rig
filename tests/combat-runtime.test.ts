@@ -102,6 +102,36 @@ test('ECS training uses the same combat systems through every qualification stag
 	} finally { await world.dispose(); }
 });
 
+test('the practice range fires the selected hardpoint, replaces targets, and refits a fresh frame', async function () {
+	const training = createTraining({ frame: 'longbow-c', loadout: [null, 'stream-rockets:t3'], reserves: [0, 4] });
+	const { world, combat } = await harness(training.state);
+	try {
+		const state = combat.attach(training.state, training);
+		const targets = state.enemies.map(function (enemy) { return enemy.id; });
+		const aim = { x: state.player.x, y: idle.aim.y };
+		combat.setControls(function () { return { ...idle, aim, fire: [true, false, false, false] }; });
+		world.update(1 / 60);
+		expect(state.stats.shotsFired).toBe(0);
+		combat.setControls(function () { return { ...idle, aim, fire: [false, true, false, false] }; });
+		world.update(1 / 60);
+		expect(state.stats.shotsFired).toBe(1);
+		expect(state.loadout[0]).toMatchObject({ slot: 1, weapon: 'stream-rockets:t3', rounds: 3 });
+		for (const enemy of state.enemies) enemy.hp = 0;
+		combat.setControls(function () { return { ...idle, aim, coolant: true }; });
+		world.update(1 / 60);
+		expect(state.coolantCharges).toBe(1);
+		expect(state.enemies).toHaveLength(targets.length);
+		expect(state.enemies.every(function (enemy) { return enemy.stationary && !targets.includes(enemy.id); })).toBe(true);
+		expect(training.stage).toBe('range');
+		const refit = createTraining({ frame: 'morrow-b', loadout: ['ppc:t5', null], reserves: [0, 0] });
+		const fresh = combat.attach(refit.state, refit);
+		expect(fresh.frame).toBe('morrow-b');
+		expect(fresh.loadout.map(function (mount) { return [mount.slot, mount.weapon]; })).toEqual([[0, 'ppc:t5']]);
+		expect(fresh.shots).toHaveLength(0);
+		expect(fresh.coolantCharges).toBe(2);
+	} finally { await world.dispose(); }
+});
+
 test('capability and resource replacement remain authoritative through live views', async function () {
 	const { world, combat, state } = await harness(scenario());
 	try {

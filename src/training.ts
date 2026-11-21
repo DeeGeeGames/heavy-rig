@@ -1,13 +1,16 @@
 import { defaultKeyboard, defaultController, keyLabel, padLabel, type KeyboardBindings, type ControllerBindings } from './bindings';
 import type { ControlMode } from './profile';
-import { createMount, getWeapon } from './arsenal';
+import { createMount, getWeapon, type WeaponId } from './arsenal';
+import { loadedMounts } from './combat-resources';
+import type { FrameId } from './frames';
+import { isFrameLoadout } from './hardpoints';
 import { angleDelta, createEnemyLoadout, createState, distance, step, type Controls, type Point, type CombatStateView } from './simulation';
 
 export const TRAINING_STAGES = ['drive', 'neutral', 'steer', 'cannon', 'missiles', 'combined', 'heat', 'coolant', 'evade', 'complete'] as const;
 export type TrainingStage = typeof TRAINING_STAGES[number];
 export interface Training {
 	state: CombatStateView;
-	stage: TrainingStage;
+	stage: TrainingStage | 'range';
 	distance: number;
 	turn: number;
 	combinedTime: number;
@@ -16,20 +19,42 @@ export interface Training {
 	strikeIssued: boolean;
 }
 
+export interface TrainingSetup {
+	frame: FrameId;
+	loadout: readonly (WeaponId | null)[];
+	reserves: readonly number[];
+}
+
+const RANGE_LANE_X = 650;
+
+const practiceTarget = function (state: CombatStateView, x: number, y: number) {
+	return { id: state.nextId++, x, y, angle: Math.atan2(state.player.y - y, state.player.x - x), hp: 150, maxHp: 150, cooldown: Infinity, heavy: false, kind: 'scout' as const, stationary: true as const, loadout: createEnemyLoadout('scout'), reactor: { heat: 0, overheated: false } };
+};
+
+const placeRangeTargets = function (state: CombatStateView) {
+	state.wrecks = [];
+	state.enemies = [practiceTarget(state, RANGE_LANE_X, 625), practiceTarget(state, RANGE_LANE_X + 65, 565), practiceTarget(state, RANGE_LANE_X, 520)];
+};
+
 // A separate, unscored range uses the same drive, weapons and warning rules as
 // the operation. It never owns or writes the player's profile.
-export const createTraining = function (): Training {
-	const state = createState({ difficulty: 'story' });
-	state.loadout = (['autocannon', 'machine-gun', 'cluster-missiles', 'stream-rockets'] as const).map(function (weapon, slot) { return { ...createMount(weapon), slot }; });
+export const createTraining = function (setup?: TrainingSetup): Training {
+	const state = createState({ difficulty: 'story', frame: setup?.frame ?? 'warden' });
+	if (setup && !isFrameLoadout(setup.frame, setup.loadout)) throw new RangeError(`Invalid training loadout for ${setup.frame}`);
+	state.loadout = setup ? loadedMounts(setup.loadout, setup.reserves) : loadedMounts(['autocannon', 'machine-gun', 'cluster-missiles', 'stream-rockets']);
 	state.spawnIn = 3600;
-	return { state, stage: 'drive', distance: 0, turn: 0, combinedTime: 0, startedAt: 0, strikeOrigin: undefined, strikeIssued: false };
+	if (setup) {
+		state.player.x = RANGE_LANE_X;
+		placeRangeTargets(state);
+	}
+	return { state, stage: setup ? 'range' : 'drive', distance: 0, turn: 0, combinedTime: 0, startedAt: 0, strikeOrigin: undefined, strikeIssued: false };
 };
 
 const placeTarget = function (state: CombatStateView) {
 	const p = state.player;
 	const x = Math.max(80, Math.min(1720, p.x + Math.cos(p.turret) * 140));
 	const y = Math.max(80, Math.min(1120, p.y + Math.sin(p.turret) * 140));
-	state.enemies = [{ id: state.nextId++, x, y, angle: Math.atan2(p.y - y, p.x - x), hp: 150, maxHp: 150, cooldown: 3600, heavy: false, kind: 'scout', stationary: true, loadout: createEnemyLoadout('scout'), reactor: { heat: 0, overheated: false } }];
+	state.enemies = [practiceTarget(state, x, y)];
 };
 
 const advance = function (training: Training, stage: TrainingStage) {
@@ -74,6 +99,7 @@ export interface TrainingBefore { x: number; y: number; angle: number; hits: num
 export const prepareTraining = function (training: Training, controls: Controls): Controls {
 	const state = training.state;
 	state.spawnIn = 3600;
+	if (training.stage === 'range') return controls;
 	retryDryDrill(training);
 	if (training.stage === 'coolant') state.player.heat = Math.max(45, state.player.heat);
 	return { ...controls, fire: training.stage === 'combined' ? controls.fire : [(training.stage === 'cannon' || training.stage === 'heat') && controls.fire[0], false, training.stage === 'missiles' && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant };
@@ -82,6 +108,11 @@ export const finishTraining = function (training: Training, controls: Controls, 
 	const state = training.state;
 	// A missed drill is a retry, never a defeat or scored kill.
 	state.player.hp = 100; state.relay = 100;
+	state.outcome = 'playing'; state.phase = 'combat';
+	if (training.stage === 'range') {
+		if (state.enemies.length === 0) placeRangeTargets(state);
+		return;
+	}
 	training.distance += distance(before, state.player);
 	training.turn += Math.abs(angleDelta(before.angle, state.player.angle));
 	if (training.stage === 'drive' && training.distance >= 100) advance(training, 'neutral');
@@ -109,7 +140,6 @@ export const finishTraining = function (training: Training, controls: Controls, 
 			else { training.strikeIssued = false; training.startedAt = state.time; }
 		}
 	}
-	state.outcome = 'playing'; state.phase = 'combat';
 };
 export const stepTraining = function (training: Training, controls: Controls, dt: number) {
 	if (training.stage === 'complete') { training.state.events = []; return; }
@@ -119,7 +149,7 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 	finishTraining(training, controls, dt, before);
 };
 
-export const trainingCopy = function (training: Training, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings; controlMode?: ControlMode; touch?: boolean; buttonLabel?: (index: number) => string } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
+export const trainingCopy = function (stage: TrainingStage, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings; controlMode?: ControlMode; touch?: boolean; buttonLabel?: (index: number) => string } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
 	const key = function (action: keyof KeyboardBindings) { return mappings.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
 	const arcade = mappings.touch || mappings.controlMode === 'arcade';
 	const buttonLabel = mappings.buttonLabel ?? padLabel;
@@ -140,6 +170,6 @@ export const trainingCopy = function (training: Training, controller: boolean, m
 		evade: ['CLEAR THE IMPACT ZONE', `Frame reset to the practice lane. ${controls.drive} when the orange circle appears. Leave it before impact; the strike stays where marked.`],
 		complete: ['FRAME QUALIFICATION COMPLETE', 'You are ready for the operation. Flank armored siege frames and strike while they recover from a barrage.'],
 	};
-	const [title, instruction] = copy[training.stage];
-	return { title, instruction, progress: `${Math.min(TRAINING_STAGES.length - 1, TRAINING_STAGES.indexOf(training.stage) + 1)} / ${TRAINING_STAGES.length - 1}` };
+	const [title, instruction] = copy[stage];
+	return { title, instruction, progress: `${Math.min(TRAINING_STAGES.length - 1, TRAINING_STAGES.indexOf(stage) + 1)} / ${TRAINING_STAGES.length - 1}` };
 };
