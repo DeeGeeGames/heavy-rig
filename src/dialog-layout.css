@@ -116,3 +116,17 @@
 	.training-mounts { grid-column: 1 / -1; grid-row: 2; }
 	.training-fit-summary { grid-column: 2; grid-row: 1; align-self: end; padding-bottom: 3px; }
 }
+#game #field-trial { height: auto; max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 24px); }
+.field-brief { display: grid; min-height: 0; overflow-y: auto; gap: 14px; }
+.field-orders { display: grid; gap: 8px; align-content: center; }
+.field-orders p { margin: 0; color: var(--paper); font: 15px/1.4 Arial, sans-serif; }
+.field-orders b { color: var(--amber); }
+.field-orders b:last-child { color: var(--cyan); }
+.field-survey { margin: 0; background-color: #162527; background-image: linear-gradient(#829b9220 1px, transparent 1px), linear-gradient(90deg,#829b9220 1px,transparent 1px); background-size: 32px 32px; border: 1px solid var(--border); }
+.field-survey svg { display: block; width: 100%; height: clamp(130px, 29dvh, 225px); }
+.field-survey figcaption { display: flex; flex-wrap: wrap; gap: 3px 14px; padding: 5px 9px; background: #162527; color: var(--muted); font: 11px var(--mono); }
+@media (max-height: 520px) and (min-width: 550px) {
+	.field-brief { grid-template-columns: 1fr 1fr; align-items: center; }
+	.field-survey svg { height: 105px; }
+	.field-orders p { font-size: 13px; }
+}

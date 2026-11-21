@@ -1,5 +1,6 @@
 import type { MissionTier } from './reputation';
 import type { Point } from './simulation';
+import type { FieldTerrain } from './field-terrain';
 
 export type FactionId = 'freeholds' | 'combine' | 'accord';
 export type PlanetId = 'meridian' | 'cinder' | 'borealis' | `system-${number}`;
@@ -38,6 +39,7 @@ export interface MissionMap {
 	extraction: Point;
 	sites: Point[];
 	landmarks: Landmark[];
+	terrain?: FieldTerrain;
 }
 
 export interface MissionStructure extends Point { hp: number; maxHp: number }

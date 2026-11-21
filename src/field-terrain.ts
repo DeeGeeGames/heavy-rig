@@ -1,0 +1,164 @@
+import type { Point } from './simulation';
+import type { SpatialPoint } from './weapon-rig';
+
+/** Centred, axis-aligned footprints in mission metres. Fissures are below grade. */
+export interface TerrainObstacle extends Readonly<Point> {
+	readonly kind: 'fissure' | 'shed';
+	readonly width: number;
+	readonly depth: number;
+	readonly height: number;
+}
+
+export interface FieldTerrain {
+	readonly obstacles: readonly TerrainObstacle[];
+	readonly roads: readonly (readonly Point[])[];
+}
+
+interface Bounds { left: number; right: number; top: number; bottom: number }
+interface Contact { fraction: number; axis: 'x' | 'y' }
+interface Corner { point: Point; distances: Map<Corner, number> }
+interface Clearance { boxes: Bounds[]; corners?: Corner[] }
+const clearanceCache = new WeakMap<FieldTerrain, Map<number, Clearance>>();
+
+const bounds = function (obstacle: TerrainObstacle, radius: number): Bounds {
+	return { left: obstacle.x - obstacle.width / 2 - radius, right: obstacle.x + obstacle.width / 2 + radius,
+		top: obstacle.y - obstacle.depth / 2 - radius, bottom: obstacle.y + obstacle.depth / 2 + radius };
+};
+const clearanceFor = function (terrain: FieldTerrain, radius: number): Clearance {
+	let sizes = clearanceCache.get(terrain);
+	if (!sizes) { sizes = new Map(); clearanceCache.set(terrain, sizes); }
+	let clearance = sizes.get(radius);
+	if (!clearance) {
+		clearance = { boxes: terrain.obstacles.map(function (obstacle) { return bounds(obstacle, radius); }) };
+		sizes.set(radius, clearance);
+	}
+	return clearance;
+};
+const distance = function (a: Point, b: Point) { return Math.hypot(a.x - b.x, a.y - b.y); };
+const inside = function (point: Point, box: Bounds) {
+	return point.x > box.left && point.x < box.right && point.y > box.top && point.y < box.bottom;
+};
+const axisInterval = function (from: number, delta: number, low: number, high: number): readonly [number, number] | undefined {
+	if (delta === 0) return from < low || from > high ? undefined : [-Infinity, Infinity];
+	const t1 = (low - from) / delta; const t2 = (high - from) / delta;
+	return t1 < t2 ? [t1, t2] : [t2, t1];
+};
+const contact = function (from: Point, to: Point, box: Bounds): Contact | undefined {
+	const dx = to.x - from.x; const dy = to.y - from.y;
+	// Travelling parallel to a wall or touching just its corner leaves the path open.
+	if (dx === 0 && (from.x <= box.left || from.x >= box.right) || dy === 0 && (from.y <= box.top || from.y >= box.bottom)) return undefined;
+	const x = axisInterval(from.x, dx, box.left, box.right);
+	const y = axisInterval(from.y, dy, box.top, box.bottom);
+	if (!x || !y) return undefined;
+	const entry = Math.max(0, x[0], y[0]);
+	if (entry >= 1 || entry >= Math.min(x[1], y[1])) return undefined;
+	return { fraction: entry, axis: x[0] >= y[0] ? 'x' : 'y' };
+};
+const firstContact = function (from: Point, to: Point, boxes: readonly Bounds[]) {
+	let first: Contact | undefined;
+	for (const box of boxes) {
+		const hit = contact(from, to, box);
+		if (hit && (!first || hit.fraction < first.fraction)) first = hit;
+	}
+	return first;
+};
+const clear = function (from: Point, to: Point, boxes: readonly Bounds[]) {
+	return !boxes.some(function (box) { return contact(from, to, box) !== undefined; });
+};
+export const terrainPathClear = function (terrain: FieldTerrain, from: Point, to: Point, radius: number): boolean {
+	const { boxes } = clearanceFor(terrain, radius);
+	return !boxes.some(function (box) { return inside(from, box) || inside(to, box); }) && clear(from, to, boxes);
+};
+const nearestFree = function (point: Point, boxes: readonly Bounds[]): Point {
+	const containing = boxes.find(function (box) { return inside(point, box); });
+	if (!containing) return point;
+	// A formation slot or firing position can fall inside a building. Pick an
+	// exterior face, including clearance, without sending the unit through it.
+	const exits = [
+		{ x: containing.left - 1, y: point.y }, { x: containing.right + 1, y: point.y },
+		{ x: point.x, y: containing.top - 1 }, { x: point.x, y: containing.bottom + 1 },
+	];
+	return exits.filter(function (at) { return !boxes.some(function (box) { return inside(at, box); }); })
+		.sort(function (a, b) { return distance(a, point) - distance(b, point); })[0] ?? point;
+};
+
+export const moveOnTerrain = function (terrain: FieldTerrain, from: Point, to: Point, radius: number): Point {
+	const { boxes } = clearanceFor(terrain, radius);
+	const origin = nearestFree(from, boxes);
+	let at = origin; let destination = origin === from ? to : { x: origin.x + to.x - from.x, y: origin.y + to.y - from.y };
+	// On the first impact discard the blocked velocity component; a second
+	// sweep stops the remaining slide at an adjoining wall.
+	for (let axis = 0; axis < 2; axis++) {
+		const hit = firstContact(at, destination, boxes);
+		if (!hit) return destination;
+		const dx = destination.x - at.x; const dy = destination.y - at.y;
+		const f = Math.max(0, hit.fraction - .001 / Math.max(1, Math.hypot(dx, dy)));
+		at = { x: at.x + dx * f, y: at.y + dy * f };
+		destination = hit.axis === 'x' ? { x: at.x, y: destination.y } : { x: destination.x, y: at.y };
+	}
+	return at;
+};
+
+const navigationCorners = function (boxes: readonly Bounds[]): Corner[] {
+	// Extra stand-off gives a turning rig room to round a corner before steering
+	// to its next waypoint. Geometry is static throughout a sortie.
+	const margin = 24;
+	const points = boxes.flatMap(function (box) {
+		return [box.left - margin, box.right + margin].flatMap(function (x) {
+			return [box.top - margin, box.bottom + margin].map(function (y) { return { x, y }; });
+		});
+	}).filter(function (point) { return !boxes.some(function (box) { return inside(point, box); }); });
+	const corners: Corner[] = points.map(function (point) { return { point, distances: new Map() }; });
+	for (const a of corners) for (const b of corners) {
+		if (clear(a.point, b.point, boxes)) a.distances.set(b, distance(a.point, b.point));
+	}
+	// Only the first visible corner is needed per moving unit. Precompute the
+	// distances between this small fixed set of corners once per rig clearance.
+	for (const via of corners) for (const from of corners) {
+		const firstLeg = from.distances.get(via);
+		if (firstLeg === undefined) continue;
+		for (const [end, lastLeg] of via.distances) {
+			if (firstLeg + lastLeg < (from.distances.get(end) ?? Infinity)) from.distances.set(end, firstLeg + lastLeg);
+		}
+	}
+	return corners;
+};
+export const terrainWaypoint = function (terrain: FieldTerrain, from: Point, to: Point, radius: number): Point {
+	const clearance = clearanceFor(terrain, radius);
+	const goal = nearestFree(to, clearance.boxes);
+	if (clear(from, goal, clearance.boxes)) return goal;
+	const corners = clearance.corners ??= navigationCorners(clearance.boxes);
+	const exits = corners.filter(function (corner) { return clear(corner.point, goal, clearance.boxes); })
+		.map(function (corner) { return { corner, remaining: distance(corner.point, goal) }; });
+	let best: Corner | undefined; let bestTotal = Infinity; let bestFirstLeg = 0;
+	for (const entry of corners) {
+		if (!clear(from, entry.point, clearance.boxes)) continue;
+		const firstLeg = distance(from, entry.point);
+		for (const { corner, remaining } of exits) {
+			const between = entry.distances.get(corner);
+			if (between === undefined) continue;
+			const total = firstLeg + between + remaining;
+			// Prefer the farther directly visible corner on an equal-length path,
+			// especially when the rig has already arrived at one of its corners.
+			if (total < bestTotal - .01 || Math.abs(total - bestTotal) <= .01 && firstLeg > bestFirstLeg) {
+				best = entry; bestTotal = total; bestFirstLeg = firstLeg;
+			}
+		}
+	}
+	return best?.point ?? from;
+};
+
+export const terrainShotFraction = function (terrain: FieldTerrain, from: SpatialPoint, to: SpatialPoint): number | undefined {
+	let first: number | undefined;
+	for (const obstacle of terrain.obstacles) {
+		if (obstacle.kind === 'fissure') continue;
+		const box = bounds(obstacle, 0);
+		const x = axisInterval(from.x, to.x - from.x, box.left, box.right);
+		const y = axisInterval(from.y, to.y - from.y, box.top, box.bottom);
+		const z = axisInterval(from.elevation, to.elevation - from.elevation, 0, obstacle.height);
+		if (!x || !y || !z) continue;
+		const entry = Math.max(0, x[0], y[0], z[0]);
+		if (entry <= Math.min(1, x[1], y[1], z[1]) && (first === undefined || entry < first)) first = entry;
+	}
+	return first;
+};

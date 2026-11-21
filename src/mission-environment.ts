@@ -1,6 +1,7 @@
 import { BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry, Group, InstancedMesh, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, RingGeometry, SRGBColorSpace, Texture } from 'three';
 import type { Biome, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
+import { createCutGround, createFieldStructures, paintFieldRoads } from './field-terrain-3d';
 
 interface SurfacePalette { ground: string; dust: string; rock: string; road: string; sky: string; haze: string; light: string }
 export const SURFACE_PALETTES: Readonly<Record<Biome, SurfacePalette>> = {
@@ -9,8 +10,7 @@ export const SURFACE_PALETTES: Readonly<Record<Biome, SurfacePalette>> = {
 	tundra: { ground: '#a3b6b8', dust: '#d6e0d9', rock: '#617b81', road: '#758c8f', sky: '#30444c', haze: '#8aa9af', light: '#e1f5ff' },
 };
 
-// Each contract owns one terrain bundle. Traversable relief stays below the
-// mech's ankles; tall silhouettes belong outside the playable boundary.
+// The mission owns all ground, markers, and obstacle assets for its field.
 export const createMissionEnvironment = function (map: MissionMap) {
 	const palette = SURFACE_PALETTES[map.biome];
 	const root = new Group(); root.name = 'mission-terrain';
@@ -44,12 +44,14 @@ export const createMissionEnvironment = function (map: MissionMap) {
 			ctx.globalAlpha = 1;
 			// Tracks connect the generated combat sites, so each field has a
 			// readable travel network instead of a scaled-up empty apron.
-			const route = [map.drop, ...map.sites, map.objective, map.extraction];
-			ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-			for (const [width, opacity] of [[108, 0.3], [80, 0.28], [52, 0.16]]) {
-				ctx.strokeStyle = palette.road; ctx.lineWidth = width ?? 1; ctx.globalAlpha = opacity ?? 1; ctx.beginPath();
-				for (const [index, point] of route.entries()) { if (index === 0) ctx.moveTo(point.x, point.y); else ctx.lineTo(point.x, point.y); }
-				ctx.stroke();
+			if (!map.terrain) {
+				const route = [map.drop, ...map.sites, map.objective, map.extraction];
+				ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+				for (const [width, opacity] of [[108, 0.3], [80, 0.28], [52, 0.16]]) {
+					ctx.strokeStyle = palette.road; ctx.lineWidth = width ?? 1; ctx.globalAlpha = opacity ?? 1; ctx.beginPath();
+					for (const [index, point] of route.entries()) { if (index === 0) ctx.moveTo(point.x, point.y); else ctx.lineTo(point.x, point.y); }
+					ctx.stroke();
+				}
 			}
 			ctx.globalAlpha = 1;
 			for (const landmark of map.landmarks) {
@@ -71,6 +73,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 				ctx.strokeStyle = palette.dust; ctx.globalAlpha = 0.35; ctx.lineWidth = 3; ctx.strokeRect(site.x - 110, site.y - 90, 220, 180);
 				ctx.font = 'bold 25px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = palette.dust; ctx.fillText(`SECTOR ${String(index + 1).padStart(2, '0')}`, site.x, site.y + 118);
 			}
+			if (map.terrain) paintFieldRoads(ctx, map.terrain);
 			ctx.globalAlpha = 0.28;
 			for (let i = 0; i < 24000; i++) { ctx.fillStyle = i % 3 ? palette.rock : palette.dust; ctx.fillRect(random() * map.width, random() * map.height, 1 + random() * 4, 1 + random() * 3); }
 			ctx.globalAlpha = 1;
@@ -78,8 +81,10 @@ export const createMissionEnvironment = function (map: MissionMap) {
 			groundSurface.color.set('#ffffff'); groundSurface.map = texture;
 		}
 	}
-	const ground = new Mesh(geometry(new PlaneGeometry(map.width, map.height)), groundSurface);
+	const ground = new Mesh(geometry(map.terrain ? createCutGround(map, map.terrain) : new PlaneGeometry(map.width, map.height)), groundSurface);
 	ground.name = 'planet-surface'; ground.rotation.x = -Math.PI / 2; ground.position.set(map.width / 2, -0.03, map.height / 2); ground.receiveShadow = true; root.add(ground);
+	const field = map.terrain ? createFieldStructures(map.terrain, map.seed) : undefined;
+	if (field) root.add(field.root);
 	const scratch = new Object3D(); const color = new Color();
 	const rocks = map.landmarks.filter(function (landmark) { return landmark.kind === 'rocks'; });
 	const stones = new InstancedMesh(rockShape, material(new MeshStandardMaterial({ color: '#ffffff', roughness: 1 })), rocks.length * 6);
@@ -176,6 +181,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		},
 		dispose: function () {
 			if (disposed) return; disposed = true;
+			field?.dispose();
 			for (const batch of batches) batch.dispose();
 			for (const asset of geometries) asset.dispose(); for (const asset of materials) asset.dispose(); for (const asset of textures) asset.dispose();
 			root.removeFromParent(); root.clear();

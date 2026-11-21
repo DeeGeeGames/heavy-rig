@@ -14,7 +14,7 @@ export interface CombatComponents {
 	squadmate: Squadmate;
 	position: Point;
 	heading: { angle: number };
-	drive: Pick<Player, 'throttle' | 'speed'>;
+	drive: Pick<Player, 'throttle' | 'speed' | 'motorSpeed'>;
 	aim: { missileLock: Player['missileLock']; turret: number; targetId: number | undefined };
 	health: { hp: number; maxHp: number };
 	reactor: Reactor;
@@ -161,7 +161,7 @@ export const createCombatRuntime = function () {
 				world.addResource('combatConfig', config); world.addResource('combatProgress', progress); world.addResource('combatFeedback', feedback); world.addResource('combatStats', snapshot.stats);
 				bindMission(snapshot.mission);
 				const position = { x: snapshot.player.x, y: snapshot.player.y }; const heading = { angle: snapshot.player.angle };
-				const drive = { throttle: snapshot.player.throttle, speed: snapshot.player.speed }; const aim = { missileLock: snapshot.player.missileLock, turret: snapshot.player.turret, targetId: snapshot.player.targetId };
+				const drive = { throttle: snapshot.player.throttle, speed: snapshot.player.speed, motorSpeed: snapshot.player.motorSpeed }; const aim = { missileLock: snapshot.player.missileLock, turret: snapshot.player.turret, targetId: snapshot.player.targetId };
 				const health = { hp: snapshot.player.hp, maxHp: 100 }; const reactor = { heat: snapshot.player.heat, overheated: snapshot.player.overheated, coolantCharges: snapshot.coolantCharges, coolantHeld: snapshot.coolantHeld };
 				const weaponBank = { mounts: snapshot.loadout };
 				const playerEntity = world.spawn({ combatOwned: true, player: true, position, heading, drive, aim, health, reactor, weaponBank });
@@ -172,6 +172,7 @@ export const createCombatRuntime = function () {
 					get angle() { return component(playerEntity.id, 'heading').angle; }, set angle(value) { writeField(playerEntity.id, 'heading', 'angle', value); },
 					get throttle() { return component(playerEntity.id, 'drive').throttle; }, set throttle(value) { writeField(playerEntity.id, 'drive', 'throttle', value); },
 					get speed() { return component(playerEntity.id, 'drive').speed; }, set speed(value) { writeField(playerEntity.id, 'drive', 'speed', value); },
+					get motorSpeed() { return component(playerEntity.id, 'drive').motorSpeed; }, set motorSpeed(value) { writeField(playerEntity.id, 'drive', 'motorSpeed', value); },
 					get turret() { return component(playerEntity.id, 'aim').turret; }, set turret(value) { writeField(playerEntity.id, 'aim', 'turret', value); },
 					get missileLock() { return component(playerEntity.id, 'aim').missileLock; }, set missileLock(value) { writeField(playerEntity.id, 'aim', 'missileLock', value); },
 					get targetId() { return component(playerEntity.id, 'aim').targetId; }, set targetId(value) { writeField(playerEntity.id, 'aim', 'targetId', value); },
