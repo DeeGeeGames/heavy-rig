@@ -8,7 +8,7 @@ import type { Settings } from './profile';
 export const rigTestEnabled = new URLSearchParams(location.search).has('rig-test');
 
 // This harness configures scenarios; movement and input remain owned by the game.
-export const mountRigTest = function (container: HTMLElement, settings: Settings, start: (state: State) => void, current: () => CombatStateView, canTestKestrel: boolean, setKestrelTrial: (scenario: CombatStateView | undefined, lighter: boolean) => void): () => void {
+export const mountRigTest = function (container: HTMLElement, settings: Settings, start: (state: State) => void, current: () => CombatStateView, canCompareKestrel: () => boolean, setKestrelComparison: (scenario: CombatStateView | undefined, enabled: boolean, lighter: boolean) => void): () => void {
 	const abort = new AbortController();
 	const panel = document.createElement('details');
 	panel.id = 'rig-test-panel'; panel.open = true;
@@ -31,15 +31,17 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 		const input = document.createElement('input'); input.type = 'checkbox'; input.id = id; input.checked = checked;
 		label.append(input, text); finishes.append(label); return input;
 	};
-	const ink = checkbox('test-kestrel-ink', 'Blue Kestrel · solid ink', directKestrel && canTestKestrel);
-	ink.disabled = !canTestKestrel;
-	if (!canTestKestrel) finishes.append('Ink requires the authored Kestrel and float color buffers.');
+	const ink = checkbox('test-kestrel-ink', 'Blue Kestrel · solid ink', true);
 	const light = checkbox('test-kestrel-housing', 'Lighter gun housing', true);
 	let scenario: CombatStateView | undefined;
 	const applyFinish = function () {
-		const available = rig.value === 'kestrel' && canTestKestrel;
+		if (!ink.disabled && !canCompareKestrel()) {
+			ink.checked = false; ink.disabled = true;
+			finishes.append('Solid ink is unavailable for this Kestrel preview.');
+		}
+		const available = rig.value === 'kestrel' && !ink.disabled;
 		finishes.hidden = rig.value !== 'kestrel'; light.disabled = !available || !ink.checked;
-		setKestrelTrial(available && ink.checked && scenario === current() ? scenario : undefined, light.checked);
+		setKestrelComparison(available && scenario === current() ? scenario : undefined, ink.checked, light.checked);
 	};
 	// A pointer-operated comparison should leave the pilot's steering keys live.
 	// Keyboard activation keeps focus in the panel for the next control.
@@ -69,6 +71,8 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 	for (const select of [rig, mode, equipment]) select.addEventListener('change', restart, { signal: abort.signal });
 	reset.addEventListener('click', restart, { signal: abort.signal });
 	const interval = window.setInterval(function () {
+		// Render-target allocation can fail on the first draw or after a resize.
+		if (!ink.disabled && !canCompareKestrel()) applyFinish();
 		const state = current();
 		const degrees = function (radians: number) { return Math.round((radians * 180 / Math.PI % 360 + 360) % 360); };
 		telemetry.textContent = `${frameWeight(state.frame, state.loadout).total.toFixed(1)}T · speed ${state.player.speed.toFixed(1)} · throttle ${Math.round(state.player.throttle * 100)}% · hull ${degrees(state.player.angle)}° · torso ${degrees(state.player.turret)}° · heat ${Math.round(state.player.heat)}%`;

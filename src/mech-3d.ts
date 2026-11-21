@@ -1,3 +1,4 @@
+import type { AuthoredGait } from './authored-run';
 import type { AuthoredPoseContext } from './authored-pose';
 import { Box3, Group, Matrix4, Mesh, Vector3 } from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
@@ -15,7 +16,7 @@ import { getMechAssetBinding } from './mech-asset-registry';
 import { SKIN_PALETTES, supportsMechSkin, type MechSkinId } from './mech-skin';
 import { applyMechSkinMaterial } from './mech-skin-material';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; equippedSlots?: readonly number[] }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
@@ -133,8 +134,9 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			for (const shutter of hardware.shutters) shutter.part.position.y = shutter.y + recoil * 5;
 			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = (feedback?.hit ?? 0) * 0.8;
 			parts.glass.emissiveIntensity = 0.6 + (feedback?.heat ?? 0) / 170;
+			const legGait = feedback?.legGait ?? gait;
 			for (const leg of legs) {
-				const foot = footPose(gait, leg.index, size, rig, !kind && chassis === 'kestrel' ? -27 : -16);
+				const foot = footPose(legGait, leg.index, size, rig, !kind && chassis === 'kestrel' ? -27 : -16);
 				const joints = legJoints(gait.body, foot, leg.index, size, poseRig, foot.pitch);
 				const x = gait.body.x; const z = gait.body.y;
 				start.set((joints.hip.x - x) / size, joints.hip.z / size, (joints.hip.y - z) / size);
@@ -143,7 +145,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 				start.copy(end); end.set((joints.ankle.x - x) / size, joints.ankle.z / size, (joints.ankle.y - z) / size);
 				orient(leg.lower, start, end, gait.body.angle); leg.ankle.position.copy(end);
 				for (const joint of [leg.hip, leg.knee, leg.ankle]) joint.rotation.y = -gait.body.angle;
-				const contact = gait.feet[leg.index];
+				const contact = legGait.feet[leg.index];
 				leg.contact.position.set((contact.x - x) / size, contact.lift / size, (contact.y - z) / size); leg.contact.rotation.y = -contact.angle;
 				leg.foot.position.set(((foot.x - contact.x) * Math.cos(contact.angle) + (foot.y - contact.y) * Math.sin(contact.angle)) / size, (foot.lift - contact.lift) / size, 0);
 				leg.foot.rotation.z = foot.pitch;

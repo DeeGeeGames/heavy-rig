@@ -112,14 +112,16 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	}
 	const pad = function (name: string, at: { x: number; y: number }, surface: Material, radius: number) {
 		const value = new Group(); value.name = name; value.position.set(at.x, 0, at.y); root.add(value);
-		const outline = new Mesh(geometry(new RingGeometry(radius - 3, radius, 64)), surface); outline.rotation.x = -Math.PI / 2; outline.position.y = 0.12; value.add(outline);
-		for (const x of [-1, 1]) for (const z of [-1, 1]) box(value, surface, x * radius * 0.58, 0.15, z * radius * 0.58, 26, 0.3, 6);
-		return value;
+		// Keep objective rings and progress ticks at display resolution over the terrain.
+		const markings = new Group(); markings.userData['nativeEffects'] = true; value.add(markings);
+		const outline = new Mesh(geometry(new RingGeometry(radius - 3, radius, 64)), surface); outline.rotation.x = -Math.PI / 2; outline.position.y = 0.12; markings.add(outline);
+		for (const x of [-1, 1]) for (const z of [-1, 1]) box(markings, surface, x * radius * 0.58, 0.15, z * radius * 0.58, 26, 0.3, 6);
+		return { value, markings };
 	};
 	pad('drop-zone', map.drop, paint, 110);
 	const extraction = pad('extraction-zone', map.extraction, green, EXTRACTION_RADIUS);
-	const progress = new Mesh(geometry(new RingGeometry(EXTRACTION_RADIUS - 12, EXTRACTION_RADIUS - 7, 64)), green); progress.rotation.x = -Math.PI / 2; progress.position.y = 0.16; extraction.add(progress);
-	const objective = pad('mission-objective', map.objective, orange, 100);
+	const progress = new Mesh(geometry(new RingGeometry(EXTRACTION_RADIUS - 12, EXTRACTION_RADIUS - 7, 64)), green); progress.rotation.x = -Math.PI / 2; progress.position.y = 0.16; extraction.markings.add(progress);
+	const objective = pad('mission-objective', map.objective, orange, 100).value;
 	const facility = new Group(); facility.name = 'mission-facility'; root.add(facility);
 	const intact = new Group(); intact.name = 'facility-intact'; facility.add(intact);
 	box(intact, dark, 0, 0, 0, 106, 8, 100); box(intact, steel, 0, 8, 0, 88, 64, 80);
@@ -134,9 +136,9 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		value.position.set(site.x, 0, site.y); root.add(value); return value;
 	});
 	const capturePads = map.sites.map(function (site, index) {
-		const value = pad(`capture-site-${index + 1}`, site, orange, CAPTURE_RADIUS);
+		const { value, markings } = pad(`capture-site-${index + 1}`, site, orange, CAPTURE_RADIUS);
 		const filled = new Mesh(geometry(new RingGeometry(CAPTURE_RADIUS - 12, CAPTURE_RADIUS - 7, 64)), green);
-		filled.rotation.x = -Math.PI / 2; filled.position.y = .2; value.add(filled);
+		filled.rotation.x = -Math.PI / 2; filled.position.y = .2; markings.add(filled);
 		const crate = new Group(); value.add(crate);
 		box(crate, dark, 0, 0, 0, 42, 25, 34); box(crate, paint, 0, 25, 0, 44, 4, 36);
 		const beacon = new Group(); value.add(beacon);
@@ -149,8 +151,8 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		update: function (mission: MissionRuntime, time: number) {
 			if (disposed) return;
 			const ready = mission.stage === 'extract';
-			extraction.visible = ready; objective.visible = !ready && (mission.contract.kind === 'defend' || mission.contract.kind === 'demolition');
-			extraction.scale.setScalar(1 + Math.sin(time * 2) * 0.015);
+			extraction.value.visible = ready; objective.visible = !ready && (mission.contract.kind === 'defend' || mission.contract.kind === 'demolition');
+			extraction.value.scale.setScalar(1 + Math.sin(time * 2) * 0.015);
 			progress.visible = mission.extractTime > 0;
 			progress.scale.setScalar(Math.max(0.03, Math.min(1, mission.extractTime / EXTRACTION_SECONDS)));
 			for (const [index, value] of raidFacilities.entries()) {

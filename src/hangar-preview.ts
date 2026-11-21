@@ -3,12 +3,14 @@ import { FRAME_RIGS } from './frame-rig';
 import { getFrame, type FrameId } from './frames';
 import { createGait } from './gait';
 import { createMech } from './mech-3d';
+import { createSolidInk } from './solid-ink';
 import { supportsMechSkin, type MechSkinId } from './mech-skin';
 
 // This view owns no campaign state, input listeners, or animation loop. Its
 // caller renders only while the Mech Bay is visible and disposes it on teardown.
 export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 	const renderer = new WebGLRenderer({ canvas, antialias: true });
+	const ink = createSolidInk(renderer);
 	const scene = new Scene();
 	const camera = new PerspectiveCamera(33, 1, 1, 2200);
 	const geometries = [new PlaneGeometry(1800, 1800), new CylinderGeometry(100, 104, 3, 48), new BoxGeometry(8, 0.3, 2)] as const;
@@ -53,6 +55,7 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 		disposed = true;
 		canvas.removeEventListener('webglcontextlost', contextLost);
 		canvas.removeEventListener('webglcontextrestored', contextRestored);
+		ink.dispose();
 		model?.dispose();
 		model = undefined;
 		for (const geometry of geometries) geometry.dispose();
@@ -176,7 +179,7 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 					camera.aspect = w / h;
 				}
 				frameCamera();
-				renderer.render(scene, camera);
+				ink.render(scene, camera, w, h);
 				invalidated = false;
 				canvas.dataset['hangarState'] = 'rendered';
 			}

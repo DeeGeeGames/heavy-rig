@@ -17,8 +17,9 @@ import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
 import { factionMechSkin, type MechSkinId } from './mech-skin';
-import { createKestrelInk } from './kestrel-ink';
-import { createKestrelCadence } from './kestrel-cadence';
+import { createSolidInk } from './solid-ink';
+import { createMechCadences } from './mech-cadence';
+import type { AuthoredGait } from './authored-run';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { createFiringArc } from './firing-arc-3d';
 
@@ -45,6 +46,7 @@ interface MechPose {
 	heat?: number;
 	target?: SpatialPoint | undefined;
 	authoredPose?: AuthoredPoseContext | undefined;
+	legGait?: AuthoredGait | undefined;
 }
 interface OverlayFrame {
 	state: CombatStateView; aim: Point; gaits: Gaits; obstructions: readonly ScreenRect[]; couchMode: boolean;
@@ -56,7 +58,7 @@ interface OverlayFrame {
 // This adapter contributes renderer/view components to the application world.
 // Model disposal follows the combat entity: there is no parallel render world
 // or second collection of live enemies.
-export const createPresentation = function (canvas: HTMLCanvasElement, rigPlayground = false) {
+export const createPresentation = function (canvas: HTMLCanvasElement) {
 	const allocated: Array<() => void> = [];
 	const disposeAllocated = function () {
 		const errors: unknown[] = [];
@@ -104,36 +106,27 @@ export const createPresentation = function (canvas: HTMLCanvasElement, rigPlaygr
 		let cameraSample: { state: CombatStateView; time: number; position: Point } | undefined;
 		let biome: Biome | undefined;
 		let relayHp: number | undefined; let relayHitAt = -10;
-		let kestrelTrial: CombatStateView | undefined;
-		let ink: ReturnType<typeof createKestrelInk> | undefined;
-		let lighterHousing = true;
-		const cadence = createKestrelCadence();
-		const clearTrial = function () {
-			kestrelTrial = undefined;
-			cadence.reset();
-			ink?.dispose();
-			ink = undefined;
-		};
-		allocated.push(clearTrial);
+		const ink = createSolidInk(renderer);
+		allocated.push(ink.dispose);
+		let comparison: { state: CombatStateView; enabled: boolean; lighter: boolean } | undefined;
+		const inkEnabled = function (state: CombatStateView) { return comparison?.state !== state || comparison.enabled; };
+		const cadence = createMechCadences();
 		const plugin = definePlugin('heavy-rig-presentation')
 			.withComponentTypes<Renderer3DComponentTypes & { mechView: MechView }>()
 			.withEventTypes<Renderer3DEventTypes>()
 			.withResourceTypes<Renderer3DResourceTypes>()
 			.withGroups<'renderer3d'>()
-			.withLabels<'renderer3d-render' | 'rig-playground-render'>()
+			.withLabels<'renderer3d-render' | 'battlefield-render'>()
 			.install(function (world, onCleanup) {
 				if (views) throw new Error('Presentation is already attached to a world');
 				world.installPlugin(createRenderer3DPlugin({ renderer, scene, camera, startLoop: false }));
-				if (rigPlayground) {
-					// Keep the plugin's transform and scene-graph systems. Only the playground
-					// selects between its ordinary draw and the ink passes at render time.
-					world.removeSystem('renderer3d-render');
-					world.addSystem('rig-playground-render').inPhase('render').inGroup('renderer3d').setProcess(function () {
-						if (ink && overlay?.player && overlay.state === kestrelTrial) {
-							ink.render(width, height, overlay.player.model.root, lighterHousing);
-						} else renderer.render(scene, camera);
-					});
-				}
+				// The plugin still owns scene graph and transform synchronization.
+				world.removeSystem('renderer3d-render');
+				world.addSystem('battlefield-render').inPhase('render').inGroup('renderer3d').setProcess(function () {
+					if (!overlay) return;
+					if (inkEnabled(overlay.state)) ink.render(scene, camera, width, height, comparison?.lighter ?? true);
+					else renderer.render(scene, camera);
+				});
 				world.registerDispose('mechView', function ({ value }) { value.model.dispose(); });
 				views = {
 					ensure: function (id, kind, commander = false, frame: FrameId = 'warden', skin: MechSkinId = 'original') {
@@ -144,7 +137,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement, rigPlaygr
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
-					pose: function (id, view, gait, heading, hp, time, { loadout, heat = 0, authoredPose, target }) {
+					pose: function (id, view, gait, heading, hp, time, { loadout, heat = 0, authoredPose, target, legGait }) {
 						if (view.damage.hp !== undefined && hp < view.damage.hp) view.damage.hitAt = time;
 						view.damage.hp = hp;
 						const transform = world.getComponent(id, 'localTransform3D');
@@ -154,7 +147,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement, rigPlaygr
 						view.model.pose(gait, heading, {
 							hit: Math.max(0, 1 - (time - view.damage.hitAt) / 0.16), recoil: weaponRecoil(loadout), heat, time,
 							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
-							...(authoredPose ? { authoredPose } : {}), ...(target ? { target } : {}),
+							...(legGait ? { legGait } : {}), ...(authoredPose ? { authoredPose } : {}), ...(target ? { target } : {}),
 						});
 					},
 					scale: function (id, scale) {
@@ -213,27 +206,19 @@ export const createPresentation = function (canvas: HTMLCanvasElement, rigPlaygr
 			resetZoom: function () { zoom = 1; },
 			toGround: function (point: Point) { return toGround(point, camera, width, height); },
 			toScreen: function (point: Point, elevation = 0) { return toScreen(point, camera, width, height, elevation); },
-			canTestKestrel: function () {
-				return rigPlayground && !!getMechAssetBinding('kestrel') && renderer.extensions.has('EXT_color_buffer_float');
+			canCompareKestrel: function () { return ink.available && !!getMechAssetBinding('kestrel'); },
+			setKestrelComparison: function (state: CombatStateView | undefined, enabled: boolean, lighter: boolean) {
+				comparison = state?.frame === 'kestrel' ? { state, enabled, lighter } : undefined;
 			},
-			setKestrelTrial: function (scenario: CombatStateView | undefined, lighter: boolean) {
-				lighterHousing = lighter;
-				if (scenario === kestrelTrial) return;
-				if (!rigPlayground || scenario?.frame !== 'kestrel') { clearTrial(); return; }
-				cadence.reset();
-				ink ??= createKestrelInk(renderer, scene, camera);
-				kestrelTrial = scenario;
-			},
-			stepKestrelTrial: function (state: CombatStateView) {
-				if (state === kestrelTrial) cadence.advance(state.authoredPose, state.player.speed);
-			},
+			stepMechCadence: cadence.advance,
 			setSkin: function (skin: MechSkinId) { playerSkin = skin; },
 			prepare: function (state: CombatStateView, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false) {
 				if (disposed || !views || !combat || width <= 0 || height <= 0) { overlay = undefined; return; }
-				if (kestrelTrial && state !== kestrelTrial) clearTrial();
-				const inTrial = state === kestrelTrial;
+				if (comparison && comparison.state !== state) comparison = undefined;
+				const nativeComparison = !inkEnabled(state);
+				const sampledLegs = function (actor: Point, gait: AuthoredGait) { return nativeComparison ? undefined : cadence.visualGait(actor, gait); };
 				const playerId = combat.entityForPlayer();
-				const player = playerId === undefined ? undefined : views.ensure(playerId, undefined, false, state.frame, inTrial ? 'accord' : playerSkin);
+				const player = playerId === undefined ? undefined : views.ensure(playerId, undefined, false, state.frame, comparison?.enabled ? 'accord' : playerSkin);
 				if (biome !== state.mission?.map.biome) {
 					biome = state.mission?.map.biome;
 					const palette = biome ? SURFACE_PALETTES[biome] : undefined;
@@ -265,7 +250,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement, rigPlaygr
 					const heading = attract ? Math.PI / 4 - 0.22 : state.player.turret;
 					const gait = attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player;
 					views.pose(playerId, player, gait, heading, state.player.hp, state.time, {
-						loadout: state.loadout, heat: state.player.heat, authoredPose: inTrial ? cadence.visualPose(state.authoredPose) : state.authoredPose,
+						loadout: state.loadout, heat: state.player.heat, authoredPose: state.authoredPose,
+						legGait: attract ? undefined : sampledLegs(state.player, state.authoredPose?.gait ?? gait),
 						target: attract || hangar ? undefined : playerAimPoint(state),
 					});
 					views.scale(playerId, hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1);
@@ -278,6 +264,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement, rigPlaygr
 					const gait = gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
 					views.pose(id, view, gait, mate.turret, mate.hp, state.time, {
 						loadout: mate.loadout, heat: mate.heat, authoredPose: mate.authoredPose,
+						legGait: sampledLegs(mate, mate.authoredPose?.gait ?? gait),
 						target: mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
 					});
 					squadmateLabelHeights.set(mate.pilotId, view.model.labelHeight + 12);
@@ -287,7 +274,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement, rigPlaygr
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
 					const view = views.ensure(id, enemy.kind, Boolean(enemy.commander), 'warden', factionMechSkin(state.mission?.contract.opponent));
-					views.pose(id, view, gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind)), enemy.angle, enemy.hp, state.time, { loadout: enemy.loadout ?? [], target: enemyAimPoint(state, enemy) });
+					const gait = gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind));
+					views.pose(id, view, gait, enemy.angle, enemy.hp, state.time, {
+						loadout: enemy.loadout ?? [], target: enemyAimPoint(state, enemy), legGait: sampledLegs(enemy, gait),
+					});
 					if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };

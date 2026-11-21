@@ -1,5 +1,6 @@
 import { ACESFilmicToneMapping, AmbientLight, BoxGeometry, Color, CylinderGeometry, DirectionalLight, FogExp2, Group, Mesh, MeshStandardMaterial, PCFSoftShadowMap, PerspectiveCamera, Scene, SpotLight, WebGLRenderer } from 'three';
 import { createMech } from './mech-3d';
+import { createSolidInk } from './solid-ink';
 import { createGait } from './gait';
 
 // A presentation-only scene: no simulation, campaign state, or combat inputs.
@@ -67,6 +68,7 @@ export const createTitleScene = function (canvas: HTMLCanvasElement) {
 	key.shadow.normalBias = 0.7; scene.add(key);
 	const rim = new SpotLight('#9cdbec', 1000000, 650, 0.7, 0.8, 2); rim.position.set(-130, 230, -130); rim.target.position.set(0, 45, 0); scene.add(rim, rim.target);
 	const fill = new DirectionalLight('#72a0ac', 1.2); fill.position.set(-100, 80, 150); scene.add(fill);
+	const ink = createSolidInk(renderer);
 	let width = 0; let height = 0; let lastRender = 0; let invalidated = true;
 	const invalidate = function () { invalidated = true; renderer.shadowMap.needsUpdate = true; };
 	canvas.addEventListener('webglcontextrestored', invalidate);
@@ -85,8 +87,8 @@ export const createTitleScene = function (canvas: HTMLCanvasElement) {
 			camera.lookAt(0, 46, 0);
 			camera.setViewOffset(w, h, portrait ? -w * 0.16 : -w * 0.23, portrait ? h * 0.045 : -h * 0.015, w, h);
 			camera.updateProjectionMatrix();
-			renderer.render(scene, camera);
+			ink.render(scene, camera, w, h);
 		},
-		dispose: function () { canvas.removeEventListener('webglcontextrestored', invalidate); mech.dispose(); geometry.dispose(); platformGeometry.dispose(); materials.forEach(function (value) { value.dispose(); }); key.shadow.dispose(); scene.clear(); renderer.dispose(); },
+		dispose: function () { canvas.removeEventListener('webglcontextrestored', invalidate); ink.dispose(); mech.dispose(); geometry.dispose(); platformGeometry.dispose(); materials.forEach(function (value) { value.dispose(); }); key.shadow.dispose(); scene.clear(); renderer.dispose(); },
 	};
 };

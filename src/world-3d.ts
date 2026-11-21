@@ -16,8 +16,10 @@ interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefin
 // retain Three.js objects; pools shrink with live state, including on restart.
 export const createWorldObjects = function (scene: Scene) {
 	const root = new Group(); root.name = 'heavy-rig-world'; scene.add(root);
-	const projectileSmoke = createProjectileSmoke(); root.add(projectileSmoke.root);
-	const weaponVfx = createWeaponVfx(); root.add(weaponVfx.afterglowRoot);
+	// Live effects retain their own materials and draw against the stylized world's depth.
+	const feedback = new Group(); feedback.name = 'combat-feedback'; feedback.userData['nativeEffects'] = true; root.add(feedback);
+	const projectileSmoke = createProjectileSmoke(); feedback.add(projectileSmoke.root);
+	const weaponVfx = createWeaponVfx(); feedback.add(weaponVfx.afterglowRoot);
 	const { createShot, createEffect } = weaponVfx;
 	const yard = new Group(); yard.name = 'legacy-terrain'; root.add(yard);
 	const environment = createEnvironment(); yard.add(environment.root);
@@ -108,9 +110,9 @@ export const createWorldObjects = function (scene: Scene) {
 	const strikes: ReturnType<typeof createStrike>[] = [];
 	const defenses: ReturnType<typeof createDefense>[] = [];
 	const shadows: PooledObject[] = [];
-	const sync = function <T extends PooledObject>(pool: T[], count: number, create: () => T, update: (value: T, index: number) => void) {
+	const sync = function <T extends PooledObject>(parent: Group, pool: T[], count: number, create: () => T, update: (value: T, index: number) => void) {
 		while (pool.length > count) { const value = pool.pop(); value?.root.removeFromParent(); value?.dispose?.(); }
-		while (pool.length < count) { const value = create(); root.add(value.root); pool.push(value); }
+		while (pool.length < count) { const value = create(); parent.add(value.root); pool.push(value); }
 		pool.forEach(update);
 	};
 	const armorArc = geometry(new RingGeometry(0.9, 1, 32, 1, -Math.PI / 3, Math.PI * 2 / 3));
@@ -137,10 +139,10 @@ export const createWorldObjects = function (scene: Scene) {
 	const warningMaterial = glow('#f3a16c');
 	// Four independently fired slots share materials but retain their own origins.
 	const beams = Array.from({ length: 4 }, function (_unused, slot) {
-		const beam = weaponVfx.createBeam(slot); root.add(beam.root); return beam;
+		const beam = weaponVfx.createBeam(slot); feedback.add(beam.root); return beam;
 	});
 	const squadmateBeams: ReturnType<typeof weaponVfx.createBeam>[] = [];
-	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); root.add(smoke);
+	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); feedback.add(smoke);
 	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0);
 	const flashes = new WeakMap<Effect, Vector3>();
 	let nextFlashMuzzle = 0;
@@ -177,7 +179,7 @@ export const createWorldObjects = function (scene: Scene) {
 			beaconSurface.color.set(state.relay < 30 ? '#ff865e' : '#b9fff0');
 			beacon.scale.setScalar(4 + Math.sin(state.time * 2.4) * 0.6);
 			const siege = state.enemies.filter(function (enemy) { return enemy.kind === 'siege' || enemy.kind === 'tank'; });
-			sync(defenses, siege.length, createDefense, function (value, index) {
+			sync(feedback, defenses, siege.length, createDefense, function (value, index) {
 				const enemy = siege[index]; if (!enemy) return;
 				const defense = getEnemyDefense(state, enemy); const radius = (enemy.commander ? 67 : 56) * mechScale(enemy.kind);
 				value.root.position.set(enemy.x, 0, enemy.y); value.root.rotation.y = -(enemy.kind === 'tank' ? enemy.hullAngle ?? enemy.angle : enemy.angle);
@@ -185,16 +187,16 @@ export const createWorldObjects = function (scene: Scene) {
 				value.exposed.scale.setScalar(radius); value.exposed.visible = defense.exposed;
 				value.commitment.scale.setScalar(radius + 8); value.commitment.visible = enemy.attack?.phase === 'committed';
 			});
-			sync(wrecks, state.wrecks.length, function () {
+			sync(root, wrecks, state.wrecks.length, function () {
 				const value = new Group(); value.name = 'wreck'; disc(value, shadow, 40).position.y = 0.04;
 				box(value, dark, 0, 0, 0, 32, 29, 8); box(value, steel, -8, 8, 0, 19, 23, 7).rotation.z = -0.2;
 				box(value, dark, 24, 0, -19, 24, 7, 5).rotation.y = 0.5; box(value, dark, -21, 0, 22, 17, 10, 4).rotation.y = -0.3;
 				return { root: value };
 			}, function (value, index) { const wreck = state.wrecks[index]; if (!wreck) return; value.root.position.set(wreck.x, 0, wreck.y); value.root.rotation.y = -wreck.angle; });
-			sync(warnings, state.warnings.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
+			sync(feedback, warnings, state.warnings.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
 				const warning = state.warnings[index]; if (!warning) return; value.root.position.set(warning.x, 0.12, warning.y); value.root.scale.setScalar(45 + Math.sin(state.time * 8) * 5);
 			});
-			sync(strikes, state.strikes.length, createStrike, function (value, index) {
+			sync(feedback, strikes, state.strikes.length, createStrike, function (value, index) {
 				const strike = state.strikes[index]; if (!strike) return;
 				value.root.position.set(strike.x, 0, strike.y);
 				value.fill.scale.setScalar(strike.radius); value.boundary.scale.setScalar(strike.radius);
@@ -202,7 +204,7 @@ export const createWorldObjects = function (scene: Scene) {
 				value.surface.opacity = 0.12 + (1 - strike.life / strike.duration) * 0.18;
 				value.shell.visible = strike.life < 0.7; value.shell.position.y = 20 + strike.life * 600;
 			});
-			sync(shadows, state.enemies.length + state.squadmates.length + 1, function () { const value = new Group(); value.name = 'mech-shadow'; disc(value, shadow, 35); return { root: value }; }, function (value, index) {
+			sync(feedback, shadows, state.enemies.length + state.squadmates.length + 1, function () { const value = new Group(); value.name = 'mech-shadow'; disc(value, shadow, 35); return { root: value }; }, function (value, index) {
 				const enemy = state.enemies[index - 1];
 				const mate = state.squadmates[index - state.enemies.length - 1];
 				const unit = index === 0 ? state.player : enemy ?? mate;
@@ -211,7 +213,7 @@ export const createWorldObjects = function (scene: Scene) {
 				value.root.position.set(unit.x, 0.05, unit.y); value.root.scale.setScalar(scale);
 			});
 			const smokePositions = new Map<Shot, Vector3>();
-			sync(shots, state.shots.length, createShot, function (value, index) {
+			sync(feedback, shots, state.shots.length, createShot, function (value, index) {
 				const shot = state.shots[index]; if (!shot) return; const style = weaponVfx.styles[shot.kind];
 				// Simulation owns the complete trajectory. Clamping the tracer to
 				// flight age prevents a new round extending behind its muzzle.
@@ -223,7 +225,7 @@ export const createWorldObjects = function (scene: Scene) {
 				if (shot.kind === 'missile' || shot.kind === 'rocket') smokePositions.set(shot, to.clone());
 			});
 			projectileSmoke.update(state, smokePositions);
-			sync(effects, state.effects.length, createEffect, function (value, index) {
+			sync(feedback, effects, state.effects.length, createEffect, function (value, index) {
 				const effect = state.effects[index]; if (!effect) return;
 				value.root.position.set(effect.x, effect.elevation ?? 36, effect.y);
 				if (effect.source === 'muzzle' && effect.squadmateId === undefined && effect.elevation === undefined && muzzles.length > 0) {
@@ -243,7 +245,7 @@ export const createWorldObjects = function (scene: Scene) {
 			const squadmateSlots = state.squadmates.flatMap(function (mate) {
 				return mate.loadout.flatMap(function (mount, index) { return getWeapon(mount.weapon).kind === 'laser' ? [{ mate, slot: mount.slot ?? index }] : []; });
 			});
-			sync(squadmateBeams, squadmateSlots.length, function () { return weaponVfx.createBeam(0); }, function (beam, index) {
+			sync(feedback, squadmateBeams, squadmateSlots.length, function () { return weaponVfx.createBeam(0); }, function (beam, index) {
 				const entry = squadmateSlots[index]; if (!entry) return;
 				const { mate, slot } = entry;
 				beam.root.name = `squad-laser-${mate.pilotId}-${slot}`;
