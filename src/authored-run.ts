@@ -21,6 +21,14 @@ export const WARDEN_RUN_PROFILE: AuthoredRunProfile = {
 	enterSpeed: RUN_ENTER_SPEED, exitSpeed: RUN_EXIT_SPEED,
 	swingLift: 8, bodyLift: 1.2, bodyRoll: 0.035, bodyPitch: 0.06, footPitch: 0.18,
 };
+export const KESTREL_RUN_PROFILE: AuthoredRunProfile = {
+	cycleSeconds: 1.05, stanceFraction: 0.26, referenceSpeed: 85, enterSpeed: 40, exitSpeed: 32,
+	swingLift: 11, bodyLift: 4.4, bodyRoll: 0.025, bodyPitch: 0.052, footPitch: 0.22,
+};
+export const runSwingRate = function (speed: number, stopping: boolean, profile: AuthoredRunProfile): number {
+	return stopping ? 1.6 : Math.max(1, speed / profile.referenceSpeed);
+};
+
 interface Landing { readonly x: number; readonly y: number; readonly angle: number }
 interface RunSwing { readonly from: Foot; readonly elapsed: number; readonly duration: number; readonly target?: Landing }
 interface RunLeg { readonly swing: RunSwing | undefined; readonly swingPhase: boolean }
@@ -61,7 +69,7 @@ export const advanceAuthoredRun = function (previous: AuthoredGait, actual: Walk
 	// supporting partner stretched ahead of a reversing hull.
 	// Cover higher ground speeds with cadence after extending the stride, so
 	// planted contacts remain inside the measured legs' reach at 180 m/s.
-	const rate = stopping ? 1.6 : Math.max(1, speed / profile.referenceSpeed);
+	const rate = runSwingRate(speed, stopping, profile);
 	const phase = (before.phase + dt * rate / cycleSeconds) % 1;
 	const turn = angleDelta(previous.body.angle, body.angle) / dt;
 	let landed = false;
