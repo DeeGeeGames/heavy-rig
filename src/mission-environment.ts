@@ -2,6 +2,7 @@ import { BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry, Gr
 import type { Biome, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { createCutGround, createFieldStructures, paintFieldRoads } from './field-terrain-3d';
+import type { TerrainBakeSource } from './terrain-bake';
 
 interface SurfacePalette { ground: string; dust: string; rock: string; road: string; sky: string; haze: string; light: string }
 export const SURFACE_PALETTES: Readonly<Record<Biome, SurfacePalette>> = {
@@ -14,6 +15,7 @@ export const SURFACE_PALETTES: Readonly<Record<Biome, SurfacePalette>> = {
 export const createMissionEnvironment = function (map: MissionMap) {
 	const palette = SURFACE_PALETTES[map.biome];
 	const root = new Group(); root.name = 'mission-terrain';
+	const staticArt = new Group(); staticArt.name = 'mission-static-terrain'; root.add(staticArt);
 	const geometries = new Set<BufferGeometry>(); const materials = new Set<Material>(); const textures = new Set<Texture>();
 	const batches: InstancedMesh[] = [];
 	const geometry = function <T extends BufferGeometry>(value: T) { geometries.add(value); return value; };
@@ -82,13 +84,13 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		}
 	}
 	const ground = new Mesh(geometry(map.terrain ? createCutGround(map, map.terrain) : new PlaneGeometry(map.width, map.height)), groundSurface);
-	ground.name = 'planet-surface'; ground.rotation.x = -Math.PI / 2; ground.position.set(map.width / 2, -0.03, map.height / 2); ground.receiveShadow = true; root.add(ground);
+	ground.name = 'planet-surface'; ground.rotation.x = -Math.PI / 2; ground.position.set(map.width / 2, -0.03, map.height / 2); ground.receiveShadow = true; staticArt.add(ground);
 	const field = map.terrain ? createFieldStructures(map.terrain, map.seed, map.biome) : undefined;
-	if (field) root.add(field.root);
+	if (field) staticArt.add(field.root);
 	const scratch = new Object3D(); const color = new Color();
 	const rocks = map.landmarks.filter(function (landmark) { return landmark.kind === 'rocks'; });
 	const stones = new InstancedMesh(rockShape, material(new MeshStandardMaterial({ color: '#ffffff', roughness: 1 })), rocks.length * 6);
-	stones.name = 'surface-relief'; stones.receiveShadow = true; root.add(stones); batches.push(stones);
+	stones.name = 'surface-relief'; stones.receiveShadow = true; staticArt.add(stones); batches.push(stones);
 	for (const [index, rock] of rocks.entries()) for (let piece = 0; piece < 6; piece++) {
 		const angle = random() * Math.PI * 2; const spread = random() * rock.radius * 0.7;
 		const radius = 5 + random() * 15; const height = 1 + random() * 4;
@@ -97,7 +99,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		stones.setMatrixAt(index * 6 + piece, scratch.matrix); stones.setColorAt(index * 6 + piece, color.set(piece % 2 ? palette.rock : palette.dust));
 	}
 	const boundaryCount = 2 * (Math.ceil(map.width / 180) + Math.ceil(map.height / 180));
-	const boundary = new InstancedMesh(cube, paint, boundaryCount); boundary.name = 'mission-boundary'; root.add(boundary); batches.push(boundary);
+	const boundary = new InstancedMesh(cube, paint, boundaryCount); boundary.name = 'mission-boundary'; staticArt.add(boundary); batches.push(boundary);
 	let boundaryIndex = 0;
 	const boundaryMark = function (x: number, y: number, angle: number) {
 		scratch.position.set(x, 0.15, y); scratch.rotation.set(0, angle, 0); scratch.scale.set(72, 0.2, 8); scratch.updateMatrix(); boundary.setMatrixAt(boundaryIndex++, scratch.matrix);
@@ -108,7 +110,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	// Silhouettes outside navigation bounds give each biome a horizon without
 	// adding invisible collision inside the traversable contract area.
 	const hills = new InstancedMesh(rockShape, material(new MeshStandardMaterial({ color: palette.rock, roughness: 1 })), 36);
-	hills.name = 'distant-ridges'; hills.receiveShadow = true; root.add(hills); batches.push(hills);
+	hills.name = 'distant-ridges'; hills.receiveShadow = true; staticArt.add(hills); batches.push(hills);
 	for (let i = 0; i < 36; i++) {
 		const side = i % 4; const radius = 100 + random() * 180; const height = 80 + random() * 260; const offset = radius + 90;
 		const x = side < 2 ? random() * map.width : side === 2 ? -offset : map.width + offset;
@@ -151,8 +153,9 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		return { value, filled, crate, beacon };
 	});
 	let disposed = false;
+	const bakeSource: TerrainBakeSource = { art: [staticArt], ground };
 	return {
-		root,
+		root, bakeSource,
 		update: function (mission: MissionRuntime, time: number) {
 			if (disposed) return;
 			const ready = mission.stage === 'extract';

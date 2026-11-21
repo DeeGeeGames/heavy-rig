@@ -97,6 +97,7 @@ export const createEnvironment = function () {
 	build('yard-structures', cube, steel, boxParts); build('cooling-tanks', cylinder, steel, roundParts); build('sodium-lamps', cube, lights, lightParts);
 	// The terrain texture is artwork generated from deterministic drawing
 	// commands. Headless simulation/geometry tests do not need a DOM canvas.
+	let ground: Mesh<PlaneGeometry, MeshStandardMaterial> | undefined;
 	if (typeof document !== 'undefined') {
 		const canvas = document.createElement('canvas'); canvas.width = 2304; canvas.height = 1536;
 		const ctx = canvas.getContext('2d');
@@ -170,12 +171,12 @@ export const createEnvironment = function () {
 			}
 			const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; texture.anisotropy = 4; textures.add(texture);
 			const groundMaterial = material(new MeshStandardMaterial({ map: texture, roughness: 0.96, metalness: 0.05 }));
-			const ground = new Mesh(geometry(new PlaneGeometry(ARENA.width, ARENA.height)), groundMaterial); ground.name = 'painted-yard';
+			ground = new Mesh(geometry(new PlaneGeometry(ARENA.width, ARENA.height)), groundMaterial); ground.name = 'painted-yard';
 			ground.rotation.x = -Math.PI / 2; ground.position.set(900, -0.01, 600); ground.receiveShadow = true; root.add(ground);
 		}
 	}
 	let disposed = false;
-	return { root, dispose: function () {
+	return { root, ground, dispose: function () {
 		if (disposed) return; disposed = true;
 		for (const batch of batches) batch.dispose();
 		for (const value of geometries) value.dispose(); for (const value of materials) value.dispose(); for (const value of textures) value.dispose();

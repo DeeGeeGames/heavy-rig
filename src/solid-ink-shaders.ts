@@ -1,3 +1,42 @@
+export const terrainShader = `
+	varying vec2 at;
+	uniform sampler2D terrainColor, terrainDepth;
+	uniform mat4 liveToTerrain, terrainToLive;
+	uniform vec4 terrainFloorDepth;
+	uniform bool drawTerrainColor;
+	void main() {
+		vec2 baked = (liveToTerrain * vec4(at * 2. - 1., 0., 1.)).xy;
+		vec2 uv = baked * .5 + .5;
+		vec2 size = vec2(textureSize(terrainColor, 0));
+		vec2 texel = uv * size;
+		vec3 color = vec3(0.);
+		if (drawTerrainColor) {
+			// Keep the baked texels chunky, with a roughly one-pixel transition
+			// at their edges so fractions of camera motion scroll smoothly.
+			vec2 edge = floor(texel + .5);
+			vec2 sampleUv = (edge + clamp((texel - edge) / max(fwidth(texel), vec2(.0001)), -.5, .5)) / size;
+			color = textureGrad(terrainColor, sampleUv, dFdx(uv), dFdy(uv)).rgb;
+		}
+		float floorClip = dot(terrainFloorDepth.xyz, vec3(baked, 1.));
+		float liveFloorDepth = (terrainToLive * vec4(baked, floorClip, 1.)).z * .5 + .5;
+		// A fullscreen fragment writes one depth to all MSAA samples. Keep that
+		// depth behind the sloped floor at each sample so native decals draw fully.
+		float sampleBias = .5 * fwidth(liveFloorDepth);
+		if (any(lessThan(uv, vec2(0.))) || any(greaterThanEqual(uv, vec2(1.)))) discard;
+		vec2 cell = floor(texel);
+		float depth = texelFetch(terrainDepth, ivec2(cell), 0).r;
+		if (depth >= 1.) discard;
+		float clipDepth = depth * 2. - 1.;
+		vec2 cellCenter = (cell + .5) * 2. / size - 1.;
+		// Ground decals and shadows sit just above the plane. Use the plane's
+		// exact depth there, while preserving the sampled silhouettes of props.
+		bool onFloor = abs(clipDepth - dot(terrainFloorDepth.xyz, vec3(cellCenter, 1.))) < terrainFloorDepth.w;
+		float liveDepth = onFloor ? liveFloorDepth + (drawTerrainColor ? sampleBias : 0.) : (terrainToLive * vec4(baked, clipDepth, 1.)).z * .5 + .5;
+		if (liveDepth <= 0. || liveDepth >= 1.) discard;
+		gl_FragDepth = liveDepth;
+		gl_FragColor = sRGBTransferOETF(vec4(color, 1.));
+	}`;
+
 // The color and surface buffers use the same four coverage samples per virtual pixel.
 export const resolveShader = `
 	uniform sampler2D paints, surfaces, depths;

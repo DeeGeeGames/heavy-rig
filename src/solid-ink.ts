@@ -1,15 +1,17 @@
 import {
-	Color, DepthTexture, DoubleSide, FloatType, HalfFloatType, MeshBasicMaterial,
-	NearestFilter, PerspectiveCamera, NoBlending, ShaderMaterial, UnsignedIntType, Vector2, Vector3,
-	WebGLRenderTarget, type OrthographicCamera, type Scene, type WebGLRenderer,
+	Color, DepthTexture, DoubleSide, FloatType, HalfFloatType, Matrix4, MeshBasicMaterial,
+	NearestFilter, PerspectiveCamera, NoBlending, ShaderMaterial, UnsignedIntType, Vector2, Vector3, Vector4,
+	WebGLRenderTarget, type OrthographicCamera, type Scene, type Texture, type WebGLRenderer,
 } from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { createInkSurfaces } from './solid-ink-surfaces';
-import { edgeShader, inkShader, repairShader, resolveShader } from './solid-ink-shaders';
+import { edgeShader, inkShader, repairShader, resolveShader, terrainShader } from './solid-ink-shaders';
+import type { BakedTerrain } from './terrain-bake';
 
 const vertexShader = 'varying vec2 at; void main() { at=uv; gl_Position=vec4(position.xy,0.,1.); }';
 
 type ViewCamera = OrthographicCamera | PerspectiveCamera;
+export type InkCellSize = 1.5 | 2 | 3;
 
 const createPipeline = function (renderer: WebGLRenderer) {
 	const options = { minFilter: NearestFilter, magFilter: NearestFilter, depthBuffer: false };
@@ -25,10 +27,17 @@ const createPipeline = function (renderer: WebGLRenderer) {
 	const lines = new WebGLRenderTarget(1, 1, options);
 	const inked = new WebGLRenderTarget(1, 1, options);
 	const finished = new WebGLRenderTarget(1, 1, options);
+	const terrainColor: { value: Texture | null } = { value: null };
+	const terrainDepth: { value: DepthTexture | null } = { value: null };
 	const uniforms = {
 		paints: { value: source.texture }, surfaces: { value: surfaces }, depths: { value: source.depthTexture },
 		geometry: { value: resolved.texture }, paintPixels: { value: paintPixels },
 		lines: { value: lines.texture }, inked: { value: inked.texture }, finished: { value: finished.texture },
+		hasTerrain: { value: false },
+		terrainColor, terrainDepth,
+		liveToTerrain: { value: new Matrix4() }, terrainToLive: { value: new Matrix4() },
+		terrainFloorDepth: { value: new Vector4() },
+		drawTerrainColor: { value: false },
 		units: { value: 1 }, depthRange: { value: 1 }, nearPlane: { value: 1 }, perspective: { value: false }, clearAlpha: { value: 1 }, cell: { value: new Vector2() }, paper: { value: new Vector3() },
 	};
 	const makePass = function (fragmentShader: string) {
@@ -36,7 +45,10 @@ const createPipeline = function (renderer: WebGLRenderer) {
 	};
 	const resolve = makePass(resolveShader), edges = makePass(edgeShader), ink = makePass(inkShader), repair = makePass(repairShader);
 	// Repair outlines at virtual resolution before nearest-neighbor enlargement.
-	const enlarge = makePass('varying vec2 at; uniform sampler2D finished; void main() { gl_FragColor=texture2D(finished,at); }');
+	const enlarge = makePass(`varying vec2 at; uniform sampler2D finished; uniform bool hasTerrain;
+		void main() { vec4 pixel=texture2D(finished,at); if(hasTerrain && pixel.a==0.) discard; gl_FragColor=pixel; }`);
+	const terrainPass = makePass(terrainShader);
+	terrainPass.depthTest = terrainPass.depthWrite = true;
 	const quad = new FullScreenQuad(resolve);
 	const depth = new MeshBasicMaterial({ colorWrite: false, side: DoubleSide });
 	const sceneMaterials = createInkSurfaces();
@@ -45,8 +57,8 @@ const createPipeline = function (renderer: WebGLRenderer) {
 	let verifiedWidth = 0, verifiedHeight = 0;
 
 	return {
-		render: function (scene: Scene, camera: ViewCamera, widthCSS: number, heightCSS: number, lighterHousing: boolean) {
-			const w = Math.max(1, Math.round(widthCSS / 3)), h = Math.max(1, Math.round(heightCSS / 3));
+		render: function (scene: Scene, camera: ViewCamera, widthCSS: number, heightCSS: number, lighterHousing: boolean, cellSize: InkCellSize, terrain?: BakedTerrain) {
+			const w = Math.max(1, Math.round(widthCSS / cellSize)), h = Math.max(1, Math.round(heightCSS / cellSize));
 			source.setSize(w * 2, h * 2);
 			for (const target of [resolved, lines, inked, finished]) target.setSize(w, h);
 			uniforms.perspective.value = camera instanceof PerspectiveCamera;
@@ -63,7 +75,15 @@ const createPipeline = function (renderer: WebGLRenderer) {
 			renderer.getClearColor(clear);
 			background.copy(originalBackground instanceof Color ? originalBackground : clear).convertLinearToSRGB();
 			uniforms.paper.value.set(background.r, background.g, background.b);
-			uniforms.clearAlpha.value = originalBackground instanceof Color ? 1 : alpha;
+			uniforms.hasTerrain.value = terrain !== undefined;
+			uniforms.clearAlpha.value = terrain ? 0 : originalBackground instanceof Color ? 1 : alpha;
+			uniforms.terrainColor.value = terrain?.color ?? null;
+			uniforms.terrainDepth.value = terrain?.depth ?? null;
+			if (terrain) {
+				uniforms.liveToTerrain.value.copy(terrain.projection).multiply(camera.matrixWorld).multiply(camera.projectionMatrixInverse);
+				uniforms.terrainToLive.value.copy(uniforms.liveToTerrain.value).invert();
+				uniforms.terrainFloorDepth.value.copy(terrain.floorDepth);
+			}
 			try {
 				const overlays = sceneMaterials.begin(scene, camera, lighterHousing);
 				renderer.debug.onShaderError = function (gl, program, vertex, fragment) {
@@ -81,18 +101,32 @@ const createPipeline = function (renderer: WebGLRenderer) {
 				scene.background = null;
 				renderer.setClearColor(0, 0);
 				renderer.autoClear = true;
-				renderer.setRenderTarget(source);
-				renderer.render(scene, camera);
-
 				const draw = function (material: ShaderMaterial, output: WebGLRenderTarget | null) {
 					renderer.setRenderTarget(output);
 					quad.material = material;
 					quad.render(renderer);
 				};
+				renderer.setRenderTarget(source);
+				if (terrain) {
+					// Occlude live ink samples with the same cached depth used for the terrain image.
+					terrainPass.colorWrite = false;
+					uniforms.drawTerrainColor.value = false;
+					draw(terrainPass, source);
+					renderer.autoClear = false;
+				}
+				renderer.render(scene, camera);
+				renderer.autoClear = true;
 				draw(resolve, resolved);
 				draw(edges, lines);
 				draw(ink, inked);
 				draw(repair, finished);
+				if (terrain) {
+					renderer.setClearColor(originalBackground instanceof Color ? originalBackground : clear, originalBackground instanceof Color ? 1 : alpha);
+					terrainPass.colorWrite = true;
+					uniforms.drawTerrainColor.value = true;
+					draw(terrainPass, target);
+					renderer.autoClear = false;
+				}
 				draw(enlarge, target);
 				if (shaderError) throw new Error(shaderError);
 				renderer.debug.onShaderError = previousShaderError;
@@ -102,7 +136,7 @@ const createPipeline = function (renderer: WebGLRenderer) {
 				// muzzle flashes, the firing arc, shadows, and the other game overlays.
 				renderer.shadowMap.autoUpdate = false;
 				renderer.autoClear = false;
-				renderer.clearDepth();
+				if (!terrain) renderer.clearDepth();
 				scene.overrideMaterial = depth;
 				renderer.render(scene, camera);
 				scene.overrideMaterial = override;
@@ -124,7 +158,7 @@ const createPipeline = function (renderer: WebGLRenderer) {
 			if (disposed) return;
 			disposed = true;
 			sceneMaterials.dispose(); quad.dispose();
-			for (const material of [resolve, edges, ink, repair, enlarge, depth]) material.dispose();
+			for (const material of [resolve, edges, ink, repair, enlarge, terrainPass, depth]) material.dispose();
 			for (const target of [source, resolved, lines, inked, finished]) target.dispose();
 		},
 	};
@@ -141,16 +175,23 @@ export const createSolidInk = function (renderer: WebGLRenderer) {
 	let disposed = false;
 	return {
 		get available() { return pipeline !== undefined; },
-		render: function (scene: Scene, camera: ViewCamera, widthCSS: number, heightCSS: number, lighterHousing = true) {
-			if (disposed || widthCSS <= 0 || heightCSS <= 0) return;
+		render: function (scene: Scene, camera: ViewCamera, widthCSS: number, heightCSS: number, lighterHousing = true, cellSize: InkCellSize = 3, terrain?: BakedTerrain) {
+			if (disposed || widthCSS <= 0 || heightCSS <= 0) return true;
 			if (pipeline && (scene.background === null || scene.background instanceof Color) && !scene.overrideMaterial) {
-				try { pipeline.render(scene, camera, widthCSS, heightCSS, lighterHousing); return; }
+				try { pipeline.render(scene, camera, widthCSS, heightCSS, lighterHousing, cellSize, terrain); return true; }
 				catch (error: unknown) {
+					if (terrain) {
+						console.warn('Baked terrain draw failed. Using screen-space terrain.', error);
+						return false;
+					}
 					pipeline.dispose(); pipeline = undefined;
 					console.warn('Solid ink draw failed. Using native rendering.', error);
 				}
 			}
+			// The battlefield restores the hidden terrain geometry before drawing its fallback.
+			if (terrain) return false;
 			renderer.render(scene, camera);
+			return true;
 		},
 		dispose: function () { disposed = true; pipeline?.dispose(); pipeline = undefined; },
 	};

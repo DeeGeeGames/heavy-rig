@@ -1,4 +1,4 @@
-import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, Group, InstancedMesh, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector3 } from 'three';
+import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, Group, InstancedMesh, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector3, type OrthographicCamera, type WebGLRenderer } from 'three';
 import { ARENA, getEnemyDefense, type Beam, type Effect, type Point, type Shot, type CombatStateView } from './simulation';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
@@ -8,6 +8,7 @@ import { createProjectileSmoke } from './projectile-smoke';
 import { createWeaponVfx } from './weapon-vfx';
 import { getWeapon } from './arsenal';
 import { getFrame } from './frames';
+import { bakeTerrain, type BakedTerrain, type TerrainBakeSource } from './terrain-bake';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
 interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
@@ -22,7 +23,12 @@ export const createWorldObjects = function (scene: Scene) {
 	const weaponVfx = createWeaponVfx(); feedback.add(weaponVfx.afterglowRoot);
 	const { createShot, createEffect } = weaponVfx;
 	const yard = new Group(); yard.name = 'legacy-terrain'; root.add(yard);
-	const environment = createEnvironment(); yard.add(environment.root);
+	const yardArt = new Group(); yard.add(yardArt);
+	const environment = createEnvironment(); yardArt.add(environment.root);
+	const groundArt = new Group(); yardArt.add(groundArt);
+	if (environment.ground) groundArt.add(environment.ground);
+	let bakedTerrain: BakedTerrain | undefined;
+	let terrainBakeFailed = false;
 	let missionMap: MissionMap | undefined;
 	let missionEnvironment: ReturnType<typeof createMissionEnvironment> | undefined;
 	const geometries = new Set<BufferGeometry>(); const materials = new Set<Material>();
@@ -48,13 +54,13 @@ export const createWorldObjects = function (scene: Scene) {
 	// The flat decorative apron keeps its recorded colors without evaluating a
 	// physical lighting shader across the whole viewport on software GPUs.
 	const floor = new InstancedMesh(cube, glow('#ffffff'), ARENA.width / 120 * (ARENA.height / 120));
-	floor.name = 'industrial-apron'; yard.add(floor);
+	floor.name = 'industrial-apron'; groundArt.add(floor);
 	let tile = 0;
 	for (let x = 0; x < ARENA.width; x += 120) for (let z = 0; z < ARENA.height; z += 120) {
 		scratch.position.set(x + 60, -0.55, z + 60); scratch.scale.set(119.6, 1, 119.6); scratch.updateMatrix();
 		floor.setMatrixAt(tile, scratch.matrix); floor.setColorAt(tile++, tint.set((x / 120 + z / 120) % 3 === 0 ? '#354046' : '#303c41'));
 	}
-	const stains = new InstancedMesh(circle, glow('#202c32', 0.15), 90); stains.name = 'terrain-marks'; yard.add(stains);
+	const stains = new InstancedMesh(circle, glow('#202c32', 0.15), 90); stains.name = 'terrain-marks'; groundArt.add(stains);
 	scratch.rotation.x = -Math.PI / 2;
 	for (let i = 0; i < 90; i++) {
 		scratch.position.set((i * 317 + 71) % ARENA.width, 0.015, (i * 173 + 80) % ARENA.height);
@@ -67,9 +73,9 @@ export const createWorldObjects = function (scene: Scene) {
 		const x = (i * 317 + 71) % ARENA.width; const z = (i * 173 + 80) % ARENA.height;
 		lines.push(new Vector3(x, 0.03, z), new Vector3(x + 24, 0.03, z + 10));
 	}
-	yard.add(new LineSegments(geometry(new BufferGeometry().setFromPoints(lines)), material(new LineBasicMaterial({ color: '#405056', transparent: true, opacity: 0.09, depthWrite: false }))));
+	groundArt.add(new LineSegments(geometry(new BufferGeometry().setFromPoints(lines)), material(new LineBasicMaterial({ color: '#405056', transparent: true, opacity: 0.09, depthWrite: false }))));
 	const stripes = group('boundary-stripes'); const stripeMaterial = glow('#b49a60');
-	yard.add(stripes);
+	groundArt.add(stripes);
 	for (let x = 50; x < ARENA.width; x += 110) for (const z of [25, ARENA.height - 25]) box(stripes, stripeMaterial, x + 19, 0.04, z, 38, 5, 0.04);
 	const relay = group('relay'); relay.position.set(ARENA.relayX, 0, ARENA.relayY);
 	disc(relay, shadow, 97).position.y = 0.04;
@@ -105,6 +111,14 @@ export const createWorldObjects = function (scene: Scene) {
 		parts.forEach(function (part, index) { part.updateMatrix(); batch.setMatrixAt(index, part.matrix); relay.remove(part); });
 		batch.castShadow = true; batch.receiveShadow = true; relay.add(batch); relayBatches.push(batch);
 	}
+	const relayStructure = new Group();
+	relay.add(relayStructure); relayStructure.add(foundation, ...relayBatches);
+	const yardBakeSource: TerrainBakeSource | undefined = environment.ground ? { art: [yardArt, relayStructure], ground: environment.ground, coveredGround: floor } : undefined;
+	const terrainBakeSource = function () { return missionEnvironment?.bakeSource ?? yardBakeSource; };
+	const resetTerrainBake = function () {
+		bakedTerrain?.dispose(); bakedTerrain = undefined; terrainBakeFailed = false;
+		for (const group of terrainBakeSource()?.art ?? []) group.visible = true;
+	};
 	const wrecks: PooledObject[] = [];
 	const warnings: PooledObject[] = []; const shots: ReturnType<typeof createShot>[] = []; const effects: ReturnType<typeof createEffect>[] = [];
 	const strikes: ReturnType<typeof createStrike>[] = [];
@@ -162,11 +176,30 @@ export const createWorldObjects = function (scene: Scene) {
 	};
 	let disposed = false;
 	return {
+		canBakeTerrain: function () { return terrainBakeSource() !== undefined && !terrainBakeFailed; },
+		resetTerrainBake,
+		disableTerrainBake: function () { resetTerrainBake(); terrainBakeFailed = true; },
+		bakedTerrainForFrame: function (enabled: boolean, renderer: WebGLRenderer, camera: OrthographicCamera, light: Color) {
+			const source = terrainBakeSource();
+			if (!source) return undefined;
+			if (enabled && !bakedTerrain && !terrainBakeFailed) {
+				try {
+					bakedTerrain = bakeTerrain(renderer, source, camera, light);
+				} catch (error: unknown) {
+					terrainBakeFailed = true;
+					console.warn('Terrain bake failed. Using screen-space terrain.', error);
+				}
+			}
+			const terrain = enabled ? bakedTerrain : undefined;
+			for (const group of source.art) group.visible = terrain === undefined;
+			return terrain;
+		},
 		update: function (state: CombatStateView, frameEffects?: FrameEffects) {
 			if (disposed) return;
 			weaponVfx.updateTime(state.time);
 			weaponVfx.updateAfterglows(state);
 			if (missionMap !== state.mission?.map) {
+				resetTerrainBake();
 				missionEnvironment?.dispose(); missionEnvironment = undefined;
 				missionMap = state.mission?.map;
 				if (missionMap) { missionEnvironment = createMissionEnvironment(missionMap); root.add(missionEnvironment.root); }
@@ -271,6 +304,7 @@ export const createWorldObjects = function (scene: Scene) {
 			for (const strike of strikes) strike.dispose();
 			for (const batch of relayBatches) batch.dispose();
 			missionEnvironment?.dispose();
+			resetTerrainBake();
 			environment.dispose();
 			projectileSmoke.dispose();
 			floor.dispose(); stains.dispose();

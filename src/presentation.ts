@@ -17,7 +17,7 @@ import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
 import { factionMechSkin, type MechSkinId } from './mech-skin';
-import { createSolidInk } from './solid-ink';
+import { createSolidInk, type InkCellSize } from './solid-ink';
 import { createMechCadences } from './mech-cadence';
 import type { AuthoredGait } from './authored-run';
 import { getMechAssetBinding } from './mech-asset-registry';
@@ -100,6 +100,15 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let overlay: OverlayFrame | undefined;
 		let width = 1; let height = 1; let disposed = false; let previousState: CombatStateView | undefined; let previousStateTime = 0;
 		let zoom = 1;
+		let inkCellSize: InkCellSize = 3;
+		const setZoom = function (value: number) {
+			if (!Number.isFinite(value)) return;
+			zoom = Math.max(0.5, Math.min(2.5, value));
+			// Keep the current grid between thresholds to avoid repeated buffer reallocations.
+			if (zoom < 0.6 || (inkCellSize === 1.5 && zoom <= 0.65)) inkCellSize = 1.5;
+			else if (zoom < 0.8 || (inkCellSize < 3 && zoom <= 0.9)) inkCellSize = 2;
+			else inkCellSize = 3;
+		};
 		let playerSkin: MechSkinId = 'original';
 		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
 		let cameraOffset: Point = { x: 0, y: 0 };
@@ -108,7 +117,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let relayHp: number | undefined; let relayHitAt = -10;
 		const ink = createSolidInk(renderer);
 		allocated.push(ink.dispose);
-		let comparison: { state: CombatStateView; enabled: boolean; lighter: boolean } | undefined;
+		let comparison: { state: CombatStateView; enabled: boolean; lighter: boolean; bakedYard: boolean } | undefined;
 		const inkEnabled = function (state: CombatStateView) { return comparison?.state !== state || comparison.enabled; };
 		const cadence = createMechCadences();
 		const plugin = definePlugin('heavy-rig-presentation')
@@ -124,8 +133,15 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				world.removeSystem('renderer3d-render');
 				world.addSystem('battlefield-render').inPhase('render').inGroup('renderer3d').setProcess(function () {
 					if (!overlay) return;
-					if (inkEnabled(overlay.state)) ink.render(scene, camera, width, height, comparison?.lighter ?? true);
-					else renderer.render(scene, camera);
+					const enabled = inkEnabled(overlay.state);
+					const bake = comparison?.state !== overlay.state || comparison.bakedYard;
+					const terrain = objects.bakedTerrainForFrame(enabled && bake && ink.available, renderer, camera, sun.color);
+					if (!enabled) { renderer.render(scene, camera); return; }
+					const lighter = comparison?.lighter ?? true;
+					if (!ink.render(scene, camera, width, height, lighter, inkCellSize, terrain) && terrain) {
+						objects.disableTerrainBake();
+						ink.render(scene, camera, width, height, lighter, inkCellSize);
+					}
 				});
 				world.registerDispose('mechView', function ({ value }) { value.model.dispose(); });
 				views = {
@@ -200,15 +216,17 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			updateCamera,
 			bind: function (entities: CombatEntities) { combat = entities; },
 			resize,
-			zoomWithWheel: function (event: Pick<WheelEvent, 'deltaY' | 'deltaMode'>) { zoom = zoomForWheel(zoom, event, height); },
+			zoomWithWheel: function (event: Pick<WheelEvent, 'deltaY' | 'deltaMode'>) { setZoom(zoomForWheel(zoom, event, height)); },
 			getZoom: function () { return zoom; },
-			setZoom: function (value: number) { if (Number.isFinite(value)) zoom = Math.max(0.5, Math.min(2.5, value)); },
-			resetZoom: function () { zoom = 1; },
+			setZoom,
+			resetZoom: function () { setZoom(1); },
 			toGround: function (point: Point) { return toGround(point, camera, width, height); },
 			toScreen: function (point: Point, elevation = 0) { return toScreen(point, camera, width, height, elevation); },
 			canCompareKestrel: function () { return ink.available && !!getMechAssetBinding('kestrel'); },
-			setKestrelComparison: function (state: CombatStateView | undefined, enabled: boolean, lighter: boolean) {
-				comparison = state?.frame === 'kestrel' ? { state, enabled, lighter } : undefined;
+			canBakeYard: objects.canBakeTerrain,
+			resetTerrainBake: objects.resetTerrainBake,
+			setKestrelComparison: function (state: CombatStateView | undefined, enabled: boolean, lighter: boolean, bakedYard: boolean) {
+				comparison = state?.frame === 'kestrel' ? { state, enabled, lighter, bakedYard } : undefined;
 			},
 			stepMechCadence: cadence.advance,
 			setSkin: function (skin: MechSkinId) { playerSkin = skin; },

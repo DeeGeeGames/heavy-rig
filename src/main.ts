@@ -930,7 +930,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		event.preventDefault(); contextLost = true; padInput.suspend(); resetInput(); setPaused(true);
 		const error = element('error'); error.textContent = 'Graphics interrupted. Waiting for recovery…'; error.hidden = false;
 	}, listenerOptions);
-	canvas.addEventListener('webglcontextrestored', function () { contextLost = false; padInput.suspend(); element('error').hidden = true; previous = 0; }, listenerOptions);
+	canvas.addEventListener('webglcontextrestored', function () { contextLost = false; presentation.resetTerrainBake(); padInput.suspend(); element('error').hidden = true; previous = 0; }, listenerOptions);
 	const updatePointer = function (event: PointerEvent) {
 		if (!playing()) return;
 		const rect = canvas.getBoundingClientRect(); const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -1399,7 +1399,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			aimMode = inputMode === 'gamepad' ? 'gamepad' : inputMode === 'touch' ? 'touch' : 'pointer';
 			message = ''; messageUntil = 0; terminalUntil = 0; tipDismissed = true;
 			audio.reset(); transition(navigation.setScreen('playing', true));
-		}, function () { return state; }, presentation.canCompareKestrel, presentation.setKestrelComparison);
+		}, function () { return state; }, presentation);
 		onCleanup(rigTest);
 	} else if (trialSeed !== undefined) showFieldTrial(trialSeed);
 	else syncScreen();
