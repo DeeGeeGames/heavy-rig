@@ -3,6 +3,8 @@ import { getFrameOffer } from './market';
 import { companyRank } from './reputation';
 import ECSpresso from 'ecspresso';
 import { mountRigTest, rigTestEnabled } from './rig-test';
+import { createFieldTrial } from './field-trial';
+import { drawFieldSurvey, fieldTrialSeed } from './field-trial-ui';
 import { html, render } from 'lit-html';
 import { createHangarPreview } from './hangar-preview';
 import { detectControllerFamily, controllerButtonLabel, renderControllerButton, renderGlyph, type ControllerFamily, type PromptDevice } from './input-prompts';
@@ -97,12 +99,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const feedback = createControllerFeedback();
 	onCleanup(feedback.dispose);
 	const profile = readProfile();
+	let trialSeed = rigTestEnabled ? undefined : fieldTrialSeed(new URLSearchParams(location.search).get('field-trial'));
+	const sessionOnly = rigTestEnabled || trialSeed !== undefined;
 	presentation.setSkin(profile.settings.mechSkin);
 	const savedSnapshot = function (): string | null | undefined {
 		try { return localStorage.getItem(CAMPAIGN_STORAGE_KEY); } catch { return undefined; }
 	};
-	let campaignSnapshot = savedSnapshot();
-	let campaign = readCampaign();
+	let campaignSnapshot = trialSeed === undefined ? savedSnapshot() : null;
+	let campaign = trialSeed === undefined ? readCampaign() : createCampaign();
 	let interruptedResult = campaignSnapshot && parseCampaign(campaignSnapshot).deployed ? campaign.lastResult : undefined;
 	let returningCompany = campaignSnapshot !== null && campaignSnapshot !== undefined;
 	let campaignSaved = false;
@@ -228,7 +232,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			${device !== 'touch' ? html`<span class="menu-key">${useTab ? html`<kbd class="input-keycap">Tab</kbd>` : renderGlyph(device, 'move')}<span class="key-label">${fittingSelect && inputMode === 'gamepad' ? '↑↓ Move · ←→ Adjust' : 'Move'}</span></span>` : ''}
 			${fittingSelect && device === 'keyboard' ? html`<span class="menu-key">${renderGlyph(device, 'move')}<span class="key-label">Adjust</span></span>` : ''}
 			${target && !fittingSelect ? html`<button class="menu-key" @click=${function () { target.click(); }}>${renderGlyph(device, 'confirm')}<span class="key-label">${label}</span></button>` : ''}
-			${navigation.screen !== 'title' || navigation.auxiliary ? html`<button class="menu-key" @click=${back}>${renderGlyph(device, 'back')}<span class="key-label">${onCompany && editor.slot === null && !assignmentBack() ? 'Title' : 'Back'}</span></button>` : ''}
+			${navigation.screen !== 'title' && navigation.screen !== 'field-trial' || navigation.auxiliary ? html`<button class="menu-key" @click=${back}>${renderGlyph(device, 'back')}<span class="key-label">${onCompany && editor.slot === null && !assignmentBack() ? 'Title' : 'Back'}</span></button>` : ''}
 			${onCompany && editor.slot === null ? html`<button class="menu-key" @click=${function () { showAuxiliary('handbook'); }}>${renderGlyph(device, 'help')}<span class="key-label">Button guide</span></button>` : ''}
 			${onCompany && editor.slot === null && hasRefitDraft() ? html`<button class="menu-key" @click=${discardDraft}>${renderGlyph(device, 'discard')}<span class="key-label">Discard draft</span></button>` : ''}
 		`, element('menu-input-hint'));
@@ -253,7 +257,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		updateWorkspaceLayout(); updateDialogLayout();
 	};
 	const save = function () {
-		element('storage-status').textContent = rigTestEnabled ? 'Rig test preferences last for this session.' : saveProfile(profile) ? 'Preferences are saved on this device.' : 'Device storage is unavailable. You can keep playing; records will last for this session.';
+		element('storage-status').textContent = sessionOnly ? 'Preferences last for this session.' : saveProfile(profile) ? 'Preferences are saved on this device.' : 'Device storage is unavailable. You can keep playing; records will last for this session.';
 	};
 	const updateSettings = function () {
 		audio.setMix(profile.settings);
@@ -277,14 +281,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('reset').hidden = !training && !escape;
 		element('reset').textContent = escape ? 'RESTART ESCAPE' : practice ? 'RESET RANGE' : 'RESTART DRILLS';
 		element('pause-training-loadout').hidden = !training;
-		element('leave').textContent = escape ? 'RETURN TO TITLE' : state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
+		element('leave').textContent = trialSeed !== undefined ? 'FIELD BRIEFING' : escape ? 'RETURN TO TITLE' : state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('training-deploy').hidden = !campaign.active;
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
-		element('pause-copy').textContent = escape ? 'The escape is paused. Resume when ready. This borrowed rig does not affect your company.'
+		element('pause-copy').textContent = trialSeed !== undefined ? 'Resume this run, or return to the briefing to start the field again or generate another layout.'
+			: escape ? 'The escape is paused. Resume when ready. This borrowed rig does not affect your company.'
 			: practice ? 'Change loadout to start a fresh run. Reset Range refills your selected ammunition and coolant.'
 			: training ? 'Resume the drills or change loadout to practice in the range.'
 			: 'Your throttle and mission are preserved. Aborting or reloading returns the squad with its current damage.';
-		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'pause-panel', 'result', 'training-setup', 'training-result', 'settings', 'handbook', 'confirm', 'save-conflict']) {
+		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'pause-panel', 'result', 'training-setup', 'training-result', 'field-trial', 'settings', 'handbook', 'confirm', 'save-conflict']) {
 			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
@@ -301,7 +306,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		updateWorkspaceLayout(); updateDialogLayout();
 		if (!focus) return;
 		const root = menu();
-		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? element('handbook') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'title' ? element(returningCompany ? 'title-continue' : 'title-new-campaign') : navigation.screen === 'intro' ? element(narrativeWaiting ? 'intro-begin' : 'intro') : navigation.screen === 'escape-result' ? element('escape-retry') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : navigation.screen === 'training-setup' ? element('training-frame') : navigation.screen === 'training-result' ? element('result-training-loadout') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
+		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? element('handbook') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'title' ? element(returningCompany ? 'title-continue' : 'title-new-campaign') : navigation.screen === 'intro' ? element(narrativeWaiting ? 'intro-begin' : 'intro') : navigation.screen === 'escape-result' ? element('escape-retry') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : navigation.screen === 'field-trial' ? element('field-deploy') : navigation.screen === 'training-setup' ? element('training-frame') : navigation.screen === 'training-result' ? element('result-training-loadout') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
 		if (root?.classList.contains('workspace')) focusWorkspace(root);
 		else (initial ?? canvas).focus({ preventScroll: navigation.screen !== 'training-setup' });
 		updateMenuHint(); updateDialogLayout();
@@ -357,6 +362,25 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		message = ''; messageUntil = 0; tipDismissed = true; terminalUntil = 0;
 		audio.reset(); transition(navigation.setScreen('playing', true)); unlockSound();
 	};
+	const showFieldTrial = function (seed: number, outcome: 'playing' | 'won' | 'lost' = 'playing') {
+		const url = new URL(location.href);
+		url.searchParams.set('field-trial', String(seed)); history.replaceState(history.state, '', url);
+		trialSeed = seed;
+		transition(navigation.setScreen('field-trial'), function () {
+			state = combatRuntime.attach(createFieldTrial(seed));
+			if (!state.mission) throw new Error('Missing field trial mission');
+			const map = state.mission.map;
+			gaits = createGaits(state); presentation.resetZoom();
+			pointer = undefined; aim = { ...map.objective };
+			aimMode = inputMode === 'gamepad' ? 'gamepad' : inputMode === 'touch' ? 'touch' : 'pointer';
+			audio.reset(); message = ''; messageUntil = 0; terminalUntil = 0; tipDismissed = false;
+			element('field-trial-title').textContent = outcome === 'won' ? 'Recorder extracted' : outcome === 'lost' ? 'Frame disabled' : 'Courier recovery';
+			element('field-deploy').textContent = outcome === 'playing' ? 'DEPLOY →' : 'REPLAY FIELD →';
+			element('field-trial-seed').textContent = `SEED ${seed} · ${(map.width / 1000).toFixed(2)} × ${(map.height / 1000).toFixed(2)} KM`;
+			drawFieldSurvey(element('field-survey-map'), map);
+			syncScreen();
+		});
+	};
 	const startIntro = function () {
 		training = undefined; escape = false; narrativePart = 'before'; narrativeElapsed = 0;
 		narrativeWaiting = audio.status() === 'locked' || audio.status() === 'unavailable';
@@ -406,7 +430,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		campaignConflict = true; silenceAudio(); padInput.suspend(); transition(navigation.showAuxiliary('save-conflict'));
 	};
 	const persistCampaign = function (): boolean {
-		if (rigTestEnabled) return true;
+		if (sessionOnly) return true;
 		if (campaignConflict) return false;
 		const current = savedSnapshot();
 		if (current !== undefined && campaignSnapshot !== undefined && current !== campaignSnapshot) { stopForConflict(); return false; }
@@ -415,7 +439,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		return true;
 	};
 	const checkpoint = function () {
-		if (training || escape || !state.mission || !campaign.deployed) return;
+		if (trialSeed !== undefined || training || escape || !state.mission || !campaign.deployed) return;
 		const next = checkpointDeployment(campaign, state.player.hp, state.coolantCharges, state.squadmates.flatMap(function (mate) {
 			const rig = campaign.deployed?.wing.find(function (member) { return member.pilotId === mate.pilotId; });
 			return rig ? [{ frameId: rig.frameId, hp: mate.hp }] : [];
@@ -655,6 +679,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('training-launch', function () { startTraining(trainingSetup()); });
 	listen('training-guided', function () { startTraining(); });
 	listen('training-back', leaveTraining);
+	listen('field-deploy', function () { if (trialSeed !== undefined && !contextLost) { unlockSound(); transition(navigation.setScreen('playing')); } });
+	listen('field-generate', function () { if (trialSeed !== undefined) showFieldTrial((trialSeed + 0x9e3779b9) >>> 0); });
 	listen('pause-training-loadout', showTrainingSetup);
 	listen('result-training-loadout', showTrainingSetup);
 	listen('title-intro', startIntro);
@@ -703,7 +729,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		else if (training) confirm(startTraining, 'RESTART DRILLS');
 	});
 	listen('leave', function () {
-		if (escape) confirm(toTitle, 'RETURN TO TITLE', 'The escape can be restarted from the title screen. Company progress is untouched.', 'LEAVE THE ESCAPE?');
+		if (trialSeed !== undefined) showFieldTrial(trialSeed);
+		else if (escape) confirm(toTitle, 'RETURN TO TITLE', 'The escape can be restarted from the title screen. Company progress is untouched.', 'LEAVE THE ESCAPE?');
 		else if (state.mission && !training) confirm(abortSortie, 'ABORT & RETURN TO SHIP', 'The squad returns with its current damage. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
 		else confirm(leaveTraining, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
 	});
@@ -719,7 +746,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('confirm-cancel', closeAuxiliary);
 	listen('reload-company', function () { window.location.reload(); });
 	window.addEventListener('storage', function (event) {
-		if (rigTestEnabled) return;
+		if (sessionOnly) return;
 		if ((event.key === CAMPAIGN_STORAGE_KEY || event.key === null) && savedSnapshot() !== campaignSnapshot) stopForConflict();
 	}, listenerOptions);
 	for (const id of ['pause-settings']) listen(id, function () { showAuxiliary('settings'); });
@@ -840,7 +867,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (capture) rigCodeInput = [];
 		setInputMode('keyboard'); if (event.isTrusted) unlockSound();
 		if (capture && navigation.auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); if (event.code === 'Escape') { capture = undefined; renderMappings(); } else if (!event.repeat && validKey(event.code)) assignKey(event.code); return; }
-		if (capture || navigation.auxiliary || campaignConflict || training || navigation.screen === 'training-setup' || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLElement && event.target.isContentEditable) {
+		if (capture || navigation.auxiliary || campaignConflict || trialSeed !== undefined || training || navigation.screen === 'training-setup' || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLElement && event.target.isContentEditable) {
 			rigCodeInput = [];
 		} else if (!event.repeat) {
 			rigCodeInput = [...rigCodeInput, event.code].slice(-rigCode.length);
@@ -866,7 +893,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const direction = event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down' : event.code === 'ArrowLeft' ? 'left' : event.code === 'ArrowRight' ? 'right' : undefined;
 			if (direction) { event.preventDefault(); moveWorkspaceFocus(root, direction); audio.cue('focus'); return; }
 		}
-		if (root && ['title', 'rig-bay', 'escape-result'].includes(navigation.screen) && !navigation.auxiliary && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
+		if (root && ['title', 'rig-bay', 'escape-result', 'field-trial'].includes(navigation.screen) && !navigation.auxiliary && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
 			event.preventDefault(); const items = focusable(root); const index = items.findIndex(function (item) { return item === document.activeElement; });
 			items[(index + (event.code === 'ArrowDown' || event.code === 'ArrowRight' ? 1 : -1) + items.length) % items.length]?.focus(); audio.cue('focus'); return;
 		}
@@ -1297,12 +1324,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			}
 			else if (escape && state.outcome === 'lost') { audio.reset(); transition(navigation.setScreen('escape-result')); }
 			else if (training?.stage === 'complete') transition(navigation.setScreen('training-result'));
+			else if (trialSeed !== undefined && state.outcome !== 'playing') showFieldTrial(trialSeed, state.outcome);
 			else if (!training && state.outcome !== 'playing') showResult(now);
 			else checkpoint();
 		},
 	});
 	const battlefieldVisible = function () {
-		return !contextLost && (navigation.screen === 'playing' || navigation.screen === 'pause-panel' || navigation.screen === 'escape-result' || navigation.screen === 'result' || navigation.screen === 'training-result');
+		return !contextLost && (navigation.screen === 'playing' || navigation.screen === 'pause-panel' || navigation.screen === 'escape-result' || navigation.screen === 'result' || navigation.screen === 'training-result' || navigation.screen === 'field-trial');
 	};
 	world.addSystem('battlefield-presentation').inPhase('postUpdate').before(transform3DSystems.propagate).setProcess(function () {
 		if (battlefieldVisible()) {
@@ -1373,7 +1401,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			audio.reset(); transition(navigation.setScreen('playing', true));
 		}, function () { return state; }, presentation.canCompareKestrel, presentation.setKestrelComparison);
 		onCleanup(rigTest);
-	} else syncScreen();
+	} else if (trialSeed !== undefined) showFieldTrial(trialSeed);
+	else syncScreen();
 	frame = requestAnimationFrame(tick);
 	return function () {
 		if (stopped) return; stopped = true;

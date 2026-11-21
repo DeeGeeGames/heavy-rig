@@ -693,6 +693,15 @@ experiments.deegeegames.com are not transferred automatically.
 Heavy Rig was extracted from DeeGeeGames/playground at commit
 `7e255d2b0676c80a79206f0a55c492d4b83cc692`, where it was named Iron Wake.
 
+### Cinder field trial
+
+For a playable seeded terrain example, open `/?field-trial=283191706` on the
+development or production preview server. The Cinder briefing shows the field
+and its two crossings. **Deploy** plays Recovery with that seed. **New Layout**
+generates another field and updates the URL so you can revisit or share it.
+**Pause → Field Briefing** returns to the same layout. This trial runs separately
+from company progression.
+
 ### Rig handling playground
 
 Run `bun run test:rigs` to build and serve a dedicated playground on port 3003,

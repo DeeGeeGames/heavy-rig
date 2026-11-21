@@ -5,6 +5,7 @@ import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
 import { ARENA, missileTracking, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
 import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
+import { FIELD_ROAD_MARKINGS } from './field-terrain-3d';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
 export const targetElevation = function (target: Point): number {
@@ -284,6 +285,22 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			ctx.beginPath(); ctx.arc(at.x, at.y, radius, 0, Math.PI * 2); if (outline) ctx.stroke(); else ctx.fill();
 		};
 		ctx.save(); ctx.beginPath(); ctx.rect(x + 1, y + 1, w - 2, h - 2); ctx.clip();
+		if (mission?.map.terrain) {
+			for (const obstacle of mission.map.terrain.obstacles) {
+				const corner = point({ x: obstacle.x - obstacle.width / 2, y: obstacle.y - obstacle.depth / 2 });
+				const dw = obstacle.width * w / bounds.width, dh = obstacle.depth * h / bounds.height;
+				ctx.fillStyle = obstacle.kind === 'fissure' ? '#35282a' : '#899190';
+				ctx.strokeStyle = obstacle.kind === 'fissure' ? '#9c6a54' : '#b3bfbb';
+				ctx.fillRect(corner.x, corner.y, dw, dh); ctx.strokeRect(corner.x, corner.y, dw, dh);
+			}
+			for (const [i, road] of mission.map.terrain.roads.entries()) {
+				ctx.strokeStyle = i === 0 ? FIELD_ROAD_MARKINGS.haul : FIELD_ROAD_MARKINGS.service;
+				ctx.setLineDash(i === 0 ? [] : [3, 2]); ctx.beginPath();
+				for (const [j, node] of road.entries()) { const p = point(node); if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); }
+				ctx.stroke();
+			}
+			ctx.setLineDash([]);
+		}
 		if (showRelay) dot(relay, '#91c5b8', 4, true);
 		if (mission) {
 			for (const { body } of structures) dot(body, body.hp > 0 ? '#ffd199' : '#829c99', 4, true);

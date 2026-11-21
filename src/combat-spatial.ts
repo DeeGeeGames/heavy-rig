@@ -3,14 +3,16 @@ import type { EnemyKind, Point, Unit } from './simulation';
 import type { SpatialPoint } from './weapon-rig';
 
 export interface HitVolume extends SpatialPoint { radius: number; halfHeight: number }
+export const ENEMY_RADIUS = 25;
+export const RIG_RADIUS = 27;
 const ENEMY_VOLUMES: Readonly<Record<EnemyKind, { elevation: number; halfHeight: number }>> = {
 	scout: { elevation: 36, halfHeight: 36 }, striker: { elevation: 45, halfHeight: 45 }, siege: { elevation: 65, halfHeight: 65 },
 	tank: { elevation: 30, halfHeight: 30 }, helicopter: { elevation: 112, halfHeight: 20 }, vtol: { elevation: 147, halfHeight: 22 },
 };
-export const enemyVolume = function (enemy: Unit): HitVolume { return { x: enemy.x, y: enemy.y, radius: 25, ...ENEMY_VOLUMES[enemy.kind] }; };
+export const enemyVolume = function (enemy: Unit): HitVolume { return { x: enemy.x, y: enemy.y, radius: ENEMY_RADIUS, ...ENEMY_VOLUMES[enemy.kind] }; };
 export const playerVolume = function (point: Point, frame: FrameId): HitVolume {
 	const height = getFrame(frame).chassisId === 'longbow' ? 145 : getFrame(frame).chassisId === 'maul' || getFrame(frame).chassisId === 'rook' ? 125 : 90;
-	return { ...point, elevation: height * getFrame(frame).size / 2, halfHeight: height * getFrame(frame).size / 2, radius: 27 };
+	return { ...point, elevation: height * getFrame(frame).size / 2, halfHeight: height * getFrame(frame).size / 2, radius: RIG_RADIUS };
 };
 export const facilityVolume = function (point: Point, radius: number): HitVolume { return { ...point, elevation: 75, halfHeight: 75, radius }; };
 export const spatialDistance = function (a: SpatialPoint, b: SpatialPoint): number { return Math.hypot(a.x - b.x, a.y - b.y, a.elevation - b.elevation); };
