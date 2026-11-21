@@ -223,10 +223,14 @@ Seeded mission layouts mix ground and air vehicles. Longer mech engagements use
 smaller mission rosters, and defense reinforcements leave more time after heavy
 contacts. Frontal armor still rewards flanking and siege cooling windows.
 
-Contract seeds generate bounded fields 4,200–4,800 by 3,000–3,600 meters. Drop
-side, objective and patrol sites, extraction point, and low terrain landmarks
-vary. Scenery is traversable; it provides no collision cover. Radar and edge
-markers show actual map bounds, the active objective, and extraction.
+Campaign and Career contracts generate fields 4,200–4,800 by 3,450–4,140 meters.
+The contract seed places the drop, objectives, pickup, and two marked crossings.
+The crossings offer direct and flanking routes through volcanic fissures, badlands
+canyons, and tundra crevasses. Ground rigs must drive around the cuts, while fire
+can cross them. Buildings and tundra conifers give ground units cover and can
+interrupt missile tracking. Radar draws the terrain footprints and routes.
+Defense drops the squad near the relay and brings in waves. Clearance, Raid,
+and Acquisition spread their sites across the field.
 
 A sortie uses each assigned frame's saved integrity and installed weapons. There
 are **no random weapon drafts, combat repair/coolant pickups, or field-service
@@ -695,9 +699,10 @@ Heavy Rig was extracted from DeeGeeGames/playground at commit
 
 ### Cinder field trial
 
-For a playable seeded terrain example, open `/?field-trial=283191706` on the
-development or production preview server. The Cinder briefing shows the field
-and its two crossings. **Deploy** plays Recovery with that seed. **New Layout**
+To replay the opening campaign Recovery map as a standalone trial, open
+`/?field-trial=283191706` on the development or production preview server.
+The Cinder briefing shows the field and its two crossings. **Deploy** plays
+Recovery with that seed. **New Layout**
 generates another field and updates the URL so you can revisit or share it.
 **Pause → Field Briefing** returns to the same layout. This trial runs separately
 from company progression.

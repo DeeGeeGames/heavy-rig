@@ -83,7 +83,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	}
 	const ground = new Mesh(geometry(map.terrain ? createCutGround(map, map.terrain) : new PlaneGeometry(map.width, map.height)), groundSurface);
 	ground.name = 'planet-surface'; ground.rotation.x = -Math.PI / 2; ground.position.set(map.width / 2, -0.03, map.height / 2); ground.receiveShadow = true; root.add(ground);
-	const field = map.terrain ? createFieldStructures(map.terrain, map.seed) : undefined;
+	const field = map.terrain ? createFieldStructures(map.terrain, map.seed, map.biome) : undefined;
 	if (field) root.add(field.root);
 	const scratch = new Object3D(); const color = new Color();
 	const rocks = map.landmarks.filter(function (landmark) { return landmark.kind === 'rocks'; });

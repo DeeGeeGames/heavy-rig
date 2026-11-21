@@ -1,8 +1,14 @@
 import { expect, test } from 'bun:test';
+import type { Contract } from '../src/campaign-types';
+import { ENEMY_RADIUS, RIG_RADIUS } from '../src/combat-spatial';
+import { defaultReserves } from '../src/combat-resources';
+import { createOpeningProgress, getChainStatus } from '../src/contract-chains';
+import { createStarterLoadout } from '../src/hardpoints';
+import { MISSION_TIERS } from '../src/reputation';
 import { createFieldTrial } from '../src/field-trial';
-import { moveOnTerrain, terrainPathClear, terrainShotFraction, terrainWaypoint, type FieldTerrain } from '../src/field-terrain';
-import { CAPTURE_RADIUS, EXTRACTION_RADIUS } from '../src/missions';
-import { distance } from '../src/simulation';
+import { moveOnTerrain, terrainPathClear, terrainShotFraction, terrainWaypoint, type FieldTerrain, type TerrainObstacle } from '../src/field-terrain';
+import { CAPTURE_RADIUS, EXTRACTION_RADIUS, missionHostileCount } from '../src/missions';
+import { createMissionState, distance, spawningStep, type Point, type SquadmateOptions } from '../src/simulation';
 
 test('generated approaches remain wide enough for rigs and every actor deploys on accessible ground', function () {
 	const first = createFieldTrial(283191706);
@@ -49,4 +55,92 @@ test('a rig slides along a fissure and stops against a second bank without tunne
 	const corner = moveOnTerrain(terrain, { x: 0, y: 30 }, { x: 300, y: 260 }, 10);
 	expect(corner.x).toBeCloseTo(75, 2); expect(corner.y).toBeCloseTo(135, 2);
 	expect(terrainShotFraction(terrain, { x: 0, y: 30, elevation: 10 }, { x: 300, y: 100, elevation: 1 })).toBeUndefined();
+});
+
+test('campaign deployment keeps each contract role, full squad, and hostile roster on connected ground', function () {
+	const loadout = createStarterLoadout('kestrel');
+	const squadmates: SquadmateOptions[] = ['one', 'two', 'three'].map(function (id) {
+		return { pilotId: id, callsign: id, specialty: 'skirmisher', frameId: 'kestrel', loadout, integrity: 100, reserves: defaultReserves(loadout) };
+	});
+	const kinds = ['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition'] as const;
+	const cutDirections = new Set<string>();
+	for (const planetId of ['meridian', 'cinder', 'borealis'] as const) for (const kind of kinds) {
+		for (const { tier } of MISSION_TIERS) for (const salt of [0, 1, 2, 3]) {
+			const seed = Math.imul(tier * 4 + salt, 0x9e3779b1) >>> 0;
+			const contract: Contract = {
+				id: 'campaign-terrain', seed, planetId, kind, tier, requiredReputation: 0, employer: 'accord',
+				opponent: 'combine', title: '', briefing: '', reward: 0, favor: 0, hostility: 0,
+			};
+			const state = createMissionState(contract, { squadmates });
+			const map = state.mission?.map; const terrain = map?.terrain;
+			if (!map || !terrain) throw new Error('Missing campaign terrain');
+			const assert = function (ok: boolean, context: string) {
+				if (!ok) throw new Error(`${planetId}/${kind}/${tier}/${seed} · ${context}`);
+			};
+			const clearAt = function (at: Point, radius: number) {
+				return at.x >= 35 + radius && at.x <= map.width - 35 - radius && at.y >= 35 + radius && at.y <= map.height - 35 - radius
+					&& terrainPathClear(terrain, at, at, radius);
+			};
+			const reachable = function (from: Point, goal: Point, radius: number) {
+				let at = from;
+				for (let hop = 0; hop <= 4 * terrain.obstacles.length; hop++) {
+					if (terrainPathClear(terrain, at, goal, radius)) return true;
+					const next = terrainWaypoint(terrain, at, goal, radius);
+					if (distance(at, next) < .01 || !clearAt(next, radius) || !terrainPathClear(terrain, at, next, radius)) return false;
+					at = next;
+				}
+				return false;
+			};
+			if (kind === 'defend') {
+				assert(distance(map.drop, map.objective) < 550 && state.enemies.length === 0, 'local defense deployment');
+				for (let index = 0; index < missionHostileCount(contract); index++) spawningStep(state, 60);
+			}
+			assert(state.enemies.length === missionHostileCount(contract), 'hostile roster');
+			assert(state.squadmates.length === squadmates.length, 'full squad deployed');
+			assert(terrain.roads.length >= 2, 'main and alternate approaches');
+			const spread = kind === 'clearance' || kind === 'raid' || kind === 'acquisition';
+			assert(map.sites.length === (spread ? 3 : 1), 'site count');
+			assert(map.sites.every(function (site, index) {
+				return map.sites.slice(index + 1).every(function (other) { return distance(site, other) > 450; });
+			}), 'distinct sites');
+			for (const road of terrain.roads) {
+				assert(road.every(function (at, index) {
+					const prev = road[index - 1]; return !prev || terrainPathClear(terrain, prev, at, 45);
+				}), 'advertised route');
+			}
+			for (const site of map.sites) {
+				assert(clearAt(site, CAPTURE_RADIUS + RIG_RADIUS) && reachable(map.drop, site, RIG_RADIUS), 'objective access');
+			}
+			assert(clearAt(map.extraction, EXTRACTION_RADIUS + RIG_RADIUS) && reachable(map.objective, map.extraction, RIG_RADIUS), 'extraction access');
+			for (const mate of state.squadmates) {
+				assert(clearAt(mate, RIG_RADIUS) && terrainPathClear(terrain, mate, map.drop, RIG_RADIUS), 'squad deployment slot');
+			}
+			for (const hostile of state.enemies) {
+				assert(clearAt(hostile, ENEMY_RADIUS) && reachable(hostile, map.objective, ENEMY_RADIUS), 'hostile deployment and egress');
+			}
+			const cut = terrain.obstacles.find(function (obstacle) { return obstacle.kind === 'fissure'; });
+			const cover = terrain.obstacles.find(function (obstacle) { return obstacle.kind === 'shed'; });
+			if (!cut || !cover) throw new Error('Expected a ground barrier and combat cover');
+			cutDirections.add(cut.width > cut.depth ? 'east-west' : 'north-south');
+			const sightline = function (o: TerrainObstacle) {
+				const from = { x: o.x - o.width / 2 - 1, y: o.y, elevation: 42 };
+				const to = { ...from, x: o.x + o.width / 2 + 1 };
+				return terrainShotFraction(terrain, from, to);
+			};
+			assert(sightline(cut) === undefined && sightline(cover) !== undefined, 'line of fire across cuts and cover');
+			if (planetId === 'borealis') assert(terrain.obstacles.some(function (o) { return o.kind === 'tree'; }), 'tundra conifers');
+		}
+	}
+	expect(cutDirections).toEqual(new Set(['east-west', 'north-south']));
+});
+
+test('the approved Cinder trial and opening campaign Recovery deploy the same terrain', function () {
+	const trial = createFieldTrial(283191706).mission?.map;
+	const recorder = getChainStatus(createOpeningProgress())?.offers[0]?.contract;
+	if (!trial || !recorder) throw new Error('Missing approved Cinder deployment');
+	const campaign = createMissionState(recorder).mission?.map;
+	expect(campaign).toEqual(trial);
+	expect(campaign?.drop).toEqual({ x: 2786, y: 2112 });
+	expect(campaign?.terrain?.roads.map(function (route) { return route.find(function (p) { return p.x === 2426; }); }))
+		.toEqual([{ x: 2426, y: 2092 }, { x: 2426, y: 1507 }]);
 });
