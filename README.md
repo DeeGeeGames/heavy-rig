@@ -5,6 +5,12 @@ Command the HRV Wayfarer, purchase frames and weapons, schedule repairs and
 refits, accept faction contracts, and extract from surface missions. Persistent
 throttle and independent turret tracking remain the combat core.
 
+The title scene, rig previews and battlefields use solid-ink contours and stepped
+color ramps. Walking mechs hold foot poses at a target of eight poses per second,
+rising to twelve during an authored run. Chassis travel, targeting and weapon
+effects update at game speed. The game uses standard Three.js rendering on GPUs
+that cannot run the ink pass.
+
 A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,
 with a Rattler machine gun fitted to each of its two mounts.
 Campaign missions and a separate Frame Training simulator are the playable modes.
@@ -700,8 +706,6 @@ input and fixed-step combat runtime, with enemy waves disabled. Ammo and heat re
 their normal behavior until reset. Campaign and preference saves are disabled in
 this mode. Physical controller/touch feel and balance need human playtesting.
 
-Open `/?rig-test=kestrel` for the blue Kestrel A solid-ink playtest, or select
-Kestrel A in the playground and enable **Blue Kestrel · solid ink**. Walk and
-reverse target eight contact-timed poses per second, and running targets twelve.
-Chassis travel and turret aim stay live. Toggle **Lighter gun housing** during
-a run to compare the receiver finish at the same speed and zoom.
+Open `/?rig-test=kestrel` to compare finishes on the blue Kestrel A. Toggle
+**Lighter gun housing** during a run to compare the receiver at the same speed
+and zoom. Clear **Blue Kestrel · solid ink** to compare the original rendering.

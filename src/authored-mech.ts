@@ -249,7 +249,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			if (!planted) throw new Error('Missing fixed-step authored gait');
 			hull.rotation.y = -planted.body.angle;
 			torso.quaternion.premultiply(yaw.setFromAxisAngle(y, planted.body.angle - heading));
-			for (const solved of locomotion.solve(planted, sampler.pelvisMatrix(context))) {
+			for (const solved of locomotion.solve(feedback?.legGait ?? planted, sampler.pelvisMatrix(context))) {
 				const leg = legs[solved.index]; if (!leg) throw new Error('Missing authored leg');
 				leg.thigh.quaternion.copy(solved.thigh); leg.shin.quaternion.copy(solved.shin); leg.foot.quaternion.copy(solved.foot);
 			}

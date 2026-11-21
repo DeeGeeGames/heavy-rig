@@ -64,7 +64,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const canvas = container.querySelector('canvas');
 	if (!canvas) throw new Error('Missing battlefield');
 	canvas.tabIndex = 0;
-	const presentation = createPresentation(canvas, rigTestEnabled);
+	const presentation = createPresentation(canvas);
 	onCleanup(presentation.dispose);
 	const combatRuntime = createCombatRuntime();
 	const navigation = createRuntimeNavigation();
@@ -1238,9 +1238,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			previousFrame = state.frame; previousMissionStage = state.mission?.stage;
 		},
 		afterStep: function () {
-			if (rigTestEnabled) presentation.stepKestrelTrial(state);
 			const now = frameTime;
 			gaits = state.frame !== previousFrame || training?.stage === 'evade' && previousStage !== 'evade' ? createGaits(state) : advanceGaits(gaits, state);
+			presentation.stepMechCadence(state, gaits);
 			pending.clear();
 			if (training && previousStage !== training.stage) {
 				audio.cue('confirm');
@@ -1335,7 +1335,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			aimMode = inputMode === 'gamepad' ? 'gamepad' : inputMode === 'touch' ? 'touch' : 'pointer';
 			message = ''; messageUntil = 0; terminalUntil = 0; tipDismissed = true;
 			audio.reset(); transition(navigation.setScreen('playing', true));
-		}, function () { return state; }, presentation.canTestKestrel(), presentation.setKestrelTrial);
+		}, function () { return state; }, presentation.canCompareKestrel, presentation.setKestrelComparison);
 		onCleanup(rigTest);
 	} else syncScreen();
 	frame = requestAnimationFrame(tick);

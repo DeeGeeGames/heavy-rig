@@ -1,43 +1,17 @@
 import {
-	Color, DepthTexture, DoubleSide, FloatType, HalfFloatType, Light, Mesh, MeshBasicMaterial,
-	MeshStandardMaterial, NearestFilter, NoBlending, ShaderMaterial, UnsignedIntType, Vector2, Vector3,
-	WebGLRenderTarget, type Object3D, type OrthographicCamera, type Scene, type WebGLRenderer,
+	Color, DepthTexture, DoubleSide, FloatType, HalfFloatType, MeshBasicMaterial,
+	NearestFilter, PerspectiveCamera, NoBlending, ShaderMaterial, UnsignedIntType, Vector2, Vector3,
+	WebGLRenderTarget, type OrthographicCamera, type Scene, type WebGLRenderer,
 } from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
-import { createInkMaterial, type InkSource, type InkSurface } from './kestrel-ink-material';
-import { edgeShader, inkShader, repairShader, resolveShader } from './kestrel-ink-shaders';
+import { createInkSurfaces } from './solid-ink-surfaces';
+import { edgeShader, inkShader, repairShader, resolveShader } from './solid-ink-shaders';
 
-const inkLayer = 30;
 const vertexShader = 'varying vec2 at; void main() { at=uv; gl_Position=vec4(position.xy,0.,1.); }';
 
-const bindSurfaces = function (roots: readonly Object3D[], mech: boolean, lighter: { value: boolean }) {
-	const bindings: { mesh: Mesh; source: InkSource; ink: InkSource; layers: number }[] = [];
-	const cache = new Map<InkSource, Map<InkSurface, InkSource>>();
-	for (const root of roots) root.traverse(function (mesh) {
-		if (!(mesh instanceof Mesh)) return;
-		const source: unknown = mesh.material;
-		if (!(source instanceof MeshBasicMaterial || source instanceof MeshStandardMaterial) || source.transparent) return;
-		const gun = mesh.name === 'geometry_kestrel_mount_left-gun' || mesh.name === 'geometry_kestrel_mount_right-gun';
-		const surface = mech ? gun ? 'gun' : 'mech' : 'yard';
-		const variants = cache.get(source) ?? new Map<InkSurface, InkSource>();
-		let ink = variants.get(surface);
-		if (!ink) {
-			ink = createInkMaterial(source, surface, lighter);
-			variants.set(surface, ink);
-			cache.set(source, variants);
-		}
-		bindings.push({ mesh, source, ink, layers: mesh.layers.mask });
-	});
-	return {
-		bindings,
-		dispose: function () {
-			for (const variants of cache.values()) for (const material of variants.values()) material.dispose();
-		},
-	};
-};
+type ViewCamera = OrthographicCamera | PerspectiveCamera;
 
-export const createKestrelInk = function (renderer: WebGLRenderer, scene: Scene, camera: OrthographicCamera) {
-	if (!renderer.extensions.has('EXT_color_buffer_float')) throw new Error('Solid ink requires floating-point render targets');
+const createPipeline = function (renderer: WebGLRenderer) {
 	const options = { minFilter: NearestFilter, magFilter: NearestFilter, depthBuffer: false };
 	const source = new WebGLRenderTarget(1, 1, { ...options, count: 2, type: HalfFloatType, depthBuffer: true });
 	source.depthTexture = new DepthTexture(1, 1, UnsignedIntType);
@@ -55,7 +29,7 @@ export const createKestrelInk = function (renderer: WebGLRenderer, scene: Scene,
 		paints: { value: source.texture }, surfaces: { value: surfaces }, depths: { value: source.depthTexture },
 		geometry: { value: resolved.texture }, paintPixels: { value: paintPixels },
 		lines: { value: lines.texture }, inked: { value: inked.texture }, finished: { value: finished.texture },
-		units: { value: 1 }, depthRange: { value: 1 }, cell: { value: new Vector2() }, paper: { value: new Vector3() },
+		units: { value: 1 }, depthRange: { value: 1 }, nearPlane: { value: 1 }, perspective: { value: false }, clearAlpha: { value: 1 }, cell: { value: new Vector2() }, paper: { value: new Vector3() },
 	};
 	const makePass = function (fragmentShader: string) {
 		return new ShaderMaterial({ uniforms, vertexShader, fragmentShader, toneMapped: false, blending: NoBlending, depthTest: false, depthWrite: false });
@@ -65,53 +39,45 @@ export const createKestrelInk = function (renderer: WebGLRenderer, scene: Scene,
 	const enlarge = makePass('varying vec2 at; uniform sampler2D finished; void main() { gl_FragColor=texture2D(finished,at); }');
 	const quad = new FullScreenQuad(resolve);
 	const depth = new MeshBasicMaterial({ colorWrite: false, side: DoubleSide });
-	const lighter = { value: false };
+	const sceneMaterials = createInkSurfaces();
 	const background = new Color(), clear = new Color();
-	const terrain = ['legacy-terrain', 'relay'].flatMap(function (name) {
-		const node = scene.getObjectByName(name);
-		return node ? [node] : [];
-	});
-	const yard = bindSurfaces(terrain, false, lighter);
-	const lights: { node: Light; layers: number }[] = [];
-	scene.traverse(function (node) { if (node instanceof Light) lights.push({ node, layers: node.layers.mask }); });
-	let player: { root: Object3D; surfaces: ReturnType<typeof bindSurfaces> } | undefined;
 	let disposed = false;
+	let verifiedWidth = 0, verifiedHeight = 0;
 
 	return {
-		render: function (widthCSS: number, heightCSS: number, modelRoot: Object3D, lighterHousing: boolean) {
-			if (disposed || widthCSS <= 0 || heightCSS <= 0) return;
-			if (player?.root !== modelRoot) {
-				player?.surfaces.dispose();
-				player = { root: modelRoot, surfaces: bindSurfaces([modelRoot], true, lighter) };
-			}
+		render: function (scene: Scene, camera: ViewCamera, widthCSS: number, heightCSS: number, lighterHousing: boolean) {
 			const w = Math.max(1, Math.round(widthCSS / 3)), h = Math.max(1, Math.round(heightCSS / 3));
-			lighter.value = lighterHousing;
 			source.setSize(w * 2, h * 2);
 			for (const target of [resolved, lines, inked, finished]) target.setSize(w, h);
-			uniforms.units.value = (camera.right - camera.left) / (w * camera.zoom);
+			uniforms.perspective.value = camera instanceof PerspectiveCamera;
+			uniforms.nearPlane.value = camera.near;
+			uniforms.units.value = 2 / (camera.projectionMatrix.elements[0] * w);
 			uniforms.depthRange.value = camera.far - camera.near;
 			uniforms.cell.value.set(1 / w, 1 / h);
 
 			const target = renderer.getRenderTarget(), alpha = renderer.getClearAlpha();
 			const autoClear = renderer.autoClear, updateShadows = renderer.shadowMap.autoUpdate;
 			const originalBackground = scene.background, override = scene.overrideMaterial, cameraLayers = camera.layers.mask;
+			const previousShaderError = renderer.debug.onShaderError;
+			let shaderError: string | undefined;
 			renderer.getClearColor(clear);
 			background.copy(originalBackground instanceof Color ? originalBackground : clear).convertLinearToSRGB();
 			uniforms.paper.value.set(background.r, background.g, background.b);
-			const groups = [yard, player.surfaces];
+			uniforms.clearAlpha.value = originalBackground instanceof Color ? 1 : alpha;
 			try {
-				for (const group of groups) for (const binding of group.bindings) {
-					binding.layers = binding.mesh.layers.mask;
-					binding.mesh.layers.set(inkLayer);
-					binding.mesh.material = binding.ink;
-					binding.ink.color.copy(binding.source.color);
-					if (binding.ink instanceof MeshStandardMaterial && binding.source instanceof MeshStandardMaterial) {
-						binding.ink.emissive.copy(binding.source.emissive);
-						binding.ink.emissiveIntensity = binding.source.emissiveIntensity;
+				const overlays = sceneMaterials.begin(scene, camera, lighterHousing);
+				renderer.debug.onShaderError = function (gl, program, vertex, fragment) {
+					shaderError = gl.getProgramInfoLog(program) || gl.getShaderInfoLog(fragment) || gl.getShaderInfoLog(vertex) || 'Ink shader compilation failed';
+					previousShaderError?.(gl, program, vertex, fragment);
+				};
+				if (w !== verifiedWidth || h !== verifiedHeight) {
+					const gl = renderer.getContext();
+					for (const buffer of [source, resolved, lines, inked, finished]) {
+						renderer.setRenderTarget(buffer);
+						if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('Incomplete solid-ink framebuffer');
 					}
+					verifiedWidth = w; verifiedHeight = h;
 				}
-				for (const light of lights) { light.layers = light.node.layers.mask; light.node.layers.enable(inkLayer); }
-				camera.layers.set(inkLayer);
 				scene.background = null;
 				renderer.setClearColor(0, 0);
 				renderer.autoClear = true;
@@ -128,6 +94,9 @@ export const createKestrelInk = function (renderer: WebGLRenderer, scene: Scene,
 				draw(ink, inked);
 				draw(repair, finished);
 				draw(enlarge, target);
+				if (shaderError) throw new Error(shaderError);
+				renderer.debug.onShaderError = previousShaderError;
+				if (!overlays) return;
 
 				// Restore the exact scene depth at display resolution before drawing live
 				// muzzle flashes, the firing arc, shadows, and the other game overlays.
@@ -140,11 +109,8 @@ export const createKestrelInk = function (renderer: WebGLRenderer, scene: Scene,
 				camera.layers.mask = cameraLayers;
 				renderer.render(scene, camera);
 			} finally {
-				for (const group of groups) for (const binding of group.bindings) {
-					binding.mesh.layers.mask = binding.layers;
-					binding.mesh.material = binding.source;
-				}
-				for (const light of lights) light.node.layers.mask = light.layers;
+				renderer.debug.onShaderError = previousShaderError;
+				sceneMaterials.restore();
 				camera.layers.mask = cameraLayers;
 				scene.background = originalBackground;
 				scene.overrideMaterial = override;
@@ -157,9 +123,35 @@ export const createKestrelInk = function (renderer: WebGLRenderer, scene: Scene,
 		dispose: function () {
 			if (disposed) return;
 			disposed = true;
-			yard.dispose(); player?.surfaces.dispose(); quad.dispose();
+			sceneMaterials.dispose(); quad.dispose();
 			for (const material of [resolve, edges, ink, repair, enlarge, depth]) material.dispose();
 			for (const target of [source, resolved, lines, inked, finished]) target.dispose();
 		},
+	};
+};
+
+// Each canvas owns a pipeline. Fall back to the native scene renderer when the
+// attachment format is unavailable or when allocation/rendering fails.
+export const createSolidInk = function (renderer: WebGLRenderer) {
+	let pipeline: ReturnType<typeof createPipeline> | undefined;
+	try {
+		if (renderer.extensions.has('EXT_color_buffer_float')) pipeline = createPipeline(renderer);
+		else console.warn('Solid ink requires floating-point render targets. Using native rendering.');
+	} catch (error: unknown) { console.warn('Solid ink setup failed. Using native rendering.', error); }
+	let disposed = false;
+	return {
+		get available() { return pipeline !== undefined; },
+		render: function (scene: Scene, camera: ViewCamera, widthCSS: number, heightCSS: number, lighterHousing = true) {
+			if (disposed || widthCSS <= 0 || heightCSS <= 0) return;
+			if (pipeline && (scene.background === null || scene.background instanceof Color) && !scene.overrideMaterial) {
+				try { pipeline.render(scene, camera, widthCSS, heightCSS, lighterHousing); return; }
+				catch (error: unknown) {
+					pipeline.dispose(); pipeline = undefined;
+					console.warn('Solid ink draw failed. Using native rendering.', error);
+				}
+			}
+			renderer.render(scene, camera);
+		},
+		dispose: function () { disposed = true; pipeline?.dispose(); pipeline = undefined; },
 	};
 };

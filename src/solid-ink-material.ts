@@ -1,4 +1,4 @@
-import { MeshBasicMaterial, MeshStandardMaterial } from 'three';
+import { MeshBasicMaterial, MeshStandardMaterial, type Vector3 } from 'three';
 
 const ramps = {
 	terrain: ['161e29', '233036', '314246', '465753', '687666', '8b957c'],
@@ -34,7 +34,9 @@ const housingAccent = `
 export type InkSource = MeshBasicMaterial | MeshStandardMaterial;
 export type InkSurface = 'yard' | 'mech' | 'gun';
 
-export const createInkMaterial = function (source: InkSource, surface: InkSurface, lightPanel: { value: boolean }) {
+export interface InkLighting { keyDirection: { value: Vector3 }; fillDirection: { value: Vector3 }; illumination: { value: Vector3 }; lightTint: { value: Vector3 } }
+
+export const createInkMaterial = function (source: InkSource, surface: InkSurface, lightPanel: { value: boolean }, lighting: InkLighting) {
 	const ink = source.clone();
 	ink.customProgramCacheKey = function () { return `${source.customProgramCacheKey()}/solid-ink/${surface}`; };
 	ink.onBeforeCompile = function (shader, renderer) {
@@ -44,6 +46,7 @@ export const createInkMaterial = function (source: InkSource, surface: InkSurfac
 		let normal = 'nonPerturbedNormal';
 		let declarations = 'layout(location=1) out highp vec4 inkSurface;';
 		if (source instanceof MeshStandardMaterial) {
+			Object.assign(shader.uniforms, lighting);
 			if (surface === 'gun') {
 				declarations += '\nvarying vec3 panelLocal; uniform bool lightPanel;';
 				shader.uniforms['lightPanel'] = lightPanel;
@@ -52,14 +55,15 @@ export const createInkMaterial = function (source: InkSource, surface: InkSurfac
 			shader.fragmentShader = shader.fragmentShader
 				.replace('#include <shadowmap_pars_fragment>', '#include <shadowmap_pars_fragment>\n#include <shadowmask_pars_fragment>')
 				.replace('void main() {', `${rampConstants}
+uniform vec3 keyDirection, fillDirection, illumination, lightTint;
 vec3 paintBand(vec3 pigment, vec3 n, float shadow, float metal, float roughness) {
 	vec3 c = clamp(sRGBTransferOETF(vec4(pigment,1.)).rgb,0.,1.);
 	float value = dot(c,vec3(.28,.57,.15));
-	vec3 key = normalize(vec3(-420.,900.,-500.));
-	float keyLight = max(0.,dot(n,key)) * shadow;
-	float fill = max(0.,dot(n,normalize(vec3(0.7,0.4,0.6))));
+	vec3 key = keyDirection;
+	float keyLight = max(0.,dot(n,key)) * shadow * illumination.x;
+	float fill = max(0.,dot(n,fillDirection))*illumination.y;
 	float spec = pow(max(0.,dot(n,normalize(key + normalize(vec3(1.,1.,1.))))),mix(18.,5.,roughness));
-	float shade = (.095 + .72*value)*(.60 + .93*keyLight + .15*max(n.y,0.) + .18*fill) + .10*metal*spec*shadow;
+	float shade = (.095 + .72*value)*(.60*illumination.z + .93*keyLight + .15*max(n.y,0.) + .18*fill) + .10*metal*spec*shadow;
 	int i = int(clamp(floor(shade*6.),0.,5.));
 	if (c.r > c.g + .095 && c.r > c.b + .13) return (c.g-c.b > .08) ? sand[i] : rust[i];
 	if (c.r > c.b + .07 && c.g > c.b + .045 && c.r >= c.g) return sand[i];
@@ -72,7 +76,7 @@ void main() {`)
 	vec3 worldN = transformNormalByInverseViewMatrix(normalize(mix(nonPerturbedNormal,normal,.23)),viewMatrix);
 	vec3 chosen = paintBand(diffuseColor.rgb,worldN,getShadowMask(),metalnessFactor,roughnessFactor);
 	${surface === 'gun' ? housingAccent : ''}
-	outgoingLight = sRGBTransferEOTF(vec4(chosen,1.)).rgb + totalEmissiveRadiance;
+	outgoingLight = sRGBTransferEOTF(vec4(chosen,1.)).rgb * lightTint + totalEmissiveRadiance;
 	#include <opaque_fragment>`);
 		} else {
 			declarations += '\nvarying vec3 inkViewPosition;';

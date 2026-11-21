@@ -1,6 +1,8 @@
 // The color and surface buffers use the same four coverage samples per virtual pixel.
 export const resolveShader = `
 	uniform sampler2D paints, surfaces, depths;
+	uniform float nearPlane, depthRange;
+	uniform bool perspective;
 
 	layout(location=1) out highp vec4 paintPixel;
 	void main() {
@@ -12,7 +14,10 @@ export const resolveShader = `
 			ivec2 pos=origin+ivec2(i%2,i/2);
 			surface[i]=texelFetch(surfaces,pos,0);
 			paint[i]=texelFetch(paints,pos,0).rgb;
-			depth[i]=texelFetch(depths,pos,0).r;
+			float sampleDepth=texelFetch(depths,pos,0).r;
+			// Normalize linear eye-space distance for comparable world-space creases
+			// in both perspective display cases and orthographic combat.
+			depth[i]=perspective ? nearPlane*sampleDepth/(nearPlane+depthRange*(1.-sampleDepth)) : sampleDepth;
 			if(surface[i].a>0.) occupied++;
 		}
 		if(2*occupied<count || occupied==0) {
@@ -51,11 +56,19 @@ export const resolveShader = `
 		paintPixel=vec4(paint[paintTap],1.);
 	}`;
 
+const cellSize = `
+	uniform float units, nearPlane, depthRange;
+	uniform bool perspective;
+	float worldCell(float surface) {
+		float normalizedDepth = surface - 2.*floor(surface*.5);
+		return units * (perspective ? nearPlane + normalizedDepth*depthRange : 1.);
+	}`;
+
 export const edgeShader = `
 	varying vec2 at;
 	uniform sampler2D geometry;
 	uniform vec2 cell;
-	uniform float units, depthRange;
+	${cellSize}
 	const vec2 dir[4]=vec2[4](vec2(-1,0),vec2(1,0),vec2(0,-1),vec2(0,1));
 	void main() {
 		vec4 here=texture2D(geometry,at);
@@ -66,7 +79,7 @@ export const edgeShader = `
 			float other=floor(next.a*.5);
 			float dz=((next.a-2.*other)-(here.a-2.*tag))*depthRange;
 			if(other==0. || (other!=tag && dz>=0.)) edges[i]=1.;
-			else if(other==tag && dz>max(4.,units*3.1)) edges[i]=.70;
+			else if(other==tag && dz>max(4.,worldCell(here.a)*3.1)) edges[i]=.70;
 			else if(other==tag && dot(here.xyz,next.xyz)<.48) {
 				// Ink just the more edge-on face of a crease, independent of the paint.
 				float facing=abs(next.z)-abs(here.z);
@@ -80,18 +93,18 @@ export const inkShader = `
 	varying vec2 at;
 	uniform sampler2D paintPixels, geometry, lines;
 	uniform vec2 cell;
-	uniform float depthRange, units;
+	${cellSize}
 	uniform vec3 paper;
 	const vec3 outline=vec3(16,22,35)/255.;
 	const vec3 thinInk=vec3(53,65,80)/255.;
 	bool onSurface(vec2 uv, float surface) {
-		return abs(texture2D(geometry,uv).a-surface)*depthRange<=max(4.,units*3.1);
+		return abs(texture2D(geometry,uv).a-surface)*depthRange<=max(4.,worldCell(surface)*3.1);
 	}
 	// An internal line can bridge one missing cell only when both ends face
 	// the same way and belong to the same nearby visible surface.
 	vec4 nearbyLines(vec2 uv, float surface) {
 		float other=texture2D(geometry,uv).a;
-		return abs(surface-other)*depthRange<=units*2.4 ? texture2D(lines,uv) : vec4(0.);
+		return abs(surface-other)*depthRange<=worldCell(surface)*2.4 ? texture2D(lines,uv) : vec4(0.);
 	}
 	void main() {
 		vec4 src=texture2D(paintPixels,at);
@@ -129,12 +142,13 @@ export const inkShader = `
 export const repairShader = `
 	varying vec2 at;
 	uniform sampler2D inked, geometry;
+	uniform float clearAlpha;
 	uniform vec2 cell;
 	const vec3 luma=vec3(.299,.587,.114);
 	const vec2 axes[4]=vec2[4](vec2(1,0),vec2(0,1),vec2(1,1),vec2(1,-1));
 	void main() {
 		vec4 here=texture2D(inked,at);
-		gl_FragColor=vec4(here.rgb,1.);
+		gl_FragColor=vec4(here.rgb,here.a==0. ? clearAlpha : 1.);
 		float light=dot(here.rgb,luma);
 		if(here.a==0. || here.a>.35 || light<.39) return;
 		float tag=floor(texture2D(geometry,at).a*.5);

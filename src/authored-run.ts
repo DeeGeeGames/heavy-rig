@@ -32,7 +32,7 @@ export const runSwingRate = function (speed: number, stopping: boolean, profile:
 interface Landing { readonly x: number; readonly y: number; readonly angle: number }
 interface RunSwing { readonly from: Foot; readonly elapsed: number; readonly duration: number; readonly target?: Landing }
 interface RunLeg { readonly swing: RunSwing | undefined; readonly swingPhase: boolean }
-interface RunState { readonly phase: number; readonly legs: readonly [RunLeg, RunLeg]; readonly stopping: boolean }
+interface RunState { readonly phase: number; readonly swingRate: number; readonly legs: readonly [RunLeg, RunLeg]; readonly stopping: boolean }
 export interface AuthoredGait extends WalkerGait { readonly running?: RunState }
 
 const smooth = function (value: number) { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
@@ -51,7 +51,7 @@ const beginRun = function (gait: WalkerGait, speed: number, rig: LegRig, profile
 		const local = phaseOf(phase, index); const swinging = local >= stanceFraction;
 		return { swingPhase: swinging, swing: swinging ? { from: gait.feet[index], elapsed: 0, duration: (1 - local) * cycleSeconds } : undefined };
 	};
-	return { phase, legs: [leg(0), leg(1)], stopping: false };
+	return { phase, swingRate: rate, legs: [leg(0), leg(1)], stopping: false };
 };
 
 // Each leg has a shorter stance than half a cycle. Their swings overlap, giving
@@ -105,7 +105,7 @@ export const advanceAuthoredRun = function (previous: AuthoredGait, actual: Walk
 	const motion = { lift: (flightLift - impact * 0.8) / 0.3, roll: Math.sin(phase * Math.PI * 2) * profile.bodyRoll, pitch: -Math.min(1, Math.max(-1, speed / profile.referenceSpeed)) * profile.bodyPitch, impact };
 	const gait: WalkerGait = { body, feet: [left.foot, right.foot], swing: undefined, nextFoot: phase < 0.5 ? 1 : 0, travelSpeed: Math.hypot(dx, dy), motion };
 	if (stopping && !left.leg.swing && !right.leg.swing && left.foot.lift === 0 && right.foot.lift === 0) return gait;
-	return { ...gait, running: { phase, legs: [left.leg, right.leg], stopping } };
+	return { ...gait, running: { phase, swingRate: rate, legs: [left.leg, right.leg], stopping } };
 };
 
 export const authoredRunFootPitch = function (gait: AuthoredGait, index: 0 | 1, amplitude = 0.18): number {
