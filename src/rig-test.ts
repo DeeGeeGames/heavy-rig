@@ -1,4 +1,4 @@
-import { FRAMES } from './frames';
+import { PLAYABLE_FRAMES } from './frames';
 import { createMount } from './arsenal';
 import { getHardpoints } from './hardpoints';
 import { frameWeight } from './combat-resources';
@@ -20,7 +20,7 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 	panel.id = 'rig-test-panel'; panel.open = true;
 	const summary = document.createElement('summary'); summary.textContent = 'RIG HANDLING TEST';
 	const rig = document.createElement('select'); rig.id = 'test-rig'; rig.title = 'Rig';
-	for (const frame of FRAMES) rig.add(new Option(frame.name, frame.id));
+	for (const frame of PLAYABLE_FRAMES) rig.add(new Option(frame.name, frame.id));
 	const directKestrel = new URLSearchParams(location.search).get('rig-test') === 'kestrel';
 	if (directKestrel) rig.value = 'kestrel';
 	const mode = document.createElement('select'); mode.id = 'test-mode'; mode.title = 'Control mode';
@@ -69,7 +69,7 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 	const guide = document.createElement('p'); guide.textContent = 'Compare: accelerate → release throttle → brake → reverse → turn a circle → aim while turning → fire. Use the normal keyboard, controller or touch controls. Pause → Controls for bindings. No enemy waves; reset restores ammo and heat. Preferences and campaign are not saved.';
 	panel.append(summary, controls, finishes, telemetry, guide); container.append(panel);
 	const restart = function () {
-		const frame = FRAMES.find(function (candidate) { return candidate.id === rig.value; });
+		const frame = PLAYABLE_FRAMES.find(function (candidate) { return candidate.id === rig.value; });
 		if (!frame) return;
 		settings.controlMode = mode.value === 'arcade' ? 'arcade' : 'simulation';
 		const state = createState({ frame: frame.id });

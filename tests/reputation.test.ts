@@ -3,7 +3,7 @@ import { getWeapon, weaponIdForTier } from '../src/arsenal';
 import { acceptContract, abandonContract, canAcceptContract, createCampaign, getContracts, parseCampaign, settleContract, travelTo, type Campaign } from '../src/campaign';
 import { advanceDays, buyFrame, buyWeapon, getOwnedMech } from '../src/company';
 import { frameWeight, loadedMounts } from '../src/combat-resources';
-import { FRAMES } from '../src/frames';
+import { PLAYABLE_FRAMES } from '../src/frames';
 import { isFrameLoadout } from '../src/hardpoints';
 import { getFrameOffer } from '../src/market';
 import { companyRank, MISSION_TIERS, REPUTATION_RANKS, unlockedMissionTier } from '../src/reputation';
@@ -27,7 +27,7 @@ test('company milestones gate contract acceptance and both purchase paths, indep
 			}
 			const id = weaponIdForTier('laser', milestone.weaponTier);
 			expect(buyWeapon(campaign, id) === campaign).toBe(!unlocked);
-			for (const frame of FRAMES) {
+			for (const frame of PLAYABLE_FRAMES) {
 				const offer = getFrameOffer(campaign, frame.id);
 				expect(offer.loadout.every(function (weapon) { return getWeapon(weapon).tier <= unlockedMissionTier(campaign).weaponTier; })).toBe(true);
 			}
@@ -58,7 +58,7 @@ test('every reputation rank retains faction-hostile recovery work', function () 
 });
 test('sale packages are complete, compatible, bounded in weight, reproducible, and transferred exactly including price and inventory', function () {
 	const packages = new Set<string>();
-	for (const rank of [1, 6, 15]) for (const seed of [1, 23, 317, 8192]) for (const frame of FRAMES) {
+	for (const rank of [1, 6, 15]) for (const seed of [1, 23, 317, 8192]) for (const frame of PLAYABLE_FRAMES) {
 		const campaign = { ...ranked(rank), seed };
 		const offer = getFrameOffer(campaign, frame.id);
 		expect(offer).toEqual(getFrameOffer(parseCampaign(JSON.stringify(campaign)), frame.id));

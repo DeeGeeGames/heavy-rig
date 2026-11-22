@@ -2,7 +2,8 @@ import { rigFrameId } from '../src/rigs';
 import { getFrameOffer } from '../src/market';
 import { describe, expect, test } from 'bun:test';
 import { WEAPONS, getWeapon } from '../src/arsenal';
-import { FRAMES } from '../src/frames';
+import { PLAYABLE_FRAMES } from '../src/frames';
+import { createStarterLoadout } from '../src/hardpoints';
 import { defaultReserves, frameWeight, loadedMounts } from '../src/combat-resources';
 import { createMissionState } from '../src/simulation';
 import { abandonContract, acceptContract, createCampaign, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
@@ -238,10 +239,28 @@ describe('Company ownership and workshop transactions', function () {
 	});
 });
 
+test('retired rigs cannot be bought and saves containing them restart at the starter company', function () {
+	const company = funded();
+	expect(roundTrip(company)).toEqual(company);
+	for (const frameId of ['longbow', 'longbow-b', 'longbow-c', 'morrow', 'morrow-b', 'morrow-c', 'rook', 'rook-b', 'rook-c'] as const) {
+		expect(buyFrame(company, frameId)).toBe(company);
+		const loadout = createStarterLoadout(frameId);
+		const reserves = defaultReserves(loadout);
+		const inventory = { ...company.inventory };
+		for (const weapon of loadout) inventory[weapon] += 2;
+		const fleet = [...company.fleet, { frameId, loadout, reserves, integrity: 100 },
+			{ frameId: `${frameId}#2` as const, loadout, reserves, integrity: 100 }];
+		const restored = roundTrip({ ...company, fleet, inventory });
+		expect(restored.credits).toBe(0);
+		expect(restored.fleet).toEqual(createCampaign(1).fleet);
+	}
+});
+
 test('rig cheat preserves an active deployment and survives save validation without duplicate grants', function () {
 	const deployed = beginDeployment(accept(funded()));
 	const unlocked = unlockAllRigs(deployed);
-	expect(unlocked.fleet).toHaveLength(FRAMES.length);
+	expect(unlocked.fleet.slice(1).map(function (mech) { return mech.frameId; }))
+		.toEqual(PLAYABLE_FRAMES.map(function (frame) { return frame.id; }).filter(function (id) { return id !== 'kestrel'; }));
 	expect(unlocked.credits).toBe(deployed.credits);
 	expect(unlocked.deployed).toEqual(deployed.deployed);
 	expect(unlocked.active).toEqual(deployed.active);
@@ -254,7 +273,7 @@ test('rig cheat adds credits on every entry while preserving deployment and vali
 	const deployed = beginDeployment(accept(funded()));
 	const granted = applyRigCheat(deployed);
 	expect(granted.credits).toBe(deployed.credits + 1_000_000);
-	expect(granted.fleet).toHaveLength(FRAMES.length);
+	expect(granted.fleet).toHaveLength(PLAYABLE_FRAMES.length);
 	expect(granted.deployed).toEqual(deployed.deployed);
 	expect(roundTrip(granted)).toEqual(granted);
 	const repeated = applyRigCheat(granted);
@@ -315,9 +334,10 @@ test('new-format saves reject invalid ammunition counts and loadout mismatches',
 		expect(setAmmunition(company, 'kestrel', reserves)).toBe(company);
 		expect(parseCampaign(JSON.stringify({ ...company, credits: 77, fleet: [{ ...mech, reserves }] })).credits).toBe(0);
 	}
-	const energy = stockFrame(funded(), 'longbow');
-	expect(setAmmunition(energy, 'longbow', [1])).toBe(energy);
-	expect(canDeploy(accept(selectFrame(energy, 'longbow')))).toBe(true);
+	const energy = stockFrame(funded(), 'kestrel-b');
+	expect(setAmmunition(energy, 'kestrel-b', [0, 1])).toBe(energy);
+	const beamOnly = setAmmunition(energy, 'kestrel-b', [0, 0]);
+	expect(canDeploy(accept(selectFrame(beamOnly, 'kestrel-b')))).toBe(true);
 	const pending = queueRefit(company, 'kestrel', [null, 'machine-gun'], [0, 23]);
 	const order = pending.workOrders[0];
 	if (!order || order.kind !== 'refit') throw new Error('Missing refit');
@@ -436,7 +456,7 @@ test('same-type rigs retain separate equipment, squad damage and workshop jobs t
 test('rig save validation accepts fleets beyond the catalogue and rejects forged copy keys', function () {
 	const full = unlockAllRigs(funded());
 	const expanded = buyFrame(full, 'kestrel');
-	expect(expanded.fleet.length).toBe(FRAMES.length + 1);
+	expect(expanded.fleet.length).toBe(PLAYABLE_FRAMES.length + 1);
 	expect(roundTrip(expanded)).toEqual(expanded);
 	for (const id of ['kestrel#0', 'kestrel#1', 'kestrel#02', 'kestrel#NaN', 'unknown#2', 'kestrel#9007199254740992']) {
 		const forged = { ...expanded, fleet: expanded.fleet.map(function (mech) { return mech.frameId === 'kestrel#2' ? { ...mech, frameId: id } : mech; }) };

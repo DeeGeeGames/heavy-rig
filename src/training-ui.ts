@@ -2,7 +2,7 @@ import { html, render } from 'lit-html';
 import { keyed } from 'lit-html/directives/keyed.js';
 import { getWeapon, WEAPONS, type WeaponId } from './arsenal';
 import { defaultReserves } from './combat-resources';
-import { FRAMES, type FrameId } from './frames';
+import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import { canEquipWeapon, createStarterLoadout, getHardpoints } from './hardpoints';
 import { loadSummary } from './loadout-ui';
 import type { TrainingSetup } from './training';
@@ -22,9 +22,9 @@ export const mountTrainingSetup = function (root: HTMLElement) {
 			<label class="training-frame-choice"><span>Frame</span>
 				<select id="training-frame" @change=${function (event: Event) {
 					if (!(event.target instanceof HTMLSelectElement)) return;
-					const choice = FRAMES[event.target.selectedIndex];
+					const choice = PLAYABLE_FRAMES[event.target.selectedIndex];
 					if (choice) { frame = choice.id; refresh(); }
-				}}>${FRAMES.map(function (option) {
+				}}>${PLAYABLE_FRAMES.map(function (option) {
 					return html`<option value=${option.id} ?selected=${frame === option.id}>${option.name}</option>`;
 				})}</select>
 			</label>

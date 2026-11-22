@@ -63,8 +63,8 @@ const advance = function (training: Training, stage: TrainingStage) {
 	if (stage === 'cannon' || stage === 'missiles' || stage === 'combined') placeTarget(training.state);
 	if (stage === 'combined') { training.state.player.heat = 0; training.state.player.overheated = false; }
 	if (stage === 'heat') {
-		training.state.frame = 'longbow';
-		training.state.loadout = [{ ...createMount('laser'), slot: 0 }];
+		training.state.frame = 'warden-b';
+		training.state.loadout = [{ ...createMount('laser'), slot: 2 }];
 		training.state.enemies = []; training.state.shots = []; training.state.player.heat = 0;
 		training.state.player.overheated = false;
 	}
@@ -96,13 +96,18 @@ const retryDryDrill = function (training: Training) {
 };
 
 export interface TrainingBefore { x: number; y: number; angle: number; hits: number }
+export const trainingFireSlot = function (stage: TrainingStage | undefined): number {
+	return stage === 'cannon' ? 0 : stage === 'missiles' || stage === 'heat' ? 2 : -1;
+};
+
 export const prepareTraining = function (training: Training, controls: Controls): Controls {
 	const state = training.state;
 	state.spawnIn = 3600;
 	if (training.stage === 'range') return controls;
 	retryDryDrill(training);
 	if (training.stage === 'coolant') state.player.heat = Math.max(45, state.player.heat);
-	return { ...controls, fire: training.stage === 'combined' ? controls.fire : [(training.stage === 'cannon' || training.stage === 'heat') && controls.fire[0], false, training.stage === 'missiles' && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant };
+	const slot = trainingFireSlot(training.stage);
+	return { ...controls, fire: training.stage === 'combined' ? controls.fire : [slot === 0 && controls.fire[0], false, slot === 2 && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant };
 };
 export const finishTraining = function (training: Training, controls: Controls, dt: number, before: TrainingBefore) {
 	const state = training.state;
@@ -154,18 +159,18 @@ export const trainingCopy = function (stage: TrainingStage, controller: boolean,
 	const arcade = mappings.touch || mappings.controlMode === 'arcade';
 	const buttonLabel = mappings.buttonLabel ?? padLabel;
 	const controls = mappings.touch
-		? { drive: 'Point the left stick toward your heading; push farther for more speed', stop: 'Hold STOP', steer: 'Point the left stick toward a new direction', aim: 'Tap the target to track it, or use NEXT', cannon: 'FIRE with mount 1 armed', missile: 'FIRE with mount 3 armed', laser: 'FIRE with mount 1 armed', coolant: 'VENT' }
+		? { drive: 'Point the left stick toward your heading; push farther for more speed', stop: 'Hold STOP', steer: 'Point the left stick toward a new direction', aim: 'Tap the target to track it, or use NEXT', cannon: 'FIRE with mount 1 armed', mountThree: 'FIRE with mount 3 armed', coolant: 'VENT' }
 		: controller
-		? { drive: 'Press D-pad up or push the left stick up', stop: `Hold ${buttonLabel(mappings.controller.stop)}`, steer: arcade ? 'Choose a new direction with the D-pad or left stick' : 'Press D-pad left/right or move the left stick left/right', aim: arcade ? 'Point the right stick at the target' : 'Hold the right stick left or right to rotate the torso', cannon: buttonLabel(mappings.controller['mount-0']), missile: buttonLabel(mappings.controller['mount-2']), laser: buttonLabel(mappings.controller['mount-0']), coolant: buttonLabel(mappings.controller.coolant) }
-		: { drive: `Hold ${key('forward')}`, stop: `Hold ${key('stop')}`, steer: arcade ? `Use ${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} to choose a direction` : `Hold ${key('left')} / ${key('right')}`, aim: 'Point at the target', cannon: key('mount-0'), missile: key('mount-2'), laser: key('mount-0'), coolant: key('coolant') };
+		? { drive: 'Press D-pad up or push the left stick up', stop: `Hold ${buttonLabel(mappings.controller.stop)}`, steer: arcade ? 'Choose a new direction with the D-pad or left stick' : 'Press D-pad left/right or move the left stick left/right', aim: arcade ? 'Point the right stick at the target' : 'Hold the right stick left or right to rotate the torso', cannon: buttonLabel(mappings.controller['mount-0']), mountThree: buttonLabel(mappings.controller['mount-2']), coolant: buttonLabel(mappings.controller.coolant) }
+		: { drive: `Hold ${key('forward')}`, stop: `Hold ${key('stop')}`, steer: arcade ? `Use ${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} to choose a direction` : `Hold ${key('left')} / ${key('right')}`, aim: 'Point at the target', cannon: key('mount-0'), mountThree: key('mount-2'), coolant: key('coolant') };
 	const copy: Record<TrainingStage, [string, string]> = {
 		drive: ['SET THE FRAME IN MOTION', `${controls.drive} to move. ${arcade ? 'Keep holding to travel; release to slow.' : 'Release it to cruise.'} Travel 100 meters.`],
 		neutral: ['BRING IT TO NEUTRAL', `${controls.stop} until the frame settles. Neutral cuts engine demand; eighty tons still need time to stop.`],
 		steer: ['TURN THE HULL', `${controls.steer}. The hull and your turret turn independently.`],
 		cannon: ['PUT A ROUND ON TARGET', `${controls.aim}; use ${controls.cannon}. Ammunition is finite; this simulator reloads dry weapons for retries.`],
-		missiles: ['GUIDED FIRE', `${controls.aim}; use ${controls.missile}. Select the target with NEXT / nearest, hold it in the firing arc for 1.5 seconds, then fire. Trident follows the acquired target. Firing ammunition sheds weight and improves speed.`],
+		missiles: ['GUIDED FIRE', `${controls.aim}; use ${controls.mountThree}. Select the target with NEXT / nearest, hold it in the firing arc for 1.5 seconds, then fire. Trident follows the acquired target. Firing ammunition sheds weight and improves speed.`],
 		combined: ['COMBINE YOUR FIRE', mappings.touch ? 'Tap at least two mount chips to arm them, then hold FIRE. All mounts share reactor heat.' : 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. Warden has two ballistic guns and two launcher pods; all share reactor heat.'],
-		heat: ['FEEL THE REACTOR', `Switched to Longbow: ARC needs no ammunition but produces much more heat. Hold ${controls.laser} to build heat to 45%.`],
+		heat: ['FEEL THE REACTOR', `Switched to Warden B: ARC draws reactor power and builds heat. Hold ${controls.mountThree} to build heat to 45%.`],
 		coolant: ['VENT THE HEAT', `Press ${controls.coolant}. One charge purges 55 heat. At 100% heat, weapons lock until heat falls to 35%.`],
 		evade: ['CLEAR THE IMPACT ZONE', `Frame reset to the practice lane. ${controls.drive} when the orange circle appears. Leave it before impact; the strike stays where marked.`],
 		complete: ['FRAME QUALIFICATION COMPLETE', 'You are ready for the operation. Flank armored siege frames and strike while they recover from a barrage.'],

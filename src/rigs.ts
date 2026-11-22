@@ -1,10 +1,10 @@
-import { FRAMES, getFrame, type FrameId } from './frames';
+import { PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
 
 // First copies retain the historical frame key, so existing saves remain valid.
 // Fleet references (including legacy fields named frameId) identify one rig.
 export type RigId = FrameId | `${FrameId}#${number}`;
 export const isRigId = function (value: unknown): value is RigId {
-	return typeof value === 'string' && FRAMES.some(function (frame) {
+	return typeof value === 'string' && PLAYABLE_FRAMES.some(function (frame) {
 		if (value === frame.id) return true;
 		if (!value.startsWith(`${frame.id}#`)) return false;
 		const serial = value.slice(frame.id.length + 1);
@@ -12,7 +12,7 @@ export const isRigId = function (value: unknown): value is RigId {
 	});
 };
 export const rigFrameId = function (id: RigId): FrameId {
-	const frame = FRAMES.find(function (frame) { return id === frame.id || id.startsWith(`${frame.id}#`); });
+	const frame = PLAYABLE_FRAMES.find(function (frame) { return id === frame.id || id.startsWith(`${frame.id}#`); });
 	if (!frame) throw new RangeError('Unknown rig');
 	return frame.id;
 };

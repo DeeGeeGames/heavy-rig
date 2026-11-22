@@ -1,6 +1,6 @@
 import { ACESFilmicToneMapping, Box3, Color, CylinderGeometry, DirectionalLight, Fog, GridHelper, Group, HemisphereLight, Mesh, MeshStandardMaterial, PCFShadowMap, PerspectiveCamera, PlaneGeometry, Scene, Vector3, WebGLRenderer, type BufferGeometry } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { FRAMES, getFrame, type FrameId } from './frames';
+import { PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
 import { FRAME_RIGS, STANDARD_LEG_RIG } from './frame-rig';
 import { advanceGait, createGait, mechScale } from './gait';
 import { createMech } from './mech-3d';
@@ -11,7 +11,7 @@ type Phase = Exclude<Motion, 'showcase'>;
 type View = 'three-quarter' | 'side' | 'game';
 interface ModelChoice { id: string; frame: FrameId; kind?: EnemyKind; commander?: boolean }
 const choices: readonly ModelChoice[] = [
-	...FRAMES.map(function (frame) { return { id: frame.id, frame: frame.id }; }),
+	...PLAYABLE_FRAMES.map(function (frame) { return { id: frame.id, frame: frame.id }; }),
 	{ id: 'scout', frame: 'warden', kind: 'scout' }, { id: 'striker', frame: 'warden', kind: 'striker' },
 	{ id: 'siege', frame: 'warden', kind: 'siege' }, { id: 'commander', frame: 'warden', kind: 'siege', commander: true },
 	{ id: 'helicopter', frame: 'warden', kind: 'helicopter' }, { id: 'vtol', frame: 'warden', kind: 'vtol' }, { id: 'tank', frame: 'warden', kind: 'tank' },

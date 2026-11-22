@@ -32,7 +32,7 @@ import { targetElevation, type ScreenRect } from './overlay';
 import { createAudio } from './audio';
 import { createGamepadInput, type PadInput } from './gamepad';
 import { createControllerFeedback } from './controller-feedback';
-import { createTraining, trainingCopy, type Training, type TrainingSetup } from './training';
+import { createTraining, trainingCopy, trainingFireSlot, type Training, type TrainingSetup } from './training';
 import { mountTrainingSetup } from './training-ui';
 import { isDifficulty, readProfile, saveProfile } from './profile';
 import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getTransmission, parseCampaign, readCampaign, saveCampaign, settleContract, travelTo, type Campaign, type CampaignResult } from './campaign';
@@ -1031,6 +1031,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('escape-guide').hidden = !escape || navigation.screen !== 'playing';
 		element('escape-guide').textContent = escape ? escapeMessage(state.time, { ...profile.settings, device: inputMode, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); } }) : '';
 		const drill = training && training.stage !== 'range' ? training.stage : undefined;
+		const drillSlot = trainingFireSlot(drill);
 		const practice = training?.stage === 'range';
 		element('training-guide').hidden = !drill || navigation.screen !== 'playing';
 		if (training) {
@@ -1073,7 +1074,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			button.classList.toggle('armed', touchLayout && armedTouchMounts.has(index));
 			button.setAttribute('aria-pressed', String(touchLayout && armedTouchMounts.has(index)));
 			const touchFiring = touchLayout && armedTouchMounts.has(index) && active('touch-fire');
-			const drillSlot = drill === 'cannon' || drill === 'heat' ? 0 : drill === 'missiles' ? 2 : -1;
 			button.disabled = !mount || Boolean(drill && drill !== 'combined' && index !== drillSlot);
 			const dry = Boolean(mount && !usableMount(mount));
 			const firing = Boolean(mount && !dry && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index] || touchFiring));
