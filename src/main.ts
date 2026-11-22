@@ -1363,7 +1363,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					try { view = createHangarPreview(modelCanvas); rigPreviews.set(id, view); }
 					catch (error: unknown) { view?.dispose(); view = undefined; modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Rig preview unavailable', error); }
 				}
-				view?.setFrame(id, undefined, profile.settings.mechSkin); view?.render();
+				view?.setFrame(id, id === 'warden' ? [0] : undefined, profile.settings.mechSkin); view?.render();
 			}
 		}
 		if (navigation.screen === 'mechbay' && !navigation.auxiliary && focused && !document.hidden) {

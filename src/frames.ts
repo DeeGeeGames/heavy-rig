@@ -78,6 +78,12 @@ export const FRAMES: readonly FrameDefinition[] = CHASSIS_IDS.flatMap(function (
 			starter: variant.starter ?? chassis.starter, mass: chassis.mass + (variant.structuralMass ?? 0) };
 	});
 });
+
+// Keep prototype definitions available to the design kit while they are out of play.
+export const PLAYABLE_FRAMES: readonly FrameDefinition[] = FRAMES.filter(function (frame) {
+	return frame.chassisId === 'warden' || frame.chassisId === 'kestrel' || frame.chassisId === 'maul';
+});
+
 export const getFrame = function (id: FrameId): FrameDefinition {
 	const frame = FRAMES.find(function (candidate) { return candidate.id === id; });
 	if (!frame) throw new RangeError(`Unknown Heavy Rig frame: ${id}`);

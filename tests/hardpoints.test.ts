@@ -28,14 +28,14 @@ test('company rejects incompatible equipment and forged saves without spending o
 	expect(canRefit(campaign, 'warden', invalid)).toBe(false);
 	expect(queueRefit(campaign, 'warden', invalid)).toBe(campaign);
 	expect(queueRefit(campaign, 'kestrel', ['laser', null])).toBe(campaign);
-	expect(queueRefit(campaign, 'longbow', ['ppc', 'laser'])).toBe(campaign);
+	expect(queueRefit(campaign, 'maul-c', [null, 'laser', 'laser'])).toBe(campaign);
 	const forged = { ...campaign, fleet: campaign.fleet.map(function (mech) { return mech.frameId === 'warden' ? { ...mech, loadout: invalid } : mech; }) };
 	expect(parseCampaign(JSON.stringify(forged)).fleet).toEqual(createCampaign(42).fleet);
-	const queued = queueRefit(campaign, 'longbow', ['laser']);
-	const forgedOrder = { ...queued, workOrders: queued.workOrders.map(function (order) { return { ...order, loadout: ['machine-gun'] }; }) };
+	const queued = queueRefit(campaign, 'maul-c', [null, 'laser']);
+	const forgedOrder = { ...queued, workOrders: queued.workOrders.map(function (order) { return { ...order, loadout: [null, 'machine-gun'] }; }) };
 	expect(parseCampaign(JSON.stringify(forgedOrder)).workOrders).toEqual([]);
 	const complete = advanceDays(queued, 1);
-	expect(getOwnedMech(complete, 'longbow')?.loadout).toEqual(['laser']);
+	expect(getOwnedMech(complete, 'maul-c')?.loadout).toEqual([null, 'laser']);
 	expect(parseCampaign(JSON.stringify(complete))).toEqual(complete);
 	// In-memory corruption cannot bypass the deployment guard either.
 	const contract = getContracts(campaign)[0];
@@ -47,8 +47,8 @@ test('company rejects incompatible equipment and forged saves without spending o
 
 test('owned chassis and refits persist exactly their visible hardpoint count', function () {
 	const company = unlockAllRigs(createCampaign(42));
-	expect(company.fleet.filter(function (mech) { return getFrame(rigFrameId(mech.frameId)).variant === 'A' && mech.frameId !== 'rook'; }).map(function (mech) { return [mech.frameId, mech.loadout.length]; })).toEqual([
-		['kestrel', 2], ['warden', 4], ['maul', 2], ['longbow', 1], ['morrow', 2],
+	expect(company.fleet.filter(function (mech) { return getFrame(rigFrameId(mech.frameId)).variant === 'A'; }).map(function (mech) { return [mech.frameId, mech.loadout.length]; })).toEqual([
+		['kestrel', 2], ['warden', 4], ['maul', 2],
 	]);
 	for (const mech of company.fleet) {
 		expect(mech.loadout).toHaveLength(getHardpoints(rigFrameId(mech.frameId)).length);

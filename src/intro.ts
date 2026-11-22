@@ -14,7 +14,7 @@ export const SADDLE_LINES = [
 	"It's good to be back in the saddle.",
 	'Now, I just have to pray to God that they got my signal...',
 ] as const;
-export const INTRO_FRAMES = ['kestrel', 'longbow'] as const satisfies readonly FrameId[];
+export const INTRO_FRAMES = ['kestrel', 'warden'] as const satisfies readonly FrameId[];
 export type IntroFrame = typeof INTRO_FRAMES[number];
 
 // Each line owns its typing, full-text hold, and fade. Carry surplus frame time

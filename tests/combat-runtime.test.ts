@@ -94,7 +94,7 @@ test('ECS training uses the same combat systems through every qualification stag
 	try {
 		for (let tick = 0; tick < 3600 && expected.stage !== 'complete'; tick++) {
 			const stage = expected.stage;
-			const controls: Controls = { ...idle, ...(expected.state.enemies[0] ? { targetId: expected.state.enemies[0].id } : {}), aim: expected.state.enemies[0] ?? expected.state.player, drive: stage === 'drive' || stage === 'evade' && expected.strikeIssued ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon' || stage === 'heat', stage === 'combined', stage === 'missiles', stage === 'combined'], coolant: stage === 'coolant' };
+			const controls: Controls = { ...idle, ...(expected.state.enemies[0] ? { targetId: expected.state.enemies[0].id } : {}), aim: expected.state.enemies[0] ?? expected.state.player, drive: stage === 'drive' || stage === 'evade' && expected.strikeIssued ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon', stage === 'combined', stage === 'missiles' || stage === 'heat', stage === 'combined'], coolant: stage === 'coolant' };
 			combat.setControls(function () { return controls; }); stepTraining(expected, controls, 1 / 60); world.update(1 / 60);
 			expect(training).toEqual(expected);
 		}
@@ -103,7 +103,7 @@ test('ECS training uses the same combat systems through every qualification stag
 });
 
 test('the practice range fires the selected hardpoint, replaces targets, and refits a fresh frame', async function () {
-	const training = createTraining({ frame: 'longbow-c', loadout: [null, 'stream-rockets:t3'], reserves: [0, 4] });
+	const training = createTraining({ frame: 'kestrel-c', loadout: [null, 'stream-rockets:t3'], reserves: [0, 4] });
 	const { world, combat } = await harness(training.state);
 	try {
 		const state = combat.attach(training.state, training);
@@ -123,10 +123,10 @@ test('the practice range fires the selected hardpoint, replaces targets, and ref
 		expect(state.enemies).toHaveLength(targets.length);
 		expect(state.enemies.every(function (enemy) { return enemy.stationary && !targets.includes(enemy.id); })).toBe(true);
 		expect(training.stage).toBe('range');
-		const refit = createTraining({ frame: 'morrow-b', loadout: ['ppc:t5', null], reserves: [0, 0] });
+		const refit = createTraining({ frame: 'maul-c', loadout: [null, 'ppc:t5'], reserves: [0, 0] });
 		const fresh = combat.attach(refit.state, refit);
-		expect(fresh.frame).toBe('morrow-b');
-		expect(fresh.loadout.map(function (mount) { return [mount.slot, mount.weapon]; })).toEqual([[0, 'ppc:t5']]);
+		expect(fresh.frame).toBe('maul-c');
+		expect(fresh.loadout.map(function (mount) { return [mount.slot, mount.weapon]; })).toEqual([[1, 'ppc:t5']]);
 		expect(fresh.shots).toHaveLength(0);
 		expect(fresh.coolantCharges).toBe(2);
 	} finally { await world.dispose(); }

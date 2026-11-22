@@ -5,7 +5,7 @@ import { getFrameOffer } from './market';
 import { unlockedMissionTier } from './reputation';
 import { WEAPONS, createWeaponRecord, getWeapon, type WeaponId } from './arsenal';
 import { MAX_CREDITS, type Campaign } from './campaign';
-import { FRAMES, type FrameId } from './frames';
+import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import { createStarterLoadout, isFrameLoadout } from './hardpoints';
 import { defaultReserves, isReserveLoadout, loadedMounts, usableMount } from './combat-resources';
 import { isPilotId, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
@@ -39,7 +39,7 @@ const emptyInventory = function (): Record<WeaponId, number> { return createWeap
 const isObject = function (value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); };
 const isInteger = function (value: unknown, min: number, max: number): value is number { return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max; };
 const isIntegrity = function (value: unknown): value is number { return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100; };
-export const isFrameId = function (value: unknown): value is FrameId { return FRAMES.some(function (frame) { return frame.id === value; }); };
+export const isFrameId = function (value: unknown): value is FrameId { return PLAYABLE_FRAMES.some(function (frame) { return frame.id === value; }); };
 export const isWeaponId = function (value: unknown): value is WeaponId { return WEAPONS.some(function (weapon) { return weapon.id === value; }); };
 const countWeapon = function (loadout: Loadout, weapon: WeaponId) { return loadout.filter(function (entry) { return entry === weapon; }).length; };
 const createOwnedMech = function (frameId: FrameId): OwnedMech {
@@ -152,7 +152,7 @@ export const buyFrame = function (campaign: Campaign, frameId: FrameId): Campaig
 };
 // Grant only missing chassis; existing equipment, damage and deployment stay intact.
 export const unlockAllRigs = function (campaign: Campaign): Campaign {
-	return FRAMES.reduce(function (company, frame) {
+	return PLAYABLE_FRAMES.reduce(function (company, frame) {
 		if (getOwnedMech(company, frame.id)) return company;
 		const mech = createOwnedMech(frame.id);
 		const inventory = includeLoadout(company.inventory, mech.loadout);

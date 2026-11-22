@@ -18,7 +18,7 @@ A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,
 with a Rattler machine gun fitted to each of its two mounts.
 Campaign missions and a separate Frame Training simulator are the playable modes.
 
-New Campaign begins with a black-screen prologue, a choice of Kestrel or Longbow,
+New Campaign begins with a black-screen prologue, a choice of Kestrel or Warden,
 and a short escape from the northwest Rig Bay to a southeast evacuation point.
 Each narrative line types at ten characters per second with terminal chirps, holds
 for two seconds, and fades over one second. A first-input prompt enables browser
@@ -248,8 +248,10 @@ with their original terms. Successful extraction pays once.
 
 ## Frames and variants
 
-The fleet contains six chassis with three separately purchasable variants each.
+The playable fleet contains three chassis with three separately purchasable variants each.
 Warden A, Kestrel A and Maul A use SNES-style models with broad armor panels and distinct chassis colors. See the [model comparisons](design/mechs/assets/README.md).
+Longbow, Morrow and Rook are out of the playable roster. A save containing one
+of those rigs loads as a fresh company.
 Each variant has its own crew, equipment, ammunition settings, and condition;
 shared weapon inventory prevents double allocation. Dealer purchases include a
 complete random loadout within unlocked weapon quality. The Market lists every
@@ -262,22 +264,10 @@ and refitted elsewhere.
 | Kestrel | Skirmisher: 2 light B | Spark: light B + compact E | Harrier: light B + compact L |
 | Warden | Line: 2B + 2L | Battery: 2B + 2E | Combined: 2B + E + L |
 | Maul | Breacher: 2L | Breaker: 2B | Furnace: B + E |
-| Longbow | Marksman: E | Rifleman: B + compact E | Overwatch: E + compact L |
-| Morrow | Salvo: 2L | Prism: 2E | Convergence: E + L |
-| Rook | Raider: 2B + compact L | Flare: 2E + compact L | Ranger: B + E + compact L |
 
 B means ballistic, E energy, and L launcher. Light ballistic mounts accept only
 Rattler; compact energy mounts accept only ARC; compact launchers accept only
 two-round rocket/missile weapons. Full mounts retain their family weapon choices.
-Longbow B/C include 3T of permanent auxiliary structure, even with an empty
-secondary mount. Their full stock loadouts use a Rattler main gun with ARC
-offhand for B, and an ARC main bank with compact launcher for C. Fitting heavier equipment adds its
-full hardware and ammunition weight.
-Rook is a medium three-mount chassis with two underslung arms
-and a central dorsal pod: 55T base, 82T recommended operating weight, 95/52 m/s
-forward/reverse baseline, 12 heat/s cooling, and 20% increased incoming damage.
-These are initial tuning values; weapon mass, reserves, and shared heat determine
-the effective mobility and endurance of each fitted variant.
 
 Original A-variant specifications:
 
@@ -285,14 +275,11 @@ Original A-variant specifications:
 | --- | --- | --- | --- | --- | --- |
 | Kestrel 21 · 40T | Starting frame | Skirmisher / 2 Rattlers | 125 / 65 m/s | 10 heat/s | Fast tracking and acceleration; takes 30% more damage |
 | Warden 08 · 80T | 5,000 CR | Line fighter / AC/38, Rattler, Needle /2, Lance /2 | 90 / 48 m/s | 12 heat/s | Balanced armor and handling |
-| Longbow 16 · 65T | 6,000 CR | Precision gunner / Tempest | 86 / 42 m/s | 15 heat/s | Strong cooling; slow tracking and 12% more damage |
-| Morrow 52 · 70T | 6,500 CR | Missile support / 2 Trident /2 | 88 / 48 m/s | 12 heat/s | Guided area fire; takes 10% more damage |
 | Maul 34 · 100T | 7,500 CR | Brawler / 2 Hailstorm /2 | 82 / 40 m/s | 11 heat/s | Takes 22% less damage; slow hull and turret traverse |
-| Rook 37 · 55T | 5,500 CR | Medium raider / AC/38, Rattler, Lance /2 | 95 / 52 m/s | 12 heat/s | Three mounts; takes 20% more damage |
 
 Frame tonnage above is **base chassis mass**, including fixed equipment.
-Recommended operating weights are Kestrel **50T**, Warden **122T**, Longbow **80T**,
-Morrow **100T**, Maul **124T**, and Rook **82T**. Installed weapons and remaining
+Recommended operating weights are Kestrel **50T**, Warden **122T**, and Maul
+**124T**. Installed weapons and remaining
 ammunition add to base mass. At the recommendation, cruise and reverse use the listed speed.
 Underweight speed receives a modest bonus capped at 15%; overload is steeper:
 150% of recommended weight gives 50% speed, with a 35% minimum. Overweight
@@ -310,8 +297,6 @@ Original A-variant hardpoints:
 | Kestrel | Two light ballistic side guns | Rattler machine guns |
 | Warden | Two ballistic side guns, two shoulder launchers | Rattler / AC/38 in guns; missiles / rockets in pods |
 | Maul | Two forearm launchers | Missiles / rockets |
-| Longbow | One energy accelerator arm | ARC laser / Tempest PPC |
-| Morrow | Two outboard silos | Missiles / rockets |
 
 The Mech Bay names each location and its allowed weapons. The market shows weapon
 families and compatible chassis before purchase. Empty and nonexistent slots cannot
@@ -321,8 +306,8 @@ in this equipment-foundation pass.
 
 All frames share the same driving and aiming controls. Integrity is a
 percentage; each frame's protection changes the damage received. Kestrel uses
-an open reverse-jointed silhouette, Maul a broad humanoid stance, Longbow a tall
-asymmetric cannon arm, and Morrow an armless twin-silo carrier. Authored hip
+an open reverse-jointed silhouette, Warden a compact wedge torso, and Maul a
+broad humanoid stance. Authored hip
 heights, knee directions, and planted-foot animation distinguish their motion.
 These presentation differences do not change collision shapes.
 
@@ -425,7 +410,7 @@ page is open. Company equipment, condition, and progression stay untouched.
 
 Guided Drills teach cruise, neutral, steering, cannon aim, guided missiles,
 combined fire, heat, coolant, and artillery evasion. The drills use a Warden
-for guns and launchers and switch to a Longbow for heat and coolant. Dry drill
+for guns and launchers and switch to Warden B for heat and coolant. Dry drill
 weapons reload after launched ordnance resolves so you can retry. On completion,
 choose Change Loadout to enter the range, return to where you opened Training,
 or review an accepted contract's loadout.
@@ -718,7 +703,7 @@ Run `bun run test:rigs` to build and serve a dedicated playground on port 3003,
 bound to all network interfaces. Open `http://localhost:3003/` or use the host's
 LAN address from another device. The script stays running until Ctrl+C.
 
-Choose any of the 18 frame variants, Simulation or Arcade controls, and starter,
+Choose any of the nine playable frame variants, Simulation or Arcade controls, and starter,
 fully loaded, or empty mounts. Switching a choice or pressing Reset starts a
 fresh run. Collapse the test panel for more battlefield space. Compare acceleration,
 coasting, braking, reversing, hull turning, independent aim, and firing while moving.
