@@ -1,4 +1,10 @@
 export const TORSO_LIMIT = 115 * Math.PI / 180;
+const headingStep = Math.PI / 6;
+
+export const snapMechHeading = function (angle: number): number {
+	return Math.round(angle / headingStep) * headingStep;
+};
+
 const delta = function (from: number, to: number) { return Math.atan2(Math.sin(to - from), Math.cos(to - from)); };
 const clamp = function (value: number, limit: number) { return Math.max(-limit, Math.min(limit, value)); };
 

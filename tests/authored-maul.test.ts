@@ -19,23 +19,26 @@ test('Maul keeps forward-bending knees, firing alignment and a vertical torso th
 	const uninstall = factory.install();
 	const model = factory.create();
 	const torso = model.root.getObjectByName('rig_torso');
-	if (!torso) throw new Error('Missing Maul torso');
+	const hull = model.root.getObjectByName('authored-hull-heading');
+	if (!torso || !hull) throw new Error('Missing Maul torso or hull');
 	let context: AuthoredPoseContext | undefined;
 	let body = { x: 0, y: 0, angle: 0 };
-	let time = 0;
+	let time = 0; let previousHullYaw = 0;
+	const vertical = new Vector3(0, 1, 0);
 	const quaternion = new Quaternion();
 	const legs = ['left', 'right'].map(function (side) {
 		const hip = model.root.getObjectByName(`rig_leg_${side}_thigh`);
 		const knee = model.root.getObjectByName(`rig_leg_${side}_shin`);
 		const ankle = model.root.getObjectByName(`rig_leg_${side}_foot`);
 		if (!hip || !knee || !ankle) throw new Error('Missing Maul leg joints');
-		return { hip, knee, ankle, previous: new Vector3() };
+		return { hip, knee, ankle, previous: new Vector3(), previousWorldAnkle: new Vector3() };
 	});
 	try {
 		for (const speed of [30, 82, 0, -40]) for (let frame = 0; frame < 120; frame++) {
 			const dt = 1 / 60;
 			body = { x: body.x + Math.cos(body.angle) * speed * dt, y: body.y + Math.sin(body.angle) * speed * dt, angle: body.angle + dt * 0.2 };
 			time += dt;
+			const previousGait = context?.gait;
 			context = factory.advancePose(context, body, time);
 			const gait = createGait(body);
 			const heading = body.angle + Math.sin(time) * 1.2;
@@ -43,17 +46,31 @@ test('Maul keeps forward-bending knees, firing alignment and a vertical torso th
 			const up = new Vector3(0, 1, 0).applyQuaternion(torso.getWorldQuaternion(quaternion));
 			expect(up.distanceTo(new Vector3(0, 1, 0))).toBeLessThan(1e-10);
 			expect(authoredMuzzleError(model, factory.weaponRigs, gait, heading, undefined, context, 'maul')).toBeLessThan(1e-8);
-			const forward = new Vector3(1, 0, 0).applyAxisAngle(new Vector3(0, 1, 0), -(context.gait?.body.angle ?? body.angle));
-			for (const leg of legs) {
+			const forward = new Vector3(1, 0, 0).transformDirection(hull.matrixWorld);
+			for (const [index, leg] of legs.entries()) {
 				const hip = leg.hip.getWorldPosition(new Vector3());
 				const knee = leg.knee.getWorldPosition(new Vector3());
-				const axis = leg.ankle.getWorldPosition(new Vector3()).sub(hip).normalize();
+				const ankle = leg.ankle.getWorldPosition(new Vector3());
+				const axis = ankle.clone().sub(hip).normalize();
 				const bend = knee.clone().sub(hip);
 				bend.addScaledVector(axis, -bend.dot(axis));
 				expect(bend.dot(forward)).toBeGreaterThan(0);
-				if (frame > 20) expect(knee.distanceTo(leg.previous)).toBeLessThan(6);
+				if (frame > 20) {
+					// A sector change carries the hip and knee around the hull's vertical axis.
+					const carried = leg.previous.clone().applyAxisAngle(vertical, hull.rotation.y - previousHullYaw);
+					expect(knee.distanceTo(leg.previous)).toBeLessThan(6 + carried.distanceTo(leg.previous));
+				}
 				leg.previous.copy(knee);
+				const contact = context.gait?.feet[index]; const prior = previousGait?.feet[index];
+				if (!contact) throw new Error('Missing Maul foot contact');
+				// The model stays at the origin in this test. Restore its world translation.
+				ankle.x += body.x; ankle.z += body.y;
+				if (prior?.lift === 0 && contact.lift === 0 && prior.x === contact.x && prior.y === contact.y) {
+					expect(ankle.distanceTo(leg.previousWorldAnkle)).toBeLessThan(1e-6);
+				}
+				leg.previousWorldAnkle.copy(ankle);
 			}
+			previousHullYaw = hull.rotation.y;
 		}
 	} finally {
 		model.dispose(); uninstall(); factory.dispose();

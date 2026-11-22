@@ -5,6 +5,7 @@ import type { WalkerGait } from './gait';
 import type { MechFeedback } from './mech-3d';
 import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
+import { snapMechHeading } from './torso-arc';
 import { prepareAuthoredLocomotion, type AuthoredLocomotionOptions } from './authored-gait';
 import { KESTREL_RUN_PROFILE } from './authored-run';
 import type { FrameId } from './frames';
@@ -164,13 +165,16 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		// up axis while independent aiming continues to rotate it around that axis.
 		const gait = descriptor.frame === 'maul' ? { ...advanced, motion: { ...advanced.motion, pitch: 0, roll: 0 } } : advanced;
 		const context = { ...advanceAuthoredPose(motions, valid, body, time), gait };
-		return { ...context, pelvisDrop: locomotion.pelvisDrop(context.gait, sampler.pelvisMatrix(context)) };
+		// Maul needs the displayed hip positions to keep its short legs bent over a planted shoe.
+		const supportHeading = descriptor.frame === 'maul' ? snapMechHeading(gait.body.angle) : gait.body.angle;
+		return { ...context, pelvisDrop: locomotion.pelvisDrop(gait, sampler.pelvisMatrix(context), supportHeading) };
 	};
 	const muzzle = function (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined): SpatialPoint {
 		const exit = exits[slot]; if (!exit) throw new RangeError(`Missing authored muzzle ${slot}`);
 		const local = tubeIndex === undefined || exit.tubes.length === 0 ? exit.muzzle : exit.tubes[((tubeIndex % exit.tubes.length) + exit.tubes.length) % exit.tubes.length];
 		if (!local) throw new RangeError(`Missing authored tube ${slot}/${tubeIndex}`);
-		const result = point(local.clone().applyMatrix4(sampler.matrix(context, body.angle ?? heading, heading)));
+		const hullAngle = snapMechHeading(context?.gait?.body.angle ?? body.angle ?? heading);
+		const result = point(local.clone().applyMatrix4(sampler.matrix(context, hullAngle, snapMechHeading(heading))));
 		return { x: result.x + body.x, y: result.y + body.y, elevation: result.elevation };
 	};
 	probe.root.clear();
@@ -247,9 +251,10 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			}
 			const planted = context.gait;
 			if (!planted) throw new Error('Missing fixed-step authored gait');
-			hull.rotation.y = -planted.body.angle;
-			torso.quaternion.premultiply(yaw.setFromAxisAngle(y, planted.body.angle - heading));
-			for (const solved of locomotion.solve(feedback?.legGait ?? planted, sampler.pelvisMatrix(context))) {
+			const hullAngle = snapMechHeading(planted.body.angle);
+			hull.rotation.y = -hullAngle;
+			torso.quaternion.premultiply(yaw.setFromAxisAngle(y, hullAngle - snapMechHeading(heading)));
+			for (const solved of locomotion.solve(feedback?.legGait ?? planted, sampler.pelvisMatrix(context), hullAngle)) {
 				const leg = legs[solved.index]; if (!leg) throw new Error('Missing authored leg');
 				leg.thigh.quaternion.copy(solved.thigh); leg.shin.quaternion.copy(solved.shin); leg.foot.quaternion.copy(solved.foot);
 			}

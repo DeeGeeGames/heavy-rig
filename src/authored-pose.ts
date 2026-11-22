@@ -91,8 +91,7 @@ export const prepareAuthoredTorsoSampler = function (torso: Object3D, motions: r
 			return { name: rest.name, position, quaternion, scale };
 		});
 	};
-	const matrix = function (context: AuthoredPoseContext | undefined, angle: number, heading: number): Matrix4 {
-		const hullAngle = context?.gait?.body.angle ?? angle;
+	const matrix = function (context: AuthoredPoseContext | undefined, hullAngle: number, heading: number): Matrix4 {
 		const result = new Matrix4().makeRotationY(-hullAngle).multiply(basis);
 		const transforms = sample(context);
 		for (const [index, transform] of transforms.entries()) {
