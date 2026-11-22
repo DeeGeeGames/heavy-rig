@@ -5,6 +5,7 @@ import type { Gaits } from './gait';
 import type { CombatStateView, EnemyKind, Point } from './simulation';
 
 const ticksPerSecond = 60;
+const posesPerSecond = 8;
 const windowLead = 24; // Open a sampling window 40% of a period before its nominal pose.
 const airborne = function (gait: AuthoredGait) { return gait.feet[0].lift > 0 && gait.feet[1].lift > 0; };
 
@@ -39,19 +40,18 @@ export const createContactCadence = function () {
 		if (!prior || elapsed <= 0 || elapsed > 1.5 / ticksPerSecond || movedBothPlants) {
 			previous = held = gait;
 			const firstTick = time > 0 && time <= 1.5 / ticksPerSecond;
-			clock = firstTick ? (gait.running ? 12 : 8) : 0;
+			clock = firstTick ? posesPerSecond : 0;
 			sampledWindow = 0;
 			heldTicks = firstTick ? 1 : 0;
 			return;
 		}
 		previous = gait;
-		const rate = gait.running ? 12 : 8;
-		clock += rate;
+		clock += posesPerSecond;
 		heldTicks++;
 		const window = Math.floor((clock + windowLead) / ticksPerSecond);
 		if (window <= sampledWindow) return;
 
-		const stepsLeft = Math.ceil(((window + 1) * ticksPerSecond - windowLead - clock) / rate) - 1;
+		const stepsLeft = Math.ceil(((window + 1) * ticksPerSecond - windowLead - clock) / posesPerSecond) - 1;
 		const swings = gait.running ? gait.running.legs.map(function (leg) { return leg.swing; }) : [gait.swing];
 		const swingStep = (gait.running?.swingRate ?? 1) / ticksPerSecond;
 		const landingDue = swings.some(function (swing) {
@@ -64,7 +64,7 @@ export const createContactCadence = function () {
 		const tookOff = airborne(gait) && !airborne(prior);
 		const poseDue = clock >= window * ticksPerSecond;
 		const keyPose = landed || (!landingDue && (tookOff || atPeak || poseDue));
-		if (stepsLeft === 0 || heldTicks >= (gait.running ? 8 : 12) || (heldTicks >= 3 && keyPose)) {
+		if (stepsLeft === 0 || heldTicks >= 12 || (heldTicks >= 3 && keyPose)) {
 			held = gait;
 			sampledWindow = window;
 			heldTicks = 0;

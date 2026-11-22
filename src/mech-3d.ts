@@ -15,6 +15,7 @@ import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { SKIN_PALETTES, supportsMechSkin, type MechSkinId } from './mech-skin';
 import { applyMechSkinMaterial } from './mech-skin-material';
+import { snapMechHeading } from './torso-arc';
 
 export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
 
@@ -53,7 +54,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	housing(hull, 'hip-casting', [{ x: rig.hipForward - 11, y: rig.hipHeight - 5, height: 5, width: rig.hipWidth - 1 }, { x: rig.hipForward + 8, y: rig.hipHeight - 5, height: 7, width: rig.hipWidth + 3 }, { x: rig.hipForward + 17, y: rig.hipHeight - 4, height: 3, width: rig.hipWidth - 3 }], dark);
 	const hardware = buildLowPolyChassis(parts, turret, frame, kind, commander);
 	for (const part of turret.children) part.position.y -= rig.hipHeight - (rig.torsoRise ?? 0);
-	turret.rotation.order = 'YXZ';
+	// Roll about the forward axis before pitching so suspension cannot rotate the displayed heading.
+	turret.rotation.order = 'YZX';
 	const slender = !kind && (chassis === 'kestrel' || chassis === 'longbow');
 	const broad = !kind && (chassis === 'maul' || chassis === 'morrow');
 	const legArmor = function (parent: Group, name: string, length: number, upper: boolean) {
@@ -121,11 +123,13 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		get exhaust(): Vector3 | undefined { return hardware.vents.length > 0 ? exhaust : undefined; },
 		get labelHeight(): number { return labelHeight; },
 		pose: function (gait: WalkerGait, heading: number, feedback?: MechFeedback) {
-			const poseRig = posedLegRig(gait, size, rig); const humanoid = rig.kneeDirection === 1;
-			hull.rotation.y = -gait.body.angle; hull.position.y = poseRig.hipHeight - rig.hipHeight; turret.rotation.y = -heading;
+			const body = { ...gait.body, angle: snapMechHeading(gait.body.angle) };
+			const torsoHeading = snapMechHeading(heading);
+			const poseRig = posedLegRig({ ...gait, body }, size, rig); const humanoid = rig.kneeDirection === 1;
+			hull.rotation.y = -body.angle; hull.position.y = poseRig.hipHeight - rig.hipHeight; turret.rotation.y = -torsoHeading;
 			const roll = gait.motion.roll * (humanoid ? 0.28 : 1); const pitch = gait.motion.pitch * (humanoid ? 0.5 : 1);
-			const sway = gait.motion.roll * (humanoid ? 6 : 26) * suspension; const relativeHeading = gait.body.angle - heading;
-			turret.position.set(-Math.sin(gait.body.angle) * sway, humanoid ? poseRig.hipHeight : rig.hipHeight + gait.motion.lift * suspension, Math.cos(gait.body.angle) * sway);
+			const sway = gait.motion.roll * (humanoid ? 6 : 26) * suspension; const relativeHeading = body.angle - torsoHeading;
+			turret.position.set(-Math.sin(body.angle) * sway, humanoid ? poseRig.hipHeight : rig.hipHeight + gait.motion.lift * suspension, Math.cos(body.angle) * sway);
 			turret.rotation.x = (Math.cos(relativeHeading) * roll - Math.sin(relativeHeading) * pitch) * suspension;
 			turret.rotation.z = (Math.sin(relativeHeading) * roll + Math.cos(relativeHeading) * pitch) * suspension;
 			const recoil = feedback?.recoil ?? 0;
@@ -137,20 +141,20 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			const legGait = feedback?.legGait ?? gait;
 			for (const leg of legs) {
 				const foot = footPose(legGait, leg.index, size, rig, !kind && chassis === 'kestrel' ? -27 : -16);
-				const joints = legJoints(gait.body, foot, leg.index, size, poseRig, foot.pitch);
-				const x = gait.body.x; const z = gait.body.y;
+				const joints = legJoints(body, foot, leg.index, size, poseRig, foot.pitch);
+				const x = body.x; const z = body.y;
 				start.set((joints.hip.x - x) / size, joints.hip.z / size, (joints.hip.y - z) / size);
 				end.set((joints.knee.x - x) / size, joints.knee.z / size, (joints.knee.y - z) / size);
-				orient(leg.upper, start, end, gait.body.angle); leg.hip.position.copy(start); leg.knee.position.copy(end);
+				orient(leg.upper, start, end, body.angle); leg.hip.position.copy(start); leg.knee.position.copy(end);
 				start.copy(end); end.set((joints.ankle.x - x) / size, joints.ankle.z / size, (joints.ankle.y - z) / size);
-				orient(leg.lower, start, end, gait.body.angle); leg.ankle.position.copy(end);
-				for (const joint of [leg.hip, leg.knee, leg.ankle]) joint.rotation.y = -gait.body.angle;
+				orient(leg.lower, start, end, body.angle); leg.ankle.position.copy(end);
+				for (const joint of [leg.hip, leg.knee, leg.ankle]) joint.rotation.y = -body.angle;
 				const contact = legGait.feet[leg.index];
 				leg.contact.position.set((contact.x - x) / size, contact.lift / size, (contact.y - z) / size); leg.contact.rotation.y = -contact.angle;
 				leg.foot.position.set(((foot.x - contact.x) * Math.cos(contact.angle) + (foot.y - contact.y) * Math.sin(contact.angle)) / size, (foot.lift - contact.lift) / size, 0);
 				leg.foot.rotation.z = foot.pitch;
 				if (leg.toes !== leg.foot) leg.toes.rotation.z = foot.toePitch;
-				const f = Math.cos(gait.body.angle); const s = Math.sin(gait.body.angle);
+				const f = Math.cos(body.angle); const s = Math.sin(body.angle);
 				start.set((joints.hip.x - x) / size + f * 8, joints.hip.z / size - 4, (joints.hip.y - z) / size + s * 8);
 				end.set((joints.knee.x - x) / size + f * 8, joints.knee.z / size + 2, (joints.knee.y - z) / size + s * 8);
 				link(leg.rod, start, end); end.lerp(start, 0.42); link(leg.sleeve, start, end);

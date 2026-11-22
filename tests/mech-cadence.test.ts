@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test';
-import { Texture } from 'three';
+import { Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { prepareAuthoredKestrel } from '../src/authored-mech';
 import { createContactCadence, createMechCadences } from '../src/mech-cadence';
-import { createGaits, advanceGaits } from '../src/gait';
+import { createGait, createGaits, advanceGaits } from '../src/gait';
 import { createMech } from '../src/mech-3d';
 import { createState, step, type Unit, type Squadmate } from '../src/simulation';
 
@@ -44,16 +44,55 @@ test('Kestrel exposes its landings and bounds while its chassis moves through he
 			const wasAirborne = previous.feet.every(function (foot) { return foot.lift > 0; });
 			if (airborne && !wasAirborne) { bounds++; showedBound = false; }
 			if (airborne && exposed) showedBound = true;
-			if (!airborne && wasAirborne) expect(showedBound).toBe(true);
+			// At eight poses per second the final braking bound can land before another airborne pose is shown.
+			if (!airborne && wasAirborne && !previous.running?.stopping) expect(showedBound).toBe(true);
 			previous = pose.gait;
 		}
 		expect(landings).toBeGreaterThan(15);
 		expect(bounds).toBeGreaterThan(5);
-		expect(heldSteps).toBeGreaterThan(400);
+		expect(540 - heldSteps).toBe(1 + 9 * 8); // Initial pose plus eight updates per second.
 		cadence.reset();
 		if (!state.authoredPose?.gait) throw new Error('Expected a final pose');
 		expect(cadence.visualGait(state.authoredPose.gait)).toBe(state.authoredPose.gait);
 	} finally { remove(); factory.dispose(); }
+});
+
+test('crossing a heading sector moves the hip and weapon sockets independently while the shoe stays planted', function () {
+	const model = createMech(undefined, false, 'longbow');
+	try {
+		const hull = model.root.getObjectByName('hull'), turret = model.root.getObjectByName('turret');
+		const hip = model.root.getObjectByName('hip'), shoe = model.root.getObjectByName('planted-foot');
+		const socket = model.root.getObjectByName('weapon-gimbal-0');
+		if (!hull || !turret || !hip || !shoe || !socket) throw new Error('Missing Longbow body, leg or weapon socket');
+		const gait = { ...createGait({ x: 0, y: 0, angle: 0 }), motion: { lift: 2, roll: 0.07, pitch: -0.05, impact: 0 } };
+		const degree = Math.PI / 180;
+		const pose = function (legs: number, aim: number) {
+			model.pose({ ...gait, body: { ...gait.body, angle: legs * degree } }, aim * degree);
+		};
+		pose(14, 70);
+		expect(hull.rotation.y).toBeCloseTo(0);
+		expect(turret.rotation.y).toBeCloseTo(-60 * degree);
+		const firstHip = hip.getWorldPosition(new Vector3()).setY(0);
+		const plant = shoe.matrixWorld.clone(), mount = socket.getWorldPosition(new Vector3());
+
+		pose(16, 74);
+		expect(hull.rotation.y).toBeCloseTo(-30 * degree);
+		expect(turret.rotation.y).toBeCloseTo(-60 * degree);
+		const torsoForward = new Vector3(1, 0, 0).transformDirection(turret.matrixWorld);
+		expect(Math.atan2(torsoForward.z, torsoForward.x)).toBeCloseTo(60 * degree, 10);
+		const rotatedHip = firstHip.applyAxisAngle(new Vector3(0, 1, 0), -30 * degree);
+		expect(hip.getWorldPosition(new Vector3()).setY(0).distanceTo(rotatedHip)).toBeLessThan(1e-8);
+		expect(socket.getWorldPosition(new Vector3()).distanceTo(mount)).toBeLessThan(1e-8);
+		expect(shoe.matrixWorld.equals(plant)).toBe(true);
+
+		pose(16, 76);
+		expect(hull.rotation.y).toBeCloseTo(-30 * degree);
+		expect(turret.rotation.y).toBeCloseTo(-90 * degree);
+		expect(socket.getWorldPosition(new Vector3()).distanceTo(mount)).toBeGreaterThan(1);
+		const barrel = new Vector3(1, 0, 0).transformDirection(socket.matrixWorld);
+		expect(Math.atan2(barrel.z, barrel.x)).toBeCloseTo(90 * degree);
+		expect(shoe.matrixWorld.equals(plant)).toBe(true);
+	} finally { model.dispose(); }
 });
 
 test('independent leg samples follow walkers through a squad turn and leave hulls, gun sockets and vehicles live', function () {

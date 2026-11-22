@@ -3,7 +3,8 @@ import { Vector3 } from 'three';
 import { FRAMES } from '../src/frames';
 import { createGait } from '../src/gait';
 import { createMech } from '../src/mech-3d';
-import { getEnemyMuzzle, getEnemyWeaponRig, getFiringDirection, getPlayerMuzzle, getPlayerWeaponRig, weaponPivot, type SpatialPoint } from '../src/weapon-rig';
+import { getEnemyMuzzle, getEnemyWeaponRig, getFiringDirection, getPlayerFiringDirection, getPlayerMuzzle, getPlayerWeaponRig, weaponPivot, type SpatialPoint } from '../src/weapon-rig';
+import { snapMechHeading } from '../src/torso-arc';
 
 const assertPosition = function (actual: Vector3 | undefined, expected: SpatialPoint, body: { x: number; y: number }) {
 	if (!actual) throw new Error('Missing physical weapon muzzle');
@@ -24,8 +25,11 @@ test('every player mount and pod tube shares combat geometry through target elev
 					for (const index of rig.tubes.keys()) assertPosition(model.rocketMuzzles[slot]?.[index], getPlayerMuzzle(frame.id, slot, body, heading, index, target), body);
 					const gimbal = model.root.getObjectByName(`weapon-gimbal-${slot}`); if (!gimbal) throw new Error('Missing weapon articulation');
 					const actual = new Vector3(1, 0, 0).transformDirection(gimbal.matrixWorld);
-					const direction = getFiringDirection(weaponPivot(rig, body, heading), heading, target);
-					expect(actual.distanceTo(new Vector3(direction.x, direction.elevation, direction.y))).toBeLessThan(0.000001);
+					const pivot = weaponPivot(rig, body, heading);
+					const barrel = getFiringDirection(pivot, snapMechHeading(heading), target);
+					expect(actual.distanceTo(new Vector3(barrel.x, barrel.elevation, barrel.y))).toBeLessThan(0.000001);
+					const aim = getPlayerFiringDirection(frame.id, slot, body, heading, getPlayerMuzzle(frame.id, slot, body, heading, undefined, target), target);
+					expect(aim).toEqual(getFiringDirection(pivot, heading, target));
 				}
 			}
 		} finally { model.dispose(); }

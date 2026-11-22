@@ -7,6 +7,7 @@ import { createMech } from '../src/mech-3d';
 import { alignCamera, toGround, viewScale } from '../src/projection-3d';
 import { createState } from '../src/simulation';
 import type { EnemyKind } from '../src/simulation';
+import { snapMechHeading } from '../src/torso-arc';
 
 test('orthographic camera matches Canvas positions and ground picking through resize and movement', function () {
 	const state = createState(); const view = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
@@ -93,8 +94,8 @@ for (const config of configurations) {
 					const surfaces = renderedParts(foot); expect(surfaces.length).toBeGreaterThan(0);
 					for (const surface of surfaces) expect(surface.matrixWorld.elements.every(Number.isFinite)).toBe(true);
 				}
-				expect(requirePart(model.root, 'hull').rotation.y).toBeCloseTo(-gait.body.angle);
-				expect(requirePart(model.root, 'turret').rotation.y).toBeCloseTo(tick / 60);
+				expect(requirePart(model.root, 'hull').rotation.y).toBeCloseTo(-snapMechHeading(gait.body.angle));
+				expect(requirePart(model.root, 'turret').rotation.y).toBeCloseTo(-snapMechHeading(-tick / 60));
 			}
 		} finally { model.dispose(); }
 	});

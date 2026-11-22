@@ -9,7 +9,7 @@ import { coolingStep, createState, movementStep, type Controls } from '../src/si
 import { createMech } from '../src/mech-3d';
 import { getPlayerMuzzle, getPlayerWeaponRig } from '../src/weapon-rig';
 
-test('retained Kestrel preserves equipped slots, fixed-step contacts and firing origins through full-speed movement', async function () {
+test('Kestrel snaps its pelvis and torso independently while preserving foot plants and firing origins', async function () {
 	const loader = new GLTFLoader().register(function () { return { name: 'HEADLESS_KESTREL', loadTexture: async function () { return new Texture(); } }; });
 	const asset = await loader.parseAsync(await Bun.file(new URL('../public/assets/mechs/kestrel/game-ready.glb', import.meta.url)).arrayBuffer(), '');
 	const procedural = createMech(undefined, false, 'kestrel');
@@ -17,6 +17,7 @@ test('retained Kestrel preserves equipped slots, fixed-step contacts and firing 
 	const expectedHeight = new Box3().setFromObject(procedural.root).getSize(new Vector3()).y; procedural.dispose();
 	const factory = prepareAuthoredKestrel(asset); expect(factory.height).toBeCloseTo(expectedHeight, 6); const remove = factory.install(); const model = createMech(undefined, false, 'kestrel');
 	const named = function (name: string): Object3D { const node = model.root.getObjectByName(name); if (!node) throw new Error(`Missing ${name}`); return node; };
+	const pelvis = named('rig_pelvis'); const torso = named('rig_torso'); const forward = new Vector3();
 	const feet = ['left', 'right'].map(function (side) { return named(`rig_leg_${side}_foot`); });
 	const footVertices = feet.map(function (foot) {
 		const vertices: { mesh: Mesh; point: Vector3 }[] = [];
@@ -45,6 +46,11 @@ test('retained Kestrel preserves equipped slots, fixed-step contacts and firing 
 				const heading = state.player.angle + Math.sin(tick / 25);
 				model.root.position.set(state.player.x, 0, state.player.y);
 				model.pose(createGait(state.player), heading, { recoil: 0, hit: 0, heat: 0, time: state.time, authoredPose: context, equippedSlots: [0] });
+				for (const [node, angle] of [[pelvis, state.player.angle], [torso, heading]] as const) {
+					node.getWorldDirection(forward);
+					const expected = Math.round(angle / (Math.PI / 6)) * (Math.PI / 6);
+					expect(Math.cos(Math.atan2(forward.z, forward.x) - expected)).toBeCloseTo(1, 12);
+				}
 				maximumMuzzleError = Math.max(maximumMuzzleError, authoredMuzzleError(model, factory.weaponRigs, createGait(state.player), heading, undefined, context, 'kestrel'));
 				for (const [index, foot] of feet.entries()) {
 					const old = before?.gait?.feet[index]; const contact = gait.feet[index]; const position = positions[index]; const rotation = rotations[index];

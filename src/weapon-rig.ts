@@ -4,6 +4,7 @@ import { FRAME_RIGS } from './frame-rig';
 import { getHardpoints } from './hardpoints';
 import { getMechAssetBinding } from './mech-asset-registry';
 import type { EnemyKind, Point } from './simulation';
+import { snapMechHeading } from './torso-arc';
 
 export interface SpatialPoint extends Point { elevation: number }
 export interface WeaponBody extends Point { angle?: number; hullAngle?: number }
@@ -12,6 +13,7 @@ export interface WeaponRig {
 	readonly pivot: SpatialPoint;
 	readonly tubes: readonly SpatialPoint[];
 	readonly hullMounted?: boolean;
+	readonly mechTorsoMounted?: boolean;
 }
 
 const mount = function (x: number, elevation: number, y: number, tubes: readonly SpatialPoint[] = []): WeaponRig {
@@ -22,9 +24,9 @@ const shoulderTubes = [0, 1].flatMap(function (row) { return [-1, 0, 1].map(func
 const rackTubes = function (rows: number, width: number): readonly SpatialPoint[] {
 	return [-1, 0, 1].flatMap(function (column) { return Array.from({ length: rows }, function (_, row) { return { x: 0, y: column * width / 3.4, elevation: row * 8 }; }); });
 };
-const scaleRig = function (rig: WeaponRig, size: number, rise = 0): WeaponRig {
+const scaleMechRig = function (rig: WeaponRig, size: number, rise = 0): WeaponRig {
 	const scale = function (point: SpatialPoint): SpatialPoint { return { x: point.x * size, y: point.y * size, elevation: (point.elevation + rise) * size }; };
-	return { muzzle: scale(rig.muzzle), pivot: scale(rig.pivot), tubes: rig.tubes.map(function (point) { return { x: point.x * size, y: point.y * size, elevation: point.elevation * size }; }) };
+	return { mechTorsoMounted: true, muzzle: scale(rig.muzzle), pivot: scale(rig.pivot), tubes: rig.tubes.map(function (point) { return { x: point.x * size, y: point.y * size, elevation: point.elevation * size }; }) };
 };
 const playerRigs = new Map<FrameId, readonly WeaponRig[]>();
 export const getPlayerWeaponRig = function (frame: FrameId): readonly WeaponRig[] {
@@ -43,7 +45,7 @@ export const getPlayerWeaponRig = function (frame: FrameId): readonly WeaponRig[
 			case 'rook': return slot === 2 ? mount(3.3, 104, 0, compactTubes) : mount(family === 'ballistic' ? 48.2 : 47.2, 53, side * 29);
 		}
 	});
-	const result = rigs.map(function (rig) { return scaleRig(rig, definition.size, FRAME_RIGS[frame].torsoRise ?? 0); });
+	const result = rigs.map(function (rig) { return scaleMechRig(rig, definition.size, FRAME_RIGS[frame].torsoRise ?? 0); });
 	playerRigs.set(frame, result); return result;
 };
 export const getEnemyWeaponRig = function (kind: EnemyKind, commander = false): readonly WeaponRig[] {
@@ -58,7 +60,7 @@ export const getEnemyWeaponRig = function (kind: EnemyKind, commander = false): 
 	const rigs = [-1, 1].map(function (side) { return mount(26.7 + gunLength / 2, 55.5, side * 34); });
 	if (kind !== 'scout') rigs.push(...[-1, 1].map(function (side) { return mount(2.8, 78.2, side * 34, shoulderTubes); }));
 	if (kind === 'siege' || commander) rigs.push(mount(commander ? 33.2 : 39.7, commander ? 102 : 101, 0));
-	return rigs.map(function (rig) { return scaleRig(rig, size); });
+	return rigs.map(function (rig) { return scaleMechRig(rig, size); });
 };
 export const getFiringDirection = function (origin: SpatialPoint, heading: number, target?: SpatialPoint): SpatialPoint {
 	if (!target) return { x: Math.cos(heading), y: Math.sin(heading), elevation: 0 };
@@ -66,13 +68,16 @@ export const getFiringDirection = function (origin: SpatialPoint, heading: numbe
 	const length = Math.hypot(dx, dy, dz);
 	return length > 0.000001 ? { x: dx / length, y: dy / length, elevation: dz / length } : { x: Math.cos(heading), y: Math.sin(heading), elevation: 0 };
 };
+const mountHeading = function (rig: WeaponRig, heading: number) {
+	return rig.mechTorsoMounted ? snapMechHeading(heading) : heading;
+};
 export const weaponPivot = function (rig: WeaponRig, body: WeaponBody, heading: number): SpatialPoint {
-	const bearing = rig.hullMounted ? body.hullAngle ?? body.angle ?? heading : heading;
+	const bearing = rig.hullMounted ? body.hullAngle ?? body.angle ?? heading : mountHeading(rig, heading);
 	return { x: body.x + Math.cos(bearing) * rig.pivot.x - Math.sin(bearing) * rig.pivot.y, y: body.y + Math.sin(bearing) * rig.pivot.x + Math.cos(bearing) * rig.pivot.y, elevation: rig.pivot.elevation };
 };
 export const weaponDirection = function (rig: WeaponRig, body: WeaponBody, heading: number, target?: SpatialPoint): SpatialPoint {
 	const pivot = weaponPivot(rig, body, heading);
-	if (!target) return getFiringDirection(pivot, heading);
+	if (!target) return getFiringDirection(pivot, mountHeading(rig, heading));
 	// Gimbals converge toward targets ahead, without swiveling backward through the chassis.
 	const forward = (target.x - pivot.x) * Math.cos(heading) + (target.y - pivot.y) * Math.sin(heading);
 	const adjustment = Math.max(0, 1 - forward);
@@ -129,5 +134,6 @@ export const getPlayerFiringDirection = function (frame: FrameId, slot: number, 
 	}
 	const rig = getPlayerWeaponRig(frame)[slot];
 	if (!rig) throw new RangeError(`Missing weapon rig ${frame}/${slot}`);
-	return weaponDirection(rig, body, heading, target);
+	// Untracked shots follow the pilot's aim between visual sectors. Tracked gimbals converge on the target.
+	return target ? weaponDirection(rig, body, heading, target) : getFiringDirection(origin, heading);
 };
