@@ -1,4 +1,4 @@
-import { getWeapon, WEAPON_FAMILY_LABELS, type WeaponDefinition } from './arsenal';
+import { getWeapon, WEAPON_FAMILY_LABELS, WEAPON_SIZE_LABELS, type WeaponDefinition, type WeaponFamily, type WeaponSize } from './arsenal';
 import { frameWeight, loadedMounts } from './combat-resources';
 import type { Loadout } from './company';
 import type { FrameId } from './frames';
@@ -11,6 +11,9 @@ export const MOUNTS = [
 	{ action: 'mount-3', mouse: 'THUMB', pad: 'LB / L1', key: '4', button: 3 },
 ] as const;
 export const massLabel = function (mass: number) { return `${mass.toFixed(3).replace(/\.?0+$/, '')} t`; };
+export const weaponClassLabel = function (family: WeaponFamily, size: WeaponSize) {
+	return `${WEAPON_SIZE_LABELS[size]} ${WEAPON_FAMILY_LABELS[family]}`;
+};
 export const sustainedHeat = function (weapon: WeaponDefinition) { return weapon.kind === 'laser' ? weapon.heat : weapon.heat / weapon.interval; };
 export const supplySummary = function (loadout: Loadout, reserves: readonly number[]): string {
 	return loadout.flatMap(function (id, slot) {
@@ -27,6 +30,11 @@ export const loadSummary = function (frame: FrameId, loadout: Loadout, reserves:
 
 export const hardpointSummary = function (frame: FrameId): string {
 	const hardpoints = getHardpoints(frame);
-	const families = [...new Set(hardpoints.map(function (hardpoint) { return hardpoint.family; }))];
-	return `${hardpoints.length} ${hardpoints.length === 1 ? 'hardpoint' : 'hardpoints'}: ${families.map(function (family) { return `${hardpoints.filter(function (hardpoint) { return hardpoint.family === family; }).length} ${WEAPON_FAMILY_LABELS[family].toLowerCase()}`; }).join(' / ')}.`;
+	const counts = new Map<string, number>();
+	for (const { family, maxSize } of hardpoints) {
+		const label = weaponClassLabel(family, maxSize);
+		counts.set(label, (counts.get(label) ?? 0) + 1);
+	}
+	const mounts = Array.from(counts, function ([label, count]) { return `${count} ${label}`; });
+	return `${hardpoints.length} ${hardpoints.length === 1 ? 'hardpoint' : 'hardpoints'}: ${mounts.join(' / ')}.`;
 };

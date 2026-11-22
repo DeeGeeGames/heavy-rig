@@ -261,13 +261,14 @@ and refitted elsewhere.
 
 | Chassis | A | B | C |
 | --- | --- | --- | --- |
-| Kestrel | Skirmisher: 2 light B | Spark: light B + compact E | Harrier: light B + compact L |
-| Warden | Line: 2B + 2L | Battery: 2B + 2E | Combined: 2B + E + L |
-| Maul | Breacher: 2L | Breaker: 2B | Furnace: B + E |
+| Kestrel | Skirmisher: 2 Small B | Spark: Small B + Small E | Harrier: Small B + Small L |
+| Warden | Line: 2 Medium B + 2 Large L | Battery: 2 Medium B + 2 Medium E | Combined: 2 Medium B + Medium E + Large L |
+| Maul | Breacher: 2 Large L | Breaker: 2 Medium B | Furnace: Medium B + Medium E |
 
-B means ballistic, E energy, and L launcher. Light ballistic mounts accept only
-Rattler; compact energy mounts accept only ARC; compact launchers accept only
-two-round rocket/missile weapons. Full mounts retain their family weapon choices.
+B means ballistic, E energy, and L launcher. Each hardpoint holds one weapon
+of the same family, up to its listed size. Rattler and ARC are Small. AC/38
+and Tempest are Medium. Launcher /2, /4, and /6 models are Small, Medium,
+and Large respectively.
 
 Original A-variant specifications:
 
@@ -294,15 +295,14 @@ Original A-variant hardpoints:
 
 | Frame | Hardpoints | Accepted weapons |
 | --- | --- | --- |
-| Kestrel | Two light ballistic side guns | Rattler machine guns |
-| Warden | Two ballistic side guns, two shoulder launchers | Rattler / AC/38 in guns; missiles / rockets in pods |
-| Maul | Two forearm launchers | Missiles / rockets |
+| Kestrel | Two Small ballistic side guns | Rattler machine guns |
+| Warden | Two Medium ballistic side guns, two Large shoulder launchers | Rattler / AC/38 in guns; missiles / rockets in pods |
+| Maul | Two Large forearm launchers | Missiles / rockets |
 
-The Mech Bay names each location and its allowed weapons. The market shows weapon
-families and compatible chassis before purchase. Empty and nonexistent slots cannot
-fire; equipment positions retain their matching controls. One pod is one hardpoint,
-regardless of its launch-tube count. Geometry and mount-origin rendering are unchanged
-in this equipment-foundation pass.
+The Mech Bay shows each mount's location, family, and size limit. The Market
+shows weapon size, family, and compatible chassis before purchase. Empty and
+nonexistent slots cannot fire. Each slot retains its matching controls. One
+pod occupies one hardpoint, regardless of its launch-tube count.
 
 All frames share the same driving and aiming controls. Integrity is a
 percentage; each frame's protection changes the damage received. Kestrel uses
@@ -350,7 +350,7 @@ firing cycle, range, sustained heat, projectile speed, and spread.
 
 Higher tiers improve damage, range, cycling, heat efficiency, projectile speed,
 and existing spread. Continuous beams keep continuous fire. Hardware mass,
-round capacity, salvo size, splash radius, and hardpoint compatibility stay tied
+round capacity, salvo size, splash radius, and weapon size stay tied
 to the weapon model. Each model-and-tier combination is separate owned equipment;
 there is no combat rank or automatic equipment leveling. Replacing tier 0 with a
 higher tier requires buying that copy and completing a normal refit. Fixed

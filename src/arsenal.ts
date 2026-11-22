@@ -36,6 +36,8 @@ export const weaponIdForTier = function (model: WeaponModelId, tier: WeaponTier)
 };
 export type WeaponFamily = 'ballistic' | 'energy' | 'launcher';
 export const WEAPON_FAMILY_LABELS: Readonly<Record<WeaponFamily, string>> = { ballistic: 'Ballistic', energy: 'Energy', launcher: 'Launcher' };
+export type WeaponSize = 'small' | 'medium' | 'large';
+export const WEAPON_SIZE_LABELS: Readonly<Record<WeaponSize, string>> = { small: 'Small', medium: 'Medium', large: 'Large' };
 export type FireInputs = readonly [boolean, boolean, boolean, boolean];
 export interface WeaponMount { weapon: WeaponId; rounds: number; cooldown: number; firing: boolean; rocketVolley?: { remaining: number; nextIn: number }; slot?: number }
 export interface AmmunitionDefinition { mass: number; capacity: number; defaultLoad: number }
@@ -46,6 +48,7 @@ export interface WeaponDefinition {
 	modelId: WeaponModelId;
 	tier: WeaponTier;
 	family: WeaponFamily;
+	size: WeaponSize;
 	name: string;
 	type: string;
 	description: string;
@@ -66,14 +69,14 @@ export interface WeaponDefinition {
 type HardwareWeapon = Omit<WeaponDefinition, 'modelId' | 'tier' | 'id'> & { id: WeaponModelId };
 type BaseWeapon = Omit<WeaponDefinition, 'mass' | 'ammunition' | 'modelId' | 'tier' | 'id'> & { id: WeaponModelId };
 const BASE_WEAPONS: readonly BaseWeapon[] = [
-	{ id: 'autocannon', family: 'ballistic', name: 'AC/38', type: 'Auto Cannon', role: 'Precise impact', description: 'Heavy, accurate shells. Reliable opening fire with modest reactor demand.', color: '#ffd28b', icon: '╋', kind: 'cannon', damage: 38, interval: 1, heat: 7, range: 845, speed: 650, projectiles: 1, spread: 0, splash: 0 },
-	{ id: 'laser', family: 'energy', name: 'ARC', type: 'Laser', role: 'Continuous beam', description: 'A continuous beam that stops at the first target. Track steadily; watch your heat.', color: '#8ff5e7', icon: 'ϟ', kind: 'laser', damage: 56, interval: 0, heat: 20, range: 620, speed: 0, projectiles: 1, spread: 0, splash: 0 },
-	{ id: 'machine-gun', family: 'ballistic', name: 'RATTLER', type: 'Machine Gun', role: 'Cool sustained fire', description: 'Rapid low-heat tracers with a narrow spread. Best against nearby light frames.', color: '#fff2ba', icon: '≋', kind: 'bullet', damage: 4, interval: 0.16, heat: 0.45, range: 700, speed: 1000, projectiles: 1, spread: 0.035, splash: 0 },
-	{ id: 'ppc', family: 'energy', name: 'TEMPEST', type: 'Particle Projection Cannon', role: 'Piercing pulse', description: 'A fast charged particle bolt punches through a line of frames. Long recharge; heavy heat.', color: '#b1a0ff', icon: '◉', kind: 'ppc', damage: 160, interval: 2.4, heat: 36, range: 1000, speed: 2200, projectiles: 1, spread: 0, splash: 0 },
-	{ id: 'stream-missiles', family: 'launcher', name: 'NEEDLE', type: 'Stream Missiles', role: 'Guided pressure', description: 'A steady stream of guided missiles follows your selected target after acquisition.', color: '#9be99e', icon: '↗', kind: 'missile', damage: 25, interval: 1.8, heat: 2.5, range: 1050, speed: 1200, projectiles: 1, spread: 0, splash: 0 },
-	{ id: 'cluster-missiles', family: 'launcher', name: 'TRIDENT', type: 'Cluster Missiles', role: 'Guided area salvo', description: 'Guided warheads fan out, converge and burst against clustered enemies.', color: '#b7e876', icon: '⋀', kind: 'missile', damage: 30, interval: 1.4, heat: 5, range: 1080, speed: 1080, projectiles: 3, spread: 0.28, splash: 65 },
-	{ id: 'stream-rockets', family: 'launcher', name: 'LANCE', type: 'Stream Rockets', role: 'Unguided pressure', description: 'Fast rockets fly straight along the turret bearing. Lead moving targets.', color: '#ffad6a', icon: '⇢', kind: 'rocket', damage: 31, interval: 1.7, heat: 2.5, range: 1000, speed: 2080, projectiles: 1, spread: 0, splash: 0 },
-	{ id: 'cluster-rockets', family: 'launcher', name: 'HAILSTORM', type: 'Cluster Rockets', role: 'Unguided area volley', description: 'Unguided rockets fire straight forward from random tubes in the pod. Lead moving targets.', color: '#ff837a', icon: '⋔', kind: 'rocket', damage: 32, interval: 1.3, heat: 4.5, range: 900, speed: 1880, projectiles: 5, spread: 0, splash: 80 },
+	{ id: 'autocannon', family: 'ballistic', size: 'medium', name: 'AC/38', type: 'Auto Cannon', role: 'Precise impact', description: 'Heavy, accurate shells. Reliable opening fire with modest reactor demand.', color: '#ffd28b', icon: '╋', kind: 'cannon', damage: 38, interval: 1, heat: 7, range: 845, speed: 650, projectiles: 1, spread: 0, splash: 0 },
+	{ id: 'laser', family: 'energy', size: 'small', name: 'ARC', type: 'Laser', role: 'Continuous beam', description: 'A continuous beam that stops at the first target. Track steadily; watch your heat.', color: '#8ff5e7', icon: 'ϟ', kind: 'laser', damage: 56, interval: 0, heat: 20, range: 620, speed: 0, projectiles: 1, spread: 0, splash: 0 },
+	{ id: 'machine-gun', family: 'ballistic', size: 'small', name: 'RATTLER', type: 'Machine Gun', role: 'Cool sustained fire', description: 'Rapid low-heat tracers with a narrow spread. Best against nearby light frames.', color: '#fff2ba', icon: '≋', kind: 'bullet', damage: 4, interval: 0.16, heat: 0.45, range: 700, speed: 1000, projectiles: 1, spread: 0.035, splash: 0 },
+	{ id: 'ppc', family: 'energy', size: 'medium', name: 'TEMPEST', type: 'Particle Projection Cannon', role: 'Piercing pulse', description: 'A fast charged particle bolt punches through a line of frames. Long recharge; heavy heat.', color: '#b1a0ff', icon: '◉', kind: 'ppc', damage: 160, interval: 2.4, heat: 36, range: 1000, speed: 2200, projectiles: 1, spread: 0, splash: 0 },
+	{ id: 'stream-missiles', family: 'launcher', size: 'small', name: 'NEEDLE', type: 'Stream Missiles', role: 'Guided pressure', description: 'A steady stream of guided missiles follows your selected target after acquisition.', color: '#9be99e', icon: '↗', kind: 'missile', damage: 25, interval: 1.8, heat: 2.5, range: 1050, speed: 1200, projectiles: 1, spread: 0, splash: 0 },
+	{ id: 'cluster-missiles', family: 'launcher', size: 'small', name: 'TRIDENT', type: 'Cluster Missiles', role: 'Guided area salvo', description: 'Guided warheads fan out, converge and burst against clustered enemies.', color: '#b7e876', icon: '⋀', kind: 'missile', damage: 30, interval: 1.4, heat: 5, range: 1080, speed: 1080, projectiles: 3, spread: 0.28, splash: 65 },
+	{ id: 'stream-rockets', family: 'launcher', size: 'small', name: 'LANCE', type: 'Stream Rockets', role: 'Unguided pressure', description: 'Fast rockets fly straight along the turret bearing. Lead moving targets.', color: '#ffad6a', icon: '⇢', kind: 'rocket', damage: 31, interval: 1.7, heat: 2.5, range: 1000, speed: 2080, projectiles: 1, spread: 0, splash: 0 },
+	{ id: 'cluster-rockets', family: 'launcher', size: 'small', name: 'HAILSTORM', type: 'Cluster Rockets', role: 'Unguided area volley', description: 'Unguided rockets fire straight forward from random tubes in the pod. Lead moving targets.', color: '#ff837a', icon: '⋔', kind: 'rocket', damage: 32, interval: 1.3, heat: 4.5, range: 900, speed: 1880, projectiles: 5, spread: 0, splash: 80 },
 ];
 // Bare launcher model IDs denote the compact two-round variants.
 const hardware = function (weapon: BaseWeapon): HardwareWeapon {
@@ -82,13 +85,14 @@ const hardware = function (weapon: BaseWeapon): HardwareWeapon {
 	if (weapon.kind === 'cannon') return { ...weapon, mass: 6, ammunition: { mass: 0.025, capacity: 480, defaultLoad: 240 } };
 	return { ...weapon, mass: weapon.kind === 'missile' ? 6 : 5, ammunition: { mass: weapon.kind === 'missile' ? 0.025 : 0.018, capacity: 720, defaultLoad: 360 } };
 };
+const LAUNCHER_SIZES = { 2: 'small', 4: 'medium', 6: 'large' } as const;
 const MODELS = BASE_WEAPONS.map(hardware).flatMap(function (weapon): HardwareWeapon[] {
 	if (weapon.id !== 'stream-missiles' && weapon.id !== 'cluster-missiles' && weapon.id !== 'stream-rockets' && weapon.id !== 'cluster-rockets') return [weapon];
 	const launcherId = weapon.id;
 	return ([2, 4, 6] as const).map(function (rounds): HardwareWeapon {
 		const id: WeaponModelId = rounds === 2 ? weapon.id : `${launcherId}-${rounds}`;
 		const stream = weapon.id.startsWith('stream-');
-		return { ...weapon, id, name: `${weapon.name}/${rounds}`, type: `${weapon.type} ${rounds}`, projectiles: rounds, stream,
+		return { ...weapon, id, size: LAUNCHER_SIZES[rounds], name: `${weapon.name}/${rounds}`, type: `${weapon.type} ${rounds}`, projectiles: rounds, stream,
 			description: `${rounds} ${weapon.kind === 'missile' ? 'guided missiles' : 'unguided rockets'} fire ${stream ? 'in sequence' : weapon.kind === 'rocket' ? 'in a staggered volley' : 'together in a fan'}. ${weapon.splash ? 'Explosions damage nearby enemies.' : 'Direct impact damage.'}`,
 			// Heat is specified per warhead; larger pods trade burst damage for reactor demand.
 			mass: weapon.mass + (rounds - 2) * 1.5, interval: Math.max(weapon.interval, rounds * 0.1), heat: weapon.heat * rounds };
