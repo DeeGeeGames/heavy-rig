@@ -16,6 +16,7 @@ import { getMechAssetBinding } from './mech-asset-registry';
 import { SKIN_PALETTES, supportsMechSkin, type MechSkinId } from './mech-skin';
 import { applyMechSkinMaterial } from './mech-skin-material';
 import { snapMechHeading } from './torso-arc';
+import { createLegPoseSampling } from './leg-pose-sampling';
 
 export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
 
@@ -93,6 +94,9 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	});
 	turret.position.y = rig.hipHeight;
 	const poseWeapons = articulateWeapons(root, hardware.assemblies, kind ? getEnemyWeaponRig(kind, commander) : getPlayerWeaponRig(frame));
+	const sampleLegPose = createLegPoseSampling(legs.flatMap(function (leg) {
+		return [leg.upper, leg.lower, leg.hip, leg.knee, leg.ankle, leg.sleeve, leg.rod, leg.contact, leg.foot, leg.toes];
+	}));
 	parts.batch(root);
 	if (finish !== 'original') applyMechSkinMaterial(parts.solid, finish, { surface: 'procedural', scale: new Vector3(0.01, 0.01, 0.01) });
 	root.userData['mechSkin'] = finish;
@@ -159,6 +163,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 				end.set((joints.knee.x - x) / size + f * 8, joints.knee.z / size + 2, (joints.knee.y - z) / size + s * 8);
 				link(leg.rod, start, end); end.lerp(start, 0.42); link(leg.sleeve, start, end);
 			}
+			sampleLegPose(feedback?.legGait);
 			root.updateMatrixWorld(true); inverseRoot.copy(root.matrixWorld).invert();
 			for (const [index, anchor] of hardware.muzzles.entries()) muzzles[index]?.setFromMatrixPosition(anchor.matrixWorld).applyMatrix4(inverseRoot);
 			for (const [slot, tubes] of rocketTubes.entries()) for (const [index, tube] of tubes.entries()) rocketMuzzles[slot]?.[index]?.setFromMatrixPosition(tube.matrixWorld).applyMatrix4(inverseRoot);

@@ -6,10 +6,12 @@ refits, accept faction contracts, and extract from surface missions. Persistent
 throttle and independent turret tracking remain the combat core.
 
 The title scene, rig previews and battlefields use solid-ink contours and stepped
-color ramps. Mechs sample their legs at eight poses per second while walking,
-reversing and running, favoring footfalls. The pelvis and upper torso turn
-independently in 30° steps. Chassis travel, targeting and weapon effects update
-at game speed. The game uses standard Three.js rendering on GPUs
+color ramps. Walking and reversing expose four leg poses per step; running
+uses eight poses per second, favoring footfalls. Each sample holds the complete
+solved leg pose until the next sample, so moving hips do not smooth the legs
+between stills. Held poses can slide with chassis travel. The pelvis and upper
+torso turn independently in 15° steps. Chassis travel, targeting and weapon
+effects update at game speed. The game uses standard Three.js rendering on GPUs
 that cannot run the ink pass.
 
 A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,

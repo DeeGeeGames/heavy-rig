@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { installMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
 import type { WalkerGait } from './gait';
 import type { MechFeedback } from './mech-3d';
+import { createLegPoseSampling } from './leg-pose-sampling';
 import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
 import { snapMechHeading } from './torso-arc';
@@ -230,6 +231,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		const muzzles = weapons.map(function () { return new Vector3(); });
 		const rocketMuzzles = weapons.map(function (weapon) { return weapon.exits.map(function () { return new Vector3(); }); });
 		const legs = (['left', 'right'] as const).map(function (side) { return { thigh: named(scene, `rig_leg_${side}_thigh`), shin: named(scene, `rig_leg_${side}_shin`), foot: named(scene, `rig_leg_${side}_foot`) }; });
+		const sampleLegPose = createLegPoseSampling(legs.flatMap(function (leg) { return [leg.thigh, leg.shin, leg.foot]; }));
 		const y = new Vector3(0, 1, 0); const yaw = new Quaternion(); const inverse = new Matrix4();
 		const position = new Vector3(); const labelVertex = new Vector3(); const relative = new Matrix4();
 		const bounds: { part: Mesh; corners: Vector3[] }[] = [];
@@ -261,6 +263,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 				const leg = legs[solved.index]; if (!leg) throw new Error('Missing authored leg');
 				leg.thigh.quaternion.copy(solved.thigh); leg.shin.quaternion.copy(solved.shin); leg.foot.quaternion.copy(solved.foot);
 			}
+			sampleLegPose(feedback?.legGait);
 			// Empty authored equipment slots hide only the interchangeable assembly.
 			// Mount brackets remain torso-owned, and simulation retains slot anchors.
 			if (descriptor.frame !== 'warden') for (const [slot, weapon] of weapons.entries()) weapon.mount.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
