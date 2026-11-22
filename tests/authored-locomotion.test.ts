@@ -6,7 +6,7 @@ import { createGait } from '../src/gait';
 import { createContactCadence } from '../src/mech-cadence';
 import { coolingStep, createState, movementStep, type Controls } from '../src/simulation';
 
-test('Warden holds eight leg samples per walk cycle while world plants and independent aim stay live', async function () {
+test('Warden unsampled IK preserves world plants and independent aim through the walking cadence', async function () {
 	const loader = new GLTFLoader().register(function () { return { name: 'HEADLESS_LOCOMOTION', loadTexture: async function () { return new Texture(); } }; });
 	const asset = await loader.parseAsync(await Bun.file(new URL('../public/assets/mechs/warden/game-ready.glb', import.meta.url)).arrayBuffer(), '');
 	const factory = prepareAuthoredWarden(asset); const remove = factory.install(); const model = factory.create();
@@ -45,7 +45,7 @@ test('Warden holds eight leg samples per walk cycle while world plants and indep
 			const legGait = gait.running ? gait : cadence.visualGait(gait);
 			model.root.position.set(body.x, 0, body.y);
 			const heading = body.angle + Math.sin(tick / 35);
-			model.pose(createGait(body), heading, { recoil: 0, hit: 0, heat: 0, time: tick / 60, authoredPose: context, legGait });
+			model.pose(createGait(body), heading, { recoil: 0, hit: 0, heat: 0, time: tick / 60, authoredPose: context });
 			maximumMuzzleError = Math.max(maximumMuzzleError, authoredMuzzleError(model, factory.weaponRigs, createGait(body), heading, undefined, context));
 			const hullYaw = Math.round(body.angle * 12 / Math.PI) * Math.PI / 12;
 			const torsoYaw = Math.round(heading * 12 / Math.PI) * Math.PI / 12;
