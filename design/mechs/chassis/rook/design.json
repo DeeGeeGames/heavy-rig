@@ -1,0 +1,19 @@
+{
+  "chassisId": "rook",
+  "activeBaseline": "rook-a-square-slate",
+  "baselines": [
+    {
+      "id": "rook-a-square-slate",
+      "status": "approved",
+      "image": "design/mechs/chassis/rook/concept/a/image.png",
+      "imageSha256": "3ef6b57d88be21bd0b9301974a3ce40189021aedd17136be0900182c69d3882c",
+      "request": "design/mechs/chassis/rook/concept/a/request.json",
+      "requestSha256": "edc932fcb604ab85c1fda07ad080c7a048069e0e4733bda6d2a2f9f4c2c124b9",
+      "prompt": "design/mechs/chassis/rook/concept/a/imagegen-prompt.txt",
+      "contractSignature": "a52dce3522675d0cd854b4d7147e6e0c6258fd048e7621fea3c4972ee24c43b7",
+      "familyReview": "design/mechs/chassis/rook/concept/a/family-review.json",
+      "approval": "On 2026-11-22 the owner selected Square Slate (design B) as the Rook A concept: “This is good. Let's go ahead and lock in design B. We'll proceed with the rest of the asset creation process later.”"
+    }
+  ],
+  "variants": []
+}

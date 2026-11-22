@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "scope": "Attach the actual PNG files to the image generator; writing their paths in a prompt does not attach them.",
+  "attachments": [
+    {
+      "role": "finish-reference",
+      "image": "design/mechs/assets/playable-a-lineup.png",
+      "imageSha256": "d01986dddebe41090e1355ee914e4e2dce9a15ccb3cfce21e3f2cd1588cda203"
+    },
+    {
+      "role": "style-reference",
+      "chassisId": "warden",
+      "baselineId": "warden-v1-candidate-01",
+      "image": "design/mechs/chassis/warden/concept/a/image.png",
+      "imageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3"
+    },
+    {
+      "role": "style-reference",
+      "chassisId": "kestrel",
+      "baselineId": "kestrel-a-baseline-v4",
+      "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+      "imageSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+    },
+    {
+      "role": "style-reference",
+      "chassisId": "maul",
+      "baselineId": "maul-a-baseline-v1",
+      "image": "design/mechs/chassis/maul/concept/a/maul-a.png",
+      "imageSha256": "9549c80c62be16566eae62b558203dc09b0c7015a9cf919759299099365e9d84"
+    }
+  ]
+}

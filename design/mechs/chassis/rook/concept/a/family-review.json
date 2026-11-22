@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "status": "approved",
+  "referenceSetId": "heavy-rig-concept-family-v2",
+  "references": [
+    {
+      "chassisId": "warden",
+      "baselineId": "warden-v1-candidate-01",
+      "image": "design/mechs/chassis/warden/concept/a/image.png",
+      "imageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3"
+    },
+    {
+      "chassisId": "kestrel",
+      "baselineId": "kestrel-a-baseline-v4",
+      "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+      "imageSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+    },
+    {
+      "chassisId": "maul",
+      "baselineId": "maul-a-baseline-v1",
+      "image": "design/mechs/chassis/maul/concept/a/maul-a.png",
+      "imageSha256": "9549c80c62be16566eae62b558203dc09b0c7015a9cf919759299099365e9d84"
+    }
+  ],
+  "finishReference": {
+    "image": "design/mechs/assets/playable-a-lineup.png",
+    "imageSha256": "d01986dddebe41090e1355ee914e4e2dce9a15ccb3cfce21e3f2cd1588cda203"
+  },
+  "styleSha256": "82413290a6c3bc82312411bb8c5e32994fc910fd562781528e28e078163577e7",
+  "candidateImage": "design/mechs/chassis/rook/concept/a/image.png",
+  "candidateImageSha256": "3ef6b57d88be21bd0b9301974a3ce40189021aedd17136be0900182c69d3882c",
+  "criteria": [
+    {
+      "criterion": "Color and value: check for coherent blocks of chassis paint, dark mechanisms and a small visor accent against the playable lineup.",
+      "result": "pass",
+      "evidence": "Ivory cockpit armor separates from the slate shoulders and shins. Charcoal joints and a small amber visor remain distinct at reduced size."
+    },
+    {
+      "criterion": "Armor construction: broad facets and selective bevels describe the main volumes in the Mech Bay view.",
+      "result": "pass",
+      "evidence": "Broad cockpit and shin faces carry the highlights. Bevels mark the edges of the armor shells."
+    },
+    {
+      "criterion": "Detail scale: compare at Practice range size. The cockpit, stance and fitted weapon housings remain legible without fine texture.",
+      "result": "pass",
+      "evidence": "In the reduced-size concept comparison the cockpit, forward knees, separate gun housings and single dorsal pod remain visible."
+    },
+    {
+      "criterion": "Joints and interfaces: reinforced load-bearing pivots, protected waist connections and functional weapon attachments share the same industrial construction language.",
+      "result": "pass",
+      "evidence": "Both underslung guns have visible arm connections. The dark waist and exposed lower-leg pivots separate the armor masses."
+    },
+    {
+      "criterion": "Distinct chassis identity: preserve the requested role, silhouette, cockpit, leg anatomy, proportions and legal mounts; do not copy another reference chassis or blend their equipment.",
+      "result": "pass",
+      "evidence": "The upright cockpit and narrow waist sit below one centerline pod with two underslung ballistic mounts. The palette recalls Warden. The dorsal launcher sits high and looks bulky for the compact mount in the brief."
+    }
+  ],
+  "ownerApproval": "On 2026-11-22 the owner selected Square Slate (design B) as the Rook A concept: “This is good. Let's go ahead and lock in design B. We'll proceed with the rest of the asset creation process later.”",
+  "gate": "Complete family review and explicit owner baseline approval before turnaround generation. Existing reference approvals do not approve this candidate."
+}
