@@ -48,7 +48,7 @@ test('Kestrel snaps its pelvis and torso independently while preserving foot pla
 				model.pose(createGait(state.player), heading, { recoil: 0, hit: 0, heat: 0, time: state.time, authoredPose: context, equippedSlots: [0] });
 				for (const [node, angle] of [[pelvis, state.player.angle], [torso, heading]] as const) {
 					node.getWorldDirection(forward);
-					const expected = Math.round(angle / (Math.PI / 6)) * (Math.PI / 6);
+					const expected = Math.round(angle / (Math.PI / 12)) * (Math.PI / 12);
 					expect(Math.cos(Math.atan2(forward.z, forward.x) - expected)).toBeCloseTo(1, 12);
 				}
 				maximumMuzzleError = Math.max(maximumMuzzleError, authoredMuzzleError(model, factory.weaponRigs, createGait(state.player), heading, undefined, context, 'kestrel'));

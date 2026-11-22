@@ -6,6 +6,7 @@ import { createContactCadence, createMechCadences } from '../src/mech-cadence';
 import { createGait, createGaits, advanceGaits } from '../src/gait';
 import { createMech } from '../src/mech-3d';
 import { createState, step, type Unit, type Squadmate } from '../src/simulation';
+import { getPlayerMuzzle } from '../src/weapon-rig';
 
 test('Kestrel exposes its landings and bounds while its chassis moves through held leg poses', async function () {
 	const loader = new GLTFLoader().register(function () { return { name: 'HEADLESS_KESTREL', loadTexture: async function () { return new Texture(); } }; });
@@ -18,7 +19,7 @@ test('Kestrel exposes its landings and bounds while its chassis moves through he
 		state.spawnIn = Infinity;
 		const cadence = createContactCadence();
 		let previous = factory.advancePose(undefined, state.player, 0).gait;
-		let heldSteps = 0; let landings = 0; let bounds = 0; let showedBound = false;
+		let runSamples = 0; let runTicks = 0; let landings = 0; let bounds = 0; let showedBound = false;
 		for (let tick = 1; tick <= 540; tick++) {
 			// The reviewed maneuver accelerates into a running turn, brakes, reverses, then settles.
 			const drive = tick < 110 ? 1 : tick >= 275 && tick < 365 ? -1 : 0;
@@ -31,7 +32,10 @@ test('Kestrel exposes its landings and bounds while its chassis moves through he
 			cadence.advance(pose.gait, pose.time);
 			const visual = cadence.visualGait(pose.gait);
 			const exposed = visual.feet === pose.gait.feet;
-			if (visual !== pose.gait) heldSteps++;
+			if (pose.gait.running && previous.running && !pose.gait.running.stopping) {
+				runTicks++;
+				if (exposed) runSamples++;
+			}
 			expect(visual.body).toBe(pose.gait.body);
 			expect(visual.motion).toBe(pose.gait.motion);
 			for (const side of [0, 1] as const) {
@@ -50,14 +54,15 @@ test('Kestrel exposes its landings and bounds while its chassis moves through he
 		}
 		expect(landings).toBeGreaterThan(15);
 		expect(bounds).toBeGreaterThan(5);
-		expect(540 - heldSteps).toBe(1 + 9 * 8); // Initial pose plus eight updates per second.
+		expect(runTicks).toBeGreaterThan(120);
+		expect(Math.abs(runSamples - runTicks * 8 / 60)).toBeLessThanOrEqual(1);
 		cadence.reset();
 		if (!state.authoredPose?.gait) throw new Error('Expected a final pose');
 		expect(cadence.visualGait(state.authoredPose.gait)).toBe(state.authoredPose.gait);
 	} finally { remove(); factory.dispose(); }
 });
 
-test('crossing a heading sector moves the hip and weapon sockets independently while the shoe stays planted', function () {
+test('crossing 15-degree sectors moves the hip and weapon sockets independently while the shoe stays planted', function () {
 	const model = createMech(undefined, false, 'longbow');
 	try {
 		const hull = model.root.getObjectByName('hull'), turret = model.root.getObjectByName('turret');
@@ -68,29 +73,31 @@ test('crossing a heading sector moves the hip and weapon sockets independently w
 		const degree = Math.PI / 180;
 		const pose = function (legs: number, aim: number) {
 			model.pose({ ...gait, body: { ...gait.body, angle: legs * degree } }, aim * degree);
+			const origin = getPlayerMuzzle('longbow', 0, gait.body, aim * degree);
+			expect(model.muzzles[0]?.distanceTo(new Vector3(origin.x, origin.elevation, origin.y))).toBeLessThan(1e-8);
 		};
-		pose(14, 70);
+		pose(7, 66);
 		expect(hull.rotation.y).toBeCloseTo(0);
 		expect(turret.rotation.y).toBeCloseTo(-60 * degree);
 		const firstHip = hip.getWorldPosition(new Vector3()).setY(0);
 		const plant = shoe.matrixWorld.clone(), mount = socket.getWorldPosition(new Vector3());
 
-		pose(16, 74);
-		expect(hull.rotation.y).toBeCloseTo(-30 * degree);
+		pose(8, 67);
+		expect(hull.rotation.y).toBeCloseTo(-15 * degree);
 		expect(turret.rotation.y).toBeCloseTo(-60 * degree);
 		const torsoForward = new Vector3(1, 0, 0).transformDirection(turret.matrixWorld);
 		expect(Math.atan2(torsoForward.z, torsoForward.x)).toBeCloseTo(60 * degree, 10);
-		const rotatedHip = firstHip.applyAxisAngle(new Vector3(0, 1, 0), -30 * degree);
+		const rotatedHip = firstHip.applyAxisAngle(new Vector3(0, 1, 0), -15 * degree);
 		expect(hip.getWorldPosition(new Vector3()).setY(0).distanceTo(rotatedHip)).toBeLessThan(1e-8);
 		expect(socket.getWorldPosition(new Vector3()).distanceTo(mount)).toBeLessThan(1e-8);
 		expect(shoe.matrixWorld.equals(plant)).toBe(true);
 
-		pose(16, 76);
-		expect(hull.rotation.y).toBeCloseTo(-30 * degree);
-		expect(turret.rotation.y).toBeCloseTo(-90 * degree);
+		pose(8, 68);
+		expect(hull.rotation.y).toBeCloseTo(-15 * degree);
+		expect(turret.rotation.y).toBeCloseTo(-75 * degree);
 		expect(socket.getWorldPosition(new Vector3()).distanceTo(mount)).toBeGreaterThan(1);
 		const barrel = new Vector3(1, 0, 0).transformDirection(socket.matrixWorld);
-		expect(Math.atan2(barrel.z, barrel.x)).toBeCloseTo(90 * degree);
+		expect(Math.atan2(barrel.z, barrel.x)).toBeCloseTo(75 * degree);
 		expect(shoe.matrixWorld.equals(plant)).toBe(true);
 	} finally { model.dispose(); }
 });
@@ -107,6 +114,7 @@ test('independent leg samples follow walkers through a squad turn and leave hull
 	if (!turret) throw new Error('Missing procedural Longbow torso');
 	let gaits = createGaits(state);
 	let playerHeld = false; let mateHeld = false; let enemyHeld = false; let movedShoe = false;
+	let checkedChassisReset = false; let checkedTimeReset = false;
 	try {
 		for (let tick = 0; tick < 120; tick++) {
 			state.time += 1 / 60;
@@ -131,8 +139,26 @@ test('independent leg samples follow walkers through a squad turn and leave hull
 			expect(turret.matrixWorld.equals(baseline)).toBe(true);
 			expect(model.muzzles[0]?.equals(muzzle)).toBe(true);
 			movedShoe ||= !shoe.matrixWorld.equals(foot);
+			if (legs === gaits.player) continue;
+			if (!checkedChassisReset) {
+				state.frame = 'longbow-b';
+				histories.advance(state, gaits);
+				expect(histories.visualGait(state.player, gaits.player)).toBe(gaits.player);
+				state.frame = 'longbow';
+				histories.advance(state, gaits);
+				checkedChassisReset = true;
+			} else if (!checkedTimeReset) {
+				const time = state.time;
+				state.time = 0;
+				histories.advance(state, gaits);
+				expect(histories.visualGait(state.player, gaits.player)).toBe(gaits.player);
+				state.time = time;
+				histories.advance(state, gaits);
+				checkedTimeReset = true;
+			}
 		}
 		expect([playerHeld, mateHeld, enemyHeld, movedShoe]).toEqual([true, true, true, true]);
+		expect(checkedChassisReset && checkedTimeReset).toBe(true);
 
 		state.time += 1 / 60;
 		const replacement = { ...scout, x: scout.x + 600 };

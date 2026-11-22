@@ -1,5 +1,5 @@
 export const TORSO_LIMIT = 115 * Math.PI / 180;
-const headingStep = Math.PI / 6;
+const headingStep = Math.PI / 12;
 
 export const snapMechHeading = function (angle: number): number {
 	return Math.round(angle / headingStep) * headingStep;

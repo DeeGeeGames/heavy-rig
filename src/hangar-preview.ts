@@ -179,7 +179,7 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 					camera.aspect = w / h;
 				}
 				frameCamera();
-				ink.render(scene, camera, w, h);
+				ink.render(scene, camera, w, h, { anchor: center });
 				invalidated = false;
 				canvas.dataset['hangarState'] = 'rendered';
 			}

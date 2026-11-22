@@ -3,13 +3,16 @@ import { Mesh, Object3D, Quaternion, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { authoredMuzzleError, prepareAuthoredWarden } from '../src/authored-mech';
 import { createGait } from '../src/gait';
+import { createContactCadence } from '../src/mech-cadence';
 import { coolingStep, createState, movementStep, type Controls } from '../src/simulation';
 
-test('selected Warden plants both feet through turns, forward/reverse, braking and paused rendering', async function () {
+test('Warden holds eight leg samples per walk cycle while world plants and independent aim stay live', async function () {
 	const loader = new GLTFLoader().register(function () { return { name: 'HEADLESS_LOCOMOTION', loadTexture: async function () { return new Texture(); } }; });
 	const asset = await loader.parseAsync(await Bun.file(new URL('../public/assets/mechs/warden/game-ready.glb', import.meta.url)).arrayBuffer(), '');
 	const factory = prepareAuthoredWarden(asset); const remove = factory.install(); const model = factory.create();
+	const cadence = createContactCadence();
 	const named = function (name: string): Object3D { const node = model.root.getObjectByName(name); if (!node) throw new Error(`Missing ${name}`); return node; };
+	const hull = named('authored-hull-heading'); const torso = named('rig_torso');
 	const feet = ['left', 'right'].map(function (side) { return named(`rig_leg_${side}_foot`); });
 	const footMeshes = feet.map(function (foot) { const meshes = new Set<Mesh>(); foot.traverse(function (node) { if (node instanceof Mesh) meshes.add(node); }); return meshes; });
 	const vertices: { node: Mesh; point: Vector3; foot: number }[] = [];
@@ -23,24 +26,58 @@ test('selected Warden plants both feet through turns, forward/reverse, braking a
 	let maximumSlide = 0; let maximumTwist = 0; let minimumGround = Infinity; let maximumMuzzleError = 0; let lifted = 0;
 	const planted = [0, 0];
 	let flightFrames = 0; let pausedFlight = false;
+	let touchdownSide: 0 | 1 | undefined; let swingSamples = 0; let forwardSteps = 0; let reverseSteps = 0;
+	let aimTurnsDuringHold = 0; let previousYaw = 0;
+	let previousLegGait: ReturnType<typeof cadence.visualGait> | undefined;
+	const endTick = 1140;
 	try {
-		for (let tick = 0; tick <= 900; tick++) {
+		for (let tick = 0; tick <= endTick; tick++) {
 			const before = context;
 			if (tick > 0) {
-				const turn = tick < 180 ? 1.6 : tick < 300 ? -1.6 : tick < 600 ? 0.6 : 0;
-				const speed = tick < 300 ? 0 : tick < 450 ? 90 : tick < 600 ? 180 : tick < 780 ? -35 : 0;
+				const turn = tick < 180 ? 1.6 : tick < 300 ? -1.6 : tick < 840 ? 0.6 : 0;
+				const speed = tick < 300 ? 0 : tick < 540 ? 32 : tick < 690 ? 90 : tick < 840 ? 180 : tick < 1020 ? -35 : 0;
 				const angle = body.angle + turn / 60;
 				body = { x: body.x + Math.cos(angle) * speed / 60, y: body.y + Math.sin(angle) * speed / 60, angle };
 				context = factory.advancePose(context, body, tick / 60);
 			}
 			const gait = context.gait; if (!gait) throw new Error('Missing procedural contacts');
+			cadence.advance(gait, context.time);
+			const legGait = gait.running ? gait : cadence.visualGait(gait);
 			model.root.position.set(body.x, 0, body.y);
 			const heading = body.angle + Math.sin(tick / 35);
-			model.pose(createGait(body), heading, { recoil: 0, hit: 0, heat: 0, time: tick / 60, authoredPose: context });
+			model.pose(createGait(body), heading, { recoil: 0, hit: 0, heat: 0, time: tick / 60, authoredPose: context, legGait });
 			maximumMuzzleError = Math.max(maximumMuzzleError, authoredMuzzleError(model, factory.weaponRigs, createGait(body), heading, undefined, context));
+			const hullYaw = Math.round(body.angle * 12 / Math.PI) * Math.PI / 12;
+			const torsoYaw = Math.round(heading * 12 / Math.PI) * Math.PI / 12;
+			expect(hull.rotation.y).toBeCloseTo(-hullYaw, 10);
+			const forward = torso.getWorldDirection(new Vector3());
+			expect(Math.cos(Math.atan2(forward.z, forward.x) - torsoYaw)).toBeCloseTo(1, 12);
+			if (legGait !== gait && torsoYaw !== previousYaw) aimTurnsDuringHold++;
+			previousYaw = torsoYaw;
+			const steadyForward = tick >= 330 && tick < 540;
+			const steadyReverse = tick >= 900 && tick < 1020;
+			if (steadyForward || steadyReverse) {
+				expect(gait.running).toBeUndefined();
+				if (gait.swing) {
+					const side = gait.swing.index;
+					if (legGait.feet[side] === gait.feet[side]) swingSamples++;
+					else expect(legGait.feet[side] === previousLegGait?.feet[side]).toBe(true);
+				}
+				for (const side of [0, 1] as const) {
+					if ((before.gait?.feet[side].lift ?? 0) <= 0 || gait.feet[side].lift !== 0) continue;
+					if (touchdownSide !== undefined) {
+						expect(side).not.toBe(touchdownSide);
+						expect(swingSamples + 1).toBe(4);
+						if (steadyForward) forwardSteps++; else reverseSteps++;
+					}
+					swingSamples = 0;
+					touchdownSide = side;
+				}
+			} else { touchdownSide = undefined; swingSamples = 0; }
 			for (const [index, foot] of feet.entries()) {
 				const contact = gait.feet[index]; const old = before.gait?.feet[index]; const position = positions[index]; const rotation = rotations[index];
 				if (!contact || !position || !rotation) throw new Error('Incomplete foot state');
+				if (contact.lift === 0) expect(legGait.feet[index]).toBe(contact);
 				const currentPosition = foot.getWorldPosition(new Vector3()); const currentRotation = foot.getWorldQuaternion(new Quaternion());
 				if (tick > 0 && old && old.lift === 0 && contact.lift === 0 && old.x === contact.x && old.y === contact.y && old.angle === contact.angle) {
 					maximumSlide = Math.max(maximumSlide, position.distanceTo(currentPosition));
@@ -68,7 +105,8 @@ test('selected Warden plants both feet through turns, forward/reverse, braking a
 					pausedFlight = true;
 				}
 			}
-			if (tick < 300 || tick > 660) expect(gait.running).toBeUndefined();
+			previousLegGait = legGait;
+			if (tick < 540 || tick > 900) expect(gait.running).toBeUndefined();
 		}
 		expect(planted.every(function (count) { return count > 100; })).toBe(true);
 		expect(lifted).toBeGreaterThan(100);
@@ -77,11 +115,37 @@ test('selected Warden plants both feet through turns, forward/reverse, braking a
 		expect(minimumGround).toBeGreaterThan(-1e-5);
 		expect(maximumMuzzleError).toBeLessThan(1e-7);
 		expect(flightFrames).toBeGreaterThan(20);
+		expect(forwardSteps).toBeGreaterThanOrEqual(4);
+		expect(reverseSteps).toBeGreaterThanOrEqual(4);
+		expect(aimTurnsDuringHold).toBeGreaterThan(5);
 		const snapshot = feet.map(function (foot) { return foot.matrixWorld.toArray(); });
 		const unchanged = factory.advancePose(context, body, context.time);
 		expect(unchanged).toEqual(context);
-		for (let frame = 0; frame < 5; frame++) model.pose(createGait(body), body.angle + Math.sin(900 / 35), { recoil: 0, hit: 0, heat: 0, time: context.time, authoredPose: context });
+		for (let frame = 0; frame < 5; frame++) model.pose(createGait(body), body.angle + Math.sin(endTick / 35), { recoil: 0, hit: 0, heat: 0, time: context.time, authoredPose: context });
 		expect(feet.map(function (foot) { return foot.matrixWorld.toArray(); })).toEqual(snapshot);
+
+		const settled = context.gait;
+		if (!settled) throw new Error('Missing settled contacts');
+		expect(settled.feet.every(function (foot) { return foot.lift === 0; })).toBe(true);
+		let liftedAfterRestart = false;
+		for (let tick = 1; tick <= 10; tick++) {
+			body = { ...body, x: body.x + Math.cos(body.angle) * 32 / 60, y: body.y + Math.sin(body.angle) * 32 / 60 };
+			context = factory.advancePose(context, body, (endTick + tick) / 60);
+			if (!context.gait) throw new Error('Missing restarted gait');
+			cadence.advance(context.gait, context.time);
+			const legs = cadence.visualGait(context.gait);
+			if (tick === 1) expect(legs.feet).toEqual(settled.feet);
+			liftedAfterRestart ||= legs.feet.some(function (foot) { return foot.lift > 0; });
+		}
+		expect(liftedAfterRestart).toBe(true);
+		const teleported = factory.advancePose(context, { ...body, x: body.x + 300 }, context.time + 1 / 60);
+		if (!teleported.gait || !context.gait) throw new Error('Missing teleported gait');
+		cadence.advance(teleported.gait, teleported.time);
+		expect(cadence.visualGait(teleported.gait)).toBe(teleported.gait);
+		for (const side of [0, 1] as const) {
+			expect(teleported.gait.feet[side].lift).toBe(0);
+			expect(teleported.gait.feet[side].x - context.gait.feet[side].x).toBeGreaterThan(280);
+		}
 	} finally {
 		model.dispose(); remove(); factory.dispose();
 		asset.scene.traverse(function (node) { if (!(node instanceof Mesh)) return; node.geometry.dispose(); for (const material of Array.isArray(node.material) ? node.material : [node.material]) { for (const value of Object.values(material)) if (value instanceof Texture) value.dispose(); material.dispose(); } });

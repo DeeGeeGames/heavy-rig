@@ -12,8 +12,10 @@ export interface AuthoredPoseContext {
 	readonly selected: AuthoredMotionName | 'idle';
 	readonly clips: readonly AuthoredClipState[];
 	readonly gait?: AuthoredGait;
-	/** Native Y-up correction shared by the pelvis and all weapon origins. */
+	/** Native Y-up correction for the pelvis supporting the leg solve. */
 	readonly pelvisDrop?: number;
+	/** When set, the torso stays level at the height of the neutral supported pose. */
+	readonly standingPelvisDrop?: number;
 }
 export interface AuthoredMotion { readonly name: AuthoredMotionName; readonly clip: AnimationClip; readonly nominalSpeed: number }
 export interface AuthoredTransform { readonly name: string; readonly position: Vector3; readonly quaternion: Quaternion; readonly scale: Vector3 }
@@ -62,8 +64,14 @@ export const prepareAuthoredTorsoSampler = function (torso: Object3D, motions: r
 		return rests.map(function (rest) {
 			const position = rest.position.clone(); const quaternion = rest.quaternion.clone(); const scale = rest.scale.clone();
 			if (context?.gait) {
-				if (rest.originalName === 'rig_pelvis') position.y += context.gait.motion.lift * 0.3 / nativeScale + (context.pelvisDrop ?? 0);
-				if (rest.originalName === 'rig_torso') quaternion.multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -context.gait.motion.pitch)).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), context.gait.motion.roll));
+				const { lift, pitch, roll } = context.gait.motion;
+				const pelvisOffset = lift * 0.3 / nativeScale + (context.pelvisDrop ?? 0);
+				if (rest.originalName === 'rig_pelvis') position.y += pelvisOffset;
+				if (rest.originalName === 'rig_torso') {
+					// Warden's upright torso is a direct child of its Y-up pelvis.
+					if (context.standingPelvisDrop !== undefined) position.y += context.standingPelvisDrop - pelvisOffset;
+					else quaternion.multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -pitch)).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), roll));
+				}
 				return { name: rest.name, position, quaternion, scale };
 			}
 			for (const property of ['position', 'quaternion', 'scale'] as const) {
@@ -101,7 +109,7 @@ export const prepareAuthoredTorsoSampler = function (torso: Object3D, motions: r
 		}
 		return result;
 	};
-	const pelvisMatrix = function (context: AuthoredPoseContext): Matrix4 {
+	const pelvisMatrix = function (context?: AuthoredPoseContext): Matrix4 {
 		return sample(context).slice(0, -1).reduce(function (result, transform) { return result.multiply(new Matrix4().compose(transform.position, transform.quaternion, transform.scale)); }, basis.clone());
 	};
 	return { sample, matrix, pelvisMatrix };
