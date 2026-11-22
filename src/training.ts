@@ -96,13 +96,18 @@ const retryDryDrill = function (training: Training) {
 };
 
 export interface TrainingBefore { x: number; y: number; angle: number; hits: number }
+export const trainingFireSlot = function (stage: TrainingStage | undefined): number {
+	return stage === 'cannon' ? 0 : stage === 'missiles' || stage === 'heat' ? 2 : -1;
+};
+
 export const prepareTraining = function (training: Training, controls: Controls): Controls {
 	const state = training.state;
 	state.spawnIn = 3600;
 	if (training.stage === 'range') return controls;
 	retryDryDrill(training);
 	if (training.stage === 'coolant') state.player.heat = Math.max(45, state.player.heat);
-	return { ...controls, fire: training.stage === 'combined' ? controls.fire : [training.stage === 'cannon' && controls.fire[0], false, (training.stage === 'missiles' || training.stage === 'heat') && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant };
+	const slot = trainingFireSlot(training.stage);
+	return { ...controls, fire: training.stage === 'combined' ? controls.fire : [slot === 0 && controls.fire[0], false, slot === 2 && controls.fire[2], false], coolant: training.stage === 'coolant' && controls.coolant };
 };
 export const finishTraining = function (training: Training, controls: Controls, dt: number, before: TrainingBefore) {
 	const state = training.state;

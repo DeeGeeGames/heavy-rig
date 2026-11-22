@@ -1,6 +1,7 @@
-import { createMount } from './arsenal';
 import { keyLabel, padLabel, type ControllerBindings, type KeyboardBindings } from './bindings';
-import { getFrame, type FrameId } from './frames';
+import { loadedMounts } from './combat-resources';
+import type { FrameId } from './frames';
+import { createStarterLoadout } from './hardpoints';
 import type { ControlMode } from './profile';
 import { createEnemyLoadout, createState, type State } from './simulation';
 
@@ -41,9 +42,7 @@ export const createEscape = function (frame: IntroFrame): State {
 	const extraction = { x: width - 220, y: height - 220 };
 	const heading = Math.atan2(extraction.y - drop.y, extraction.x - drop.x);
 	state.player = { ...state.player, ...drop, angle: heading, turret: heading };
-	state.loadout = frame === 'kestrel'
-		? [0, 1].map(function (slot) { return { ...createMount('machine-gun'), slot }; })
-		: [{ ...createMount(getFrame(frame).starter), slot: 0 }];
+	state.loadout = loadedMounts(createStarterLoadout(frame));
 	// The escape uses the existing extraction, navigation marker, minimap, and
 	// enemy rules. It has no company contract and never settles campaign rewards.
 	state.mission = {
