@@ -1,0 +1,39 @@
+{
+  "chassisId": "rook",
+  "variantId": "rook",
+  "contractSignature": "a52dce3522675d0cd854b4d7147e6e0c6258fd048e7621fea3c4972ee24c43b7",
+  "mounts": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "dorsal-launcher",
+      "name": "Compact dorsal launcher",
+      "family": "launcher",
+      "weapons": [
+        "stream-missiles",
+        "cluster-missiles",
+        "stream-rockets",
+        "cluster-rockets"
+      ]
+    }
+  ],
+  "baseline": null,
+  "reviewStatus": "approved",
+  "ownerApproval": "On 2026-11-22 the owner selected Square Slate (design B) as the Rook A concept: “This is good. Let's go ahead and lock in design B. We'll proceed with the rest of the asset creation process later.”"
+}

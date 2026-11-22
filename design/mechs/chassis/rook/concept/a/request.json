@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "rook",
+  "background": "Transparent",
+  "details": "Explore a short, square courier-raider silhouette: upright beveled rectangular cockpit with small recessed amber visor, visible twin low arm trunnions, a narrow exposed charcoal waist, forward-knee biped legs with broad rectangular shin shells and compact squared boots. Keep its shoulders narrow, the cockpit set forward, and the low centerline dorsal pod distinct above the roof. Use uninterrupted desaturated slate-blue shell plates with one whole off-white chest panel and near-black joints. Use the mech’s own left for the larger AC/38 and own right for the smaller Rattler; show both muzzles and both arm connections, with the smaller near-side unit on viewer left and the heavier far-side unit on viewer right. No text or markings.",
+  "loadout": [
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    },
+    {
+      "weaponId": "stream-rockets",
+      "rounds": 360
+    }
+  ]
+}
