@@ -18,7 +18,7 @@ For high-detail authoring, the [game optimization procedure](game-optimization.m
 ## Baselines and variants
 
 New baselines follow [shared-world visual consistency](visual-consistency.md):
-attach the verified approved reference images emitted by the CLI, then review
+attach the playable A lineup for finish and the three concept images for construction, using the CLI attachment manifest. Then review
 the candidate beside those references before turnaround generation. The family
 review records exact image hashes and remains pending until explicitly reviewed
 and approved; existing concept approvals retain their original scope.

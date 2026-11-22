@@ -42,9 +42,15 @@ if (import.meta.main) {
 	await Bun.write(resolve(output,'request.json'),JSON.stringify(request,null,2)+'\n');
 	await Bun.write(resolve(output,'prompt.txt'),prompt+'\n');
 	await Bun.write(resolve(output,'contract.json'),JSON.stringify({chassisId:frame.chassisId,variantId:frame.id,contractSignature:contractSignature(frame.chassisId),mounts:frame.mounts,baseline:baseline??null,reviewStatus:'pending',ownerApproval:null},null,2)+'\n');
-	await Bun.write(resolve(output,'attachments.json'),JSON.stringify({schemaVersion:1,scope:'Attach the actual PNG files to the image generator; writing their paths in a prompt does not attach them.',attachments:baseline ? [{role:'edit-target',image:baseline.image,imageSha256:baseline.imageSha256,baselineId:baseline.id}] : references.map(function(reference) { return {role:'style-reference',...reference}; })},null,2)+'\n');
+	const attachments = baseline
+		? [{role:'edit-target',image:baseline.image,imageSha256:baseline.imageSha256,baselineId:baseline.id}]
+		: [
+			{role:'finish-reference',...catalog.visualReferenceSet.finishReference},
+			...references.map(function(reference) { return {role:'style-reference',...reference}; }),
+		];
+	await Bun.write(resolve(output,'attachments.json'),JSON.stringify({schemaVersion:1,scope:'Attach the actual PNG files to the image generator; writing their paths in a prompt does not attach them.',attachments},null,2)+'\n');
 	if (request.mode === 'baseline') {
-		await Bun.write(resolve(output,'family-review.json'),JSON.stringify({schemaVersion:1,status:'pending',referenceSetId:catalog.visualReferenceSet.id,references,styleSha256:new Bun.CryptoHasher('sha256').update(await Bun.file(resolve(root,'design/mechs/style.json')).arrayBuffer()).digest('hex'),candidateImage:null,candidateImageSha256:null,criteria:catalog.visualReferenceSet.reviewCriteria.map(function(criterion) { return {criterion,result:'pending',evidence:null}; }),ownerApproval:null,gate:'Complete family review and explicit owner baseline approval before turnaround generation. Existing reference approvals do not approve this candidate.'},null,2)+'\n');
+		await Bun.write(resolve(output,'family-review.json'),JSON.stringify({schemaVersion:1,status:'pending',referenceSetId:catalog.visualReferenceSet.id,references,finishReference:catalog.visualReferenceSet.finishReference,styleSha256:new Bun.CryptoHasher('sha256').update(await Bun.file(resolve(root,'design/mechs/style.json')).arrayBuffer()).digest('hex'),candidateImage:null,candidateImageSha256:null,criteria:catalog.visualReferenceSet.reviewCriteria.map(function(criterion) { return {criterion,result:'pending',evidence:null}; }),ownerApproval:null,gate:'Complete family review and explicit owner baseline approval before turnaround generation. Existing reference approvals do not approve this candidate.'},null,2)+'\n');
 	}
 	console.log(`Prepared ${resolve(output)}. Inspect the actual generated image against contract.json; owner approval remains separate.`);
 }

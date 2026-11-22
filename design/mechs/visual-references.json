@@ -1,6 +1,6 @@
 {
-  "id": "heavy-rig-concept-family-v1",
-  "scope": "Reference set selected from individually owner-approved concepts. This does not approve a new concept or assert new family-level owner acceptance.",
+  "id": "heavy-rig-concept-family-v2",
+  "scope": "The playable A lineup establishes finish and detail scale. Individually approved concepts supply mechanical construction references.",
   "references": [
     {
       "chassisId": "warden",
@@ -22,10 +22,14 @@
     }
   ],
   "reviewCriteria": [
-    "Material finish: neutral desaturated military surfaces, restrained contrast and comparable armor/mechanism material separation.",
-    "Armor construction: thick angular plates, substantial bevels and readable mechanical subassemblies with comparable treatment across chassis.",
-    "Detail scale: broad clean armor areas; vents, fasteners and seams remain subordinate at a matched presentation size.",
+    "Color and value: check for coherent blocks of chassis paint, dark mechanisms and a small visor accent against the playable lineup.",
+    "Armor construction: broad facets and selective bevels describe the main volumes in the Mech Bay view.",
+    "Detail scale: compare at Practice range size. The cockpit, stance and fitted weapon housings remain legible without fine texture.",
     "Joints and interfaces: reinforced load-bearing pivots, protected waist connections and functional weapon attachments share the same industrial construction language.",
     "Distinct chassis identity: preserve the requested role, silhouette, cockpit, leg anatomy, proportions and legal mounts; do not copy another reference chassis or blend their equipment."
-  ]
+  ],
+  "finishReference": {
+    "image": "design/mechs/assets/playable-a-lineup.png",
+    "imageSha256": "d01986dddebe41090e1355ee914e4e2dce9a15ccb3cfce21e3f2cd1588cda203"
+  }
 }
