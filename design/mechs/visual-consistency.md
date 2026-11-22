@@ -1,16 +1,13 @@
 # Shared-world visual consistency
 
-New chassis baselines use the individually owner-approved Warden, Kestrel and
-Maul concepts listed in [visual-references.json](visual-references.json). This
-reference set supplies shared construction and material cues; the requested
-chassis retains its own silhouette, role, proportions, leg anatomy and mounts.
-Selecting existing approved images as references does not create a new owner
-approval of the set, a candidate or a production model.
+For a new chassis, attach the [playable Warden, Kestrel and Maul lineup](assets/playable-a-lineup.png) as the finish reference. Use its Mech Bay row to judge armor planes and color placement. Compare the candidate at the size of the Practice range row to judge silhouette, stance and weapon readability. Give the new chassis its own proportions and palette.
+
+The three approved concept PNGs in [visual-references.json](visual-references.json) supply construction cues such as how a weapon housing meets its pivot. The playable lineup sets the level of surface detail.
 
 ## Prepare references
 
 Run `bun run mech:prompt request.json new-output-directory`. Existing request
-JSON remains valid. For a baseline, the CLI verifies every reference's active
+JSON remains valid. For a baseline, the CLI verifies the lineup image hash and each concept reference's active
 baseline ID, chassis, recorded owner approval, image path and actual SHA-256.
 An outdated or modified reference stops composition; review and explicitly
 update the reference set instead of silently changing the hashes.
@@ -41,7 +38,7 @@ and concrete visual evidence:
 
 - Material finish and armor/mechanism contrast.
 - Armor plate, bevel and subassembly construction.
-- Detail scale and density at matching presentation size.
+- Silhouette and weapon readability at Practice range size.
 - Joint and interface construction language.
 - The new chassis's distinct identity and legal mounts.
 

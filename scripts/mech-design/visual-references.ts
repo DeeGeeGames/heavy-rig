@@ -18,6 +18,9 @@ export const validateVisualReference = function(reference: VisualReference, reco
 
 export const verifiedVisualReferences = async function(): Promise<readonly VisualReference[]> {
 	const root = resolve(import.meta.dir, '../..');
+	const finish = visualReferenceSet.finishReference;
+	const finishBytes = await Bun.file(resolve(root, finish.image)).arrayBuffer();
+	if (new Bun.CryptoHasher('sha256').update(finishBytes).digest('hex') !== finish.imageSha256) throw Error('Playable finish reference changed. Review the lineup before composing a baseline.');
 	for (const reference of visualReferenceSet.references) {
 		const image = resolve(root, reference.image);
 		const imageRelative = relative(root, image);
