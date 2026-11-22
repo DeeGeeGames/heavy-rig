@@ -22,8 +22,14 @@ const rampConstants = Object.entries(ramps).map(function ([name, stops]) {
 
 const housingAccent = `
 	vec3 face = normalize(cross(dFdx(panelLocal), dFdy(panelLocal)));
+	#ifdef MECH_PIXEL_PLATES
+	// The Kestrel's ivory and sage panels belong to the receiver. The barrel
+	// collar is a shaded forest plate, and the tubes are bare metal.
+	bool housing = vMechPlate.y > .99;
+	#else
 	bool housing = panelLocal.z > -.22 && panelLocal.z < .025 && abs(panelLocal.x) > .202
 		&& panelLocal.y < .779 && panelLocal.y > .695;
+	#endif
 	if (lightPanel && housing && face.y > .52) {
 		const vec3 luma = vec3(.2126, .7152, .0722);
 		float luminance = dot(chosen, luma);

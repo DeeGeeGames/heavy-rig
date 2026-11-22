@@ -45,7 +45,11 @@ The [asset manifest](assets/manifest.json) records exact paths, sizes and hashes
 See [checkpoint roles](assets/README.md) and
 [authoring commands](../../scripts/mech-design/blender/README.md).
 
-## Current Warden acceptance
+## Playable A models
+
+The owner selected the SNES-style Warden A, Kestrel A and Maul A for the game on November 22, 2026. Each uses a hand-built outer shell over the high-detail chassis rig. The three selection records identify the exact game exports, approved comparison images and source files. See the [playable model records and rebuild command](assets/README.md).
+
+## High-detail source approvals
 
 The selected route is the original-reference P2.0 50K source with reused approved
 pod geometry/bakes and selective repairs. The 39,748-triangle Warden A includes
@@ -55,10 +59,7 @@ and its exact-hash visual approval record. The owner accepted its appearance and
 demonstrated motion with "This is good. We can integrate this into the game to
 see how it looks soon."
 
-Normal game startup is unchanged. Next, integrate this selected asset for real
-in-game review. In-game appearance/feel, representative hardware performance,
-other equipped variants and second-chassis repeatability remain outstanding.
-The eight visible launcher cells map to six gameplay tubes without changing salvos.
+The eight visible Warden launcher cells map to six gameplay tubes. Its high-detail package records the original approval for that particular export.
 
 Before making Warden's geometry, material or animation choices roster defaults,
 measure it in representative real game scenes on the intended hardware. Sixteen
@@ -97,8 +98,8 @@ and image equivalence after glTF Transform pruning. Candidate exports and
 previews remain ignored until owner approval. Local material authoring consumes
 no additional Studio credits.
 
-Normal startup now installs the approved Kestrel; a failed load or five-second
-startup timeout keeps the procedural fallback. `kestrel-preview.html` provides
+The game uses the procedural Kestrel if loading its authored model fails or exceeds
+the five-second startup timeout. `kestrel-preview.html` provides
 the same game entry; `kestrel-study.html` isolates equipment, camera and motion
 review. The runtime uses fixed-step contacts and measured IK with
 Kestrel-specific strides, rather than replaying the embedded draft leg tracks.

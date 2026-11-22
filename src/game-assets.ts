@@ -1,4 +1,4 @@
-import { authoredKestrelUrl, loadAuthoredKestrel, loadAuthoredMaul, loadAuthoredWarden } from './authored-mech';
+import { authoredKestrelUrl, loadAuthoredKestrel, loadAuthoredMaul, loadAuthoredWarden, playableMechUrl } from './authored-mech';
 import { loadMechSkinPatterns } from './mech-skin-material';
 
 // Install accepted visual assets before presentation creates synchronous models.
@@ -25,9 +25,9 @@ const loadWithDeadline = async function (label: string, url: string, load: typeo
 	return factory;
 };
 const [factories, releasePatterns] = await Promise.all([Promise.all([
-	loadWithDeadline('Warden', './assets/mechs/warden/game-ready.glb', loadAuthoredWarden),
+	loadWithDeadline('Warden', playableMechUrl('warden'), loadAuthoredWarden),
 	loadWithDeadline('Kestrel', authoredKestrelUrl(), loadAuthoredKestrel),
-	loadWithDeadline('Maul', './assets/mechs/maul/game-ready.glb', loadAuthoredMaul),
+	loadWithDeadline('Maul', playableMechUrl('maul'), loadAuthoredMaul),
 ]), loadMechSkinPatterns()]);
 const uninstall = factories.map(function (factory) { return factory?.install(); });
 let disposed = false;

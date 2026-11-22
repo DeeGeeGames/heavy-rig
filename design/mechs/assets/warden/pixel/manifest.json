@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-approved-for-play",
+  "chassis": "warden",
+  "variant": "warden-a",
+  "approval": {
+    "date": "2026-11-22",
+    "scope": "Owner selected this SNES-style A variant and requested its use in the game.",
+    "comparison": "design/mechs/assets/warden/pixel/comparison.png"
+  },
+  "asset": {
+    "path": "public/assets/mechs/warden/pixel.glb",
+    "retainedPath": "design/mechs/assets/warden/pixel/warden.glb",
+    "sha256": "9311e941cd27b4c0115708b3d4cba7850eef2b67c4c7bd192f7d651c948537e0",
+    "bytes": 314480,
+    "triangles": 4306,
+    "meshSections": 14,
+    "materials": 2,
+    "textureImages": 0,
+    "rigGroups": 12,
+    "anchors": 28,
+    "clips": [
+      "walk",
+      "run",
+      "backward"
+    ]
+  },
+  "equipment": "Two side cannons and two eight-cell shoulder launchers. Six cells per launcher map to the gameplay tubes.",
+  "source": {
+    "path": "public/assets/mechs/warden/game-ready.glb",
+    "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
+    "manifest": "design/mechs/assets/warden/game-ready/manifest.json"
+  },
+  "reproduction": "scripts/mech-design/build-pixel-mechs.py"
+}

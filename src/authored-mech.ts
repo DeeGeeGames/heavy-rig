@@ -16,8 +16,14 @@ import { applyMechSkinMaterial, type SkinSurface } from './mech-skin-material';
 export const MAUL_LOGICAL_TUBE_MAPPING = ['1_0', '2_0', '1_1', '2_1', '1_3', '2_3'] as const;
 export const WARDEN_LOGICAL_TUBE_MAPPING = ['lower_1', 'lower_2', 'lower_4', 'upper_1', 'upper_3', 'upper_4'] as const;
 
+export const playableMechUrl = function (frame: AuthoredDescriptor['frame']): string {
+	return `./assets/mechs/${frame}/pixel.glb`;
+};
+const previewMechUrl = function (frame: AuthoredDescriptor['frame']): string {
+	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? playableMechUrl(frame);
+};
 export const authoredWardenUrl = function (): string {
-	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? './assets/mechs/warden/game-ready.glb';
+	return previewMechUrl('warden');
 };
 const wardenWeaponSpecs = [
 	{ group: 'rig_mount_left-gun', muzzle: 'physical_exit_left_gun_1', side: 'left', launcher: false },
@@ -50,7 +56,7 @@ const kestrelDescriptor: AuthoredDescriptor = {
 	locomotion: { walkStride: 0.6, walkExtension: 0.2, run: KESTREL_RUN_PROFILE },
 };
 export const authoredKestrelUrl = function (): string {
-	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? './assets/mechs/kestrel/game-ready.glb';
+	return previewMechUrl('kestrel');
 };
 const maulDescriptor: AuthoredDescriptor = {
 	// Procedural Maul posed on FRAME_RIGS.maul at its own scale: floor 0.
@@ -61,7 +67,7 @@ const maulDescriptor: AuthoredDescriptor = {
 	locomotion: { walkStride: 0.65, walkExtension: 0.18, walkLiftScale: 0.55, stableKneeBend: true, run: { cycleSeconds: 1.15, stanceFraction: 0.36, referenceSpeed: 65, enterSpeed: 42, exitSpeed: 34, swingLift: 8, bodyLift: 2.4, bodyRoll: 0, bodyPitch: 0, footPitch: 0.1, landingLead: 0.8 } },
 };
 export const authoredMaulUrl = function (): string {
-	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? './assets/mechs/maul/game-ready.glb';
+	return previewMechUrl('maul');
 };
 interface AuthoredOptions { readonly height?: number; readonly diagnostics?: boolean }
 
@@ -75,6 +81,9 @@ const named = function (root: Object3D, name: string): Object3D {
 const point = function (value: Vector3): SpatialPoint { return { x: value.x, y: value.z, elevation: value.y }; };
 const finitePoint = function (value: Vector3) { return [value.x, value.y, value.z].every(Number.isFinite); };
 const materialsOf = function (node: Mesh): Material[] { return Array.isArray(node.material) ? node.material : [node.material]; };
+const isPixelPlateMaterial = function (material: Material): boolean {
+	return material instanceof MeshStandardMaterial && material.vertexColors && material.name.endsWith(' plate colors');
+};
 
 const disposeAsset = function (asset: Pick<GLTF, 'scene'>) {
 	const geometries = new Set<BufferGeometry>(); const materials = new Set<Material>(); const textures = new Set<Texture>();
@@ -110,7 +119,11 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		return spec.launcher ? tubeMapping.map(function (suffix) { return `physical_exit_${spec.side}_${descriptor.launcherExitPrefix ?? 'launcher_'}${suffix}`; }) : [];
 	};
 	if (!Number.isFinite(sourceHeight) || sourceHeight <= 0 || !Number.isFinite(height) || height <= 0) throw new Error('Invalid authored asset height');
-	asset.scene.traverse(function (node) { if (node instanceof SkinnedMesh) throw new Error(`${descriptor.frame} asset contract requires rigid groups`); });
+	let hasPixelPlates = false;
+	asset.scene.traverse(function (node) {
+		if (node instanceof SkinnedMesh) throw new Error(`${descriptor.frame} asset contract requires rigid groups`);
+		if (!hasPixelPlates && node instanceof Mesh) hasPixelPlates = materialsOf(node).some(isPixelPlateMaterial);
+	});
 	const scale = height / sourceHeight;
 	const sourceCenter = named(asset.scene, 'rig_torso').getWorldPosition(new Vector3());
 	const origin = Object.freeze({ x: sourceCenter.x, z: sourceCenter.z });
@@ -154,9 +167,14 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 	});
 	const nativeBasis = new Matrix4().compose(new Vector3(-origin.z * scale, -sourceBounds.min.y * scale, origin.x * scale), new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2), new Vector3(scale, scale, scale));
 	const sampler = prepareAuthoredTorsoSampler(named(asset.scene, 'rig_torso'), motions, nativeBasis);
+	// The pixel Kestrel's reshaped shoes need a slightly shorter stance to clear
+	// the ground together for a full bound at light-load speed.
+	const profile = descriptor.locomotion;
+	const gaitOptions = hasPixelPlates && descriptor.frame === 'kestrel' && profile
+		? { ...profile, run: { ...profile.run, stanceFraction: 0.25 } } : profile;
 	const locomotion = prepareAuthoredLocomotion(named(probe.scene, 'rig_pelvis'), (['left', 'right'] as const).map(function (side, index) {
 		return { index: index === 0 ? 0 : 1, thigh: named(probe.scene, `rig_leg_${side}_thigh`), shin: named(probe.scene, `rig_leg_${side}_shin`), foot: named(probe.scene, `rig_leg_${side}_foot`) };
-	}), scale, descriptor.locomotion);
+	}), scale, gaitOptions);
 	const standingPelvisDrop = descriptor.frame === 'warden'
 		? locomotion.pelvisDrop(locomotion.advance(undefined, { x: 0, y: 0, angle: 0 }, 0), sampler.pelvisMatrix(), 0)
 		: undefined;
@@ -201,18 +219,21 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			const key = skin === 'original' ? source.uuid : `${source.uuid}:${node.uuid}`;
 			const previous = ownedMaterials.get(key); if (previous) return previous;
 			const material = source.clone(); ownedMaterials.set(key, material);
-			if (skin !== 'original' && material instanceof MeshStandardMaterial && source.name !== 'Warden vent recess') {
-				const secondary = ['_shin', '_foot', '_mount_'].some(function (part) { return node.name.includes(part); });
-				const surface: SkinSurface = descriptor.frame !== 'warden' ? secondary ? 'palette-secondary' : 'palette-primary'
-					: source.name === 'Warden shared pod atlas' ? 'pod'
-						: node.name.includes('mount_connections') || node.name.includes('_pelvis') ? 'mechanism'
-							: node.name.includes('-gun') ? 'gun' : secondary ? 'secondary' : 'primary';
-				const nativeScale = node.getWorldScale(new Vector3()).divideScalar(scale);
-				const positions = node.geometry.getAttribute('position');
-				let min = Infinity; let max = -Infinity;
-				if (surface === 'gun') for (let index = 0; index < positions.count; index++) { const z = positions.getZ(index); min = Math.min(min, z); max = Math.max(max, z); }
-				applyMechSkinMaterial(material, skin, { surface, scale: nativeScale, ...(surface === 'gun' ? { barrelCutoff: -(max - (max - min) * 0.38) * nativeScale.z } : {}) });
+			if (skin === 'original' || !(material instanceof MeshStandardMaterial) || source.name === 'Warden vent recess') return material;
+			const nativeScale = node.getWorldScale(new Vector3()).divideScalar(scale);
+			if (hasPixelPlates) {
+				if (isPixelPlateMaterial(material)) applyMechSkinMaterial(material, skin, { surface: 'pixel-plates', scale: nativeScale });
+				return material;
 			}
+			const secondary = ['_shin', '_foot', '_mount_'].some(function (part) { return node.name.includes(part); });
+			const surface: SkinSurface = descriptor.frame !== 'warden' ? secondary ? 'palette-secondary' : 'palette-primary'
+				: source.name === 'Warden shared pod atlas' ? 'pod'
+					: node.name.includes('mount_connections') || node.name.includes('_pelvis') ? 'mechanism'
+						: node.name.includes('-gun') ? 'gun' : secondary ? 'secondary' : 'primary';
+			const positions = node.geometry.getAttribute('position');
+			let min = Infinity; let max = -Infinity;
+			if (surface === 'gun') for (let index = 0; index < positions.count; index++) { const z = positions.getZ(index); min = Math.min(min, z); max = Math.max(max, z); }
+			applyMechSkinMaterial(material, skin, { surface, scale: nativeScale, ...(surface === 'gun' ? { barrelCutoff: -(max - (max - min) * 0.38) * nativeScale.z } : {}) });
 			return material;
 		};
 		scene.traverse(function (node) {

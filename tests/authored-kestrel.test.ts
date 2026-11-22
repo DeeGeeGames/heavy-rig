@@ -87,9 +87,9 @@ test('Kestrel snaps its pelvis and torso independently while preserving foot pla
 	expect(getPlayerWeaponRig('kestrel')).not.toBe(factory.weaponRigs);
 });
 
-test('Kestrel bounds through sustained flight with its torso rising above the supported pose', async function () {
+test.each(['game-ready', 'pixel'])('Kestrel %s bounds through sustained flight with its torso rising above the supported pose', async function (modelName) {
 	const loader = new GLTFLoader().register(function () { return { name: 'HEADLESS_KESTREL_BOUND', loadTexture: async function () { return new Texture(); } }; });
-	const asset = await loader.parseAsync(await Bun.file(new URL('../public/assets/mechs/kestrel/game-ready.glb', import.meta.url)).arrayBuffer(), '');
+	const asset = await loader.parseAsync(await Bun.file(new URL(`../public/assets/mechs/kestrel/${modelName}.glb`, import.meta.url)).arrayBuffer(), '');
 	const factory = prepareAuthoredKestrel(asset); const model = factory.create();
 	try {
 		const torso = model.root.getObjectByName('rig_torso'); if (!torso) throw new Error('Missing Kestrel torso');

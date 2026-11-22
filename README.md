@@ -249,6 +249,7 @@ with their original terms. Successful extraction pays once.
 ## Frames and variants
 
 The fleet contains six chassis with three separately purchasable variants each.
+Warden A, Kestrel A and Maul A use SNES-style models with broad armor panels and distinct chassis colors. See the [model comparisons](design/mechs/assets/README.md).
 Each variant has its own crew, equipment, ammunition settings, and condition;
 shared weapon inventory prevents double allocation. Dealer purchases include a
 complete random loadout within unlocked weapon quality. The Market lists every
@@ -614,8 +615,9 @@ hot reload. To inspect model animations without starting a campaign:
 bun run dev:models
 ```
 
-Open **http://localhost:3001/**. This local tool loads all twelve production
-models with the game's shared pose and gait code. Select a model and motion,
+Open **http://localhost:3001/**. This offline-capable viewer shows the twelve
+procedural models with the game's shared pose and gait code. Use the Mech Bay
+or Training range to see the playable A variants. Select a model and motion in the viewer,
 adjust throttle or playback speed, and drag to orbit or scroll to zoom. Pause
 freezes the pose; **Step 1/60 s** pauses and advances exactly one simulation
 frame, independent of playback speed. **Restart motion** resets the pose and
@@ -632,7 +634,7 @@ Each setting resets measurements with a two-second warmup. The readout shows
 rolling average FPS, p95 frame time, frames over 20ms, resolution, draw calls,
 and triangles. Wait ten seconds per setting and longer for heat throttling.
 The fixed arena keeps every model in view, with overlap at high counts.
-This loads the new authored Warden GLB with shared geometry/textures and
+This loads the playable Warden A GLB with shared geometry and
 independent fixed-step animation for each model, without combat,
 AI, collisions, or shadows; it is a model workload rather than a full-game
 capacity estimate. Browser refresh rate and device temperature affect results.

@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { Mesh, Object3D, Texture } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { prepareAuthoredKestrel, prepareAuthoredMaul, prepareAuthoredWarden } from '../src/authored-mech';
+import { authoredMuzzleError, playableMechUrl, prepareAuthoredKestrel, prepareAuthoredMaul, prepareAuthoredWarden } from '../src/authored-mech';
 import { createContactCadence } from '../src/mech-cadence';
 import { createGait, type WalkerGait } from '../src/gait';
 import { createMech } from '../src/mech-3d';
@@ -18,10 +18,9 @@ const feetChanged = function (gait: WalkerGait, previous: WalkerGait | undefined
 
 for (const [frame, prepare] of [['warden', prepareAuthoredWarden], ['kestrel', prepareAuthoredKestrel], ['maul', prepareAuthoredMaul]] as const) {
 	test(`${frame} holds entire solved leg poses while torso, travel and muzzles stay live`, async function () {
-		const source = await new GLTFLoader().register(function () {
-			return { name: 'HEADLESS_STILL_SAMPLING', loadTexture: async function () { return new Texture(); } };
-		}).parseAsync(await Bun.file(new URL(`../public/assets/mechs/${frame}/game-ready.glb`, import.meta.url)).arrayBuffer(), '');
-		const factory = prepare(source); const sampled = factory.create(); const live = factory.create();
+		const source = await new GLTFLoader().parseAsync(await Bun.file(new URL(`../public/${playableMechUrl(frame)}`, import.meta.url)).arrayBuffer(), '');
+		const factory = prepare(source); const uninstall = factory.install();
+		const sampled = createMech(undefined, false, frame, 'freeholds'); const live = createMech(undefined, false, frame, 'original');
 		const named = function (model: typeof sampled, name: string) {
 			const node = model.root.getObjectByName(name); if (!node) throw new Error(`Missing ${name}`); return node;
 		};
@@ -47,6 +46,7 @@ for (const [frame, prepare] of [['warden', prepareAuthoredWarden], ['kestrel', p
 				live.pose(context.gait, heading, feedback);
 				expect(named(sampled, 'rig_torso').matrixWorld.toArray()).toEqual(named(live, 'rig_torso').matrixWorld.toArray());
 				expect(sampled.muzzles.map(function (muzzle) { return muzzle.toArray(); })).toEqual(live.muzzles.map(function (muzzle) { return muzzle.toArray(); }));
+				if (tick % 60 === 0) expect(authoredMuzzleError(sampled, factory.weaponRigs, context.gait, heading, undefined, context, frame)).toBeLessThan(1e-6);
 				const current = transforms(legs);
 				if (!feetChanged(legGait, previous)) {
 					expect(current).toEqual(snapshot);
@@ -70,7 +70,7 @@ for (const [frame, prepare] of [['warden', prepareAuthoredWarden], ['kestrel', p
 			sampled.pose(legsNow, 0, { ...feedback, legGait: previous });
 			expect(transforms(legs)).toEqual(native);
 		} finally {
-			sampled.dispose(); live.dispose(); factory.dispose();
+			sampled.dispose(); live.dispose(); uninstall(); factory.dispose();
 			source.scene.traverse(function (node) {
 				if (!(node instanceof Mesh)) return;
 				node.geometry.dispose();

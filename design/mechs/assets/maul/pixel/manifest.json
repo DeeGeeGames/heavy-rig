@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "status": "owner-approved-for-play",
+  "chassis": "maul",
+  "variant": "maul-a",
+  "approval": {
+    "date": "2026-11-22",
+    "scope": "Owner selected this SNES-style A variant and requested its use in the game.",
+    "comparison": "design/mechs/assets/maul/pixel/comparison.png"
+  },
+  "asset": {
+    "path": "public/assets/mechs/maul/pixel.glb",
+    "retainedPath": "design/mechs/assets/maul/pixel/maul.glb",
+    "sha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f",
+    "bytes": 364532,
+    "triangles": 4830,
+    "meshSections": 11,
+    "materials": 2,
+    "textureImages": 0,
+    "rigGroups": 10,
+    "anchors": 34,
+    "clips": [
+      "diagnostic-articulation",
+      "walk",
+      "run",
+      "backward"
+    ]
+  },
+  "equipment": "Two forearm launcher pods, each with sixteen physical openings and six gameplay tubes.",
+  "source": {
+    "path": "public/assets/mechs/maul/game-ready.glb",
+    "sha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1",
+    "manifest": "design/mechs/assets/maul/game-ready/manifest.json"
+  },
+  "reproduction": "scripts/mech-design/build-pixel-mechs.py"
+}

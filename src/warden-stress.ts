@@ -1,5 +1,5 @@
 import { Color, DirectionalLight, HemisphereLight, OrthographicCamera, Scene, WebGLRenderer } from 'three';
-import { loadAuthoredWarden } from './authored-mech';
+import { authoredWardenUrl, loadAuthoredWarden } from './authored-mech';
 import { advanceGait, createGait } from './gait';
 import { FRAME_RIGS } from './frame-rig';
 import { getFrame } from './frames';
@@ -98,6 +98,6 @@ const start = function (factory: Awaited<ReturnType<typeof loadAuthoredWarden>>)
 };
 try {
 	element('stats').textContent = 'Loading authored Warden model…';
-	const factory = await loadAuthoredWarden('./assets/mechs/warden/game-ready.glb');
+	const factory = await loadAuthoredWarden(authoredWardenUrl());
 	try { start(factory); } catch (error) { factory.dispose(); throw error; }
 } catch (error) { const output = element('error'); output.hidden = false; output.textContent = `Unable to start: ${error instanceof Error ? error.message : String(error)}`; }
