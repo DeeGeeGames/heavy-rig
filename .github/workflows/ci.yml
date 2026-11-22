@@ -73,6 +73,8 @@ jobs:
         with:
           lfs: true
       - run: python3 scripts/mech-design/verify-assets.py
+      - name: Rebuild the approved playable mechs and verify their hashes
+        run: python3 scripts/mech-design/build-pixel-mechs.py --out design/mechs/generated/ci-pixel-rebuild
       - run: python3 -m unittest discover -s tests -p 'test_*.py'
       - run: python3 tests/mech-rigid-contract_test.py
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2

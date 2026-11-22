@@ -1,22 +1,25 @@
 # Retained mech authoring inputs
 
-The selected Warden A derivative is documented in
-[game-ready/README.md](warden/game-ready/README.md); its in-game acceptance remains
-separate. The [approved Kestrel A](kestrel/game-ready/README.md) is installed by
-normal startup after material, scale and runtime visual approval. Its raw
-provider source and repaired articulation are retained as separate checkpoints.
-The [approved Maul A](maul/game-ready/README.md) follows the same retention policy
-and is installed by normal startup with its reviewed upright runtime gait.
+Warden A, Kestrel A and Maul A use hand-faceted armor, broad blocks of vertex color and an emissive visor. Each playable GLB retains the rigid pivots, firing anchors and animation clips of its high-detail source. The [in-game lineup](playable-a-lineup.png) shows their Original finish in the Practice range and Mech Bay.
+
+| Playable model | Triangles | Approved comparison | High-detail source |
+| --- | ---: | --- | --- |
+| [Warden A](warden/pixel/manifest.json) | 4,306 | [Warden comparison](warden/pixel/comparison.png) | [39,748 triangles](warden/game-ready/README.md) |
+| [Kestrel A](kestrel/pixel/manifest.json) | 3,123 | [Kestrel comparison](kestrel/pixel/comparison.png) | [42,796 triangles](kestrel/game-ready/README.md) |
+| [Maul A](maul/pixel/manifest.json) | 4,830 | [Maul comparison](maul/pixel/comparison.png) | [50,718 triangles](maul/game-ready/README.md) |
+
+To restore the checkpoints and independently rebuild the three playable exports, run the following from the repository root. Give the rebuild a new output directory each time. It verifies the SHA-256 of each source and rebuilt model against the selection record.
 
 ```sh
 git lfs install --local
 git lfs pull
 bun install --frozen-lockfile
-python scripts/mech-design/verify-assets.py
+python3 scripts/mech-design/verify-assets.py
+python3 scripts/mech-design/build-pixel-mechs.py --out design/mechs/generated/approved-pixel-rebuild
 ```
 
 `manifest.json` pins all retained assets by path, size and SHA-256. GLB and Blender
-files use Git LFS. The Warden derivative's authoring build directly reads:
+files use Git LFS. The high-detail Warden authoring build reads the following inputs.
 
 - `warden/game-ready/source.glb`: unchanged P2.0 source generated from approved views.
 - `warden/optimization/{pod,right-pod}/pod.glb`: approved geometry and embedded bakes.

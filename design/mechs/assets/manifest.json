@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "Retained owner-approved advancing mech checkpoints and required reproduction inputs. Warden visual approval remains separately scoped; Kestrel A and Maul A have exact-hash source, articulation, material and demonstrated runtime visual approvals.",
+  "scope": "Retained owner-approved mech checkpoints and their reproduction inputs, including the three SNES-style models selected for the playable A variants.",
   "files": [
     {
       "path": "design/mechs/assets/kestrel/articulation-base/approval.json",
@@ -881,6 +881,76 @@
       "path": "design/mechs/assets/maul/generated-source/structural-review.json",
       "bytes": 1545,
       "sha256": "2fd392e760dea3735b7a1e9aba45d76c39287c0f5295839ed39b40d25484789b"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/pixel/comparison.png",
+      "bytes": 44201,
+      "sha256": "2255baf807402cfcce2278f6abbba11262bc3a5a3341a098491a177de312b62c"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/pixel/kestrel.glb",
+      "bytes": 225088,
+      "sha256": "00eed5f2c94b87fd19e2d1f14a80cdf2d0d9efc1e53a30a46ddcaeb56ea6f7e0"
+    },
+    {
+      "path": "design/mechs/assets/kestrel/pixel/manifest.json",
+      "bytes": 1140,
+      "sha256": "d10ec73993f6573c7e453a3fcaf0fe87f4ebeb7209eead10930db0f0dde93621"
+    },
+    {
+      "path": "design/mechs/assets/maul/pixel/comparison.png",
+      "bytes": 84892,
+      "sha256": "0d8b3a0e61f97e6333f33af2edf9e0f2dcc8d51b9c8c2fddb051ee296d0aa1a1"
+    },
+    {
+      "path": "design/mechs/assets/maul/pixel/manifest.json",
+      "bytes": 1167,
+      "sha256": "6e07cdcfccc80d0845bb3c2082e9bac3b2781754ce5829b4eaca5f4419679bfa"
+    },
+    {
+      "path": "design/mechs/assets/maul/pixel/maul.glb",
+      "bytes": 364532,
+      "sha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f"
+    },
+    {
+      "path": "design/mechs/assets/warden/pixel/comparison.png",
+      "bytes": 58661,
+      "sha256": "2ab4a0ebf1cd6270f6a00b51e5207c5d10d78384dda2de51bfca1dff93000523"
+    },
+    {
+      "path": "design/mechs/assets/warden/pixel/manifest.json",
+      "bytes": 1169,
+      "sha256": "ff83c9b714ef7d7ae63fea27fd5d44914bc4221b38bb60eb169edf9aff8fd8cd"
+    },
+    {
+      "path": "design/mechs/assets/warden/pixel/warden.glb",
+      "bytes": 314480,
+      "sha256": "9311e941cd27b4c0115708b3d4cba7850eef2b67c4c7bd192f7d651c948537e0"
+    },
+    {
+      "path": "public/assets/mechs/kestrel/pixel.glb",
+      "bytes": 225088,
+      "sha256": "00eed5f2c94b87fd19e2d1f14a80cdf2d0d9efc1e53a30a46ddcaeb56ea6f7e0"
+    },
+    {
+      "path": "public/assets/mechs/maul/game-ready.glb",
+      "bytes": 1783372,
+      "sha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1"
+    },
+    {
+      "path": "public/assets/mechs/maul/pixel.glb",
+      "bytes": 364532,
+      "sha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f"
+    },
+    {
+      "path": "public/assets/mechs/warden/pixel.glb",
+      "bytes": 314480,
+      "sha256": "9311e941cd27b4c0115708b3d4cba7850eef2b67c4c7bd192f7d651c948537e0"
+    },
+    {
+      "path": "design/mechs/assets/playable-a-lineup.png",
+      "bytes": 213504,
+      "sha256": "d01986dddebe41090e1355ee914e4e2dce9a15ccb3cfce21e3f2cd1588cda203"
     }
   ]
 }

@@ -26,5 +26,5 @@
   ],
   "generatedSource": "design/mechs/assets/kestrel/generated-source/approval.json",
   "articulationBase": "design/mechs/assets/kestrel/articulation-base/approval.json",
-  "activeGameDerivative": "design/mechs/assets/kestrel/game-ready/manifest.json"
+  "activeGameDerivative": "design/mechs/assets/kestrel/pixel/manifest.json"
 }

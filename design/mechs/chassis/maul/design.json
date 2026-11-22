@@ -28,7 +28,7 @@
   "articulationBase": "design/mechs/assets/maul/articulation-base/approval.json",
   "runtimeWalkReview": {
     "status": "approved-walk-timing-and-foot-path",
-    "approval": "Owner said \"The walk looks good\" after the upright-torso revision. The later final run/reverse approval is recorded in the active game derivative.",
+    "approval": "Owner said \"The walk looks good\" after the upright-torso revision. The later run and reverse approval for this high-detail source is recorded in design/mechs/assets/maul/game-ready/approval.json.",
     "assetSha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1",
     "reviewedRuntimeSources": {
       "src/authored-mech.ts": "bc5e0d874730d2224893f5c378ae187516d527991c01d0c46b0597187993b185",
@@ -38,5 +38,5 @@
       "scripts/mech-design/blender/maul_motion.py": "8a848e17c8ff429ed0fe328a38b6b0f25d3181322de9f9bae297cbfeca4e8330"
     }
   },
-  "activeGameDerivative": "design/mechs/assets/maul/game-ready/manifest.json"
+  "activeGameDerivative": "design/mechs/assets/maul/pixel/manifest.json"
 }
