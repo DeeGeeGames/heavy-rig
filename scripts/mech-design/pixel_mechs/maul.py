@@ -21,16 +21,20 @@ def polygon_z(loop, z):
     return [(x, y, z) for x, y in loop]
 
 
-def forearm_plate(mesh, side):
-    # One open-faced cartridge. Grid boundaries are halfway between adjacent
-    # physical firing centers; all sixteen wells meet the actual source exits.
+def forearm_cells(mesh, side):
     points = [[mesh.anchor(f"physical_exit_{side}_{r}_{c}") for c in range(4)] for r in range(4)]
     xs = [fsum(points[j][i][0] for j in range(4)) / 4 for i in range(4)]
     ys = [fsum(p[1] for p in row) / 4 for row in points]
     cx = (xs[0] + xs[-1]) / 2
     cy = (ys[0] + ys[-1]) / 2
     z = max(p[2] for row in points for p in row)
+    return points, xs, ys, (cx, cy, z)
 
+
+def forearm_plate(mesh, side):
+    # One open-faced cartridge. Grid boundaries are halfway between adjacent
+    # physical firing centers; all sixteen wells meet the actual source exits.
+    points, xs, ys, (cx, cy, z) = forearm_cells(mesh, side)
     def borders(vals):
         return (
             [vals[0] - (vals[1] - vals[0]) * 0.5]
@@ -194,6 +198,10 @@ def pelvis(mesh):
 def pod(mesh, side, sign):
     mesh.section = f"geometry_maul_mount_{side}-pod"
     cx, cy, z = forearm_plate(mesh, side)
+    gauntlet(mesh, sign, cx, cy, z)
+
+
+def gauntlet(mesh, sign, cx, cy, z):
     mesh.hull_z(
         [
             (-53, cx, 528, 681, 165, 23, 22),

@@ -1,6 +1,41 @@
 {
   "schemaVersion": 1,
-  "scope": "Retained owner-approved mech checkpoints and their reproduction inputs, including the three SNES-style models selected for the playable A variants.",
+  "scope": "Retained owner-approved mech checkpoints, playable A/B/C assets, and reproduction inputs.",
+  "playableVariantApproval": {
+    "status": "owner-approved-for-play",
+    "date": "2026-11-22",
+    "decision": "Approve all six for production",
+    "scope": "The six assembled B/C models reviewed from three angles and in the Practice range.",
+    "bundles": [
+      {
+        "variants": [
+          "warden-b",
+          "warden-c"
+        ],
+        "baseSha256": "9311e941cd27b4c0115708b3d4cba7850eef2b67c4c7bd192f7d651c948537e0",
+        "path": "public/assets/mechs/warden/variants.glb",
+        "sha256": "6ecaad0b8fabcd2429b53ca3f9f940a447b351dff1993ad85c4d0d0b0e133d53"
+      },
+      {
+        "variants": [
+          "kestrel-b",
+          "kestrel-c"
+        ],
+        "baseSha256": "00eed5f2c94b87fd19e2d1f14a80cdf2d0d9efc1e53a30a46ddcaeb56ea6f7e0",
+        "path": "public/assets/mechs/kestrel/variants.glb",
+        "sha256": "46791a5a1c1eb86007181c0551c5ed9407dc8797595e1b97a6c14f91997c04fb"
+      },
+      {
+        "variants": [
+          "maul-b",
+          "maul-c"
+        ],
+        "baseSha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f",
+        "path": "public/assets/mechs/maul/variants.glb",
+        "sha256": "94d9d64bfd7fe7947d1db8b9810b3568f6b020b348130738298415248aa9c1bf"
+      }
+    ]
+  },
   "files": [
     {
       "path": "design/mechs/assets/kestrel/articulation-base/approval.json",
@@ -951,6 +986,21 @@
       "path": "design/mechs/assets/playable-a-lineup.png",
       "bytes": 213504,
       "sha256": "d01986dddebe41090e1355ee914e4e2dce9a15ccb3cfce21e3f2cd1588cda203"
+    },
+    {
+      "path": "public/assets/mechs/kestrel/variants.glb",
+      "bytes": 25288,
+      "sha256": "46791a5a1c1eb86007181c0551c5ed9407dc8797595e1b97a6c14f91997c04fb"
+    },
+    {
+      "path": "public/assets/mechs/maul/variants.glb",
+      "bytes": 60000,
+      "sha256": "94d9d64bfd7fe7947d1db8b9810b3568f6b020b348130738298415248aa9c1bf"
+    },
+    {
+      "path": "public/assets/mechs/warden/variants.glb",
+      "bytes": 39612,
+      "sha256": "6ecaad0b8fabcd2429b53ca3f9f940a447b351dff1993ad85c4d0d0b0e133d53"
     }
   ]
 }

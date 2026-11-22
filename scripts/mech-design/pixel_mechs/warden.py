@@ -140,7 +140,7 @@ def pelvis_and_connections(mesh):
         mesh.cylinder((sign * 169, 750, -104), (sign * 259, 750, -104), 41, "cast")
 
 
-def shoulder_bank(mesh, side, sign):
+def shoulder_shell(mesh, side, sign):
     mesh.section = f"geometry_rig_mount_{side}-shoulder bank"
     cx = sign * 263
     mesh.hull_y(
@@ -165,6 +165,12 @@ def shoulder_bank(mesh, side, sign):
         (-64, cx, 852 + front_offset, 976 + front_offset, 234, 22, 18),
     ]
     mesh.hull_z(pod, lambda i, j: "cast" if j in (0, 1, 7) else "gold" if i >= 2 else "armor", ("deep", None))
+    return pod
+
+
+def shoulder_bank(mesh, side, sign):
+    pod = shoulder_shell(mesh, side, sign)
+    cx = sign * 263
     # Sloped socket plate, eight flat-walled wells. Each well follows a physical
     # center from the actual source GLB; the centers vary slightly by side.
     bore_points = [
@@ -222,6 +228,12 @@ def shoulder_bank(mesh, side, sign):
                 q = [front[j], front[k], inside[k], inside[j]]
                 mesh.face(q, minus((x, y, z), average(q)), "joint")
             mesh.face(inside, (0, 0, 1), "bore")
+    shoulder_rear(mesh, sign)
+
+
+def shoulder_rear(mesh, sign):
+    cx = sign * 263
+    front_offset = 4.2 if sign < 0 else 0
     mesh.hull_z(
         [
             (-372, cx, 897 + front_offset, 945 + front_offset, 151, 10, 9),
