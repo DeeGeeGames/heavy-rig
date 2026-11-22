@@ -1,10 +1,10 @@
 import { html, render } from 'lit-html';
 import { keyed } from 'lit-html/directives/keyed.js';
-import { getWeapon, WEAPONS, type WeaponId } from './arsenal';
+import { getWeapon, WEAPONS, WEAPON_SIZE_LABELS, type WeaponId } from './arsenal';
 import { defaultReserves } from './combat-resources';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import { canEquipWeapon, createStarterLoadout, getHardpoints } from './hardpoints';
-import { loadSummary } from './loadout-ui';
+import { loadSummary, weaponClassLabel } from './loadout-ui';
 import type { TrainingSetup } from './training';
 
 export const mountTrainingSetup = function (root: HTMLElement) {
@@ -34,7 +34,7 @@ export const mountTrainingSetup = function (root: HTMLElement) {
 				const ammunition = weaponId ? getWeapon(weaponId).ammunition : null;
 				const rounds = ammunition ? [0, ammunition.defaultLoad, ammunition.capacity] : [];
 				return html`<div class="training-mount">
-					<label><span>${slot + 1} · ${hardpoint.name}</span>
+					<label><span>${slot + 1} · ${hardpoint.name} · ${weaponClassLabel(hardpoint.family, hardpoint.maxSize)}</span>
 						<select data-training-mount=${slot} @change=${function (event: Event) {
 							if (!(event.target instanceof HTMLSelectElement)) return;
 							const weapon = weapons[event.target.selectedIndex - 1]?.id ?? null;
@@ -42,7 +42,7 @@ export const mountTrainingSetup = function (root: HTMLElement) {
 							const reserves = defaultReserves(loadout).map(function (value, index) { return index === slot ? value : setup.reserves[index] ?? value; });
 							drafts.set(frame, { frame, loadout, reserves }); refresh();
 						}}><option value="" ?selected=${weaponId === null}>Empty</option>${weapons.map(function (weapon) {
-							return html`<option value=${weapon.id} ?selected=${weapon.id === weaponId}>${weapon.name}</option>`;
+							return html`<option value=${weapon.id} ?selected=${weapon.id === weaponId}>${weapon.name} · ${WEAPON_SIZE_LABELS[weapon.size]}</option>`;
 						})}</select>
 					</label>
 					${ammunition ? keyed(weaponId, html`<label><span>Rounds</span>
