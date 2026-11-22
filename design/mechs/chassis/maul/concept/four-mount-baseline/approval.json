@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-22",
+  "status": "owner-approved-concept-baseline",
+  "ownerStatement": "This is good. Let's base the rework of the variants upon this baseline.",
+  "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+  "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0",
+  "scope": "Approve this exact Breacher image as the four-mount Maul concept baseline, including inset upper-body mounts and solid feet. B/C concepts require separate visual approval. Does not approve production meshes, turnarounds, gameplay integration or balance.",
+  "gameplayContractStatus": "four-mount-contract-implemented",
+  "existingProductionBaseline": "maul-a-baseline-v1",
+  "derivation": "Every B/C concept must use this exact image directly; preserve body, feet, mounting locations, palette, pose and presentation. Only weapon modules may change.",
+  "implementationAuthorization": {
+    "ownerStatement": "Proceed with implementing these into the models.",
+    "scope": "Authorizes the shown A/B/C concepts to be implemented as shared-body models. Actual export appearance acceptance remains pending."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "status": "owner-approved-concept-for-implementation",
+  "scope": "Revised concept image only. Owner requested inset mounts between shoulders and torso and solid feet without toes. No production mesh or gameplay changes.",
+  "sourceManifest": "design/mechs/assets/maul/pixel/manifest.json",
+  "sourceAssetSha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f",
+  "referenceImage": "design/mechs/chassis/maul/concept/four-mount-baseline/edit-input.png",
+  "mounts": [
+    {
+      "side": "left",
+      "location": "forearm",
+      "family": "launcher",
+      "maxSize": "large",
+      "stock": "cluster-rockets-4",
+      "appearance": "retain approved grouped sixteen tube openings; /4 describes the firing cycle, not physical opening count"
+    },
+    {
+      "side": "right",
+      "location": "forearm",
+      "family": "launcher",
+      "maxSize": "large",
+      "stock": "cluster-rockets-4",
+      "appearance": "retain approved grouped sixteen tube openings; /4 describes the firing cycle, not physical opening count"
+    },
+    {
+      "side": "left",
+      "location": "inboard shoulder pocket between torso and shoulder armor",
+      "family": "ballistic",
+      "maxSize": "small",
+      "stock": "machine-gun",
+      "appearance": "compact single-barrel machine gun in a recessed reinforced mounting collar at upper chest height"
+    },
+    {
+      "side": "right",
+      "location": "inboard shoulder pocket between torso and shoulder armor",
+      "family": "ballistic",
+      "maxSize": "small",
+      "stock": "machine-gun",
+      "appearance": "compact single-barrel machine gun in a recessed reinforced mounting collar at upper chest height"
+    }
+  ],
+  "feet": "Single continuous beveled cream armor cap and dark sole per foot; no separate toes."
+}

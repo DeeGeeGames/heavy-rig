@@ -212,6 +212,7 @@ describe('Company ownership and workshop transactions', function () {
 			{ ...company, version: 2 },
 			{ ...company, version: 3 },
 			{ ...company, version: 4 },
+			{ ...company, version: 7 },
 			{ ...company, selectedFrame: 'maul' },
 			{ ...company, fleet: [] },
 			{ ...company, fleet: [...company.fleet, company.fleet[0]] },

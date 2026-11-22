@@ -1,8 +1,9 @@
 """Hand-authored Maul A plates, on the approved source rig."""
 
-from math import fsum
+from copy import deepcopy
+from math import cos, fsum, pi, sin
 
-from .geometry import average, clipped_rect, minus, ring_z
+from .geometry import PlateMesh, average, clipped_rect, minus, ring_z
 
 PALETTE = {
     "oxide": "bb605b",
@@ -13,8 +14,66 @@ PALETTE = {
     "podrim": "b2a99a",
     "hot": "faad54",
     "glint": "ffd998",
+    "optic": "4fd6d2",
+    "plasma": "9b82d5",
 }
 VISOR_EMISSIVE = [0.44, 0.15, 0.015]
+
+
+def prepare_source(source):
+    """Add the two approved torso-owned interfaces without renumbering the rig.
+
+    Existing animation channels, leg pivots and forearm exits retain their source
+    indices. New geometry is attached in the same rigid-parent space as the old
+    authored plates; the original high-detail GLB remains unchanged.
+    """
+    source = deepcopy(source)
+    nodes = source["nodes"]
+    mesh = PlateMesh(nodes, PALETTE)
+    torso_index = mesh.by_name["rig_torso"]
+    origin = mesh.anchor("rig_torso")
+    for side, sign in (("left", 1), ("right", -1)):
+        pivot = (sign * 188, 884, -70)
+        mount_index = len(nodes)
+        geometry_index, muzzle_index = mount_index + 1, mount_index + 2
+        nodes[torso_index]["children"].append(mount_index)
+        nodes.extend([
+            {"name": f"rig_mount_{side}-inboard", "translation": [(a - b) * .001 for a, b in zip(pivot, origin)],
+             "children": [geometry_index, muzzle_index]},
+            {"name": f"geometry_maul_mount_{side}-inboard", "mesh": 0},
+            {"name": f"muzzle_{side}-inboard", "translation": [0, 0, .224]},
+        ])
+    return source
+
+
+def inboard_center(sign):
+    return sign * 188, 884, -70
+
+
+def inboard_receiver(mesh, sign):
+    x, y, rear = inboard_center(sign)
+    mesh.hull_z(
+        [(rear - 10, x, y - 31, y + 31, 62, 10, 10),
+         (36, x, y - 31, y + 31, 62, 10, 10),
+         (63, x, y - 25, y + 25, 54, 9, 9)],
+        lambda i, j: "porcelain" if j in (3, 4, 5) else "oxide",
+        ("cast", "cast"),
+    )
+    return x, y, 63
+
+
+def inboard_gun(mesh, side, sign):
+    mesh.section = f"geometry_maul_mount_{side}-inboard"
+    x, y, front = inboard_receiver(mesh, sign)
+    # Hollow bore and front rim; no cap across the visible firing aperture.
+    rings = [barrel_ring(x, y, z, radius) for z, radius in
+             ((front - 3, 14), (154, 14), (154, 9), (front + 12, 9))]
+    mesh.join(rings, lambda i, j: "silver" if i == 1 else "joint", (None, None))
+
+
+def barrel_ring(x, y, z, radius):
+    return [(x + radius * cos((i + .5) * pi / 4), y + radius * sin((i + .5) * pi / 4), z)
+            for i in range(8)]
 
 
 def polygon_z(loop, z):
@@ -156,6 +215,19 @@ def torso(mesh):
         )
         mesh.cylinder((sign * 112, 848, -148), (sign * 263, 848, -148), 63, "cast", 10)
         mesh.cylinder((sign * 186, 848, -148), (sign * 214, 848, -148), 70, "silver", 10)
+        # Recessed cartridge pocket between breastplate and pauldron. The dark
+        # perimeter belongs to the torso, so removing a weapon leaves its socket.
+        x, y, _ = inboard_center(sign)
+        mesh.hull_z(
+            [(-125, x, y - 43, y + 43, 76, 12, 12),
+             (48, x, y - 43, y + 43, 76, 12, 12)],
+            "cast", ("cast", None),
+        )
+        outer = polygon_z(clipped_rect(x, y, 76, 86, 12, 12), 48)
+        inner = polygon_z(clipped_rect(x, y, 64, 66, 10, 10), 48)
+        for edge in range(8):
+            next_edge = (edge + 1) % 8
+            mesh.face([outer[edge], outer[next_edge], inner[next_edge], inner[edge]], (0, 0, 1), "joint")
         # Overhanging square pauldrons with lower cutaway. The upper arm stays
         # visible between the pauldron and the forearm pod in side and rear view.
         mesh.hull_y(
@@ -311,18 +383,15 @@ def leg(mesh, side, sign):
         ],
         "oxide",
     )
-    for n in (-1, 0, 1):
-        tx = ax + n * 85
-        tip = 162 if n == 0 else 142
-        mesh.hull_z(
-            [
-                (-7, tx, 7, 64, 78, 11, 11),
-                (47, tx, 0, 80, 83, 12, 13),
-                (104, tx, 0, 62, 83, 13, 10),
-                (tip, tx, 0, 36, 69, 11, 8),
-            ],
-            lambda i, j: "porcelain" if i >= 1 and j not in (0, 1, 7) else "cast",
-        )
+    # A single continuous boot cap replaces the three separated toe fingers.
+    # Preserve the sole's footprint and ankle pivot, rather than changing gait.
+    mesh.hull_z(
+        [(-7, ax, 7, 64, 248, 25, 11),
+         (47, ax, 0, 80, 253, 28, 13),
+         (104, ax, 0, 62, 253, 28, 10),
+         (162, ax, 0, 36, 239, 25, 8)],
+        lambda i, j: "porcelain" if i >= 1 and j not in (0, 1, 7) else "cast",
+    )
 
 
 def build(mesh):
@@ -330,4 +399,5 @@ def build(mesh):
     pelvis(mesh)
     for side, sign in (("left", 1), ("right", -1)):
         pod(mesh, side, sign)
+        inboard_gun(mesh, side, sign)
         leg(mesh, side, sign)

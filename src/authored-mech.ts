@@ -40,6 +40,8 @@ const kestrelWeaponSpecs = [
 const maulWeaponSpecs = [
 	{ group: 'rig_mount_left-pod', muzzle: 'muzzle_left-forearm pod', side: 'left', launcher: true },
 	{ group: 'rig_mount_right-pod', muzzle: 'muzzle_right-forearm pod', side: 'right', launcher: true },
+	{ group: 'rig_mount_left-inboard', muzzle: 'muzzle_left-inboard', side: 'left', launcher: false },
+	{ group: 'rig_mount_right-inboard', muzzle: 'muzzle_right-inboard', side: 'right', launcher: false },
 ] as const;
 type AuthoredChassis = 'warden' | 'kestrel' | 'maul';
 interface AuthoredWeaponSpec {

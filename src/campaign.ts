@@ -36,7 +36,7 @@ export interface CampaignResult {
 }
 
 export interface Campaign extends CompanyState {
-	version: 7;
+	version: 8;
 	introComplete: boolean;
 	mode?: 'campaign' | 'career';
 	story?: ChainProgress;
@@ -55,7 +55,7 @@ export interface Campaign extends CompanyState {
 	lastResult: CampaignResult | undefined;
 }
 
-const CAMPAIGN_VERSION = 7;
+const CAMPAIGN_VERSION = 8;
 export const CAMPAIGN_STORAGE_KEY = `heavy-rig:campaign:v${CAMPAIGN_VERSION}`;
 const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition'];
 const MAX_COUNT = 1_000_000;

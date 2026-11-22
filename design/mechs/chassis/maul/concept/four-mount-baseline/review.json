@@ -1,0 +1,18 @@
+{
+  "status": "owner-approved-concept-baseline",
+  "tool": "built-in image_gen",
+  "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+  "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0",
+  "prompt": "prompt.txt",
+  "inputImage": "design/mechs/chassis/maul/concept/four-mount-baseline/edit-input.png",
+  "inputImageSha256": "47ad4fc191852d06144bb97f34fb623d3dc2d5e9b5a80ad94dcc4f68fa5418fb",
+  "visibleChecks": {
+    "mountCount": "pass: two forearm launcher assemblies and two recessed ballistic assemblies, four total",
+    "placement": "pass: ballistic receivers and collars sit between cream torso sides and inner orange shoulder armor; no weapons remain above shoulder tops",
+    "feet": "pass: each foot has one broad continuous front cap and sole; no separated toes",
+    "preservation": "pass at concept level: same pose, palette, cockpit, leg proportions and forearm pods",
+    "clearance": "uncertain: single image does not verify shoulder articulation, internal feed paths or muzzle clearance throughout motion"
+  },
+  "ownerApproval": "This is good. Let's base the rework of the variants upon this baseline.",
+  "scope": "Raster concept only; no mesh or game assets changed."
+}

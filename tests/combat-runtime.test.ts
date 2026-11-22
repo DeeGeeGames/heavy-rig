@@ -123,7 +123,7 @@ test('the practice range fires the selected hardpoint, replaces targets, and ref
 		expect(state.enemies).toHaveLength(targets.length);
 		expect(state.enemies.every(function (enemy) { return enemy.stationary && !targets.includes(enemy.id); })).toBe(true);
 		expect(training.stage).toBe('range');
-		const refit = createTraining({ frame: 'maul-c', loadout: [null, 'ppc:t5'], reserves: [0, 0] });
+		const refit = createTraining({ frame: 'maul-c', loadout: [null, 'ppc:t5', null, null], reserves: [0, 0, 0, 0] });
 		const fresh = combat.attach(refit.state, refit);
 		expect(fresh.frame).toBe('maul-c');
 		expect(fresh.loadout.map(function (mount) { return [mount.slot, mount.weapon]; })).toEqual([[1, 'ppc:t5']]);

@@ -76,7 +76,16 @@ def maul_cartridge(mesh, side, sign, family):
         "podrim", (None, "coal"),
     )
     if family == "energy":
-        return emitter(mesh, x, y, front + 11, front + 72, 120, 105, "redshade", "porcelain", "hot")
+        # Furnace carries a PPC here, rather than a second small ARC cartridge.
+        rings = [maul.barrel_ring(x, y, z, radius) for z, radius in
+                 ((front + 11, 64), (front + 50, 62), (front + 65, 54),
+                  (front + 65, 44), (front + 37, 44))]
+        mesh.join(rings, lambda i, j: "silver" if i == 2 else "joint", (None, None))
+        mesh.face(maul.barrel_ring(x, y, front + 37, 44), (0, 0, 1), "plasma")
+        for z in (front + 14, front + 37):
+            mesh.join([maul.barrel_ring(x, y, zz, radius) for zz, radius in
+                       ((z, 64), (z, 72), (z + 8, 72), (z + 8, 64))], "podrim", (None, None))
+        return (x, y, front + 65), ()
     mesh.cylinder((x, y, front + 9), (x, y, front + 78), 52, "cast")
     lip = front + 164
     kestrel.tube(mesh, x, y, front + 59, lip, 33)
@@ -85,6 +94,19 @@ def maul_cartridge(mesh, side, sign, family):
              ((lip - 46, 30), (lip - 46, 43), (lip - 13, 43), (lip - 13, 30))]
     mesh.join(rings, "porcelain", (None, None))
     return (x, y, lip), ()
+
+
+def maul_inboard(mesh, sign, family):
+    x, y, front = maul.inboard_receiver(mesh, sign)
+    if family == "energy":
+        return emitter(mesh, x, y, front - 20, front + 6, 49, 46, "coal", "silver", "optic")
+    # The compact LANCE has two physical exits in one cartridge. They remain
+    # vertically paired, fitting the same pocket as A's gun and B's optical bank.
+    lip = front + 35
+    tubes = tuple((x, y + offset, lip) for offset in (-13, 13))
+    for tx, ty, tz in tubes:
+        kestrel.tube(mesh, tx, ty, front - 1, tz, 10)
+    return (x, y, lip), tubes
 
 
 RECIPES = {
@@ -100,6 +122,9 @@ RECIPES = {
         (0, "ballistic", "rig_mount_left-pod", lambda mesh: maul_cartridge(mesh, "left", 1, "ballistic")),
         (1, "ballistic", "rig_mount_right-pod", lambda mesh: maul_cartridge(mesh, "right", -1, "ballistic")),
         (1, "energy", "rig_mount_right-pod", lambda mesh: maul_cartridge(mesh, "right", -1, "energy")),
+        (2, "energy", "rig_mount_left-inboard", lambda mesh: maul_inboard(mesh, 1, "energy")),
+        (3, "energy", "rig_mount_right-inboard", lambda mesh: maul_inboard(mesh, -1, "energy")),
+        (3, "launcher", "rig_mount_right-inboard", lambda mesh: maul_inboard(mesh, -1, "launcher")),
     ]),
 }
 

@@ -36,6 +36,8 @@ def rebuild(chassis, recipe, staging):
     source_hash = selection["source"]["sha256"]
     verify(source_path, source_hash)
     source, source_bytes = glb.read_glb(source_path)
+    if hasattr(recipe, "prepare_source"):
+        source = recipe.prepare_source(source)
 
     mesh = PlateMesh(source["nodes"], recipe.PALETTE)
     recipe.build(mesh)
