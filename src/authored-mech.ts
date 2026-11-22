@@ -12,14 +12,16 @@ import { KESTREL_RUN_PROFILE } from './authored-run';
 import type { FrameId } from './frames';
 import type { MechSkinId } from './mech-skin';
 import { applyMechSkinMaterial, type SkinSurface } from './mech-skin-material';
+import { getHardpoints } from './hardpoints';
+import { getWeapon } from './arsenal';
 
 export const MAUL_LOGICAL_TUBE_MAPPING = ['1_0', '2_0', '1_1', '2_1', '1_3', '2_3'] as const;
 export const WARDEN_LOGICAL_TUBE_MAPPING = ['lower_1', 'lower_2', 'lower_4', 'upper_1', 'upper_3', 'upper_4'] as const;
 
-export const playableMechUrl = function (frame: AuthoredDescriptor['frame']): string {
+export const playableMechUrl = function (frame: AuthoredChassis): string {
 	return `./assets/mechs/${frame}/pixel.glb`;
 };
-const previewMechUrl = function (frame: AuthoredDescriptor['frame']): string {
+const previewMechUrl = function (frame: AuthoredChassis): string {
 	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? playableMechUrl(frame);
 };
 export const authoredWardenUrl = function (): string {
@@ -39,18 +41,26 @@ const maulWeaponSpecs = [
 	{ group: 'rig_mount_left-pod', muzzle: 'muzzle_left-forearm pod', side: 'left', launcher: true },
 	{ group: 'rig_mount_right-pod', muzzle: 'muzzle_right-forearm pod', side: 'right', launcher: true },
 ] as const;
+type AuthoredChassis = 'warden' | 'kestrel' | 'maul';
+interface AuthoredWeaponSpec {
+	readonly group: string;
+	readonly muzzle: string;
+	readonly side: 'left' | 'right';
+	readonly launcher: boolean;
+	readonly exits?: readonly string[];
+}
 interface AuthoredDescriptor {
-	readonly frame: 'warden' | 'kestrel' | 'maul';
+	readonly chassis: AuthoredChassis;
 	readonly height: number;
-	readonly weapons: readonly { readonly group: string; readonly muzzle: string; readonly side: 'left' | 'right'; readonly launcher: boolean }[];
+	readonly weapons: readonly AuthoredWeaponSpec[];
 	readonly locomotion?: AuthoredLocomotionOptions;
 	readonly tubeMapping?: readonly string[];
 	readonly launcherExitPrefix?: string;
 }
-const wardenDescriptor: AuthoredDescriptor = { frame: 'warden', height: 101.75, weapons: wardenWeaponSpecs };
+const wardenDescriptor: AuthoredDescriptor = { chassis: 'warden', height: 101.75, weapons: wardenWeaponSpecs };
 const kestrelDescriptor: AuthoredDescriptor = {
 	// Existing procedural Kestrel, posed neutrally on its own rig: floor0, roof74.82.
-	frame: 'kestrel', height: 74.82, weapons: kestrelWeaponSpecs,
+	chassis: 'kestrel', height: 74.82, weapons: kestrelWeaponSpecs,
 	// Short support and a longer recovery produce visible bounds. Torso rise shares
 	// the flight phase; measured pivots and soles still own planted contacts.
 	locomotion: { walkStride: 0.6, walkExtension: 0.2, run: KESTREL_RUN_PROFILE },
@@ -60,7 +70,7 @@ export const authoredKestrelUrl = function (): string {
 };
 const maulDescriptor: AuthoredDescriptor = {
 	// Procedural Maul posed on FRAME_RIGS.maul at its own scale: floor 0.
-	frame: 'maul', height: 153.65404829172167, weapons: maulWeaponSpecs,
+	chassis: 'maul', height: 153.65404829172167, weapons: maulWeaponSpecs,
 	tubeMapping: MAUL_LOGICAL_TUBE_MAPPING, launcherExitPrefix: '',
 	// The source has a short upper leg, broad shoes and heavy forearm pods.
 	// Keep strides and foot pitch conservative; measured IK uses its own pivots.
@@ -108,20 +118,21 @@ const disposeAsset = function (asset: Pick<GLTF, 'scene'>) {
 
 // The source stays caller-owned. Instances share immutable geometry/textures and
 // own their cloned materials, pose state and transforms.
-const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GLTF, 'scene' | 'animations'>, options: AuthoredOptions, release?: () => void) {
+const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GLTF, 'scene' | 'animations'>, options: AuthoredOptions, release?: () => void, variant?: { frame: FrameId; baseBounds: Box3 }) {
 	if (asset.scene.parent) throw new Error('Authored source must be an unparented neutral scene');
-	const sourceBounds = new Box3().setFromObject(asset.scene);
+	const frame = variant?.frame ?? descriptor.chassis;
+	const sourceBounds = variant?.baseBounds ?? new Box3().setFromObject(asset.scene);
 	const sourceHeight = sourceBounds.max.y - sourceBounds.min.y;
 	const height = options.height ?? descriptor.height;
 	const weaponSpecs = descriptor.weapons;
 	const tubeMapping = descriptor.tubeMapping ?? WARDEN_LOGICAL_TUBE_MAPPING;
 	const launcherExits = function (spec: AuthoredDescriptor['weapons'][number]): readonly string[] {
-		return spec.launcher ? tubeMapping.map(function (suffix) { return `physical_exit_${spec.side}_${descriptor.launcherExitPrefix ?? 'launcher_'}${suffix}`; }) : [];
+		return spec.exits ?? (spec.launcher ? tubeMapping.map(function (suffix) { return `physical_exit_${spec.side}_${descriptor.launcherExitPrefix ?? 'launcher_'}${suffix}`; }) : []);
 	};
 	if (!Number.isFinite(sourceHeight) || sourceHeight <= 0 || !Number.isFinite(height) || height <= 0) throw new Error('Invalid authored asset height');
 	let hasPixelPlates = false;
 	asset.scene.traverse(function (node) {
-		if (node instanceof SkinnedMesh) throw new Error(`${descriptor.frame} asset contract requires rigid groups`);
+		if (node instanceof SkinnedMesh) throw new Error(`${descriptor.chassis} asset contract requires rigid groups`);
 		if (!hasPixelPlates && node instanceof Mesh) hasPixelPlates = materialsOf(node).some(isPixelPlateMaterial);
 	});
 	const scale = height / sourceHeight;
@@ -132,12 +143,12 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		if (!clip || !Number.isFinite(clip.duration) || clip.duration <= 0) throw new Error(`Missing authored ${name} animation`);
 		const metadata: unknown = clip.userData['nativeUnitsPerSecond'] ?? clip.userData['nominalForwardSpeed'];
 		const validMetadata = typeof metadata === 'number' && Number.isFinite(metadata) && metadata !== 0;
-		if (descriptor.frame !== 'warden' && !validMetadata) throw new Error(`Missing ${descriptor.frame} ${name} nominal speed metadata`);
+		if (descriptor.chassis !== 'warden' && !validMetadata) throw new Error(`Missing ${descriptor.chassis} ${name} nominal speed metadata`);
 		const nominal = validMetadata ? Math.abs(metadata) : name === 'walk' ? 0.32 / 0.9 : name === 'run' ? 0.64 / 0.9 : 0.2666666667;
 		return { name, clip, nominalSpeed: nominal * scale };
 	});
 	const makeGraph = function () {
-		const root = new Group(); root.name = `authored-${descriptor.frame}-frame`;
+		const root = new Group(); root.name = `authored-${frame}-frame`;
 		const hull = new Group(); hull.name = 'authored-hull-heading'; root.add(hull);
 		const basis = new Group(); basis.name = 'authored-native-basis'; basis.rotation.y = Math.PI / 2; basis.scale.setScalar(scale); basis.position.set(-origin.z * scale, -sourceBounds.min.y * scale, origin.x * scale); hull.add(basis);
 		const scene = asset.scene.clone(true); basis.add(scene); root.updateMatrixWorld(true);
@@ -170,12 +181,12 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 	// The pixel Kestrel's reshaped shoes need a slightly shorter stance to clear
 	// the ground together for a full bound at light-load speed.
 	const profile = descriptor.locomotion;
-	const gaitOptions = hasPixelPlates && descriptor.frame === 'kestrel' && profile
+	const gaitOptions = hasPixelPlates && descriptor.chassis === 'kestrel' && profile
 		? { ...profile, run: { ...profile.run, stanceFraction: 0.25 } } : profile;
 	const locomotion = prepareAuthoredLocomotion(named(probe.scene, 'rig_pelvis'), (['left', 'right'] as const).map(function (side, index) {
 		return { index: index === 0 ? 0 : 1, thigh: named(probe.scene, `rig_leg_${side}_thigh`), shin: named(probe.scene, `rig_leg_${side}_shin`), foot: named(probe.scene, `rig_leg_${side}_foot`) };
 	}), scale, gaitOptions);
-	const standingPelvisDrop = descriptor.frame === 'warden'
+	const standingPelvisDrop = descriptor.chassis === 'warden'
 		? locomotion.pelvisDrop(locomotion.advance(undefined, { x: 0, y: 0, angle: 0 }, 0), sampler.pelvisMatrix(), 0)
 		: undefined;
 	const advancePose = function (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number): AuthoredPoseContext {
@@ -185,10 +196,10 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		const advanced = locomotion.advance(valid?.gait, body, dt);
 		// Maul's weight transfer translates the body; its torso keeps a vertical
 		// up axis while independent aiming continues to rotate it around that axis.
-		const gait = descriptor.frame === 'maul' ? { ...advanced, motion: { ...advanced.motion, pitch: 0, roll: 0 } } : advanced;
+		const gait = descriptor.chassis === 'maul' ? { ...advanced, motion: { ...advanced.motion, pitch: 0, roll: 0 } } : advanced;
 		const context = { ...advanceAuthoredPose(motions, valid, body, time), gait };
 		// Maul needs the displayed hip positions to keep its short legs bent over a planted shoe.
-		const supportHeading = descriptor.frame === 'maul' ? snapMechHeading(gait.body.angle) : gait.body.angle;
+		const supportHeading = descriptor.chassis === 'maul' ? snapMechHeading(gait.body.angle) : gait.body.angle;
 		return { ...context, pelvisDrop: locomotion.pelvisDrop(gait, sampler.pelvisMatrix(context), supportHeading), ...(standingPelvisDrop === undefined ? {} : { standingPelvisDrop }) };
 	};
 	const muzzle = function (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined): SpatialPoint {
@@ -210,8 +221,8 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		if (closed) { releaseSource?.(); releaseSource = undefined; }
 	};
 	const create = function (skin: MechSkinId = 'original'): MechAssetModel {
-		if (closed) throw new Error(`Authored ${descriptor.frame} factory is disposed`);
-		if (installation?.closing) throw new Error(`Authored ${descriptor.frame} installation is closing; dispose existing models first`);
+		if (closed) throw new Error(`Authored ${descriptor.chassis} factory is disposed`);
+		if (installation?.closing) throw new Error(`Authored ${descriptor.chassis} installation is closing; dispose existing models first`);
 		const { root, hull, scene } = makeGraph();
 		root.userData['mechSkin'] = skin;
 		const ownedMaterials = new Map<string, Material>();
@@ -226,7 +237,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 				return material;
 			}
 			const secondary = ['_shin', '_foot', '_mount_'].some(function (part) { return node.name.includes(part); });
-			const surface: SkinSurface = descriptor.frame !== 'warden' ? secondary ? 'palette-secondary' : 'palette-primary'
+			const surface: SkinSurface = descriptor.chassis !== 'warden' ? secondary ? 'palette-secondary' : 'palette-primary'
 				: source.name === 'Warden shared pod atlas' ? 'pod'
 					: node.name.includes('mount_connections') || node.name.includes('_pelvis') ? 'mechanism'
 						: node.name.includes('-gun') ? 'gun' : secondary ? 'secondary' : 'primary';
@@ -287,7 +298,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			sampleLegPose(feedback?.legGait);
 			// Empty authored equipment slots hide only the interchangeable assembly.
 			// Mount brackets remain torso-owned, and simulation retains slot anchors.
-			if (descriptor.frame !== 'warden') for (const [slot, weapon] of weapons.entries()) weapon.mount.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
+			if (frame !== 'warden') for (const [slot, weapon] of weapons.entries()) weapon.mount.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
 			// Weapons and structural necks retain their authored local transforms.
 			root.updateMatrixWorld(true); inverse.copy(root.matrixWorld).invert();
 			for (const [slot, weapon] of weapons.entries()) {
@@ -319,11 +330,12 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			},
 		};
 	};
+	const launcher = weaponSpecs.find(function (spec) { return spec.launcher; });
 	return {
-		create, weaponRigs, advancePose, muzzle, tubeMapping: weaponSpecs.some(function (spec) { return spec.launcher; }) ? tubeMapping : [], height, nativeHorizontalOrigin: origin,
+		create, weaponRigs, advancePose, muzzle, tubeMapping: launcher ? launcher.exits ?? tubeMapping : [], height, nativeHorizontalOrigin: origin,
 		install: function () {
-			if (closed) throw new Error(`Authored ${descriptor.frame} factory is disposed`);
-			const remove = installMechAssetBinding(descriptor.frame, { create, weaponRigs, advancePose, muzzle });
+			if (closed) throw new Error(`Authored ${descriptor.chassis} factory is disposed`);
+			const remove = installMechAssetBinding(frame, { create, weaponRigs, advancePose, muzzle });
 			installation = { remove, closing: false };
 			return function () { if (installation?.remove === remove) installation.closing = true; releaseIfUnused(); };
 		},
@@ -362,6 +374,91 @@ export const loadAuthoredMaul = async function (url: string, options: AuthoredOp
 	const asset = await new GLTFLoader().loadAsync(url);
 	try { return prepareAuthored(maulDescriptor, asset, options, function () { disposeAsset(asset); }); }
 	catch (error: unknown) { disposeAsset(asset); throw error; }
+};
+
+const playableDescriptors = { warden: wardenDescriptor, kestrel: kestrelDescriptor, maul: maulDescriptor };
+
+const loadPlayableAsset = async function (label: string, url: string): Promise<GLTF | undefined> {
+	let expired = false;
+	let deadline: ReturnType<typeof setTimeout> | undefined;
+	const loading = new GLTFLoader().loadAsync(url).then(function (asset) {
+		if (expired) { disposeAsset(asset); return undefined; }
+		return asset;
+	}).catch(function (error: unknown) {
+		console.warn(`${label} asset unavailable; using the procedural model.`, error);
+		return undefined;
+	});
+	const fallback = new Promise<undefined>(function (resolve) {
+		deadline = setTimeout(function () {
+			expired = true;
+			console.warn(`${label} loading timed out; using the procedural model.`);
+			resolve(undefined);
+		}, 5000);
+	});
+	try { return await Promise.race([loading, fallback]); }
+	finally { if (deadline !== undefined) clearTimeout(deadline); }
+};
+
+const assemblePlayableVariant = function (descriptor: AuthoredDescriptor, frame: FrameId, base: GLTF, modules: GLTF) {
+	const scene = base.scene.clone(true);
+	const weapons = getHardpoints(frame).map(function (hardpoint, slot): AuthoredWeaponSpec {
+		const spec = descriptor.weapons[slot];
+		const baseHardpoint = getHardpoints(descriptor.chassis)[slot];
+		if (!spec || !baseHardpoint) throw new Error(`Missing ${frame} socket ${slot}`);
+		if (hardpoint.family === baseHardpoint.family) return spec;
+
+		const name = `variant_${slot}_${hardpoint.family}`;
+		const module = named(modules.scene, name);
+		if (module.userData['mount'] !== spec.group) throw new Error(`Wrong socket for ${frame} module ${name}`);
+		const socket = named(scene, spec.group);
+		for (const child of [...socket.children]) if (!child.name.startsWith('connection_')) socket.remove(child);
+		socket.add(...module.clone(true).children);
+		const launcher = hardpoint.family === 'launcher';
+		const count = launcher ? Math.max(...hardpoint.weapons.map(function (id) { return getWeapon(id).projectiles; })) : 0;
+		return { ...spec, launcher, muzzle: `${name}_muzzle`, exits: Array.from({ length: count }, function (_, index) { return `${name}_tube_${index}`; }) };
+	});
+	return { scene, animations: base.animations, descriptor: { ...descriptor, weapons } };
+};
+
+export const loadPlayableMechFamily = async function (chassis: AuthoredChassis, url: string) {
+	const pixelUrl = playableMechUrl(chassis);
+	const [base, modules] = await Promise.all([
+		loadPlayableAsset(chassis, url),
+		url === pixelUrl ? loadPlayableAsset(`${chassis} B/C`, `./assets/mechs/${chassis}/variants.glb`) : undefined,
+	]);
+	if (!base) {
+		if (modules) disposeAsset(modules);
+		return [];
+	}
+	// Source meshes are shared by the base and both variants. Keep them alive
+	// until the last factory has closed and all of its instances are gone.
+	let references = 1;
+	const release = function () {
+		references -= 1;
+		if (references !== 0) return;
+		disposeAsset(base);
+		if (modules) disposeAsset(modules);
+	};
+	const factories: ReturnType<typeof prepareAuthored>[] = [];
+	const descriptor = playableDescriptors[chassis];
+	try {
+		const baseBounds = new Box3().setFromObject(base.scene);
+		factories.push(prepareAuthored(descriptor, base, {}, release));
+		references += 1;
+		if (modules) for (const suffix of ['b', 'c'] as const) {
+			const frame: FrameId = `${chassis}-${suffix}`;
+			try {
+				const variant = assemblePlayableVariant(descriptor, frame, base, modules);
+				factories.push(prepareAuthored(variant.descriptor, variant, {}, release, { frame, baseBounds }));
+				references += 1;
+			} catch (error: unknown) {
+				console.warn(`${frame} asset invalid; using the procedural model.`, error);
+			}
+		}
+	} catch (error: unknown) {
+		console.warn(`${chassis} asset invalid; using the procedural model.`, error);
+	} finally { release(); }
+	return factories;
 };
 
 export const authoredMuzzleError = function (model: MechAssetModel, rigs: readonly WeaponRig[], gait: WalkerGait, heading: number, target?: SpatialPoint, context?: AuthoredPoseContext, frame: FrameId = 'warden'): number {

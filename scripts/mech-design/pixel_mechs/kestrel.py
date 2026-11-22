@@ -141,7 +141,7 @@ def pelvis(mesh):
     mesh.cylinder((-5, 550, -12), (-5, 591, -12), 95, "cast", 12)
 
 
-def gun(mesh, side, sign):
+def gun_housing(mesh, side, sign):
     mesh.section = f"geometry_kestrel_mount_{side}-gun"
     x, y, z = mesh.anchor(f"muzzle_{side}-gun")
     dz = z - (264 if sign > 0 else 254)
@@ -157,6 +157,11 @@ def gun(mesh, side, sign):
         lambda i, j: "cast" if j in (0, 1, 7) else "ivory" if j in (3, 4, 5) and i >= 2 else "sage",
         ("forest", "cast"),
     )
+    return x, y, dz
+
+
+def gun(mesh, side, sign):
+    x, y, dz = gun_housing(mesh, side, sign)
     mesh.cylinder((x, y, 3 + dz), (x, y, 72 + dz), 54, "cast")
     mesh.cylinder((x, y, 52 + dz), (x, y, 78 + dz), 56, "forest")
     for i in range(1, 8):

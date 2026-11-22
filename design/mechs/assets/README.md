@@ -18,6 +18,21 @@ python3 scripts/mech-design/verify-assets.py
 python3 scripts/mech-design/build-pixel-mechs.py --out design/mechs/generated/approved-pixel-rebuild
 ```
 
+The B/C variants fit replacement weapon cartridges to the A mounts at startup.
+Warden changes its shoulder cartridges, Kestrel changes its right arm cartridge,
+and Maul changes both forearm cartridges. The game uses the same body geometry,
+normalization, rig and gait for every variant of a chassis. Each cartridge
+includes the muzzle and, for Kestrel C, two physical launcher exits. Cartridge
+geometry represents the stock hardware for its mount family across compatible
+refits.
+
+Rebuild the three module bundles with
+`python3 scripts/mech-design/build-pixel-variants.py --out design/mechs/generated/variant-rebuild`.
+Compare each output with the matching `public/assets/mechs/<chassis>/variants.glb`.
+The bundles record the SHA-256 of the A asset used to author them. The
+`authored-variants` test checks that pairing, shared body geometry and alignment
+of rendered exits with simulation firing origins.
+
 `manifest.json` pins all retained assets by path, size and SHA-256. GLB and Blender
 files use Git LFS. The high-detail Warden authoring build reads the following inputs.
 

@@ -105,7 +105,9 @@ review. The runtime uses fixed-step contacts and measured IK with
 Kestrel-specific strides, rather than replaying the embedded draft leg tracks.
 Clip approval therefore does not approve runtime locomotion. Empty gun slots
 hide only their interchangeable assemblies; torso brackets and firing anchors
-remain. Other Kestrel weapon variants retain the procedural path.
+remain. The playable B/C variants of all three chassis load weapon cartridges
+alongside the matching A asset. A missing or invalid cartridge falls back to
+the affected variant's procedural model.
 
 The material and neutral authoring exports reproduced byte for byte. This
 second-chassis run exercised the shared inventory and neutral rig packager;
