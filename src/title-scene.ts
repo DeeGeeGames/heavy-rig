@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, AmbientLight, BoxGeometry, Color, CylinderGeometry, DirectionalLight, FogExp2, Group, Mesh, MeshStandardMaterial, PCFSoftShadowMap, PerspectiveCamera, Scene, SpotLight, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, AmbientLight, BoxGeometry, Color, CylinderGeometry, DirectionalLight, FogExp2, Group, Mesh, MeshStandardMaterial, PCFShadowMap, PerspectiveCamera, Scene, SpotLight, Vector3, WebGLRenderer } from 'three';
 import { createMech } from './mech-3d';
 import { createSolidInk } from './solid-ink';
 import { createGait } from './gait';
@@ -8,7 +8,7 @@ export const createTitleScene = function (canvas: HTMLCanvasElement) {
 	const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
 	renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
 	renderer.shadowMap.enabled = true;
-	renderer.shadowMap.type = PCFSoftShadowMap;
+	renderer.shadowMap.type = PCFShadowMap;
 	renderer.shadowMap.autoUpdate = false;
 	renderer.shadowMap.needsUpdate = true;
 	renderer.toneMapping = ACESFilmicToneMapping;
@@ -17,6 +17,7 @@ export const createTitleScene = function (canvas: HTMLCanvasElement) {
 	scene.background = new Color('#0a1419');
 	scene.fog = new FogExp2('#0a1419', 0.0028);
 	const camera = new PerspectiveCamera(35, 1, 1, 2200);
+	const inkAnchor = new Vector3(0, 46, 0);
 	const geometry = new BoxGeometry(1, 1, 1);
 	const materials: MeshStandardMaterial[] = [];
 	const material = function (color: string, glow?: string) {
@@ -84,10 +85,10 @@ export const createTitleScene = function (canvas: HTMLCanvasElement) {
 			const drift = Math.sin(now / 14000) * 3;
 			const distance = portrait ? 1.8 : 1;
 			camera.position.set((190 + drift) * distance, 46 + 67 * distance, 205 * distance);
-			camera.lookAt(0, 46, 0);
+			camera.lookAt(inkAnchor);
 			camera.setViewOffset(w, h, portrait ? -w * 0.16 : -w * 0.23, portrait ? h * 0.045 : -h * 0.015, w, h);
 			camera.updateProjectionMatrix();
-			ink.render(scene, camera, w, h);
+			ink.render(scene, camera, w, h, { anchor: inkAnchor });
 		},
 		dispose: function () { canvas.removeEventListener('webglcontextrestored', invalidate); ink.dispose(); mech.dispose(); geometry.dispose(); platformGeometry.dispose(); materials.forEach(function (value) { value.dispose(); }); key.shadow.dispose(); scene.clear(); renderer.dispose(); },
 	};

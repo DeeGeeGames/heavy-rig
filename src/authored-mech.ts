@@ -156,6 +156,9 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 	const locomotion = prepareAuthoredLocomotion(named(probe.scene, 'rig_pelvis'), (['left', 'right'] as const).map(function (side, index) {
 		return { index: index === 0 ? 0 : 1, thigh: named(probe.scene, `rig_leg_${side}_thigh`), shin: named(probe.scene, `rig_leg_${side}_shin`), foot: named(probe.scene, `rig_leg_${side}_foot`) };
 	}), scale, descriptor.locomotion);
+	const standingPelvisDrop = descriptor.frame === 'warden'
+		? locomotion.pelvisDrop(locomotion.advance(undefined, { x: 0, y: 0, angle: 0 }, 0), sampler.pelvisMatrix(), 0)
+		: undefined;
 	const advancePose = function (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number): AuthoredPoseContext {
 		const valid = previous && time >= previous.time ? previous : undefined;
 		const dt = valid ? Math.min(time - valid.time, 0.1) : 0;
@@ -167,7 +170,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		const context = { ...advanceAuthoredPose(motions, valid, body, time), gait };
 		// Maul needs the displayed hip positions to keep its short legs bent over a planted shoe.
 		const supportHeading = descriptor.frame === 'maul' ? snapMechHeading(gait.body.angle) : gait.body.angle;
-		return { ...context, pelvisDrop: locomotion.pelvisDrop(gait, sampler.pelvisMatrix(context), supportHeading) };
+		return { ...context, pelvisDrop: locomotion.pelvisDrop(gait, sampler.pelvisMatrix(context), supportHeading), ...(standingPelvisDrop === undefined ? {} : { standingPelvisDrop }) };
 	};
 	const muzzle = function (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined): SpatialPoint {
 		const exit = exits[slot]; if (!exit) throw new RangeError(`Missing authored muzzle ${slot}`);

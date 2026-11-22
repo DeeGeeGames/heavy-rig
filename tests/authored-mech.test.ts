@@ -114,7 +114,7 @@ test('non-collinear authored hinges keep physical muzzle and six selected exits 
 	} finally { model.dispose(); remove(); factory.dispose(); for (const geometry of asset.geometries) geometry.dispose(); asset.material.dispose(); }
 });
 
-test('rigid mounts inherit animated torso motion and simulation muzzle sampling never depends on rendering', function () {
+test('Warden mounts inherit its steady torso and simulation muzzle sampling stays independent of rendering', function () {
 	const asset = fixture(true); const factory = prepareAuthoredWarden(asset); const remove = factory.install();
 	let body = { x: 500, y: 400, angle: 0 }; let gait = createGait(body);
 	let context: AuthoredPoseContext = factory.advancePose(undefined, body, 0);
@@ -126,8 +126,10 @@ test('rigid mounts inherit animated torso motion and simulation muzzle sampling 
 	const matrices = fixed.map(function (node) { node.updateMatrix(); return node.matrix.clone(); });
 	const decode = model.root.getObjectsByProperty('type', 'Mesh').filter(function (node) { return node.name.startsWith('static_decode_'); });
 	const decodeMatrices = decode.map(function (node) { node.updateMatrix(); return node.matrix.toArray(); });
-	let lowest = Infinity; let highest = -Infinity; let maximumTilt = 0;
 	try {
+		model.root.position.set(body.x, 0, body.y); model.root.rotation.y = 0.23; model.root.scale.setScalar(1.3);
+		model.pose(gait, 0, { recoil: 0, hit: 0, heat: 0, time: 0, authoredPose: context });
+		const standingHeight = torso.getWorldPosition(new Vector3()).y;
 		// Rendering arbitrary unrelated poses cannot publish an authoritative cache.
 		model.pose(createGait({ x: -900, y: 73, angle: 2 }), -1, { recoil: 0, hit: 0, heat: 0, time: 50, target: { x: 0, y: 0, elevation: 220 } });
 		expect(getPlayerMuzzle('warden', 0, body, 0, undefined, undefined, context)).toEqual(before);
@@ -138,7 +140,7 @@ test('rigid mounts inherit animated torso motion and simulation muzzle sampling 
 			const heading = angle + Math.sin(tick / 13);
 			const target = { x: body.x + Math.cos(heading) * 125, y: body.y + Math.sin(heading) * 125, elevation: tick % 2 ? 220 : 0 };
 			model.root.position.set(body.x, 0, body.y); model.root.rotation.y = 0.23; model.root.scale.setScalar(1.3);
-			model.pose(gait, heading, { recoil: 0, hit: 0, heat: 0, time: tick / 60, target, authoredPose: context });
+			model.pose(gait, heading, { recoil: 0.8, hit: 0, heat: 0, time: tick / 60, target, authoredPose: context });
 			expect(authoredMuzzleError(model, factory.weaponRigs, gait, heading, target, context)).toBeLessThan(1e-6);
 			const inverse = torso.matrixWorld.clone().invert();
 			for (const [index, node] of fixed.entries()) {
@@ -146,10 +148,9 @@ test('rigid mounts inherit animated torso motion and simulation muzzle sampling 
 				const relative = new Matrix4().multiplyMatrices(inverse, node.matrixWorld);
 				expect(Math.max(...relative.elements.map(function (value, element) { return Math.abs(value - (expected.elements[element] ?? Infinity)); }))).toBeLessThan(1e-12);
 			}
-			const at = torso.getWorldPosition(new Vector3()); lowest = Math.min(lowest, at.y); highest = Math.max(highest, at.y);
-			maximumTilt = Math.max(maximumTilt, 1 - new Vector3(0, 1, 0).transformDirection(torso.matrixWorld).y);
+			expect(torso.getWorldPosition(new Vector3()).y).toBeCloseTo(standingHeight, 10);
+			expect(new Vector3(0, 1, 0).transformDirection(torso.matrixWorld).y).toBeCloseTo(1, 12);
 		}
-		expect(highest - lowest).toBeGreaterThan(1); expect(maximumTilt).toBeGreaterThan(0.001);
 		expect(decode.map(function (node) { node.updateMatrix(); return node.matrix.toArray(); })).toEqual(decodeMatrices);
 		const last = getPlayerMuzzle('warden', 2, body, 1, 5, undefined, context);
 		model.dispose(); expect(getPlayerMuzzle('warden', 2, body, 1, 5, undefined, context)).toEqual(last);

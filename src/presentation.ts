@@ -17,7 +17,8 @@ import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
 import { factionMechSkin, type MechSkinId } from './mech-skin';
-import { createSolidInk, type InkCellSize } from './solid-ink';
+import { createSolidInk } from './solid-ink';
+import { minimumInkZoom, selectInkCellSize, type InkCellSize } from './solid-ink-grid';
 import { createMechCadences } from './mech-cadence';
 import type { AuthoredGait } from './authored-run';
 import { getMechAssetBinding } from './mech-asset-registry';
@@ -100,14 +101,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let overlay: OverlayFrame | undefined;
 		let width = 1; let height = 1; let disposed = false; let previousState: CombatStateView | undefined; let previousStateTime = 0;
 		let zoom = 1;
-		let inkCellSize: InkCellSize = 3;
+		let inkCellSize: InkCellSize = 1.5;
 		const setZoom = function (value: number) {
 			if (!Number.isFinite(value)) return;
 			zoom = Math.max(0.5, Math.min(2.5, value));
-			// Keep the current grid between thresholds to avoid repeated buffer reallocations.
-			if (zoom < 0.6 || (inkCellSize === 1.5 && zoom <= 0.65)) inkCellSize = 1.5;
-			else if (zoom < 0.8 || (inkCellSize < 3 && zoom <= 0.9)) inkCellSize = 2;
-			else inkCellSize = 3;
+			inkCellSize = selectInkCellSize(zoom, inkCellSize);
 		};
 		let playerSkin: MechSkinId = 'original';
 		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
@@ -116,6 +114,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let biome: Biome | undefined;
 		let relayHp: number | undefined; let relayHitAt = -10;
 		const ink = createSolidInk(renderer);
+		const inkAnchor = new Vector3();
 		allocated.push(ink.dispose);
 		let comparison: { state: CombatStateView; enabled: boolean; lighter: boolean; bakedYard: boolean } | undefined;
 		const inkEnabled = function (state: CombatStateView) { return comparison?.state !== state || comparison.enabled; };
@@ -137,10 +136,22 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const bake = comparison?.state !== overlay.state || comparison.bakedYard;
 					const terrain = objects.bakedTerrainForFrame(enabled && bake && ink.available, renderer, camera, sun.color);
 					if (!enabled) { renderer.render(scene, camera); return; }
-					const lighter = comparison?.lighter ?? true;
-					if (!ink.render(scene, camera, width, height, lighter, inkCellSize, terrain) && terrain) {
+					const responsiveScale = viewScale(width, height);
+					const displayZoom = zoom * camera.zoom;
+					const cellSize = camera.zoom === 1 ? inkCellSize : selectInkCellSize(displayZoom, inkCellSize);
+					const player = overlay.state.player;
+					// Match the Warden study's standing reference height. Keep the
+					// anchor independent of chassis pose, look-ahead and camera shake.
+					inkAnchor.set(player.x, 50.875, player.y);
+					const frame = {
+						anchor: inkAnchor,
+						cell: cellSize * responsiveScale * displayZoom,
+						minimumCell: cellSize * responsiveScale * minimumInkZoom[cellSize],
+						lighterHousing: comparison?.lighter ?? true,
+					};
+					if (!ink.render(scene, camera, width, height, terrain ? { ...frame, terrain } : frame) && terrain) {
 						objects.disableTerrainBake();
-						ink.render(scene, camera, width, height, lighter, inkCellSize);
+						ink.render(scene, camera, width, height, frame);
 					}
 				});
 				world.registerDispose('mechView', function ({ value }) { value.model.dispose(); });
