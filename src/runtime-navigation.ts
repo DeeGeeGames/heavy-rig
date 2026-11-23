@@ -2,7 +2,7 @@ import { definePlugin, type ScreenConfiguratorFn, type ScreenDefinition, type Sc
 import type { ShipScreen } from './company-ui';
 
 export type RuntimeBaseScreen = ShipScreen | 'title' | 'intro' | 'rig-bay' | 'escape-result' | 'jump' | 'playing' | 'pause-panel' | 'result' | 'training-setup' | 'training-result' | 'situation-setup' | 'situation-result' | 'field-trial';
-export type RuntimeAuxiliary = 'settings' | 'handbook' | 'confirm' | 'save-conflict';
+export type RuntimeAuxiliary = 'settings' | 'handbook' | 'confirm' | 'save-conflict' | 'squad-orders';
 export type RuntimeScreen = RuntimeBaseScreen | RuntimeAuxiliary | 'training';
 type RuntimeScreens = Record<RuntimeScreen, ScreenDefinition>;
 
@@ -15,7 +15,7 @@ interface NavigationWorld {
 }
 
 const isAuxiliary = function (screen: RuntimeScreen | null): screen is RuntimeAuxiliary {
-	return screen === 'settings' || screen === 'handbook' || screen === 'confirm' || screen === 'save-conflict';
+	return screen === 'settings' || screen === 'handbook' || screen === 'confirm' || screen === 'save-conflict' || screen === 'squad-orders';
 };
 const definition: Pick<ScreenDefinition, 'initialState'> = { initialState: function () { return {}; } };
 
@@ -39,6 +39,7 @@ const screens: ScreenConfiguratorFn<RuntimeScreens> = function (configurator) {
 		.add('training', definition)
 		.add('training-setup', definition)
 		.add('pause-panel', definition)
+		.add('squad-orders', definition)
 		.add('result', definition)
 		.add('training-result', definition)
 		.add('situation-setup', definition)
@@ -143,6 +144,12 @@ export const createRuntimeNavigation = function () {
 			});
 		},
 		closeAuxiliary: function () { return enqueue(popAuxiliary); },
+		openSquadOrders: function () {
+			return enqueue(async function (owner) {
+				if (owner.getCurrentScreen() === 'playing') await owner.pushScreen('pause-panel', {});
+				if (!closed && owner.getCurrentScreen() === 'pause-panel') await owner.pushScreen('squad-orders', {});
+			});
+		},
 		pause,
 		resume,
 		subscribe: function (listener: () => void) {

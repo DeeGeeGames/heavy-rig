@@ -10,9 +10,9 @@ import type { Contract, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionMap, missionHostileCount, missionSpawn, missionDeploymentSlot, squadDestination } from './missions';
 import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint } from './weapon-rig';
 import { ENEMY_RADIUS, RIG_RADIUS, enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
-import { moveOnTerrain, terrainShotFraction, terrainWaypoint, type FieldTerrain } from './field-terrain';
+import { moveOnTerrain, terrainPointClear, terrainShotFraction, terrainWaypoint, type FieldTerrain } from './field-terrain';
 import { inFiringArc, turnTorso } from './torso-arc';
-import { planSquads, type SquadOrder } from './enemy-squads';
+import { planSquads, type SquadOrder as EnemySquadOrder } from './enemy-squads';
 import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './enemy-tactics';
 import { SQUAD_SIZE, type Pilot } from './pilots';
 
@@ -22,7 +22,7 @@ export type MechEnemyKind = 'scout' | 'striker' | 'siege';
 export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
-export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: SquadOrder; tactics?: EnemyTactics; stationary?: true }
+export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: EnemySquadOrder; tactics?: EnemyTactics; stationary?: true }
 type EnemyTarget = 'player' | 'relay' | { squadmateId: string };
 export interface Shot extends Point { elevation?: number; vElevation?: number; origin?: SpatialPoint; age?: number; vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[]; weapon?: WeaponId; slot?: number; owner?: number; enemyTarget?: EnemyTarget; squadmateId?: string }
 export interface Effect extends Point { life: number; size: number; color: string; elevation?: number; source?: 'muzzle'; slot?: number; squadmateId?: string }
@@ -37,6 +37,8 @@ export interface CombatCollection<T> extends ReadonlyArray<T> {
 export const MISSILE_LOCK_SECONDS = 1.5;
 export const MISSILE_LOCK_GRACE = 0.3;
 export interface MissileLock { targetId: number; progress: number; interrupted: number }
+export type FireDiscipline = 'free' | 'hold';
+export type SquadOrder = { kind: 'form' } | { kind: 'hold' | 'move'; point: Point } | { kind: 'attack'; targetId: number };
 interface RigBody extends Point, ReactorState {
 	angle: number;
 	turret: number;
@@ -60,6 +62,8 @@ export interface Squadmate extends RigBody, Pick<SquadmateOptions, 'pilotId' | '
 	loadout: WeaponMount[];
 	shotsFired: number;
 	coolantCharges: number;
+	order?: SquadOrder | undefined;
+	fireDiscipline?: FireDiscipline | undefined;
 	authoredPose?: AuthoredPoseContext | undefined;
 }
 export interface CombatStateView {
@@ -81,6 +85,8 @@ export interface State extends CombatStateView {
 }
 
 export const ARENA = { width: 1800, height: 1200, relayX: 900, relayY: 600 };
+const EDGE_CLEARANCE = 35;
+const SQUAD_ARRIVAL_RADIUS = 16;
 interface EnemyStats { mass: number; recommendedMass: number; cooling: number; hp: number; speed: number; range: number; reload: number; damage: number; aggro: number; elevation: number; score: number }
 export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
 	scout: { mass: 35, recommendedMass: 42, cooling: 10, hp: 600, speed: 66, range: 310, reload: 2, damage: 3.5, aggro: 650, elevation: 42, score: 200 },
@@ -130,7 +136,7 @@ export const createMissionState = function (contract: Contract, options: Mission
 		const at = missionDeploymentSlot(map, index);
 		return {
 			pilotId, callsign, specialty, frameId, loadout: loadedMounts(loadout, reserves),
-			x: clamp(at.x, 35, map.width - 35), y: clamp(at.y, 35, map.height - 35), angle: heading, turret: heading,
+			x: clamp(at.x, EDGE_CLEARANCE, map.width - EDGE_CLEARANCE), y: clamp(at.y, EDGE_CLEARANCE, map.height - EDGE_CLEARANCE), angle: heading, turret: heading,
 			hp: Number.isFinite(integrity) ? clamp(integrity, 0, 100) : 0, heat: 0, overheated: false, throttle: 0, speed: 0, shotsFired: 0, coolantCharges: 2,
 		};
 	});
@@ -156,17 +162,48 @@ const createEnemy = function (state: CombatStateView, spawn: Point & { kind: Ene
 	const target = relayPosition(state) ?? state.player;
 	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle: Math.atan2(target.y - spawn.y, target.x - spawn.x), cooldown: 1.2, heavy: spawn.kind === 'siege' || spawn.kind === 'tank', kind: spawn.kind, reactor: { heat: 0, overheated: false }, loadout: createEnemyLoadout(spawn.kind, commander, level?.weaponTier ?? 0), ...(commander ? { commander: true } : {}) };
 };
-type CombatTarget = { id: number; kind: 'enemy'; body: Unit; radius: number } | { id: number; kind: 'structure'; body: NonNullable<MissionRuntime['structure']>; radius: number };
-const combatTargets = function (state: CombatStateView): CombatTarget[] {
+export type CombatTarget = { id: number; kind: 'enemy'; body: Unit; radius: number } | { id: number; kind: 'structure'; body: NonNullable<MissionRuntime['structure']>; radius: number };
+export const combatTargets = function (state: CombatStateView): CombatTarget[] {
 	const enemies: CombatTarget[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, kind: 'enemy', body: enemy, radius: ENEMY_RADIUS }; });
 	return [...enemies, ...missionStructures(state.mission).filter(function (target) { return target.body.hp > 0; }).map(function ({ id, body }): CombatTarget { return { id, kind: 'structure', body, radius: FACILITY_RADIUS }; })];
 };
 export const distance = function (a: Point, b: Point) { return Math.hypot(a.x - b.x, a.y - b.y); };
 export const angleDelta = function (from: number, to: number) { return Math.atan2(Math.sin(to - from), Math.cos(to - from)); };
 const clamp = function (value: number, min: number, max: number) { return Math.max(min, Math.min(max, value)); };
+export const squadOrderDestinationClear = function (state: CombatStateView, point: Point): boolean {
+	const bounds = state.mission?.map ?? ARENA;
+	const terrain = state.mission?.map.terrain;
+	return point.x >= EDGE_CLEARANCE && point.x <= bounds.width - EDGE_CLEARANCE
+		&& point.y >= EDGE_CLEARANCE && point.y <= bounds.height - EDGE_CLEARANCE
+		&& (!terrain || terrainPointClear(terrain, point, RIG_RADIUS));
+};
+
+export const squadMoveDestinations = function (state: CombatStateView, pilotIds: readonly string[], point: Point): ReadonlyMap<string, Point> | undefined {
+	const pilots = new Set(pilotIds);
+	const squad = state.squadmates.filter(function (mate) { return mate.hp > 0 && pilots.has(mate.pilotId); });
+	if (squad.length === 0 || squad.length !== pilots.size || !squadOrderDestinationClear(state, point)) return undefined;
+	const separation = 2 * (RIG_RADIUS + SQUAD_ARRIVAL_RADIUS) + 4;
+	const candidates = [{ ...point }, ...[separation, separation * 2].flatMap(function (radius) {
+		return Array.from({ length: 8 }, function (_, index) {
+			const angle = Math.PI / 4 * index;
+			return { x: point.x + radius * Math.cos(angle), y: point.y + radius * Math.sin(angle) };
+		});
+	})];
+	const destinations = new Map<string, Point>();
+	for (const mate of squad) {
+		const at = candidates.find(function (candidate) {
+			return squadOrderDestinationClear(state, candidate)
+				&& [...destinations.values()].every(function (used) { return distance(candidate, used) >= separation - .001; });
+		});
+		if (!at) return undefined;
+		destinations.set(mate.pilotId, at);
+	}
+	return destinations;
+};
+
 const moveBody = function (body: Point, dx: number, dy: number, bounds: { width: number; height: number }, terrain: FieldTerrain | undefined, radius: number) {
-	const x = clamp(body.x + dx, 35, bounds.width - 35);
-	const y = clamp(body.y + dy, 35, bounds.height - 35);
+	const x = clamp(body.x + dx, EDGE_CLEARANCE, bounds.width - EDGE_CLEARANCE);
+	const y = clamp(body.y + dy, EDGE_CLEARANCE, bounds.height - EDGE_CLEARANCE);
 	if (terrain) {
 		const at = moveOnTerrain(terrain, body, { x, y }, radius);
 		body.x = at.x; body.y = at.y;
@@ -249,6 +286,11 @@ export const enemyWeight = function (enemy: Unit) {
 	return weightMetrics(stats.mass, stats.recommendedMass, enemyMounts(enemy));
 };
 const targetVolume = function (target: CombatTarget): HitVolume { return target.kind === 'enemy' ? enemyVolume(target.body) : facilityVolume(target.body, target.radius); };
+const contactObstructs = function (origin: SpatialPoint, at: SpatialPoint, id: number, contacts: readonly CombatTarget[]) {
+	return contacts.some(function (other) {
+		return other.id !== id && other.body.hp > 0 && hitVolumeFraction(origin, at, targetVolume(other)) !== undefined;
+	});
+};
 const rigMissileTracking = function (rig: RigBody, frame: FrameId, loadout: readonly WeaponMount[], targets: readonly CombatTarget[], id: number, terrain: FieldTerrain | undefined): 'NO GUIDANCE' | 'OUT OF RANGE' | 'OUT OF ARC' | 'BLOCKED' | 'TRACKING' {
 	const target = targets.find(function (candidate) { return candidate.id === id; });
 	const weapons = loadout.filter(function (mount, index) { return canEquipWeapon(frame, mount.slot ?? index, mount.weapon); }).map(function (mount) { return getWeapon(mount.weapon); }).filter(function (weapon) { return weapon.kind === 'missile'; });
@@ -258,7 +300,7 @@ const rigMissileTracking = function (rig: RigBody, frame: FrameId, loadout: read
 	const origin = playerVolume(rig, frame);
 	const at = targetVolume(target);
 	if (terrain && terrainShotFraction(terrain, origin, at) !== undefined) return 'BLOCKED';
-	if (targets.some(function (other) { return other.id !== id && hitVolumeFraction(origin, at, targetVolume(other)) !== undefined; })) return 'BLOCKED';
+	if (contactObstructs(origin, at, id, targets)) return 'BLOCKED';
 	return 'TRACKING';
 };
 export const missileTracking = function (state: CombatStateView, id: number) { return rigMissileTracking(state.player, state.frame, state.loadout, combatTargets(state), id, state.mission?.map.terrain); };
@@ -569,26 +611,65 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 	fireRigWeapons(state, input, dt);
 };
 
-const squadmateTarget = function (state: CombatStateView, mate: Squadmate): CombatTarget | undefined {
-	const range = Math.max(0, ...mate.loadout.filter(usableMount).map(function (mount) { return getWeapon(mount.weapon).range; }));
+const squadmateTarget = function (state: CombatStateView, mate: Squadmate, targets: readonly CombatTarget[], range: number): CombatTarget | undefined {
+	if (mate.fireDiscipline === 'hold') return undefined;
 	const terrain = state.mission?.map.terrain;
 	const origin = terrain ? playerVolume(mate, mate.frameId) : undefined;
-	const reachable = combatTargets(state).filter(function (target) {
-		return distance(mate, target.body) <= range && (!terrain || !origin || terrainShotFraction(terrain, origin, targetVolume(target)) === undefined);
-	});
+	const reachable = function (target: CombatTarget) {
+		return target.body.hp > 0 && distance(mate, target.body) <= range
+			&& (!terrain || !origin || terrainShotFraction(terrain, origin, targetVolume(target)) === undefined);
+	};
 	const priority = function (target: CombatTarget) { return target.kind === 'structure' || target.id === state.mission?.targetId ? 0 : 1; };
-	return reachable.sort(function (a, b) { return priority(a) - priority(b) || distance(mate, a.body) - distance(mate, b.body) || a.id - b.id; })[0];
+	return targets.filter(reachable).sort(function (a, b) { return priority(a) - priority(b) || distance(mate, a.body) - distance(mate, b.body) || a.id - b.id; })[0];
+};
+// Evaluate the firing lane with the rig facing the target. The actual aim,
+// lock, heat and muzzle checks still run before each shot.
+const squadmateShotClear = function (mate: Squadmate, point: Point, target: CombatTarget, contacts: readonly CombatTarget[], terrain: FieldTerrain | undefined) {
+	const separation = distance(point, target.body);
+	const at = targetVolume(target);
+	const bearing = Math.atan2(at.y - point.y, at.x - point.x);
+	const facing = { x: point.x, y: point.y, angle: bearing };
+	const origin = playerVolume(point, mate.frameId);
+	return mate.loadout.some(function (mount, index) {
+		const weapon = getWeapon(mount.weapon);
+		const slot = mount.slot ?? index;
+		if (separation > weapon.range || !usableMount(mount) || !canEquipWeapon(mate.frameId, slot, mount.weapon)) return false;
+		if (weapon.kind === 'missile' && (contactObstructs(origin, at, target.id, contacts)
+			|| terrain && terrainShotFraction(terrain, origin, at) !== undefined)) return false;
+		if (!terrain) return true;
+		const tube = tubeIndex(getPlayerWeaponRig(mate.frameId)[slot]?.tubes.length ?? 0, mate.shotsFired + 1);
+		const muzzle = getPlayerMuzzle(mate.frameId, slot, facing, bearing, tube, at);
+		return !muzzleBlocked(terrain, facing, muzzle, at);
+	});
+};
+const squadmateAttackDestination = function (state: CombatStateView, mate: Squadmate, target: CombatTarget, contacts: readonly CombatTarget[], range: number): Point {
+	if (range === 0) return mate;
+	const separation = distance(mate, target.body);
+	if (separation > range) return target.body;
+	const bearing = Math.atan2(mate.y - target.body.y, mate.x - target.body.x);
+	const radius = Math.min(separation, range * 0.8);
+	const terrain = state.mission?.map.terrain;
+	for (const offset of [Math.PI / 6, -Math.PI / 6, Math.PI / 3, -Math.PI / 3]) {
+		const at = { x: target.body.x + Math.cos(bearing + offset) * radius, y: target.body.y + Math.sin(bearing + offset) * radius };
+		if (squadOrderDestinationClear(state, at) && squadmateShotClear(mate, at, target, contacts, terrain)) return at;
+	}
+	return target.body;
 };
 const squadmateDestination = function (state: CombatStateView, active: readonly Squadmate[], mate: Squadmate, index: number): Point {
+	if (mate.order?.kind === 'hold' || mate.order?.kind === 'move') return mate.order.point;
 	const player = state.player;
 	const mission = state.mission;
-	if (mission?.stage === 'extract') {
-		const { objective, extraction } = mission.map;
-		return squadDestination(extraction, Math.atan2(extraction.y - objective.y, extraction.x - objective.x), index, 48, 58);
+	if (!mate.order) {
+		if (mission?.stage === 'extract') {
+			const { objective, extraction } = mission.map;
+			return squadDestination(extraction, Math.atan2(extraction.y - objective.y, extraction.x - objective.x), index, 48, 58);
+		}
+		const nearestSite = mission?.captureSites?.filter(function (site) { return !site.complete && distance(player, site) < CAPTURE_RADIUS + 210; })
+			.sort(function (a, b) { return distance(player, a) - distance(player, b); })[0];
+		if (nearestSite && active.every(function (other) {
+			return other === mate || distance(other, nearestSite) >= (other.order ? CAPTURE_RADIUS : distance(mate, nearestSite));
+		})) return nearestSite;
 	}
-	const nearestSite = mission?.captureSites?.filter(function (site) { return !site.complete && distance(player, site) < CAPTURE_RADIUS + 210; })
-		.sort(function (a, b) { return distance(player, a) - distance(player, b); })[0];
-	if (nearestSite && active.every(function (other) { return other === mate || distance(other, nearestSite) >= distance(mate, nearestSite); })) return nearestSite;
 	return mate.specialty === 'skirmisher' ? squadDestination(player, player.angle, index, 54, 115) : squadDestination(player, player.angle, index, 120, 85);
 };
 
@@ -597,6 +678,7 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 	const bounds = state.mission?.map ?? ARENA;
 	const terrain = state.mission?.map.terrain;
 	const active = state.squadmates.filter(function (mate) { return mate.hp > 0; });
+	const targets = combatTargets(state);
 	for (const [index, mate] of state.squadmates.entries()) {
 		if (mate.hp <= 0) continue;
 		const frame = getFrame(mate.frameId);
@@ -609,14 +691,22 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 			if (mate.heat <= 35) mate.overheated = false;
 			burst(state, mate, 80, '#93e9e1');
 		}
-		const target = squadmateTarget(state, mate);
-		const destination = squadmateDestination(state, active, mate, index);
-		const at = { x: clamp(destination.x, 35, bounds.width - 35), y: clamp(destination.y, 35, bounds.height - 35) };
+		const order = mate.order;
+		const ordered = order?.kind === 'attack' ? targets.find(function (candidate) { return candidate.id === order.targetId && candidate.body.hp > 0; }) : undefined;
+		if (order?.kind === 'attack' && !ordered) delete mate.order;
+		const range = Math.max(0, ...mate.loadout.filter(usableMount).map(function (mount) { return getWeapon(mount.weapon).range; }));
+		const target = ordered ? (squadmateShotClear(mate, mate, ordered, targets, terrain) ? ordered : undefined) : squadmateTarget(state, mate, targets, range);
+		const destination = ordered ? (target ? mate : squadmateAttackDestination(state, mate, ordered, targets, range)) : squadmateDestination(state, active, mate, index);
+		const at = { x: clamp(destination.x, EDGE_CLEARANCE, bounds.width - EDGE_CLEARANCE), y: clamp(destination.y, EDGE_CLEARANCE, bounds.height - EDGE_CLEARANCE) };
 		const separation = distance(mate, at);
-		const moving = separation > 16;
+		const moving = separation > SQUAD_ARRIVAL_RADIUS;
 		const heading = travelHeading(terrain, mate, at, RIG_RADIUS);
 		const bearing = target ? Math.atan2(target.body.y - mate.y, target.body.x - mate.x) : state.player.angle;
-		mate.angle += clamp(angleDelta(mate.angle, moving ? heading : bearing), -dt * frame.turnRate, dt * frame.turnRate);
+		// Brake along the approach before turning to face a contact. Turning while
+		// coasting into a waypoint can carry the rig out of its own arrival radius.
+		const holdingPoint = mate.order?.kind === 'hold' || mate.order?.kind === 'move';
+		const desiredHeading = moving ? heading : holdingPoint && Math.abs(mate.motorSpeed ?? mate.speed) > .5 ? mate.angle : bearing;
+		mate.angle += clamp(angleDelta(mate.angle, desiredHeading), -dt * frame.turnRate, dt * frame.turnRate);
 		const demand = moving ? Math.min(1, separation / 110) * Math.max(0, Math.cos(angleDelta(mate.angle, heading))) : 0;
 		mate.throttle = demand;
 		const speed = frameWeight(mate.frameId, mate.loadout).speed * demand;

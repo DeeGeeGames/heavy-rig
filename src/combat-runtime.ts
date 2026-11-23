@@ -4,6 +4,7 @@ import { finishTraining, prepareTraining, type Training, type TrainingBefore } f
 import type { ReactorState } from './combat-resources';
 import type { WeaponMount } from './arsenal';
 import type { MissionRuntime } from './campaign-types';
+import type { FireDiscipline, SquadOrder } from './simulation';
 
 type Player = State['player'];
 interface Reactor { heat: number; overheated: boolean; coolantCharges: number; coolantHeld: boolean }
@@ -63,9 +64,15 @@ const collection = function <T>(access: CollectionAccess<T>) {
 	};
 };
 export interface CombatHooks { beforeStep?: () => void; afterStep?: () => void }
+export interface SquadOrderChange {
+	pilotId: string;
+	order?: SquadOrder;
+	fireDiscipline?: FireDiscipline;
+}
 export const createCombatRuntime = function () {
 	let state: CombatStateView | undefined;
 	let attach: ((initial: CombatStateView, training?: Training) => CombatStateView) | undefined;
+	let applySquadOrders: ((current: CombatStateView, changes: readonly SquadOrderChange[]) => boolean) | undefined;
 	let setEnabled: ((enabled: boolean) => void) | undefined;
 	let playerId: (() => number | undefined) | undefined;
 	let squadmateId: ((id: string) => number | undefined) | undefined;
@@ -92,6 +99,22 @@ export const createCombatRuntime = function () {
 			world.addResource('combatControls', { raw: controls(), current: controls() });
 			world.addResource('combatSession', { enabled: false, active: false, training: undefined, before: undefined });
 			setEnabled = function (enabled) { world.getResource('combatSession').enabled = enabled; };
+			applySquadOrders = function (current, changes) {
+				if (current !== state || world.getResource('combatSession').enabled || current.outcome !== 'playing') return false;
+				const byPilot = new Map(changes.map(function (change) { return [change.pilotId, change]; }));
+				if (byPilot.size !== changes.length) return false;
+				const recipients = world.getEntitiesWithQuery(['squadmate']).filter(function ({ components: { squadmate } }) {
+					return squadmate.hp > 0 && byPilot.has(squadmate.pilotId);
+				});
+				if (recipients.length !== changes.length) return false;
+				for (const { id, components: { squadmate } } of recipients) {
+					const change = byPilot.get(squadmate.pilotId);
+					if (change?.order) squadmate.order = change.order;
+					if (change?.fireDiscipline) squadmate.fireDiscipline = change.fireDiscipline;
+					world.markChanged(id, 'squadmate');
+				}
+				return true;
+			};
 			playerId = function () { return world.getEntitiesWithQuery(['player'])[0]?.id; };
 			squadmateId = function (id) { return world.getEntitiesWithQuery(['squadmate']).find(function (entity) { return entity.components.squadmate.pilotId === id; })?.id; };
 			enemyId = function (id) { return world.getEntitiesWithQuery(['enemy']).find(function (entity) { return entity.components.enemy.id === id; })?.id; };
@@ -287,11 +310,12 @@ export const createCombatRuntime = function () {
 					world.eventBus.publish('combatStepFinished', { events: [...resources.combatFeedback.events], time: resources.combatProgress.time });
 					hooks.afterStep?.();
 				});
-			onCleanup(function () { state = undefined; attach = undefined; setEnabled = undefined; playerId = undefined; squadmateId = undefined; enemyId = undefined; hooks = {}; });
+			onCleanup(function () { state = undefined; attach = undefined; applySquadOrders = undefined; setEnabled = undefined; playerId = undefined; squadmateId = undefined; enemyId = undefined; hooks = {}; });
 		});
 	return {
 		plugin,
 		attach: function (initial: CombatStateView, training?: Training): CombatStateView { if (!attach) throw new Error('Combat plugin is not installed'); return attach(initial, training); },
+		applySquadOrders: function (current: CombatStateView, changes: readonly SquadOrderChange[]) { return applySquadOrders?.(current, changes) ?? false; },
 		setControls: function (provider: () => Controls) { controls = provider; },
 		setEnabled: function (enabled: boolean) { setEnabled?.(enabled); },
 		setHooks: function (next: CombatHooks) { hooks = next; },

@@ -1,0 +1,343 @@
+#squad-orders {
+	position: absolute;
+	inset: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(58px, var(--dialog-bottom-gap, 58px)) max(18px, env(safe-area-inset-left));
+	width: auto;
+	max-width: 1240px;
+	margin-inline: auto;
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	isolation: isolate;
+	color: var(--paper);
+	background: #111c20;
+	border: 1px solid #425650;
+	box-shadow: 0 18px 72px #050c10cc;
+}
+.squad-orders-head,
+.squad-orders-footer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 16px;
+	background: #10191d;
+}
+.squad-orders-head {
+	justify-content: space-between;
+	border-bottom: 1px solid var(--border);
+}
+.has-mobile-fullscreen .squad-orders-head { padding-inline-end: 68px; }
+.squad-orders-head p { margin: 0; }
+.squad-orders-head h2 {
+	margin: 2px 0 0;
+	font: 32px/.95 var(--display);
+	letter-spacing: .05em;
+	text-transform: uppercase;
+}
+.squad-orders-paused {
+	flex: none;
+	color: var(--amber);
+	font: 11px/1.2 var(--mono);
+	letter-spacing: .09em;
+}
+.squad-orders-body {
+	min-height: 0;
+	display: grid;
+	grid-template-columns: clamp(218px, 34%, 304px) minmax(0, 1fr);
+	grid-template-areas: "console field";
+}
+.squad-console {
+	grid-area: console;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-width: 0;
+	overflow: auto;
+	overscroll-behavior: contain;
+	padding: 12px;
+	border-right: 1px solid var(--border);
+	background: #182428;
+}
+.squad-selection, .squad-fire-label {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px 8px;
+	color: var(--muted);
+	font: 11px/1.3 var(--mono);
+}
+#squad-orders button {
+	min-width: 0;
+	min-height: 34px;
+	padding: 6px 9px;
+	border-color: #a9c3b442;
+	border-radius: 3px;
+	color: var(--paper);
+	background-color: #202e31;
+	font-size: 13px;
+}
+#squad-orders button:hover:not(:disabled) { border-color: var(--cyan); }
+#squad-orders button:focus-visible,
+#game.using-gamepad #squad-orders button:focus {
+	outline: 2px solid var(--amber);
+	outline-offset: 1px;
+}
+#squad-orders :is(.squad-pilot, .squad-commands button, .squad-fire-options button)[aria-pressed="true"] {
+	background: #29423e;
+	border-color: #92d6c5b0;
+}
+.squad-roster, .squad-commands {
+	display: grid;
+	gap: 5px;
+}
+#squad-orders .squad-pilot {
+	display: grid;
+	gap: 3px;
+	justify-items: start;
+	text-align: left;
+}
+.squad-pilot strong {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+.squad-pilot strong span {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 17px;
+	height: 17px;
+	background: #0e1a20;
+	color: var(--muted);
+	font: 11px var(--mono);
+}
+.squad-pilot[aria-pressed="true"] strong span { background: var(--cyan); color: #10191d; }
+.squad-pilot small {
+	padding-left: 23px;
+	color: var(--muted);
+	font-size: 11px;
+}
+.squad-pilot small[data-staged] { color: var(--cyan); }
+.squad-pilot small[data-staged]::before { content: '↳ '; }
+.squad-pilot small[data-fire-state="hold"],
+.squad-fire-label span { color: #f9cd8f; }
+#squad-orders .squad-commands button { display: flex; align-items: center; gap: 7px; text-align: left; }
+.squad-commands button span {
+	width: 1em;
+	color: var(--cyan);
+	font: 16px/1 var(--mono);
+}
+.squad-fire {
+	display: grid;
+	gap: 6px;
+	padding-top: 9px;
+	border-top: 1px solid var(--border);
+}
+.squad-fire-options {
+	display: grid;
+	grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+	gap: 3px;
+}
+#squad-orders .squad-fire-options button { padding-inline: 4px; }
+#squad-orders .squad-fire-options [data-squad-fire="hold"][aria-pressed="true"] {
+	background: #483926;
+	border-color: #e6bc7d;
+	color: #f9cd8f;
+}
+.squad-field {
+	grid-area: field;
+	display: grid;
+	grid-template-rows: minmax(0, 1fr) auto;
+	min-height: 0;
+	overflow: clip;
+	background: radial-gradient(ellipse at 58% 34%, #253a32 0%, #121f22 72%);
+}
+.squad-map {
+	position: relative;
+	min-height: 0;
+	overflow: clip;
+}
+.squad-map canvas, .squad-map-compass {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+.squad-map-compass {
+	inset: 8px 10px auto auto;
+	padding: 5px 7px;
+	border: 1px solid #91ada23e;
+	background: #152420;
+	color: var(--muted);
+	font: 11px/1 var(--mono);
+}
+#squad-orders .squad-map-confirm {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	background: transparent;
+	border: none;
+	cursor: crosshair;
+}
+#squad-orders .squad-map-confirm:focus-visible,
+#game.using-gamepad #squad-orders .squad-map-confirm:focus {
+	outline-offset: -2px;
+}
+#squad-orders .squad-mark {
+	position: absolute;
+	transform: translate(-50%, -50%);
+	display: grid;
+	justify-items: center;
+	white-space: nowrap;
+	pointer-events: none;
+	font: 11px/1.1 var(--mono);
+}
+#squad-orders button.squad-mark {
+	z-index: 2;
+	pointer-events: auto;
+	padding: 8px 6px;
+	min-width: 40px;
+	min-height: 40px;
+	border: 1px solid transparent;
+	background: transparent;
+}
+.squad-mark b {
+	display: grid;
+	place-items: center;
+	min-width: 17px;
+	height: 17px;
+	border: 1px solid #92d6c5a8;
+	color: var(--cyan);
+	background: #0d1a1c;
+}
+.squad-mark small {
+	padding: 2px 3px;
+	background: #0c1b1bea;
+	color: #a6cabb;
+	font: 9px/1 var(--mono);
+}
+.squad-mark[data-selected] { z-index: 1; }
+.squad-mark[data-selected] b { background: var(--cyan); color: #101a1a; }
+.squad-mark[data-disabled] { opacity: .5; }
+.squad-mark.map-player b { border-color: #ddc787; color: #ddc787; }
+.squad-map-leader {
+	position: absolute;
+	height: 1px;
+	background: #9cc5b4ab;
+	transform-origin: left center;
+	pointer-events: none;
+}
+.squad-map-leader::before {
+	content: '';
+	position: absolute;
+	inset: -1px auto auto -1px;
+	width: 3px;
+	height: 3px;
+	background: var(--cyan);
+}
+.squad-mark.map-objective, .squad-mark.map-pickup {
+	color: #e6c38b;
+	text-shadow: 0 1px 3px #06110b;
+}
+.squad-mark.map-pickup { color: var(--cyan); }
+.map-hostile i {
+	display: block;
+	width: 8px;
+	height: 8px;
+	transform: rotate(45deg);
+	background: #291e1b;
+	border: 1px solid #ff9d89;
+}
+.map-hostile[data-priority] i {
+	width: 11px;
+	height: 11px;
+	border-color: #ffbd8d;
+}
+#squad-orders .map-hostile[data-targeted],
+#squad-orders .map-cursor { z-index: 3; }
+.map-hostile[data-targeted] i {
+	width: 14px;
+	height: 14px;
+	background: #ff9d89;
+	box-shadow: 0 0 0 2px #182529, 0 0 0 3px #ff9d89;
+}
+#squad-orders .map-cursor {
+	color: #ffdc9b;
+	text-shadow: 0 0 3px #000, 0 0 5px #000;
+	font-size: 27px;
+}
+.squad-map-caption {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	min-height: 36px;
+	padding: 5px 10px;
+	background: #101b1ef0;
+	color: var(--muted);
+	border-top: 1px solid var(--border);
+	font: 11px/1.2 var(--mono);
+}
+.squad-map-caption>span { display: inline-flex; align-items: center; gap: 5px; }
+.squad-map-caption i { width: 7px; height: 7px; border: 1px solid currentColor; }
+.squad-map-caption .map-key-friendly { background: var(--cyan); color: var(--cyan); }
+.squad-map-caption .map-key-hostile { color: #ff9d89; transform: rotate(45deg); }
+.squad-map-caption .map-key-objective { color: #e6c38b; transform: rotate(45deg); }
+.squad-map-caption .map-key-pickup { color: var(--cyan); border-radius: 50%; }
+.squad-map-prompt { color: #f9cd8f; }
+.squad-contact-picker { display: flex; flex-wrap: nowrap; gap: 3px; margin-left: auto; }
+#squad-orders .squad-contact-picker button { min-height: 32px; padding: 4px 8px; }
+.squad-contact-picker small { color: var(--muted); }
+.squad-orders-footer {
+	justify-content: flex-end;
+	border-top: 1px solid var(--border);
+}
+.squad-orders-status {
+	margin-right: auto;
+	color: var(--muted);
+	font: 11px/1.2 var(--mono);
+}
+#squad-orders .squad-apply {
+	background: var(--cyan);
+	border-color: var(--cyan);
+	color: #101a1d;
+	font-weight: bold;
+}
+#squad-orders .squad-apply:hover:not(:disabled) { background: #b5e8d9; }
+@media (max-width: 580px) {
+	#squad-orders { inset: max(6px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right)) max(40px, var(--dialog-bottom-gap, 40px)) max(7px, env(safe-area-inset-left)); }
+	.squad-orders-head, .squad-orders-footer { padding: 7px 9px; }
+	.squad-orders-head h2 { font-size: 26px; }
+	.squad-orders-head p { letter-spacing: .08em; }
+	.squad-orders-body {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(max-content, 1fr) max-content;
+		grid-template-areas: "field" "console";
+		align-content: start;
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
+	.squad-field { grid-template-rows: minmax(clamp(162px, 55vw, 275px), 1fr) auto; }
+	.squad-console { overflow: visible; padding: 8px; border-right: none; gap: 7px; }
+	.squad-roster { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+	.squad-commands { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.squad-pilot small { padding-left: 0; }
+	.squad-orders-footer { flex-wrap: wrap; }
+	.squad-orders-status { flex-basis: 100%; }
+	#squad-orders .squad-orders-footer button { padding-inline: 7px; font-size: 12px; }
+}
+@media (min-width: 581px) and (max-height: 520px) {
+	#squad-orders { inset-block-start: max(5px, env(safe-area-inset-top)); inset-block-end: max(37px, var(--dialog-bottom-gap, 37px)); }
+	.squad-orders-head, .squad-orders-footer { padding-block: 5px; }
+	.squad-orders-head h2 { font-size: 24px; }
+	.squad-orders-body { grid-template-columns: minmax(254px, 40%) minmax(0, 1fr); }
+	.squad-console { padding: 7px; gap: 5px; }
+	.squad-roster { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+	.squad-commands { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.squad-pilot small { padding-left: 0; }
+	.squad-fire { gap: 3px; padding-top: 4px; }
+	#squad-orders button { min-height: 26px; padding-block: 4px; }
+	.squad-map-caption { min-height: 30px; }
+}
