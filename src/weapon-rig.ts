@@ -39,7 +39,9 @@ export const getPlayerWeaponRig = function (frame: FrameId): readonly WeaponRig[
 		switch (definition.chassisId) {
 			case 'warden': return slot < 2 ? mount(42.2, 55.5, side * 34) : family === 'launcher' ? mount(2.8, 78.2, side * 34, shoulderTubes) : mount(10.2, 82.5, side * 34);
 			case 'kestrel': return family === 'ballistic' ? mount(37.2, 59, side * 20) : family === 'energy' ? mount(37.2, 59, side * 20) : mount(34.3, 59, side * 20, compactTubes);
-			case 'maul': return family === 'launcher' ? mount(25.8, 46, side * 41, rackTubes(2, 19)) : mount(family === 'ballistic' ? 41.1 : 33.2, 52, side * 41);
+			case 'maul': return slot < 2
+				? family === 'launcher' ? mount(25.8, 46, side * 41, rackTubes(2, 19)) : mount(family === 'ballistic' ? 41.1 : 33.2, 52, side * 41)
+				: family === 'launcher' ? mount(15.3, 91, side * 22, compactTubes) : mount(family === 'ballistic' ? 23.7 : 19.2, 91, side * 22);
 			case 'longbow': return slot === 0 ? mount(71.2, 72, -27) : family === 'energy' ? mount(31.2, 65, 27) : mount(28.3, 65, 27, compactTubes);
 			case 'morrow': return family === 'launcher' ? mount(-1.2, 73, side * 36, rackTubes(4, 22)) : mount(6.2, 87, side * 36);
 			case 'rook': return slot === 2 ? mount(3.3, 104, 0, compactTubes) : mount(family === 'ballistic' ? 48.2 : 47.2, 53, side * 29);

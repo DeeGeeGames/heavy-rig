@@ -11,7 +11,7 @@ import { createMissionState, distance, spawningStep, type Controls, type EnemyKi
 
 // Broad engagement budgets protect against instant kills, unusable stock builds,
 // and tier/volley regressions. They are not exact tuning values or owner acceptance.
-const engage = async function (frame: FrameId, kind: EnemyKind, tier: MissionTier, options: { loadout?: readonly WeaponId[]; defense?: 'front' | 'rear' | 'exposed' } = {}) {
+const engage = async function (frame: FrameId, kind: EnemyKind, tier: MissionTier, options: { loadout?: readonly (WeaponId | null)[]; defense?: 'front' | 'rear' | 'exposed' } = {}) {
 	const contract: Contract = { id: 'combat-balance', seed: 123, planetId: 'meridian', kind: 'defend', employer: 'freeholds', opponent: 'combine', title: 'Combat balance', briefing: '', reward: 1000, favor: 8, hostility: 5, tier, requiredReputation: -100 };
 	const quality = getMissionTier(tier).weaponTier;
 	const loadout = options.loadout ?? createStarterLoadout(frame).map(function (id) { return weaponIdForTier(getWeapon(id).modelId, quality); });
@@ -78,7 +78,7 @@ test('stock line, brawler, precision and support packages sustain useful mech ki
 });
 
 test('exceptional six-round pods cannot erase heavy armor in one opening burst and reward flanking or exposure', async function () {
-	const loadout = ['cluster-rockets-6:t5', 'cluster-rockets-6:t5'] as const;
+	const loadout = ['cluster-rockets-6:t5', 'cluster-rockets-6:t5', null, null] as const;
 	const front = await engage('maul', 'siege', 6, { loadout, defense: 'front' });
 	const rear = await engage('maul', 'siege', 6, { loadout, defense: 'rear' });
 	const exposed = await engage('maul', 'siege', 6, { loadout, defense: 'exposed' });

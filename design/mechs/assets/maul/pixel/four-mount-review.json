@@ -1,0 +1,100 @@
+{
+  "status": "owner-approved-for-play",
+  "baseSha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
+  "bundleSha256": "7a0dd68e55d4182d486d5a9d9213af131b30004b343561c1e73859f1b30220a9",
+  "baseGeometry": {
+    "triangles": 4850,
+    "geometryNodes": 12,
+    "drawSections": 13,
+    "materials": 2,
+    "textures": 0
+  },
+  "anchorsMillimetres": {
+    "rig_mount_left-inboard": [
+      188.0,
+      884.0,
+      -70.0
+    ],
+    "geometry_maul_mount_left-inboard": [
+      188.0,
+      884.0,
+      -70.0
+    ],
+    "muzzle_left-inboard": [
+      188.0,
+      884.0,
+      154.0
+    ],
+    "rig_mount_right-inboard": [
+      -188.0,
+      884.0,
+      -70.0
+    ],
+    "geometry_maul_mount_right-inboard": [
+      -188.0,
+      884.0,
+      -70.0
+    ],
+    "muzzle_right-inboard": [
+      -188.0,
+      884.0,
+      154.0
+    ]
+  },
+  "checks": {
+    "sourceNodeIndices": "unchanged; six new nodes appended",
+    "sourceLegAndForearmRig": "all original nongeometry rig nodes unchanged except torso child references for appended sockets",
+    "animationChannels": "names and channel target nodes unchanged",
+    "bundleBasePairing": "matches exact new A asset hash",
+    "otherChassisRebuilds": "Warden and Kestrel base and variant hashes unchanged",
+    "visualReview": "actual exported GLBs imported and A/B/C assembled in Blender5.3, reviewed front/rear; four mounts, inset pockets and continuous foot cap visible",
+    "scope": "Structural checks above are supplemented by the runtime verification and exact-asset owner approval recorded below."
+  },
+  "reviewRenders": [
+    "design/mechs/assets/maul/pixel/four-mount/breacher.png",
+    "design/mechs/assets/maul/pixel/four-mount/breaker.png",
+    "design/mechs/assets/maul/pixel/four-mount/furnace.png"
+  ],
+  "runtimeVerification": {
+    "productionAssets": "SHA-256 matched dist/assets/mechs/maul and public/assets/mechs/maul for both GLBs",
+    "muzzleComparisons": 12480,
+    "sampledMotion": "480 fixed frames per variant spanning walk, run, reverse and changing torso aim",
+    "practiceRange": "All four stock mounts fired on A/B/C through simulated keyboard input; movement and independent aim exercised",
+    "fallback": "Missing Maul B/C bundle exercised with HTTP404; A remains authored and B/C use four-mount procedural fallback",
+    "viewportChecks": [
+      "1280x800 desktop",
+      "390x844 portrait with simulated touch",
+      "568x320 landscape with simulated touch"
+    ],
+    "emptyInsetMounts": "Both secondary slots can be empty; remaining two mounts deploy on portrait and landscape",
+    "browserErrors": 0,
+    "unexpectedFallbackWarnings": 0,
+    "check": "bun run check: 520 tests, typecheck, lint and production build passed",
+    "independentReview": "Reviewed mount/runtime/asset-builder changes; migration-only finding removed with entire migration path after explicit owner compatibility waiver",
+    "acceptanceLimits": "Physical controller/touch, audio, target-hardware performance, exhaustive animated clearance and measured balance remain unverified."
+  },
+  "ownerApproval": {
+    "date": "2026-11-22",
+    "ownerStatement": "Let's go ahead and commit to these.",
+    "scope": "Owner approved the actual four-mount Breacher, Breaker and Furnace models after local network preview. Appearance and production selection approval; no inference of measured balance, audio, hardware performance or physical-controller acceptance.",
+    "baseSha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
+    "bundleSha256": "7a0dd68e55d4182d486d5a9d9213af131b30004b343561c1e73859f1b30220a9",
+    "reviewImages": [
+      {
+        "variantId": "maul",
+        "image": "design/mechs/assets/maul/pixel/four-mount/breacher.png",
+        "imageSha256": "c7f7d8ab6c337f0fa30f097f3bb8a64e75654df6583c6721c5df2d564415bf8c"
+      },
+      {
+        "variantId": "maul-b",
+        "image": "design/mechs/assets/maul/pixel/four-mount/breaker.png",
+        "imageSha256": "fc37113a04784ae8eebbed909d5ae0df0539e12b2978663628c317e256fa7d80"
+      },
+      {
+        "variantId": "maul-c",
+        "image": "design/mechs/assets/maul/pixel/four-mount/furnace.png",
+        "imageSha256": "3ccf2e1c5d77732d07dc18aa419d882d14fff86722058b66834aeddcf4d733e2"
+      }
+    ]
+  }
+}

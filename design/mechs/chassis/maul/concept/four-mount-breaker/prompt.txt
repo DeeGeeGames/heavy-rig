@@ -1,0 +1,12 @@
+Use case: precise-object-edit.
+EDIT ONLY THE WEAPON CARTRIDGES of the attached owner-approved Maul Breacher baseline. This is a concept reference for future modular 3D assembly, not a new chassis master.
+PRESERVE exactly the cockpit and yellow visor, orange/rust shoulder caps, cream chest armor and gauntlet tops, slate mechanisms, torso/pelvis/legs/ankles, broad solid boot feet with SINGLE uninterrupted cream front cap per foot, pose, framing, camera, light neutral background and simple broad low-poly facets. No toe fingers or splits. Keep the existing heavy gauntlet housing envelopes and recessed upper-body mounting pockets. Keep both upper-body weapons INSIDE the gaps between the chest sides and inner shoulder armor, BELOW the shoulder tops. Do not place weapons on top of shoulders. Do not add new mounts, limbs, armor masses or external ammunition boxes. Refit only the weapon inserts, front faces and required short internal collars. Keep upper chest and head unobstructed.
+EXACTLY FOUR WEAPON ASSEMBLIES: one forearm module on each side plus one inset module on each side. All weapons point forward. The mech's OWN LEFT is on the VIEWER'S RIGHT; its OWN RIGHT is on the VIEWER'S LEFT.
+Full body, same image dimensions and presentation as reference. One mech only, no text, labels, grids, extra views, watermark, glowing beams or firing effects. Preserve the existing palette on every shared body part; small emitter lens colors are allowed.
+
+TARGET: MAUL B BREAKER. Symmetric cannon/laser loadout.
+- OWN LEFT FOREARM (viewer right): replace the rocket cartridge with ONE substantial AC/38 autocannon. Retain the orange/cream armored gauntlet shell, use a solid front plate with one central short heavy dark cannon barrel, visible circular open bore and a compact armored recoil collar. NO rocket tube grid remains.
+- OWN RIGHT FOREARM (viewer left): exactly the same AC/38 cartridge and bore. Both cannons have the same size and construction.
+- OWN LEFT INSET POCKET (viewer right): replace the small machine gun with ONE recessed ARC laser emitter. Small flat cyan optical lens inside the existing armored mounting collar, a dark socket, no protruding ballistic barrel or open gun bore.
+- OWN RIGHT INSET POCKET (viewer left): matching ARC optical emitter.
+Final visual checklist: two identical forearm cannons, two identical inset optical emitters, zero rocket launchers. Four mounts total. Both cannon barrels and both inset optical lenses clearly visible.

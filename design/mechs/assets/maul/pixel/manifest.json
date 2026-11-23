@@ -5,20 +5,23 @@
   "variant": "maul-a",
   "approval": {
     "date": "2026-11-22",
-    "scope": "Owner selected this SNES-style A variant and requested its use in the game.",
-    "comparison": "design/mechs/assets/maul/pixel/comparison.png"
+    "ownerStatement": "Let's go ahead and commit to these.",
+    "scope": "Four-mount Maul A/B/C models approved after local network preview.",
+    "appliesToAssetSha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
+    "bundleSha256": "7a0dd68e55d4182d486d5a9d9213af131b30004b343561c1e73859f1b30220a9",
+    "review": "design/mechs/assets/maul/pixel/four-mount-review.json"
   },
   "asset": {
     "path": "public/assets/mechs/maul/pixel.glb",
     "retainedPath": "design/mechs/assets/maul/pixel/maul.glb",
-    "sha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f",
-    "bytes": 364532,
-    "triangles": 4830,
-    "meshSections": 11,
+    "sha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
+    "bytes": 366600,
+    "triangles": 4850,
+    "meshSections": 13,
     "materials": 2,
     "textureImages": 0,
-    "rigGroups": 10,
-    "anchors": 34,
+    "rigGroups": 12,
+    "anchors": 36,
     "clips": [
       "diagnostic-articulation",
       "walk",
@@ -26,11 +29,23 @@
       "backward"
     ]
   },
-  "equipment": "Two forearm launcher pods, each with sixteen physical openings and six gameplay tubes.",
+  "equipment": "Two forearm HAILSTORM/4 launcher pods with sixteen physical openings each and six gameplay tubes, plus two compact RATTLER guns in recessed inboard torso pockets. Shared solid boot feet replace the separated toes.",
   "source": {
     "path": "public/assets/mechs/maul/game-ready.glb",
     "sha256": "79809952e7c1e86c05b813722986abdaf6a4a104ff8ce5ed7a72cd410ce653d1",
     "manifest": "design/mechs/assets/maul/game-ready/manifest.json"
   },
-  "reproduction": "scripts/mech-design/build-pixel-mechs.py"
+  "reproduction": "scripts/mech-design/build-pixel-mechs.py",
+  "rework": {
+    "concept": "design/mechs/chassis/maul/concept/four-mount-baseline/approval.json",
+    "scope": "Implemented and verified on the shared rig; owner approved the exact exported base and variant bundle after local network preview.",
+    "sourceRigPolicy": "Existing source rig and animation indices retained; two torso-owned inboard sockets appended without modifying high-detail source.",
+    "verification": "design/mechs/assets/maul/pixel/four-mount-review.json"
+  },
+  "previousApproval": {
+    "date": "2026-11-22",
+    "scope": "Historical approval of the previous two-mount SNES-style Maul A; the linked comparison depicts that previous export.",
+    "comparison": "design/mechs/assets/maul/pixel/comparison.png",
+    "appliesToAssetSha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f"
+  }
 }

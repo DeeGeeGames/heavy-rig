@@ -9,7 +9,7 @@ test('Maul keeps forward-bending knees, firing alignment and a vertical torso th
 	// This regression evaluates geometry and transforms; browser QA covers images.
 	const source = await new GLTFLoader().register(function () {
 		return { name: 'HEADLESS_MAUL', loadTexture: async function () { return new Texture(); } };
-	}).parseAsync(await Bun.file(new URL('../public/assets/mechs/maul/game-ready.glb', import.meta.url)).arrayBuffer(), '');
+	}).parseAsync(await Bun.file(new URL('../public/assets/mechs/maul/pixel.glb', import.meta.url)).arrayBuffer(), '');
 	const animations = ['walk', 'run', 'backward'].map(function (name) {
 		const clip = new AnimationClip(name, 1, []);
 		clip.userData['nominalForwardSpeed'] = name === 'run' ? 0.5 : name === 'backward' ? -0.1 : 0.1;

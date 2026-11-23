@@ -6,7 +6,7 @@ Warden A, Kestrel A and Maul A use hand-faceted armor, broad blocks of vertex co
 | --- | ---: | --- | --- |
 | [Warden A](warden/pixel/manifest.json) | 4,306 | [Warden comparison](warden/pixel/comparison.png) | [39,748 triangles](warden/game-ready/README.md) |
 | [Kestrel A](kestrel/pixel/manifest.json) | 3,123 | [Kestrel comparison](kestrel/pixel/comparison.png) | [42,796 triangles](kestrel/game-ready/README.md) |
-| [Maul A](maul/pixel/manifest.json) | 4,830 | [Maul comparison](maul/pixel/comparison.png) | [50,718 triangles](maul/game-ready/README.md) |
+| [Maul A](maul/pixel/manifest.json) | 4,850 | [Four-mount implementation review](maul/pixel/four-mount-review.json) | [50,718 triangles](maul/game-ready/README.md) |
 
 To restore the checkpoints and independently rebuild the three playable exports, run the following from the repository root. Give the rebuild a new output directory each time. It verifies the SHA-256 of each source and rebuilt model against the selection record.
 
@@ -20,11 +20,24 @@ python3 scripts/mech-design/build-pixel-mechs.py --out design/mechs/generated/ap
 
 The B/C variants fit replacement weapon cartridges to the A mounts at startup.
 Warden changes its shoulder cartridges, Kestrel changes its right arm cartridge,
-and Maul changes both forearm cartridges. The game uses the same body geometry,
+and Maul changes its forearm and recessed inboard cartridges. The game uses the same body geometry,
 normalization, rig and gait for every variant of a chassis. Each cartridge
 includes the muzzle and, for Kestrel C, two physical launcher exits. Cartridge
 geometry represents the stock hardware for its mount family across compatible
 refits.
+
+The Maul four-mount rework follows the approved
+[Breacher concept](../chassis/maul/concept/four-mount-baseline/approval.json):
+two forearm cartridges and two recessed cartridges between the torso and shoulder
+armor, with continuous armored foot caps. Breaker carries twin cannons and inset
+lasers; Furnace carries a cannon, particle accelerator, inset laser and compact
+two-tube rocket launcher. All three use the same body, rig and locomotion.
+The [export review](maul/pixel/four-mount-review.json) records the new hashes and
+checks. The older Maul comparison depicts the previous two-mount model; its
+appearance approval applies only to the old export. The owner approved the new
+A/B/C models after local network preview; exact asset hashes and retained render
+images are recorded in the export review. The owner waived save compatibility for this
+rework; campaign version eight starts a fresh save instead of migrating old fits.
 
 Rebuild the three module bundles with
 `python3 scripts/mech-design/build-pixel-variants.py --out design/mechs/generated/variant-rebuild`.

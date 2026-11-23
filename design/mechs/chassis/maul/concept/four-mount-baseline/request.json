@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "maul",
+  "background": "White",
+  "details": "Owner-approved four-mount Breacher. Retain massive forearm launcher gauntlets, recess both compact ballistic cartridges between torso and shoulder armor below shoulder tops, use solid continuous armored boot caps with no toe fingers. Preserve the approved body, palette and proportions.",
+  "loadout": [
+    {
+      "weaponId": "cluster-rockets-4",
+      "rounds": 360
+    },
+    {
+      "weaponId": "cluster-rockets-4",
+      "rounds": 360
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    }
+  ]
+}

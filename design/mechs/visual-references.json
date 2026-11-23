@@ -1,5 +1,5 @@
 {
-  "id": "heavy-rig-concept-family-v2",
+  "id": "heavy-rig-concept-family-v3",
   "scope": "The playable A lineup establishes finish and detail scale. Individually approved concepts supply mechanical construction references.",
   "references": [
     {
@@ -16,9 +16,9 @@
     },
     {
       "chassisId": "maul",
-      "baselineId": "maul-a-baseline-v1",
-      "image": "design/mechs/chassis/maul/concept/a/maul-a.png",
-      "imageSha256": "9549c80c62be16566eae62b558203dc09b0c7015a9cf919759299099365e9d84"
+      "baselineId": "maul-four-mount-baseline",
+      "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+      "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0"
     }
   ],
   "reviewCriteria": [

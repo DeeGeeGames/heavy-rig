@@ -1,6 +1,6 @@
 {
   "chassisId": "maul",
-  "activeBaseline": "maul-a-baseline-v1",
+  "activeBaseline": "maul-four-mount-baseline",
   "baselines": [
     {
       "id": "maul-a-baseline-v1",
@@ -12,16 +12,53 @@
       "prompt": "design/mechs/chassis/maul/concept/a/prompt.txt",
       "contractSignature": "f5ff61ae5df9f6e2e835bc61ef028a4ad6cf1c618e216e62578cc14d23d53210",
       "approval": "2026-11-13: owner selected Maul option 1: \"Add option 1. Then push these to the PR.\" Concept approval only; hidden surfaces and production model remain separate."
+    },
+    {
+      "id": "maul-four-mount-baseline",
+      "status": "approved",
+      "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+      "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0",
+      "request": "design/mechs/chassis/maul/concept/four-mount-baseline/request.json",
+      "requestSha256": "447e8c89cc1c5355ad45fade4b5c3617964b611e49ca33cf1a57a511e3b86682",
+      "prompt": "design/mechs/chassis/maul/concept/four-mount-baseline/prompt.txt",
+      "contractSignature": "eb8692e3a8151a419b6b40cb2ac22048db3b0addce2c28a03e85f52bedbdb26a",
+      "approval": "2026-11-22: owner said 'This is good. Let's base the rework of the variants upon this baseline.' Then authorized model implementation. Concept approval includes inset mounts and solid feet; actual model appearance acceptance remains separate."
     }
   ],
-  "variants": [],
-  "activeTurnaround": "maul-a-turnaround",
+  "variants": [
+    {
+      "variantId": "maul-b",
+      "status": "approved-concept-for-implementation",
+      "baselineId": "maul-four-mount-baseline",
+      "image": "design/mechs/chassis/maul/concept/four-mount-breaker/breaker.png",
+      "imageSha256": "8c22d59dd029b4a0d2c6353278953e6b44aa69d2171f5df385023a1c1f7e7e7a",
+      "parentImageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0",
+      "prompt": "design/mechs/chassis/maul/concept/four-mount-breaker/prompt.txt",
+      "review": "design/mechs/chassis/maul/concept/four-mount-breaker/review.json",
+      "contractSignature": "eb8692e3a8151a419b6b40cb2ac22048db3b0addce2c28a03e85f52bedbdb26a",
+      "approval": "Proceed with implementing these into the models."
+    },
+    {
+      "variantId": "maul-c",
+      "status": "approved-concept-for-implementation",
+      "baselineId": "maul-four-mount-baseline",
+      "image": "design/mechs/chassis/maul/concept/four-mount-furnace/furnace.png",
+      "imageSha256": "bc8f7c8de0cf45e78520f3e18dd1892b50ebb9751e27c12c5ae84541d3c51cc8",
+      "parentImageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0",
+      "prompt": "design/mechs/chassis/maul/concept/four-mount-furnace/prompt.txt",
+      "review": "design/mechs/chassis/maul/concept/four-mount-furnace/review.json",
+      "contractSignature": "eb8692e3a8151a419b6b40cb2ac22048db3b0addce2c28a03e85f52bedbdb26a",
+      "approval": "Proceed with implementing these into the models."
+    }
+  ],
+  "activeTurnaround": null,
   "turnarounds": [
     {
       "status": "approved",
       "manifest": "design/mechs/chassis/maul/turnaround/a/manifest.json",
       "approval": "2026-11-15: Owner said \"Approved\" to the complete four-view turnaround set, including proposed rear armor and more upright stance. Directional-reference approval only; generated source, articulation and runtime acceptance remain separate.",
-      "id": "maul-a-turnaround"
+      "id": "maul-a-turnaround",
+      "scope": "Historical approved views for maul-a-baseline-v1, not revalidated for the four-mount rework."
     }
   ],
   "generatedSource": "design/mechs/assets/maul/generated-source/approval.json",
@@ -38,5 +75,24 @@
       "scripts/mech-design/blender/maul_motion.py": "8a848e17c8ff429ed0fe328a38b6b0f25d3181322de9f9bae297cbfeca4e8330"
     }
   },
-  "activeGameDerivative": "design/mechs/assets/maul/pixel/manifest.json"
+  "activeGameDerivative": "design/mechs/assets/maul/pixel/manifest.json",
+  "activeConceptRework": {
+    "id": "maul-four-mount-baseline",
+    "approval": "design/mechs/chassis/maul/concept/four-mount-baseline/approval.json",
+    "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+    "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0",
+    "proposedMounts": "design/mechs/chassis/maul/concept/four-mount-baseline/proposal.json",
+    "scope": "Approved four-mount concepts and exact implemented A/B/C exports, verified on the retained shared Maul rig.",
+    "variants": [
+      {
+        "variantId": "maul-b",
+        "record": "design/mechs/chassis/maul/concept/four-mount-breaker/review.json"
+      },
+      {
+        "variantId": "maul-c",
+        "record": "design/mechs/chassis/maul/concept/four-mount-furnace/review.json"
+      }
+    ],
+    "modelApproval": "design/mechs/assets/maul/pixel/four-mount-review.json"
+  }
 }

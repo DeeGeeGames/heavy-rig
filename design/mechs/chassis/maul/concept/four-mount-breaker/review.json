@@ -1,0 +1,47 @@
+{
+  "status": "owner-approved-concept-for-implementation",
+  "variantId": "maul-b",
+  "baseline": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+  "baselineSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0",
+  "image": "design/mechs/chassis/maul/concept/four-mount-breaker/breaker.png",
+  "imageSha256": "8c22d59dd029b4a0d2c6353278953e6b44aa69d2171f5df385023a1c1f7e7e7a",
+  "prompt": "design/mechs/chassis/maul/concept/four-mount-breaker/prompt.txt",
+  "tool": "built-in image_gen",
+  "scope": "Concept approved for model implementation; exported geometry and in-game appearance are separate acceptance.",
+  "mounts": [
+    {
+      "side": "left",
+      "location": "forearm",
+      "weapon": "autocannon",
+      "maxSize": "medium"
+    },
+    {
+      "side": "right",
+      "location": "forearm",
+      "weapon": "autocannon",
+      "maxSize": "medium"
+    },
+    {
+      "side": "left",
+      "location": "inboard pocket",
+      "weapon": "laser",
+      "maxSize": "small"
+    },
+    {
+      "side": "right",
+      "location": "inboard pocket",
+      "weapon": "laser",
+      "maxSize": "small"
+    }
+  ],
+  "visibleReview": {
+    "count": "pass: four weapon assemblies visible",
+    "familiesAndSides": "pass: requested cartridge families in specified own-left and own-right positions",
+    "inboardMounts": "pass: both receivers recessed between upper torso and inner shoulder armor, below shoulder tops",
+    "feet": "pass: broad single-piece fronts without toe fingers",
+    "chassisPreservation": "pass at raster concept level: palette, body, feet, armor masses, pose, camera and presentation preserved",
+    "articulationClearance": "not verified; requires a 3D assembly",
+    "sharedGeometry": "not verified; raster concepts are not proof of identical mesh geometry"
+  },
+  "ownerApproval": "Proceed with implementing these into the models."
+}

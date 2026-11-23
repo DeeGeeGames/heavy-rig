@@ -233,6 +233,15 @@ export const buildLowPolyChassis = function (parts: LowPolyParts, turret: Group,
 			casting(turret, 'rear-reactor', -24, 81, side * 14, 15, 26, 14, dark);
 			vent(-32.2, 73, side * 14, 4);
 		}
+		// Recess the secondary cartridges inside the shoulders, below their caps.
+		for (const side of [-1, 1]) {
+			const family = familyAt(side < 0 ? 2 : 3);
+			const z = side * 22;
+			casting(turret, 'inboard-socket', 6, 91, z, 18, 12, 11, dark);
+			if (family === 'ballistic') gun(z, 91, 16, 1.5, 10);
+			else if (family === 'energy') energyGun(z, 91, true, 1);
+			else compactLauncher(z, 91, 0);
+		}
 		cylinder(turret, 'neck-bearing', 6, 6, dark, -2, 97, 0);
 		cockpit(0, 101, 19, 22, 13);
 		housing(turret, 'jaw-guard', [{ x: 8, y: 102, height: 2, width: 10 }, { x: 14, y: 102, height: 2, width: 8 }], accent);

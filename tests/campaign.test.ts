@@ -132,7 +132,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 	});
 });
 
-test('v7 storage purges incompatible campaigns while preserving profile and unrelated browser data', async function () {
+test('v8 storage purges incompatible campaigns while preserving profile and unrelated browser data', async function () {
 	const { CAMPAIGN_STORAGE_KEY, readCampaign, saveCampaign } = await import('../src/campaign');
 	const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
 	const data = new Map<string, string>();
@@ -146,13 +146,13 @@ test('v7 storage purges incompatible campaigns while preserving profile and unre
 	};
 	Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
 	try {
-		for (const version of [1, 2, 3, 4, 5, 6]) storage.setItem(`heavy-rig:campaign:v${version}`, JSON.stringify({ ...createCampaign(72), version, credits: 900 }));
+		for (const version of [1, 2, 3, 4, 5, 6, 7]) storage.setItem(`heavy-rig:campaign:v${version}`, JSON.stringify({ ...createCampaign(72), version, credits: 900 }));
 		storage.setItem('heavy-rig:profile:v1', 'keep settings');
 		storage.setItem('other-game:campaign:v4', 'keep other game');
 		const fresh = readCampaign();
-		expect(fresh.version).toBe(7);
+		expect(fresh.version).toBe(8);
 		expect(fresh.credits).toBe(0);
-		for (const version of [1, 2, 3, 4, 5, 6]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
+		for (const version of [1, 2, 3, 4, 5, 6, 7]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
 		expect(storage.getItem('heavy-rig:profile:v1')).toBe('keep settings');
 		expect(storage.getItem('other-game:campaign:v4')).toBe('keep other game');
 		const current = createCampaign(84);

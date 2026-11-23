@@ -87,7 +87,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		housing(foot, 'instep', [{ x: -13, y: 6, height: 2.3, width: width * 0.65 }, { x: -4, y: 8.2, height: 5, width: width * 0.88 }, { x: articulated ? 6 : 14, y: 4.7, height: 2.6, width: width * 0.88 }], steel);
 		const toes = articulated ? group(foot, 'toe-hinge') : foot;
 		if (articulated) toes.position.set(8, 3, 0);
-		for (const side of [-1, 1]) housing(toes, 'split-toe', [{ x: 9 - toes.position.x, y: 3.5 - toes.position.y, height: 3.4, width: width * 0.46 }, { x: 21 - toes.position.x, y: 3.1 - toes.position.y, height: 3, width: width * 0.46 }, { x: 26 - toes.position.x, y: 1.8 - toes.position.y, height: 1.7, width: width * 0.4 }], trim, side * width * 0.59);
+		if (!kind && chassis === 'maul') housing(foot, 'solid-boot-cap', [{ x: 9, y: 3.5, height: 3.4, width }, { x: 21, y: 3.1, height: 3, width }, { x: 26, y: 1.8, height: 1.7, width: width * 0.88 }], trim);
+		else for (const side of [-1, 1]) housing(toes, 'split-toe', [{ x: 9 - toes.position.x, y: 3.5 - toes.position.y, height: 3.4, width: width * 0.46 }, { x: 21 - toes.position.x, y: 3.1 - toes.position.y, height: 3, width: width * 0.46 }, { x: 26 - toes.position.x, y: 1.8 - toes.position.y, height: 1.7, width: width * 0.4 }], trim, side * width * 0.59);
 		if (articulated) cylinder(foot, 'toe-bearing', 2, width * 1.9, dark, 8, 3, 0, 'z');
 		if (!kind && chassis === 'kestrel') housing(foot, 'rear-talon', [{ x: -27, y: 1.5, height: 1.4, width: 2 }, { x: -12, y: 4, height: 3, width: 3 }], steel);
 		return { index, upper, lower, hip, knee, ankle, sleeve, rod, contact, foot, toes };

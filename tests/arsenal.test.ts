@@ -124,7 +124,7 @@ describe('Heavy Rig arsenal', function () {
 test('deployment and combat reject incompatible weapons and nonexistent chassis slots', function () {
 	expect(function () { createMissionState(contract, { frame: 'kestrel', loadout: ['autocannon', null] }); }).toThrow(RangeError);
 	expect(function () { createMissionState(contract, { frame: 'longbow', loadout: ['ppc', null] }); }).toThrow(RangeError);
-	expect(function () { createState({ frame: 'maul', starter: 'machine-gun' }); }).toThrow(RangeError);
+	expect(function () { createState({ frame: 'maul', starter: 'laser' }); }).toThrow(RangeError);
 	const state = createState({ frame: 'warden' }); state.spawnIn = 3600;
 	state.loadout = [createMount('laser'), createMount('machine-gun'), createMount('autocannon'), { ...createMount('stream-rockets'), slot: 5 }, { ...createMount('machine-gun'), slot: 1 }];
 	step(state, { ...idle, fire: [true, true, true, true] }, 1 / 60);
