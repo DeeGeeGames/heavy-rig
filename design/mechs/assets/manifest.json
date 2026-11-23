@@ -5,7 +5,7 @@
     "status": "owner-approved-for-play",
     "date": "2026-11-22",
     "decision": "Approve all six for production",
-    "scope": "The six assembled B/C models reviewed from three angles and in the Practice range.",
+    "scope": "Approved current playable variant exports; later per-bundle approval records supersede the original selection where present.",
     "bundles": [
       {
         "variants": [
@@ -33,8 +33,11 @@
         "baseSha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
         "path": "public/assets/mechs/maul/variants.glb",
         "sha256": "7a0dd68e55d4182d486d5a9d9213af131b30004b343561c1e73859f1b30220a9",
-        "status": "four-mount-rework-implemented-awaiting-owner-runtime-appearance-review",
-        "approvalScope": "Previous B/C production approval does not apply to these replaced assets. Four-mount concepts approved for implementation; actual reworked models pending owner review."
+        "status": "owner-approved-for-play",
+        "approvalScope": "Owner approved the actual four-mount Breacher, Breaker and Furnace models after local network preview. Appearance and production selection approval; no inference of measured balance, audio, hardware performance or physical-controller acceptance.",
+        "ownerStatement": "Let's go ahead and commit to these.",
+        "approvalDate": "2026-11-22",
+        "review": "design/mechs/assets/maul/pixel/four-mount-review.json"
       }
     ]
   },
@@ -941,8 +944,8 @@
     },
     {
       "path": "design/mechs/assets/maul/pixel/manifest.json",
-      "bytes": 1954,
-      "sha256": "ae6163e2d5380e2452892c490337831f62e3d02d76039a2f1d398fdd51f4d8c6"
+      "bytes": 2369,
+      "sha256": "9d6d1ca0027744ddc34653cdd767f64da4871e75b4b38528105a0fb860f42890"
     },
     {
       "path": "design/mechs/assets/maul/pixel/maul.glb",
@@ -1006,8 +1009,23 @@
     },
     {
       "path": "design/mechs/assets/maul/pixel/four-mount-review.json",
-      "bytes": 3015,
-      "sha256": "94bcfe84ddccb92ac6b81be3e7c22e56e2611d182a2a7255f0b2c05a5953991b"
+      "bytes": 4287,
+      "sha256": "7c57e6980b0ce5b0ff62dbe36ef95d0218fd7da21c84aefe661dd3cc0c3f7442"
+    },
+    {
+      "path": "design/mechs/assets/maul/pixel/four-mount/breacher.png",
+      "bytes": 48723,
+      "sha256": "c7f7d8ab6c337f0fa30f097f3bb8a64e75654df6583c6721c5df2d564415bf8c"
+    },
+    {
+      "path": "design/mechs/assets/maul/pixel/four-mount/breaker.png",
+      "bytes": 50884,
+      "sha256": "fc37113a04784ae8eebbed909d5ae0df0539e12b2978663628c317e256fa7d80"
+    },
+    {
+      "path": "design/mechs/assets/maul/pixel/four-mount/furnace.png",
+      "bytes": 51183,
+      "sha256": "3ccf2e1c5d77732d07dc18aa419d882d14fff86722058b66834aeddcf4d733e2"
     }
   ]
 }

@@ -82,7 +82,7 @@
     "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
     "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0",
     "proposedMounts": "design/mechs/chassis/maul/concept/four-mount-baseline/proposal.json",
-    "scope": "Approved four-mount concept baseline, implemented on the retained shared Maul rig. Actual exported model appearance awaits owner review.",
+    "scope": "Approved four-mount concepts and exact implemented A/B/C exports, verified on the retained shared Maul rig.",
     "variants": [
       {
         "variantId": "maul-b",
@@ -92,6 +92,7 @@
         "variantId": "maul-c",
         "record": "design/mechs/chassis/maul/concept/four-mount-furnace/review.json"
       }
-    ]
+    ],
+    "modelApproval": "design/mechs/assets/maul/pixel/four-mount-review.json"
   }
 }

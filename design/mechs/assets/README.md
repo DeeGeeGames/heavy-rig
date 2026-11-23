@@ -34,8 +34,9 @@ lasers; Furnace carries a cannon, particle accelerator, inset laser and compact
 two-tube rocket launcher. All three use the same body, rig and locomotion.
 The [export review](maul/pixel/four-mount-review.json) records the new hashes and
 checks. The older Maul comparison depicts the previous two-mount model; its
-appearance approval does not apply to the new exports. Owner review of the new
-runtime appearance remains pending. The owner waived save compatibility for this
+appearance approval applies only to the old export. The owner approved the new
+A/B/C models after local network preview; exact asset hashes and retained render
+images are recorded in the export review. The owner waived save compatibility for this
 rework; campaign version eight starts a fresh save instead of migrating old fits.
 
 Rebuild the three module bundles with

@@ -1,13 +1,15 @@
 {
   "schemaVersion": 1,
-  "status": "runtime-verified-four-mount-rework-awaiting-owner-appearance-review",
+  "status": "owner-approved-for-play",
   "chassis": "maul",
   "variant": "maul-a",
   "approval": {
     "date": "2026-11-22",
-    "scope": "Historical approval of the previous two-mount SNES-style Maul A; the linked comparison depicts that previous export.",
-    "comparison": "design/mechs/assets/maul/pixel/comparison.png",
-    "appliesToAssetSha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f"
+    "ownerStatement": "Let's go ahead and commit to these.",
+    "scope": "Four-mount Maul A/B/C models approved after local network preview.",
+    "appliesToAssetSha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
+    "bundleSha256": "7a0dd68e55d4182d486d5a9d9213af131b30004b343561c1e73859f1b30220a9",
+    "review": "design/mechs/assets/maul/pixel/four-mount-review.json"
   },
   "asset": {
     "path": "public/assets/mechs/maul/pixel.glb",
@@ -36,8 +38,14 @@
   "reproduction": "scripts/mech-design/build-pixel-mechs.py",
   "rework": {
     "concept": "design/mechs/chassis/maul/concept/four-mount-baseline/approval.json",
-    "scope": "Owner authorized model implementation. Actual exported geometry, articulation and runtime presentation require verification.",
+    "scope": "Implemented and verified on the shared rig; owner approved the exact exported base and variant bundle after local network preview.",
     "sourceRigPolicy": "Existing source rig and animation indices retained; two torso-owned inboard sockets appended without modifying high-detail source.",
     "verification": "design/mechs/assets/maul/pixel/four-mount-review.json"
+  },
+  "previousApproval": {
+    "date": "2026-11-22",
+    "scope": "Historical approval of the previous two-mount SNES-style Maul A; the linked comparison depicts that previous export.",
+    "comparison": "design/mechs/assets/maul/pixel/comparison.png",
+    "appliesToAssetSha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f"
   }
 }
