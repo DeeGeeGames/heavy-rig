@@ -333,3 +333,31 @@ test('squad rocket volleys use their own sparse mount and leave player accuracy 
 		expect(state.stats.shotsHit).toBe(0);
 	} finally { await world.dispose(); }
 });
+
+test('squad order batches commit only to the paused current sortie and never partially apply', async function () {
+	const contract: Contract = { id: 'squad-orders', seed: 123, planetId: 'meridian', kind: 'clearance', employer: 'freeholds', opponent: 'combine', title: 'Clear', briefing: 'Clear the site', reward: 100, favor: 8, hostility: 5, tier: 1, requiredReputation: -100 };
+	const loadout = createStarterLoadout('kestrel');
+	const mate: SquadmateOptions = { pilotId: 'rook', callsign: 'Rook', specialty: 'marksman', frameId: 'kestrel', loadout, reserves: defaultReserves(loadout), integrity: 100 };
+	const initial = function () { return createMissionState(contract, { squadmates: [mate, { ...mate, pilotId: 'kite', callsign: 'Kite' }] }); };
+	const { world, combat, state } = await harness(initial());
+	try {
+		const [rook, kite] = state.squadmates;
+		if (!rook || !kite) throw new Error('Missing order recipients');
+		const hold = { pilotId: rook.pilotId, order: { kind: 'hold', point: { x: rook.x, y: rook.y } }, fireDiscipline: 'hold' } as const;
+		expect(combat.applySquadOrders(state, [hold])).toBe(false);
+		combat.setEnabled(false);
+		expect(combat.applySquadOrders(state, [hold, { pilotId: 'absent', order: { kind: 'form' } }])).toBe(false);
+		expect(rook.order).toBeUndefined();
+		expect(rook.fireDiscipline).toBeUndefined();
+		expect(combat.applySquadOrders(state, [hold, { pilotId: kite.pilotId, order: { kind: 'form' } }])).toBe(true);
+		const time = state.time;
+		world.update(1 / 60);
+		expect(state.time).toBe(time);
+		expect(rook.order).toEqual(hold.order);
+		expect(rook.fireDiscipline).toBe('hold');
+		expect(kite.order).toEqual({ kind: 'form' });
+		const replacement = combat.attach(initial());
+		expect(combat.applySquadOrders(state, [hold])).toBe(false);
+		expect(replacement.squadmates[0]?.order).toBeUndefined();
+	} finally { await world.dispose(); }
+});

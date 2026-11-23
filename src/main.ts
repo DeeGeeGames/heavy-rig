@@ -11,6 +11,7 @@ import { detectControllerFamily, controllerButtonLabel, renderControllerButton, 
 import { refreshNavigationGlyphs, menuActionLabel } from './menu-prompts';
 import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
 import { createCombatRuntime } from './combat-runtime';
+import { mountSquadOrders } from './squad-orders-ui';
 import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-navigation';
 import { createRuntimeInput } from './runtime-input';
 import { createTouchFacing, createTouchTargeting, mountTouchDrive, visibleTouchContacts } from './touch-controls';
@@ -161,6 +162,17 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
 	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
+	const squadOrdersRoot = element('squad-orders');
+	const canIssueSquadOrders = function () {
+		return state.outcome === 'playing' && state.squadmates.some(function (mate) { return mate.hp > 0; });
+	};
+	const squadOrders = mountSquadOrders(squadOrdersRoot, {
+		apply: function (current, changes) {
+			if (navigation.auxiliary !== 'squad-orders' || navigation.transitioning || campaignConflict || contextLost) return;
+			if (combatRuntime.applySquadOrders(current, changes)) setPaused(false);
+		},
+		back: function () { backFromSquadOrders(); },
+	}, abort.signal);
 	let acquiredTargetId: number | undefined;
 	let aim: Point = { x: 900, y: 450 }; let pointer: Point | undefined; let aimMode: 'pointer' | 'gamepad' | 'touch' | 'target' = 'pointer';
 	const touchTargeting = createTouchTargeting();
@@ -231,7 +243,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const fitting = root?.id === 'training-setup' || root?.id === 'situation-setup';
 		const fittingSelect = fitting && target instanceof HTMLSelectElement;
 		const useTab = device === 'keyboard' && (fitting || training && root?.id === 'pause-panel');
-		const label = menuActionLabel(target);
+		const label = root === squadOrdersRoot ? 'Select' : menuActionLabel(target);
 		render(html`
 			${device !== 'touch' ? html`<span class="menu-key">${useTab ? html`<kbd class="input-keycap">Tab</kbd>` : renderGlyph(device, 'move')}<span class="key-label">${fittingSelect && inputMode === 'gamepad' ? '↑↓ Move · ←→ Adjust' : 'Move'}</span></span>` : ''}
 			${fittingSelect && device === 'keyboard' ? html`<span class="menu-key">${renderGlyph(device, 'move')}<span class="key-label">Adjust</span></span>` : ''}
@@ -282,10 +294,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const syncScreen = function (focus = true) {
 		screenRevision++;
+		const ordersWasOpen = !squadOrdersRoot.hidden;
 		const practice = training?.stage === 'range';
 		element('reset').hidden = !training && !escape && !situationSim;
 		element('reset').textContent = situationSim ? 'RESTART SIMULATION' : escape ? 'RESTART ESCAPE' : practice ? 'RESET RANGE' : 'RESTART DRILLS';
 		element('pause-training-loadout').hidden = !training;
+		element('pause-squad-orders').hidden = !canIssueSquadOrders();
 		element('leave').textContent = situationSim ? 'RETURN TO SIM SETUP' : trialSeed !== undefined ? 'FIELD BRIEFING' : escape ? 'RETURN TO TITLE' : state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('training-deploy').hidden = !campaign.active;
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
@@ -295,7 +309,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			: practice ? 'Change loadout to start a fresh run. Reset Range refills your selected ammunition and coolant.'
 			: training ? 'Resume the drills or change loadout to practice in the range.'
 			: 'Your throttle and mission are preserved. Aborting or reloading returns the squad with its current damage.';
-		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'pause-panel', 'result', 'training-setup', 'training-result', 'situation-setup', 'situation-result', 'field-trial', 'settings', 'handbook', 'confirm', 'save-conflict']) {
+		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'pause-panel', 'squad-orders', 'result', 'training-setup', 'training-result', 'situation-setup', 'situation-result', 'field-trial', 'settings', 'handbook', 'confirm', 'save-conflict']) {
 			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
@@ -304,6 +318,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (modal) touchZoom.reset();
 		container.classList.toggle('training-active', Boolean(training && !practice));
 		container.classList.toggle('menu-open', modal); container.dataset['screen'] = navigation.auxiliary ?? navigation.screen;
+		if (!ordersWasOpen && !squadOrdersRoot.hidden) squadOrders.open(state);
+		else if (ordersWasOpen && squadOrdersRoot.hidden) squadOrders.close();
 		updateMenuHint();
 		element('title-save-status').textContent = !returningCompany ? 'NO COMPANY STARTED' : `${campaignSaved ? 'LOCAL COMPANY' : 'SESSION ONLY · STORAGE UNAVAILABLE'} / DAY ${String(campaign.day).padStart(2, '0')} / ${getPlanet(campaign.planetId).name.toUpperCase()}`;
 		if (navigation.screen === 'title') showTitleScene();
@@ -312,6 +328,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		updateWorkspaceLayout(); updateDialogLayout();
 		if (!focus) return;
 		const root = menu();
+		if (root === squadOrdersRoot) {
+			if (!root.contains(document.activeElement)) focusable(root)[0]?.focus();
+			updateMenuHint(); updateDialogLayout();
+			return;
+		}
 		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? element('handbook') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'title' ? element(returningCompany ? 'title-continue' : 'title-new-campaign') : navigation.screen === 'intro' ? element(narrativeWaiting ? 'intro-begin' : 'intro') : navigation.screen === 'escape-result' ? element('escape-retry') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : navigation.screen === 'field-trial' ? element('field-deploy') : navigation.screen === 'training-setup' ? element('training-frame') : navigation.screen === 'training-result' ? element('result-training-loadout') : navigation.screen === 'situation-setup' ? element('situation-mission') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
 		if (root?.classList.contains('workspace')) focusWorkspace(root);
 		else (initial ?? canvas).focus({ preventScroll: navigation.screen !== 'training-setup' && navigation.screen !== 'situation-setup' });
@@ -448,6 +469,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (returnFocus?.isConnected && !returnFocus.closest('[hidden], [inert]')) returnFocus.focus({ preventScroll: true });
 			else syncScreen();
 		});
+	};
+	const openSquadOrders = function () {
+		if (navigation.auxiliary || campaignConflict || contextLost || !canIssueSquadOrders()) return;
+		returnFocus = element('pause-squad-orders');
+		silenceAudio();
+		transition(navigation.openSquadOrders());
+	};
+	const backFromSquadOrders = function () {
+		if (navigation.auxiliary === 'squad-orders' && !navigation.transitioning && !squadOrders.cancelPick()) closeAuxiliary();
 	};
 	const confirm = function (action: () => void, label: string, copy = 'The current operation will be lost. Your recorded results and settings will be kept.', title = 'ABANDON THIS RUN?') {
 		element('confirm-cancel').textContent = isShipScreen(navigation.screen) ? 'KEEP BROWSING' : 'CANCEL';
@@ -675,6 +705,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const back = function () {
 		if (navigation.transitioning) return;
+		if (navigation.auxiliary === 'squad-orders') { backFromSquadOrders(); return; }
 		if (navigation.auxiliary) { closeAuxiliary(); return; }
 		const planetPopover = element('starmap').querySelector<HTMLElement>('.planet-popover:popover-open');
 		if (navigation.screen === 'starmap' && planetPopover) {
@@ -773,6 +804,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	});
 	listen('resume', function () { setPaused(false); });
 	listen('pause', function () { setPaused(true); });
+	listen('open-squad-orders', openSquadOrders);
+	listen('pause-squad-orders', openSquadOrders);
 	listen('reset', function () {
 		if (situationSim) confirm(function () { startSituation(true); }, 'RESTART SIMULATION', 'Start this situation again with fresh rigs and the same terrain.', 'RESTART THIS SIMULATION?');
 		else if (escape) confirm(startEscape, 'RESTART ESCAPE');
@@ -959,9 +992,16 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const direction = event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down' : event.code === 'ArrowLeft' ? 'left' : event.code === 'ArrowRight' ? 'right' : undefined;
 			if (direction) { event.preventDefault(); moveWorkspaceFocus(root, direction); audio.cue('focus'); return; }
 		}
-		if (root && ['title', 'rig-bay', 'escape-result', 'field-trial'].includes(navigation.screen) && !navigation.auxiliary && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
-			event.preventDefault(); const items = focusable(root); const index = items.findIndex(function (item) { return item === document.activeElement; });
-			items[(index + (event.code === 'ArrowDown' || event.code === 'ArrowRight' ? 1 : -1) + items.length) % items.length]?.focus(); audio.cue('focus'); return;
+		if (root && (root === squadOrdersRoot || !navigation.auxiliary && ['title', 'rig-bay', 'escape-result', 'field-trial'].includes(navigation.screen))) {
+			const direction = event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down' : event.code === 'ArrowLeft' ? 'left' : event.code === 'ArrowRight' ? 'right' : undefined;
+			if (direction) {
+				event.preventDefault();
+				if (root !== squadOrdersRoot || !squadOrders.moveCursor(direction)) {
+					const items = focusable(root); const index = items.findIndex(function (item) { return item === document.activeElement; });
+					items[(index + (direction === 'down' || direction === 'right' ? 1 : -1) + items.length) % items.length]?.focus();
+				}
+				audio.cue('focus'); return;
+			}
 		}
 		// Purchases and work orders require a fresh confirmation press.
 		if (root && event.repeat && (event.code === 'Enter' || event.code === 'Space')) { event.preventDefault(); return; }
@@ -1167,6 +1207,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('touch-fire').classList.toggle('firing', touchFiring);
 		element('touch-fire').toggleAttribute('disabled', p.overheated || !weaponButtons.some(function (button, index) { return !button.hidden && !button.disabled && button.dataset['resourceState'] !== 'dry' && armedTouchMounts.has(index); }));
 		ui.coolant.textContent = `${state.coolantCharges} ${state.coolantCharges === 1 ? 'CHARGE' : 'CHARGES'}`;
+		element('open-squad-orders').hidden = !canIssueSquadOrders();
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE CONTROLLER INPUTS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
 		ui.hint.hidden = tipDismissed || state.time > 35 || navigation.screen !== 'playing';
 		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.coolant) : html`${combatKeyboardPrompt('coolant')}`, coolantPrompt);
@@ -1257,7 +1298,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			status.hidden = pad.connected || !pad.available && !controllerLost;
 			if (status.textContent !== controllerStatus) status.textContent = controllerStatus;
 		}
-		if (pad.pause && focused && !document.hidden && !contextLost) { audio.cue('back'); if (navigation.auxiliary) closeAuxiliary(); else if (companyNavigationReady()) showAuxiliary('settings'); else setPaused(navigation.screen === 'playing'); }
+		if (pad.pause && focused && !document.hidden && !contextLost) { audio.cue('back'); if (navigation.auxiliary === 'squad-orders') backFromSquadOrders(); else if (navigation.auxiliary) closeAuxiliary(); else if (companyNavigationReady()) showAuxiliary('settings'); else setPaused(navigation.screen === 'playing'); }
 		const root = menu();
 		if (root && !navigation.transitioning && pad.connected && screenRevision === revisionAtFrame && focused && !document.hidden && !contextLost) {
 			if (companyNavigationReady() && isShipScreen(navigation.screen)) {
@@ -1266,7 +1307,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (pad.help) { showAuxiliary('handbook'); return; }
 				if (pad.discard && hasRefitDraft()) { discardDraft(); return; }
 			}
-			if (pad.navigate) {
+			const movedOrderCursor = root === squadOrdersRoot && pad.direction && squadOrders.moveCursor(pad.direction);
+			if (pad.navigate && !movedOrderCursor) {
 				const focusedElement = document.activeElement;
 				if (pad.adjust && focusedElement instanceof HTMLSelectElement) {
 					const enabled = [...focusedElement.options].filter(function (option) { return !option.disabled; });
@@ -1280,7 +1322,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				} else {
 					const items = focusable(root); const index = items.findIndex(function (item) { return item === focusedElement; });
 					const next = index < 0 ? (pad.navigate < 0 ? items.length - 1 : 0) : (index + pad.navigate + items.length) % items.length;
-					items[next]?.focus({ preventScroll: navigation.screen !== 'training-setup' && navigation.screen !== 'situation-setup' });
+					items[next]?.focus({ preventScroll: root !== squadOrdersRoot && navigation.screen !== 'training-setup' && navigation.screen !== 'situation-setup' });
 				}
 				audio.cue('focus');
 			}

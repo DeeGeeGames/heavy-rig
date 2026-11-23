@@ -15,6 +15,7 @@
 	<link rel="stylesheet" href="./src/intro.css">
 	<link rel="stylesheet" href="./src/touch.css">
 	<link rel="stylesheet" href="./src/cockpit.css">
+	<link rel="stylesheet" href="./src/squad-orders.css">
 	<link rel="stylesheet" href="./src/rig-test.css">
 </head>
 <body>
@@ -25,7 +26,7 @@
 	<div id="hud" inert>
 		<header class="mission-bar">
 			<div class="mission-heading"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow" id="mission-name">LAST TRANSMISSION</span><b id="phase">01 / FIRST CONTACT</b><span id="status">Protect Relay 09</span></div></div>
-			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="pause">PAUSE <kbd></kbd></button></div>
+			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="open-squad-orders" aria-label="Squad orders" hidden>ORDERS</button><button id="pause">PAUSE <kbd></kbd></button></div>
 		</header>
 		<div id="training-guide" class="training-guide" hidden><span id="training-progress" class="eyebrow"></span><b id="training-title"></b><p id="training-copy"></p><small>SAFE TRAINING · PAUSE TO EXIT</small></div>
 		<div id="message" class="field-message" role="status" aria-live="polite"></div>
@@ -123,9 +124,10 @@
 	</section>
 	<section id="pause-panel" class="modal compact menu-surface" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
 		<header class="dialog-heading"><span class="eyebrow">OPERATION SUSPENDED</span><h2 id="pause-title">STANDING BY.</h2></header>
-		<div class="dialog-body"><div data-dialog-topic="pause"><p id="pause-copy" data-dialog-text>Your throttle and operation are preserved.</p><button id="pause-controls" class="secondary">PILOT HANDBOOK</button><button id="pause-settings" class="secondary">SETTINGS</button><button id="reset" class="secondary">RESTART OPERATION</button><button id="leave" class="secondary">RETURN TO BRIEFING</button></div></div>
+		<div class="dialog-body"><div data-dialog-topic="pause"><p id="pause-copy" data-dialog-text>Your throttle and operation are preserved.</p><button id="pause-squad-orders" class="secondary" hidden>SQUAD ORDERS</button><button id="pause-controls" class="secondary">PILOT HANDBOOK</button><button id="pause-settings" class="secondary">SETTINGS</button><button id="reset" class="secondary">RESTART OPERATION</button><button id="leave" class="secondary">RETURN TO BRIEFING</button></div></div>
 		<footer class="dialog-actions"><button id="resume" class="primary">RESUME OPERATION <span>→</span></button><button id="pause-training-loadout" class="secondary" hidden>CHANGE LOADOUT</button></footer>
 	</section>
+	<section id="squad-orders" class="squad-orders menu-surface" role="dialog" aria-modal="true" aria-label="Squad orders" hidden inert></section>
 	<section id="result" class="modal result-modal menu-surface" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
 		<header class="dialog-heading"><div class="modal-kicker"><span class="eyebrow">AFTER ACTION REPORT</span><span id="result-difficulty"></span></div><h2 id="result-title">SIGNAL UNBROKEN.</h2></header>
 		<div class="dialog-body"><div data-dialog-topic="report"><p id="result-story" class="result-story" data-dialog-text hidden></p><p id="result-copy" data-dialog-text></p><div class="report-score"><span id="result-rank">A</span><div><small>OPERATION SCORE</small><b id="result-score">0</b></div></div><div id="result-stats" class="result-stats"></div><p id="result-upgrades" class="report-upgrades" data-dialog-text></p><p id="record-feedback" class="muted" data-dialog-text></p></div></div>
