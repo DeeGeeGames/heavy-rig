@@ -17,6 +17,22 @@
 .training-mount { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 7px; }
 .training-mount > label:only-child { grid-column: 1 / -1; }
 .training-fit-summary { color: var(--cyan); font: 11px/1.5 var(--mono); margin: 0; }
+#game :is(#situation-setup, #situation-result) { height: auto; max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 24px); }
+.situation-plan, .situation-conditions, .situation-lineup, .situation-seat { display: grid; gap: 10px; }
+.situation-plan { align-content: start; min-width: 0; }
+.situation-conditions { grid-template-columns: 1.3fr 1.15fr 1fr; }
+.situation-lineup { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.situation-seat { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; }
+.situation-seat > :only-child { grid-column: 1 / -1; }
+.situation-seat select { font-size: 12px; }
+.situation-briefing, .situation-report p { color: var(--muted); font: 14px/1.45 Arial, sans-serif; margin: 0; }
+.situation-report { display: grid; gap: 12px; min-height: 0; overflow-y: auto; }
+.situation-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 0; }
+@media (max-width: 600px), (max-height: 420px) {
+	.situation-conditions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.situation-conditions > :first-child, #situation-fit .training-fit-summary { grid-column: 1 / -1; grid-row: auto; }
+	.situation-lineup { grid-template-columns: minmax(0, 1fr); }
+}
 .dialog-heading { flex: none; }
 #game .dialog-heading h2 { font-size: clamp(25px, 3.7vw, 38px); margin: 8px 0 0; line-height: 1.04; }
 .dialog-tabs { display: flex; flex: none; gap: 5px; }
