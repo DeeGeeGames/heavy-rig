@@ -26,7 +26,7 @@ const pilots = {
 } as const;
 
 export type PilotId = keyof typeof pilots;
-const recruits: readonly PilotId[] = ['flint', 'kite', 'glass', 'talon', 'brace', 'switch'];
+export const RECRUIT_IDS = ['flint', 'kite', 'glass', 'talon', 'brace', 'switch'] as const satisfies readonly PilotId[];
 export const SQUAD_SIZE = 4;
 export const isPilotId = function (value: unknown): value is PilotId {
 	return typeof value === 'string' && Object.hasOwn(pilots, value);
@@ -35,7 +35,7 @@ export const isPilotId = function (value: unknown): value is PilotId {
 export const getPilot = function (id: PilotId): Pilot { return { id, ...pilots[id] }; };
 
 export const getRecruitOffers = function (campaign: Campaign): readonly Pilot[] {
-	return recruits.filter(function (id) { return !campaign.pilots.includes(id); }).slice(0, 3).map(getPilot);
+	return RECRUIT_IDS.filter(function (id) { return !campaign.pilots.includes(id); }).slice(0, 3).map(getPilot);
 };
 
 export const hirePilot = function (campaign: Campaign, id: PilotId): Campaign {

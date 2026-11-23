@@ -78,12 +78,13 @@
 				<button id="title-continue" class="title-choice" aria-describedby="title-continue-description"><span class="title-cursor" aria-hidden="true">▸</span><span id="title-company-label">ENTER COMPANY</span><span class="title-choice-end" aria-hidden="true">↗</span></button>
 				<button id="title-new-campaign" class="title-choice" aria-describedby="title-new-campaign-description"><span class="title-cursor" aria-hidden="true">▸</span>NEW CAMPAIGN</button>
 				<button id="title-new-career" class="title-choice" aria-describedby="title-new-career-description"><span class="title-cursor" aria-hidden="true">▸</span>NEW CAREER</button>
+				<button id="title-situation" class="title-choice" aria-describedby="title-situation-description"><span class="title-cursor" aria-hidden="true">▸</span>SITUATION SIM</button>
 				<button id="title-training" class="title-choice" aria-describedby="title-training-description"><span class="title-cursor" aria-hidden="true">▸</span>FRAME TRAINING<span class="title-choice-end" aria-hidden="true">SIM</span></button>
 				<button id="title-intro" class="title-choice" aria-describedby="title-intro-description"><span class="title-cursor" aria-hidden="true">▸</span>REPLAY ESCAPE</button>
 				<button id="title-settings" class="title-choice" aria-describedby="title-settings-description"><span class="title-cursor" aria-hidden="true">▸</span>SETTINGS</button>
 				<button id="title-handbook" class="title-choice" aria-describedby="title-handbook-description"><span class="title-cursor" aria-hidden="true">▸</span>PILOT HANDBOOK</button>
 			</nav>
-			<div class="title-menu-description"><p id="title-continue-description">Board the Wayfarer. Choose your next contract.</p><p id="title-new-campaign-description" hidden>Escape the Rig Bay and pick up a signal on the Bridge. Replaces existing progress after confirmation.</p><p id="title-new-career-description" hidden>Start directly aboard the Wayfarer. No escape sequence. Replaces existing progress after confirmation.</p><p id="title-training-description" hidden>Test any frame and loadout or learn the controls in guided drills.</p><p id="title-intro-description" hidden>Replay the Rig Bay escape. Company progress is untouched.</p><p id="title-settings-description" hidden>Tune audio, difficulty, controls, and accessibility.</p><p id="title-handbook-description" hidden>Study the controls, weapons, and life on the frontier.</p></div>
+			<div class="title-menu-description"><p id="title-continue-description">Board the Wayfarer. Choose your next contract.</p><p id="title-new-campaign-description" hidden>Escape the Rig Bay and pick up a signal on the Bridge. Replaces existing progress after confirmation.</p><p id="title-new-career-description" hidden>Start directly aboard the Wayfarer. No escape sequence. Replaces existing progress after confirmation.</p><p id="title-situation-description" hidden>Set the mission and assemble a squad for a one-off sortie.</p><p id="title-training-description" hidden>Test any frame and loadout or learn the controls in guided drills.</p><p id="title-intro-description" hidden>Replay the Rig Bay escape. Company progress is untouched.</p><p id="title-settings-description" hidden>Tune audio, difficulty, controls, and accessibility.</p><p id="title-handbook-description" hidden>Study the controls, weapons, and life on the frontier.</p></div>
 		</div>
 		<div class="title-hangar-label" aria-hidden="true"><span>08 <i>/</i> WARDEN</span><small>80T LINE FIGHTER · WAYFARER HANGAR</small></div>
 		<footer class="title-footer"><span id="title-save-status"></span><span>INDEPENDENT STEEL. UNSETTLED FRONTIER.</span></footer>
@@ -100,6 +101,16 @@
 		<header class="dialog-heading"><span class="eyebrow">WAYFARER SIMULATOR</span><h2 id="training-setup-title">TRAINING LOADOUT</h2></header>
 		<div id="training-fit" class="training-fit"></div>
 		<footer class="dialog-actions"><button id="training-launch" class="primary">ENTER RANGE <span>→</span></button><button id="training-guided" class="secondary" title="Learn the controls with preset equipment">GUIDED DRILLS</button><button id="training-back" class="text-button">BACK</button></footer>
+	</section>
+	<section id="situation-setup" class="modal menu-surface" role="dialog" aria-modal="true" aria-labelledby="situation-setup-title" hidden>
+		<header class="dialog-heading"><h2 id="situation-setup-title">SITUATION SIM</h2></header>
+		<div id="situation-fit" class="training-fit"></div>
+		<footer class="dialog-actions"><button id="situation-launch" class="primary">DEPLOY →</button><button id="situation-back" class="text-button">RETURN TO TITLE</button></footer>
+	</section>
+	<section id="situation-result" class="modal compact menu-surface" role="dialog" aria-modal="true" aria-labelledby="situation-result-title" hidden>
+		<header class="dialog-heading"><span class="eyebrow">SITUATION SIM</span><h2 id="situation-result-title">MISSION COMPLETE</h2></header>
+		<div class="situation-report"><p id="situation-result-copy"></p><div class="result-stats situation-stats"><div><b id="situation-kills"></b><small>ELIMINATED</small></div><div><b id="situation-time"></b><small>FIELD TIME</small></div></div></div>
+		<footer class="dialog-actions"><button id="situation-replay" class="primary">REPLAY</button><button id="situation-edit" class="secondary">CHANGE SETUP</button><button id="situation-exit" class="text-button">RETURN TO TITLE</button></footer>
 	</section>
 	<section id="field-trial" class="modal compact menu-surface" role="dialog" aria-modal="true" aria-labelledby="field-trial-title" hidden>
 		<header class="dialog-heading"><div class="modal-kicker"><span class="eyebrow">CINDER / FIELD TRIAL</span><span id="field-trial-seed"></span></div><h2 id="field-trial-title">Courier recovery</h2></header>

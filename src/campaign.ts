@@ -57,7 +57,7 @@ export interface Campaign extends CompanyState {
 
 const CAMPAIGN_VERSION = 8;
 export const CAMPAIGN_STORAGE_KEY = `heavy-rig:campaign:v${CAMPAIGN_VERSION}`;
-const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition'];
+export const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition'];
 const MAX_COUNT = 1_000_000;
 export const MAX_CREDITS = 1_000_000_000_000;
 const isInteger = function (value: unknown, min: number, max: number): value is number {
@@ -90,7 +90,7 @@ const mixSeed = function (seed: number, value: number) {
 	return (mixed ^ (mixed >>> 16)) >>> 0;
 };
 
-const contractCopy: Readonly<Record<MissionKind, { title: string; briefing: string; reward: number }>> = {
+export const CONTRACT_COPY: Readonly<Record<MissionKind, Readonly<{ title: string; briefing: string; reward: number }>>> = {
 	defend: { title: 'Hold the signal', briefing: 'Defend the contracted uplink through the hostile assault. Keep its integrity above zero, then rendezvous with your dropship.', reward: 1200 },
 	demolition: { title: 'Break the supply line', briefing: 'Locate and destroy the marked processing facility. Its garrison is expendable; the facility is the objective. Reach extraction after demolition.', reward: 1400 },
 	assassination: { title: 'Cut the command link', briefing: 'Find and destroy the designated command frame. Supporting forces are optional targets. Leave the surface through the extraction zone.', reward: 1700 },
@@ -112,7 +112,7 @@ const getContractTemplates = function (campaign: Campaign, planetId: PlanetId = 
 			const employer = FACTION_IDS[employerIndex] ?? 'freeholds';
 			const opponent = FACTION_IDS[(employerIndex + 1 + seed % 2) % FACTION_IDS.length] ?? 'combine';
 			const tier = level.tier;
-			const copy = contractCopy[kind];
+			const copy = CONTRACT_COPY[kind];
 			const reward = Math.round(copy.reward * level.reward * (1 + campaign.boardReputation[employer] * 0.0025));
 			return {
 				id: `${campaign.seed}-${campaign.boardRevision}-${planetId}-${kind}-${tier}`, seed, planetId, kind, employer, opponent,
@@ -146,7 +146,7 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 			: `${faction.name} needs ${rival.name} patrols cleared from the contested approaches.`;
 		return { ...contract, employer, opponent,
 			seed: mixSeed(contract.seed, PLANETS.findIndex(function (world) { return world.id === planetId; }) + 1),
-			reward: Math.round(contractCopy[contract.kind].reward * getMissionTier(contract.tier).reward * (1 + campaign.boardReputation[employer] * .0025)),
+			reward: Math.round(CONTRACT_COPY[contract.kind].reward * getMissionTier(contract.tier).reward * (1 + campaign.boardReputation[employer] * .0025)),
 			briefing: `${context} ${contract.briefing}`,
 		};
 	});
