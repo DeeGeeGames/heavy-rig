@@ -6,12 +6,6 @@ const cabinBeam = 1.47;
 const podCenter = 219;
 export const DROPSHIP_WIDTH = 2 * (podCenter + 33);
 
-// The commander is index zero. The two aft berths unload first.
-export const dropshipBerth = function (index: number, count: number) {
-	if (count === 1) return { x: 27, z: 110 };
-	return { x: index === 1 || index === 3 ? -82 : 82, z: index === 1 || index === 2 ? 132 : -25 };
-};
-
 const sides = [-1, 1] as const;
 const held = function (value: number, poses: number) { return Math.round(Math.max(0, Math.min(1, value)) * poses) / poses; };
 

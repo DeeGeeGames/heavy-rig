@@ -1,5 +1,5 @@
 import { angleDelta } from './simulation';
-import type { Foot, LegRig, WalkerGait } from './gait';
+import { advanceGaitHeading, type Foot, type LegRig, type WalkerGait } from './gait';
 
 export const RUN_ENTER_SPEED = 50;
 export const RUN_EXIT_SPEED = 42;
@@ -59,7 +59,7 @@ const beginRun = function (gait: WalkerGait, speed: number, rig: LegRig, profile
 export const advanceAuthoredRun = function (previous: AuthoredGait, actual: WalkerGait['body'], dt: number, rig: LegRig, profile: AuthoredRunProfile = WARDEN_RUN_PROFILE): AuthoredGait {
 	const { cycleSeconds, stanceFraction } = profile;
 	if (dt <= 0) return previous;
-	const body = { ...actual, angle: previous.body.angle + Math.max(-dt * 2.5, Math.min(dt * 2.5, angleDelta(previous.body.angle, actual.angle))) };
+	const body = { ...actual, angle: advanceGaitHeading(previous.body.angle, actual.angle, dt) };
 	const dx = (body.x - previous.body.x) / dt; const dy = (body.y - previous.body.y) / dt;
 	const speed = dx * Math.cos(body.angle) + dy * Math.sin(body.angle);
 	const before = previous.running ?? beginRun(previous, speed, rig, profile);

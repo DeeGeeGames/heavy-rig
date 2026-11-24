@@ -88,8 +88,10 @@ debrief reports every result and links damaged rigs to Engineering.
 
 Playable contracts, Situation Sim and the Cinder field trial open aboard the
 dropship in the Wayfarer’s hangar. The Wayfarer stays in orbit while the
-dropship carries the assigned rigs to the mission’s landing site. The rear
-ramp opens, the wingmates unload, and the commander steps off last. The camera
+dropship carries the assigned rigs to the mission’s landing site. The rigs board
+in the left-to-right order of their ground formation. Wingmates unload in an
+order that leaves room for the rigs behind them. The commander steps off last,
+and the ramp stays down until the squad clears it. The camera
 pulls back to gameplay distance as the empty ship leaves. Ship motion, ramp
 travel and the camera move use eight held poses per second. **Skip Launch**
 takes the squad straight to the same starting formation. Combat and the mission

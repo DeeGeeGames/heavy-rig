@@ -21,6 +21,9 @@ export interface Gaits { player: WalkerGait; squadmates: ReadonlyMap<string, Wal
 interface Joint extends Point { z: number }
 
 const clamp = function (value: number, min: number, max: number) { return Math.max(min, Math.min(max, value)); };
+export const advanceGaitHeading = function (from: number, to: number, dt: number) {
+	return from + clamp(angleDelta(from, to), -dt * 2.5, dt * 2.5);
+};
 const mix = function (from: number, to: number, t: number) { return from + (to - from) * t; };
 const smooth = function (value: number) { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t); };
 const humanoidStancePitch = function (gait: WalkerGait, foot: Foot, size: number, rig: LegRig) {
@@ -71,7 +74,7 @@ export const advanceGait = function (gait: WalkerGait, actualBody: Body, dt: num
 	if (distance(gait.body, actualBody) > 80 * size) return createGait(actualBody, size, rig);
 	// AI aim can change instantly on a target switch. Let the visible hull turn
 	// through that change without rotating either planted foot with it.
-	const body: Body = { x: actualBody.x, y: actualBody.y, angle: gait.body.angle + clamp(angleDelta(gait.body.angle, actualBody.angle), -dt * 2.5, dt * 2.5) };
+	const body: Body = { x: actualBody.x, y: actualBody.y, angle: advanceGaitHeading(gait.body.angle, actualBody.angle, dt) };
 	const dx = (body.x - gait.body.x) / dt; const dy = (body.y - gait.body.y) / dt;
 	const forwardSpeed = (dx * Math.cos(body.angle) + dy * Math.sin(body.angle)) / size;
 	const turn = angleDelta(gait.body.angle, body.angle) / dt;
