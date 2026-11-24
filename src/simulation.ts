@@ -10,7 +10,7 @@ import type { Contract, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionMap, missionHostileCount, missionSpawn, missionDeploymentSlot, squadDestination } from './missions';
 import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint } from './weapon-rig';
 import { ENEMY_RADIUS, RIG_RADIUS, enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
-import { moveOnTerrain, terrainPointClear, terrainShotFraction, terrainWaypoint, type FieldTerrain } from './field-terrain';
+import { moveOnTerrain, terrainPathClear, terrainPointClear, terrainShotFraction, terrainWaypoint, type FieldTerrain } from './field-terrain';
 import { inFiringArc, turnTorso } from './torso-arc';
 import { planSquads, type SquadOrder as EnemySquadOrder } from './enemy-squads';
 import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './enemy-tactics';
@@ -39,6 +39,7 @@ export const MISSILE_LOCK_GRACE = 0.3;
 export interface MissileLock { targetId: number; progress: number; interrupted: number }
 export type FireDiscipline = 'free' | 'hold';
 export type SquadOrder = { kind: 'form' } | { kind: 'hold' | 'move'; point: Point } | { kind: 'attack'; targetId: number };
+interface SquadMoveProgress { order: SquadOrder; searchAfter: number; firingPosition?: Point | undefined }
 interface RigBody extends Point, ReactorState {
 	angle: number;
 	turret: number;
@@ -87,6 +88,15 @@ export interface State extends CombatStateView {
 export const ARENA = { width: 1800, height: 1200, relayX: 900, relayY: 600 };
 const EDGE_CLEARANCE = 35;
 const SQUAD_ARRIVAL_RADIUS = 16;
+const SQUAD_MOVE_RADIUS = 2 * RIG_RADIUS;
+const SQUAD_MOVE_SEARCH_INTERVAL = .25;
+const squadMoveOffsets = [.5, .9].flatMap(function (fraction) {
+	return Array.from({ length: 16 }, function (_, index) {
+		const angle = index * Math.PI / 8;
+		return { x: Math.cos(angle) * SQUAD_MOVE_RADIUS * fraction, y: Math.sin(angle) * SQUAD_MOVE_RADIUS * fraction };
+	});
+});
+const squadMoveProgress = new WeakMap<Squadmate, SquadMoveProgress>();
 interface EnemyStats { mass: number; recommendedMass: number; cooling: number; hp: number; speed: number; range: number; reload: number; damage: number; aggro: number; elevation: number; score: number }
 export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
 	scout: { mass: 35, recommendedMass: 42, cooling: 10, hp: 600, speed: 66, range: 310, reload: 2, damage: 3.5, aggro: 650, elevation: 42, score: 200 },
@@ -611,13 +621,14 @@ export const weaponsStep = function (state: CombatStateView, input: Controls, dt
 	fireRigWeapons(state, input, dt);
 };
 
-const squadmateTarget = function (state: CombatStateView, mate: Squadmate, targets: readonly CombatTarget[], range: number): CombatTarget | undefined {
+const squadmateTarget = function (state: CombatStateView, mate: Squadmate, targets: readonly CombatTarget[], range: number, checkFiringLane: boolean): CombatTarget | undefined {
 	if (mate.fireDiscipline === 'hold') return undefined;
 	const terrain = state.mission?.map.terrain;
-	const origin = terrain ? playerVolume(mate, mate.frameId) : undefined;
+	const origin = terrain && !checkFiringLane ? playerVolume(mate, mate.frameId) : undefined;
 	const reachable = function (target: CombatTarget) {
-		return target.body.hp > 0 && distance(mate, target.body) <= range
-			&& (!terrain || !origin || terrainShotFraction(terrain, origin, targetVolume(target)) === undefined);
+		if (target.body.hp <= 0 || distance(mate, target.body) > range) return false;
+		if (checkFiringLane) return squadmateShotClear(mate, mate, target, targets, terrain);
+		return !terrain || !origin || terrainShotFraction(terrain, origin, targetVolume(target)) === undefined;
 	};
 	const priority = function (target: CombatTarget) { return target.kind === 'structure' || target.id === state.mission?.targetId ? 0 : 1; };
 	return targets.filter(reachable).sort(function (a, b) { return priority(a) - priority(b) || distance(mate, a.body) - distance(mate, b.body) || a.id - b.id; })[0];
@@ -655,6 +666,47 @@ const squadmateAttackDestination = function (state: CombatStateView, mate: Squad
 	}
 	return target.body;
 };
+
+const squadmateMoveDestination = function (state: CombatStateView, mate: Squadmate, anchor: Point, active: readonly Squadmate[], targets: readonly CombatTarget[], range: number, target: CombatTarget | undefined, progress: SquadMoveProgress): Point {
+	const terrain = state.mission?.map.terrain;
+	const nearby = mate.fireDiscipline === 'hold' || range === 0 ? [] : targets.filter(function (contact) {
+		return contact.body.hp > 0 && distance(anchor, contact.body) <= range;
+	});
+	const hasShot = function (at: Point) {
+		return nearby.some(function (contact) { return squadmateShotClear(mate, at, contact, targets, terrain); });
+	};
+	if (nearby.length === 0 || hasShot(anchor)) {
+		progress.firingPosition = undefined;
+		return anchor;
+	}
+	if (target && nearby.includes(target)) {
+		progress.firingPosition = undefined;
+		return mate;
+	}
+	const reachable = function (point: Point) {
+		return (!terrain || terrainPathClear(terrain, anchor, point, RIG_RADIUS) && terrainPathClear(terrain, mate, point, RIG_RADIUS))
+			&& active.every(function (other) {
+				if (other === mate) return true;
+				const order = other.order;
+				const assigned = order?.kind === 'move' || order?.kind === 'hold' ? order.point : other;
+				const otherProgress = squadMoveProgress.get(other);
+				const reserved = otherProgress && otherProgress.order === order ? otherProgress.firingPosition : undefined;
+				return distance(point, other) >= 2 * RIG_RADIUS && distance(point, assigned) >= 2 * RIG_RADIUS
+					&& (!reserved || distance(point, reserved) >= 2 * RIG_RADIUS);
+			});
+	};
+	if (progress.firingPosition && reachable(progress.firingPosition) && hasShot(progress.firingPosition)) return progress.firingPosition;
+	progress.firingPosition = undefined;
+	if (state.time < progress.searchAfter) return anchor;
+	progress.searchAfter = state.time + SQUAD_MOVE_SEARCH_INTERVAL;
+	progress.firingPosition = squadMoveOffsets.map(function (offset) {
+		return { x: anchor.x + offset.x, y: anchor.y + offset.y };
+	}).find(function (point) {
+		return squadOrderDestinationClear(state, point) && reachable(point) && hasShot(point);
+	});
+	return progress.firingPosition ?? anchor;
+};
+
 const squadmateDestination = function (state: CombatStateView, active: readonly Squadmate[], mate: Squadmate, index: number): Point {
 	if (mate.order?.kind === 'hold' || mate.order?.kind === 'move') return mate.order.point;
 	const player = state.player;
@@ -695,11 +747,25 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 		const ordered = order?.kind === 'attack' ? targets.find(function (candidate) { return candidate.id === order.targetId && candidate.body.hp > 0; }) : undefined;
 		if (order?.kind === 'attack' && !ordered) delete mate.order;
 		const range = Math.max(0, ...mate.loadout.filter(usableMount).map(function (mount) { return getWeapon(mount.weapon).range; }));
-		const target = ordered ? (squadmateShotClear(mate, mate, ordered, targets, terrain) ? ordered : undefined) : squadmateTarget(state, mate, targets, range);
-		const destination = ordered ? (target ? mate : squadmateAttackDestination(state, mate, ordered, targets, range)) : squadmateDestination(state, active, mate, index);
+		const target = ordered ? (squadmateShotClear(mate, mate, ordered, targets, terrain) ? ordered : undefined) : squadmateTarget(state, mate, targets, range, order?.kind === 'move');
+		let destination = ordered ? (target ? mate : squadmateAttackDestination(state, mate, ordered, targets, range)) : squadmateDestination(state, active, mate, index);
+		let anchor: Point | undefined;
+		if (order?.kind === 'move') {
+			let progress = squadMoveProgress.get(mate);
+			if (progress?.order !== order && distance(mate, order.point) <= SQUAD_ARRIVAL_RADIUS
+				&& (!terrain || terrainPathClear(terrain, mate, order.point, RIG_RADIUS))) {
+				progress = { order, searchAfter: 0 };
+				squadMoveProgress.set(mate, progress);
+			}
+			if (progress?.order === order) {
+				anchor = order.point;
+				destination = squadmateMoveDestination(state, mate, anchor, active, targets, range, target, progress);
+			}
+		} else squadMoveProgress.delete(mate);
 		const at = { x: clamp(destination.x, EDGE_CLEARANCE, bounds.width - EDGE_CLEARANCE), y: clamp(destination.y, EDGE_CLEARANCE, bounds.height - EDGE_CLEARANCE) };
 		const separation = distance(mate, at);
-		const moving = separation > SQUAD_ARRIVAL_RADIUS;
+		const adjusting = anchor !== undefined && destination !== anchor;
+		const moving = separation > (adjusting ? 1 : SQUAD_ARRIVAL_RADIUS);
 		const heading = travelHeading(terrain, mate, at, RIG_RADIUS);
 		const bearing = target ? Math.atan2(target.body.y - mate.y, target.body.x - mate.x) : state.player.angle;
 		// Brake along the approach before turning to face a contact. Turning while
@@ -707,10 +773,15 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 		const holdingPoint = mate.order?.kind === 'hold' || mate.order?.kind === 'move';
 		const desiredHeading = moving ? heading : holdingPoint && Math.abs(mate.motorSpeed ?? mate.speed) > .5 ? mate.angle : bearing;
 		mate.angle += clamp(angleDelta(mate.angle, desiredHeading), -dt * frame.turnRate, dt * frame.turnRate);
-		const demand = moving ? Math.min(1, separation / 110) * Math.max(0, Math.cos(angleDelta(mate.angle, heading))) : 0;
+		const demand = moving ? Math.min(1, separation / (adjusting ? 55 : 110)) * Math.max(0, Math.cos(angleDelta(mate.angle, heading))) : 0;
 		mate.throttle = demand;
 		const speed = frameWeight(mate.frameId, mate.loadout).speed * demand;
+		const before = anchor ? { x: mate.x, y: mate.y } : undefined;
 		advanceDrive(mate, speed, frame.acceleration, dt, bounds, terrain);
+		// A turning or braking rig can drift away from its planned straight path.
+		if (anchor && before && (distance(mate, anchor) > SQUAD_MOVE_RADIUS || terrain && !terrainPathClear(terrain, mate, anchor, RIG_RADIUS))) {
+			mate.x = before.x; mate.y = before.y; mate.speed = 0; mate.motorSpeed = 0;
+		}
 		const aim = target?.body ?? { x: mate.x + Math.cos(mate.angle), y: mate.y + Math.sin(mate.angle) };
 		const aimAngle = Math.atan2(aim.y - mate.y, aim.x - mate.x);
 		mate.turret = turnTorso(mate.angle, mate.turret, aimAngle, dt * frame.turretRate);

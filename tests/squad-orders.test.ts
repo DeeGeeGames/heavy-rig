@@ -89,6 +89,45 @@ test('a group waypoint routes around cover, stays clear of its other arrival slo
 	expect(partner.speed).toBeLessThan(.01);
 });
 
+test('a move order lets an armed pilot clear cover within its waypoint radius and return when the contact is gone', function () {
+	const terrain: FieldTerrain = { obstacles: [{ kind: 'shed', x: 970, y: 710, width: 42, depth: 56, height: 120 }], roads: [] };
+	const state = createMissionState(contract, { map: { ...generateMissionMap(contract), terrain }, squadmates: [
+		{ ...mate, frameId: 'morrow', loadout: ['cluster-missiles', 'cluster-missiles'], reserves: [12, 12] },
+	] });
+	const wing = state.squadmates[0];
+	if (!wing) throw new Error('Missing missile squadmate');
+	const point = { x: 900, y: 700 };
+	Object.assign(wing, point, { angle: 0, turret: 0 });
+	const target: Unit = { id: state.nextId++, x: 1120, y: 700, hp: 1000, maxHp: 1000, kind: 'scout', heavy: false, angle: 0, cooldown: 3600 };
+	state.enemies = [target];
+
+	wing.order = { kind: 'hold', point };
+	for (let tick = 0; tick < 180; tick++) advanceSquad(state);
+	expect(distance(wing, point)).toBe(0);
+	expect(wing.shotsFired).toBe(0);
+	wing.order = { kind: 'move', point };
+	wing.fireDiscipline = 'hold';
+	for (let tick = 0; tick < 180; tick++) advanceSquad(state);
+	expect(distance(wing, point)).toBe(0);
+	expect(wing.shotsFired).toBe(0);
+
+	wing.fireDiscipline = 'free';
+	let furthest = 0;
+	for (let tick = 0; tick < 600; tick++) {
+		advanceSquad(state);
+		furthest = Math.max(furthest, distance(wing, point));
+	}
+	expect(furthest).toBeGreaterThan(20);
+	expect(furthest).toBeLessThanOrEqual(2 * RIG_RADIUS + 1e-6);
+	expect(target.hp).toBeLessThan(target.maxHp);
+	expect(wing.order).toEqual({ kind: 'move', point });
+
+	state.enemies = [];
+	for (let tick = 0; tick < 600; tick++) advanceSquad(state);
+	expect(distance(wing, point)).toBeLessThan(20);
+	expect(wing.speed).toBeLessThan(.01);
+});
+
 test('an ordered missile rig moves around a blocking contact to acquire its designated target', function () {
 	const map = { ...generateMissionMap(contract), terrain: { obstacles: [], roads: [] } };
 	const state = createMissionState(contract, { map, squadmates: [
