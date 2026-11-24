@@ -72,27 +72,41 @@
 		<footer class="dialog-actions"><button id="escape-retry" class="primary">RETRY ESCAPE →</button><button id="escape-change-rig" class="secondary">CHANGE RIG</button></footer>
 	</section>
 	<section id="title" class="title-screen menu-surface" aria-labelledby="title-name" hidden>
-		<canvas id="title-scene" aria-hidden="true"></canvas>
-		<div class="title-shade" aria-hidden="true"></div>
-		<header class="title-topline"><span class="title-studio"><span class="title-emblem" aria-hidden="true">DG</span> DEEGEE GAMES</span><span>HRV WAYFARER <i>/</i> FRONTIER SECTOR</span></header>
-		<div class="title-content">
-			<p class="title-kicker"><span></span> A MERCENARY MECH COMPANY</p>
-			<h1 id="title-name"><img class="title-logo" src="./public/brand/heavy-rig.png" width="1254" height="1254" alt="Heavy Rig"></h1>
-			<p class="title-tagline">Your steel. Your crew. Your next contract.</p>
-			<nav class="title-menu" aria-label="Main menu">
-				<button id="title-continue" class="title-choice" aria-describedby="title-continue-description"><span class="title-cursor" aria-hidden="true">▸</span><span id="title-company-label">ENTER COMPANY</span><span class="title-choice-end" aria-hidden="true">↗</span></button>
-				<button id="title-new-campaign" class="title-choice" aria-describedby="title-new-campaign-description"><span class="title-cursor" aria-hidden="true">▸</span>NEW CAMPAIGN</button>
-				<button id="title-new-career" class="title-choice" aria-describedby="title-new-career-description"><span class="title-cursor" aria-hidden="true">▸</span>NEW CAREER</button>
-				<button id="title-situation" class="title-choice" aria-describedby="title-situation-description"><span class="title-cursor" aria-hidden="true">▸</span>SITUATION SIM</button>
-				<button id="title-training" class="title-choice" aria-describedby="title-training-description"><span class="title-cursor" aria-hidden="true">▸</span>FRAME TRAINING<span class="title-choice-end" aria-hidden="true">SIM</span></button>
-				<button id="title-intro" class="title-choice" aria-describedby="title-intro-description"><span class="title-cursor" aria-hidden="true">▸</span>REPLAY ESCAPE</button>
-				<button id="title-settings" class="title-choice" aria-describedby="title-settings-description"><span class="title-cursor" aria-hidden="true">▸</span>SETTINGS</button>
-				<button id="title-handbook" class="title-choice" aria-describedby="title-handbook-description"><span class="title-cursor" aria-hidden="true">▸</span>PILOT HANDBOOK</button>
-			</nav>
-			<div class="title-menu-description"><p id="title-continue-description">Board the Wayfarer. Choose your next contract.</p><p id="title-new-campaign-description" hidden>Escape the Rig Bay and pick up a signal on the Bridge. Replaces existing progress after confirmation.</p><p id="title-new-career-description" hidden>Start directly aboard the Wayfarer. No escape sequence. Replaces existing progress after confirmation.</p><p id="title-situation-description" hidden>Set the mission and assemble a squad for a one-off sortie.</p><p id="title-training-description" hidden>Test any frame and loadout or learn the controls in guided drills.</p><p id="title-intro-description" hidden>Replay the Rig Bay escape. Company progress is untouched.</p><p id="title-settings-description" hidden>Tune audio, difficulty, controls, and accessibility.</p><p id="title-handbook-description" hidden>Study the controls, weapons, and life on the frontier.</p></div>
+		<div class="title-landscape">
+			<img class="title-plate" src="./public/brand/meridian-dusk.webp" width="416" height="234" alt="">
+			<header class="title-topline"><span class="title-studio">DeeGee Games</span><span class="title-location">Meridian <i>/</i> Badlands</span></header>
+			<div class="title-brand">
+				<h1 id="title-name"><img class="title-logo" src="./public/brand/heavy-rig.png" width="1254" height="1254" alt="Heavy Rig"></h1>
+				<p>Your steel. Your crew.<br> Your next contract.</p>
+			</div>
 		</div>
-		<div class="title-hangar-label" aria-hidden="true"><span>08 <i>/</i> WARDEN</span><small>80T LINE FIGHTER · WAYFARER HANGAR</small></div>
-		<footer class="title-footer"><span id="title-save-status"></span><span>INDEPENDENT STEEL. UNSETTLED FRONTIER.</span></footer>
+		<nav id="title-deck" class="title-deck" aria-label="Main menu">
+			<div>
+				<p id="title-save-status" class="title-save"></p>
+				<button id="title-continue" class="title-primary"><span id="title-company-label">New campaign</span><span class="title-arrow" aria-hidden="true"></span></button>
+			</div>
+			<div class="title-links">
+				<button id="title-company" aria-haspopup="dialog" aria-controls="title-picker" hidden>New company<span class="title-plus" aria-hidden="true"></span></button>
+				<button id="title-direct-career">New career</button>
+				<button id="title-simulator" aria-haspopup="dialog" aria-controls="title-picker">Simulator<span class="title-plus" aria-hidden="true"></span></button>
+				<button id="title-settings">Settings</button>
+				<button id="title-handbook">Pilot handbook</button>
+			</div>
+		</nav>
+		<div id="title-picker" class="title-picker" role="dialog" aria-labelledby="title-picker-heading" hidden>
+			<div class="title-picker-card">
+				<header><h2 id="title-picker-heading">New company</h2><button id="title-picker-back">Back</button></header>
+				<div id="title-company-options" class="title-options" hidden>
+					<button id="title-new-campaign" aria-label="New campaign" aria-describedby="title-campaign-detail"><b>New campaign</b><small id="title-campaign-detail">Escape the Rig Bay and pick up a signal on the Bridge.</small></button>
+					<button id="title-new-career" aria-label="New career" aria-describedby="title-career-detail"><b>New career</b><small id="title-career-detail">Start directly aboard the Wayfarer.</small></button>
+				</div>
+				<div id="title-simulator-options" class="title-options" hidden>
+					<button id="title-situation" aria-label="Situation sim" aria-describedby="title-situation-detail"><b>Situation sim</b><small id="title-situation-detail">Set the mission and assemble a squad for a one-off sortie.</small></button>
+					<button id="title-training" aria-label="Frame training" aria-describedby="title-training-detail"><b>Frame training</b><small id="title-training-detail">Test frames and loadouts or learn the controls in guided drills.</small></button>
+					<button id="title-intro" aria-label="Replay escape" aria-describedby="title-escape-detail"><b>Replay escape</b><small id="title-escape-detail">Replay the Rig Bay escape with your company progress preserved.</small></button>
+				</div>
+			</div>
+		</div>
 	</section>
 	<section id="bridge" class="bridge-screen menu-surface" tabindex="-1" aria-label="Wayfarer command bridge" hidden></section>
 	<section id="starmap" class="bridge-screen menu-surface" tabindex="-1" aria-label="Wayfarer starmap" hidden></section>

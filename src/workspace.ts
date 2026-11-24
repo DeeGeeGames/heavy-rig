@@ -1,4 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
+import { directionalControl } from './menu-focus';
 
 export interface WorkspacePane {
 	id: string;
@@ -152,15 +153,8 @@ export const moveWorkspaceFocus = function (root: HTMLElement, direction: 'up' |
 	const items = workspaceControls(root); const focused = document.activeElement;
 	const index = items.findIndex(function (item) { return item === focused; });
 	if (index < 0 || !(focused instanceof HTMLElement)) { focusWorkspace(root); return; }
-	const box = focused.getBoundingClientRect(); const horizontal = direction === 'left' || direction === 'right';
 	const sign = direction === 'left' || direction === 'up' ? -1 : 1;
-	const candidates = items.filter(function (item) { return item !== focused; }).map(function (item) {
-		const rect = item.getBoundingClientRect();
-		const dx = (rect.left + rect.right - box.left - box.right) / 2; const dy = (rect.top + rect.bottom - box.top - box.bottom) / 2;
-		const forward = horizontal ? dx : dy; const perpendicular = Math.abs(horizontal ? dy : dx);
-		return { item, forward: forward * sign, distance: Math.abs(forward) + perpendicular * 3 };
-	}).filter(function (entry) { return entry.forward > 3; }).sort(function (a, b) { return a.distance - b.distance; });
-	const target = candidates[0]?.item ?? items[Math.max(0, Math.min(items.length - 1, index + sign))];
+	const target = directionalControl(items, focused, direction) ?? items[Math.max(0, Math.min(items.length - 1, index + sign))];
 	target?.focus({ preventScroll: true }); rememberWorkspaceFocus(root); changed(root);
 };
 export const renderWorkspace = function (root: HTMLElement, header: TemplateResult, panes: readonly WorkspacePane[], footer: TemplateResult, initial: string, views: readonly WorkspaceView[] = panes.map(function (pane) { return { id: pane.id, label: pane.label, panes: [pane.id] }; }), hero?: TemplateResult) {
