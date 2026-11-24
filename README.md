@@ -5,7 +5,7 @@ Command the HRV Wayfarer, purchase frames and weapons, schedule repairs and
 refits, accept faction contracts, and extract from surface missions. Persistent
 throttle and independent turret tracking remain the combat core.
 
-The title scene, rig previews and battlefields use solid-ink contours and stepped
+Rig previews and battlefields use solid-ink contours and stepped
 color ramps. Walking and reversing expose four leg poses per step; running
 uses eight poses per second, favoring footfalls. Each sample holds the complete
 solved leg pose until the next sample, so moving hips do not smooth the legs
@@ -37,10 +37,12 @@ Accepting one commits the company to that contact. You can repair, take ordinary
 contracts, and return to the signal later. A failed or aborted story sortie
 leaves the same job available to retry. New Career opens directly on the Starmap.
 
-On later launches, the game opens on a console-style title menu
-with a rendered Wayfarer hangar. Choose **Continue Company** to board the ship
-with existing progress. Frame Training, Settings, and the Pilot Handbook
-are also available here. Up/down or Tab selects a menu item; Enter confirms.
+The title screen overlooks Meridian’s relay yard at dusk. Distant tracer fire
+and explosions animate against a 416 × 234 pixel-art landscape. Choose **New
+Campaign** for the escape or **New Career** to start aboard the Wayfarer. With
+a saved company, the main action resumes your progress and **New company**
+offers both fresh starts. **Simulator** contains Situation Sim, Frame Training,
+and Replay Escape. The arrow keys or Tab move between actions and Enter selects.
 Controller and touch prompts follow the active input device. Escape or the
 controller's east face button opens a confirmation to return to the title from
 any company department without resetting company progress. Training entered
