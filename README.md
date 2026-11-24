@@ -594,7 +594,9 @@ and open directly from disk. Crowd profiling and shared model resources
 remain tracked in [performance issue #10](https://github.com/DeeGeeGames/heavy-rig/issues/10).
 
 An original locally synthesized 96-BPM score changes its layers with combat
-intensity and uses quieter ship arrangements. The playable intro escape selects the
+intensity and uses quieter ship arrangements. Mission launches play “Break the
+Clamps,” a 14-second industrial rock cue timed to the dropship sequence.
+The playable intro escape selects the
 144-BPM Pursuit theme with a running bass pulse, tense brass-like phrases, and
 industrial percussion, alongside the facility alarms. Set `AudioFrame.theme` to
 `pursuit` to reuse it independently of facility alarms. Weapon, mechanical, damage,

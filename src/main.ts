@@ -27,7 +27,7 @@ import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
 import { createMissionState, createState, distance, getOperationReport, type Controls, type Point, type SquadmateOptions } from './simulation';
 import { createPresentation } from './presentation';
-import { LAUNCH_TIMING, launchCues, sampleLaunchTime } from './launch-timing';
+import { LAUNCH_TIMING, sampleLaunchTime } from './launch-timing';
 import { advanceGaits, createGaits } from './gait';
 import { viewScale } from './projection-3d';
 import { targetElevation, type ScreenRect } from './overlay';
@@ -153,6 +153,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let narrativeElapsed = 0;
 	let narrativeWaiting = false;
 	let launchElapsed = 0;
+	let launchStartedAt: number | undefined;
+	const launchTimeNow = function () {
+		return launchStartedAt === undefined ? launchElapsed : (performance.now() - launchStartedAt) / 1000;
+	};
+	const pauseLaunchClock = function () {
+		launchElapsed = launchTimeNow();
+		launchStartedAt = undefined;
+	};
 	let trainingOrigin: 'title' | 'bridge' | 'starmap' = 'title';
 	let editor: CompanyEditor = { loadout: [...(getOwnedMech(campaign)?.loadout ?? [])], reserves: [...(getOwnedMech(campaign)?.reserves ?? [])], slot: null, notice: '' };
 	const mouseButtons = new Set<number>();
@@ -214,7 +222,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	for (const action of ['nearest', 'cycle'] as const) element(action === 'nearest' ? 'target-nearest' : 'target-next').addEventListener('click', function () { selectTarget(action); }, listenerOptions);
 	const keyboardAction = function (code: string) { return ACTIONS.find(function (action) { return profile.settings.keyboard[action].includes(code); }); };
 	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
-	const silenceAudio = function () { audio.update({ speed: 0, laser: false, heat: 0, active: false, theme: escape ? 'pursuit' : 'standard' }); };
+	const silenceAudio = function () {
+		pauseLaunchClock();
+		audio.update({ speed: 0, laser: false, heat: 0, active: false, theme: escape ? 'pursuit' : 'standard' });
+	};
 	const unlockSound = function () { void audio.unlock(); };
 	const assignmentBack = function () {
 		const deploy = element('deploy');
@@ -378,6 +389,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	let stopped = false;
 	const transition = function (operation: Promise<void>, after: () => void = syncScreen) {
+		pauseLaunchClock();
 		screenRevision++; resetInput();
 		void operation.then(function () { if (!stopped) after(); }).catch(function (error: unknown) {
 			console.error(error); const node = element('error'); node.textContent = 'Could not change screen. Reload to recover.'; node.hidden = false;
@@ -1389,30 +1401,35 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const audioFrame = function (now: number) {
 		const combat = playing(); const inTrainingMenu = navigation.screen === 'training-setup' || navigation.screen === 'training-result' || navigation.screen === 'situation-setup';
 		const result = navigation.screen === 'result' || navigation.screen === 'situation-result';
-		const briefing = navigation.screen === 'title' || navigation.screen === 'jump' || navigation.screen === 'launch' || isShipScreen(navigation.screen);
-		const audibleMenu = briefing || inTrainingMenu || (result && now < terminalUntil + 30000);
+		const launching = navigation.screen === 'launch';
+		const briefing = navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen);
+		const audibleMenu = (launching && !navigation.transitioning && !navigation.auxiliary) || briefing || inTrainingMenu || (result && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			theme: escape ? 'pursuit' as const : 'standard' as const,
 			alarm: combat && escape,
+			launchTime: launching && launchStartedAt !== undefined ? launchTimeNow() : undefined,
 			jogTime: navigation.screen === 'intro' && narrativePart === 'before' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary && [1, 2].includes(narrativeFrame(INTRO_LINES, narrativeElapsed).index)
 				? narrativeElapsed - (INTRO_LINES[0].length / 10 + 3) : undefined,
 			jogDuration: INTRO_LINES.slice(1, 3).reduce(function (sum, line) { return sum + line.length / 10 + 3; }, 0) - 0.05,
 			hatchTime: navigation.screen === 'intro' && narrativePart === 'after' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary
 				? narrativeElapsed : undefined,
 			active: !contextLost && focused && !document.hidden && !campaignConflict && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
-			phase: briefing ? 'briefing' as const : inTrainingMenu ? 'refit' as const : result ? 'result' as const : 'combat' as const,
+			phase: launching ? 'launch' as const : briefing ? 'briefing' as const : inTrainingMenu ? 'refit' as const : result ? 'result' as const : 'combat' as const,
 			intensity: Math.min(1, state.enemies.length / 5 + (state.wave - 1) * 0.08), danger: Math.max(0, 1 - Math.min(state.player.hp, state.relay) / 50), victory: state.outcome === 'won' };
 	};
 	let frameTime = 0;
 	let makeInput = function (): Controls { return { drive: 0, stop: false, turn: 0, aim, fire: [false, false, false, false], coolant: false }; };
-	world.addSystem('mission-launch').inScreens(['launch']).inPhase('preUpdate').setProcess(function ({ dt }) {
+	world.addSystem('mission-launch').inScreens(['launch']).inPhase('preUpdate').setProcess(function () {
 		if (navigation.transitioning || !focused || document.hidden || contextLost || campaignConflict) return;
-		const previousTime = launchElapsed;
-		launchElapsed += dt;
-		for (const cue of launchCues) if (previousTime < cue.at && launchElapsed >= cue.at) audio.launchCue(cue.kind);
+		if (launchStartedAt === undefined) {
+			// Start the soundtrack before drawing the first shot. Both use foreground real time.
+			launchStartedAt = performance.now() - launchElapsed * 1000;
+			audio.update(audioFrame(frameTime));
+		}
+		const elapsed = launchTimeNow();
 		const dockHeight = portrait.matches && container.classList.contains('touch-enabled') ? element('touch').offsetHeight : 0;
-		presentation.setLaunchTime(sampleLaunchTime(launchElapsed), dockHeight);
-		if (launchElapsed >= LAUNCH_TIMING.end) finishLaunch();
+		presentation.setLaunchTime(sampleLaunchTime(elapsed), dockHeight);
+		if (elapsed >= LAUNCH_TIMING.end) finishLaunch();
 	});
 	world.addSystem('intro-narrative').inScreens(['intro']).inPhase('preUpdate').setProcess(function ({ dt }) {
 		if (narrativeWaiting || navigation.transitioning || navigation.auxiliary || !focused || document.hidden || contextLost) return;
