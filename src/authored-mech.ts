@@ -18,11 +18,14 @@ import { getWeapon } from './arsenal';
 export const MAUL_LOGICAL_TUBE_MAPPING = ['1_0', '2_0', '1_1', '2_1', '1_3', '2_3'] as const;
 export const WARDEN_LOGICAL_TUBE_MAPPING = ['lower_1', 'lower_2', 'lower_4', 'upper_1', 'upper_3', 'upper_4'] as const;
 
-export const playableMechUrl = function (frame: AuthoredChassis): string {
-	return `./assets/mechs/${frame}/pixel.glb`;
+export const playableMechUrl = function (frame: AuthoredChassis, part: 'pixel' | 'variants' = 'pixel'): string {
+	return globalThis.document?.getElementById(`${frame}-${part}-glb`)?.textContent || `./assets/mechs/${frame}/${part}.glb`;
+};
+export const previewAssetOverride = function () {
+	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'];
 };
 const previewMechUrl = function (frame: AuthoredChassis): string {
-	return new URLSearchParams(location.search).get('asset') ?? document.documentElement.dataset['authoredAsset'] ?? playableMechUrl(frame);
+	return previewAssetOverride() ?? playableMechUrl(frame);
 };
 export const authoredWardenUrl = function (): string {
 	return previewMechUrl('warden');
@@ -43,7 +46,7 @@ const maulWeaponSpecs = [
 	{ group: 'rig_mount_left-inboard', muzzle: 'muzzle_left-inboard', side: 'left', launcher: false },
 	{ group: 'rig_mount_right-inboard', muzzle: 'muzzle_right-inboard', side: 'right', launcher: false },
 ] as const;
-type AuthoredChassis = 'warden' | 'kestrel' | 'maul';
+export type AuthoredChassis = 'warden' | 'kestrel' | 'maul';
 interface AuthoredWeaponSpec {
 	readonly group: string;
 	readonly muzzle: string;
@@ -334,7 +337,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 	};
 	const launcher = weaponSpecs.find(function (spec) { return spec.launcher; });
 	return {
-		create, weaponRigs, advancePose, muzzle, tubeMapping: launcher ? launcher.exits ?? tubeMapping : [], height, nativeHorizontalOrigin: origin,
+		frame, create, weaponRigs, advancePose, muzzle, tubeMapping: launcher ? launcher.exits ?? tubeMapping : [], height, nativeHorizontalOrigin: origin,
 		install: function () {
 			if (closed) throw new Error(`Authored ${descriptor.chassis} factory is disposed`);
 			const remove = installMechAssetBinding(frame, { create, weaponRigs, advancePose, muzzle });
@@ -387,13 +390,13 @@ const loadPlayableAsset = async function (label: string, url: string): Promise<G
 		if (expired) { disposeAsset(asset); return undefined; }
 		return asset;
 	}).catch(function (error: unknown) {
-		console.warn(`${label} asset unavailable; using the procedural model.`, error);
+		console.warn(`${label} asset unavailable.`, error);
 		return undefined;
 	});
 	const fallback = new Promise<undefined>(function (resolve) {
 		deadline = setTimeout(function () {
 			expired = true;
-			console.warn(`${label} loading timed out; using the procedural model.`);
+			console.warn(`${label} loading timed out.`);
 			resolve(undefined);
 		}, 5000);
 	});
@@ -422,11 +425,11 @@ const assemblePlayableVariant = function (descriptor: AuthoredDescriptor, frame:
 	return { scene, animations: base.animations, descriptor: { ...descriptor, weapons } };
 };
 
-export const loadPlayableMechFamily = async function (chassis: AuthoredChassis, url: string) {
-	const pixelUrl = playableMechUrl(chassis);
+export const loadPlayableMechFamily = async function (chassis: AuthoredChassis, url: string,
+	cartridges = url === playableMechUrl(chassis) ? playableMechUrl(chassis, 'variants') : null) {
 	const [base, modules] = await Promise.all([
 		loadPlayableAsset(chassis, url),
-		url === pixelUrl ? loadPlayableAsset(`${chassis} B/C`, `./assets/mechs/${chassis}/variants.glb`) : undefined,
+		cartridges ? loadPlayableAsset(`${chassis} B/C`, cartridges) : undefined,
 	]);
 	if (!base) {
 		if (modules) disposeAsset(modules);
@@ -454,11 +457,11 @@ export const loadPlayableMechFamily = async function (chassis: AuthoredChassis, 
 				factories.push(prepareAuthored(variant.descriptor, variant, {}, release, { frame, baseBounds }));
 				references += 1;
 			} catch (error: unknown) {
-				console.warn(`${frame} asset invalid; using the procedural model.`, error);
+				console.warn(`${frame} asset invalid.`, error);
 			}
 		}
 	} catch (error: unknown) {
-		console.warn(`${chassis} asset invalid; using the procedural model.`, error);
+		console.warn(`${chassis} asset invalid.`, error);
 	} finally { release(); }
 	return factories;
 };

@@ -35,7 +35,7 @@
 </head>
 <body>
 <main>
-	<header><h1><span>08 /</span> WARDEN</h1><p>Low-poly motion study · Articulated 3D prototype</p></header>
+	<header><h1><span>08 /</span> WARDEN</h1><p>Warden A · Motion study</p></header>
 	<div class="stage" id="stage">
 		<canvas id="warden-canvas"></canvas>
 		<div class="readout"><strong id="motion-name">Walk</strong><small id="motion-description">Planted feet, loaded suspension, and working pistons.</small></div>
@@ -43,7 +43,7 @@
 	</div>
 	<div class="controls">
 		<div class="motion-bank">
-			<button data-motion="showcase" aria-pressed="true">Showcase</button><button data-motion="walk" aria-pressed="false">Walk</button><button data-motion="reverse" aria-pressed="false">Reverse</button><button data-motion="turn" aria-pressed="false">Turn</button><button data-motion="aim" aria-pressed="false">Aim</button><button data-motion="fire" aria-pressed="false">Fire</button><button data-motion="rest" aria-pressed="false">Rest</button>
+			<button data-motion="showcase" aria-pressed="true">Showcase</button><button data-motion="walk" aria-pressed="false">Walk</button><button data-motion="lap" aria-pressed="false">Circle walk</button><button data-motion="reverse" aria-pressed="false">Reverse</button><button data-motion="turn" aria-pressed="false">Turn</button><button data-motion="aim" aria-pressed="false">Aim</button><button data-motion="fire" aria-pressed="false">Fire</button><button data-motion="rest" aria-pressed="false">Rest</button>
 		</div>
 		<div class="secondary">
 			<button id="pause" aria-pressed="false">Pause</button>
@@ -52,7 +52,7 @@
 			<label>View <select id="view"><option value="three-quarter">Three quarter</option><option value="side">Side</option><option value="game">Game angle</option></select></label>
 			<button id="orbit" aria-pressed="false">Orbit camera</button>
 		</div>
-		<p class="note">Showcase cycles through walking, reversing, turning, aiming, and firing. This mesh uses the game's planted-foot gait; the still's lighting and surface finish are approximated here.</p>
+		<p class="note">Showcase cycles through walking, reversing, turning, aiming, and firing. Game angle shows the pixel finish used in combat.</p>
 		<p id="error" hidden></p>
 	</div>
 </main>

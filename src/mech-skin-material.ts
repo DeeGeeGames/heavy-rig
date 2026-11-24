@@ -9,12 +9,12 @@ fallback.format = RGFormat; fallback.needsUpdate = true;
 const pattern = { value: fallback };
 const patternReady = { value: 0 };
 
-export const loadMechSkinPatterns = async function (): Promise<() => void> {
+export const loadMechSkinPatterns = async function (url = './assets/mechs/faction-patterns.png'): Promise<() => void> {
 	const abort = new AbortController();
 	const deadline = setTimeout(function () { abort.abort(); }, 5000);
 	let bitmap: ImageBitmap | undefined;
 	try {
-		const response = await fetch('./assets/mechs/faction-patterns.png', { signal: abort.signal });
+		const response = await fetch(url, { signal: abort.signal });
 		if (!response.ok) throw new Error(`Pattern texture returned ${response.status}`);
 		bitmap = await createImageBitmap(await response.blob(), { colorSpaceConversion: 'none' });
 		if (bitmap.width !== SIZE * COLUMNS || bitmap.height !== SIZE * ROWS) throw new Error('Invalid camouflage texture dimensions');

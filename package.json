@@ -7,10 +7,10 @@
 		"bun": "1.3.14"
 	},
 	"scripts": {
-		"dev": "bun --port ${PORT:-3000} --console index.html",
+		"dev": "bun --port ${PORT:-3000} scripts/dev.ts",
 		"test:rigs": "bun run build && RIG_TEST=1 PORT=3003 bun run preview",
-		"dev:stress": "bun --port ${PORT:-3002} --console warden-stress.html",
-		"dev:models": "bun --port ${PORT:-3001} --console models-preview.html",
+		"dev:stress": "bun --port ${PORT:-3002} scripts/dev.ts stress",
+		"dev:models": "bun --port ${PORT:-3001} scripts/dev.ts models",
 		"build": "bun run scripts/build.ts",
 		"preview": "bun run scripts/preview.ts",
 		"test": "bun test",

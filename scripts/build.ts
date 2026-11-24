@@ -6,7 +6,7 @@ const dist = join(root, 'dist');
 await rm(dist, { recursive: true, force: true });
 
 const result = await Bun.build({
-	entrypoints: [join(root, 'index.html'), join(root, 'warden-preview.html'), join(root, 'models-preview.html'), join(root, 'warden-stress.html'), join(root, 'kestrel-preview.html'), join(root, 'kestrel-study.html'), join(root, 'maul-preview.html'), join(root, 'maul-study.html')],
+	entrypoints: [join(root, 'index.html'), join(root, 'warden-preview.html'), join(root, 'models-preview.html'), join(root, 'warden-stress.html'), join(root, 'authored-mech-study.html'), join(root, 'kestrel-study.html'), join(root, 'maul-study.html')],
 	outdir: dist,
 	target: 'browser',
 	minify: true,
@@ -14,6 +14,10 @@ const result = await Bun.build({
 	define: { 'process.env.NODE_ENV': '"production"' },
 });
 if (!result.success) throw new AggregateError(result.logs, 'Heavy Rig build failed');
+
+for (const alias of ['kestrel-preview.html', 'maul-preview.html']) {
+	await Bun.write(join(dist, alias), Bun.file(join(dist, 'index.html')));
+}
 
 for await (const path of new Bun.Glob('**/*').scan({ cwd: join(root, 'public'), onlyFiles: true })) {
 	const file = Bun.file(join(root, 'public', path));

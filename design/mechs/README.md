@@ -4,7 +4,7 @@ Use this kit to discuss and generate Heavy Rig art across chats. Start with “C
 
 ## Sources and tools
 
-The playable Warden A, Kestrel A and Maul A use the approved SNES-style models. Each selection pairs its reviewed comparison with the exact game export, high-detail source and rebuild recipe. See the [playable model records and rebuild command](assets/README.md).
+Warden, Kestrel and Maul each have three playable SNES-style variants. Their current records pair the production exports with their high-detail sources and rebuild recipes. [In-game roster](assets/playable-variants.png) · [Model records and rebuild commands](assets/README.md)
 
 For the stages after reference approval, read [Mech asset production](asset-production.md): source audit, articulation, shared variant modules, optimization, in-game acceptance and repeatability. This is the evolving process record; experimental results are not yet production defaults.
 

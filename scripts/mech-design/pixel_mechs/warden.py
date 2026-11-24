@@ -3,6 +3,7 @@
 from math import fsum
 
 from .geometry import average, clipped_rect, minus, ring_z
+from .warden_profile import finish_warden
 
 PALETTE = {
     "armor": "7798b0",
@@ -397,3 +398,7 @@ def build(mesh):
         shoulder_bank(mesh, side, sign)
         gun(mesh, side, sign)
         leg(mesh, side, sign)
+
+
+def finish_export(document, binary, mesh):
+    finish_warden(document, binary, mesh, PALETTE | {"frame": "536473", "plate": "849dac"})

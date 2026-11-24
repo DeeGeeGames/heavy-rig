@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { embedPlayableMechs, embedPreviewAsset } from '../standalone-model-study';
 
 const root = resolve(import.meta.dir, '../..');
 const assetArgument = process.argv[2]; const outputArgument = process.argv[3];
@@ -20,7 +21,10 @@ const bundle = async function (path: string) {
 	if (!script || result.outputs.length !== 1) throw new Error('Expected a single standalone authored preview bundle');
 	return (await script.text()).replaceAll('</script', '<\\/script');
 };
-const injectAsset = function (html: string) { return html.replace('<html lang="en"', `<html lang="en" data-authored-asset="${assetUrl}"`); };
+const injectAsset = function (html: string, gameFrame?: string) {
+	const frame = gameFrame ? ` data-authored-frame="${gameFrame}"` : '';
+	return html.replace('<html lang="en"', `<html lang="en"${frame} data-authored-asset="${assetUrl}"`);
+};
 const studyScript = await bundle('src/authored-mech-study.ts');
 const study = injectAsset((await Bun.file(join(root, frameArgument === 'maul' ? 'maul-study.html' : frameArgument === 'kestrel' ? 'kestrel-study.html' : 'authored-mech-study.html')).text()).replace('<script type="module" src="./src/authored-mech-study.ts"></script>', function () { return `<script type="module">${studyScript}</script>`; }));
 await Bun.write(join(output, 'study.html'), study);
@@ -37,10 +41,16 @@ for (const match of game.matchAll(/<link rel="stylesheet" href="\.\/([^"]+)">/g)
 	game = game.replace(match[0], function () { return `<style>${css}</style>`; });
 }
 game = game.replace('src="./public/brand/heavy-rig.png"', `src="data:image/png;base64,${Buffer.from(await Bun.file(join(root, 'public/brand/heavy-rig.png')).arrayBuffer()).toString('base64')}"`);
-const gameScript = await bundle(frameArgument === 'maul' ? 'src/maul-game.ts' : frameArgument === 'kestrel' ? 'src/kestrel-game.ts' : 'src/authored-game.ts');
-const gameEntry = /<script type="module" src="\.\/src\/(?:main|kestrel-game|game-assets)\.ts"><\/script>/;
-if (!gameEntry.test(game)) throw new Error('Expected one game bootstrap script');
-game = injectAsset(game.replace(gameEntry, function () { return `<script type="module">${gameScript}</script>`; }));
+const gameEntry = '<script type="module" src="./src/game-assets.ts"></script>';
+if (!game.includes(gameEntry)) throw new Error('Expected the full game bootstrap script');
+const [gameScript, playableAssets, patterns] = await Promise.all([
+	bundle('src/game-assets.ts'),
+	embedPlayableMechs(['warden', 'kestrel', 'maul'], true),
+	embedPreviewAsset('mech-faction-patterns', 'assets/mechs/faction-patterns.png'),
+]);
+game = injectAsset(game.replace(gameEntry, function () {
+	return `${playableAssets}\n${patterns}\n<script type="module">${gameScript}</script>`;
+}), frameArgument);
 await Bun.write(join(output, 'game.html'), game);
 for await (const path of new Bun.Glob('**/*').scan({ cwd: join(root, 'public'), onlyFiles: true })) await Bun.write(join(output, path), Bun.file(join(root, 'public', path)));
 const provenance = { frame: frameArgument, asset: relative(root, asset), sha256: createHash('sha256').update(new Uint8Array(bytes)).digest('hex'), bytes: bytes.byteLength, study: 'study.html', game: 'game.html', mode: 'Production bundles with the selected authored GLB embedded for portable review.' };

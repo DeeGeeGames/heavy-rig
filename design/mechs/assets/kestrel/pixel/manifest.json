@@ -4,16 +4,19 @@
   "chassis": "kestrel",
   "variant": "kestrel-a",
   "approval": {
-    "date": "2026-11-22",
-    "scope": "Owner selected this SNES-style A variant and requested its use in the game.",
-    "comparison": "design/mechs/assets/kestrel/pixel/comparison.png"
+    "date": "2026-11-23",
+    "ownerStatement": "This is good. Proceed with these changes to all the models and apply them all the way through everywhere, including the game.",
+    "scope": "Lean Kestrel cockpit and forearm housings with the existing twin seven-bore guns and the fitted right-arm laser and launcher cartridges.",
+    "appliesToAssetSha256": "1b419a93fba96e799b6371e60069b27df9c2cefb6a2d8f2b11fd7f5a789d88ab",
+    "bundleSha256": "e2038cf1301ceb2caf7b3c0dd009413f79ce629426d7faecfc097a024ac81142",
+    "comparison": "design/mechs/assets/playable-variants.png"
   },
   "asset": {
     "path": "public/assets/mechs/kestrel/pixel.glb",
     "retainedPath": "design/mechs/assets/kestrel/pixel/kestrel.glb",
-    "sha256": "00eed5f2c94b87fd19e2d1f14a80cdf2d0d9efc1e53a30a46ddcaeb56ea6f7e0",
-    "bytes": 225088,
-    "triangles": 3123,
+    "sha256": "1b419a93fba96e799b6371e60069b27df9c2cefb6a2d8f2b11fd7f5a789d88ab",
+    "bytes": 228588,
+    "triangles": 3183,
     "meshSections": 11,
     "materials": 2,
     "textureImages": 0,
@@ -31,5 +34,6 @@
     "sha256": "fbab677c30bd0181dcb4a6758ac78602d168a8ee2556bc75793aa2b256129f8b",
     "manifest": "design/mechs/assets/kestrel/game-ready/manifest.json"
   },
-  "reproduction": "scripts/mech-design/build-pixel-mechs.py"
+  "reproduction": "scripts/mech-design/build-pixel-mechs.py",
+  "moduleReproduction": "scripts/mech-design/build-pixel-variants.py"
 }

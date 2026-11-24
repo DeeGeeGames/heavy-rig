@@ -42,6 +42,8 @@ def rebuild(chassis, recipe, staging):
     mesh = PlateMesh(source["nodes"], recipe.PALETTE)
     recipe.build(mesh)
     document, binary = assemble(chassis, source_hash, source, source_bytes, mesh, recipe.VISOR_EMISSIVE)
+    if hasattr(recipe, "finish_export"):
+        recipe.finish_export(document, binary, mesh)
     target = staging / chassis / "pixel.glb"
     target.parent.mkdir()
     glb.write_glb(target, document, binary)

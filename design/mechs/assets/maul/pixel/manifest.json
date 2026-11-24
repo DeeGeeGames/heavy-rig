@@ -4,19 +4,19 @@
   "chassis": "maul",
   "variant": "maul-a",
   "approval": {
-    "date": "2026-11-22",
-    "ownerStatement": "Let's go ahead and commit to these.",
-    "scope": "Four-mount Maul A/B/C models approved after local network preview.",
-    "appliesToAssetSha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
-    "bundleSha256": "7a0dd68e55d4182d486d5a9d9213af131b30004b343561c1e73859f1b30220a9",
-    "review": "design/mechs/assets/maul/pixel/four-mount-review.json"
+    "date": "2026-11-23",
+    "ownerStatement": "This is good. Proceed with these changes to all the models and apply them all the way through everywhere, including the game.",
+    "scope": "Original four-mount body, legs and inboard weapons with Ironclad forearms. Each outer weapon retains 25% of its original Ironclad barrel projection measured forward from the elbow armor seam.",
+    "appliesToAssetSha256": "096689db04899d107f504b0f8aaeef1f1c6d68a9103559edfdec2fc2aaa2e6a5",
+    "bundleSha256": "7c8cf2e1baf32a17ba2ff22bc81465b4a890e1f6919b94b80824fc3c55699721",
+    "comparison": "design/mechs/assets/playable-variants.png"
   },
   "asset": {
     "path": "public/assets/mechs/maul/pixel.glb",
     "retainedPath": "design/mechs/assets/maul/pixel/maul.glb",
-    "sha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
-    "bytes": 366600,
-    "triangles": 4850,
+    "sha256": "096689db04899d107f504b0f8aaeef1f1c6d68a9103559edfdec2fc2aaa2e6a5",
+    "bytes": 359712,
+    "triangles": 4854,
     "meshSections": 13,
     "materials": 2,
     "textureImages": 0,
@@ -38,7 +38,7 @@
   "reproduction": "scripts/mech-design/build-pixel-mechs.py",
   "rework": {
     "concept": "design/mechs/chassis/maul/concept/four-mount-baseline/approval.json",
-    "scope": "Implemented and verified on the shared rig; owner approved the exact exported base and variant bundle after local network preview.",
+    "scope": "The four-mount concept and original body, rig, inboard sockets and feet carry forward from the previous export. The current forearm selection is recorded in approval.",
     "sourceRigPolicy": "Existing source rig and animation indices retained; two torso-owned inboard sockets appended without modifying high-detail source.",
     "verification": "design/mechs/assets/maul/pixel/four-mount-review.json"
   },
@@ -47,5 +47,6 @@
     "scope": "Historical approval of the previous two-mount SNES-style Maul A; the linked comparison depicts that previous export.",
     "comparison": "design/mechs/assets/maul/pixel/comparison.png",
     "appliesToAssetSha256": "d7e51638dcfef1916fedb562642459cce02974dfd2caf364ca1b16f6ceff765f"
-  }
+  },
+  "moduleReproduction": "scripts/mech-design/build-pixel-variants.py"
 }

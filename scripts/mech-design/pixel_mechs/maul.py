@@ -1,9 +1,10 @@
 """Hand-authored Maul A plates, on the approved source rig."""
 
 from copy import deepcopy
-from math import cos, fsum, pi, sin
 
-from .geometry import PlateMesh, average, clipped_rect, minus, ring_z
+from .maul_forearm import build as build_forearm, place_launcher_exits, polygon_z
+from .geometry import PlateMesh, clipped_rect, ring_z
+from .kestrel import barrel_ring
 
 PALETTE = {
     "oxide": "bb605b",
@@ -71,67 +72,8 @@ def inboard_gun(mesh, side, sign):
     mesh.join(rings, lambda i, j: "silver" if i == 1 else "joint", (None, None))
 
 
-def barrel_ring(x, y, z, radius):
-    return [(x + radius * cos((i + .5) * pi / 4), y + radius * sin((i + .5) * pi / 4), z)
-            for i in range(8)]
-
-
-def polygon_z(loop, z):
-    return [(x, y, z) for x, y in loop]
-
-
-def forearm_cells(mesh, side):
-    points = [[mesh.anchor(f"physical_exit_{side}_{r}_{c}") for c in range(4)] for r in range(4)]
-    xs = [fsum(points[j][i][0] for j in range(4)) / 4 for i in range(4)]
-    ys = [fsum(p[1] for p in row) / 4 for row in points]
-    cx = (xs[0] + xs[-1]) / 2
-    cy = (ys[0] + ys[-1]) / 2
-    z = max(p[2] for row in points for p in row)
-    return points, xs, ys, (cx, cy, z)
-
-
-def forearm_plate(mesh, side):
-    # One open-faced cartridge. Grid boundaries are halfway between adjacent
-    # physical firing centers; all sixteen wells meet the actual source exits.
-    points, xs, ys, (cx, cy, z) = forearm_cells(mesh, side)
-    def borders(vals):
-        return (
-            [vals[0] - (vals[1] - vals[0]) * 0.5]
-            + [(a + b) * 0.5 for a, b in zip(vals, vals[1:])]
-            + [vals[-1] + (vals[-1] - vals[-2]) * 0.5]
-        )
-
-    bx, by = borders(xs), borders(ys)
-
-    def boundary(left, right, bottom, top, cut):
-        return [
-            (left + cut, bottom),
-            (right - cut, bottom),
-            (right, bottom),
-            (right, top),
-            (right - cut, top),
-            (left + cut, top),
-            (left, top),
-            (left, bottom),
-        ]
-
-    outer = polygon_z(clipped_rect(cx, cy, 170, 174, 18, 18), z)
-    bounds = polygon_z(boundary(bx[0], bx[-1], by[0], by[-1], 11), z)
-    for j in range(8):
-        k = (j + 1) % 8
-        mesh.face([outer[j], outer[k], bounds[k], bounds[j]], (0, 0, 1), "podrim")
-    for r, row in enumerate(points):
-        for c, (x, y, _) in enumerate(row):
-            border = polygon_z(boundary(bx[c], bx[c + 1], by[r], by[r + 1], 5), z)
-            well = polygon_z(clipped_rect(x, y, 23.2, 23.4, 4.7, 4.7), z)
-            inner = polygon_z(clipped_rect(x, y, 20.9, 21.1, 4.6, 4.6), z - 16)
-            for j in range(8):
-                k = (j + 1) % 8
-                mesh.face([border[j], border[k], well[k], well[j]], (0, 0, 1), "silver")
-                q = [well[j], well[k], inner[k], inner[j]]
-                mesh.face(q, minus((x, y, z - 10), average(q)), "joint")
-            mesh.face(inner, (0, 0, 1), "bore")
-    return cx, cy, z
+def forearm(mesh, side, family):
+    return build_forearm(mesh, side, family, PALETTE)
 
 
 def torso(mesh):
@@ -267,48 +209,6 @@ def pelvis(mesh):
     )
 
 
-def pod(mesh, side, sign):
-    mesh.section = f"geometry_maul_mount_{side}-pod"
-    cx, cy, z = forearm_plate(mesh, side)
-    gauntlet(mesh, sign, cx, cy, z)
-
-
-def gauntlet(mesh, sign, cx, cy, z):
-    mesh.hull_z(
-        [
-            (-53, cx, 528, 681, 165, 23, 22),
-            (-15, cx, 495, 717, 209, 28, 34),
-            (51, cx, 477, 718, 244, 31, 35),
-            (161, cx, 475, 708, 242, 30, 32),
-            (241, cx, 483, 682, 233, 29, 29),
-            (z - 22, cx, 489, 669, 207, 24, 22),
-            (z, cx, cy - 87, cy + 87, 170, 18, 18),
-        ],
-        lambda i, j: "coal"
-        if j in (0, 1, 7)
-        else "oxide"
-        if i in (4, 5)
-        else "porcelain"
-        if j in (3, 4, 5)
-        else "redshade",
-        ("cast", None),
-    )
-    # Torso-owned elbow plugs into this rear pod yoke.
-    mesh.hull_z(
-        [
-            (-152, cx, 616, 685, 123, 16, 14),
-            (-109, cx, 615, 729, 158, 20, 22),
-            (-52, cx, 602, 729, 164, 21, 25),
-            (4, cx, 569, 692, 137, 18, 19),
-        ],
-        "cast",
-    )
-    mesh.hull_z([(-54, cx, 552, 637, 108, 13, 13), (-57, cx, 560, 629, 96, 11, 10)], "cast", ("cast", "joint"))
-    # One solid contrasting service panel per side, with no tiny grille lines.
-    bx = cx + sign * 119
-    mesh.patch([(bx, 541, 78), (bx, 594, 78), (bx, 597, 132), (bx, 546, 145)], "cast", (sign, 0, 0))
-
-
 def leg(mesh, side, sign):
     hx, hy, hz = mesh.anchor(f"rig_leg_{side}_thigh")
     kx, ky, kz = mesh.anchor(f"rig_leg_{side}_shin")
@@ -398,6 +298,11 @@ def build(mesh):
     torso(mesh)
     pelvis(mesh)
     for side, sign in (("left", 1), ("right", -1)):
-        pod(mesh, side, sign)
+        mesh.section = f"geometry_maul_mount_{side}-pod"
+        forearm(mesh, side, "launcher")
         inboard_gun(mesh, side, sign)
         leg(mesh, side, sign)
+
+
+def finish_export(document, binary, mesh):
+    place_launcher_exits(document["nodes"], mesh)
