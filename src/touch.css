@@ -69,7 +69,7 @@
 /* The portrait dock owns canvas height despite inline renderer dimensions.
    Keep control geometry independent of browser chrome and fullscreen height. */
 @media (orientation: portrait) {
-	.touch-enabled:not(.menu-open) { --touch-dock: calc(256px + env(safe-area-inset-bottom)); }
+	.touch-enabled { --touch-dock: calc(256px + env(safe-area-inset-bottom)); }
 	.touch-enabled:not(.menu-open) #battlefield, .touch-enabled:not(.menu-open) .world-labels { height: calc(100% - var(--touch-dock)) !important; }
 	.touch-enabled #touch { height: var(--touch-dock, 270px); background: #0c1b19f5; border-top: 1px solid #7e9c7a55; }
 	.touch-drive-cluster, .touch-fire-cluster { width: 138px; height: 182px; bottom: max(14px, env(safe-area-inset-bottom)); }

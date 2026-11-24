@@ -84,6 +84,15 @@ advances one day and opens a shared debrief, including after a live abort or
 interrupted deployment. Crew-only days resolve immediately at commitment. The
 debrief reports every result and links damaged rigs to Engineering.
 
+Playable contracts, Situation Sim and the Cinder field trial open aboard the
+dropship in the Wayfarer’s hangar. The Wayfarer stays in orbit while the
+dropship carries the assigned rigs to the mission’s landing site. The rear
+ramp opens, the wingmates unload, and the commander steps off last. The camera
+pulls back to gameplay distance as the empty ship leaves. Ship motion, ramp
+travel and the camera move use eight held poses per second. **Skip Launch**
+takes the squad straight to the same starting formation. Combat and the mission
+clock start at handoff. [Launch ship designs](design/mission-start/ship-designs.png)
+
 In live combat, squadmates fight alongside the commander, help complete
 objectives, and regroup at extraction. Any operating rig can hold the pickup
 zone for three seconds. The dropship leaves once the hold is complete and the

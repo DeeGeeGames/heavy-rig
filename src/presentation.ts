@@ -23,6 +23,9 @@ import { createMechCadences } from './mech-cadence';
 import type { AuthoredGait } from './authored-run';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { createFiringArc } from './firing-arc-3d';
+import { createLaunchFlight } from './launch-flight';
+import { createSurfaceLanding } from './launch-surface';
+import { LAUNCH_TIMING } from './launch-timing';
 
 interface CombatEntities {
 	entityForPlayer: () => number | undefined;
@@ -44,6 +47,8 @@ interface ViewBindings {
 }
 interface MechPose {
 	loadout: readonly WeaponMount[];
+	elevation?: number;
+	visible?: boolean;
 	heat?: number;
 	target?: SpatialPoint | undefined;
 	authoredPose?: AuthoredPoseContext | undefined;
@@ -116,6 +121,17 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		const ink = createSolidInk(renderer);
 		const inkAnchor = new Vector3();
 		allocated.push(ink.dispose);
+		let launchTime: number | undefined;
+		let launchDockHeight = 0;
+		let launchOwner: CombatStateView | undefined;
+		let flight: ReturnType<typeof createLaunchFlight> | undefined;
+		let surface: ReturnType<typeof createSurfaceLanding> | undefined;
+		const releaseLaunch = function () {
+			flight?.dispose(); flight = undefined;
+			surface?.dispose(); surface = undefined;
+			launchOwner = undefined;
+		};
+		allocated.push(releaseLaunch);
 		let comparison: { state: CombatStateView; enabled: boolean; lighter: boolean; bakedYard: boolean } | undefined;
 		const inkEnabled = function (state: CombatStateView) { return comparison?.state !== state || comparison.enabled; };
 		const cadence = createMechCadences();
@@ -131,6 +147,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				// The plugin still owns scene graph and transform synchronization.
 				world.removeSystem('renderer3d-render');
 				world.addSystem('battlefield-render').inPhase('render').inGroup('renderer3d').setProcess(function () {
+					if (flight && launchOwner && launchTime !== undefined) {
+						flight.render(renderer, ink, launchOwner, playerSkin, launchTime, width, height);
+						return;
+					}
 					if (!overlay) return;
 					const enabled = inkEnabled(overlay.state);
 					const bake = comparison?.state !== overlay.state || comparison.bakedYard;
@@ -164,13 +184,14 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
-					pose: function (id, view, gait, heading, hp, time, { loadout, heat = 0, authoredPose, target, legGait }) {
+					pose: function (id, view, gait, heading, hp, time, { loadout, heat = 0, authoredPose, target, legGait, elevation = 0, visible = true }) {
 						if (view.damage.hp !== undefined && hp < view.damage.hp) view.damage.hitAt = time;
 						view.damage.hp = hp;
 						const transform = world.getComponent(id, 'localTransform3D');
 						if (!transform) return;
-						transform.x = gait.body.x; transform.z = gait.body.y;
+						transform.x = gait.body.x; transform.y = elevation; transform.z = gait.body.y;
 						world.markChanged(id, 'localTransform3D');
+						view.model.root.visible = visible;
 						view.model.pose(gait, heading, {
 							hit: Math.max(0, 1 - (time - view.damage.hitAt) / 0.16), recoil: weaponRecoil(loadout), heat, time,
 							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
@@ -231,6 +252,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			getZoom: function () { return zoom; },
 			setZoom,
 			resetZoom: function () { setZoom(1); },
+			setLaunchTime: function (seconds: number | undefined, dockHeight = 0) {
+				if (launchTime !== undefined && (seconds === undefined || seconds < launchTime)) releaseLaunch();
+				launchTime = seconds;
+				launchDockHeight = dockHeight;
+			},
 			toGround: function (point: Point) { return toGround(point, camera, width, height); },
 			toScreen: function (point: Point, elevation = 0) { return toScreen(point, camera, width, height, elevation); },
 			canCompareKestrel: function () { return ink.available && !!getMechAssetBinding('kestrel'); },
@@ -243,6 +269,18 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			setSkin: function (skin: MechSkinId) { playerSkin = skin; },
 			prepare: function (state: CombatStateView, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false) {
 				if (disposed || !views || !combat || width <= 0 || height <= 0) { overlay = undefined; return; }
+				if (launchOwner && launchOwner !== state) releaseLaunch();
+				if (launchTime !== undefined && state.mission) {
+					launchOwner = state;
+					if (launchTime < LAUNCH_TIMING.approach) {
+						flight ??= createLaunchFlight();
+						overlay = undefined;
+						return;
+					}
+					if (flight) { flight.dispose(); flight = undefined; }
+					surface ??= createSurfaceLanding(scene, state, state.mission.map);
+				}
+				const landing = launchTime !== undefined ? surface?.update(launchTime, width, height) : undefined;
 				if (comparison && comparison.state !== state) comparison = undefined;
 				const nativeComparison = !inkEnabled(state);
 				const sampledLegs = function (actor: Point, gait: AuthoredGait) { return nativeComparison ? undefined : cadence.visualGait(actor, gait); };
@@ -262,11 +300,17 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				if (relayHp !== undefined && state.relay < relayHp) relayHitAt = state.time;
 				relayHp = state.relay;
 				previousState = state; previousStateTime = state.time;
-				if (attract || hangar) cameraOffset = { x: 0, y: 0 };
+				if (attract || hangar || landing) cameraOffset = { x: 0, y: 0 };
 				resize(state, width, height);
 				sun.position.set(state.player.x - 420, 900, state.player.y - 500); sun.target.position.set(state.player.x, 0, state.player.y);
 				fill.position.set(state.player.x + 700, 450, state.player.y + 600); fill.target.position.set(state.player.x, 50, state.player.y);
-				if (hangar) {
+				if (landing) {
+					const viewHeight = Math.max(1, height - launchDockHeight * landing.dockBlend);
+					alignCamera(camera, width, viewHeight, state, zoom, landing.focus);
+					camera.zoom = landing.zoom;
+					if (viewHeight < height) camera.setViewOffset(width, viewHeight, 0, 0, width, height);
+					else camera.updateProjectionMatrix();
+				} else if (hangar) {
 					camera.zoom = 1.65;
 					camera.setViewOffset(width, height, width > 700 ? -width * 0.29 : -width * 0.16, width > 700 ? -height * 0.11 : height * 0.27, width, height);
 					camera.updateProjectionMatrix();
@@ -276,25 +320,29 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					camera.updateProjectionMatrix();
 				}
 				if (player && playerId !== undefined) {
-					const heading = attract ? Math.PI / 4 - 0.22 : state.player.turret;
-					const gait = attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player;
+					const arrival = landing?.poses[0];
+					const heading = arrival?.gait.body.angle ?? (attract ? Math.PI / 4 - 0.22 : state.player.turret);
+					const gait = arrival?.gait ?? (attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player);
 					views.pose(playerId, player, gait, heading, state.player.hp, state.time, {
-						loadout: state.loadout, heat: state.player.heat, authoredPose: state.authoredPose,
-						legGait: attract ? undefined : sampledLegs(state.player, state.authoredPose?.gait ?? gait),
-						target: attract || hangar ? undefined : playerAimPoint(state),
+						loadout: state.loadout, heat: state.player.heat, authoredPose: arrival ? arrival.authored : state.authoredPose,
+						elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
+						legGait: arrival?.gait ?? (attract ? undefined : sampledLegs(state.player, state.authoredPose?.gait ?? gait)),
+						target: attract || hangar || landing ? undefined : playerAimPoint(state),
 					});
 					views.scale(playerId, hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1);
 				}
 				const squadmateLabelHeights = new Map<string, number>();
-				for (const mate of state.squadmates) {
+				for (const [index, mate] of state.squadmates.entries()) {
 					const id = combat.entityForSquadmate(mate.pilotId);
 					if (id === undefined) continue;
 					const view = views.ensure(id, undefined, false, mate.frameId, playerSkin);
-					const gait = gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
-					views.pose(id, view, gait, mate.turret, mate.hp, state.time, {
-						loadout: mate.loadout, heat: mate.heat, authoredPose: mate.authoredPose,
-						legGait: sampledLegs(mate, mate.authoredPose?.gait ?? gait),
-						target: mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
+					const arrival = landing?.poses[index + 1];
+					const gait = arrival?.gait ?? gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
+					views.pose(id, view, gait, arrival?.gait.body.angle ?? mate.turret, mate.hp, state.time, {
+						loadout: mate.loadout, heat: mate.heat, authoredPose: arrival ? arrival.authored : mate.authoredPose,
+						elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
+						legGait: arrival?.gait ?? sampledLegs(mate, mate.authoredPose?.gait ?? gait),
+						target: !landing && mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
 					});
 					squadmateLabelHeights.set(mate.pilotId, view.model.labelHeight + 12);
 				}
@@ -312,15 +360,20 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
 				objects.update(state, player ? {
 					muzzles: player.model.muzzles.map(worldAnchor), exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
-				} : undefined);
-				firingArc.update(state, Boolean(player) && !attract && !hangar);
-				reticle.visible = barrel.visible = !attract;
+				} : undefined, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.gait.body : undefined; }));
+				firingArc.update(state, Boolean(player) && !attract && !hangar && !landing);
+				reticle.visible = barrel.visible = !attract && !landing;
 				reticle.position.set(aim.x, 0.25, aim.y);
 				const positions = barrelGeometry.getAttribute('position'); const p = state.player;
 				positions.setXYZ(0, p.x, 0.25, p.y); positions.setXYZ(1, p.x + Math.cos(p.turret) * 110, 0.25, p.y + Math.sin(p.turret) * 110); positions.needsUpdate = true;
 				overlay = { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights };
 			},
 			drawOverlay: function () {
+				if (launchTime !== undefined) {
+					ctx.clearRect(0, 0, width, height);
+					if (surface && launchTime < LAUNCH_TIMING.touchdown) surface.drawSurvey(ctx, width, height, camera, launchTime);
+					return;
+				}
 				if (disposed || !overlay || width <= 0 || height <= 0) return;
 				const { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights } = overlay;
 				drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode, enemyLabelHeights, squadmateLabelHeights,

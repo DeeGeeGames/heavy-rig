@@ -1,11 +1,16 @@
 import type { Point } from './simulation';
 import type { SpatialPoint } from './weapon-rig';
 
-/** Centred, axis-aligned footprints in mission metres. Fissures are below grade. */
-export interface TerrainObstacle extends Readonly<Point> {
-	readonly kind: 'fissure' | 'shed' | 'tree';
+/** Centred, axis-aligned footprints in mission metres. */
+interface GroundFootprint extends Readonly<Point> {
 	readonly width: number;
 	readonly depth: number;
+}
+export interface ObstacleField {
+	readonly obstacles: readonly GroundFootprint[];
+}
+export interface TerrainObstacle extends GroundFootprint {
+	readonly kind: 'fissure' | 'shed' | 'tree';
 	readonly height: number;
 }
 
@@ -18,13 +23,13 @@ interface Bounds { left: number; right: number; top: number; bottom: number }
 interface Contact { fraction: number; axis: 'x' | 'y' }
 interface Corner { point: Point; distances: Map<Corner, number> }
 interface Clearance { boxes: Bounds[]; corners?: Corner[] }
-const clearanceCache = new WeakMap<FieldTerrain, Map<number, Clearance>>();
+const clearanceCache = new WeakMap<ObstacleField, Map<number, Clearance>>();
 
-const bounds = function (obstacle: TerrainObstacle, radius: number): Bounds {
+const bounds = function (obstacle: GroundFootprint, radius: number): Bounds {
 	return { left: obstacle.x - obstacle.width / 2 - radius, right: obstacle.x + obstacle.width / 2 + radius,
 		top: obstacle.y - obstacle.depth / 2 - radius, bottom: obstacle.y + obstacle.depth / 2 + radius };
 };
-const clearanceFor = function (terrain: FieldTerrain, radius: number): Clearance {
+const clearanceFor = function (terrain: ObstacleField, radius: number): Clearance {
 	let sizes = clearanceCache.get(terrain);
 	if (!sizes) { sizes = new Map(); clearanceCache.set(terrain, sizes); }
 	let clearance = sizes.get(radius);
@@ -67,10 +72,10 @@ const clear = function (from: Point, to: Point, boxes: readonly Bounds[]) {
 };
 // Placement checks arbitrary clearances once. Only moving bodies need the
 // persistent per-radius navigation cache used by sweeps and waypoints.
-export const terrainPointClear = function (terrain: FieldTerrain, point: Point, radius: number): boolean {
+export const terrainPointClear = function (terrain: ObstacleField, point: Point, radius: number): boolean {
 	return terrain.obstacles.every(function (obstacle) { return !inside(point, bounds(obstacle, radius)); });
 };
-export const terrainPathClear = function (terrain: FieldTerrain, from: Point, to: Point, radius: number): boolean {
+export const terrainPathClear = function (terrain: ObstacleField, from: Point, to: Point, radius: number): boolean {
 	const { boxes } = clearanceFor(terrain, radius);
 	return !boxes.some(function (box) { return inside(from, box) || inside(to, box); }) && clear(from, to, boxes);
 };

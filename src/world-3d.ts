@@ -194,7 +194,7 @@ export const createWorldObjects = function (scene: Scene) {
 			for (const group of source.art) group.visible = terrain === undefined;
 			return terrain;
 		},
-		update: function (state: CombatStateView, frameEffects?: FrameEffects) {
+		update: function (state: CombatStateView, frameEffects?: FrameEffects, landingShadows?: readonly (Point | undefined)[]) {
 			if (disposed) return;
 			weaponVfx.updateTime(state.time);
 			weaponVfx.updateAfterglows(state);
@@ -240,7 +240,8 @@ export const createWorldObjects = function (scene: Scene) {
 			sync(feedback, shadows, state.enemies.length + state.squadmates.length + 1, function () { const value = new Group(); value.name = 'mech-shadow'; disc(value, shadow, 35); return { root: value }; }, function (value, index) {
 				const enemy = state.enemies[index - 1];
 				const mate = state.squadmates[index - state.enemies.length - 1];
-				const unit = index === 0 ? state.player : enemy ?? mate;
+				const unit = enemy ?? (landingShadows ? landingShadows[index === 0 ? 0 : index - state.enemies.length] : index === 0 ? state.player : mate);
+				value.root.visible = unit !== undefined;
 				if (!unit) return;
 				const scale = enemy ? mechScale(enemy.kind) : mate ? getFrame(mate.frameId).size : 1;
 				value.root.position.set(unit.x, 0.05, unit.y); value.root.scale.setScalar(scale);
