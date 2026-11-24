@@ -24,7 +24,7 @@ import type { AuthoredGait } from './authored-run';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { createFiringArc } from './firing-arc-3d';
 import { createLaunchFlight } from './launch-flight';
-import { createSurfaceLanding } from './launch-surface';
+import { createSurfaceLanding, planLaunchLanding } from './launch-surface';
 import { LAUNCH_TIMING } from './launch-timing';
 
 interface CombatEntities {
@@ -124,12 +124,14 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let launchTime: number | undefined;
 		let launchDockHeight = 0;
 		let launchOwner: CombatStateView | undefined;
+		let launchPlan: ReturnType<typeof planLaunchLanding> | undefined;
 		let flight: ReturnType<typeof createLaunchFlight> | undefined;
 		let surface: ReturnType<typeof createSurfaceLanding> | undefined;
 		const releaseLaunch = function () {
 			flight?.dispose(); flight = undefined;
 			surface?.dispose(); surface = undefined;
 			launchOwner = undefined;
+			launchPlan = undefined;
 		};
 		allocated.push(releaseLaunch);
 		let comparison: { state: CombatStateView; enabled: boolean; lighter: boolean; bakedYard: boolean } | undefined;
@@ -272,13 +274,14 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				if (launchOwner && launchOwner !== state) releaseLaunch();
 				if (launchTime !== undefined && state.mission) {
 					launchOwner = state;
+					launchPlan ??= planLaunchLanding(state, state.mission.map);
 					if (launchTime < LAUNCH_TIMING.approach) {
-						flight ??= createLaunchFlight();
+						flight ??= createLaunchFlight(launchPlan.berths);
 						overlay = undefined;
 						return;
 					}
 					if (flight) { flight.dispose(); flight = undefined; }
-					surface ??= createSurfaceLanding(scene, state, state.mission.map);
+					surface ??= createSurfaceLanding(scene, state, state.mission.map, launchPlan);
 				}
 				const landing = launchTime !== undefined ? surface?.update(launchTime, width, height) : undefined;
 				if (comparison && comparison.state !== state) comparison = undefined;

@@ -6,7 +6,8 @@ import type { Biome } from './campaign-types';
 import { FRAME_RIGS } from './frame-rig';
 import { getFrame } from './frames';
 import { createGait } from './gait';
-import { DROPSHIP_DECK, createDropship, createWayfarer, dropshipBerth } from './launch-ships';
+import type { LaunchBerth } from './launch-berths';
+import { DROPSHIP_DECK, createDropship, createWayfarer } from './launch-ships';
 import { LAUNCH_TIMING } from './launch-timing';
 import { createMech } from './mech-3d';
 import type { MechSkinId } from './mech-skin';
@@ -59,7 +60,9 @@ const createOrbitPlate = function (biome: Biome, seed: number) {
 	return texture;
 };
 
-export const createLaunchFlight = function () {
+export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
+	const commander = berths[0];
+	if (!commander) throw new Error('Missing commander berth');
 	const scene = new Scene(); scene.background = new Color('#111925');
 	const camera = new PerspectiveCamera(38, 1, 2, 32000); scene.add(camera);
 	const plateDepth = 24000;
@@ -88,13 +91,14 @@ export const createLaunchFlight = function () {
 			return { frame: mate.frameId, loadout: mate.loadout };
 		})];
 		for (const [i, entry] of entries.entries()) {
+			const berth = berths[i];
+			if (!berth) throw new Error('Missing deployment berth');
 			const rig = createMech(undefined, false, entry.frame, skin);
 			rigs.push(rig);
-			const berth = dropshipBerth(i, entries.length);
 			const heading = Math.PI / 2;
 			const gait = createGait({ x: 0, y: 0, angle: heading }, getFrame(entry.frame).size, FRAME_RIGS[entry.frame]);
 			rig.pose(gait, heading, { time: 0, heat: 0, hit: 0, recoil: 0, equippedSlots: entry.loadout.map(function (mount, index) { return mount.slot ?? index; }) });
-			if (i === 0 || i === 3) shoulderHeight = Math.max(shoulderHeight, bounds.setFromObject(rig.root, true).max.y);
+			if (berth.z <= commander.z) shoulderHeight = Math.max(shoulderHeight, bounds.setFromObject(rig.root, true).max.y);
 			rig.root.position.set(berth.x, DROPSHIP_DECK.height, berth.z); crew.add(rig.root);
 		}
 		if (manifest !== state) {
@@ -130,11 +134,10 @@ export const createLaunchFlight = function () {
 			key.color.set(ramp > .15 ? '#ffe1b7' : '#ef8672');
 			overhead.intensity = .95 + .62 * ramp; key.intensity = 1.65 + 1.5 * ramp;
 			camera.fov = aspect < .86 ? 74 : 63;
-			const commander = dropshipBerth(0, rigs.length);
 			const eye = DROPSHIP_DECK.height + Math.min(154, shoulderHeight + 17);
 			const tall = ease((shoulderHeight - 105) / 46);
 			cameraFrom(ship.root, rigs.length === 1 ? -27 : 0, eye, commander.z - 88,
-				-3, eye - 54 + 10 * tall, 278);
+				-3 * Math.sign(commander.x), eye - 54 + 10 * tall, 278);
 			ship.root.localToWorld(inkAnchor.set(0, 96, DROPSHIP_DECK.hinge));
 			return;
 		}

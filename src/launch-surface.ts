@@ -1,13 +1,16 @@
 import { DoubleSide, Group, IcosahedronGeometry, InstancedMesh, Mesh, MeshBasicMaterial, Object3D, Shape, ShapeGeometry, type OrthographicCamera, type Scene } from 'three';
+import type { WeaponMount } from './arsenal';
 import type { MissionMap } from './campaign-types';
 import { terrainPathClear, terrainPointClear, type ObstacleField } from './field-terrain';
 import { FRAME_RIGS } from './frame-rig';
 import { getFrame, type FrameId } from './frames';
-import { advanceGait, createGait, type Foot, type WalkerGait } from './gait';
+import { advanceGait, advanceGaitHeading, createGait, type Foot, type WalkerGait } from './gait';
 import type { AuthoredPoseContext } from './authored-pose';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { SURFACE_PALETTES } from './mission-environment';
-import { createDropship, DROPSHIP_DECK, DROPSHIP_WIDTH, dropshipBerth } from './launch-ships';
+import { boardingLayouts, type LaunchBerth } from './launch-berths';
+import { footprintOverlap, launchFootprint, posedFootprint } from './launch-footprint';
+import { createDropship, DROPSHIP_DECK, DROPSHIP_WIDTH } from './launch-ships';
 import { LAUNCH_TIMING } from './launch-timing';
 import { toScreen, viewScale } from './projection-3d';
 import { angleDelta, combatTargets, type CombatStateView, type Point } from './simulation';
@@ -29,7 +32,7 @@ const landingField = function (map: MissionMap, state: CombatStateView): Obstacl
 	] };
 };
 
-const landingSite = function (map: MissionMap, state: CombatStateView, terrain: ObstacleField) {
+const landingSites = function* (map: MissionMap, state: CombatStateView, terrain: ObstacleField): Generator<LandingSite> {
 	const formation = [state.player, ...state.squadmates];
 	// Keep the ramp facing the camera. Where terrain permits, point it toward
 	// the trailing formation so early arrivals can walk straight to their stations.
@@ -37,17 +40,17 @@ const landingSite = function (map: MissionMap, state: CombatStateView, terrain: 
 	const preferred = [0, 90, 30, 60, -22.5, 112.5].map(function (degrees) { return degrees * Math.PI / 180; })
 		.sort(function (a, b) { return Math.abs(angleDelta(a, away)) - Math.abs(angleDelta(b, away)); });
 	const candidates = [...preferred, ...[15, 45, 75].map(function (degrees) { return degrees * Math.PI / 180; })];
-	const placement = function (heading: number, shift: number) {
+	const placement = function (heading: number, shift: number, runout: number) {
 		const dx = Math.cos(heading), dz = Math.sin(heading);
 		const back = Math.min(...formation.map(function (actor) { return (actor.x - map.drop.x) * dx + (actor.y - map.drop.y) * dz; }));
-		const offset = back - DROPSHIP_DECK.toe - 106;
+		const offset = back - DROPSHIP_DECK.toe - runout;
 		const at = function (side: number, aft: number): Point {
 			return { x: map.drop.x + dx * (offset + aft) + dz * (side + shift), y: map.drop.y + dz * (offset + aft) - dx * (side + shift) };
 		};
 		const aftAt = function (p: Point) { return (p.x - map.drop.x) * dx + (p.y - map.drop.y) * dz - offset; };
 		return { heading, at, aftAt };
 	};
-	let fallback = placement(0, 0), best = Infinity;
+	let fallback = placement(0, 0, 106), best = Infinity;
 	const inField = function (p: Point) { return p.x >= 0 && p.x <= map.width && p.y >= 0 && p.y <= map.height; };
 	const offsets = [0, -120, 120, -240, 240, -350, 350, -490, 490, -630, 630];
 	const score = function (site: ReturnType<typeof placement>) {
@@ -66,16 +69,20 @@ const landingSite = function (map: MissionMap, state: CombatStateView, terrain: 
 		// route individual rigs around obstructions between the ramp and formation.
 		return (occupied + (fits ? 0 : 1) + (ramp ? 0 : 1)) * (formation.length + 1) + blocked;
 	};
-	// Keep a rear-quarter view wherever the site allows. A broadside is the
-	// last option on a crowded field, after testing the full set of lateral offsets.
-	for (const headings of [candidates, [-Math.PI / 4, 3 * Math.PI / 4]]) {
-		for (const shift of offsets) for (const heading of headings) {
-			const site = placement(heading, shift), cost = score(site);
-			if (cost === 0) return site;
-			if (cost < best) { fallback = site; best = cost; }
+	// Try a longer straight walk or a broadside before making everyone walk
+	// several rig widths sideways from a distant landing site.
+	const angles = function (degrees: number[]) { return degrees.map(function (angle) { return angle * Math.PI / 180; }); };
+	const views = [candidates, angles([-45, 135, -60, 150]), angles([-75, 165, -90, 180])];
+	for (const shifts of [offsets.slice(0, 3), offsets.slice(3)]) {
+		for (const headings of views) {
+			for (const runout of [106, 180, 250]) for (const shift of shifts) for (const heading of headings) {
+				const site = placement(heading, shift, runout), cost = score(site);
+				if (cost === 0) yield site;
+				if (cost < best) { fallback = site; best = cost; }
+			}
 		}
 	}
-	return fallback;
+	if (best > 0) yield fallback;
 };
 
 interface LandingRig {
@@ -90,15 +97,13 @@ const altitude = function (time: number) {
 };
 const deckHeight = function (aft: number) { return DROPSHIP_DECK.height * unit((DROPSHIP_DECK.toe - aft) / (DROPSHIP_DECK.toe - DROPSHIP_DECK.hinge)); };
 
-type LandingSite = ReturnType<typeof landingSite>;
+interface LandingSite { heading: number; at: (side: number, aft: number) => Point; aftAt: (p: Point) => number }
 type Body = WalkerGait['body'];
 type GroundPath = (time: number) => Body;
 
 // The launch order sets an absolute time for each rig to clear the ramp. A rig
 // in a forward berth can start walking early while still following the aft row.
-const rampTrack = function (site: LandingSite, index: number, count: number) {
-	const berth = dropshipBerth(index, count);
-	const clear = count === 1 ? 10.0 : 9.45 + .63 * (index === 0 ? count - 1 : index - 1);
+const rampTrack = function (site: LandingSite, berth: LaunchBerth, clear: number) {
 	const start = clear - (DROPSHIP_DECK.toe - berth.z) / 150;
 	const toe = site.at(berth.x, DROPSHIP_DECK.toe);
 	const at = function (t: number): Body {
@@ -115,54 +120,186 @@ const groundTrack = function (site: LandingSite, ramp: ReturnType<typeof rampTra
 	// send a turning rig back through the passenger behind it.
 	const forward = Math.max(0, DROPSHIP_DECK.toe + 50 - site.aftAt(control));
 	control.x += forward * Math.cos(site.heading); control.y += forward * Math.sin(site.heading);
-	const end = Math.min(13.15, ramp.clear + Math.hypot(span, bend) / (134 * pace));
+	const end = Math.min(13.0, ramp.clear + Math.hypot(span, bend) / (134 * pace));
+	const finalCourse = site.heading + angleDelta(site.heading, Math.atan2(goal.y - control.y, goal.x - control.x));
+	const facing = finalCourse + angleDelta(finalCourse, goal.angle);
+	// Finish turning while there is still room between the formation slots.
+	const settle = .35 + Math.abs(facing - finalCourse) * .7;
 	return function (time) {
 		if (time <= ramp.clear) return ramp.at(time);
 		const t = 1 - (1 - between(time, ramp.clear, end)) ** 1.5;
 		const a = mixPoint(ramp.toe, control, t), b = mixPoint(control, goal, t);
 		const course = Math.atan2(b.y - a.y, b.x - a.x);
 		const heading = site.heading + angleDelta(site.heading, course) * ease(between(time, ramp.clear, ramp.clear + .3));
-		return { ...mixPoint(a, b, t), angle: heading + angleDelta(heading, goal.angle) * ease(between(time, end - .15, Math.min(13.875, end + .7))) };
+		return { ...mixPoint(a, b, t), angle: mix(heading, facing, ease(between(time, Math.max(ramp.clear + .2, end - settle), end + .2))) };
 	};
 };
 
+interface LandingRoute {
+	route: GroundPath;
+	footprints: ReturnType<typeof posedFootprint>[];
+	parked: ReturnType<typeof posedFootprint>;
+	conflicts: Map<LandingRoute, number>;
+	cost: number;
+}
+
 // Formation headings vary by mission. Plan the whole squad together: a path
 // that is individually clear may cross a wingmate or park in front of it.
-const rigPaths = function (site: LandingSite, terrain: ObstacleField, state: CombatStateView) {
-	const actors = [state.player, ...state.squadmates];
-	const times = Array.from({ length: 38 }, function (_, i) { return 8.75 + i / 8; });
-	const routes = actors.map(function (actor, index) {
-		const ramp = rampTrack(site, index, actors.length);
-		return [0, -70, 70, -150, 150, -240, 240, -345, 345].flatMap(function (bend) { return [1, 1.35, .78].map(function (pace) {
-			const route = groundTrack(site, ramp, actor, bend, pace), points = times.map(route);
-			const blocked = points.filter(function (p, i) { return (times[i] ?? 0) >= ramp.clear && !terrainPointClear(terrain, p, 32); }).length;
-			return { route, points, cost: Math.abs(bend) * .15 + Math.abs(pace - 1) * 14 + blocked * 32000 };
-		}); });
+const rigPaths = function (site: LandingSite, terrain: ObstacleField, actors: readonly (Body & { shape: ReturnType<typeof launchFootprint> })[], berths: readonly LaunchBerth[], cache: Map<string, LandingRoute>) {
+	const times = Array.from({ length: 42 }, function (_, i) { return 8.75 + i / 8; });
+	// Two walkers following one another need room for a planted rear foot and
+	// the next rig's forward stride. Opposite lanes can unload more closely.
+	const byLane = new Map<number, number>();
+	const release: number[] = [];
+	const firstExit = actors.length === 1 ? 10 : 9.45;
+	let previous = firstExit - .63;
+	for (const berth of [...berths].sort(function (a, b) { return a.exitOrder - b.exitOrder; })) {
+		const last = byLane.get(berth.x) ?? -Infinity;
+		previous = Math.max(previous + .63, last + .95);
+		byLane.set(berth.x, previous); release.push(previous);
+	}
+	// A full squad can start up to two held poses earlier to keep the handoff on time.
+	const advance = actors.length > 2 ? Math.max(0, Math.min(.25, previous - (9.45 + .63 * (actors.length - 1)))) : 0;
+	const tracks = actors.map(function (actor, index) {
+		const berth = berths[index];
+		if (!berth) throw new Error('Missing deployment berth');
+		const time = release[berth.exitOrder];
+		if (time === undefined) throw new Error('Missing ramp release');
+		const clear = time - advance;
+		return { actor, ramp: rampTrack(site, berth, clear), key: [index, berth.x, berth.z, clear].join(',') };
 	});
-	const clearance = function (a: readonly Point[], b: readonly Point[]) {
-		return a.reduce(function (total, p, i) {
-			const q = b[i]; if (!q) return total;
-			const dx = p.x - q.x, dy = p.y - q.y;
-			const gap = Math.hypot(dx, dy), onScreen = Math.hypot((dx - dy) / Math.SQRT2, (dx + dy) / Math.sqrt(6));
-			return total + Math.max(0, 100 - gap) ** 2 + .25 * Math.max(0, 69 - onScreen) ** 2;
-		}, 0);
-	};
-	const options = routes.map(function (row, index) {
-		return row.map(function (route) {
-			return { ...route, conflicts: routes.slice(0, index).map(function (others) { return others.map(function (other) { return clearance(route.points, other.points); }); }) };
+	const option = function ({ actor, ramp, key }: (typeof tracks)[number], bend: number, pace: number): LandingRoute {
+		const id = [key, bend, pace].join(',');
+		const cached = cache.get(id);
+		if (cached) return cached;
+		const route = groundTrack(site, ramp, actor, bend, pace), points = times.map(route);
+		const blocked = points.filter(function (p, i) { return (times[i] ?? 0) >= ramp.clear && !terrainPointClear(terrain, p, 32); }).length;
+		let angle = site.heading;
+		const footprints = points.map(function (p) {
+			angle = advanceGaitHeading(angle, p.angle, 1 / 8);
+			return posedFootprint({ ...p, angle }, actor.shape);
 		});
-	});
-	let best = Infinity, bestPaths: GroundPath[] = [];
-	const choose = function (row: number, cost: number, chosen: readonly number[], paths: readonly GroundPath[]) {
-		const candidates = options[row];
-		if (!candidates) { best = cost; bestPaths = [...paths]; return; }
-		for (const [i, candidate] of candidates.entries()) {
-			const next = cost + candidate.cost + chosen.reduce(function (total, previous, j) { return total + (candidate.conflicts[j]?.[previous] ?? 0); }, 0);
-			if (next < best) choose(row + 1, next, [...chosen, i], [...paths, candidate.route]);
-		}
+		const result = { route, footprints, parked: posedFootprint(actor, actor.shape), conflicts: new Map<LandingRoute, number>(),
+			cost: 2 * Math.abs(bend) + Math.abs(pace - 1) * 14 + blocked * 32000 };
+		cache.set(id, result);
+		return result;
 	};
-	choose(0, 0, [], []);
-	return bestPaths;
+	const clearance = function (a: LandingRoute, b: LandingRoute) {
+		const cached = a.conflicts.get(b);
+		if (cached !== undefined) return cached;
+		const parked = footprintOverlap(a.parked, b.parked);
+		const total = a.footprints.reduce(function (total, p, i) {
+			const q = b.footprints[i];
+			const depth = q ? Math.max(0, footprintOverlap(p, q) - parked) : 0;
+			return total + depth * depth;
+		}, 0);
+		a.conflicts.set(b, total);
+		return total;
+	};
+	const straight = tracks.map(function (track) { return option(track, 0, 1); });
+	const directCost = straight.reduce(function (sum, route, i) {
+		return sum + route.cost + straight.slice(0, i).reduce(function (cost, other) { return cost + clearance(route, other); }, 0);
+	}, 0);
+	const direct = { paths: straight.map(function (row) { return row.route; }), cost: directCost };
+	const detour = function (limit: number) {
+		let best = limit, bestPaths: GroundPath[] | undefined;
+		const routes = tracks.map(function (track) {
+			return [0, -16, 16, -35, 35, -70, 70, -150, 150, -240, 240, -345, 345].filter(function (bend) { return 2 * Math.abs(bend) < best; }).flatMap(function (bend) {
+				return [1, 1.35, .78].map(function (pace) { return option(track, bend, pace); });
+			}).filter(function ({ cost }) { return cost < best; });
+		});
+		const choose = function (row: number, cost: number, chosen: readonly LandingRoute[]) {
+			const candidates = routes[row];
+			if (!candidates) { best = cost; bestPaths = chosen.map(function (route) { return route.route; }); return; }
+			for (const candidate of candidates) {
+				let next = cost + candidate.cost;
+				for (const previous of chosen) {
+					if (next >= best) break;
+					next += clearance(candidate, previous);
+				}
+				if (next < best) choose(row + 1, next, [...chosen, candidate]);
+			}
+		};
+		choose(0, 0, []);
+		return bestPaths ? { paths: bestPaths, cost: best } : undefined;
+	};
+	return { direct, detour };
+};
+
+export const planLaunchLanding = function (state: CombatStateView, map: MissionMap) {
+	const terrain = landingField(map, state);
+	const goal = function (body: Body, frame: FrameId, loadout: readonly WeaponMount[]) {
+		return { x: body.x, y: body.y, angle: body.angle, shape: launchFootprint(frame, loadout) };
+	};
+	const actors = [goal(state.player, state.frame, state.loadout), ...state.squadmates.map(function (mate) { return goal(mate, mate.frameId, mate.loadout); })];
+	const chooseLayout = function (site: LandingSite, limit: number) {
+		const toe = site.at(0, DROPSHIP_DECK.toe);
+		const goals = actors.map(function (actor) {
+			return { x: (actor.x - toe.x) * Math.sin(site.heading) - (actor.y - toe.y) * Math.cos(site.heading), z: site.aftAt(actor) };
+		});
+		const cache = new Map<string, LandingRoute>();
+		const layouts = boardingLayouts(goals).flatMap(function (berths) {
+			const distance = berths.reduce(function (sum, berth, i) {
+				const p = goals[i]; if (!p) throw new Error('Missing formation position');
+				const lateral = Math.abs(p.x - berth.x);
+				return sum + Math.hypot(lateral, p.z - DROPSHIP_DECK.toe) + .5 * lateral;
+			}, 0);
+			// A farther wingmate going first leaves the near station free to pass.
+			const waiting = berths.reduce(function (cost, berth, i) {
+				if (i === 0) return cost;
+				const own = goals[i]; if (!own) throw new Error('Missing formation position');
+				return cost + berths.reduce(function (extra, other, j) {
+					const point = goals[j];
+					return extra + (j > 0 && point && other.exitOrder < berth.exitOrder ? Math.max(0, own.z - point.z) * .5 : 0);
+				}, 0);
+			}, 0);
+			if (distance + waiting >= limit) return [];
+			const routes = rigPaths(site, terrain, actors, berths, cache);
+			return [{ berths, routes, distance: distance + waiting, cost: routes.direct.cost + distance + waiting }];
+		});
+		if (layouts.length === 0) return undefined;
+		const direct = layouts.reduce(function (a, b) { return a.cost <= b.cost ? a : b; });
+		let best = { berths: direct.berths, paths: direct.routes.direct.paths, cost: direct.cost };
+		for (const layout of layouts) {
+			const allowance = Math.min(limit, best.cost) - layout.distance;
+			if (allowance <= 0 || layout.routes.direct.cost === 0) continue;
+			const detour = layout.routes.detour(allowance);
+			if (detour) best = { berths: layout.berths, paths: detour.paths, cost: layout.distance + detour.cost };
+		}
+		const sin = Math.sin(site.heading), cos = Math.cos(site.heading);
+		const sideways = function (p: Point) { return (p.x - toe.x) * sin - (p.y - toe.y) * cos; };
+		const backtrack = best.paths.reduce(function (sum, path) {
+			const start = sideways(path(8));
+			let last = start, travel = 0;
+			for (let t = 8.125; t <= 13.875; t += .125) {
+				const at = sideways(path(t)); travel += Math.abs(at - last); last = at;
+			}
+			return sum + travel - Math.abs(last - start);
+		}, 0);
+		return { ...best, site, backtrack, score: best.cost + 2 * backtrack };
+	};
+	const sites = landingSites(map, state, terrain);
+	const first = sites.next();
+	if (first.done) throw new Error('Missing landing site');
+	let best = chooseLayout(first.value, Infinity);
+	if (!best) throw new Error('Missing deployment plan');
+	// Try other clear touchdown points if a rig would need to double back.
+	// Bound the extra work up front, before the first frame of the sequence.
+	for (let i = 0; i < 8 && best.backtrack > 6; i++) {
+		const next = sites.next(); if (next.done) break;
+		const candidate = chooseLayout(next.value, best.score);
+		if (candidate && candidate.score < best.score) best = candidate;
+	}
+	const { site } = best;
+	// Keep the ramp planted until the trailing rig, including its back foot and
+	// outboard equipment, has walked beyond the lip on the held-pose clock.
+	let closeAt = LAUNCH_TIMING.lift - .125;
+	const clearOfRamp = function (path: GroundPath, index: number) {
+		const actor = actors[index]; if (!actor) throw new Error('Missing deployment rig');
+		return site.aftAt(path(closeAt)) > DROPSHIP_DECK.toe + actor.shape.radius + 12;
+	};
+	while (closeAt < 13.875 && !best.paths.every(clearOfRamp)) closeAt += .125;
+	return { site, berths: best.berths, paths: best.paths, closeAt };
 };
 
 // Advance the deployed rig's normal game gait and expose only poses on the
@@ -191,9 +328,7 @@ const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPa
 // tracked contact, so the two meet exactly as the survey wipes off the field.
 const silhouette = [[-78, -207], [78, -207], [110, -155], [110, -92], [135, -92], [140, -148], [175, -130], [180, 101], [157, 143], [128, 136], [119, 95], [108, 95], [107, 196], [-107, 196], [-108, 95], [-119, 95], [-128, 136], [-157, 143], [-180, 101], [-175, -130], [-140, -148], [-135, -92], [-110, -92], [-110, -155]] as const;
 
-export const createSurfaceLanding = function (scene: Scene, state: CombatStateView, map: MissionMap) {
-	const terrain = landingField(map, state);
-	const site = landingSite(map, state, terrain);
+export const createSurfaceLanding = function (scene: Scene, state: CombatStateView, map: MissionMap, { site, paths, closeAt } = planLaunchLanding(state, map)) {
 	const ship = createDropship();
 	const root = new Group(); root.name = 'mission-landing'; scene.add(root); root.add(ship.root);
 	ship.root.rotation.y = Math.PI / 2 - site.heading;
@@ -207,7 +342,6 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 	const dustPaint = new MeshBasicMaterial({ color: SURFACE_PALETTES[map.biome].dust, transparent: true, opacity: .38, depthWrite: false });
 	const dust = new InstancedMesh(dustShape, dustPaint, 16); dust.frustumCulled = false; root.add(dust);
 	const puff = new Object3D();
-	const paths = rigPaths(site, terrain, state);
 	const tracks = [state.frame, ...state.squadmates.map(function (mate) { return mate.frameId; })].map(function (frame, index) {
 		const path = paths[index];
 		if (!path) throw new Error('Missing deployment berth');
@@ -223,20 +357,22 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		return { x: origin.x - 475 * (1 - progress) + 35 * progress, y: origin.y + 245 * (1 - progress) + 25 * progress };
 	};
 	const update = function (time: number, w: number, h: number) {
-		const airborne = altitude(time);
+		const normalClose = LAUNCH_TIMING.lift - .125;
+		const shipTime = time <= closeAt ? Math.min(time, normalClose) : mix(normalClose, LAUNCH_TIMING.end, between(time, closeAt, LAUNCH_TIMING.end));
+		const airborne = altitude(shipTime);
 		const approach = time < LAUNCH_TIMING.touchdown;
 		const pullback = 1 - (1 - between(time, LAUNCH_TIMING.touchdown, 13.875)) ** 1.7;
-		const lift = between(time, LAUNCH_TIMING.lift, LAUNCH_TIMING.end);
-		const travel = site.at(0, -45 * ease(between(time, LAUNCH_TIMING.lift, 12.5)) - 980 * between(time, 12.45, LAUNCH_TIMING.end) ** 1.6);
+		const lift = between(shipTime, LAUNCH_TIMING.lift, LAUNCH_TIMING.end);
+		const travel = site.at(0, -45 * ease(between(shipTime, LAUNCH_TIMING.lift, 12.5)) - 980 * between(shipTime, 12.45, LAUNCH_TIMING.end) ** 1.6);
 		ship.root.visible = !approach;
 		ship.root.position.set(travel.x, airborne, travel.y);
 		ship.root.rotation.z = Math.round(-lift * 5) * Math.PI / 90;
-		ship.setRamp(ease(between(time, 7.125, 8.125)) * (1 - ease(between(time, LAUNCH_TIMING.lift - .125, LAUNCH_TIMING.lift + .625))));
+		ship.setRamp(ease(between(shipTime, 7.125, 8.125)) * (1 - ease(between(shipTime, normalClose, LAUNCH_TIMING.lift + .625))));
 		ship.setThrust(approach ? 0 : .14 + .86 * Math.max(1 - ease(between(time, 7.25, 8.0)), ease(between(time, 11, 12.5))));
 		const silhouetteAt = approach ? shadowAt(time) : { x: travel.x + 15 + airborne * .37, y: travel.y + 8 + airborne * .32 };
 		shadow.position.set(silhouetteAt.x, 1.05, silhouetteAt.y);
 		shadowPaint.opacity = approach ? .48 : Math.max(.15, .45 - airborne * .0005);
-		const wash = time < 10 ? between(time, 7.125, 8.5) : between(time, 11.375, 13.0);
+		const wash = shipTime < 10 ? between(shipTime, 7.125, 8.5) : between(shipTime, normalClose, 13.0);
 		dust.visible = wash > 0 && wash < 1;
 		if (dust.visible) {
 			dustPaint.opacity = .44 * (1 - wash);
