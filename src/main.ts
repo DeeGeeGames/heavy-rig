@@ -38,14 +38,14 @@ import { mountTrainingSetup } from './training-ui';
 import { createSituationMission } from './situation-sim';
 import { mountSituationSetup } from './situation-sim-ui';
 import { isDifficulty, readProfile, saveProfile, type Settings } from './profile';
-import { abandonContract, acceptContract, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getTransmission, parseCampaign, recoverInterruptedDeployment, saveCampaign, settleContract, travelTo, type Campaign, type CampaignResult } from './campaign';
+import { abandonContract, assignOperationSlot, commitOperations, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getPlannedOperation, getTransmission, parseCampaign, recoverInterruptedDeployment, removeOperation, reviewOperations, saveCampaign, settleContract, stageOperation, travelTo, type Campaign, type CampaignResult } from './campaign';
 import type { Difficulty } from './operation';
 import { focusTerritoryMap } from './territory-map';
-import { MISSION_NAMES, renderBridge, renderStarmap, type BridgeActions, type ShipView } from './campaign-ui';
-import type { PlanetId } from './campaign-types';
+import { renderBridge, renderStarmap, type BridgeActions, type ShipView } from './campaign-ui';
+import { MISSION_NAMES, type PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
 import { missionStructures, missionObjective } from './missions';
-import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame } from './company';
+import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
 import { dismissPilot, getPilot, hirePilot } from './pilots';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import { createTitleScene } from './title-scene';
@@ -116,6 +116,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let campaignConflict = false;
 	let destination: PlanetId = campaign.planetId;
 	let selectedContract: string | undefined;
+	let editedOperation: string | undefined;
 	let guidedCourse: PlanetId | undefined;
 	let jumpArrival: { until: number; transmission: boolean } | undefined;
 	const abort = new AbortController(); const listenerOptions = { signal: abort.signal };
@@ -301,7 +302,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('pause-training-loadout').hidden = !training;
 		element('pause-squad-orders').hidden = !canIssueSquadOrders();
 		element('leave').textContent = situationSim ? 'RETURN TO SIM SETUP' : trialSeed !== undefined ? 'FIELD BRIEFING' : escape ? 'RETURN TO TITLE' : state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
-		element('training-deploy').hidden = !campaign.active;
+		element('training-deploy').hidden = !campaign.active && !campaign.operations?.length;
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('pause-copy').textContent = trialSeed !== undefined ? 'Resume this run, or return to the briefing to start the field again or generate another layout.'
 			: situationSim ? 'Restart to replay this situation with fresh rigs, or return to setup to change the mission and squad.'
@@ -348,9 +349,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const updateDifficulty = function () {
 		for (const input of container.querySelectorAll<HTMLInputElement>('input[data-difficulty]')) input.checked = input.value === profile.settings.difficulty;
 	};
-	const start = function () {
-		if (contextLost || navigation.auxiliary || navigation.screen !== 'deploy') return;
-		const next = beginDeployment(campaign);
+	const launchLive = function (next: Campaign) {
+		if (contextLost || navigation.auxiliary) return;
 		if (next === campaign || !next.active || !next.deployed) return;
 		const mech = getOwnedMech(next, next.deployed.frameId);
 		if (!mech) return;
@@ -370,6 +370,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		message = squadmates.length ? '' : `${rigName(mech.frameId)} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`;
 		messageUntil = message ? 5 : 0; tipDismissed = false;
 		terminalUntil = 0; audio.reset(); transition(navigation.setScreen('playing')); unlockSound();
+	};
+	const start = function () {
+		if (navigation.screen === 'deploy') launchLive(beginDeployment(campaign));
 	};
 	const showTrainingSetup = function () {
 		if (navigation.transitioning || navigation.auxiliary || campaignConflict) return;
@@ -532,12 +535,30 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const target = element('mechbay').querySelector<HTMLElement>(selector) ?? (fallback ? element('mechbay').querySelector<HTMLElement>(fallback) : null);
 		if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); }
 	};
+	const openOperations = function () {
+		destination = campaign.planetId;
+		navigateShip('bridge', 'operations');
+	};
+	const removeStagedOperation = function (id: string) {
+		const operation = getPlannedOperation(campaign, id);
+		if (!operation) return;
+		confirm(function () {
+			const next = removeOperation(campaign, id);
+			if (next === campaign || !replaceCampaign(next)) return;
+			editedOperation = undefined;
+			openOperations();
+		}, 'REMOVE FROM DAY', `${operation.contract.title} returns to the board and its pilots and rigs become available.`, 'REMOVE STAGED CONTRACT?');
+	};
 	const refreshCompany = function () {
 		if (!isShipScreen(navigation.screen) || navigation.screen === 'bridge' || navigation.screen === 'starmap') return;
 		const root = element(navigation.screen); const previousFocus = document.activeElement;
 		const focusIndex = focusable(root).findIndex(function (item) { return item === previousFocus; });
+		const operation = getPlannedOperation(campaign, editedOperation) ?? campaign.operations?.[0];
+		const lineup = operation?.lineup ?? campaign.preferredLineup ?? campaign.lineup;
 		renderCompany(root, campaign, navigation.screen, editor, campaignSaved, {
 			skin: profile.settings.mechSkin,
+			operation, openOperations,
+			removeOperation: function () { if (operation) removeStagedOperation(operation.contract.id); },
 			selectSkin: function (skin) { profile.settings.mechSkin = skin; presentation.setSkin(skin); save(); refreshCompany(); focusCompany(`[data-mech-skin="${skin}"]`); },
 			navigate: navigateShip,
 			selectFrame: function (id) { const select = function () { updateCompany(selectFrame(campaign, id), 'Frame selected.'); }; if (hasRefitDraft() && id !== campaign.selectedFrame) confirm(select, 'DISCARD & SELECT FRAME', 'Changing frames discards this unqueued refit. Installed equipment is unchanged.', 'DISCARD REFIT DRAFT?'); else select(); },
@@ -583,8 +604,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const pilot = getPilot(id);
 				confirm(function () { updateCompany(dismissPilot(campaign, id), `${pilot.callsign} left the roster.`); }, 'DISMISS PILOT', `${pilot.callsign} leaves the company and frees their rig assignment. The hiring fee is spent.`, `DISMISS ${pilot.callsign.toUpperCase()}?`);
 			},
-			assignPilot: function (slot, id) { updateCompany(assignPilot(campaign, slot, id), id ? `${getPilot(id).callsign} assigned.` : 'Squad slot cleared.'); },
-			assignRig: function (slot, id) { updateCompany(assignRig(campaign, slot, id), id ? `${rigName(id)} assigned.` : 'Rig assignment cleared.'); },
+			assignPilot: function (slot, id) {
+				const assignment = { pilotId: id, frameId: id ? lineup[slot]?.frameId ?? null : null };
+				const next = campaign.active ? assignPilot(campaign, slot, id) : assignOperationSlot(campaign, operation?.contract.id, slot, assignment);
+				updateCompany(next, id ? `${getPilot(id).callsign} assigned.` : 'Squad slot cleared.');
+			},
+			assignRig: function (slot, id) {
+				const next = campaign.active ? assignRig(campaign, slot, id) : assignOperationSlot(campaign, operation?.contract.id, slot, { pilotId: lineup[slot]?.pilotId ?? null, frameId: id });
+				updateCompany(next, id ? `${rigName(id)} assigned.` : 'Rig assignment cleared.');
+			},
 			deploy: function () {
 				if (!canDeploySquad(campaign)) return;
 				if (hasRefitDraft() && campaign.lineup.some(function (slot) { return slot.frameId === campaign.selectedFrame; })) {
@@ -603,6 +631,28 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const refreshCampaign = function () {
 		const actions: BridgeActions = {
 			navigate: navigateShip,
+			openBoard: function () { destination = campaign.planetId; navigateShip('bridge', 'board'); },
+			editOperation: function (id) { editedOperation = id; navigateShip('deploy', 'squad'); },
+			commitDay: function () {
+				if (contextLost || navigation.screen !== 'bridge' || navigation.auxiliary) return;
+				const { entries, issues } = reviewOperations(campaign);
+				if (!entries.length || issues.length) return;
+				if (hasRefitDraft() && entries.some(function (entry) { return entry.operation.lineup.some(function (seat) { return seat.frameId === campaign.selectedFrame; }); })) {
+					confirm(function () { navigateShip('mechbay', 'loadout'); }, 'OPEN MECH BAY', 'Queue or discard the staged loadout before deploying that rig.', 'REFIT DRAFT PENDING'); return;
+				}
+				const live = entries.find(function (entry) { return entry.live; })?.operation.contract;
+				const stakes = entries.map(function ({ operation: { contract } }) { return `${getFaction(contract.opponent).name} −${contract.hostility}`; }).join(' · ');
+				const orders = live ? `Play ${live.title}. The shared debrief follows after the sortie.` : 'The commander stays aboard. Crew results appear in the shared debrief.';
+				confirm(function () {
+					if (contextLost) return;
+					const next = commitOperations(campaign);
+					if (next === campaign) return;
+					editedOperation = undefined;
+					if (next.deployed) launchLive(next);
+					else if (replaceCampaign(next) && next.lastOperationDay) showDayDebrief(next.lastOperationDay, performance.now());
+				}, live ? 'COMMIT & PLAY' : 'COMMIT & ADVANCE', `${orders} Advance to day ${campaign.day + 1}. Opposition standing on commitment. ${stakes}.`, `COMMIT DAY ${campaign.day}?`);
+			},
+			openLastReport: function () { if (campaign.lastOperationDay) showDayDebrief(campaign.lastOperationDay, performance.now()); },
 			selectPlanet: function (id) {
 				if (campaign.active) return;
 				if (id !== destination) guidedCourse = undefined;
@@ -639,14 +689,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					transition(navigation.setScreen('jump'), function () { syncScreen(); element('jump').focus({ preventScroll: true }); });
 				}, 'CONFIRM JUMP', `One calendar day · 0 CR. Arrive at ${getPlanet(target).name} on day ${campaign.day + 1}. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
 			},
-			accept: function (contract) {
+			stage: function (contract) {
 				if (navigation.screen !== 'bridge' || navigation.auxiliary || destination !== campaign.planetId) return;
-				const step = getAuthoredStep(campaign.story, contract);
-				const commitment = step && (getTransmission(campaign)?.offers.length ?? 0) > 1 ? `Choosing ${step.label.toLowerCase()} commits you to ${step.contact}. The other offer closes.` : '';
-				confirm(function () {
-					const next = acceptContract(campaign, contract.id); if (next === campaign) return;
-					if (replaceCampaign(next)) navigateShip('deploy', 'squad');
-				}, commitment ? `ACCEPT ${step?.label.toUpperCase()}` : 'ACCEPT CONTRACT', [commitment, `${getFaction(contract.opponent).name}: −${contract.hostility} reputation immediately, including if you abort. Payment of ${contract.reward.toLocaleString()} CR requires successful extraction. Success strengthens the employer on this front; failure or abort strengthens the opposition.`].filter(Boolean).join(' '), 'ACCEPT THIS CONTRACT?');
+				const next = stageOperation(campaign, contract.id);
+				if (next === campaign || !replaceCampaign(next)) return;
+				editedOperation = contract.id;
+				navigateShip('deploy', 'squad');
 			},
 			deploy: function () { navigateShip('deploy', 'squad'); },
 			abandon: function () { confirm(abortSortie, 'ABORT & RETURN TO SHIP', 'No payment, employer favor, or company reputation will be earned. The opposition reputation penalty from acceptance remains, and the opposition gains local influence.', 'ABORT THIS CONTRACT?'); },
@@ -670,7 +718,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			else refreshCompany();
 			syncScreen();
 			const root = element(target);
-			if (view) selectWorkspacePane(root, view, view === 'transmission' || view === 'loadout');
+			if (view) selectWorkspacePane(root, view, view === 'transmission' || view === 'loadout' || view === 'operations');
 			if (view === 'transmission') root.querySelector<HTMLElement>('[data-pane="transmission"] .pane-actions button')?.focus({ preventScroll: true });
 			const action = reveal ? root.querySelector<HTMLElement>(reveal) : undefined;
 			if (action) { revealWorkspaceElement(action); action.focus({ preventScroll: true }); }
@@ -729,9 +777,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		else if (campaign.deployed) {
 			// Recover an interrupted company sortie when the player resumes it.
 			const recovered = recoverInterruptedDeployment(campaign);
-			if (recovered.lastResult && replaceCampaign(recovered)) showDebrief(recovered.lastResult, performance.now());
+			if (recovered.lastResult && replaceCampaign(recovered)) {
+				if (recovered.lastOperationDay) showDayDebrief(recovered.lastOperationDay, performance.now());
+				else showDebrief(recovered.lastResult, performance.now());
+			}
 		}
 		else if (campaign.active) navigateShip('deploy');
+		else if (campaign.operations?.length) openOperations();
 		else if (getTransmission(campaign)?.offers.length) toTransmission();
 		else toShip();
 	});
@@ -795,11 +847,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	element('title-continue').hidden = !returningCompany;
 	element('title-company-label').textContent = campaign.introComplete ? 'CONTINUE COMPANY' : 'CONTINUE ESCAPE';
 	describeTitleChoice(returningCompany ? 'title-continue' : 'title-new-campaign');
-	listen('training-deploy', function () { if (campaign.active) navigateShip('deploy'); });
+	listen('training-deploy', function () { if (campaign.active || campaign.operations?.length) navigateShip('deploy'); });
 	listen('training-briefing', leaveTraining);
 	listen('restart', function () {
 		const contract = campaign.lastResult?.contract;
 		if (contract && getAuthoredStep(campaign.story, contract)) toTransmission();
+		else if (campaign.lastOperationDay) openOperations();
 		else toShip();
 	});
 	listen('resume', function () { setPaused(false); });
@@ -816,11 +869,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (situationSim) confirm(showSituationSetup, 'RETURN TO SIM SETUP', 'The current run ends. Your mission and squad selections are kept for the next deployment.', 'LEAVE THIS SIMULATION?');
 		else if (trialSeed !== undefined) showFieldTrial(trialSeed);
 		else if (escape) confirm(toTitle, 'RETURN TO TITLE', 'The escape can be restarted from the title screen. Company progress is untouched.', 'LEAVE THE ESCAPE?');
-		else if (state.mission && !training) confirm(abortSortie, 'ABORT & RETURN TO SHIP', 'The squad returns with its current damage. No payment or employer favor is earned; the opposition penalty remains and its local influence grows. Recovery takes one day.', 'ABORT THIS CONTRACT?');
+		else if (state.mission && !training) confirm(abortSortie, 'ABORT & RETURN TO SHIP', `The squad returns with its current damage. The aborted mission earns no payment or favor. The day advances once.${campaign.committedCrew?.length ? ' Other crews finish their contracts.' : ''}`, 'ABORT THIS CONTRACT?');
 		else confirm(leaveTraining, trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP', 'Leave the simulator? Company progress is untouched.', 'LEAVE TRAINING?');
 	});
 	listen('result-company', function () {
-		if (campaign.lastResult?.squad?.some(function (member) { return member.integrity < 100; })) navigateShip('engineering', 'condition');
+		const reports = campaign.lastOperationDay ?? (campaign.lastResult ? [campaign.lastResult] : []);
+		if (reports.some(function (result) { return result.squad?.some(function (member) { return member.integrity < 100; }); })) navigateShip('engineering', 'condition');
 		else navigateShip('mechbay', 'loadout');
 	});
 	listen('result-starmap', toShip);
@@ -890,6 +944,61 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	element('handbook').tabIndex = -1;
 	coarsePointer.addEventListener('change', updateSettings, listenerOptions);
 	window.addEventListener('resize', function () { if (inputMode === 'touch') resetInput(); if (navigation.screen === 'bridge') refreshCampaign(); else if (navigation.screen === 'market') refreshCompany(); }, listenerOptions);
+	const rigReport = function (member: DeployedPilot, earnedWin: boolean) {
+		const condition = member.integrity <= 0 ? 'disabled' : member.integrity < 100 ? 'damaged' : 'intact';
+		const integrity = `${Math.ceil(member.startingIntegrity)}% → ${Math.ceil(member.integrity)}%`;
+		const repair = condition !== 'intact' && (getOwnedMech(campaign, member.frameId)?.integrity ?? 100) < 100 && !workOrderFor(campaign, member.frameId);
+		return html`<article class="sortie-rig" data-condition=${condition}>
+			<div><strong>${getPilot(member.pilotId).callsign}</strong><small>${rigName(member.frameId)} · ${condition === 'disabled' ? 'DISABLED / RECOVERED' : 'RETURNED'}</small>${earnedWin && member.pilotId !== 'player' ? html`<small>+1 successful sortie</small>` : ''}</div>
+			<output>${integrity}</output>${repair ? html`<button class="secondary" @click=${function () { navigateShip('engineering', 'condition', false, `[data-repair-frame="${member.frameId}"]`); }}>REPAIR →</button>` : ''}
+		</article>`;
+	};
+	const reportContent = function (content: ReturnType<typeof html> | null) {
+		const anchor = element('result-operations');
+		if (anchor.parentElement) render(content, anchor.parentElement, { renderBefore: anchor });
+	};
+	const saveReportCopy = function () {
+		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
+	};
+	const showDayDebrief = function (results: readonly CampaignResult[], now: number, fieldReport?: ReturnType<typeof getOperationReport>) {
+		const first = results[0];
+		if (!first) return;
+		const step = getAuthoredStep(campaign.story, first.contract);
+		const won = results.filter(function (mission) { return mission.won; }).length;
+		const payment = results.reduce(function (total, mission) { return total + mission.payout; }, 0);
+		const reputation = results.reduce(function (total, mission) { return total + mission.companyReputation; }, 0);
+		const damage = results.some(function (mission) { return mission.squad?.some(function (member) { return member.integrity < 100; }); });
+		terminalUntil = now + 1600;
+		element('result-title').textContent = `DAY ${first.day} DEBRIEF`;
+		element('result-story').hidden = !step;
+		element('result-story').textContent = step ? first.won ? step.success : `${step.contact} is holding the job for you. Retry from the Bridge when ready.` : '';
+		element('result-copy').textContent = `${won} of ${results.length} contracts completed. All pilots recovered.`;
+		element('result-difficulty').textContent = '';
+		element('result-score').textContent = `${payment.toLocaleString()} CR`;
+		element('result-rank').textContent = `${won}/${results.length}`;
+		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'TOTAL CONTRACT PAY';
+		element('result-stats').hidden = true;
+		element('result-stats').replaceChildren();
+		reportContent(html`${results.map(function (mission) {
+			const { contract, crew, squad } = mission;
+			const rollText = function (check: NonNullable<CampaignResult['crew']>['objective']) { return `${check.passed ? 'passed' : 'failed'} · rolled ${check.roll} / needed ${check.chance} or less`; };
+			return html`<article class="day-report-line" data-operation-result=${contract.id} data-outcome=${mission.won ? 'won' : 'lost'}>
+				<div><span class="eyebrow">${crew ? 'Crew only' : 'Player-led'} · ${getPlanet(contract.planetId).name}</span><h3>${contract.title}</h3></div>
+				<strong>${mission.won ? 'Complete' : mission.aborted ? 'Aborted' : 'Failed'}</strong>
+				<small>${mission.payout.toLocaleString()} CR · +${mission.favor} favor with ${getFaction(contract.employer).shortName} · +${mission.companyReputation} company reputation</small>
+			</article>
+			${crew ? html`<p class="day-report-checks" data-dialog-text>Objective ${rollText(crew.objective)}. Extraction ${rollText(crew.extraction)}.</p>`
+				: fieldReport ? html`<p class="day-report-checks" data-dialog-text>${fieldReport.kills} eliminated · ${formatTime(fieldReport.time)} field time</p>` : ''}
+			${squad?.map(function (member) { return rigReport(member, mission.won); })}`;
+		})}`);
+		element('result-upgrades').textContent = `+${reputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15`;
+		element('restart').textContent = step ? 'BRIDGE / SIGNAL →' : 'OPERATIONS →';
+		element('result-company').hidden = !damage;
+		element('result-company').textContent = 'ENGINEERING →';
+		element('result-starmap').hidden = true;
+		saveReportCopy();
+		transition(navigation.setScreen('result'));
+	};
 	const showDebrief = function (result: CampaignResult, now: number, report?: ReturnType<typeof getOperationReport>) {
 		const { contract, won, aborted, payout, favor, companyReputation } = result;
 		const step = getAuthoredStep(campaign.story, contract);
@@ -908,31 +1017,27 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('result-rank').textContent = won ? '✓' : '×';
 		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'CONTRACT PAYMENT';
 		const stats = [...(report ? [[String(report.kills), 'ELIMINATED'], [formatTime(report.time), 'FIELD TIME']] : []), [`+${favor}`, 'EMPLOYER FAVOR']];
+		element('result-stats').hidden = false;
 		element('result-stats').replaceChildren(...stats.map(function ([value, label]) { const node = document.createElement('div'); const strong = document.createElement('b'); const small = document.createElement('small'); strong.textContent = value ?? ''; small.textContent = label ?? ''; node.append(strong, small); return node; }));
 		const upgrades = element('result-upgrades');
-		for (const row of element('result').querySelectorAll<HTMLElement>('.sortie-rig')) { render(null, row); row.remove(); }
-		for (const member of squad) {
-			const row = document.createElement('article');
-			row.className = 'sortie-rig';
-			row.dataset['condition'] = member.integrity <= 0 ? 'disabled' : member.integrity < 100 ? 'damaged' : 'intact';
-			const integrity = `${Math.ceil(member.startingIntegrity)}% → ${Math.ceil(member.integrity)}%`;
-			render(html`<div><strong>${getPilot(member.pilotId).callsign}</strong><small>${rigName(member.frameId)} · ${member.integrity <= 0 ? 'DISABLED / RECOVERED' : 'RETURNED'}</small></div><output>${integrity}</output>${member.integrity < 100 ? html`<button class="secondary" @click=${function () { navigateShip('engineering', 'condition', false, `[data-repair-frame="${member.frameId}"]`); }}>REPAIR →</button>` : ''}`, row);
-			upgrades.before(row);
-		}
+		reportContent(html`${squad.map(function (member) { return rigReport(member, won); })}`);
 		const funds = step ? `COMPANY FUNDS ${campaign.credits.toLocaleString()} CR · ` : '';
 		upgrades.textContent = `${funds}DAY ${campaign.day} · +${companyReputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
 		element('restart').textContent = step ? 'BRIDGE / SIGNAL →' : 'RETURN TO SHIP →';
 		element('result-company').hidden = !step && !damage;
 		element('result-company').textContent = damage ? 'ENGINEERING →' : 'MECH BAY →';
 		element('result-starmap').hidden = !step;
-		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
+		saveReportCopy();
 		transition(navigation.setScreen('result'));
 	};
 	const showResult = function (now: number) {
 		if (situationSim || training || escape || !state.mission) return;
 		checkpoint();
 		const next = settleContract(campaign, state.outcome === 'won');
-		if (next !== campaign && next.lastResult && replaceCampaign(next)) showDebrief(next.lastResult, now, getOperationReport(state));
+		if (next === campaign || !next.lastResult || !replaceCampaign(next)) return;
+		const report = getOperationReport(state);
+		if (next.lastOperationDay) showDayDebrief(next.lastOperationDay, now, report);
+		else showDebrief(next.lastResult, now, report);
 	};
 	const showSituationResult = function (now: number) {
 		const mission = state.mission;
@@ -954,7 +1059,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const next = abandonContract(campaign);
 		if (next === campaign || !replaceCampaign(next)) return;
 		const result = next.lastResult;
-		if (result && (result.squad || getAuthoredStep(next.story, result.contract))) showDebrief(result, performance.now(), report);
+		if (next.lastOperationDay) showDayDebrief(next.lastOperationDay, performance.now(), report);
+		else if (result && (result.squad || getAuthoredStep(next.story, result.contract))) showDebrief(result, performance.now(), report);
 		else toShip();
 	};
 	container.addEventListener('focusin', function (event) { if (event.target instanceof HTMLElement && !event.target.closest('.menu-controls')) updateMenuHint(); }, listenerOptions);

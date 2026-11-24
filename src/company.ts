@@ -251,17 +251,19 @@ const isDeployedRig = function (value: Record<string, unknown>): boolean {
 const isDeployedPilot = function (value: unknown): value is DeployedPilot {
 	return isObject(value) && isPilotId(value['pilotId']) && isDeployedRig(value);
 };
-export const isDeployedSquad = function (value: unknown): value is readonly DeployedPilot[] {
+export const isSortieSquad = function (value: unknown): value is readonly DeployedPilot[] {
 	return Array.isArray(value) && value.length >= 1 && value.length <= SQUAD_SIZE && value.every(isDeployedPilot)
-		&& value[0]?.pilotId === 'player'
 		&& new Set(value.map(function (pilot) { return pilot.pilotId; })).size === value.length
 		&& new Set(value.map(function (pilot) { return pilot.frameId; })).size === value.length;
+};
+export const isDeployedSquad = function (value: unknown): value is readonly DeployedPilot[] {
+	return isSortieSquad(value) && value[0]?.pilotId === 'player';
 };
 const isDeployment = function (value: unknown): value is Deployment {
 	return isObject(value) && isDeployedRig(value) && isInteger(value['coolantCharges'], 0, 2)
 		&& Array.isArray(value['wing']) && value['wing'].length < SQUAD_SIZE && isDeployedSquad([{ ...value, pilotId: 'player' }, ...value['wing']]);
 };
-const isAssignment = function (value: unknown): value is PilotAssignment {
+export const isAssignment = function (value: unknown): value is PilotAssignment {
 	return isObject(value) && (value['pilotId'] === null || isPilotId(value['pilotId']))
 		&& (value['frameId'] === null || value['pilotId'] !== null && isRigId(value['frameId']));
 };

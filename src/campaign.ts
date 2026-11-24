@@ -5,7 +5,10 @@ import { createOpeningProgress, getAuthoredStep, getChainStatus, isAuthoredContr
 import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, PLANETS, type UniverseState } from './universe';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
 
-import { advanceDays, createCompany, isDeployedSquad, MAX_DAY, parseCompany, type CompanyState, type DeployedPilot } from './company';
+import { advanceDays, beginDeployment, createCompany, deploymentIssue, isAssignment, isDeployedSquad, isSortieSquad, MAX_DAY, parseCompany, type CompanyState, type DeployedPilot } from './company';
+import { forecastCrew, resolveCrew, type CrewCheck, type CrewForecast, type CrewResolution } from './crew-resolution';
+import { getPilot, isPilotId, MAX_PILOT_WINS, recordPilotWins, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
+import { rigName, type RigId } from './rigs';
 
 export interface FactionDefinition {
 	id: FactionId;
@@ -33,6 +36,25 @@ export interface CampaignResult {
 	companyReputation: number;
 	day: number;
 	squad?: readonly DeployedPilot[];
+	crew?: Pick<CrewResolution, 'objective' | 'extraction'>;
+}
+
+export interface PlannedOperation {
+	shipId: 'wayfarer';
+	contract: Contract;
+	lineup: readonly PilotAssignment[];
+}
+
+interface CrewSortie {
+	contract: Contract;
+	resolution: CrewResolution;
+}
+
+interface OperationReview {
+	operation: PlannedOperation;
+	live: boolean;
+	issues: readonly string[];
+	forecast?: CrewForecast;
 }
 
 export interface Campaign extends CompanyState {
@@ -53,12 +75,18 @@ export interface Campaign extends CompanyState {
 	boardReputation: Record<FactionId, number>;
 	active: Contract | undefined;
 	lastResult: CampaignResult | undefined;
+	operations?: readonly PlannedOperation[] | undefined;
+	committedCrew?: readonly CrewSortie[] | undefined;
+	lastOperationDay?: readonly CampaignResult[] | undefined;
+	preferredLineup?: readonly PilotAssignment[];
+	pilotWins?: Partial<Record<PilotId, number>>;
 }
 
 const CAMPAIGN_VERSION = 8;
 export const CAMPAIGN_STORAGE_KEY = `heavy-rig:campaign:v${CAMPAIGN_VERSION}`;
 export const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition'];
 const MAX_COUNT = 1_000_000;
+const MAX_OPERATIONS = MISSION_KINDS.length + 1;
 export const MAX_CREDITS = 1_000_000_000_000;
 const isInteger = function (value: unknown, min: number, max: number): value is number {
 	return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
@@ -172,7 +200,7 @@ export const canAcceptContract = function (campaign: Campaign, contract: Contrac
 
 export const acceptContract = function (campaign: Campaign, contractId: string): Campaign {
 	const contract = findPosting(campaign, contractId);
-	if (!contract || !canAcceptContract(campaign, contract)) return campaign;
+	if (campaign.operations?.length || !contract || !canAcceptContract(campaign, contract)) return campaign;
 	return {
 		...campaign, universe: { ...campaign.universe, boardDay: campaign.day }, active: contract,
 		reputation: { ...campaign.reputation, [contract.opponent]: boundedReputation(campaign.reputation[contract.opponent] - contract.hostility) },
@@ -181,27 +209,170 @@ export const acceptContract = function (campaign: Campaign, contractId: string):
 };
 
 export const travelTo = function (campaign: Campaign, planetId: PlanetId): Campaign {
-	if (campaign.active || campaign.deployed || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
+	if (campaign.active || campaign.deployed || campaign.operations?.length || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
 	return { ...advanceDays(campaign, 1), planetId, universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 }, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation } };
 };
 
-const finishContract = function (campaign: Campaign, won: boolean, aborted: boolean): Campaign {
-	const contract = campaign.active;
-	if (!contract || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY) return campaign;
+const emptyLineup = function (): readonly PilotAssignment[] {
+	return Array.from({ length: SQUAD_SIZE }, function () { return { pilotId: null, frameId: null }; });
+};
+
+export const getPlannedOperation = function (campaign: Campaign, id: string | undefined): PlannedOperation | undefined {
+	return campaign.operations?.find(function (operation) { return operation.contract.id === id; });
+};
+
+export const canStageOperation = function (campaign: Campaign, contract: Contract): boolean {
+	return (campaign.operations?.length ?? 0) < MAX_OPERATIONS && !getPlannedOperation(campaign, contract.id)
+		&& (!isAuthoredContract(contract) || !campaign.operations?.some(function (operation) { return isAuthoredContract(operation.contract); }))
+		&& canAcceptContract(campaign, contract);
+};
+
+export const stageOperation = function (campaign: Campaign, id: string): Campaign {
+	const contract = findPosting(campaign, id);
+	if (!contract || !canStageOperation(campaign, contract)) return campaign;
+	const operations = campaign.operations ?? [];
+	const lineup = operations.length ? emptyLineup() : (campaign.preferredLineup ?? campaign.lineup).map(function (slot) {
+		return slot.pilotId && !campaign.pilots.includes(slot.pilotId) ? { pilotId: null, frameId: null } : slot;
+	});
+	return { ...campaign, operations: [...operations, { shipId: 'wayfarer', contract, lineup }] };
+};
+
+export const removeOperation = function (campaign: Campaign, id: string): Campaign {
+	return campaign.deployed || !getPlannedOperation(campaign, id) ? campaign : {
+		...campaign, operations: campaign.operations?.filter(function (entry) { return entry.contract.id !== id; }),
+	};
+};
+
+export const assignOperationSlot = function (campaign: Campaign, id: string | undefined, index: number, assignment: PilotAssignment): Campaign {
+	const operation = getPlannedOperation(campaign, id);
+	const lineup = operation?.lineup ?? (id === undefined && !campaign.active ? campaign.preferredLineup ?? campaign.lineup : undefined);
+	const slot = lineup?.[index];
+	if (campaign.deployed || !lineup || !slot || slot.pilotId === assignment.pilotId && slot.frameId === assignment.frameId
+		|| assignment.pilotId && !campaign.pilots.includes(assignment.pilotId)
+		|| assignment.frameId && (!assignment.pilotId || !campaign.fleet.some(function (rig) { return rig.frameId === assignment.frameId; }))
+		|| lineup.some(function (other, seat) { return seat !== index && Boolean(assignment.pilotId && assignment.pilotId === other.pilotId || assignment.frameId && assignment.frameId === other.frameId); })) return campaign;
+	const updated = lineup.map(function (seat, i) { return i === index ? { ...assignment } : seat; });
+	if (!operation) return { ...campaign, preferredLineup: updated };
+	return { ...campaign, operations: campaign.operations?.map(function (entry) {
+		return entry === operation ? { ...entry, lineup: updated } : entry;
+	}) };
+};
+
+export const reviewOperations = function (campaign: Campaign): { entries: readonly OperationReview[]; issues: readonly string[] } {
+	const operations = campaign.operations ?? [];
+	const postings = operations.length ? new Map(getContracts(campaign).map(function (contract) { return [contract.id, contract]; })) : new Map<string, Contract>();
+	const storyOffers = getTransmission(campaign)?.offers ?? [];
+	const entries = operations.map(function (operation): OperationReview {
+		const { contract, lineup } = operation;
+		const live = lineup.some(function (seat) { return seat.pilotId === 'player'; });
+		const issues: string[] = [];
+		const seats = lineup.filter(function (seat) { return seat.pilotId !== null; });
+		const current = isAuthoredContract(contract) ? storyOffers.find(function (offer) { return offer.contract.id === contract.id; })?.contract : postings.get(contract.id);
+		if (contract.planetId !== campaign.planetId || !current || !sameContract(contract, current) || campaign.reputation[contract.employer] < contract.requiredReputation
+			|| companyRank(campaign) < getMissionTier(contract.tier).rank) issues.push('This posting changed. Remove it and review the board.');
+		if (isAuthoredContract(contract) && !live) issues.push('Commander required.');
+		if (!seats.length) issues.push('Assign at least one pilot and rig.');
+		for (const { pilotId, frameId } of seats) {
+			if (!pilotId) continue;
+			const callsign = getPilot(pilotId).callsign;
+			if (!campaign.pilots.includes(pilotId)) issues.push(`${callsign} is no longer on the roster.`);
+			if (operations.some(function (other) { return other !== operation && other.lineup.some(function (seat) { return seat.pilotId === pilotId; }); })) issues.push(`${callsign} is assigned to another sortie.`);
+			if (!frameId) { issues.push(`${callsign} needs a rig.`); continue; }
+			if (operations.some(function (other) { return other !== operation && other.lineup.some(function (seat) { return seat.frameId === frameId; }); })) issues.push(`${rigName(frameId)} is assigned to another sortie.`);
+			const problem = deploymentIssue(campaign, frameId);
+			if (problem) issues.push(`${rigName(frameId)}: ${problem}`);
+		}
+		return { operation, live, issues, ...(!live && !issues.length ? { forecast: forecastCrew(campaign, contract, lineup) } : {}) };
+	});
+	const issues = [...new Set(entries.flatMap(function (entry) { return entry.issues; }))];
+	if (campaign.active || campaign.deployed) issues.push('Finish the active contract first.');
+	if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT || campaign.completed + campaign.failed + operations.length > MAX_COUNT) issues.push('The campaign calendar is full.');
+	return { entries, issues };
+};
+
+const chargeHostility = function (reputation: Campaign['reputation'], contracts: readonly Contract[]): Campaign['reputation'] {
+	const next = { ...reputation };
+	for (const { opponent, hostility } of contracts) next[opponent] = boundedReputation(next[opponent] - hostility);
+	return next;
+};
+
+const deployedSquad = function (deployed: CompanyState['deployed']): readonly DeployedPilot[] | undefined {
+	return deployed ? [{ pilotId: 'player', frameId: deployed.frameId, integrity: deployed.integrity, startingIntegrity: deployed.startingIntegrity }, ...deployed.wing] : undefined;
+};
+
+const recordContract = function (campaign: Campaign, contract: Contract, won: boolean, aborted: boolean, squad?: readonly DeployedPilot[], crew?: CampaignResult['crew']): Campaign & { lastResult: CampaignResult } {
 	const favor = won ? Math.min(contract.favor, 100 - campaign.reputation[contract.employer]) : 0;
 	const payout = won ? Math.min(contract.reward, MAX_CREDITS - campaign.credits) : 0;
 	const reputation = { ...campaign.reputation, [contract.employer]: boundedReputation(campaign.reputation[contract.employer] + favor) };
 	const companyReputation = won ? Math.min(getMissionTier(contract.tier).reputation, MAX_COMPANY_REPUTATION - campaign.companyReputation) : 0;
 	const day = campaign.day + 1;
 	const story = campaign.story;
-	const deployed = campaign.deployed;
-	const squad: readonly DeployedPilot[] | undefined = deployed ? [{ pilotId: 'player', frameId: deployed.frameId, integrity: deployed.integrity, startingIntegrity: deployed.startingIntegrity }, ...deployed.wing] : undefined;
-	return advanceDays({
-		...campaign, universe: { ...applyMissionInfluence(campaign.universe, contract.planetId, contract.employer, contract.opponent, won), boardDay: day, boardVersion: 2 }, active: undefined, deployed: undefined, reputation, boardReputation: { ...reputation }, boardRevision: campaign.boardRevision + 1,
+	return {
+		...campaign, universe: applyMissionInfluence(campaign.universe, contract.planetId, contract.employer, contract.opponent, won), reputation,
 		credits: campaign.credits + payout, companyReputation: campaign.companyReputation + companyReputation, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
-		lastResult: { contract, won, aborted, payout, favor, companyReputation, day, ...(squad ? { squad } : {}) },
+		lastResult: { contract, won, aborted, payout, favor, companyReputation, day, ...(squad ? { squad } : {}), ...(crew ? { crew } : {}) },
+		...(won && squad?.some(function (member) { return member.pilotId !== 'player'; }) ? { pilotWins: recordPilotWins(campaign, squad.map(function (member) { return member.pilotId; })) } : {}),
 		...(won && story?.committed === contract.id ? { story: { id: story.id, completed: [...story.completed, contract.id] } } : {}),
+	};
+};
+
+const endDay = function (campaign: Campaign): Campaign {
+	return advanceDays({ ...campaign,
+		universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 },
+		active: undefined, deployed: undefined, committedCrew: undefined, boardReputation: { ...campaign.reputation }, boardRevision: campaign.boardRevision + 1,
 	}, 1);
+};
+
+const finishOperations = function (campaign: Campaign, won: boolean, aborted: boolean): Campaign {
+	const crew = campaign.committedCrew;
+	if (!crew) return campaign;
+	const live = campaign.active;
+	const reports: CampaignResult[] = [];
+	const damage = new Map<RigId, number>();
+	let next = campaign;
+	if (live) {
+		const recorded = recordContract(next, live, won, aborted, deployedSquad(campaign.deployed));
+		reports.push(recorded.lastResult);
+		next = recorded;
+	}
+	for (const { contract, resolution } of crew) {
+		const { objective, extraction, squad } = resolution;
+		for (const { frameId, integrity } of squad) damage.set(frameId, integrity);
+		const recorded = recordContract(next, contract, objective.passed && extraction.passed, false, squad, { objective, extraction });
+		reports.push(recorded.lastResult);
+		next = recorded;
+	}
+	return endDay({ ...next, lastResult: reports[0], lastOperationDay: reports,
+		fleet: next.fleet.map(function (rig) { const integrity = damage.get(rig.frameId); return integrity === undefined ? rig : { ...rig, integrity }; }),
+	});
+};
+
+export const commitOperations = function (campaign: Campaign): Campaign {
+	const review = reviewOperations(campaign);
+	const first = review.entries[0];
+	if (!first || review.issues.length) return campaign;
+	const live = review.entries.find(function (entry) { return entry.live; })?.operation;
+	let next: Campaign = { ...campaign, operations: undefined, preferredLineup: first.operation.lineup };
+	if (live) {
+		const lineup = [...live.lineup].sort(function (left, right) { return Number(right.pilotId === 'player') - Number(left.pilotId === 'player'); });
+		next = beginDeployment({ ...next, active: live.contract, lineup });
+		if (!next.deployed) return campaign;
+	}
+	const crew = review.entries.filter(function (entry) { return !entry.live; }).map(function ({ operation: { contract, lineup } }) {
+		return { contract, resolution: resolveCrew(campaign, contract, lineup) };
+	}).sort(function (left, right) { return left.contract.id.localeCompare(right.contract.id); });
+	next = { ...next, committedCrew: crew, reputation: chargeHostility(campaign.reputation, review.entries.map(function (entry) { return entry.operation.contract; })),
+		universe: { ...campaign.universe, boardDay: campaign.day },
+		...(campaign.story && live && isAuthoredContract(live.contract) ? { story: { ...campaign.story, committed: live.contract.id } } : {}),
+	};
+	return live ? next : finishOperations(next, false, false);
+};
+
+const finishContract = function (campaign: Campaign, won: boolean, aborted: boolean): Campaign {
+	const contract = campaign.active;
+	if (!contract || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY) return campaign;
+	if (campaign.committedCrew) return finishOperations(campaign, won, aborted);
+	return endDay(recordContract({ ...campaign, lastOperationDay: undefined }, contract, won, aborted, deployedSquad(campaign.deployed)));
 };
 
 export const settleContract = function (campaign: Campaign, won: boolean): Campaign { return finishContract(campaign, won, false); };
@@ -224,12 +395,51 @@ const isContract = function (value: unknown): value is Contract {
 const isResult = function (value: unknown): value is CampaignResult {
 	if (!object(value) || !isContract(value['contract'])) return false;
 	const contract = value['contract'];
+	const crew = value['crew'];
+	const squad = value['squad'];
 	return typeof value['won'] === 'boolean' && typeof value['aborted'] === 'boolean' && !(value['won'] && value['aborted'])
 		&& isInteger(value['payout'], 0, contract.reward) && isInteger(value['favor'], 0, contract.favor)
 		&& isInteger(value['companyReputation'], 0, getMissionTier(contract.tier).reputation)
 		&& (value['won'] || value['companyReputation'] === 0)
-		&& (value['squad'] === undefined || isDeployedSquad(value['squad']))
+		&& (crew === undefined ? squad === undefined || isDeployedSquad(squad) : !value['aborted'] && !isAuthoredContract(contract) && isCrewChecks(crew)
+			&& value['won'] === (crew.objective.passed && crew.extraction.passed) && isCrewSquad(squad, crew.extraction.passed))
 		&& (value['won'] || value['payout'] === 0 && value['favor'] === 0) && isInteger(value['day'], 2, MAX_DAY);
+};
+
+const isCrewCheck = function (value: unknown): value is CrewCheck {
+	return object(value) && isInteger(value['chance'], 0, 100) && isInteger(value['roll'], 1, 100) && value['passed'] === (value['roll'] <= value['chance']);
+};
+
+const isCrewChecks = function (value: unknown): value is Pick<CrewResolution, 'objective' | 'extraction'> {
+	return object(value) && isCrewCheck(value['objective']) && isCrewCheck(value['extraction']);
+};
+
+const isCrewSquad = function (squad: unknown, extracted: boolean): squad is readonly DeployedPilot[] {
+	return isSortieSquad(squad) && squad.every(function (member) { return member.pilotId !== 'player'; })
+		&& (!extracted || squad.some(function (member) { return member.integrity > 0; }));
+};
+
+const isCrewSortie = function (value: unknown): value is CrewSortie {
+	if (!object(value) || !isContract(value['contract']) || isAuthoredContract(value['contract'])) return false;
+	const resolution = value['resolution'];
+	if (!object(resolution)) return false;
+	const squad = resolution['squad'];
+	return isCrewChecks(resolution) && isCrewSquad(squad, resolution.extraction.passed);
+};
+
+const isLineup = function (value: unknown): value is readonly PilotAssignment[] {
+	if (!Array.isArray(value) || value.length !== SQUAD_SIZE || !value.every(isAssignment)) return false;
+	const pilots = value.flatMap(function (seat) { return seat.pilotId ? [seat.pilotId] : []; });
+	const rigs = value.flatMap(function (seat) { return seat.frameId ? [seat.frameId] : []; });
+	return new Set(pilots).size === pilots.length && new Set(rigs).size === rigs.length;
+};
+
+const isPlannedOperation = function (value: unknown): value is PlannedOperation {
+	return object(value) && value['shipId'] === 'wayfarer' && isContract(value['contract']) && isLineup(value['lineup']);
+};
+
+const isPilotWins = function (value: unknown): value is Partial<Record<PilotId, number>> {
+	return object(value) && Object.entries(value).every(function ([id, wins]) { return isPilotId(id) && id !== 'player' && isInteger(wins, 0, MAX_PILOT_WINS); });
 };
 
 const sameContract = function (saved: Contract, generated: Contract): boolean {
@@ -263,12 +473,27 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['companyReputation'], 0, MAX_COMPANY_REPUTATION)
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
-			|| value['completed'] + value['failed'] > value['boardRevision'] || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
+			|| value['completed'] + value['failed'] > Math.min(MAX_COUNT, value['boardRevision'] * MAX_OPERATIONS) || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
 			|| value['active'] !== undefined && !isContract(value['active']) || value['lastResult'] !== undefined && !isResult(value['lastResult'])) return createCampaign();
 		const universe = parseUniverse(value['universe'], value['day']);
 		if (!universe) return createCampaign();
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
 		if (!company) return createCampaign();
+		const operations = value['operations']; const committedCrew = value['committedCrew']; const lastOperationDay = value['lastOperationDay'];
+		const preferredLineup = value['preferredLineup']; const pilotWins = value['pilotWins'];
+		if (preferredLineup !== undefined && !isLineup(preferredLineup) || pilotWins !== undefined && !isPilotWins(pilotWins)) return createCampaign();
+		if (operations !== undefined && (!Array.isArray(operations) || operations.length > MAX_OPERATIONS || !operations.every(isPlannedOperation)
+			|| new Set(operations.map(function (entry) { return entry.contract.id; })).size !== operations.length
+			|| operations.some(function (entry) { return entry.contract.planetId !== value['planetId']; })
+			|| operations.filter(function (entry) { return isAuthoredContract(entry.contract); }).length > 1
+			|| operations.length > 0 && value['active'] !== undefined)) return createCampaign();
+		if (committedCrew !== undefined && (!Array.isArray(committedCrew) || committedCrew.length >= MAX_OPERATIONS || !committedCrew.every(isCrewSortie)
+			|| !value['active'] || !company.deployed || value['completed'] + value['failed'] + committedCrew.length + 1 > MAX_COUNT)) return createCampaign();
+		if (lastOperationDay !== undefined && (!Array.isArray(lastOperationDay) || !lastOperationDay.length || lastOperationDay.length > MAX_OPERATIONS || !lastOperationDay.every(isResult)
+			|| lastOperationDay.filter(function (result) { return !result.crew; }).length > 1
+			|| new Set(lastOperationDay.map(function (result) { return result.contract.id; })).size !== lastOperationDay.length
+			|| lastOperationDay.some(function (result) { return result.day !== lastOperationDay[0]?.day; })
+			|| JSON.stringify(lastOperationDay[0]) !== JSON.stringify(value['lastResult']))) return createCampaign();
 		const mode = value['mode'];
 		if (mode !== undefined && mode !== 'campaign' && mode !== 'career') return createCampaign();
 		const story = parseChainProgress(value['story']);
@@ -279,6 +504,8 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			...company, version: CAMPAIGN_VERSION, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], companyReputation: value['companyReputation'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
+			...(operations ? { operations } : {}), ...(committedCrew ? { committedCrew } : {}), ...(lastOperationDay ? { lastOperationDay } : {}),
+			...(preferredLineup ? { preferredLineup } : {}), ...(pilotWins ? { pilotWins } : {}),
 			...(mode ? { mode } : {}), ...(story ? { story } : {}),
 		};
 		const result = campaign.lastResult;
@@ -288,17 +515,29 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			const reported = result.won ? story?.completed.at(-1) : story?.committed;
 			if (!step || reported !== result.contract.id || !sameContract(result.contract, step.contract)) return createCampaign();
 		}
-		if (!FACTION_IDS.every(function (id) {
-			const expected = campaign.active?.opponent === id ? boundedReputation(campaign.boardReputation[id] - campaign.active.hostility) : campaign.boardReputation[id];
-			return campaign.reputation[id] === expected;
-		})) return createCampaign();
 		const active = campaign.active;
+		const contracts = active ? [active, ...(committedCrew?.map(function (sortie) { return sortie.contract; }) ?? [])] : [];
+		const expectedReputation = chargeHostility(campaign.boardReputation, contracts);
+		if (!FACTION_IDS.every(function (id) { return campaign.reputation[id] === expectedReputation[id]; })) return createCampaign();
 		if (active) {
 			if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT) return createCampaign();
 			if (isAuthoredContract(active) && story?.committed !== active.id) return createCampaign();
 			const generated = findPosting(campaign, active.id);
-			if (!generated || !sameContract(active, generated) || companyRank(campaign) < getMissionTier(active.tier).rank || campaign.reputation[active.employer] < active.requiredReputation) return createCampaign();
+			if (!generated || !sameContract(active, generated) || companyRank(campaign) < getMissionTier(active.tier).rank || campaign.boardReputation[active.employer] < active.requiredReputation) return createCampaign();
 			campaign.active = generated;
+		}
+		if (committedCrew) {
+			const squad = [...(deployedSquad(company.deployed) ?? []), ...committedCrew.flatMap(function (sortie) { return sortie.resolution.squad; })];
+			if (new Set(contracts.map(function (contract) { return contract.id; })).size !== contracts.length
+				|| new Set(squad.map(function (member) { return member.pilotId; })).size !== squad.length || new Set(squad.map(function (member) { return member.frameId; })).size !== squad.length
+				|| committedCrew.some(function ({ contract, resolution }) {
+					const posting = findPosting(campaign, contract.id);
+					return !posting || !sameContract(contract, posting) || companyRank(campaign) < getMissionTier(contract.tier).rank || campaign.boardReputation[contract.employer] < contract.requiredReputation
+						|| resolution.squad.some(function (member) {
+							return !campaign.pilots.includes(member.pilotId) || deploymentIssue(campaign, member.frameId) !== undefined
+								|| campaign.fleet.find(function (rig) { return rig.frameId === member.frameId; })?.integrity !== member.startingIntegrity;
+						});
+				})) return createCampaign();
 		}
 		return campaign;
 	} catch { return createCampaign(); }

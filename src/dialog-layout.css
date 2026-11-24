@@ -74,6 +74,13 @@
 .sortie-rig[data-condition='disabled'] { border-color: var(--danger); }
 .sortie-rig[data-condition='damaged'] { border-color: var(--amber); }
 .sortie-rig button { padding: 7px 8px; }
+.day-report-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; border-inline-start: 2px solid var(--cyan); background: #11232a; padding: 8px 10px; }
+.day-report-line[data-outcome='lost'] { border-color: var(--danger); }
+.day-report-line h3 { margin: 3px 0 0; font: 21px/1.05 var(--display); }
+.day-report-line > strong { color: var(--cyan); font: 11px/1.3 var(--mono); text-transform: uppercase; }
+.day-report-line[data-outcome='lost'] > strong { color: var(--danger); }
+.day-report-line > small { grid-column: 1 / -1; color: var(--muted); font: 10px/1.5 var(--mono); }
+#game .dialog-body .day-report-checks { margin: 0; color: var(--muted); font: 11px/1.4 var(--mono); }
 #game.couch-ui .dialog-body p, #game.couch-ui .manual-binding span { font-size: 17px; }
 #game.couch-ui .manual-binding b, #game.couch-ui .dialog-tabs button, #game.couch-ui .dialog-pager button { font-size: 13px; }
 #game.couch-ui .dialog-body .toggle-setting, #game.couch-ui .dialog-body .slider-setting { font-size: 13px; }

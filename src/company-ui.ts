@@ -5,7 +5,7 @@ import { html } from 'lit-html';
 import { renderWorkspace, revealWorkspaceElement, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
 import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_FAMILY_LABELS, WEAPON_SIZE_LABELS, type WeaponId, type WeaponModelId } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
-import { getPlanet, type Campaign } from './campaign';
+import { getPlanet, type Campaign, type PlannedOperation } from './campaign';
 import { getAuthoredStep } from './contract-chains';
 import { availableWeapons, canRefit, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
 import { PLAYABLE_FRAMES, getFrame, type FrameDefinition, type FrameId } from './frames';
@@ -25,6 +25,9 @@ export interface CompanyEditor {
 }
 export interface CompanyActions {
 	skin: MechSkinId;
+	operation?: PlannedOperation | undefined;
+	openOperations: () => void;
+	removeOperation: () => void;
 	selectSkin: (skin: MechSkinId) => void;
 	navigate: (screen: ShipScreen) => void;
 	selectFrame: (frameId: RigId) => void;
@@ -108,7 +111,8 @@ const frameSchematic = function (frame: FrameDefinition) {
 interface CompanyView { kind: 'weapons' | 'frames'; weapon: WeaponModelId; frame: FrameId; slot: number | null; assignment?: AssignmentPicker }
 const views = new WeakMap<HTMLElement, CompanyView>();
 const assignedPilot = function (campaign: Campaign, frame: RigId) {
-	const pilotId = campaign.lineup.find(function (entry) { return entry.frameId === frame; })?.pilotId;
+	const lineup = campaign.operations?.length ? campaign.operations.flatMap(function (operation) { return operation.lineup; }) : campaign.preferredLineup ?? campaign.lineup;
+	const pilotId = lineup.find(function (entry) { return entry.frameId === frame; })?.pilotId;
 	return pilotId ? getPilot(pilotId).callsign : undefined;
 };
 

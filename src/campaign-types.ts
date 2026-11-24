@@ -7,6 +7,11 @@ export type PlanetId = 'meridian' | 'cinder' | 'borealis' | `system-${number}`;
 export type Biome = 'badlands' | 'volcanic' | 'tundra';
 export type MissionKind = 'defend' | 'demolition' | 'assassination' | 'clearance' | 'raid' | 'recovery' | 'acquisition';
 
+export const MISSION_NAMES: Readonly<Record<MissionKind, string>> = {
+	defend: 'Garrison defense', demolition: 'Facility demolition', assassination: 'Priority target', clearance: 'Area clearance',
+	raid: 'Raid', recovery: 'Recovery', acquisition: 'Target acquisition',
+};
+
 export interface Contract {
 	id: string;
 	seed: number;
