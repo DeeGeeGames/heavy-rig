@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 	<meta name="theme-color" content="#10191d">
-	<meta name="description" content="Command a mercenary dropship, choose faction contracts across three planets, and deploy your combat frame into varied surface missions.">
+	<meta name="description" content="Command a mercenary company aboard the HRV Wayfarer, choose faction contracts, and launch your squad by dropship into surface missions.">
 	<title>Heavy Rig · Frontier Company</title>
 	<link rel="stylesheet" href="./src/style.css">
 	<link rel="stylesheet" href="./src/campaign.css">
@@ -56,6 +56,9 @@
 		</nav>
 	</div>
 	<section id="intro" class="intro-screen menu-surface" tabindex="-1"><p id="intro-line"></p><button id="intro-begin" hidden>BEGIN TRANSMISSION<small>Click or press Enter to enable sound.</small></button></section>
+	<section id="launch" aria-label="Squad launch" hidden>
+		<button type="button" id="skip-launch"><span data-menu-glyph="confirm"></span>SKIP LAUNCH</button>
+	</section>
 	<section id="rig-bay" class="rig-bay menu-surface" hidden>
 		<header><span class="eyebrow">RIG BAY / SECURITY LOCK DISENGAGED</span><h2>BORROW SOME FREEDOM.</h2><p>Two frames. One way out. Choose your rig.</p></header>
 		<div class="rig-choices">

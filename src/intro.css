@@ -3,6 +3,10 @@
 #intro-begin { padding: 22px 28px; background: #000; font: 16px/1.6 var(--mono); letter-spacing: 2px; }
 #intro-begin small { display: block; margin-top: 12px; color: var(--muted); font: 12px/1.5 var(--mono); letter-spacing: 0; }
 #game[data-screen='intro'] .menu-controls { display: none; }
+#game[data-screen='launch'] .menu-controls { display: none; }
+#game[data-screen='launch'] .world-labels { opacity: 1; }
+#launch { position: absolute; z-index: 3; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
+#skip-launch { display: flex; align-items: center; gap: 8px; padding: 7px 11px; background: #0c191ee8; font: 11px var(--mono); }
 #game[data-screen='rig-bay'] .menu-controls { z-index: 5; }
 .rig-bay { position: absolute; inset: 0; z-index: 4; background: #080d0f; display: grid; align-content: center; gap: 24px; padding: 32px 8% 100px; overflow: auto; }
 .rig-bay header, .rig-choices { width: min(900px, 100%); margin-inline: auto; }

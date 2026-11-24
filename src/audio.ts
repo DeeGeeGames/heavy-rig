@@ -1,4 +1,5 @@
 import type { CombatEvent } from './simulation';
+import type { LaunchCue } from './launch-timing';
 
 export type AudioPhase = 'briefing' | 'combat' | 'refit' | 'result';
 export type AudioTheme = 'standard' | 'pursuit';
@@ -334,6 +335,19 @@ export const createAudio = function () {
 		noise({ at, duration: 0.16, volume: 0.12 * weight, frequency: 560, pan: side * 0.16 });
 		tone({ at: at + 0.055, frequency: 230, endFrequency: 150, duration: 0.07, volume: 0.045 * weight, type: 'triangle', pan: side * 0.16 });
 	};
+	const launchCue = function (kind: LaunchCue) {
+		if (!synth || disposed || !active || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
+		const at = synth.context.currentTime;
+		if (kind === 'latch' || kind === 'land') {
+			const landing = kind === 'land';
+			tone({ at, frequency: landing ? 84 : 190, endFrequency: landing ? 26 : 53, type: 'triangle', duration: landing ? 0.46 : 0.16, volume: 0.29 });
+			noise({ at: at + 0.025, duration: landing ? 0.48 : 0.1, volume: landing ? 0.2 : 0.14, frequency: landing ? 490 : 1800 });
+			return;
+		}
+		const lift = kind === 'lift';
+		tone({ at, frequency: lift ? 48 : 83, endFrequency: lift ? 137 : 38, type: 'sawtooth', cutoff: 350, endCutoff: lift ? 950 : 210, duration: lift ? 1.65 : 0.8, attack: 0.14, hold: 0.2, volume: 0.13 });
+		noise({ at, duration: lift ? 1.9 : 0.85, volume: 0.21, frequency: lift ? 1200 : 750 });
+	};
 	const updateJog = function (time: number | undefined, duration: number | undefined) {
 		const enabled = time !== undefined && Number.isFinite(time) && time >= 0 && synth && jogBuffer && uiActive && !muted && mix.effects > 0 && mix.master > 0 && synth.context.state === 'running';
 		if (!enabled) { if (jogVoice) stopVoice(jogVoice); return; }
@@ -607,5 +621,5 @@ export const createAudio = function () {
 		for (const node of current.nodes) node.disconnect();
 		if (current.context.state !== 'closed') await current.context.close();
 	};
-	return { unlock, status, cue, footstep, typeText, setMuted, setMix, reset, update, play, dispose };
+	return { unlock, status, cue, launchCue, footstep, typeText, setMuted, setMix, reset, update, play, dispose };
 };

@@ -27,6 +27,7 @@ import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
 import { createMissionState, createState, distance, getOperationReport, type Controls, type Point, type SquadmateOptions } from './simulation';
 import { createPresentation } from './presentation';
+import { LAUNCH_TIMING, launchCues, sampleLaunchTime } from './launch-timing';
 import { advanceGaits, createGaits } from './gait';
 import { viewScale } from './projection-3d';
 import { targetElevation, type ScreenRect } from './overlay';
@@ -126,6 +127,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const keys = new Set<string>(); const pending = new Set<string>(); const held = new Map<number, string>();
 	const coarsePointer = window.matchMedia('(any-pointer: coarse)');
 	const primaryPointer = window.matchMedia('(pointer: coarse)');
+	const portrait = window.matchMedia('(orientation: portrait)');
 	const hasTouch = function () { return coarsePointer.matches || navigator.maxTouchPoints > 0; };
 	const fullscreenButton = element('mobile-fullscreen');
 	if (!(fullscreenButton instanceof HTMLButtonElement)) throw new Error('Missing fullscreen button');
@@ -158,6 +160,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let narrativePart: 'before' | 'after' = 'before';
 	let narrativeElapsed = 0;
 	let narrativeWaiting = false;
+	let launchElapsed = 0;
 	let trainingOrigin: 'title' | 'bridge' | 'starmap' = 'title';
 	let editor: CompanyEditor = { loadout: [...(getOwnedMech(campaign)?.loadout ?? [])], reserves: [...(getOwnedMech(campaign)?.reserves ?? [])], slot: null, notice: '' };
 	const mouseButtons = new Set<number>();
@@ -310,7 +313,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			: practice ? 'Change loadout to start a fresh run. Reset Range refills your selected ammunition and coolant.'
 			: training ? 'Resume the drills or change loadout to practice in the range.'
 			: 'Your throttle and mission are preserved. Aborting or reloading returns the squad with its current damage.';
-		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'pause-panel', 'squad-orders', 'result', 'training-setup', 'training-result', 'situation-setup', 'situation-result', 'field-trial', 'settings', 'handbook', 'confirm', 'save-conflict']) {
+		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'launch', 'pause-panel', 'squad-orders', 'result', 'training-setup', 'training-result', 'situation-setup', 'situation-result', 'field-trial', 'settings', 'handbook', 'confirm', 'save-conflict']) {
 			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
@@ -349,6 +352,19 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const updateDifficulty = function () {
 		for (const input of container.querySelectorAll<HTMLInputElement>('input[data-difficulty]')) input.checked = input.value === profile.settings.difficulty;
 	};
+	const startLaunch = function () {
+		launchElapsed = 0;
+		presentation.setLaunchTime(0);
+		audio.reset(); transition(navigation.setScreen('launch')); unlockSound();
+	};
+	const finishLaunch = function () {
+		if (navigation.screen !== 'launch' || navigation.transitioning || navigation.auxiliary || campaignConflict || contextLost || document.hidden || !focused) return;
+		transition(navigation.setScreen('playing'));
+	};
+	world.onScreenExit('launch', function () {
+		presentation.setLaunchTime(undefined);
+		audio.reset();
+	});
 	const launchLive = function (next: Campaign) {
 		if (contextLost || navigation.auxiliary) return;
 		if (next === campaign || !next.active || !next.deployed) return;
@@ -369,7 +385,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		pointer = undefined;
 		message = squadmates.length ? '' : `${rigName(mech.frameId)} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`;
 		messageUntil = message ? 5 : 0; tipDismissed = false;
-		terminalUntil = 0; audio.reset(); transition(navigation.setScreen('playing')); unlockSound();
+		terminalUntil = 0; startLaunch();
 	};
 	const start = function () {
 		if (navigation.screen === 'deploy') launchLive(beginDeployment(campaign));
@@ -411,7 +427,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		gaits = createGaits(state); aim = { ...(state.mission?.map.objective ?? state.player) }; pointer = undefined;
 		aimMode = inputMode === 'gamepad' ? 'gamepad' : inputMode === 'touch' ? 'touch' : 'pointer';
 		message = ''; messageUntil = 0; terminalUntil = 0; tipDismissed = false;
-		audio.reset(); transition(navigation.setScreen('playing')); unlockSound();
+		startLaunch();
 	};
 	const showFieldTrial = function (seed: number, outcome: 'playing' | 'won' | 'lost' = 'playing') {
 		const url = new URL(location.href);
@@ -755,6 +771,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (navigation.transitioning) return;
 		if (navigation.auxiliary === 'squad-orders') { backFromSquadOrders(); return; }
 		if (navigation.auxiliary) { closeAuxiliary(); return; }
+		if (navigation.screen === 'launch') { finishLaunch(); return; }
 		const planetPopover = element('starmap').querySelector<HTMLElement>('.planet-popover:popover-open');
 		if (navigation.screen === 'starmap' && planetPopover) {
 			planetPopover.hidePopover();
@@ -812,7 +829,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('training-launch', function () { startTraining(trainingSetup()); });
 	listen('training-guided', function () { startTraining(); });
 	listen('training-back', leaveTraining);
-	listen('field-deploy', function () { if (trialSeed !== undefined && !contextLost) { unlockSound(); transition(navigation.setScreen('playing')); } });
+	listen('field-deploy', function () { if (trialSeed !== undefined && !contextLost) startLaunch(); });
+	listen('skip-launch', finishLaunch);
 	listen('field-generate', function () { if (trialSeed !== undefined) showFieldTrial((trialSeed + 0x9e3779b9) >>> 0); });
 	listen('pause-training-loadout', showTrainingSetup);
 	listen('result-training-loadout', showTrainingSetup);
@@ -1327,7 +1345,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const audioFrame = function (now: number) {
 		const combat = playing(); const inTrainingMenu = navigation.screen === 'training-setup' || navigation.screen === 'training-result' || navigation.screen === 'situation-setup';
 		const result = navigation.screen === 'result' || navigation.screen === 'situation-result';
-		const audibleMenu = navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) || inTrainingMenu || (result && now < terminalUntil + 30000);
+		const briefing = navigation.screen === 'title' || navigation.screen === 'jump' || navigation.screen === 'launch' || isShipScreen(navigation.screen);
+		const audibleMenu = briefing || inTrainingMenu || (result && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			theme: escape ? 'pursuit' as const : 'standard' as const,
 			alarm: combat && escape,
@@ -1336,12 +1355,21 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			jogDuration: INTRO_LINES.slice(1, 3).reduce(function (sum, line) { return sum + line.length / 10 + 3; }, 0) - 0.05,
 			hatchTime: navigation.screen === 'intro' && narrativePart === 'after' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary
 				? narrativeElapsed : undefined,
-			active: !contextLost && focused && !document.hidden && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
-			phase: navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen) ? 'briefing' as const : inTrainingMenu ? 'refit' as const : result ? 'result' as const : 'combat' as const,
+			active: !contextLost && focused && !document.hidden && !campaignConflict && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
+			phase: briefing ? 'briefing' as const : inTrainingMenu ? 'refit' as const : result ? 'result' as const : 'combat' as const,
 			intensity: Math.min(1, state.enemies.length / 5 + (state.wave - 1) * 0.08), danger: Math.max(0, 1 - Math.min(state.player.hp, state.relay) / 50), victory: state.outcome === 'won' };
 	};
 	let frameTime = 0;
 	let makeInput = function (): Controls { return { drive: 0, stop: false, turn: 0, aim, fire: [false, false, false, false], coolant: false }; };
+	world.addSystem('mission-launch').inScreens(['launch']).inPhase('preUpdate').setProcess(function ({ dt }) {
+		if (navigation.transitioning || !focused || document.hidden || contextLost || campaignConflict) return;
+		const previousTime = launchElapsed;
+		launchElapsed += dt;
+		for (const cue of launchCues) if (previousTime < cue.at && launchElapsed >= cue.at) audio.launchCue(cue.kind);
+		const dockHeight = portrait.matches && container.classList.contains('touch-enabled') ? element('touch').offsetHeight : 0;
+		presentation.setLaunchTime(sampleLaunchTime(launchElapsed), dockHeight);
+		if (launchElapsed >= LAUNCH_TIMING.end) finishLaunch();
+	});
 	world.addSystem('intro-narrative').inScreens(['intro']).inPhase('preUpdate').setProcess(function ({ dt }) {
 		if (narrativeWaiting || navigation.transitioning || navigation.auxiliary || !focused || document.hidden || contextLost) return;
 		const lines = narrativePart === 'before' ? INTRO_LINES : SADDLE_LINES;
@@ -1551,12 +1579,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		},
 	});
 	const battlefieldVisible = function () {
-		return !contextLost && (navigation.screen === 'playing' || navigation.screen === 'pause-panel' || navigation.screen === 'escape-result' || navigation.screen === 'result' || navigation.screen === 'training-result' || navigation.screen === 'situation-result' || navigation.screen === 'field-trial');
+		return !contextLost && (navigation.screen === 'launch' || navigation.screen === 'playing' || navigation.screen === 'pause-panel' || navigation.screen === 'escape-result' || navigation.screen === 'result' || navigation.screen === 'training-result' || navigation.screen === 'situation-result' || navigation.screen === 'field-trial');
 	};
 	world.addSystem('battlefield-presentation').inPhase('postUpdate').before(transform3DSystems.propagate).setProcess(function () {
 		if (battlefieldVisible()) {
 			world.enableSystemGroup('renderer3d');
 			presentation.prepare(state, aim, gaits, false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI);
+			if (navigation.screen === 'launch') return;
 			const contacts = touchContacts();
 			const locked = aimMode === 'touch' || aimMode === 'target' ? touchTargeting.resolve(contacts) : undefined;
 			const marker = element('touch-lock-marker'); marker.hidden = !locked || !playing();

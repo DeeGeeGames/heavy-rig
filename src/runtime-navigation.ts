@@ -1,7 +1,7 @@
 import { definePlugin, type ScreenConfiguratorFn, type ScreenDefinition, type ScreenResource } from 'ecspresso';
 import type { ShipScreen } from './company-ui';
 
-export type RuntimeBaseScreen = ShipScreen | 'title' | 'intro' | 'rig-bay' | 'escape-result' | 'jump' | 'playing' | 'pause-panel' | 'result' | 'training-setup' | 'training-result' | 'situation-setup' | 'situation-result' | 'field-trial';
+export type RuntimeBaseScreen = ShipScreen | 'title' | 'intro' | 'rig-bay' | 'escape-result' | 'jump' | 'launch' | 'playing' | 'pause-panel' | 'result' | 'training-setup' | 'training-result' | 'situation-setup' | 'situation-result' | 'field-trial';
 export type RuntimeAuxiliary = 'settings' | 'handbook' | 'confirm' | 'save-conflict' | 'squad-orders';
 export type RuntimeScreen = RuntimeBaseScreen | RuntimeAuxiliary | 'training';
 type RuntimeScreens = Record<RuntimeScreen, ScreenDefinition>;
@@ -35,6 +35,7 @@ const screens: ScreenConfiguratorFn<RuntimeScreens> = function (configurator) {
 		.add('pilots', definition)
 		.add('deploy', definition)
 		.add('jump', definition)
+		.add('launch', definition)
 		.add('playing', definition)
 		.add('training', definition)
 		.add('training-setup', definition)
