@@ -3,43 +3,42 @@
   "scope": "Retained owner-approved mech checkpoints, playable A/B/C assets, and reproduction inputs.",
   "playableVariantApproval": {
     "status": "owner-approved-for-play",
-    "date": "2026-11-22",
-    "decision": "Approve all six for production",
-    "scope": "Approved current playable variant exports; later per-bundle approval records supersede the original selection where present.",
+    "date": "2026-11-23",
+    "decision": "This is good. Proceed with these changes to all the models and apply them all the way through everywhere, including the game.",
+    "scope": "The selected Warden, Kestrel and Maul bodies and fitted A, B and C weapons across the playable lineup.",
     "bundles": [
       {
         "variants": [
           "warden-b",
           "warden-c"
         ],
-        "baseSha256": "9311e941cd27b4c0115708b3d4cba7850eef2b67c4c7bd192f7d651c948537e0",
+        "baseSha256": "797b21e3fabdf88c3ca7e5cd5e1cff7b8e6761afd73923805fb47ea2516bf18a",
         "path": "public/assets/mechs/warden/variants.glb",
-        "sha256": "6ecaad0b8fabcd2429b53ca3f9f940a447b351dff1993ad85c4d0d0b0e133d53"
+        "sha256": "9e286cc2cf6a94bb5abedd96ac2b69ba82bee975f8169781c5879bdc8fa5d76a",
+        "review": "design/mechs/assets/warden/pixel/manifest.json"
       },
       {
         "variants": [
           "kestrel-b",
           "kestrel-c"
         ],
-        "baseSha256": "00eed5f2c94b87fd19e2d1f14a80cdf2d0d9efc1e53a30a46ddcaeb56ea6f7e0",
+        "baseSha256": "1b419a93fba96e799b6371e60069b27df9c2cefb6a2d8f2b11fd7f5a789d88ab",
         "path": "public/assets/mechs/kestrel/variants.glb",
-        "sha256": "46791a5a1c1eb86007181c0551c5ed9407dc8797595e1b97a6c14f91997c04fb"
+        "sha256": "e2038cf1301ceb2caf7b3c0dd009413f79ce629426d7faecfc097a024ac81142",
+        "review": "design/mechs/assets/kestrel/pixel/manifest.json"
       },
       {
         "variants": [
           "maul-b",
           "maul-c"
         ],
-        "baseSha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f",
+        "baseSha256": "096689db04899d107f504b0f8aaeef1f1c6d68a9103559edfdec2fc2aaa2e6a5",
         "path": "public/assets/mechs/maul/variants.glb",
-        "sha256": "7a0dd68e55d4182d486d5a9d9213af131b30004b343561c1e73859f1b30220a9",
-        "status": "owner-approved-for-play",
-        "approvalScope": "Owner approved the actual four-mount Breacher, Breaker and Furnace models after local network preview. Appearance and production selection approval; no inference of measured balance, audio, hardware performance or physical-controller acceptance.",
-        "ownerStatement": "Let's go ahead and commit to these.",
-        "approvalDate": "2026-11-22",
-        "review": "design/mechs/assets/maul/pixel/four-mount-review.json"
+        "sha256": "7c8cf2e1baf32a17ba2ff22bc81465b4a890e1f6919b94b80824fc3c55699721",
+        "review": "design/mechs/assets/maul/pixel/manifest.json"
       }
-    ]
+    ],
+    "comparison": "design/mechs/assets/playable-variants.png"
   },
   "files": [
     {
@@ -929,13 +928,13 @@
     },
     {
       "path": "design/mechs/assets/kestrel/pixel/kestrel.glb",
-      "bytes": 225088,
-      "sha256": "00eed5f2c94b87fd19e2d1f14a80cdf2d0d9efc1e53a30a46ddcaeb56ea6f7e0"
+      "bytes": 228588,
+      "sha256": "1b419a93fba96e799b6371e60069b27df9c2cefb6a2d8f2b11fd7f5a789d88ab"
     },
     {
       "path": "design/mechs/assets/kestrel/pixel/manifest.json",
-      "bytes": 1140,
-      "sha256": "d10ec73993f6573c7e453a3fcaf0fe87f4ebeb7209eead10930db0f0dde93621"
+      "bytes": 1600,
+      "sha256": "112fb20f3e7cc3c5ea441a2156a6d3c141d52bd02893f5947e3f4c4c02b71d22"
     },
     {
       "path": "design/mechs/assets/maul/pixel/comparison.png",
@@ -944,13 +943,13 @@
     },
     {
       "path": "design/mechs/assets/maul/pixel/manifest.json",
-      "bytes": 2369,
-      "sha256": "9d6d1ca0027744ddc34653cdd767f64da4871e75b4b38528105a0fb860f42890"
+      "bytes": 2683,
+      "sha256": "c7ee3a1fceaff35840bc5cefdf8a14efd91008842d4335a7c9967a12b9522f08"
     },
     {
       "path": "design/mechs/assets/maul/pixel/maul.glb",
-      "bytes": 366600,
-      "sha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f"
+      "bytes": 359712,
+      "sha256": "096689db04899d107f504b0f8aaeef1f1c6d68a9103559edfdec2fc2aaa2e6a5"
     },
     {
       "path": "design/mechs/assets/warden/pixel/comparison.png",
@@ -959,18 +958,18 @@
     },
     {
       "path": "design/mechs/assets/warden/pixel/manifest.json",
-      "bytes": 1169,
-      "sha256": "ff83c9b714ef7d7ae63fea27fd5d44914bc4221b38bb60eb169edf9aff8fd8cd"
+      "bytes": 1681,
+      "sha256": "9734ddce9d1beafc7ff7a5817aa32a2012424f3f722702f8b54cea64ce6f9f5e"
     },
     {
       "path": "design/mechs/assets/warden/pixel/warden.glb",
-      "bytes": 314480,
-      "sha256": "9311e941cd27b4c0115708b3d4cba7850eef2b67c4c7bd192f7d651c948537e0"
+      "bytes": 403352,
+      "sha256": "797b21e3fabdf88c3ca7e5cd5e1cff7b8e6761afd73923805fb47ea2516bf18a"
     },
     {
       "path": "public/assets/mechs/kestrel/pixel.glb",
-      "bytes": 225088,
-      "sha256": "00eed5f2c94b87fd19e2d1f14a80cdf2d0d9efc1e53a30a46ddcaeb56ea6f7e0"
+      "bytes": 228588,
+      "sha256": "1b419a93fba96e799b6371e60069b27df9c2cefb6a2d8f2b11fd7f5a789d88ab"
     },
     {
       "path": "public/assets/mechs/maul/game-ready.glb",
@@ -979,33 +978,33 @@
     },
     {
       "path": "public/assets/mechs/maul/pixel.glb",
-      "bytes": 366600,
-      "sha256": "b48237a7e8722adda5dea61671d0d2df8477e96a1855176c6c2cf42cc014d60f"
+      "bytes": 359712,
+      "sha256": "096689db04899d107f504b0f8aaeef1f1c6d68a9103559edfdec2fc2aaa2e6a5"
     },
     {
       "path": "public/assets/mechs/warden/pixel.glb",
-      "bytes": 314480,
-      "sha256": "9311e941cd27b4c0115708b3d4cba7850eef2b67c4c7bd192f7d651c948537e0"
+      "bytes": 403352,
+      "sha256": "797b21e3fabdf88c3ca7e5cd5e1cff7b8e6761afd73923805fb47ea2516bf18a"
     },
     {
       "path": "design/mechs/assets/playable-a-lineup.png",
-      "bytes": 213504,
-      "sha256": "d01986dddebe41090e1355ee914e4e2dce9a15ccb3cfce21e3f2cd1588cda203"
+      "bytes": 152131,
+      "sha256": "d1594b6a860989d5757897caa311ef81837bc5a0b9162c589818985d0a42c1b6"
     },
     {
       "path": "public/assets/mechs/kestrel/variants.glb",
       "bytes": 25288,
-      "sha256": "46791a5a1c1eb86007181c0551c5ed9407dc8797595e1b97a6c14f91997c04fb"
+      "sha256": "e2038cf1301ceb2caf7b3c0dd009413f79ce629426d7faecfc097a024ac81142"
     },
     {
       "path": "public/assets/mechs/maul/variants.glb",
-      "bytes": 88236,
-      "sha256": "7a0dd68e55d4182d486d5a9d9213af131b30004b343561c1e73859f1b30220a9"
+      "bytes": 88648,
+      "sha256": "7c8cf2e1baf32a17ba2ff22bc81465b4a890e1f6919b94b80824fc3c55699721"
     },
     {
       "path": "public/assets/mechs/warden/variants.glb",
       "bytes": 39612,
-      "sha256": "6ecaad0b8fabcd2429b53ca3f9f940a447b351dff1993ad85c4d0d0b0e133d53"
+      "sha256": "9e286cc2cf6a94bb5abedd96ac2b69ba82bee975f8169781c5879bdc8fa5d76a"
     },
     {
       "path": "design/mechs/assets/maul/pixel/four-mount-review.json",
@@ -1026,6 +1025,11 @@
       "path": "design/mechs/assets/maul/pixel/four-mount/furnace.png",
       "bytes": 51183,
       "sha256": "3ccf2e1c5d77732d07dc18aa419d882d14fff86722058b66834aeddcf4d733e2"
+    },
+    {
+      "path": "design/mechs/assets/playable-variants.png",
+      "bytes": 141665,
+      "sha256": "c55cdf4e21a3295a6384e3f8bf27e74523b4f40fe45e9c8cfc8dabc81b128b9e"
     }
   ]
 }

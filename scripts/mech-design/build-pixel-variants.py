@@ -4,6 +4,7 @@ import argparse
 from importlib import import_module
 import json
 from pathlib import Path
+import tempfile
 
 from blender.optimization_io import fresh_output
 from pixel_mechs import kestrel, maul, warden
@@ -55,45 +56,16 @@ def kestrel_laser(mesh):
 def kestrel_launcher(mesh):
     x, y, dz = kestrel.gun_housing(mesh, "right", -1)
     mesh.hull_z(
-        [(dz + 12, x, y - 50, y + 50, 128, 16, 15),
-         (dz + 72, x, y - 48, y + 48, 150, 14, 12),
-         (dz + 136, x, y - 43, y + 43, 151, 13, 11)],
-        "forest", ("cast", "ivory"),
+        [(dz + 12, x, y - 47, y + 47, 114, 16, 15),
+         (dz + 72, x, y - 45, y + 45, 133, 14, 12),
+         (dz + 136, x, y - 40, y + 40, 132, 13, 11)],
+        "forest", ("cast", "silver"),
     )
     lip = dz + 184
     tubes = tuple((x + offset, y, lip) for offset in (-34, 34))
     for tx, ty, tz in tubes:
         kestrel.tube(mesh, tx, ty, dz + 124, tz, 30)
     return (x, y, lip), tubes
-
-
-def maul_cartridge(mesh, side, sign, family):
-    _, _, _, (x, y, front) = maul.forearm_cells(mesh, side)
-    maul.gauntlet(mesh, sign, x, y, front)
-    mesh.hull_z(
-        [(front, x, y - 87, y + 87, 170, 18, 18),
-         (front + 13, x, y - 72, y + 72, 151, 16, 16)],
-        "podrim", (None, "coal"),
-    )
-    if family == "energy":
-        # Furnace carries a PPC here, rather than a second small ARC cartridge.
-        rings = [maul.barrel_ring(x, y, z, radius) for z, radius in
-                 ((front + 11, 64), (front + 50, 62), (front + 65, 54),
-                  (front + 65, 44), (front + 37, 44))]
-        mesh.join(rings, lambda i, j: "silver" if i == 2 else "joint", (None, None))
-        mesh.face(maul.barrel_ring(x, y, front + 37, 44), (0, 0, 1), "plasma")
-        for z in (front + 14, front + 37):
-            mesh.join([maul.barrel_ring(x, y, zz, radius) for zz, radius in
-                       ((z, 64), (z, 72), (z + 8, 72), (z + 8, 64))], "podrim", (None, None))
-        return (x, y, front + 65), ()
-    mesh.cylinder((x, y, front + 9), (x, y, front + 78), 52, "cast")
-    lip = front + 164
-    kestrel.tube(mesh, x, y, front + 59, lip, 33)
-    # Ring-shaped collar, with both rim faces outside the barrel's bore.
-    rings = [kestrel.barrel_ring(x, y, z, r) for z, r in
-             ((lip - 46, 30), (lip - 46, 43), (lip - 13, 43), (lip - 13, 30))]
-    mesh.join(rings, "porcelain", (None, None))
-    return (x, y, lip), ()
 
 
 def maul_inboard(mesh, sign, family):
@@ -119,9 +91,9 @@ RECIPES = {
         (1, "launcher", "rig_mount_right-gun", kestrel_launcher),
     ]),
     "maul": (maul, [
-        (0, "ballistic", "rig_mount_left-pod", lambda mesh: maul_cartridge(mesh, "left", 1, "ballistic")),
-        (1, "ballistic", "rig_mount_right-pod", lambda mesh: maul_cartridge(mesh, "right", -1, "ballistic")),
-        (1, "energy", "rig_mount_right-pod", lambda mesh: maul_cartridge(mesh, "right", -1, "energy")),
+        (0, "ballistic", "rig_mount_left-pod", lambda mesh: maul.forearm(mesh, "left", "ballistic")),
+        (1, "ballistic", "rig_mount_right-pod", lambda mesh: maul.forearm(mesh, "right", "ballistic")),
+        (1, "energy", "rig_mount_right-pod", lambda mesh: maul.forearm(mesh, "right", "energy")),
         (2, "energy", "rig_mount_left-inboard", lambda mesh: maul_inboard(mesh, 1, "energy")),
         (3, "energy", "rig_mount_right-inboard", lambda mesh: maul_inboard(mesh, -1, "energy")),
         (3, "launcher", "rig_mount_right-inboard", lambda mesh: maul_inboard(mesh, -1, "launcher")),
@@ -171,16 +143,24 @@ def rebuild(chassis, recipe, modules, output):
     target = output / chassis / "variants.glb"
     target.parent.mkdir()
     glb.write_glb(target, document, buffers.data)
-    print(f"{glb.digest(target.read_bytes())}  {target}")
+    expected = selection["approval"]["bundleSha256"]
+    base.verify(target, expected)
+    return expected
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True, help="New directory under design/mechs/generated")
     args = parser.parse_args()
-    output = fresh_output(base.REPO, args.out, directory=True)
-    for chassis, (recipe, modules) in RECIPES.items():
-        rebuild(chassis, recipe, modules, output)
+    output = fresh_output(base.REPO, args.out)
+    with tempfile.TemporaryDirectory(dir=output.parent) as temporary:
+        staging = Path(temporary)
+        hashes = {chassis: rebuild(chassis, recipe, modules, staging) for chassis, (recipe, modules) in RECIPES.items()}
+        fresh_output(base.REPO, output, directory=True)
+        for chassis in hashes:
+            (staging / chassis).rename(output / chassis)
+    for chassis, digest in hashes.items():
+        print(f"{digest}  {output / chassis / 'variants.glb'}")
 
 
 if __name__ == "__main__":

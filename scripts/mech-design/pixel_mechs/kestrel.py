@@ -41,27 +41,37 @@ def torso(mesh):
     # A single down-swept bill, roughly a full source height from engine to tip.
     # Three different values define the ivory crown, green flanks and dark keel.
     spine = [
-        (-307, -5, 762, 904, 273, 35, 25),
-        (-176, -5, 704, 942, 333, 48, 37),
-        (-25, -5, 683, 923, 333, 46, 35),
-        (122, -6, 663, 860, 262, 44, 30),
-        (266, -7, 636, 793, 159, 28, 22),
-        (438, -7, 592, 649, 62, 13, 10),
+        (-307, -5, 779, 902, 249, 28, 21),
+        (-176, -5, 734, 930, 289, 35, 25),
+        (-25, -5, 716, 916, 289, 36, 27),
+        (122, -6, 683, 860, 236, 35, 23),
+        (266, -7, 649, 793, 149, 24, 18),
+        (438, -7, 595, 649, 59, 11, 8),
         (482, -7, 578, 603, 24, 5, 5),
     ]
     mesh.hull_z(
         spine, lambda i, j: "ivory" if j in (3, 4, 5) else "sage" if j in (2, 6) else "forest", ("forest", "forest")
     )
-    # Tall rear power pack, broad sage shell, and one dark inset on the aft face.
+    # A narrow raised cover follows the power pack above its dark rear vent.
     mesh.hull_z(
         [
-            (-487, -5, 836, 945, 208, 27, 28),
-            (-440, -5, 797, 999.8, 292, 34, 35),
-            (-326, -5, 792, 999.8, 302, 31, 34),
-            (-263, -5, 800, 971, 299, 31, 28),
-            (-231, -5, 814, 940, 261, 30, 19),
+            (-487, -5, 844, 944, 193, 22, 16),
+            (-440, -5, 813, 966, 244, 29, 22),
+            (-326, -5, 804, 976, 249, 26, 23),
+            (-263, -5, 810, 956, 248, 23, 19),
+            (-225, -5, 826, 930, 207, 20, 15),
         ],
         lambda i, j: "forest" if j in (0, 1, 7) else "sage",
+    )
+    mesh.hull_z(
+        [
+            (-458, -5, 950, 963, 101, 9, 4),
+            (-408, -5, 954, 999.8, 137, 12, 9),
+            (-333, -5, 962, 990, 134, 12, 7),
+            (-270, -5, 948, 959, 107, 9, 3),
+        ],
+        lambda i, j: "sage" if j in (3, 4, 5) else "forest",
+        ("forest", "forest"),
     )
     mesh.hull_z([(-488, -5, 858, 927, 167, 15, 12), (-492, -5, 866, 922, 153, 14, 10)], "cast", ("cast", "shadow"))
     for y in (882, 903):
@@ -74,10 +84,13 @@ def torso(mesh):
         mesh.beam((sx, sy - 6, sz), (sign * 118 - 5, 685, 40), 41, 26, "silver")
         mesh.hull_z(
             [
-                (-226, sign * 146 - 5, 783, 875, 79, 12, 15),
-                (-145, sign * 160 - 5, 790, 888, 108, 15, 20),
-                (8, sign * 153 - 5, 787, 860, 106, 17, 16),
-                (103, sign * 119 - 5, 747, 813, 80, 14, 14),
+                (z, -5 + sign * offset * 0.94, low, high, width * 0.86, bevel_x * 0.86, bevel_y * 0.86)
+                for z, offset, low, high, width, bevel_x, bevel_y in (
+                    (-226, 146, 789, 869, 79, 12, 15),
+                    (-145, 160, 796, 882, 108, 15, 20),
+                    (8, 153, 793, 854, 106, 17, 16),
+                    (103, 119, 753, 807, 80, 14, 14),
+                )
             ],
             lambda i, j: "sage" if j in (2, 3, 4, 5, 6) else "forest",
             ("cast", "cast"),
@@ -145,16 +158,23 @@ def gun_housing(mesh, side, sign):
     mesh.section = f"geometry_kestrel_mount_{side}-gun"
     x, y, z = mesh.anchor(f"muzzle_{side}-gun")
     dz = z - (264 if sign > 0 else 254)
-    # Seven distinct short ends emerge from one light gun housing on each side.
+    # The elongated receiver is common to the gun, laser and launcher cartridges.
+    def receiver_paint(segment, edge):
+        if edge in (0, 1, 7):
+            return "cast"
+        if edge == 4 and segment in (1, 2):
+            return "ivory"
+        return "forest" if edge in (2, 6) else "sage"
+
     mesh.hull_z(
         [
-            (-251 + dz, x, 619, 752, 117, 13, 17),
-            (-215 + dz, x, 599, 768, 151, 22, 21),
-            (-137 + dz, x, 600, 789, 164, 22, 26),
-            (-28 + dz, x, 603, 770, 159, 20, 23),
-            (22 + dz, x, 621, 744, 137, 21, 18),
+            (-284 + dz, x, 632, 728, 93, 10, 11),
+            (-218 + dz, x, 619, 752, 131, 13, 16),
+            (-137 + dz, x, 617, 762, 141, 14, 17),
+            (-31 + dz, x, 621, 734, 122, 12, 12),
+            (32 + dz, x, 629, 711, 103, 10, 10),
         ],
-        lambda i, j: "cast" if j in (0, 1, 7) else "ivory" if j in (3, 4, 5) and i >= 2 else "sage",
+        receiver_paint,
         ("forest", "cast"),
     )
     return x, y, dz
@@ -162,13 +182,12 @@ def gun_housing(mesh, side, sign):
 
 def gun(mesh, side, sign):
     x, y, dz = gun_housing(mesh, side, sign)
-    mesh.cylinder((x, y, 3 + dz), (x, y, 72 + dz), 54, "cast")
-    mesh.cylinder((x, y, 52 + dz), (x, y, 78 + dz), 56, "forest")
+    mesh.cylinder((x, y, 3 + dz), (x, y, 72 + dz), 47, "cast")
+    mesh.cylinder((x, y, 52 + dz), (x, y, 78 + dz), 49, "forest")
     for i in range(1, 8):
         bx, by, bz = mesh.anchor(f"physical_exit_{side}_gun_{i}")
         tube(mesh, bx, by, 67 + dz, bz, 10.6, 8)
-    # Club-shaped collar halfway down the real barrel bundle.
-    mesh.cylinder((x, y, 175 + dz), (x, y, 205 + dz), 39, "cast", 10)
+    mesh.cylinder((x, y, 175 + dz), (x, y, 205 + dz), 36, "cast", 10)
 
 
 def leg(mesh, side, sign):

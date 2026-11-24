@@ -4,16 +4,19 @@
   "chassis": "warden",
   "variant": "warden-a",
   "approval": {
-    "date": "2026-11-22",
-    "scope": "Owner selected this SNES-style A variant and requested its use in the game.",
-    "comparison": "design/mechs/assets/warden/pixel/comparison.png"
+    "date": "2026-11-23",
+    "ownerStatement": "This is good. Proceed with these changes to all the models and apply them all the way through everywhere, including the game.",
+    "scope": "Original Warden with the selected lean torso, 25% longer nose and 12% lower torso height relative to the lean study, and tapered gun arms. All three variants share the same body and guns.",
+    "appliesToAssetSha256": "797b21e3fabdf88c3ca7e5cd5e1cff7b8e6761afd73923805fb47ea2516bf18a",
+    "bundleSha256": "9e286cc2cf6a94bb5abedd96ac2b69ba82bee975f8169781c5879bdc8fa5d76a",
+    "comparison": "design/mechs/assets/playable-variants.png"
   },
   "asset": {
     "path": "public/assets/mechs/warden/pixel.glb",
     "retainedPath": "design/mechs/assets/warden/pixel/warden.glb",
-    "sha256": "9311e941cd27b4c0115708b3d4cba7850eef2b67c4c7bd192f7d651c948537e0",
-    "bytes": 314480,
-    "triangles": 4306,
+    "sha256": "797b21e3fabdf88c3ca7e5cd5e1cff7b8e6761afd73923805fb47ea2516bf18a",
+    "bytes": 403352,
+    "triangles": 4542,
     "meshSections": 14,
     "materials": 2,
     "textureImages": 0,
@@ -31,5 +34,6 @@
     "sha256": "734620011cfa6f846cc4bf6819a6f140695815a35311581984b148be881c71de",
     "manifest": "design/mechs/assets/warden/game-ready/manifest.json"
   },
-  "reproduction": "scripts/mech-design/build-pixel-mechs.py"
+  "reproduction": "scripts/mech-design/build-pixel-mechs.py",
+  "moduleReproduction": "scripts/mech-design/build-pixel-variants.py"
 }

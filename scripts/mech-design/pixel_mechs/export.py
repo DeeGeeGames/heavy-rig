@@ -71,6 +71,16 @@ class Buffers:
         return animations
 
 
+def read_rows(buffers, index):
+    """Read the tightly packed geometry written by pixel_mechs.export."""
+    accessor = buffers.accessors[index]
+    view = buffers.views[accessor["bufferView"]]
+    formats = {(5126, "VEC3"): "<3f", (5121, "VEC4"): "<4B", (5123, "SCALAR"): "<H"}
+    start = view["byteOffset"]
+    data = memoryview(buffers.data)[start : start + view["byteLength"]]
+    return list(struct.iter_unpack(formats[accessor["componentType"], accessor["type"]], data))
+
+
 def primitive(buffers, faces, material, parent):
     positions, normals, colors, indices = [], [], [], []
     vertices = {}

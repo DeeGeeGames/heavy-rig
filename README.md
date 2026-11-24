@@ -249,7 +249,7 @@ with their original terms. Successful extraction pays once.
 ## Frames and variants
 
 The playable fleet contains three chassis with three separately purchasable variants each.
-Warden A, Kestrel A and Maul A use SNES-style models with broad armor panels and distinct chassis colors. See the [model comparisons](design/mechs/assets/README.md).
+All nine use SNES-style models. Each family shares its body and gait, with fitted weapons that identify the variant. [In-game roster](design/mechs/assets/playable-variants.png) · [Model records](design/mechs/assets/README.md)
 Longbow, Morrow and Rook are out of the playable roster. A save containing one
 of those rigs loads as a fresh company.
 Each variant has its own crew, equipment, ammunition settings, and condition;
@@ -263,7 +263,7 @@ and refitted elsewhere.
 | --- | --- | --- | --- |
 | Kestrel | Skirmisher: 2 Small B | Spark: Small B + Small E | Harrier: Small B + Small L |
 | Warden | Line: 2 Medium B + 2 Large L | Battery: 2 Medium B + 2 Medium E | Combined: 2 Medium B + Medium E + Large L |
-| Maul | Breacher: 2 Large L | Breaker: 2 Medium B | Furnace: Medium B + Medium E |
+| Maul | Breacher · 2 Large L + 2 Small B | Breaker · 2 Medium B + 2 Small E | Furnace · Medium B + Medium E + Small E + Small L |
 
 B means ballistic, E energy, and L launcher. Each hardpoint holds one weapon
 of the same family, up to its listed size. Rattler and ARC are Small. AC/38
@@ -276,11 +276,11 @@ Original A-variant specifications:
 | --- | --- | --- | --- | --- | --- |
 | Kestrel 21 · 40T | Starting frame | Skirmisher / 2 Rattlers | 125 / 65 m/s | 10 heat/s | Fast tracking and acceleration; takes 30% more damage |
 | Warden 08 · 80T | 5,000 CR | Line fighter / AC/38, Rattler, Needle /2, Lance /2 | 90 / 48 m/s | 12 heat/s | Balanced armor and handling |
-| Maul 34 · 100T | 7,500 CR | Brawler / 2 Hailstorm /2 | 82 / 40 m/s | 11 heat/s | Takes 22% less damage; slow hull and turret traverse |
+| Maul 34 · 100T | 7,500 CR | Brawler / 2 Hailstorm /4, 2 Rattlers | 82 / 40 m/s | 11 heat/s | Takes 22% less damage; slow hull and turret traverse |
 
 Frame tonnage above is **base chassis mass**, including fixed equipment.
 Recommended operating weights are Kestrel **50T**, Warden **122T**, and Maul
-**124T**. Installed weapons and remaining
+**136T**. Installed weapons and remaining
 ammunition add to base mass. At the recommendation, cruise and reverse use the listed speed.
 Underweight speed receives a modest bonus capped at 15%; overload is steeper:
 150% of recommended weight gives 50% speed, with a 35% minimum. Overweight
@@ -297,7 +297,7 @@ Original A-variant hardpoints:
 | --- | --- | --- |
 | Kestrel | Two Small ballistic side guns | Rattler machine guns |
 | Warden | Two Medium ballistic side guns, two Large shoulder launchers | Rattler / AC/38 in guns; missiles / rockets in pods |
-| Maul | Two Large forearm launchers | Missiles / rockets |
+| Maul | Two Large forearm launchers, two Small inboard guns | Missiles or rockets in the gauntlets, Rattlers in the inboard sockets |
 
 The Mech Bay shows each mount's location, family, and size limit. The Market
 shows weapon size, family, and compatible chassis before purchase. Empty and
@@ -306,8 +306,8 @@ pod occupies one hardpoint, regardless of its launch-tube count.
 
 All frames share the same driving and aiming controls. Integrity is a
 percentage; each frame's protection changes the damage received. Kestrel uses
-an open reverse-jointed silhouette, Warden a compact wedge torso, and Maul a
-broad humanoid stance. Authored hip
+a lean cockpit on reverse-jointed legs, Warden a low wedge with tapered gun arms,
+and Maul an upright stance with short armored forearms. Authored hip
 heights, knee directions, and planted-foot animation distinguish their motion.
 These presentation differences do not change collision shapes.
 
@@ -555,17 +555,17 @@ and effect pools, synthesized audio, haptics, and DOM rendering remain explicit
 presentation adapters consuming the authoritative runtime view and feedback.
 Rendering optimization remains separate work under issue #10.
 
-All company chassis and the scout, striker, siege, and Crown commander now
-use shaped low-poly armor, octagonal hardware, and articulated legs in gameplay.
-The title scene uses the same redesigned Warden. Existing frame proportions,
-gait rigs, and combat handling are preserved. Rigid surfaces use vertex colors and are combined
-per articulated assembly; weapon and cooling effects follow their posed anchors.
+The title yard, portraits, Mech Bay and combat use the same playable models.
+Each family shares a rigid gait and sockets for its variant weapons. Weapon and
+cooling effects follow their posed anchors. Hostile walkers and vehicles have
+their own models.
 
-`models-preview.html` presents all nine production models with walk, reverse,
-turn, independent aim, recoil, playback, and orbit controls. `bun run build` also
-creates `dist/models-study.html`, a standalone review file that opens offline.
-The original `warden-preview.html` and `dist/warden-study.html` remain available
-as the approved design reference. Crowd profiling and shared model resources
+`models-preview.html` shows all nine playable models and seven hostiles with
+walk, reverse, turn, independent aim, firing, playback and orbit controls.
+**Circle walk** repeats the silhouette test with two torso sweeps per lap.
+`warden-preview.html` opens the Warden A study. The standalone equivalents
+`dist/models-study.html` and `dist/warden-study.html` embed the production models
+and open directly from disk. Crowd profiling and shared model resources
 remain tracked in [performance issue #10](https://github.com/DeeGeeGames/heavy-rig/issues/10).
 
 An original locally synthesized 96-BPM score changes its layers with combat
@@ -600,10 +600,9 @@ hot reload. To inspect model animations without starting a campaign:
 bun run dev:models
 ```
 
-Open **http://localhost:3001/**. This offline-capable viewer shows the twelve
-procedural models with the game's shared pose and gait code. Use the Mech Bay
-or Training range to see the playable A variants. Select a model and motion in the viewer,
-adjust throttle or playback speed, and drag to orbit or scroll to zoom. Pause
+Open **http://localhost:3001/**. Select a playable variant or hostile, choose a
+motion and adjust throttle or playback speed. Drag to orbit or scroll to zoom.
+Use **Game angle** to see the pixel finish used in combat. Pause
 freezes the pose; **Step 1/60 s** pauses and advances exactly one simulation
 frame, independent of playback speed. **Restart motion** resets the pose and
 clock while preserving the model, camera, throttle, playback speed, and pause

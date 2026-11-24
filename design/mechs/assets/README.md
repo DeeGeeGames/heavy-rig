@@ -1,14 +1,16 @@
 # Retained mech authoring inputs
 
-Warden A, Kestrel A and Maul A use hand-faceted armor, broad blocks of vertex color and an emissive visor. Each playable GLB retains the rigid pivots, firing anchors and animation clips of its high-detail source. The [in-game lineup](playable-a-lineup.png) shows their Original finish in the Practice range and Mech Bay.
+All nine playable variants use hand-faceted armor, blocks of chassis paint and a small emissive visor. Each family shares a body, articulated legs and firing mounts. The mounted weapons distinguish its variants. Compare the [nine production models in the Mech Bay](playable-variants.png) and the [three A models in Practice and the Mech Bay](playable-a-lineup.png).
 
-| Playable model | Triangles | Approved comparison | High-detail source |
+| Playable family | A-model triangles | Selected silhouette | High-detail source |
 | --- | ---: | --- | --- |
-| [Warden A](warden/pixel/manifest.json) | 4,306 | [Warden comparison](warden/pixel/comparison.png) | [39,748 triangles](warden/game-ready/README.md) |
-| [Kestrel A](kestrel/pixel/manifest.json) | 3,123 | [Kestrel comparison](kestrel/pixel/comparison.png) | [42,796 triangles](kestrel/game-ready/README.md) |
-| [Maul A](maul/pixel/manifest.json) | 4,850 | [Four-mount implementation review](maul/pixel/four-mount-review.json) | [50,718 triangles](maul/game-ready/README.md) |
+| [Warden](warden/pixel/manifest.json) | 4,542 | Low wedge, extended nose and tapered gun arms | [39,748 triangles](warden/game-ready/README.md) |
+| [Kestrel](kestrel/pixel/manifest.json) | 3,183 | Lean cockpit and forearm housings above reverse-jointed legs | [42,796 triangles](kestrel/game-ready/README.md) |
+| [Maul](maul/pixel/manifest.json) | 4,854 | Upright four-mount body with short Ironclad forearms | [50,718 triangles](maul/game-ready/README.md) |
 
-To restore the checkpoints and independently rebuild the three playable exports, run the following from the repository root. Give the rebuild a new output directory each time. It verifies the SHA-256 of each source and rebuilt model against the selection record.
+Warden B and C change the shoulder weapons. Kestrel B and C replace the right gun with a laser or a two-exit launcher. Maul retains the original torso, legs and two recessed inboard weapons. Its outer launcher, cannon and energy cartridges each retain 25% of the original Ironclad barrel projection beyond the elbow armor. Breacher carries twin launcher gauntlets and inset guns, Breaker carries twin cannons and inset lasers, and Furnace mixes a cannon and particle gauntlet with an inset laser and launcher. The earlier four-mount approval documents the underlying Maul chassis. [Four-mount design review](maul/pixel/four-mount-review.json)
+
+To reproduce the game models from the retained high-detail inputs, run both builders from the repository root. Use fresh output directories. Each builder verifies the resulting SHA-256 hashes against the current selection. The variant tests exercise the shared rig, cartridge sockets and alignment of rendered exits with simulation firing origins.
 
 ```sh
 git lfs install --local
@@ -16,35 +18,8 @@ git lfs pull
 bun install --frozen-lockfile
 python3 scripts/mech-design/verify-assets.py
 python3 scripts/mech-design/build-pixel-mechs.py --out design/mechs/generated/approved-pixel-rebuild
+python3 scripts/mech-design/build-pixel-variants.py --out design/mechs/generated/approved-variant-rebuild
 ```
-
-The B/C variants fit replacement weapon cartridges to the A mounts at startup.
-Warden changes its shoulder cartridges, Kestrel changes its right arm cartridge,
-and Maul changes its forearm and recessed inboard cartridges. The game uses the same body geometry,
-normalization, rig and gait for every variant of a chassis. Each cartridge
-includes the muzzle and, for Kestrel C, two physical launcher exits. Cartridge
-geometry represents the stock hardware for its mount family across compatible
-refits.
-
-The Maul four-mount rework follows the approved
-[Breacher concept](../chassis/maul/concept/four-mount-baseline/approval.json):
-two forearm cartridges and two recessed cartridges between the torso and shoulder
-armor, with continuous armored foot caps. Breaker carries twin cannons and inset
-lasers; Furnace carries a cannon, particle accelerator, inset laser and compact
-two-tube rocket launcher. All three use the same body, rig and locomotion.
-The [export review](maul/pixel/four-mount-review.json) records the new hashes and
-checks. The older Maul comparison depicts the previous two-mount model; its
-appearance approval applies only to the old export. The owner approved the new
-A/B/C models after local network preview; exact asset hashes and retained render
-images are recorded in the export review. The owner waived save compatibility for this
-rework; campaign version eight starts a fresh save instead of migrating old fits.
-
-Rebuild the three module bundles with
-`python3 scripts/mech-design/build-pixel-variants.py --out design/mechs/generated/variant-rebuild`.
-Compare each output with the matching `public/assets/mechs/<chassis>/variants.glb`.
-The bundles record the SHA-256 of the A asset used to author them. The
-`authored-variants` test checks that pairing, shared body geometry and alignment
-of rendered exits with simulation firing origins.
 
 `manifest.json` pins all retained assets by path, size and SHA-256. GLB and Blender
 files use Git LFS. The high-detail Warden authoring build reads the following inputs.

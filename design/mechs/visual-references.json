@@ -1,5 +1,5 @@
 {
-  "id": "heavy-rig-concept-family-v3",
+  "id": "heavy-rig-concept-family-v4",
   "scope": "The playable A lineup establishes finish and detail scale. Individually approved concepts supply mechanical construction references.",
   "references": [
     {
@@ -30,6 +30,6 @@
   ],
   "finishReference": {
     "image": "design/mechs/assets/playable-a-lineup.png",
-    "imageSha256": "d01986dddebe41090e1355ee914e4e2dce9a15ccb3cfce21e3f2cd1588cda203"
+    "imageSha256": "d1594b6a860989d5757897caa311ef81837bc5a0b9162c589818985d0a42c1b6"
   }
 }

@@ -4,10 +4,12 @@ import { PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
 import { FRAME_RIGS, STANDARD_LEG_RIG } from './frame-rig';
 import { advanceGait, createGait, mechScale } from './gait';
 import { createMech } from './mech-3d';
+import { createStudyPose, runModelStudy } from './model-study-assets';
+import { getMechAssetBinding } from './mech-asset-registry';
+import { advanceStudyTravel, createStudyMuzzleFlash, isStudyMotion, type StudyMotion, type StudyPhase } from './model-study-motion';
+import { createSolidInk } from './solid-ink';
 import type { EnemyKind } from './simulation';
 
-type Motion = 'showcase' | 'walk' | 'reverse' | 'turn' | 'aim' | 'fire' | 'rest';
-type Phase = Exclude<Motion, 'showcase'>;
 type View = 'three-quarter' | 'side' | 'game';
 interface ModelChoice { id: string; frame: FrameId; kind?: EnemyKind; commander?: boolean }
 const choices: readonly ModelChoice[] = [
@@ -21,13 +23,13 @@ const getChoice = function (id: string) {
 	if (!choice) throw new Error(`Unknown model study choice: ${id}`);
 	return choice;
 };
-const isMotion = function (value: string | undefined): value is Motion { return value === 'showcase' || value === 'walk' || value === 'reverse' || value === 'turn' || value === 'aim' || value === 'fire' || value === 'rest'; };
-const descriptions: Readonly<Record<Phase, string>> = {
+const descriptions: Readonly<Record<StudyPhase, string>> = {
+	lap: 'A circular walk with two independent torso sweeps per lap.',
 	walk: 'Planted feet, loaded suspension, and working pistons.',
 	reverse: 'Backward travel with the same foot-contact solver.',
 	turn: 'The chassis turns while the feet step into the new heading.',
 	aim: 'Independent turret tracking while the chassis walks.',
-	fire: 'Recoil actuates the frame’s gun slides or launchers.',
+	fire: 'The fitted weapons flash in sequence at their muzzle or launcher exit.',
 	rest: 'Stationary inspection. Drag to inspect the silhouette and joints.',
 };
 const requireElement = function (id: string) {
@@ -45,19 +47,29 @@ const throttleInput = requireElement('throttle'); const playbackInput = requireE
 if (!(throttleInput instanceof HTMLInputElement) || !(playbackInput instanceof HTMLSelectElement) || !(viewInput instanceof HTMLSelectElement) || !(modelInput instanceof HTMLSelectElement)) throw new Error('Invalid model study controls');
 
 const startStudy = function () {
+	const available = function (choice: ModelChoice) { return Boolean(choice.kind || getMechAssetBinding(choice.frame)); };
 	modelInput.replaceChildren(...choices.map(function (choice) {
-		return new Option(choice.kind ? choice.id.toUpperCase() : getFrame(choice.frame).name, choice.id);
+		const name = choice.kind ? choice.id.toUpperCase() : getFrame(choice.frame).name;
+		const option = new Option(name, choice.id);
+		if (!available(choice)) { option.disabled = true; option.text = `${name} (model unavailable)`; }
+		return option;
 	}));
-	modelInput.value = 'warden';
+	const warden = getChoice('warden');
+	let choice = available(warden) ? warden : choices.find(available) ?? getChoice('scout');
+	modelInput.value = choice.id;
+	modelInput.disabled = false;
 	const renderer = new WebGLRenderer({ canvas, antialias: true });
+	const ink = createSolidInk(renderer);
+	renderer.info.autoReset = false;
 	renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap;
 	renderer.toneMapping = ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
 	const scene = new Scene(); scene.background = new Color('#102027'); scene.fog = new Fog('#102027', 500, 1500);
+	const flash = createStudyMuzzleFlash(scene);
 	const camera = new PerspectiveCamera(33, 1, 1, 2200);
 	const controls = new OrbitControls(camera, canvas); controls.enablePan = false;
 	controls.minDistance = 120; controls.maxDistance = 1000; controls.maxPolarAngle = Math.PI * 0.48; controls.autoRotateSpeed = 0.9;
-	let choice = getChoice('warden');
 	let model = createMech(choice.kind, choice.commander ?? false, choice.frame); scene.add(model.root);
+	let pose = createStudyPose(choice.kind ? undefined : choice.frame);
 	scene.add(new HemisphereLight('#d6e6e0', '#243337', 2.2));
 	const key = new DirectionalLight('#ffe2b8', 3.4); key.position.set(140, 300, 100); key.castShadow = true;
 	key.shadow.mapSize.set(1024, 1024); key.shadow.camera.left = -160; key.shadow.camera.right = 160;
@@ -80,7 +92,7 @@ const startStudy = function () {
 		deck.add(marking);
 	}
 	const boot = requireElement('error'); const abort = new AbortController();
-	let motion: Motion = 'showcase'; let time = 0; let phaseTime = 0; let phase: Phase = 'walk';
+	let motion: StudyMotion = 'showcase'; let time = 0; let phaseTime = 0; let phase: StudyPhase = 'walk';
 	let paused = false; let throttle = 0.65; let playback = 1; let view: View = 'three-quarter';
 	let body = { x: 0, y: 0, angle: 0 }; let speed = 0; let aim = 0;
 	const sizeForChoice = function () { return choice.kind ? mechScale(choice.kind) : getFrame(choice.frame).size; };
@@ -107,9 +119,12 @@ const startStudy = function () {
 		body = { x: 0, y: 0, angle: 0 }; gait = createGait(body, sizeForChoice(), rigForChoice());
 		speed = 0; aim = 0; time = 0; phaseTime = 0; accumulator = 0; previous = 0; ticks = 0;
 		phase = motion === 'showcase' ? 'walk' : motion;
-		grid.position.set(0, -0.25, 0); deck.position.set(0, 0, 0); model.pose(gait, aim);
+		grid.position.set(0, -0.25, 0); deck.position.set(0, 0, 0);
+		pose = createStudyPose(choice.kind ? undefined : choice.frame);
+		flash.update(model, 0, 0);
+		pose(model, gait, aim, { recoil: 0, hit: 0, heat: 0, time });
 	};
-	const selectMotion = function (selected: Motion) {
+	const selectMotion = function (selected: StudyMotion) {
 		motion = selected; resetMotion();
 		for (const button of modeButtons) button.setAttribute('aria-pressed', String(button.dataset['motion'] === motion));
 	};
@@ -124,26 +139,22 @@ const startStudy = function () {
 	};
 	const step = function () {
 		const dt = 1 / 60; time += dt; ticks++;
-		const nextPhase: Phase = motion === 'showcase' ? time % 26 < 6 ? 'walk' : time % 26 < 11 ? 'reverse' : time % 26 < 16 ? 'turn' : time % 26 < 22 ? 'aim' : 'fire' : motion;
+		const nextPhase: StudyPhase = motion === 'showcase' ? time % 26 < 6 ? 'walk' : time % 26 < 11 ? 'reverse' : time % 26 < 16 ? 'turn' : time % 26 < 22 ? 'aim' : 'fire' : motion;
 		if (nextPhase !== phase) phaseTime = 0;
 		phase = nextPhase; phaseTime += dt;
 		const definition = getFrame(choice.frame); const size = sizeForChoice(); const rig = rigForChoice();
 		const forwardSpeed = choice.kind ? choice.kind === 'scout' ? 100 : choice.kind === 'siege' ? 62 : 90 : definition.speed;
 		const reverseSpeed = choice.kind ? forwardSpeed * 0.53 : definition.reverseSpeed;
-		const targetSpeed = (phase === 'walk' ? forwardSpeed : phase === 'reverse' ? -reverseSpeed : phase === 'aim' ? forwardSpeed * 0.58 : 0) * throttle;
-		speed += (targetSpeed - speed) * (1 - Math.exp(-dt * 3.5));
-		const heading = body.angle + (phase === 'turn' ? dt * 0.65 : 0);
-		body = { x: body.x + Math.cos(heading) * speed * dt, y: body.y + Math.sin(heading) * speed * dt, angle: heading };
+		({ body, speed, aim } = advanceStudyTravel(body, speed, aim, phase, phaseTime, throttle, forwardSpeed, reverseSpeed, dt));
 		gait = advanceGait(gait, body, dt, size, choice.kind ? 1 : definition.stride, rig);
-		const targetAim = body.angle + (phase === 'aim' ? Math.sin(phaseTime * 0.9) * 1.3 : phase === 'turn' ? -Math.sin(phaseTime * 0.5) * 0.55 : 0);
-		aim += (targetAim - aim) * (1 - Math.exp(-dt * 5));
 		const shotAge = phaseTime % 0.85; const recoil = phase === 'fire' ? Math.max(0, 1 - shotAge / 0.19) : 0;
-		model.pose(gait, aim, { recoil, hit: 0, heat: phase === 'fire' ? 45 : 0, time });
+		pose(model, gait, aim, { recoil, hit: 0, heat: phase === 'fire' ? 45 : 0, time });
+		flash.update(model, phaseTime, recoil);
 		// The camera follows the chassis; move the ground equally so contacts
 		// remain stationary relative to the same markings during stance.
 		grid.position.set(-body.x % 50, -0.25, -body.y % 50); deck.position.set(-body.x, 0, -body.y);
 	};
-	for (const button of modeButtons) button.addEventListener('click', function () { const value = button.dataset['motion']; if (isMotion(value)) selectMotion(value); }, { signal: abort.signal });
+	for (const button of modeButtons) button.addEventListener('click', function () { const value = button.dataset['motion']; if (isStudyMotion(value)) selectMotion(value); }, { signal: abort.signal });
 	modelInput.addEventListener('change', function () { selectModel(getChoice(modelInput.value)); }, { signal: abort.signal });
 	pauseButton.addEventListener('click', function () { setPaused(!paused); }, { signal: abort.signal });
 	stepButton.addEventListener('click', function () { if (contextLost) return; setPaused(true); step(); }, { signal: abort.signal });
@@ -163,7 +174,11 @@ const startStudy = function () {
 		const elapsed = previous === 0 ? 0 : Math.min((now - previous) / 1000, 0.1); previous = now;
 		if (!document.hidden && !contextLost) {
 			if (!paused) { accumulator += elapsed * playback; while (accumulator >= 1 / 60) { step(); accumulator -= 1 / 60; } }
-			controls.update(paused ? 0 : elapsed); renderer.render(scene, camera); rendered++;
+			controls.update(paused ? 0 : elapsed);
+			renderer.info.reset();
+			if (view === 'game') ink.render(scene, camera, canvas.clientWidth, canvas.clientHeight, { anchor: controls.target });
+			else renderer.render(scene, camera);
+			rendered++;
 			label.textContent = phase;
 			timeOutput.textContent = `${time.toFixed(3)} s · frame ${ticks}`;
 			description.textContent = choice.kind === 'helicopter' ? 'Circling gunship with main and tail rotors, landing skids, and a tracking chin gun.' : choice.kind === 'vtol' ? 'Twin tilt-fan aircraft with independently aimed wing missile pods.' : choice.kind === 'tank' ? 'Tracked armor with a rotating cannon turret and vulnerable flanks.' : descriptions[phase];
@@ -178,14 +193,13 @@ const startStudy = function () {
 		if (disposed) return; disposed = true; cancelAnimationFrame(frame); abort.abort(); observer.disconnect(); controls.dispose();
 		model.dispose(); for (const geometry of geometries) geometry.dispose(); for (const value of materials) value.dispose();
 		grid.geometry.dispose(); if (Array.isArray(grid.material)) for (const value of grid.material) value.dispose(); else grid.material.dispose();
-		key.shadow.dispose(); scene.clear(); renderer.dispose(); renderer.forceContextLoss();
+		key.shadow.dispose(); flash.dispose(); scene.clear(); ink.dispose(); renderer.dispose(); renderer.forceContextLoss();
 	};
-	window.addEventListener('pagehide', function (event) { if (!event.persisted) dispose(); else { previous = 0; accumulator = 0; } }, { signal: abort.signal });
-	model.pose(gait, aim); resize(); frame = requestAnimationFrame(tick);
+	pose(model, gait, aim, { recoil: 0, hit: 0, heat: 0, time }); resize(); frame = requestAnimationFrame(tick);
 	return dispose;
 };
 
-try { startStudy(); } catch (error) {
+runModelStudy(['warden', 'kestrel', 'maul'], true, startStudy).catch(function (error: unknown) {
 	const message = requireElement('error'); message.hidden = false;
 	message.textContent = error instanceof Error ? error.message : 'Could not initialize the model motion study.';
-}
+});
