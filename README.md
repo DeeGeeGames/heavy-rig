@@ -53,9 +53,9 @@ Company funds and the calendar are visible across the ship:
 | Screen | Purpose |
 | --- | --- |
 | Starmap | Inspect systems and plot travel. |
-| Contracts | Review faction standings, inspect mission briefings, and accept work. |
-| Deploy | Assign the commander and up to three squadmates to ready rigs, then launch. |
-| Pilots | Inspect the roster and hire or dismiss squadmates. |
+| Contracts | Inspect briefings, stage local contracts, and commit the day from Operations. |
+| Deploy | Assign up to four pilots and ready rigs to a staged contract. |
+| Pilots | Hire or dismiss squadmates and review their skills and successful sorties. |
 | Mech Bay | Inspect and refit owned rigs and see their pilot assignments. |
 | Market | Spend contract earnings on weapon copies or additional frames with complete reputation-scaled weapon packages included. |
 | Engineering | Schedule repairs, inspect or cancel work orders, and advance calendar days. |
@@ -66,18 +66,30 @@ shows the focused action, Back, button guide (**Y / triangle / H**), and Discard
 Draft (**X / square / X**) when a refit is staged. D-pad, left stick, or arrow
 keys move focus; longer content uses visible Previous/Next page buttons.
 Pages remember their focus and refit drafts survive department changes.
-Purchases, work orders, calendar advances, travel, contract acceptance, and
-deployment show a confirmation with their cost or consequences first.
+Purchases, work orders, calendar advances, travel, and committing deployments
+show a confirmation with their cost or consequences first.
 
-Accept a contract to open Deploy. The commander is the only player-controlled
-pilot. Hire squadmates for 500 CR each in Pilots, then assign them available rigs
-in one lineup. Bench an unused pilot to free their rig. The lineup persists
-between contracts. Squadmates fight alongside the commander, can complete
+Stage a contract to open Deploy. Assign up to four pilots and rigs per contract.
+Each pilot and rig can deploy once per day. Hire squadmates for 500 CR each in
+Pilots and bench any assigned pilot to free their rig. The first lineup carries
+over to the next day. The commander can play one mission and is required for
+story contracts. All other missions use objective and extraction checks driven
+by pilot skills, equipment, hull condition, and mission tier. The rolls are tied
+to the posting. Successful sorties build a hired pilot's experience and unlock
+dispatch bonuses at three and six wins.
+
+Stage multiple local contracts, then commit them together from **Contracts →
+Operations**. When the commander deploys, play that mission first. The campaign
+advances one day and opens a shared debrief, including after a live abort or
+interrupted deployment. Crew-only days resolve immediately at commitment. The
+debrief reports every result and links damaged rigs to Engineering.
+
+In live combat, squadmates fight alongside the commander, help complete
 objectives, and regroup at extraction. Any operating rig can hold the pickup
 zone for three seconds. The dropship leaves once the hold is complete and the
 commander is inside the zone. Stragglers and disabled rigs are recovered with
 their recorded damage. A disabled commander ends the sortie, and all pilots
-survive. The debrief lists each deployed rig and links damaged rigs to repairs.
+survive.
 
 You can buy multiple copies of a variant and manage each rig separately. Every
 market frame arrives with a complete weapon loadout and standard ammunition.
@@ -115,9 +127,9 @@ usable weapon with ammunition, or an energy weapon. A destroyed, unarmed, or com
 loadout edits to be applied, queued, or discarded before launch.
 
 Engineering can advance one day or wait until the next scheduled completion.
-Travel and mission settlement also advance work by one day. Waiting does not
-charge credits or refresh contract postings. Calendar time does not advance
-while the browser is idle. An accepted but undeployed contract can remain open
+Travel and settling the day's operations each advance work by one day. Waiting
+does not charge credits or reroll the board. Calendar time does not advance
+while the browser is idle. A staged contract can remain open
 while the crew finishes work; company changes and calendar advancement are
 locked during a deployment.
 
@@ -154,12 +166,12 @@ industrial, or relay interests. Quiet interiors and unclaimed systems away from
 a contested front have no military work. Accepted contracts keep their factions,
 objective, and payment even as time moves the border. Unaccepted listings follow
 the current front. A jump takes one day, costs no fuel, and refreshes the board;
-remote listings preview postings after arrival. An accepted contract must be
-completed or aborted before traveling.
+remote listings preview postings after arrival. Resolve or remove staged
+contracts before traveling.
 
 The Frontier Freeholds, Ferric Combine, and Signal Accord post work against
 one another. The briefing shows both sides, payment, and reputation changes
-before acceptance. Acceptance immediately costs 6–16 opposition standing.
+before deployment. Committing the day charges 6–16 opposition standing per contract.
 Successful extraction earns 8–18 employer favor and the posted payment. Failure
 or abort earns neither and retains the original opposition penalty. Faction
 standing is bounded to −100…100, modifies offered payment, and gates employer
@@ -242,9 +254,9 @@ manage reactor heat; neither repairs frame damage. Difficulty settings affect
 the next deployment's hostile armor and damage.
 
 Damage and the commander's spent coolant are checkpointed during combat. A live
-abort or reload recovers the squad with its recorded damage and advances one
-recovery day. Accepted contracts that are awaiting deployment survive reload
-with their original terms. Successful extraction pays once.
+abort or reload recovers the squad with its recorded damage and settles any crew
+sorties that were committed with it. Drafted squads survive reload. Successful
+extraction pays once.
 
 ## Frames and variants
 
@@ -669,9 +681,9 @@ The Pages workflow deploys `master` after the complete check. Pull requests must
 satisfy live branch protection; workflow definitions alone do not establish
 merge readiness. The custom domain is configured in `CNAME`.
 
-Company progression uses **`heavy-rig:campaign:v7`**. Version 7 starts a fresh
-company with a pilot roster, deployable lineup, and per-rig damage checkpoints.
-Earlier campaign namespaces (v1–v6) are purged when company data is read or saved.
+Company progression uses **`heavy-rig:campaign:v8`**. Existing v8 saves retain
+their company and start new pilot experience counters at zero. Earlier campaign
+namespaces (v1–v7) are purged when company data is read or saved.
 Preferences remain under `heavy-rig:profile:v1`; historical classic records in
 that profile are retained but the classic operation is no longer a playable mode.
 

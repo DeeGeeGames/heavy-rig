@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
 import { CONTRACT_COPY, getPlanet, MISSION_KINDS } from './campaign';
-import { MISSION_NAMES } from './campaign-ui';
+import { MISSION_NAMES } from './campaign-types';
 import { PLAYABLE_FRAMES } from './frames';
 import { getPilot, RECRUIT_IDS, SQUAD_SIZE } from './pilots';
 import { MISSION_TIERS } from './reputation';
