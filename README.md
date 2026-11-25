@@ -250,7 +250,9 @@ all-rigs cheat retain their existing equipment; the starter Kestrel stays fixed.
 Completing the objective opens extraction. Reach the marked landing zone and
 remain within 150 meters for three uninterrupted seconds. Combat and incoming
 ordnance continue; frame destruction or loss of a defended relay still fails the
-contract. Every weapon family can damage facilities.
+contract. Every weapon family can damage facilities. On Pilot difficulty a
+demolition facility absorbs 2,000–4,100 damage across the six contract tiers.
+Each of the three raid installations has 60% of its tier's demolition durability.
 
 Hostile forces combine Scout, Striker, and Siege mechs with helicopters, missile
 VTOLs, and tanks. Helicopters circle at gun range; VTOLs strafe at standoff range
@@ -361,8 +363,11 @@ shows weapon size, family, and compatible chassis before purchase. Empty and
 nonexistent slots cannot fire. Each slot retains its matching controls. One
 pod occupies one hardpoint, regardless of its launch-tube count.
 
-All frames share the same driving and aiming controls. Integrity is a
-percentage; each frame's protection changes the damage received. Kestrel uses
+All frames share the same driving and aiming controls. Against mounted Rig
+weapons, each tonne of base chassis carries 25 armor points. The 40T Kestrel
+has 1,000 and the 80T Warden has 2,000. Chassis resistance and directional
+plates modify each hit. The cockpit and Engineering show remaining integrity
+as a percentage. Kestrel uses
 a lean cockpit on reverse-jointed legs, Warden a low wedge with tapered gun arms,
 and Maul an upright stance with short armored forearms. Authored hip
 heights, knee directions, and planted-foot animation distinguish their motion.
