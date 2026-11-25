@@ -128,6 +128,10 @@ export const renderAimGlyph = function (device: PromptDevice): TemplateResult {
 	return html`<span class="input-glyphs" data-prompt-device=${device}>${renderSpec(device === 'keyboard' ? mouse : rightStick)}</span>`;
 };
 
+export const renderScrollGlyph = function (): TemplateResult {
+	return html`<span class="input-glyphs">${renderSpec(rightStick)}</span>`;
+};
+
 export const renderZoomGlyph = function (): TemplateResult {
 	return html`<span class="input-glyphs" data-prompt-device="keyboard">${renderSpec(wheel)}</span>`;
 };

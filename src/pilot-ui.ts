@@ -125,6 +125,6 @@ export const deploymentPanes = function (campaign: Campaign, actions: CompanyAct
 		actions: html`<button class="secondary" data-close-assignment @click=${close}>← LINEUP</button>
 			${selectPilot && selected.pilotId ? html`<button class="text-button" data-bench-pilot @click=${function () { close(); actions.assignPilot(slot, null); }}>BENCH PILOT</button>` : ''}
 			${!selectPilot && (planned || slot > 0) && selected.frameId ? html`<button class="text-button" data-unassign-rig @click=${function () { close(); actions.assignRig(slot, null); }}>UNASSIGN RIG</button>` : ''}
-			${selectPilot && !choices.length ? html`<button class="secondary" @click=${function () { actions.navigate('pilots'); }}>PILOTS →</button>` : ''}`,
+			${selectPilot && !choices.length ? html`<button class="secondary" @click=${function () { close(); actions.navigate('pilots'); }}>PILOTS →</button>` : ''}`,
 	}];
 };

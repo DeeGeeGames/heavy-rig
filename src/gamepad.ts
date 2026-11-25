@@ -53,6 +53,17 @@ const pressedMenuButtons = function (gamepadButtons: readonly GamepadButton[], p
 	return buttons;
 };
 
+const menuDirection = function (x: number, y: number, previous: PadInput['direction']): PadInput['direction'] {
+	const horizontal = Math.abs(x);
+	const vertical = Math.abs(y);
+	if (Math.max(horizontal, vertical) <= .55) return undefined;
+	// Keep the chosen axis steady near a diagonal while the stick is held.
+	const preferHorizontal = Math.abs(horizontal - vertical) < .12 && previous
+		? previous === 'left' || previous === 'right' : horizontal > vertical;
+	if (preferHorizontal && horizontal > .55 || vertical <= .55) return x < 0 ? 'left' : 'right';
+	return y < 0 ? 'up' : 'down';
+};
+
 export const createGamepadInput = function () {
 	let previous = new Map<string, ReadonlySet<number>>();
 	let previousMenu = new Map<string, ReadonlySet<number>>();
@@ -115,7 +126,9 @@ export const createGamepadInput = function () {
 		const neutral = movementNeutral && !Object.values(bindings).some(pressed);
 		if (sample && !claimed && neutral) gameplayReady = true;
 		if (sample && !claimed && movementNeutral && ![0, 1, 2, 3, 4, 5, 6, 7, 9].some(menuPressed)) menuReady = true;
-		const direction: PadInput['direction'] = up || y < -0.55 ? 'up' : left || x < -0.55 ? 'left' : down || y > 0.55 ? 'down' : right || x > 0.55 ? 'right' : undefined;
+		const direction = up || down || left || right
+			? menuDirection(Number(right) - Number(left), Number(down) - Number(up), navigation)
+			: menuDirection(x, y, navigation);
 		let navigate = 0;
 		if (menuReady && !claimed && direction && (navigation !== direction || now >= repeatAt)) { navigate = direction === 'up' || direction === 'left' ? -1 : 1; repeatAt = now + (navigation === direction ? 160 : 400); }
 		navigation = direction;

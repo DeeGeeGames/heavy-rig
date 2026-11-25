@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { directionalControl } from '../src/menu-focus';
 import { createGamepadInput, type GamepadSnapshot } from '../src/gamepad';
 
 const pad = function (buttons: readonly number[] = [], axes: readonly number[] = [0, 0, 0, 0], index = 0, id = 'Xbox controller'): GamepadSnapshot {
@@ -110,4 +111,30 @@ test('analog trigger noise cannot repeat page changes without a deliberate relea
 	for (const [step, value] of [.4, .36, .3, .5, .6].entries()) expect(input.read([trigger(value)], 20 + step * 10).page).toBe(0);
 	input.read([trigger(.1)], 80);
 	expect(input.read([trigger(.6)], 90).page).toBe(1);
+});
+
+test('a diagonal stick follows its dominant axis without oscillating near the diagonal', function () {
+	const input = claimed();
+	expect(input.read([pad([], [.99, -.7])], 10).direction).toBe('right');
+	expect(input.read([pad([], [.82, -.84])], 20).direction).toBeUndefined();
+	expect(input.read([pad([], [.66, -.99])], 30).direction).toBe('up');
+	expect(input.read([pad([13], [.66, -.99])], 40).direction).toBe('down');
+	expect(input.read([pad([12, 13])], 50).direction).toBeUndefined();
+});
+
+test('unequal menu tiles follow their visible row and column, with no wrap at an edge', function () {
+	const tile = function (left: number, top: number, right: number, bottom: number) {
+		return { getBoundingClientRect: function () { return { left, top, right, bottom }; } };
+	};
+	const mission = tile(0, 0, 140, 40);
+	const location = tile(150, 0, 275, 40);
+	const rig = tile(0, 55, 190, 95);
+	const pilot = tile(200, 55, 275, 95);
+	const deploy = tile(0, 130, 275, 170);
+	const items = [deploy, pilot, mission, rig, location];
+	expect(directionalControl(items, mission, 'right')).toBe(location);
+	expect(directionalControl(items, location, 'down')).toBe(pilot);
+	expect(directionalControl(items, rig, 'up')).toBe(mission);
+	expect(directionalControl(items, location, 'right')).toBeUndefined();
+	expect(directionalControl(items, deploy, 'down')).toBeUndefined();
 });

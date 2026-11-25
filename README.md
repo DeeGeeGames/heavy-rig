@@ -66,7 +66,8 @@ Company funds and the calendar are visible across the ship:
 Keyboard equivalents are **Q/E** and **Z/C**. The button key along the bottom
 shows the focused action, Back, button guide (**Y / triangle / H**), and Discard
 Draft (**X / square / X**) when a refit is staged. D-pad, left stick, or arrow
-keys move focus; longer content uses visible Previous/Next page buttons.
+keys move focus toward the control on that side of the screen. The right stick
+scrolls longer panels. Previous/Next buttons turn measured content pages.
 Pages remember their focus and refit drafts survive department changes.
 Purchases, work orders, calendar advances, travel, and committing deployments
 show a confirmation with their cost or consequences first.
@@ -475,7 +476,7 @@ to those indices.
 | Fire mount 4 | Back/thumb mouse / hold 4 or F | LB / L1 | Hold mount 4 tile |
 | Coolant purge | V | B / circle | Vent coolant |
 | Pause / resume | Escape | Menu | Pause |
-| Menus | Tab / Shift+Tab / Enter | D-pad or stick, A/cross confirm, B/circle back | Tap |
+| Menus | Arrows or Tab / Shift+Tab to move, Enter to select, Escape to go back | D-pad or left stick to move, south face button to select, east face button to go back | Tap a control or choice |
 
 Hold any combination of firing controls to combine weapons. Empty mounts do
 nothing. The mouse thumb binding uses browser button 3; keys provide all four
@@ -484,17 +485,19 @@ back-button actions are suppressed over the battlefield.
 
 Wheel zoom ranges from 0.5× to 2.5× and keeps the frame centered. It survives
 pause and resizing; a new mission or training session restores the default.
-Company screens and dialogs fill the available window without scrolling.
-Tabs select content panes; Previous/Next buttons page longer content.
+Company screens and dialogs fit the available window. Tabs select content panes.
+Longer panels use Previous/Next buttons or scroll within the panel.
 Ctrl/Command + wheel retains browser zoom.
 
 The active device changes prompts, using Xbox, PlayStation, Nintendo, or Steam
 Deck glyphs when identified and physical-position labels for unknown pads.
 Nintendo keeps standard physical positions: B confirms and A goes back.
 Controller use enables the larger interface; Settings can enable it for keyboard
-and mouse. D-pad/stick navigation reaches content and page buttons; bumpers
-and triggers change departments and their pages. Left/right adjusts a focused
-volume slider. Touch controls
+and mouse. Bumpers and triggers switch ship departments and their views.
+In Settings and the handbook, bumpers switch tabs and triggers turn content
+pages. Left/right adjusts a focused volume slider. Select a loadout, mission, or
+controller binding to open its choices. Browse with the D-pad or left stick,
+confirm to apply, or go back to keep the current value. Touch controls
 activate on touch-first devices or through Settings. Optional recoil/damage
 vibration depends on browser and controller support.
 

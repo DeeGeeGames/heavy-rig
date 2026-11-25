@@ -1,3 +1,5 @@
+import { menuControls } from './menu-focus';
+
 interface DialogState {
 	root: HTMLElement;
 	body: HTMLElement;
@@ -11,6 +13,9 @@ interface DialogState {
 
 const topicName = function (topic: HTMLElement) { return topic.dataset['dialogTopic'] ?? ''; };
 const isVisible = function (element: HTMLElement) { return !element.hidden && element.getBoundingClientRect().height > 0; };
+const childrenOf = function (parent: HTMLElement) {
+	return [...parent.children].filter(function (child): child is HTMLElement { return child instanceof HTMLElement; });
+};
 
 // A long narrative keeps its original node (and ID) for the game's updates.
 // Only its measured presentation is split, so changing report text stays safe.
@@ -59,12 +64,16 @@ const paginate = function (state: DialogState, keepFocus = false, focusTarget?: 
 	const topic = state.topics.find(function (candidate) { return topicName(candidate) === state.selected; });
 	if (!topic) return;
 	for (const fragment of topic.querySelectorAll('.dialog-fragment')) fragment.remove();
-	const sources = [...topic.children].filter(function (item): item is HTMLElement { return item instanceof HTMLElement; });
+	// Mapping rows share a wrapper for binding updates, but each row is a full
+	// page item. A long list must never be clipped inside a second viewport.
+	const sources = childrenOf(topic).flatMap(function (item) {
+		return item.hasAttribute('data-dialog-items') ? childrenOf(item) : [item];
+	});
 	for (const source of sources) {
 		source.classList.remove('dialog-item-offpage', 'dialog-source-split');
 		source.inert = false;
 	}
-	const height = state.body.clientHeight;
+	const height = topic.clientHeight;
 	if (height <= 0) return;
 	const items = sources.filter(isVisible).flatMap(function (source) {
 		return source.hasAttribute('data-dialog-text') && source.getBoundingClientRect().height > height
@@ -82,7 +91,9 @@ const paginate = function (state: DialogState, keepFocus = false, focusTarget?: 
 		page.push(item);
 	}
 	if (page.length > 0) pages.push(page);
-	const focused = focusTarget ?? document.activeElement;
+	// An open choice list holds DOM focus outside this dialog. Keep its field
+	// on the measured page if the viewport or input mode changes underneath.
+	const focused = focusTarget ?? topic.querySelector('[aria-expanded="true"]') ?? document.activeElement;
 	const focusedPage = keepFocus && focused instanceof HTMLElement ? pages.findIndex(function (candidate) { return candidate.some(function (item) { return item.contains(focused); }); }) : -1;
 	state.page = Math.max(0, Math.min(focusedPage >= 0 ? focusedPage : state.page, pages.length - 1));
 	for (const [index, candidate] of pages.entries()) {
@@ -92,9 +103,47 @@ const paginate = function (state: DialogState, keepFocus = false, focusTarget?: 
 		}
 	}
 	state.counter.textContent = `${state.page + 1} / ${Math.max(1, pages.length)}`;
+	const pagerFocus = [state.previous, state.next].find(function (button) { return button === document.activeElement; });
 	state.previous.disabled = state.page === 0;
 	state.next.disabled = state.page >= pages.length - 1;
 	state.previous.parentElement?.classList.toggle('dialog-single-page', pages.length <= 1);
+	if (keepFocus && pagerFocus?.disabled) {
+		const target = [state.previous, state.next].find(function (button) { return !button.disabled; })
+			?? menuControls(topic)[0] ?? state.root.querySelector<HTMLButtonElement>('[data-dialog-tab][aria-pressed="true"], .dialog-actions button:enabled');
+		target?.focus({ preventScroll: true });
+	}
+};
+
+export const stepDialogNavigation = function (root: HTMLElement, section: 'topic' | 'page', delta: number): boolean {
+	if (delta === 0) return false;
+	if (section === 'page') {
+		const button = root.querySelector<HTMLButtonElement>(delta < 0 ? '[data-dialog-previous]' : '[data-dialog-next]');
+		if (!button || button.disabled) return false;
+		button.click();
+		const body = root.querySelector<HTMLElement>('.dialog-body');
+		const controls = body ? menuControls(body) : [];
+		const nextField = delta < 0 ? controls.at(-1) : controls[0];
+		nextField?.focus({ preventScroll: true });
+		return true;
+	}
+	const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-dialog-tab]')];
+	const index = tabs.findIndex(function (tab) { return tab.getAttribute('aria-pressed') === 'true'; });
+	if (index < 0 || tabs.length < 2) return false;
+	const target = tabs[(index + Math.sign(delta) + tabs.length) % tabs.length];
+	if (!target) return false;
+	target.focus({ preventScroll: true });
+	target.click();
+	return true;
+};
+
+const pageButton = function (next: boolean) {
+	const button = document.createElement('button');
+	button.type = 'button';
+	button.toggleAttribute(next ? 'data-dialog-next' : 'data-dialog-previous', true);
+	const glyph = document.createElement('span');
+	glyph.dataset['menuGlyph'] = next ? 'nextPage' : 'previousPage';
+	button.append(glyph, next ? 'NEXT' : 'PREVIOUS');
+	return button;
 };
 
 export const mountDialogLayout = function (container: HTMLElement, signal: AbortSignal): (focusTarget?: HTMLElement) => void {
@@ -124,14 +173,20 @@ export const mountDialogLayout = function (container: HTMLElement, signal: Abort
 		const topics = [...body.querySelectorAll<HTMLElement>('[data-dialog-topic]')];
 		const pager = document.createElement('nav'); pager.className = 'dialog-pager'; pager.setAttribute('aria-label', 'Content pages');
 		pagers.push(pager);
-		const previous = document.createElement('button'); previous.textContent = '← PREVIOUS'; previous.type = 'button';
-		const next = document.createElement('button'); next.textContent = 'NEXT →'; next.type = 'button';
+		const previous = pageButton(false);
+		const next = pageButton(true);
 		const counter = document.createElement('span'); counter.setAttribute('role', 'status');
 		pager.append(previous, counter, next); actions.before(pager);
 		const state: DialogState = { root, body, topics, previous, next, counter, selected: topicName(topics[0] ?? root), page: 0 };
 		states.push(state);
-		previous.addEventListener('click', function () { state.page = Math.max(0, state.page - 1); paginate(state); if (previous.disabled) next.focus({ preventScroll: true }); }, { signal });
-		next.addEventListener('click', function () { state.page++; paginate(state); if (next.disabled) previous.focus({ preventScroll: true }); }, { signal });
+		const turnPage = function (step: number, button: HTMLButtonElement) {
+			state.page += step;
+			paginate(state);
+			const available = button.disabled ? (step < 0 ? next : previous) : button;
+			available.focus({ preventScroll: true });
+		};
+		previous.addEventListener('click', function () { turnPage(-1, previous); }, { signal });
+		next.addEventListener('click', function () { turnPage(1, next); }, { signal });
 		for (const tab of root.querySelectorAll<HTMLButtonElement>('[data-dialog-tab]')) {
 			tab.addEventListener('click', function () { state.selected = tab.dataset['dialogTab'] ?? ''; state.page = 0; paginate(state); }, { signal });
 		}
@@ -143,6 +198,7 @@ export const mountDialogLayout = function (container: HTMLElement, signal: Abort
 	for (const state of states) resize.observe(state.body);
 	const appearance = new MutationObserver(schedule);
 	appearance.observe(container, { attributes: true, attributeFilter: ['class'] });
+	for (const list of container.querySelectorAll('[data-dialog-items]')) appearance.observe(list, { childList: true });
 	signal.addEventListener('abort', function () {
 		cancelAnimationFrame(frame); resize.disconnect(); appearance.disconnect();
 		for (const pager of pagers) pager.remove();
