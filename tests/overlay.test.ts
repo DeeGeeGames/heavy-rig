@@ -56,7 +56,9 @@ test('target feedback follows fitted weapon range and actual guidance acquisitio
 	expect(targetSolution(state, target, target).guided).toBe(false);
 	expect(targetSolution(state, nearer, target).guided).toBe(true);
 	state.player.targetId = target.id;
-	target.y = state.player.y - 1100;
+	target.y = state.player.y - 2000;
+	expect(targetSolution(state, target, target)).toEqual({ guided: false, inRange: true });
+	target.y = state.player.y - 2001;
 	expect(targetSolution(state, target, target)).toEqual({ guided: false, inRange: false });
 	// An unavailable selection must not promise a fallback lock on another unit.
 	expect(targetSolution(state, nearer, nearer).guided).toBe(false);

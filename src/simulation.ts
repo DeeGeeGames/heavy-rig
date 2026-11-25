@@ -301,11 +301,17 @@ const contactObstructs = function (origin: SpatialPoint, at: SpatialPoint, id: n
 		return other.id !== id && other.body.hp > 0 && hitVolumeFraction(origin, at, targetVolume(other)) !== undefined;
 	});
 };
+export const missileLockRange = function (frame: FrameId, loadout: readonly WeaponMount[]): number {
+	return loadout.reduce(function (range, mount, index) {
+		const weapon = getWeapon(mount.weapon);
+		return weapon.kind === 'missile' && canEquipWeapon(frame, mount.slot ?? index, mount.weapon) ? Math.max(range, weapon.range) : range;
+	}, 0);
+};
 const rigMissileTracking = function (rig: RigBody, frame: FrameId, loadout: readonly WeaponMount[], targets: readonly CombatTarget[], id: number, terrain: FieldTerrain | undefined): 'NO GUIDANCE' | 'OUT OF RANGE' | 'OUT OF ARC' | 'BLOCKED' | 'TRACKING' {
 	const target = targets.find(function (candidate) { return candidate.id === id; });
-	const weapons = loadout.filter(function (mount, index) { return canEquipWeapon(frame, mount.slot ?? index, mount.weapon); }).map(function (mount) { return getWeapon(mount.weapon); }).filter(function (weapon) { return weapon.kind === 'missile'; });
-	if (!target || weapons.length === 0) return 'NO GUIDANCE';
-	if (!weapons.some(function (weapon) { return distance(rig, target.body) <= weapon.range; })) return 'OUT OF RANGE';
+	const range = missileLockRange(frame, loadout);
+	if (!target || range === 0) return 'NO GUIDANCE';
+	if (distance(rig, target.body) > range) return 'OUT OF RANGE';
 	if (!inFiringArc(rig, rig.angle, target.body)) return 'OUT OF ARC';
 	const origin = playerVolume(rig, frame);
 	const at = targetVolume(target);

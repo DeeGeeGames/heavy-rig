@@ -1,6 +1,6 @@
 import { definePlugin } from 'ecspresso';
 import { createGroupComponents, createRenderer3DPlugin, type Renderer3DComponentTypes, type Renderer3DEventTypes, type Renderer3DResourceTypes } from 'ecspresso/plugins/rendering/renderer3D';
-import { zoomForWheel } from './shared/wheel-zoom';
+import { clampCombatZoom, MIN_COMBAT_ZOOM, zoomForWheel } from './shared/camera-zoom';
 import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Fog, HemisphereLight, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, RingGeometry, Scene, Vector3, WebGLRenderer } from 'three';
 import { createGait, mechScale, type Gaits } from './gait';
 import { getFrame, type FrameId } from './frames';
@@ -85,7 +85,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap;
 		renderer.localClippingEnabled = true;
 		canvas.after(labels);
-		const scene = new Scene(); allocated.push(function () { scene.clear(); }); scene.background = new Color('#142329'); scene.fog = new Fog('#1c3035', 1700, 3200);
+		const scene = new Scene(); allocated.push(function () { scene.clear(); }); scene.background = new Color('#142329');
+		const fog = new Fog('#1c3035', 1700, 3200); scene.fog = fog;
 		const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
 		scene.add(new HemisphereLight('#c4e5e7', '#28302c', 1.4));
 		const sun = new DirectionalLight('#ffd9a0', 3.1); allocated.push(function () { sun.shadow.dispose(); }); sun.position.set(-300, 800, 500); sun.castShadow = true;
@@ -109,7 +110,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let inkCellSize: InkCellSize = 1.5;
 		const setZoom = function (value: number) {
 			if (!Number.isFinite(value)) return;
-			zoom = Math.max(0.5, Math.min(2.5, value));
+			zoom = clampCombatZoom(value);
 			inkCellSize = selectInkCellSize(zoom, inkCellSize);
 		};
 		let playerSkin: MechSkinId = 'original';
@@ -159,6 +160,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const responsiveScale = viewScale(width, height);
 					const displayZoom = zoom * camera.zoom;
 					const cellSize = camera.zoom === 1 ? inkCellSize : selectInkCellSize(displayZoom, inkCellSize);
+					// Budget the extra-wide view separately so it cannot reduce mech detail at ordinary zooms.
+					const minimumZoom = displayZoom < minimumInkZoom[2] ? MIN_COMBAT_ZOOM : minimumInkZoom[cellSize];
 					const player = overlay.state.player;
 					// Match the Warden study's standing reference height. Keep the
 					// anchor independent of chassis pose, look-ahead and camera shake.
@@ -166,7 +169,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const frame = {
 						anchor: inkAnchor,
 						cell: cellSize * responsiveScale * displayZoom,
-						minimumCell: cellSize * responsiveScale * minimumInkZoom[cellSize],
+						minimumCell: cellSize * responsiveScale * minimumZoom,
 						lighterHousing: comparison?.lighter ?? true,
 					};
 					if (!ink.render(scene, camera, width, height, terrain ? { ...frame, terrain } : frame) && terrain) {
@@ -214,6 +217,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			views = undefined; combat = undefined; overlay = undefined;
 			disposeAllocated();
 		};
+		const alignView = function (state: CombatStateView, viewHeight: number, focus: Point) {
+			const depthOffset = alignCamera(camera, width, viewHeight, state, zoom, focus);
+			fog.near = 1700 + depthOffset; fog.far = 3200 + depthOffset;
+		};
 		const resize = function (state: CombatStateView, nextWidth: number, nextHeight: number) {
 			width = nextWidth; height = nextHeight;
 			if (disposed || width <= 0 || height <= 0) return;
@@ -224,7 +231,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			if (labels.width !== canvas.width || labels.height !== canvas.height) { labels.width = canvas.width; labels.height = canvas.height; }
 			camera.clearViewOffset(); camera.zoom = 1; alignCamera(centeredCamera, width, height, state, zoom);
 			const focus = toGround({ x: width * (0.5 + cameraOffset.x), y: height * (0.52 + cameraOffset.y) }, centeredCamera, width, height) ?? state.player;
-			alignCamera(camera, width, height, state, zoom, focus);
+			alignView(state, height, focus);
 			if (state.shake > 0) camera.setViewOffset(width, height, -Math.sin(state.time * 79) * state.shake, -Math.cos(state.time * 91) * state.shake, width, height);
 			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		};
@@ -249,6 +256,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			bind: function (entities: CombatEntities) { combat = entities; },
 			resize,
 			zoomWithWheel: function (event: Pick<WheelEvent, 'deltaY' | 'deltaMode'>) { setZoom(zoomForWheel(zoom, event, height)); },
+			toggleWideView: function () { setZoom(zoom === MIN_COMBAT_ZOOM ? 1 : MIN_COMBAT_ZOOM); },
 			getZoom: function () { return zoom; },
 			setZoom,
 			resetZoom: function () { setZoom(1); },
@@ -290,7 +298,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					biome = state.mission?.map.biome;
 					const palette = biome ? SURFACE_PALETTES[biome] : undefined;
 					scene.background = new Color(palette?.sky ?? '#142329');
-					scene.fog = new Fog(palette?.haze ?? '#1c3035', 1700, 3200);
+					fog.color.set(palette?.haze ?? '#1c3035');
 					sun.color.set(palette?.light ?? '#ffd9a0');
 				}
 				if (state !== previousState || state.time < previousStateTime) {
@@ -306,7 +314,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				fill.position.set(state.player.x + 700, 450, state.player.y + 600); fill.target.position.set(state.player.x, 50, state.player.y);
 				if (landing) {
 					const viewHeight = Math.max(1, height - launchDockHeight * landing.dockBlend);
-					alignCamera(camera, width, viewHeight, state, zoom, landing.focus);
+					alignView(state, viewHeight, landing.focus);
 					camera.zoom = landing.zoom;
 					if (viewHeight < height) camera.setViewOffset(width, viewHeight, 0, 0, width, height);
 					else camera.updateProjectionMatrix();

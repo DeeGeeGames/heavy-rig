@@ -14,7 +14,7 @@ import { createCombatRuntime } from './combat-runtime';
 import { mountSquadOrders } from './squad-orders-ui';
 import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-navigation';
 import { createRuntimeInput } from './runtime-input';
-import { createTouchFacing, createTouchTargeting, mountTouchDrive, visibleTouchContacts } from './touch-controls';
+import { createTouchFacing, createTouchTargeting, isContactVisible, mountTouchDrive, visibleTouchContacts } from './touch-controls';
 import { mountTouchZoom } from './touch-zoom';
 import { mountMobileFullscreen } from './mobile-fullscreen';
 import { mountFullscreenViewport } from './fullscreen-viewport';
@@ -25,7 +25,7 @@ import { getFrame } from './frames';
 import { MOUNTS, loadSummary, massLabel } from './loadout-ui';
 import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
-import { createMissionState, createState, distance, getOperationReport, type Controls, type Point, type SquadmateOptions } from './simulation';
+import { createMissionState, createState, distance, getOperationReport, missileLockRange, type Controls, type Point, type SquadmateOptions } from './simulation';
 import { createPresentation } from './presentation';
 import { LAUNCH_TIMING, launchCues, sampleLaunchTime } from './launch-timing';
 import { advanceGaits, createGaits } from './gait';
@@ -1505,15 +1505,23 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (pad.confirm && document.activeElement instanceof HTMLElement && root.contains(document.activeElement)) document.activeElement.click();
 			if (pad.back && screenRevision === revisionAtFrame) { audio.cue('back'); back(); }
 		}
-		// Apply drift before all mouse, touch and controller ground picking.
+		const combatInput = playing() && screenRevision === revisionAtFrame;
+		if (combatInput && pad.ready && pad.confirm) presentation.toggleWideView();
+		// Apply zoom and drift before all mouse, touch and controller ground picking.
 		presentation.updateCamera(state, aimMode === 'pointer' ? pointer : undefined, hudObstructions);
-		if (playing() && screenRevision === revisionAtFrame) {
+		if (combatInput) {
 			if (pad.targetNearest) selectTarget('nearest');
 			if (pad.targetNext) selectTarget('cycle');
 			const aimTargets = [
 				...state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, point: enemy }; }),
 				...missionStructures(state.mission).filter(function (target) { return target.body.hp > 0; }).map(function ({ id, body }) { return { id, point: body }; }),
 			];
+			const missileRange = pad.connected ? missileLockRange(state.frame, state.loadout) : 0;
+			const inStickRange = function (point: Point, assistDistance: number) {
+				if (assistDistance < 850) return true;
+				if (distance(point, state.player) > missileRange) return false;
+				return isContactVisible(presentation.toScreen(point, targetElevation(point)), width, height, hudObstructions);
+			};
 			if (!aimTargets.some(function (target) { return target.id === acquiredTargetId; })) acquiredTargetId = undefined;
 			if (aimMode === 'touch' || aimMode === 'target') {
 				const locked = touchTargeting.resolve(touchContacts()); acquiredTargetId = locked?.id;
@@ -1527,7 +1535,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const origin = presentation.toScreen(state.player); const length = Math.hypot(pad.aimX, pad.aimY);
 				const projected = presentation.toGround({ x: origin.x + pad.aimX / length * 380, y: origin.y + pad.aimY / length * 380 });
 				if (projected) aim = projected;
-				const targets = aimTargets.map(function (target) { const at = presentation.toScreen(target.point, targetElevation(target.point)); const dx = at.x - origin.x; const dy = at.y - origin.y; return { ...target, alignment: (dx * pad.aimX + dy * pad.aimY) / Math.max(1, Math.hypot(dx, dy) * length) }; }).filter(function (target) { return target.alignment > 0.975 && distance(target.point, state.player) < 850; }).sort(function (a, b) { return b.alignment - a.alignment; });
+				const targets = aimTargets.map(function (target) {
+					const at = presentation.toScreen(target.point, targetElevation(target.point));
+					const dx = at.x - origin.x; const dy = at.y - origin.y;
+					return { ...target, alignment: (dx * pad.aimX + dy * pad.aimY) / Math.max(1, Math.hypot(dx, dy) * length) };
+				}).filter(function (target) { return target.alignment > 0.975 && inStickRange(target.point, distance(target.point, state.player)); })
+					.sort(function (a, b) { return b.alignment - a.alignment; });
 				const target = targets[0]; acquiredTargetId ??= target?.id;
 				if (target) aim = { x: target.point.x, y: target.point.y };
 			} else if (pointer && aimMode === 'pointer') {
@@ -1545,7 +1558,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const target = aimTargets.map(function (candidate) {
 					const dx = candidate.point.x - state.player.x; const dy = candidate.point.y - state.player.y;
 					return { ...candidate, along: dx * forwardX + dy * forwardY, across: Math.abs(dx * forwardY - dy * forwardX) };
-				}).filter(function (candidate) { return candidate.along > 0 && candidate.along < 850 && candidate.across <= 25; }).sort(function (a, b) { return a.along - b.along; })[0];
+				}).filter(function (candidate) { return candidate.along > 0 && candidate.across <= 25 && inStickRange(candidate.point, candidate.along); })
+					.sort(function (a, b) { return a.along - b.along; })[0];
 				acquiredTargetId ??= target?.id;
 			} else if (aimMode === 'gamepad' && acquiredTargetId !== undefined) {
 				const target = aimTargets.find(function (candidate) { return candidate.id === acquiredTargetId; });
