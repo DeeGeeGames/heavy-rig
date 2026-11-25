@@ -64,25 +64,36 @@ const platePaintCases = [
 	return `${cases.join(' ')} return ${paint};`;
 }).join('\n');
 
+export const mechPlateShader = `vec2 mechPlate(vec3 pigment) {
+	ivec3 rgb = ivec3(pigment * 255.0 + 0.5);
+	switch (rgb.r * 65536 + rgb.g * 256 + rgb.b) {
+		${platePaintCases}
+	}
+	return vec2(0.);
+}`;
+
 export type SkinSurface = 'primary' | 'secondary' | 'palette-primary' | 'palette-secondary' | 'pixel-plates' | 'pod' | 'mechanism' | 'gun' | 'procedural';
 interface SkinMaterialOptions { surface: SkinSurface; scale: Vector3; barrelCutoff?: number }
 
-export const applyMechSkinMaterial = function (material: MeshStandardMaterial, skin: MechSkinId, options: SkinMaterialOptions): void {
+export const applyMechSkinMaterial = function (material: MeshStandardMaterial, skin: MechSkinId | Color, options: SkinMaterialOptions): void {
 	if (skin === 'original') return;
+	const skinName = typeof skin === 'string' ? skin : 'solid';
+	material.userData['mechSkin'] = skinName;
 	if (options.surface === 'mechanism') {
 		material.color.set('#45494a'); material.metalness = 0.68; material.roughness = 0.6;
-		material.userData['mechSkin'] = skin; return;
+		return;
 	}
-	const palette = SKIN_PALETTES[skin];
-	const primary = palette.primary.map(function (hex) { return new Color(hex); });
-	const secondary = palette.secondary.map(function (hex) { return new Color(hex); });
+	// The high-detail authoring viewer also accepts a single coat, using its
+	// existing palette/atlas armor masks. Its paint never samples camouflage.
+	const palette = skin === 'accord' ? SKIN_PALETTES.accord : SKIN_PALETTES.freeholds;
+	const primary = skin instanceof Color ? [skin, skin, skin] : palette.primary.map(function (hex) { return new Color(hex); });
+	const secondary = skin instanceof Color ? primary : palette.secondary.map(function (hex) { return new Color(hex); });
 	const surface = options.surface;
 	const mode = surface.startsWith('palette-') ? 'palette' : surface;
 	const second = surface === 'secondary' || surface === 'palette-secondary' || surface === 'pod' || surface === 'gun';
 	const colors = second ? secondary : primary;
 	const thresholds = second ? palette.secondaryThresholds : palette.thresholds;
-	material.userData['mechSkin'] = skin;
-	material.customProgramCacheKey = function () { return `mech-skin-1:${skin}:${mode}`; };
+	material.customProgramCacheKey = function () { return `mech-skin-1:${skinName}:${mode}`; };
 	material.onBeforeCompile = function (shader) {
 		shader.uniforms['mechPattern'] = pattern;
 		shader.uniforms['mechPatternReady'] = patternReady;
@@ -99,13 +110,7 @@ export const applyMechSkinMaterial = function (material: MeshStandardMaterial, s
 		if (mode === 'pixel-plates') {
 			shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
 varying vec2 vMechPlate;
-vec2 mechPlate(vec3 pigment) {
-	ivec3 rgb = ivec3(pigment * 255.0 + 0.5);
-	switch (rgb.r * 65536 + rgb.g * 256 + rgb.b) {
-		${platePaintCases}
-	}
-	return vec2(0.);
-}`).replace('#include <color_vertex>', '#include <color_vertex>\nvMechPlate = mechPlate(color.rgb);');
+${mechPlateShader}`).replace('#include <color_vertex>', '#include <color_vertex>\nvMechPlate = mechPlate(color.rgb);');
 			shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\n#define MECH_PIXEL_PLATES\nvarying vec2 vMechPlate;');
 		}
 		shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
@@ -127,7 +132,7 @@ vec3 mechPaint(vec3 a, vec3 b, vec3 c, vec2 limits, float field) {
 		if (mode === 'palette') assignment = '#ifdef USE_MAP\nif (abs(vMapUv.x - 0.0625) < 0.002) { diffuseColor.rgb = mechPaintColor; mechPainted = true; }\n#endif';
 		if (mode === 'pod') assignment = 'diffuseColor.rgb *= mechPaintColor * 2.2;';
 		if (mode === 'gun') assignment = 'if (vMechPaintPosition.y < mechBarrelCutoff) { diffuseColor.rgb = mechSteel; mechPainted = false; } else { diffuseColor.rgb = mechPaintColor; }';
-		const secondaryPaint = '(mechPatternReady > 0.5 ? mechPaint(mechSecondaryColors[0], mechSecondaryColors[1], mechSecondaryColors[2], mechSecondaryThresholds, mechField) : mechSecondaryColors[1])';
+		const secondaryPaint = skin instanceof Color ? 'mechSecondaryColors[1]' : '(mechPatternReady > 0.5 ? mechPaint(mechSecondaryColors[0], mechSecondaryColors[1], mechSecondaryColors[2], mechSecondaryThresholds, mechField) : mechSecondaryColors[1])';
 		if (mode === 'pixel-plates') assignment = `
 if (vMechPlate.x > 0.5) {
 	diffuseColor.rgb = (vMechPlate.x > 1.5 ? ${secondaryPaint} : mechPaintColor) * vMechPlate.y;
@@ -141,10 +146,11 @@ if (mechPrimary || mechSecondary) {
 	mechPainted = true;
 }`;
 		const paintChunk = mode === 'pixel-plates' ? '#include <color_fragment>' : '#include <map_fragment>';
-		shader.fragmentShader = shader.fragmentShader.replace(paintChunk, `${paintChunk}
-vec2 mechFields = texture(mechPattern, clamp(vMechPaintPosition * 0.5 + 0.5, 0.0, 1.0)).rg;
+		const coat = skin instanceof Color ? 'vec3 mechPaintColor = mechColors[1];' : `vec2 mechFields = texture(mechPattern, clamp(vMechPaintPosition * 0.5 + 0.5, 0.0, 1.0)).rg;
 float mechField = ${skin === 'freeholds' ? 'mechFields.r' : 'mechFields.g'};
-vec3 mechPaintColor = mechPatternReady > 0.5 ? mechPaint(mechColors[0], mechColors[1], mechColors[2], mechThresholds, mechField) : mechColors[1];
+vec3 mechPaintColor = mechPatternReady > 0.5 ? mechPaint(mechColors[0], mechColors[1], mechColors[2], mechThresholds, mechField) : mechColors[1];`;
+		shader.fragmentShader = shader.fragmentShader.replace(paintChunk, `${paintChunk}
+${coat}
 bool mechPainted = ${mode === 'palette' || mode === 'procedural' || mode === 'pixel-plates' ? 'false' : 'true'};
 ${assignment}`);
 		shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>

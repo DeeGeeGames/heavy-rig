@@ -10,7 +10,7 @@ import type { LaunchBerth } from './launch-berths';
 import { DROPSHIP_DECK, createDropship, createWayfarer } from './launch-ships';
 import { LAUNCH_TIMING } from './launch-timing';
 import { createMech } from './mech-3d';
-import type { MechSkinId } from './mech-skin';
+import type { MechFinish } from './mech-skin';
 import type { CombatStateView } from './simulation';
 import type { createSolidInk } from './solid-ink';
 
@@ -82,9 +82,9 @@ export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
 	const rigs: ReturnType<typeof createMech>[] = [];
 	const bounds = new Box3();
 	let shoulderHeight = 0;
-	let manifest: CombatStateView | undefined, livery: MechSkinId | undefined;
+	let manifest: CombatStateView | undefined, livery: MechFinish | undefined;
 	const emptyBerths = function () { for (const rig of rigs.splice(0)) rig.dispose(); };
-	const embark = function (state: CombatStateView, skin: MechSkinId) {
+	const embark = function (state: CombatStateView, skin: MechFinish) {
 		if (state === manifest && skin === livery) return;
 		emptyBerths(); shoulderHeight = 0;
 		const entries = [{ frame: state.frame, loadout: state.loadout }, ...state.squadmates.map(function (mate) {
@@ -159,7 +159,7 @@ export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
 		ship.root.localToWorld(inkAnchor.set(0, 85, 0));
 	};
 	return {
-		render: function (renderer: WebGLRenderer, ink: ReturnType<typeof createSolidInk>, state: CombatStateView, skin: MechSkinId, seconds: number, width: number, height: number) {
+		render: function (renderer: WebGLRenderer, ink: ReturnType<typeof createSolidInk>, state: CombatStateView, skin: MechFinish, seconds: number, width: number, height: number) {
 			if (width <= 0 || height <= 0) return;
 			embark(state, skin);
 			camera.aspect = width / height; shots(seconds, camera.aspect); camera.updateProjectionMatrix();

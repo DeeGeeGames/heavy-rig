@@ -1,6 +1,7 @@
 import { CircleGeometry, Color, CylinderGeometry, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, RingGeometry, Vector3, type BufferGeometry } from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { paintColorForZone, type PaintZone, type SolidMechPaint } from './mech-paint';
 
 export interface Section { x: number; y: number; height: number; width: number }
 export interface Palette { steel: string; accent: string; trim: string; glass: string }
@@ -8,7 +9,7 @@ const CROSS_SECTION = [[-0.62, -1], [0.62, -1], [1, -0.62], [1, 0.62], [0.62, 1]
 
 // Keep rigid surfaces together. Color is baked into vertices, leaving one
 // structural draw per articulated assembly instead of one per armor detail.
-export const createLowPolyParts = function (palette: Palette) {
+export const createLowPolyParts = function (palette: Palette, paint?: SolidMechPaint) {
 	const geometries = new Set<BufferGeometry>();
 	const surface = function (color: string) { return new MeshStandardMaterial({ color, roughness: 0.73, metalness: 0.25, flatShading: true }); };
 	const steel = surface(palette.steel); const accent = surface(palette.accent); const dark = surface('#253239');
@@ -16,6 +17,14 @@ export const createLowPolyParts = function (palette: Palette) {
 	const glass = surface(palette.glass); glass.emissive.set(palette.glass); glass.emissiveIntensity = 0.7;
 	const solid = surface('#ffffff'); solid.vertexColors = true;
 	const materials = [steel, accent, dark, trim, recess, piston, glass, solid];
+	const pigments = paint && { paint, primary: surface(paint.primary), secondary: surface(paint.secondary) };
+	if (pigments) materials.push(pigments.primary, pigments.secondary);
+	// Choose each armor casting's pigment before batching erases the individual part boundaries.
+	const armor = function (original: MeshStandardMaterial, zone: PaintZone, lateral = 0) {
+		if (!pigments) return original;
+		const side = lateral < 0 ? 'left' : lateral > 0 ? 'right' : 'center';
+		return paintColorForZone(pigments.paint, zone, side) === pigments.paint.primary ? pigments.primary : pigments.secondary;
+	};
 	const own = function <T extends BufferGeometry>(value: T): T { geometries.add(value); return value; };
 	const mesh = function (parent: Group, name: string, geometry: BufferGeometry, material: MeshStandardMaterial, x = 0, y = 0, z = 0) {
 		const part = new Mesh(geometry, material); part.name = name; part.position.set(x, y, z);
@@ -64,7 +73,7 @@ export const createLowPolyParts = function (palette: Palette) {
 		const retained = new Set<BufferGeometry>(); root.traverse(function (object) { if (object instanceof Mesh) retained.add(object.geometry); });
 		for (const geometry of geometries) if (!retained.has(geometry)) { geometry.dispose(); geometries.delete(geometry); }
 	};
-	return { steel, accent, dark, trim, recess, piston, glass, solid, own, mesh, group, housing, cylinder, aperture, batch,
+	return { steel, accent, dark, trim, recess, piston, glass, solid, armor, own, mesh, group, housing, cylinder, aperture, batch,
 		dispose: function () { for (const geometry of geometries) geometry.dispose(); for (const material of materials) material.dispose(); },
 	};
 };
