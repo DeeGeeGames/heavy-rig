@@ -23,7 +23,7 @@ export const createDropshipShadow = function (yaw: number) {
 		update: function (terrain: FieldTerrain | undefined, hull: Point, altitude: number) {
 			const at = { x: hull.x + 15 + altitude * .37, y: hull.y + 8 + altitude * .32 };
 			root.position.set(at.x, groundHeight(terrain, at) + 1.05, at.y);
-			drapeGroundGeometry(geometry, terrain, at, -yaw);
+			drapeGroundGeometry(geometry, terrain, at, -root.rotation.y);
 			paint.opacity = Math.max(.15, .45 - altitude * .0005);
 		},
 		dispose: function () { root.removeFromParent(); geometry.dispose(); paint.dispose(); },

@@ -1,10 +1,13 @@
 import { expect, test } from 'bun:test';
-import { InstancedMesh, LineSegments, Mesh, Scene, Vector3, type BufferGeometry, type Material, type Object3D } from 'three';
+import { InstancedMesh, LineSegments, Mesh, OrthographicCamera, Scene, Vector3, type BufferGeometry, type Material, type Object3D } from 'three';
 import { createMount } from '../src/arsenal';
 import { dropRigPose, rigReleaseTime } from '../src/enemy-deployment';
 import { getHardpoints } from '../src/hardpoints';
 import { createGaits } from '../src/gait';
 import { createMech } from '../src/mech-3d';
+import { alignCamera, toScreen } from '../src/projection-3d';
+import { PERIMETER_RIDGE_HEIGHT } from '../src/scenery-flight';
+import { MIN_COMBAT_ZOOM } from '../src/shared/camera-zoom';
 import { createState, projectilesStep, spawningStep, step, weaponsStep } from '../src/simulation';
 import { createSituationMission } from '../src/situation-sim';
 import { createWorldObjects } from '../src/world-3d';
@@ -71,6 +74,39 @@ test('one transport unloads two rigs, stays for departure, and clears on mission
 		expect(scene.getObjectByName('hostile-dropship-vehicle')).toBeUndefined();
 		expect(scene.getObjectByName('transport-ground-shadow')).toBeUndefined();
 	} finally { world.dispose(); }
+});
+
+test('reinforcement flights cross opposite sides of Wide View above the perimeter ridges', function () {
+	const width = 1280, height = 800;
+	// These landings are visible from the pilot, with opposite approach bearings.
+	for (const [seed, fromLeft] of [[8, true], [594, false]] as const) {
+		const state = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, seed, 'story');
+		const map = state.mission?.map;
+		if (!map) throw new Error('Expected a defense map');
+		const camera = new OrthographicCamera();
+		alignCamera(camera, width, height, state, MIN_COMBAT_ZOOM);
+		const scene = new Scene(), world = createWorldObjects(scene, function () { return camera.right - camera.left; });
+		const onscreen: number[] = [];
+		let lowestOutside = Infinity;
+		try {
+			state.spawnIn = 0;
+			for (let tick = 1; tick <= 13 * 30; tick++) {
+				state.time = tick / 30; spawningStep(state, 1 / 30); world.update(state);
+				const ship = scene.getObjectByName('hostile-dropship-vehicle');
+				if (!ship) break;
+				const { x, y: elevation, z: y } = ship.position;
+				if (Math.min(x, y, map.width - x, map.height - y) < 0) lowestOutside = Math.min(lowestOutside, elevation);
+				const px = toScreen({ x, y }, camera, width, height, elevation);
+				if (px.x >= 0 && px.x <= width && px.y >= 0 && px.y <= height) onscreen.push(px.x);
+			}
+			const first = onscreen[0], last = onscreen.at(-1);
+			if (first === undefined || last === undefined) throw new Error('Transport stayed outside the view');
+			expect(fromLeft ? first : last).toBeLessThan(width * .1);
+			expect(fromLeft ? last : first).toBeGreaterThan(width * .9);
+			expect(Number.isFinite(lowestOutside)).toBe(true);
+			expect(lowestOutside).toBeGreaterThan(PERIMETER_RIDGE_HEIGHT);
+		} finally { world.dispose(); }
+	}
 });
 
 test('transparent world effects retain depth tests without writing depth and disposal releases each shared asset once', function () {

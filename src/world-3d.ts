@@ -20,9 +20,9 @@ interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefin
 
 // World presentation owns its meshes and GPU assets. Simulation objects never
 // retain Three.js objects; pools shrink with live state, including on restart.
-export const createWorldObjects = function (scene: Scene) {
+export const createWorldObjects = function (scene: Scene, wideViewWidth = function () { return 0; }) {
 	const root = new Group(); root.name = 'heavy-rig-world'; scene.add(root);
-	const dropships = createEnemyDropshipViews(root);
+	const dropships = createEnemyDropshipViews(root, wideViewWidth);
 	// Live effects retain their own materials and draw against the stylized world's depth.
 	const feedback = new Group(); feedback.name = 'combat-feedback'; feedback.userData['nativeEffects'] = true; root.add(feedback);
 	const projectileSmoke = createProjectileSmoke(); feedback.add(projectileSmoke.root);
@@ -240,7 +240,7 @@ export const createWorldObjects = function (scene: Scene) {
 				return { root: value };
 			}, function (value, index) { const wreck = state.wrecks[index]; if (wreck) placeOnGround(value.root, terrain, wreck, 0, -wreck.angle); });
 			const inbound = state.warnings;
-			dropships.update(state, inbound);
+			dropships.update(state, inbound, planes);
 			sync(feedback, warnings, inbound.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
 				const warning = inbound[index]; if (!warning) return; placeOnGround(value.root, terrain, warning, .3); value.root.scale.setScalar(45 + Math.sin(state.time * 8) * 5);
 			});

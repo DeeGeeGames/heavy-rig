@@ -104,7 +104,6 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		sun.shadow.camera.top = 680; sun.shadow.camera.bottom = -680; sun.shadow.camera.near = 10; sun.shadow.camera.far = 2200;
 		sun.shadow.normalBias = 2; sun.shadow.bias = -0.0003; scene.add(sun, sun.target);
 		const fill = new DirectionalLight('#a3d1d8', 1.05); scene.add(fill, fill.target);
-		const objects = createWorldObjects(scene); allocated.push(function () { objects.dispose(); });
 		const firingArc = createFiringArc(); allocated.push(firingArc.dispose); scene.add(firingArc.mesh);
 		const reticleGeometry = new RingGeometry(17, 18.5, 48).rotateX(-Math.PI / 2); allocated.push(function () { reticleGeometry.dispose(); });
 		const reticleMaterial = new MeshBasicMaterial({ color: '#d8f2de', transparent: true, opacity: 0.85, depthWrite: false }); allocated.push(function () { reticleMaterial.dispose(); });
@@ -125,6 +124,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		};
 		let playerSkin: MechFinish = 'original';
 		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
+		const objects = createWorldObjects(scene, function () { return (centeredCamera.right - centeredCamera.left) * zoom / MIN_COMBAT_ZOOM; });
+		allocated.push(function () { objects.dispose(); });
 		let cameraOffset: Point = { x: 0, y: 0 };
 		let cameraTerrain: FieldTerrain | undefined;
 		let weaponKick: { state: CombatStateView; time: number; offset: Point } | undefined;
