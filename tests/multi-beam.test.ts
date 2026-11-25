@@ -111,3 +111,26 @@ test('a squadmate firing the same laser slot as the player retains its own beam 
 		expect(playerBeam?.visible).toBe(false);
 	} finally { world.dispose(); }
 });
+
+test('a cut cools at the struck surface when the emitter sweeps into open air or releases', function () {
+	const scene = new Scene(); const world = createWorldObjects(scene); const state = createState();
+	const hit = { slot: 0, owner: 7, origin: { x: 40, y: 60, elevation: 45 }, x: 1340, y: 60, elevation: 45, contact: true };
+	try {
+		state.beams = [hit]; world.update(state);
+		const beam = scene.getObjectByName('hostile-laser-7-0');
+		const contact = beam?.getObjectByName('laser-contact');
+		if (!beam || !contact) throw new Error('Missing hostile cutting laser');
+		expect(contact.visible).toBe(true);
+		state.time += 0.1;
+		state.beams = [{ ...hit, x: 900, y: 580, contact: false }];
+		world.update(state);
+		expect(contact.position.toArray()).toEqual([1340, 45, 60]);
+		state.time += 0.1; state.beams = []; world.update(state);
+		expect(beam.children[0]?.visible).toBe(false);
+		expect(contact.visible).toBe(true);
+		state.time += 0.5; world.update(state);
+		expect(scene.getObjectByName(beam.name)).toBeUndefined();
+		state.beams = [{ ...hit, x: 800, contact: false }]; world.update(state);
+		expect(scene.getObjectByName(beam.name)?.getObjectByName('laser-contact')?.visible).toBe(false);
+	} finally { world.dispose(); }
+});

@@ -63,6 +63,7 @@ test('laser endpoint, damage and missile acquisition switch together when the li
 		weaponsStep(state, { drive: 0, turn: 0, stop: false, aim: target, targetId: target.id, fire: [false, false, true, false], coolant: false }, 1 / 60);
 		const beam = state.beam;
 		if (!beam) throw new Error('Laser did not fire');
+		expect(beam.contact).toBe(true);
 		if (height === 120) {
 			expect(missileTracking(state, target.id)).toBe('BLOCKED'); expect(beam.x).toBeCloseTo(690); expect(target.hp).toBe(1000);
 		} else {
