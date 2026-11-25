@@ -84,12 +84,10 @@ export const createWeaponVfx = function () {
 		});
 		return { surface, tint, opacity };
 	};
-	const sharedFlare = function (color: string) { const value = flare(color); ownMaterial(value.surface); return value.surface; };
 	const white = emissive('#f4ffff'); const amber = emissive('#ffbd57');
 	const violet = emissive('#ae83ff'); const hot = emissive('#fff1c4');
-	const hostileFlare = sharedFlare('#ff855d'); const hostileSheath = softBeam('#f06440', 0.52);
-	const tealFlare = sharedFlare('#46e6cc'); const violetFlare = sharedFlare('#9165ff');
-	const laserSheath = softBeam('#37d6bf', 0.44); const particleWake = softBeam('#8e67ff', 0.55, true);
+	const violetFlare = ownMaterial(flare('#9165ff').surface);
+	const particleWake = softBeam('#8e67ff', 0.55, true);
 	const metal = ownMaterial(new MeshStandardMaterial({ color: '#b4beb3', roughness: 0.65, metalness: 0.45 }));
 	const rocketMetal = ownMaterial(new MeshStandardMaterial({ color: '#776f61', roughness: 0.7, metalness: 0.5 }));
 	const finsMaterial = ownMaterial(new MeshStandardMaterial({ color: '#485252', roughness: 0.7, metalness: 0.5 }));
@@ -188,27 +186,6 @@ export const createWeaponVfx = function () {
 			value.corona.instanceMatrix.needsUpdate = true;
 		}
 	};
-	const createBeam = function (slot: number, hostile = false) {
-		const root = new Group(); root.name = slot === 0 ? 'laser' : `laser-${slot}`; root.visible = false;
-		const halo = new Mesh(cylinder, hostile ? hostileSheath : laserSheath); const core = new Mesh(cylinder, white);
-		const impact = new Mesh(plane, hostile ? hostileFlare : tealFlare); const emitter = new Mesh(plane, hostile ? hostileFlare : tealFlare);
-		const sparks = new InstancedMesh(cylinder, white, 7); sparks.frustumCulled = false;
-		root.add(halo, core, impact, emitter, sparks);
-		return { root, halo, core, impact, emitter, sparks, dispose: function () { sparks.dispose(); } };
-	};
-	const updateBeam = function (value: ReturnType<typeof createBeam>, from: Vector3, to: Vector3, time: number, contact: boolean) {
-		value.impact.position.copy(to); value.impact.scale.setScalar(30 + Math.sin(time * 31) * 2);
-		value.impact.visible = value.sparks.visible = contact;
-		value.emitter.position.copy(from); value.emitter.scale.setScalar(20);
-		for (let i = 0; i < value.sparks.count; i++) {
-			const age = (time * 4.5 + i * 0.173) % 1; const angle = i * 2.4;
-			scratch.position.set(to.x + Math.cos(angle) * age * 16, to.y + Math.sin(angle * 1.7) * age * 14 - age * age * 9, to.z + Math.sin(angle) * age * 16);
-			direction.set(Math.cos(angle), Math.sin(angle * 1.7) - age, Math.sin(angle)).normalize();
-			scratch.quaternion.setFromUnitVectors(up, direction); scratch.scale.set(0.35 * (1 - age), 2 + age * 3, 0.35 * (1 - age));
-			scratch.updateMatrix(); value.sparks.setMatrixAt(i, scratch.matrix);
-		}
-		value.sparks.instanceMatrix.needsUpdate = true;
-	};
 	const createLegacyEffect = function (root: Group) {
 		const light = flare('#ffce83'); const sparkSurface = new MeshBasicMaterial({ color: '#fff0bf', transparent: true, depthWrite: false, blending: AdditiveBlending, toneMapped: false });
 		const halo = new Mesh(ring, sparkSurface); halo.rotation.x = -Math.PI / 2;
@@ -255,7 +232,7 @@ export const createWeaponVfx = function () {
 		};
 	};
 	return {
-		styles, createShot, updateShot, createBeam, updateBeam, createEffect, afterglowRoot, updateAfterglows, contacts,
+		styles, createShot, updateShot, createEffect, afterglowRoot, updateAfterglows, contacts,
 		updateTime: function (time: number) { clock.value = time; },
 		dispose: function () { clearAfterglows(); contacts.dispose(); for (const value of geometries) value.dispose(); for (const value of materials) value.dispose(); },
 	};

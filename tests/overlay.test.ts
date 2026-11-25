@@ -44,6 +44,8 @@ test('target feedback follows fitted weapon range and actual guidance acquisitio
 	state.enemies = [target]; state.player.targetId = target.id;
 	expect(targetSolution(state, target, target)).toEqual({ guided: false, inRange: true });
 	state.frame = 'longbow'; state.loadout = [createMount('laser')];
+	expect(targetSolution(state, target, target)).toEqual({ guided: false, inRange: true });
+	target.y = state.player.y - 1300;
 	expect(targetSolution(state, target, target)).toEqual({ guided: false, inRange: false });
 	state.frame = 'morrow'; state.loadout = [createMount('stream-missiles')]; acquireMissileTarget(state, target.id);
 	expect(targetSolution(state, target, target)).toEqual({ guided: true, inRange: true });

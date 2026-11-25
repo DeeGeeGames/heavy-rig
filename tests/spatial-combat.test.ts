@@ -1,7 +1,7 @@
 import { acquireMissileTarget } from './missile-fixture';
 import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
-import { createMount } from '../src/arsenal';
+import { createMount, weaponIdForTier } from '../src/arsenal';
 import { createCombatRuntime } from '../src/combat-runtime';
 import { createState, weaponsStep, projectilesStep, type Controls, type EnemyKind, type Unit } from '../src/simulation';
 import { enemyVolume } from '../src/combat-spatial';
@@ -79,6 +79,24 @@ test('guided missiles steer vertically while beams stop at the first 3D contact'
 	expect(air.hp).toBeLessThan(1000); expect(beamState.beams[0]?.origin).toBeDefined(); expect(beamState.beams[0]?.elevation).toBeGreaterThan(120);
 });
 
+test('standard and exceptional ARC beams damage distant targets and stop at their tier limit on a miss', function () {
+	for (const [tier, range] of [[0, 1240], [5, 1550]] as const) {
+		const state = createState({ frame: 'longbow', starter: weaponIdForTier('laser', tier) });
+		state.player.x = 40; state.player.angle = 0; state.player.turret = 0;
+		const target = enemy(1, state.player.x + range, 'vtol'); state.enemies = [target];
+		const controls: Controls = { ...idle, aim: target, targetId: target.id, fire: [true, false, false, false] };
+		weaponsStep(state, controls, 1 / 60);
+		expect(state.beam?.contact).toBe(true); expect(target.hp).toBeLessThan(1000);
+		const hp = target.hp;
+		target.x += 180;
+		weaponsStep(state, controls, 1 / 60);
+		const beam = state.beams[0];
+		if (!beam?.origin || beam.elevation === undefined) throw new Error('Missing spatial beam');
+		expect(beam.contact).toBe(false); expect(target.hp).toBe(hp);
+		expect(Math.hypot(beam.x - beam.origin.x, beam.y - beam.origin.y, beam.elevation - beam.origin.elevation)).toBeCloseTo(range, 6);
+	}
+});
+
 test('ECS owns acquired identity through firing, pause and state replacement', async function () {
 	const combat = createCombatRuntime(); const world = ECSpresso.create().withPlugin(combat.plugin).withFixedTimestep(1 / 60).build();
 	try {
@@ -102,7 +120,7 @@ test('missiles can turn around and ground contact still resolves on the final li
 	expect(state.enemies[0]?.hp).toBeLessThan(1000); expect(state.events).toContain('impact'); expect(state.effects.at(-1)?.elevation).toBe(0);
 	const laserState = createState({ frame: 'longbow', starter: 'laser' }); laserState.player.turret = 0; laserState.enemies = [enemy(1, 800, 'tank')];
 	weaponsStep(laserState, { ...idle, targetId: 1, fire: [true, false, false, false] }, 1 / 60);
-	expect(laserState.beams[0]?.elevation).toBe(0);
+	expect(laserState.beam).toMatchObject({ elevation: 0, contact: true });
 });
 
 test('close acquired aircraft remain hittable without a global convergence distance', function () {

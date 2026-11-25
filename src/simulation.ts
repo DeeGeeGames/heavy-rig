@@ -18,7 +18,7 @@ import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './ene
 import { SQUAD_SIZE, type Pilot } from './pilots';
 
 export interface Point { x: number; y: number }
-export interface Beam extends Point { slot: number; elevation?: number; origin?: SpatialPoint; squadmateId?: string; owner?: number }
+export interface Beam extends Point { slot: number; elevation?: number; origin?: SpatialPoint; contact?: boolean; squadmateId?: string; owner?: number }
 export type MechEnemyKind = 'scout' | 'striker' | 'siege';
 export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
@@ -77,7 +77,7 @@ export interface CombatStateView {
 	squadmates: readonly Squadmate[];
 	relay: number; enemies: CombatCollection<Unit>; shots: CombatCollection<Shot>; effects: CombatCollection<Effect>; wave: number; spawned: number; spawnIn: number;
 	intermission: number; cannonIn: number; time: number; kills: number; shake: number;
-	beams: Beam[]; beam: (Point & { slot?: number; elevation?: number }) | undefined; outcome: 'playing' | 'won' | 'lost'; nextId: number;
+	beams: Beam[]; beam: (Point & { slot?: number; elevation?: number; contact?: boolean }) | undefined; outcome: 'playing' | 'won' | 'lost'; nextId: number;
 	coolantCharges: number; coolantHeld: boolean; warnings: CombatCollection<Warning>; wrecks: CombatCollection<Wreck>; events: CombatEvent[];
 }
 // Plain domain callers retain ordinary mutable arrays. The live runtime exposes
@@ -666,14 +666,16 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 			const muzzle = getPlayerMuzzle(frame, slot, p, p.turret, undefined, aim, gunner.pose);
 			const origin = exposedMuzzle(terrain, p, muzzle);
 			const direction = getPlayerFiringDirection(frame, slot, p, p.turret, origin, aim);
-			const length = direction.elevation < 0 ? Math.min(weapon.range, -origin.elevation / direction.elevation) : weapon.range;
+			const groundDistance = direction.elevation < 0 ? -origin.elevation / direction.elevation : Infinity;
+			const length = Math.min(weapon.range, groundDistance);
 			const end = { x: origin.x + direction.x * length, y: origin.y + direction.y * length, elevation: Math.max(0, origin.elevation + direction.elevation * length) };
 			const hits = targets.filter(contactAlive).map(function (target) { return { target, entry: hitVolumeFraction(origin, end, target.volume) }; }).filter(function (hit): hit is { target: FireContact; entry: number } { return hit.entry !== undefined; }).sort(function (a, b) { return a.entry - b.entry; });
 			const cover = terrain ? terrainShotFraction(terrain, origin, end) : undefined;
 			const first = hits[0];
 			const hit = first && first.entry < (cover ?? Infinity) ? first : undefined;
 			const endpoint = pointAlong(origin, end, hit?.entry ?? cover ?? 1);
-			state.beams.push({ ...endpoint, slot, origin, ...gunner.source });
+			const contact = hit !== undefined || cover !== undefined || groundDistance <= weapon.range;
+			state.beams.push({ ...endpoint, slot, origin, contact, ...gunner.source });
 			if (hit) hitBeam(hit.target.id, weapon.damage * gunner.damage * dt, origin);
 			mount.firing = true;
 			return;

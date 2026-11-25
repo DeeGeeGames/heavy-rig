@@ -1,12 +1,12 @@
 import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, Group, InstancedMesh, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector3, type OrthographicCamera, type WebGLRenderer } from 'three';
-import { ARENA, getEnemyDefense, type Beam, type Effect, type Point, type Shot, type CombatStateView } from './simulation';
+import { ARENA, getEnemyDefense, type Effect, type Point, type Shot, type CombatStateView } from './simulation';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
 import { createMissionEnvironment } from './mission-environment';
 import type { MissionMap } from './campaign-types';
 import { createProjectileSmoke } from './projectile-smoke';
 import { createWeaponVfx } from './weapon-vfx';
-import { getWeapon } from './arsenal';
+import { createCuttingLasers } from './cutting-laser';
 import { getFrame } from './frames';
 import { bakeTerrain, type BakedTerrain, type TerrainBakeSource } from './terrain-bake';
 
@@ -21,6 +21,7 @@ export const createWorldObjects = function (scene: Scene) {
 	const feedback = new Group(); feedback.name = 'combat-feedback'; feedback.userData['nativeEffects'] = true; root.add(feedback);
 	const projectileSmoke = createProjectileSmoke(); feedback.add(projectileSmoke.root);
 	const weaponVfx = createWeaponVfx(); feedback.add(weaponVfx.afterglowRoot, weaponVfx.contacts.root);
+	const lasers = createCuttingLasers(); feedback.add(lasers.root);
 	const { createShot, createEffect } = weaponVfx;
 	const yard = new Group(); yard.name = 'legacy-terrain'; root.add(yard);
 	const yardArt = new Group(); yard.add(yardArt);
@@ -151,12 +152,6 @@ export const createWorldObjects = function (scene: Scene) {
 		return { root: value, fill, boundary, countdown, shell, surface, dispose: function () { surface.dispose(); } };
 	};
 	const warningMaterial = glow('#f3a16c');
-	// Four independently fired slots share materials but retain their own origins.
-	const beams = Array.from({ length: 4 }, function (_unused, slot) {
-		const beam = weaponVfx.createBeam(slot); feedback.add(beam.root); return beam;
-	});
-	const squadmateBeams: ReturnType<typeof weaponVfx.createBeam>[] = [];
-	const hostileBeams: ReturnType<typeof weaponVfx.createBeam>[] = [];
 	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); feedback.add(smoke);
 	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0);
 	const flashes = new WeakMap<Effect, Vector3>();
@@ -165,15 +160,6 @@ export const createWorldObjects = function (scene: Scene) {
 		delta.subVectors(to, from); const length = delta.length();
 		mesh.visible = length > 0.0001; if (!mesh.visible) return;
 		mesh.position.copy(from).add(to).multiplyScalar(0.5); mesh.scale.set(width, length, width); mesh.quaternion.setFromUnitVectors(up, delta.normalize());
-	};
-	const updateBeam = function (beam: ReturnType<typeof weaponVfx.createBeam>, endpoint: Beam | undefined, rig: Point, time: number, muzzle?: Vector3) {
-		beam.root.visible = endpoint !== undefined;
-		if (!endpoint) return;
-		from.set(rig.x, 42, rig.y); to.set(endpoint.x, endpoint.elevation ?? 42, endpoint.y);
-		if (endpoint.origin) from.set(endpoint.origin.x, endpoint.origin.elevation, endpoint.origin.y);
-		else if (muzzle) from.copy(muzzle);
-		segment(beam.halo, 7); segment(beam.core, 0.75);
-		weaponVfx.updateBeam(beam, from, to, time, from.distanceTo(to) < getWeapon('laser').range - 0.5);
 	};
 	let disposed = false;
 	return {
@@ -275,25 +261,7 @@ export const createWorldObjects = function (scene: Scene) {
 				}
 				value.update(effect);
 			});
-			beams.forEach(function (beam, slot) {
-				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot && candidate.squadmateId === undefined && candidate.owner === undefined; });
-				updateBeam(beam, endpoint, state.player, state.time, muzzles[slot]);
-			});
-			const squadmateSlots = state.squadmates.flatMap(function (mate) {
-				return mate.loadout.flatMap(function (mount, index) { return getWeapon(mount.weapon).kind === 'laser' ? [{ mate, slot: mount.slot ?? index }] : []; });
-			});
-			sync(feedback, squadmateBeams, squadmateSlots.length, function () { return weaponVfx.createBeam(0); }, function (beam, index) {
-				const entry = squadmateSlots[index]; if (!entry) return;
-				const { mate, slot } = entry;
-				beam.root.name = `squad-laser-${mate.pilotId}-${slot}`;
-				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot && candidate.squadmateId === mate.pilotId; });
-				updateBeam(beam, endpoint, mate, state.time);
-			});
-			const hostile = state.beams.filter(function (beam) { return beam.owner !== undefined; });
-			sync(feedback, hostileBeams, hostile.length, function () { return weaponVfx.createBeam(0, true); }, function (beam, index) {
-				const endpoint = hostile[index]; if (!endpoint?.origin) return;
-				updateBeam(beam, endpoint, endpoint.origin, state.time);
-			});
+			lasers.update(state, muzzles);
 			smoke.visible = state.player.heat > 60;
 			if (smoke.visible) {
 				smoke.position.set(state.player.x - Math.cos(state.player.angle) * 23, 70 + state.time * 25 % 24, state.player.y - Math.sin(state.player.angle) * 23);
@@ -307,9 +275,7 @@ export const createWorldObjects = function (scene: Scene) {
 			if (disposed) return; disposed = true;
 			for (const effect of effects) effect.dispose();
 			for (const shot of shots) shot.dispose();
-			for (const beam of beams) beam.dispose();
-			for (const beam of squadmateBeams) beam.dispose();
-			for (const beam of hostileBeams) beam.dispose();
+			lasers.dispose();
 			weaponVfx.dispose();
 			for (const strike of strikes) strike.dispose();
 			for (const batch of relayBatches) batch.dispose();
