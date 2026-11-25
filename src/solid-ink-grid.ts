@@ -1,17 +1,18 @@
-import type { Matrix4 } from 'three';
+import type { Matrix4, OrthographicCamera } from 'three';
+import { MIN_COMBAT_ZOOM } from './shared/camera-zoom';
 
-export type InkCellSize = 1 | 1.5 | 2;
+// Both the terrain atlas and live battlefield ink measure cells along the
+// orthographic view axes. Each keeps its own stable anchor.
+export const BATTLEFIELD_CELL_WORLD_UNITS = 2;
 
-const distantExit = 0.84, normalExit = 0.78;
-const closeEntry = 1.16, closeExit = 1.10;
-
-export const selectInkCellSize = function (zoom: number, current: InkCellSize): InkCellSize {
-	if (zoom >= closeEntry || current === 1 && zoom > closeExit) return 1;
-	if (zoom <= normalExit || current === 2 && zoom < distantExit) return 2;
-	return 1.5;
+export const battlefieldInkCells = function (camera: OrthographicCamera, width: number, displayZoom: number) {
+	const cell = BATTLEFIELD_CELL_WORLD_UNITS * camera.projectionMatrix.elements[0] * width / 2;
+	// Reserve capacity for the current zoom range without taking on the cost
+	// of the extra-wide view at ordinary combat zooms.
+	const wideViewCutoff = 0.5;
+	const reserveZoom = displayZoom < wideViewCutoff ? MIN_COMBAT_ZOOM : wideViewCutoff;
+	return { cell, minimumCell: cell * Math.min(1, reserveZoom / displayZoom) };
 };
-
-export const minimumInkZoom = { 1: closeExit, 1.5: normalExit, 2: 0.5 } as const;
 
 // Resolve, line bridging, and bright-cell repair need neighbouring texels.
 const guard = 3, border = guard * 2 + 1;
@@ -35,13 +36,12 @@ export const inkGrid = function ({ width, height, cell, minimumCell, anchorX, an
 
 	const limitWidth = width / minimumCell + border + 1;
 	const limitHeight = height / minimumCell + border + 1;
-	// Budget for the widest field of view in this tier. Any density reduction
-	// applies to the entire tier so it cannot disturb the world grid mid-zoom.
+	// Bound the reserved buffer without coarsening a view that already fits.
 	const reduction = Math.max(1, limitWidth / maxEdge, limitHeight / maxEdge, Math.sqrt(limitWidth * limitHeight / maxCells));
 	const roomX = Math.floor(limitWidth / reduction) - border, roomY = Math.floor(limitHeight / reduction) - border;
 	if (roomX <= 0 || roomY <= 0) return undefined;
 	const min = reduction === 1 ? minimumCell : Math.max(minimumCell, width / roomX, height / roomY) * (1 + Number.EPSILON);
-	const displayCell = cell * (min / minimumCell);
+	const displayCell = Math.max(cell, min);
 	const axis = function (span: number, anchor: number, room: number) {
 		const offset = -anchor / displayCell;
 		return {

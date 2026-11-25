@@ -19,7 +19,7 @@ import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
 import { getLiveryPreset, missionMechFinish, type LiveryPresetId, type MechFinish } from './mech-skin';
 import { createSolidInk } from './solid-ink';
-import { minimumInkZoom, selectInkCellSize, type InkCellSize } from './solid-ink-grid';
+import { battlefieldInkCells } from './solid-ink-grid';
 import { createMechCadences } from './mech-cadence';
 import type { AuthoredGait } from './authored-run';
 import { getMechAssetBinding } from './mech-asset-registry';
@@ -116,11 +116,9 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let overlay: OverlayFrame | undefined;
 		let width = 1; let height = 1; let disposed = false; let previousState: CombatStateView | undefined; let previousStateTime = 0;
 		let zoom = 1;
-		let inkCellSize: InkCellSize = 1.5;
 		const setZoom = function (value: number) {
 			if (!Number.isFinite(value)) return;
 			zoom = clampCombatZoom(value);
-			inkCellSize = selectInkCellSize(zoom, inkCellSize);
 		};
 		let playerSkin: MechFinish = 'original';
 		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
@@ -174,19 +172,13 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const bake = comparison?.state !== overlay.state || comparison.bakedYard;
 					const terrain = objects.bakedTerrainForFrame(enabled && bake && ink.available, renderer, camera, sun.color);
 					if (!enabled) { renderer.render(scene, camera); return; }
-					const responsiveScale = viewScale(width, height);
-					const displayZoom = zoom * camera.zoom;
-					const cellSize = camera.zoom === 1 ? inkCellSize : selectInkCellSize(displayZoom, inkCellSize);
-					// Budget the extra-wide view separately so it cannot reduce mech detail at ordinary zooms.
-					const minimumZoom = displayZoom < minimumInkZoom[2] ? MIN_COMBAT_ZOOM : minimumInkZoom[cellSize];
 					const player = overlay.state.player;
 					// Match the Warden study's standing reference height. Keep the
 					// anchor independent of chassis pose, look-ahead and camera shake.
 					inkAnchor.set(player.x, groundHeight(overlay.state.mission?.map.terrain, player) + 50.875, player.y);
 					const frame = {
 						anchor: inkAnchor,
-						cell: cellSize * responsiveScale * displayZoom,
-						minimumCell: cellSize * responsiveScale * minimumZoom,
+						...battlefieldInkCells(camera, width, zoom * camera.zoom),
 						lighterHousing: comparison?.lighter ?? true,
 					};
 					if (!ink.render(scene, camera, width, height, terrain ? { ...frame, terrain } : frame) && terrain) {

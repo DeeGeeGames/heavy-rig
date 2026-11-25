@@ -1,18 +1,26 @@
 import { expect, test } from 'bun:test';
 import { Matrix4, OrthographicCamera, Vector3 } from 'three';
-import { alignCamera, viewScale } from '../src/projection-3d';
+import { alignCamera } from '../src/projection-3d';
 import { createState } from '../src/simulation';
-import { inkGrid, minimumInkZoom, selectInkCellSize, setInkClipTransform } from '../src/solid-ink-grid';
+import { battlefieldInkCells, inkGrid, setInkClipTransform } from '../src/solid-ink-grid';
 
-test('zoom hysteresis crosses both tier boundaries without oscillating under small reversals', function () {
-	const zooms = [0.5, 0.83, 0.84, 0.83, 0.79, 0.78, 1.16, 1.15, 1.11, 1.10, 1.15, 1.16, 0.5];
-	const sizes: number[] = [];
-	let size = selectInkCellSize(1, 1.5);
-	for (const zoom of zooms) {
-		size = selectInkCellSize(zoom, size);
-		sizes.push(size);
+test('battlefield ink matches a two-metre terrain texel from wide view to close zoom', function () {
+	const camera = new OrthographicCamera();
+	const state = createState();
+	const start = new Vector3(state.player.x, 50.875, state.player.y);
+	for (const [width, height] of [[1440, 900], [390, 844]] as const) {
+		for (const zoom of [0.35, 0.64, 1, 1.55, 2.5]) {
+			alignCamera(camera, width, height, state, zoom);
+			// Compare to the screen projection of a terrain texel measured along
+			// the camera's fixed horizontal axis, not to a preset screen size.
+			const end = new Vector3(2, 0, 0).applyQuaternion(camera.quaternion).add(start);
+			const terrainPitch = (end.project(camera).x - start.clone().project(camera).x) * width / 2;
+			const grid = inkGrid({ width, height, ...battlefieldInkCells(camera, width, zoom), anchorX: 0, anchorY: 0, maxTextureSize: 8192 });
+			if (!grid) throw new Error('Missing battlefield ink grid');
+			expect(width / grid.x.span).toBeCloseTo(terrainPitch, 8);
+			expect(height / grid.y.span).toBeCloseTo(terrainPitch, 8);
+		}
 	}
-	expect(sizes).toEqual([2, 2, 1.5, 1.5, 1.5, 2, 1, 1, 1, 1.5, 1.5, 1, 2]);
 });
 
 test('camera look-ahead, zoom and shake preserve the tracked mech grid and display depth', function () {
@@ -27,7 +35,7 @@ test('camera look-ahead, zoom and shake preserve the tracked mech grid and displ
 		const anchor = new Vector3(state.player.x, 50.875, state.player.y).project(camera);
 		const armor = new Vector3(state.player.x + 10.3, 77.2, state.player.y - 16.7).project(camera);
 		const grid = inkGrid({
-			width, height, cell: 1.5 * zoom, minimumCell: 1.5 * minimumInkZoom[1.5],
+			width, height, ...battlefieldInkCells(camera, width, zoom),
 			anchorX: (anchor.x + 1) * width / 2, anchorY: (anchor.y + 1) * height / 2, maxTextureSize: 8192,
 		});
 		if (!grid) throw new Error('Missing ink grid');
@@ -61,19 +69,25 @@ test('camera look-ahead, zoom and shake preserve the tracked mech grid and displ
 	expect(last.activeWidth).toBeLessThan(first.activeWidth);
 });
 
-test('a large viewport has a bounded source allocation that stays fixed throughout its tier', function () {
+test('large viewports bound wide-view allocation without coarsening a closer view that fits', function () {
 	const width = 7680, height = 4320, maxTextureSize = 4096;
-	const minimumCell = 2 * minimumInkZoom[2] * viewScale(width, height);
-	const options = { width, height, minimumCell, anchorX: 143.02, anchorY: 919.95, maxTextureSize };
-	const far = inkGrid({ ...options, cell: minimumCell });
-	const near = inkGrid({ ...options, cell: 1.6 * minimumCell });
+	const camera = new OrthographicCamera();
+	const state = createState();
+	alignCamera(camera, width, height, state, 0.5);
+	const farCells = battlefieldInkCells(camera, width, 0.5);
+	alignCamera(camera, width, height, state, 2.5);
+	const nearCells = battlefieldInkCells(camera, width, 2.5);
+	const options = { width, height, anchorX: 143.02, anchorY: 919.95, maxTextureSize };
+	const far = inkGrid({ ...options, ...farCells });
+	const near = inkGrid({ ...options, ...nearCells });
 	if (!far || !near) throw new Error('Large viewport needs a bounded grid');
 	for (const axis of [far.x, far.y]) {
 		expect(axis.capacity * 2).toBeLessThanOrEqual(maxTextureSize);
 		expect(axis.active).toBeLessThanOrEqual(axis.capacity);
 	}
-	expect(far.x.capacity * far.y.capacity).toBeLessThan(width * height / 10);
+	expect(far.x.capacity * far.y.capacity).toBeLessThanOrEqual(1_600_000);
 	expect([near.x.capacity, near.y.capacity]).toEqual([far.x.capacity, far.y.capacity]);
-	expect(far.x.span / near.x.span).toBeCloseTo(1.6, 8);
-	expect(inkGrid({ ...options, cell: minimumCell, width: Infinity })).toBeUndefined();
+	expect(width / far.x.span).toBeGreaterThan(farCells.cell);
+	expect(width / near.x.span).toBeCloseTo(nearCells.cell, 8);
+	expect(inkGrid({ ...options, ...farCells, width: Infinity })).toBeUndefined();
 });
