@@ -1,6 +1,8 @@
 import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Path, Shape, ShapeGeometry } from 'three';
 import type { Biome, MissionMap } from './campaign-types';
 import type { FieldTerrain, TerrainObstacle } from './field-terrain';
+import { hasBiomeGround, type SurfaceBiome } from './biome-ground';
+import { createBiomeScenery } from './biome-scenery';
 
 export const FIELD_ROAD_MARKINGS = { haul: '#e7ac67', service: '#8dc7c9' } as const;
 
@@ -60,12 +62,13 @@ export const createCutGround = function (map: MissionMap, terrain: FieldTerrain)
 };
 
 type Vertex = readonly [number, number, number];
-const CUT_BANDS: Readonly<Record<Biome, readonly number[]>> = {
+type FissureBiome = Exclude<Biome, SurfaceBiome>;
+const CUT_BANDS: Readonly<Record<FissureBiome, readonly number[]>> = {
 	volcanic: [0xa5694d, 0x635152, 0x443e49, 0x685550, 0x3b3642, 0x422e32, 0xc95b37, 0xffa25b, 0x552f30, 0x35313b, 0x5f4c49, 0x4c4349, 0x945a45],
 	badlands: [0xc39268, 0x926346, 0x81553e, 0xb78054, 0x875741, 0x704936, 0x684b3d, 0x87684c, 0x704c37, 0x80543d, 0xae7752, 0x966443, 0xc5966d],
 	tundra: [0xaad1d9, 0x719eaf, 0x557c9e, 0x74aabd, 0x486c89, 0x417990, 0x32617e, 0x2a526e, 0x396f90, 0x4f81a4, 0x6aa5b8, 0x83b7c2, 0xc6e2df],
 };
-const createFissures = function (cuts: readonly TerrainObstacle[], seed: number, biome: Biome) {
+const createFissures = function (cuts: readonly TerrainObstacle[], seed: number, biome: FissureBiome) {
 	const vertices: number[] = []; const pigments: number[] = [];
 	const tone = new Color();
 	const face = function (a: Vertex, b: Vertex, c: Vertex, d: Vertex, color: number) {
@@ -126,7 +129,7 @@ const SHED_COLORS = {
 	badlands: { base: 0x675344, wall: 0xb59976, trim: 0x674637, roof: 0x87604d },
 	tundra: { base: 0x425764, wall: 0x879da7, trim: 0x3c5463, roof: 0xd0dedb },
 };
-const addShed = function (parts: ShedPart[], shed: TerrainObstacle, biome: Biome) {
+const addShed = function (parts: ShedPart[], shed: TerrainObstacle, biome: FissureBiome) {
 	const { width: w, depth: d, height: h } = shed;
 	const colors = SHED_COLORS[biome];
 	const add = function (x: number, y: number, z: number, width: number, height: number, depth: number, color: number) {
@@ -152,6 +155,7 @@ const addShed = function (parts: ShedPart[], shed: TerrainObstacle, biome: Biome
 };
 
 export const createFieldStructures = function (terrain: FieldTerrain, seed: number, biome: Biome) {
+	if (hasBiomeGround(biome)) return createBiomeScenery(terrain, seed, biome);
 	const root = new Group();
 	const fissures = createFissures(terrain.obstacles.filter(function (obstacle) { return obstacle.kind === 'fissure'; }), seed, biome);
 	root.add(fissures);
@@ -179,7 +183,7 @@ export const createFieldStructures = function (terrain: FieldTerrain, seed: numb
 		}
 		conifers.name = 'tundra-conifers'; conifers.castShadow = true; conifers.receiveShadow = true; root.add(conifers);
 	}
-	return { root, dispose: function () {
+	return { root, rotors: undefined, dispose: function () {
 		fissures.geometry.dispose(); fissures.material.dispose();
 		sheds.geometry.dispose(); sheds.material.dispose(); sheds.dispose();
 		conifers?.geometry.dispose(); conifers?.material.dispose(); conifers?.dispose(); root.removeFromParent();

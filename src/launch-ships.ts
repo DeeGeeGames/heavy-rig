@@ -1,8 +1,9 @@
 import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
 import { createShipParts } from './launch-ship-parts';
 
-export const DROPSHIP_DECK = { height: 30, hinge: 205, toe: 350 } as const;
 const cabinBeam = 1.47;
+const rampFrameHalfWidth = 106;
+export const DROPSHIP_DECK = { height: 30, hinge: 205, toe: 350, halfWidth: rampFrameHalfWidth * cabinBeam } as const;
 const podCenter = 219;
 export const DROPSHIP_WIDTH = 2 * (podCenter + 33);
 
@@ -98,7 +99,7 @@ export const createDropship = function () {
 	const run = toe - hinge, fall = height - 1;
 	const length = Math.hypot(run, fall);
 	const down = Math.atan2(fall, run);
-	hull(ramp, 'ramp-armature', steel, 'z', 0, [[0, -3, 3, 106], [length - 8, -3, 3, 106], [length, -0.6, 0.6, 103]]);
+	hull(ramp, 'ramp-armature', steel, 'z', 0, [[0, -3, 3, rampFrameHalfWidth], [length - 8, -3, 3, rampFrameHalfWidth], [length, -0.6, 0.6, 103]]);
 	for (const side of sides) {
 		box(ramp, 'ramp-edge', accent, side * 93, 0.55, length * 0.48, 5, 1, length - 13);
 		box(ramp, 'outer-door-plate', trim, side * 51, -6.2, length * 0.5, 93, 2, length - 17);

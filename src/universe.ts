@@ -25,8 +25,11 @@ export interface SystemIntel {
 export const FACTION_CENTERS: Readonly<Record<FactionId, { x: number; y: number }>> = {
 	freeholds: { x: 25, y: 32 }, combine: { x: 74, y: 32 }, accord: { x: 51, y: 76 },
 };
-const BIOMES: readonly Biome[] = ['badlands', 'volcanic', 'tundra'];
-const COLORS: Readonly<Record<Biome, string>> = { badlands: '#d9ac78', volcanic: '#e77b5d', tundra: '#9bd6e6' };
+const regionalBiomes = ['badlands', 'volcanic', 'tundra'] as const;
+const COLORS: Readonly<Record<Biome, string>> = {
+	badlands: '#d9ac78', volcanic: '#e77b5d', tundra: '#9bd6e6', wetlands: '#6bc5b6',
+	forest: '#94b979', steppe: '#dec36c', crystal: '#c3a0e2',
+};
 export const randomSource = function (seed: number) {
 	let value = seed >>> 0;
 	return function () { value = (Math.imul(value, 1664525) + 1013904223) >>> 0; return value / 4294967296; };
@@ -41,14 +44,20 @@ const generateSystems = function (): readonly PlanetDefinition[] {
 	const names = ['Ashfall', 'Vesper', 'Harrow', 'Solace', 'Redoubt', 'Kestrel', 'Nacre', 'Orison', 'Ember', 'Drift', 'Talus', 'Haven'];
 	const suffixes = ['Reach', 'Gate', 'Crossing', 'Deep', 'Station', 'Fall'];
 	const generated = Array.from({ length: 72 }, function (_, index): PlanetDefinition {
-		const biome = BIOMES[Math.floor(random() * BIOMES.length)] ?? 'badlands';
+		const biome = regionalBiomes[Math.floor(random() * regionalBiomes.length)] ?? 'badlands';
 		return {
 			id: `system-${index}`, name: `${names[index % names.length]} ${suffixes[Math.floor(index / names.length)]}`,
 			description: biome === 'badlands' ? 'Dry settlement belts, aquifers, and overland supply routes.' : biome === 'volcanic' ? 'Ore seams, foundry settlements, and exposed processing plants.' : 'Ice fields, isolated outposts, and long-range relay installations.',
 			biome, color: COLORS[biome], x: 5 + index % 12 * 8 + random() * 4, y: 8 + Math.floor(index / 12) * 15 + random() * 6,
 		};
 	}).filter(function (world) { return !anchors.some(function (anchor) { return Math.hypot(anchor.x - world.x, anchor.y - world.y) < 6; }); });
-	return [...anchors, ...generated];
+	// Existing chart positions and indices feed saved contracts and their terrain seeds.
+	return [...anchors, ...generated,
+		{ id: 'brackwater', name: 'Brackwater', description: 'Levees connect reed islands and pump stations in a tidal delta.', biome: 'wetlands', color: COLORS.wetlands, x: 36, y: 62 },
+		{ id: 'elderholt', name: 'Elderholt', description: 'Logging roads run between old-growth stands and isolated timber yards.', biome: 'forest', color: COLORS.forest, x: 18, y: 62 },
+		{ id: 'galeward', name: 'Galeward', description: 'Turbine rows cross golden grassland broken by dark stone outcrops.', biome: 'steppe', color: COLORS.steppe, x: 51, y: 20 },
+		{ id: 'iolith', name: 'Iolith', description: 'Survey tracks wind between clusters of violet and milky quartz.', biome: 'crystal', color: COLORS.crystal, x: 82, y: 64 },
+	];
 };
 // A shared seeded chart keeps names and surface biomes stable across companies.
 // Each company's seed, calendar, and mission influence determine its frontiers.

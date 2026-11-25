@@ -1,5 +1,7 @@
 import { expect, test } from 'bun:test';
-import { Scene, Vector3 } from 'three';
+import { Box3, Matrix4, Scene, Vector3 } from 'three';
+import { createBiomeScenery } from '../src/biome-scenery';
+import { terrainPathClear } from '../src/field-terrain';
 import { createSurfaceLanding, planLaunchLanding } from '../src/launch-surface';
 import { cloudEntry, cloudExit, LAUNCH_DURATION, LAUNCH_TIMING, launchCues, launchSceneTime } from '../src/launch-timing';
 import { DROPSHIP_DECK, DROPSHIP_WIDTH } from '../src/launch-ships';
@@ -184,25 +186,54 @@ test('the ship keeps the ramp down while the last rig still has a foot on it', f
 	} finally { landing.dispose(); }
 });
 
-test('a loaded dropship lands clear of the guards and facilities already on the field', function () {
-	for (const [planetId, kind, tier, seed] of [['meridian', 'acquisition', 6, 11139138], ['cinder', 'raid', 1, 11235680]] as const) {
+test('a loaded dropship lands clear of obstacles, guards and facilities already on the field', function () {
+	for (const [planetId, kind, tier, seed] of [['meridian', 'acquisition', 6, 11139138], ['cinder', 'raid', 1, 11235680], ['brackwater', 'defend', 4, 42]] as const) {
 		const state = createSituationMission({
 			planetId, kind, tier, frame: 'warden',
 			wing: [{ pilotId: 'flint', frame: 'kestrel' }, { pilotId: 'kite', frame: 'maul' }, { pilotId: 'glass', frame: 'warden-c' }],
 		}, seed, 'story');
 		const map = state.mission?.map;
 		if (!map) throw new Error('Missing deployment map');
-		const scene = new Scene(), landing = createSurfaceLanding(scene, state, map);
+		const scene = new Scene(), plan = planLaunchLanding(state, map), landing = createSurfaceLanding(scene, state, map, plan);
 		try {
 			landing.update(touchdown + 1.125, 900, 600);
 			const ship = scene.getObjectByName('company-dropship-vehicle');
 			if (!ship) throw new Error('Missing landed dropship');
+			if (map.terrain) expect(terrainPathClear(map.terrain, plan.site.at(0, DROPSHIP_DECK.hinge),
+				plan.site.at(0, DROPSHIP_DECK.toe), DROPSHIP_DECK.halfWidth)).toBe(true);
 			for (const { body, radius } of combatTargets(state)) {
 				const p = ship.worldToLocal(new Vector3(body.x, 0, body.y));
 				const insideHull = Math.abs(p.x) < DROPSHIP_WIDTH / 2 + radius && p.z > -190 - radius && p.z < DROPSHIP_DECK.hinge + radius;
-				const onRamp = Math.abs(p.x) < 145 + radius && p.z >= DROPSHIP_DECK.hinge && p.z < DROPSHIP_DECK.toe + radius;
+				const onRamp = Math.abs(p.x) < DROPSHIP_DECK.halfWidth + radius && p.z >= DROPSHIP_DECK.hinge && p.z < DROPSHIP_DECK.toe + radius;
 				expect(insideHull || onRamp).toBe(false);
 			}
 		} finally { landing.dispose(); }
 	}
+});
+
+test('rotating blades stay outside the cargo hold as the dropship leaves Galeward', function () {
+	const state = createSituationMission({ planetId: 'galeward', kind: 'defend', tier: 4, frame: 'warden',
+		wing: [{ pilotId: 'flint', frame: 'maul' }, { pilotId: 'kite', frame: 'kestrel' }, { pilotId: 'glass', frame: 'warden-c' }] }, 42, 'story');
+	const map = state.mission?.map;
+	if (!map?.terrain) throw new Error('Missing deployment terrain');
+	const scene = new Scene(), landing = createSurfaceLanding(scene, state, map);
+	const scenery = createBiomeScenery(map.terrain, map.seed, 'steppe');
+	try {
+		const ship = scene.getObjectByName('company-dropship-vehicle'), rotors = scenery.rotors;
+		if (!ship || !rotors) throw new Error('Missing dropship or rotors');
+		const hold = new Box3(new Vector3(-145, 32, -125), new Vector3(145, 190, 175));
+		const matrix = new Matrix4(), inverse = new Matrix4(), point = new Vector3();
+		const vertices = rotors.mesh.geometry.getAttribute('position');
+		for (let t = lift; t <= LAUNCH_TIMING.end; t += .125) {
+			landing.update(t, 900, 600); ship.updateMatrixWorld(true);
+			inverse.copy(ship.matrixWorld).invert();
+			rotors.update(t - LAUNCH_TIMING.end);
+			for (let i = 0; i < rotors.mesh.count; i++) {
+				rotors.mesh.getMatrixAt(i, matrix); matrix.premultiply(inverse);
+				for (let v = 0; v < vertices.count; v++) {
+					if (hold.containsPoint(point.fromBufferAttribute(vertices, v).applyMatrix4(matrix))) throw new Error(`Rotor entered the cargo hold at ${t}s`);
+				}
+			}
+		}
+	} finally { landing.dispose(); scenery.dispose(); }
 });

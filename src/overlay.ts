@@ -6,12 +6,9 @@ import { toScreen } from './projection-3d';
 import { ARENA, missileTracking, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
 import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { FIELD_ROAD_MARKINGS } from './field-terrain-3d';
+import { terrainMapColors } from './terrain-map-colors';
 import { enemyVolume, playerVolume } from './combat-spatial';
 import { getFrame, type FrameId } from './frames';
-
-const RADAR_CUT_COLORS = {
-	volcanic: ['#35282a', '#9c6a54'], badlands: ['#3d2922', '#bd9164'], tundra: ['#294657', '#abd2df'],
-} as const;
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
 export const targetElevation = function (target: Point & { catalog?: { frameId: FrameId } }): number {
@@ -304,12 +301,11 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		};
 		ctx.save(); ctx.beginPath(); ctx.rect(x + 1, y + 1, w - 2, h - 2); ctx.clip();
 		if (mission?.map.terrain) {
-			const cut = RADAR_CUT_COLORS[mission.map.biome];
 			for (const obstacle of mission.map.terrain.obstacles) {
 				const corner = point({ x: obstacle.x - obstacle.width / 2, y: obstacle.y - obstacle.depth / 2 });
 				const dw = obstacle.width * w / bounds.width, dh = obstacle.depth * h / bounds.height;
-				ctx.fillStyle = obstacle.kind === 'fissure' ? cut[0] : obstacle.kind === 'tree' ? '#496b62' : '#899190';
-				ctx.strokeStyle = obstacle.kind === 'fissure' ? cut[1] : obstacle.kind === 'tree' ? '#83ac96' : '#b3bfbb';
+				const [fill, edge] = terrainMapColors(obstacle.kind, mission.map.biome);
+				ctx.fillStyle = fill; ctx.strokeStyle = edge;
 				ctx.fillRect(corner.x, corner.y, dw, dh); ctx.strokeRect(corner.x, corner.y, dw, dh);
 			}
 			for (const [i, road] of mission.map.terrain.roads.entries()) {

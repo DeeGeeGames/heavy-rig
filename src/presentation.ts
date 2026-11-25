@@ -389,9 +389,12 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					if (enemy.catalog || enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
+				// The simulation clock starts at touchdown handoff. Run surface scenery
+				// up to that phase during the approach while gameplay is still frozen.
+				const sceneryTime = launchTime === undefined ? state.time : launchTime - LAUNCH_TIMING.end;
 				objects.update(state, player ? {
 					muzzles: player.model.muzzles.map(worldAnchor), exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
-				} : undefined, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.position : undefined; }));
+				} : undefined, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.position : undefined; }), sceneryTime);
 				firingArc.update(state, Boolean(player) && !attract && !hangar && !landing);
 				reticle.visible = barrel.visible = !attract && !landing;
 				reticle.position.set(aim.x, 0.25, aim.y);
