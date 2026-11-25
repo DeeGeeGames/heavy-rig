@@ -94,7 +94,7 @@ export const escapeMessage = function (time: number, prompts: EscapePrompts): st
 	const steer = prompts.device === 'touch' ? 'Drag the left stick sideways to steer. STOP brings you to neutral.'
 		: prompts.device === 'gamepad' ? `${arcade ? 'Left stick chooses your direction.' : 'Left stick left/right turns your legs.'} ${button(prompts.controller.stop)} stops.`
 			: `${arcade ? 'Movement keys choose your direction.' : `${key('left')} / ${key('right')} turn your legs.`} ${key('stop')} stops.`;
-	const aim = prompts.device === 'touch' ? 'Tap a guard to track it, or use NEXT. Arm mount chips, then hold FIRE.'
+	const aim = prompts.device === 'touch' ? 'Tap a guard to track it, or use NEXT. Hold a weapon tile to fire that mount.'
 		: prompts.device === 'gamepad' ? `${arcade ? 'Right stick aims.' : 'Right stick left/right turns your torso.'} Hold ${button(prompts.controller['mount-0'])} to fire.`
 			: `Mouse aims independently of your legs. Hold ${key('mount-0')} to fire.`;
 	const coolant = prompts.device === 'touch' ? 'VENT' : prompts.device === 'gamepad' ? button(prompts.controller.coolant) : key('coolant');
