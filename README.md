@@ -491,9 +491,9 @@ to those indices.
 
 | Action | Keyboard / mouse | Standard gamepad | Touch |
 | --- | --- | --- | --- |
-| Raise/lower persistent throttle | W/S or up/down | D-pad or left stick up/down | Drag left stick up/down |
+| Drive up/down in Arcade or adjust throttle in Simulation | W/S or up/down | D-pad or left stick up/down | Drag left stick up/down |
 | Neutral; momentum decays | X | X / square | STOP |
-| Turn hull | A/D or left/right | D-pad or left stick left/right | Drag left stick left/right |
+| Move sideways in Arcade or turn in Simulation | A/D or left/right | D-pad or left stick left/right | Drag left stick left/right |
 | Aim independent turret | Mouse | Right stick left/right rotates torso | Tap a hostile or NEXT to track; empty ground aims manually |
 | Camera zoom | Mouse wheel | — | — |
 | Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Arm mount 1; hold FIRE |
@@ -528,13 +528,14 @@ activate on touch-first devices or through Settings. Optional recoil/damage
 vibration depends on browser and controller support.
 
 **Settings → Controls → Control Mode** selects **Simulation** or
-**Arcade** (default), saved on this device. The table above describes Simulation. In
-Arcade, the D-pad, left stick, or WASD / mapped movement keys select screen-relative
-leg facing and forward throttle demand; release returns throttle gradually to
-neutral. The right stick selects absolute torso facing, as before. Both modes
-retain each chassis’s leg and torso rotation speeds. Mouse aiming works in
-both modes, including while moving or firing with a controller. Touch controls
-retain persistent throttle and a cruise/steer stick in either mode. Touch targeting is independent of the desktop/controller control-mode preference.
+**Arcade** (default), saved on this device. In Arcade, the D-pad, left stick, or
+mapped movement keys accelerate the rig in the chosen screen direction while its
+legs turn to follow. Push the stick farther for more speed. Reversing input
+bleeds off momentum before the rig gains speed the other way. Release to slow.
+The right stick aims the torso independently. Both modes retain each chassis’s
+leg and torso rotation speeds. Mouse aiming works in both modes, including while
+moving or firing with a controller. The touch stick always uses Arcade movement.
+Enabling CRUISE holds the touch stick’s last direction and speed setting on release.
 
 In Simulation, releasing throttle keeps the engine setting and releasing the
 right stick holds the torso heading. Pause preserves throttle and
@@ -547,8 +548,7 @@ heat, throttle, and the mapped stop input sit at the lower left; hardpoints, fit
 weapons, live fire bindings, remaining ammunition, readiness/reload/heat lock, and coolant sit at the
 lower right. Controller use enlarges the same layout and changes the prompts to
 the detected controller family. Combined fire uses independent mapped inputs;
-there is no mount arming step or touch target tracking in these modes. Simulation
-and Arcade keep their existing movement and aiming behavior.
+there is no mount arming step or touch target tracking in these modes.
 
 The cockpit follows active input, including on touchscreen laptops: a key press
 or mouse use restores the direct-fire layout; touch reveals the mobile controls.

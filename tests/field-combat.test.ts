@@ -43,6 +43,26 @@ test('the cockpit reports a stopped or sliding hull while its throttle remains l
 	} finally { await world.dispose(); }
 });
 
+test('Arcade can move off a wall on the first tick after the impact has absorbed its momentum', async function () {
+	const combat = createCombatRuntime();
+	const world = ECSpresso.create().withPlugin(combat.plugin).withFixedTimestep(1 / 60).build();
+	try {
+		await world.initialize();
+		const state = combat.attach(scenario()); const p = state.player;
+		const controls: Controls = { drive: 0, turn: 0, stop: false, heading: 0, throttleTarget: 1, aim: p, fire: [false, false, false, false], coolant: false };
+		combat.setControls(function () { return controls; }); combat.setEnabled(true);
+		for (let tick = 0; tick < 420; tick++) world.update(1 / 60);
+		expect(p.x).toBeCloseTo(663, 2);
+		expect(p.speed).toBeCloseTo(0);
+		const wall = p.x; const y = p.y;
+		combat.setControls(function () { return { ...controls, heading: Math.PI }; });
+		world.update(1 / 60);
+		expect(p.x).toBeLessThan(wall);
+		expect(p.y).toBe(y);
+		expect(p.speed).toBeCloseTo((wall - p.x) * 60);
+	} finally { await world.dispose(); }
+});
+
 test('a shed intercepts both sides, ends a piercing shot after the exposed target, and shields its far side from splash', function () {
 	const state = scenario();
 	const exposed = scout(31, 610); const sheltered = scout(32, 748);

@@ -77,7 +77,7 @@ export interface CombatStateView {
 	authoredPose?: AuthoredPoseContext | undefined;
 	mission?: MissionRuntime;
 	frame: FrameId; difficulty: Difficulty; phase: 'combat'; loadout: WeaponMount[]; seed: number; stats: CombatStats; strikes: CombatCollection<ArtilleryStrike>;
-	player: RigBody;
+	player: RigBody & { travelAngle?: number | undefined };
 	squadmates: readonly Squadmate[];
 	relay: number; enemies: CombatCollection<Unit>; shots: CombatCollection<Shot>; effects: CombatCollection<Effect>; wave: number; spawned: number; spawnIn: number;
 	intermission: number; cannonIn: number; time: number; kills: number; shake: number;
@@ -247,6 +247,24 @@ const advanceDrive = function (body: RigBody, targetSpeed: number, acceleration:
 	// normal component of motion. Instruments and footsteps use ground speed.
 	body.motorSpeed = motorSpeed;
 	if (dt > 0) body.speed = Math.sign(motorSpeed) * Math.hypot(body.x - x, body.y - y) / dt;
+};
+const advanceArcadeDrive = function (player: CombatStateView['player'], heading: number | undefined, targetSpeed: number, acceleration: number, dt: number, bounds: { width: number; height: number }, terrain: FieldTerrain | undefined) {
+	if (dt <= 0) return;
+	const speed = Math.abs(player.speed);
+	const travelAngle = player.travelAngle ?? (player.angle + (player.speed < 0 ? Math.PI : 0));
+	// Blend world-space velocities. On release the remaining throttle can only sustain or slow the current motion.
+	const blend = Math.min(1, dt * acceleration);
+	const carry = speed * (1 - blend);
+	const thrust = (heading === undefined ? Math.min(speed, targetSpeed) : targetSpeed) * blend;
+	const targetAngle = heading ?? travelAngle;
+	const vx = Math.cos(travelAngle) * carry + Math.cos(targetAngle) * thrust;
+	const vy = Math.sin(travelAngle) * carry + Math.sin(targetAngle) * thrust;
+	const x = player.x; const y = player.y;
+	moveBody(player, vx * dt, vy * dt, bounds, terrain, RIG_RADIUS);
+	// Carry only the motion that survived a wall slide or the edge of the field.
+	const dx = player.x - x; const dy = player.y - y;
+	player.speed = Math.hypot(dx, dy) / dt;
+	player.travelAngle = Math.atan2(dy, dx);
 };
 const travelHeading = function (terrain: FieldTerrain | undefined, from: Point, to: Point, radius: number) {
 	const next = terrain ? terrainWaypoint(terrain, from, to, radius) : to;
@@ -677,14 +695,31 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 	const before = state.authoredPose ?? advancePose?.(undefined, p, state.time - dt, state.mission?.map.terrain);
 	const frame = getFrame(state.frame);
 	const bounds = state.mission?.map ?? ARENA;
-	p.angle += input.heading === undefined ? input.turn * dt * frame.turnRate : clamp(angleDelta(p.angle, input.heading), -dt * frame.turnRate, dt * frame.turnRate);
-	// Simulation holds its engine setting; arcade approaches stick demand, including neutral.
+	const turn = input.heading === undefined ? input.turn * dt * frame.turnRate : clamp(angleDelta(p.angle, input.heading), -dt * frame.turnRate, dt * frame.turnRate);
 	const throttleChange = dt * 0.75;
-	p.throttle = input.stop ? 0 : input.throttleTarget === undefined
-		? clamp(p.throttle + input.drive * throttleChange, -1, 1)
-		: p.throttle + clamp(clamp(input.throttleTarget, 0, 1) - p.throttle, -throttleChange, throttleChange);
-	const modifier = frameWeight(state.frame, state.loadout).modifier;
-	advanceDrive(p, p.throttle * (p.throttle < 0 ? frame.reverseSpeed : frame.speed) * modifier, frame.acceleration, dt, bounds, state.mission?.map.terrain);
+	const weight = frameWeight(state.frame, state.loadout);
+	const terrain = state.mission?.map.terrain;
+	if (input.throttleTarget === undefined) {
+		if (p.travelAngle !== undefined) {
+			// Returning to Simulation keeps the signed component of momentum along the hull.
+			p.speed *= Math.cos(p.travelAngle - p.angle);
+			p.motorSpeed = p.speed;
+			p.travelAngle = undefined;
+		}
+		p.angle += turn;
+		p.throttle = input.stop ? 0 : clamp(p.throttle + input.drive * throttleChange, -1, 1);
+		advanceDrive(p, p.throttle * (p.throttle < 0 ? frame.reverseSpeed : frame.speed) * weight.modifier, frame.acceleration, dt, bounds, terrain);
+	} else {
+		const demand = clamp(input.throttleTarget, 0, 1);
+		// A neutral touch input during a Simulation reverse cruise lets the signed setting decay.
+		const throttle = demand > 0 ? Math.abs(p.throttle) : p.throttle;
+		p.throttle = input.stop ? 0 : throttle + clamp(demand - throttle, -throttleChange, throttleChange);
+		const heading = demand > 0 ? input.heading ?? p.angle + turn : undefined;
+		const maxSpeed = p.throttle < 0 ? frame.reverseSpeed * weight.modifier : weight.speed;
+		advanceArcadeDrive(p, heading, Math.abs(p.throttle) * maxSpeed, frame.acceleration, dt, bounds, terrain);
+		p.motorSpeed = undefined;
+		p.angle += turn;
+	}
 	const aimAngle = input.centerTorso ? p.angle : Math.atan2(input.aim.y - p.y, input.aim.x - p.x);
 	const turretRate = input.centerTorso ? frame.turretRate * 0.5 : frame.turretRate;
 	p.turret = turnTorso(p.angle, p.turret, aimAngle, targetingDt(state, p, dt) * turretRate, input.turretTurn);

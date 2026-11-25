@@ -89,10 +89,10 @@ export const escapeMessage = function (time: number, prompts: EscapePrompts): st
 	const key = function (action: keyof KeyboardBindings) { return prompts.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
 	const button = prompts.buttonLabel ?? padLabel;
 	const arcade = prompts.controlMode === 'arcade' && prompts.device !== 'touch';
-	const drive = prompts.device === 'touch' ? 'Drag the left stick up to raise throttle; release to cruise.'
+	const drive = prompts.device === 'touch' ? 'Point the left stick to move. Release to slow.'
 		: prompts.device === 'gamepad' ? arcade ? 'Point the left stick to move; release to slow.' : 'Left stick up/down sets throttle; release to cruise.'
 			: arcade ? `${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} move; release to slow.` : `${key('forward')} raises throttle; ${key('back')} lowers it. Release to cruise.`;
-	const steer = prompts.device === 'touch' ? 'Drag the left stick sideways to steer. STOP brings you to neutral.'
+	const steer = prompts.device === 'touch' ? 'Point the stick in a new direction. Your legs turn to follow. STOP brings you to neutral.'
 		: prompts.device === 'gamepad' ? `${arcade ? 'Left stick chooses your direction.' : 'Left stick left/right turns your legs.'} ${button(prompts.controller.stop)} stops.`
 			: `${arcade ? 'Movement keys choose your direction.' : `${key('left')} / ${key('right')} turn your legs.`} ${key('stop')} stops.`;
 	const aim = prompts.device === 'touch' ? 'Tap a guard to track it, or use NEXT. Arm mount chips, then hold FIRE.'
