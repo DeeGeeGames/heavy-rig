@@ -460,10 +460,10 @@ to those indices.
 | Turn hull | A/D or left/right | D-pad or left stick left/right | Drag left stick left/right |
 | Aim independent turret | Mouse | Right stick left/right rotates torso | Tap a hostile or NEXT to track; empty ground aims manually |
 | Camera zoom | Mouse wheel | — | — |
-| Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Arm mount 1; hold FIRE |
-| Fire mount 2 | Right mouse / hold 2 or E | LT / L2 | Arm mount 2; hold FIRE |
-| Fire mount 3 | Middle mouse / hold 3 or Q | RB / R1 | Arm mount 3; hold FIRE |
-| Fire mount 4 | Back/thumb mouse / hold 4 or F | LB / L1 | Arm mount 4; hold FIRE |
+| Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Hold mount 1 tile |
+| Fire mount 2 | Right mouse / hold 2 or E | LT / L2 | Hold mount 2 tile |
+| Fire mount 3 | Middle mouse / hold 3 or Q | RB / R1 | Hold mount 3 tile |
+| Fire mount 4 | Back/thumb mouse / hold 4 or F | LB / L1 | Hold mount 4 tile |
 | Coolant purge | V | B / circle | Vent coolant |
 | Pause / resume | Escape | Menu | Pause |
 | Menus | Tab / Shift+Tab / Enter | D-pad or stick, A/cross confirm, B/circle back | Tap |
@@ -508,8 +508,8 @@ Keyboard/mouse and controller share a direct-fire cockpit. Frame integrity, reac
 heat, throttle, and the mapped stop input sit at the lower left; hardpoints, fitted
 weapons, live fire bindings, remaining ammunition, readiness/reload/heat lock, and coolant sit at the
 lower right. Controller use enlarges the same layout and changes the prompts to
-the detected controller family. Combined fire uses independent mapped inputs;
-there is no mount arming step or touch target tracking in these modes. Simulation
+the detected controller family. Combined fire uses independent mapped inputs.
+Touch target tracking is not available in these modes. Simulation
 and Arcade keep their existing movement and aiming behavior.
 
 The cockpit follows active input, including on touchscreen laptops: a key press
@@ -517,12 +517,14 @@ or mouse use restores the direct-fire layout; touch reveals the mobile controls.
 The Show touch controls preference can keep the touch dock visible for mouse use,
 and controller use hides it. Narrow windows alone do not enable touch controls.
 
-Touch combat uses two thumbs: the left stick sets heading and speed;
-the right FIRE trigger fires the armed mount chips. Releasing the drive stick
+The left stick sets heading and speed. Each tile in the right-hand grid fires
+one fitted mount. Tap for a shot when ready, hold for sustained fire, or hold
+separate tiles together to combine weapons. Releasing the drive stick
 slows the rig to zero. CRUISE retains the stick position after release; adjust
 the stick to change course or speed. Turning Cruise off restores release-to-slow;
 STOP centers the stick while leaving Cruise enabled. Pause, focus loss, resize,
-and input-mode changes clear Cruise. Releasing FIRE ceases new shots.
+and input-mode changes clear Cruise. Releasing a tile stops starting new shots
+or bursts from that mount.
 Tap a visible hostile (including aircraft or a facility) to track its position with the existing turret turn rate.
 NEAREST selects the closest visible, unobscured contact to the rig. NEXT cycles
 those contacts in increasing distance from the rig, wrapping to the nearest.

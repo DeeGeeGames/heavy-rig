@@ -1,9 +1,8 @@
-/* Touch cockpit: arcade movement, target tracking, and a held trigger. */
+/* Touch cockpit: arcade movement, target tracking, and per-mount fire. */
+.touch-enabled { --touch-side: 18px; --touch-bottom: max(12px, env(safe-area-inset-bottom)); }
 .touch-enabled #touch { position: absolute; inset: auto 0 0; height: 225px; display: block; pointer-events: none; }
 .touch-enabled #touch button { pointer-events: auto; touch-action: none; }
-.touch-drive-cluster, .touch-fire-cluster { position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); width: 204px; height: 190px; text-align: center; }
-.touch-drive-cluster { left: max(20px, env(safe-area-inset-left)); }
-.touch-fire-cluster { right: max(20px, env(safe-area-inset-right)); }
+.touch-drive-cluster { position: absolute; bottom: var(--touch-bottom); left: max(var(--touch-side), env(safe-area-inset-left)); width: 204px; height: 190px; text-align: center; }
 .touch-control-label { display: block; font: 9px/1.4 var(--mono); letter-spacing: 1px; color: var(--paper); }
 .touch-drive-cluster>.touch-control-label { width: 126px; }
 .touch-drive-cluster>small { position: absolute; left: 0; top: 153px; width: 126px; font: 8px var(--mono); color: var(--muted); }
@@ -14,33 +13,47 @@
 .touch-left { left: 8px; top: calc(50% - 12px); }.touch-right { right: 8px; top: calc(50% - 12px); }
 #touch-drive-knob { position: absolute; left: calc(50% - 23px); top: calc(50% - 23px); width: 46px; height: 46px; border-radius: 50%; background: #729a88; border: 1px solid #b8d5bf; pointer-events: none; }
 #touch-drive-knob::after { content: ''; position: absolute; inset: 18px; background: #dae3be; border-radius: 50%; }
-.touch-enabled :is(#touch-stop, #touch-cruise, #touch-coolant, #touch-next, #touch-nearest) { position: absolute; width: 54px; height: 54px; min-height: 54px; border-radius: 50%; padding: 0; display: grid; align-content: center; gap: 3px; font: 11px var(--mono); background: #10211ff2; }
+.touch-enabled :is(#touch-stop, #touch-cruise) { position: absolute; width: 54px; height: 54px; min-height: 54px; border-radius: 50%; padding: 0; display: grid; align-content: center; gap: 3px; font: 11px var(--mono); background: #10211ff2; }
 #touch-cruise { right: 5px; top: 24px; border-color: var(--cyan); }
 #touch-cruise[aria-pressed="true"] { background: #2f5346; color: var(--cyan); box-shadow: inset 0 0 0 2px var(--cyan); }
 #touch-stop { right: 5px; bottom: 8px; border-color: var(--danger); color: #ffb09a; }
 #touch small { display: block; font: 8px var(--mono); color: var(--muted); }
-.touch-fire-cluster>.touch-control-label { text-align: right; min-height: 20px; white-space: nowrap; font-size: 8px; }
-.touch-enabled #touch-fire { position: absolute; right: 0; top: 24px; width: 126px; height: 126px; min-height: 0; border-radius: 50%; background: #725a31e8; border: 1px solid var(--amber); box-shadow: inset 0 0 0 7px #a48c5544; color: #ffdfa9; font: 27px var(--display); padding: 0; }
-#touch-fire small { color: #e0ceaa; margin-top: 5px; }
-.touch-enabled #touch-fire.firing { background: #a57a38; box-shadow: inset 0 0 0 7px #e3b87777, 0 0 24px #f3b35b22; }
-#touch-nearest { left: 0; top: 4px; font-size: 10px; }
-#touch-next { left: -8px; top: 64px; }
-#touch-coolant { left: 0; bottom: 8px; border-color: var(--cyan); color: var(--cyan); }
-.touch-enabled .weapon-console { z-index: 1; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 208px); right: max(20px, env(safe-area-inset-right)); width: max-content; max-width: calc(100% - 40px); }
-.touch-enabled .weapon-console-heading { margin-bottom: 6px; }
-.touch-enabled .weapon-console-heading .eyebrow { font-size: 8px; }
-.touch-enabled .weapon-console-heading .eyebrow::after { content: ' / TAP TO ARM'; }
-.touch-enabled .weapon-bank { display: flex; gap: 6px; }
-.touch-enabled .weapon { width: 58px; height: 56px; min-height: 56px; padding: 6px 3px; gap: 2px; border-radius: 5px; justify-items: center; text-align: center; }
-.touch-enabled .weapon.armed { background: #2f463b; border-color: var(--cyan); box-shadow: inset 0 2px var(--cyan); }
-.touch-enabled .weapon .weapon-mount, .touch-enabled .weapon small { display: none; }
-.touch-enabled .weapon .weapon-ammo { display: block; font: 8px/1 var(--mono); color: var(--paper); }
-.touch-enabled .weapon em { display: block; margin: 0; font: 7px/1 var(--mono); }
-.touch-enabled .weapon .weapon-icon { display: none; }
+/* Share the weapon bank with desktop. The wrapper only lays out the touch grid. */
+.combat-controls { display: contents; }
+.touch-combat-utilities { display: none; }
+.touch-enabled .combat-controls {
+	position: absolute; z-index: 1; bottom: var(--touch-bottom); right: max(var(--touch-side), env(safe-area-inset-right));
+	width: 188px; display: grid; gap: 6px; pointer-events: none;
+}
+.touch-enabled .touch-combat-utilities { display: grid; gap: 5px; }
+.touch-combat-heading { display: flex; justify-content: space-between; gap: 5px; font: 8px/11px var(--mono); color: var(--muted); white-space: nowrap; }
+#touch-target-status { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--cyan); }
+.touch-combat-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.touch-combat-actions button {
+	width: 100%; height: 44px; padding: 0; border-radius: 50%; background: #10211ff2;
+	display: grid; place-content: center; justify-items: center; gap: 2px; font: 9px var(--mono);
+}
+.touch-enabled .combat-controls button { pointer-events: auto; touch-action: none; }
+.touch-combat-actions small { font: 7px var(--mono); color: var(--muted); }
+#touch-coolant, #zoom-hold { border-color: var(--cyan); color: var(--cyan); }
+.touch-enabled .weapon-console { position: static; width: auto; }
+.touch-enabled :is(.weapon-console-heading, .weapon-console #coolant) { display: none; }
+.touch-enabled .weapon-bank { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.touch-enabled .weapon {
+	display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: 15px 11px;
+	align-content: center; align-items: center; column-gap: 3px; row-gap: 3px; min-width: 0; height: 50px;
+	padding: 4px 5px; border: 1px solid #7e9588; border-left: 2px solid var(--weapon-color); border-radius: 4px; background: #1d2825f5;
+}
+.touch-enabled .weapon :is(.weapon-mount, small) { display: none; }
+.touch-enabled .weapon .weapon-icon { grid-column: 1; grid-row: 1; position: static; font: 9px var(--mono); }
+.touch-enabled .weapon b { grid-column: 2 / -1; grid-row: 1; min-width: 0; max-width: 100%; padding: 0; font: 13px var(--display); overflow: hidden; text-overflow: ellipsis; }
+.touch-enabled .weapon .weapon-ammo { display: block; grid-column: 1 / 3; grid-row: 2; font: 8px var(--mono); white-space: nowrap; color: var(--paper); }
+.touch-enabled .weapon em { grid-column: 3; grid-row: 2; justify-self: end; margin: 0; font: 7px var(--mono); white-space: nowrap; }
+.touch-enabled .weapon.firing { background: #6e4d29; border-color: var(--weapon-color); color: #fff0cf; }
+.touch-enabled .weapon.firing em { color: #fff0cf; }
+.touch-enabled .weapon.locked { border-left-color: var(--danger); }
+.touch-enabled .weapon.empty { border-left-color: var(--muted); }
 .touch-enabled .load-heading { font-size: 7px; margin-top: 4px; }
-.touch-enabled .weapon .weapon-icon { position: static; padding: 0; font: 10px var(--mono); color: var(--cyan); }
-.touch-enabled .weapon b { padding: 0; font: 12px var(--display); letter-spacing: 0; }
-.touch-enabled .weapon-console #coolant { display: none; }
 .touch-enabled .left-instruments, .training-active.touch-enabled .left-instruments { left: max(20px, env(safe-area-inset-left)); top: 78px; bottom: auto; right: auto; width: 260px; display: flex; gap: 8px; align-items: start; }
 .touch-enabled .relay-readout { display: block; flex: 0 0 63px; padding: 7px; margin: 0; }
 .touch-enabled .relay-readout .signal-icon { display: none; }.touch-enabled .relay-readout .eyebrow { font-size: 7px; letter-spacing: 0; }.touch-enabled .relay-readout b { display: block; float: none; font-size: 14px; }.touch-enabled .relay-readout .track { margin-top: 5px; }
@@ -69,25 +82,16 @@
 /* The portrait dock owns canvas height despite inline renderer dimensions.
    Keep control geometry independent of browser chrome and fullscreen height. */
 @media (orientation: portrait) {
-	.touch-enabled { --touch-dock: calc(256px + env(safe-area-inset-bottom)); }
+	.touch-enabled { --touch-side: clamp(12px, 3.5vw, 14px); --touch-bottom: calc(12px + env(safe-area-inset-bottom)); --touch-dock: calc(198px + env(safe-area-inset-bottom)); }
 	.touch-enabled:not(.menu-open) #battlefield, .touch-enabled:not(.menu-open) .world-labels { height: calc(100% - var(--touch-dock)) !important; }
-	.touch-enabled #touch { height: var(--touch-dock, 270px); background: #0c1b19f5; border-top: 1px solid #7e9c7a55; }
-	.touch-drive-cluster, .touch-fire-cluster { width: 138px; height: 182px; bottom: max(14px, env(safe-area-inset-bottom)); }
-	.touch-drive-cluster { left: max(16px, env(safe-area-inset-left)); }.touch-fire-cluster { right: max(16px, env(safe-area-inset-right)); }
-	.touch-enabled #touch-drive, .touch-enabled #touch-fire { width: 104px; height: 104px; top: 19px; }
+	.touch-enabled #touch { height: var(--touch-dock); background: #0c1b19f5; border-top: 1px solid #7e9c7a55; }
+	.touch-drive-cluster { width: 104px; height: 183px; }
+	.touch-enabled #touch-drive { width: 104px; height: 104px; top: 19px; }
 	.touch-drive-cluster>.touch-control-label, .touch-drive-cluster>small { width: 104px; }
 	.touch-drive-cluster>small { top: 127px; font-size: 7px; }
-	.touch-enabled #touch-stop { right: 0; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
-	.touch-enabled #touch-coolant { left: auto; right: 0; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
-	.touch-enabled #touch-cruise { left: 0; right: auto; top: auto; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
-	.touch-enabled #touch-nearest { left: -28px; top: 8px; width: 48px; height: 48px; min-height: 48px; font-size: 9px; }
-	.touch-enabled #touch-next { left: -28px; top: 67px; width: 48px; height: 48px; min-height: 48px; }
-	.touch-fire-cluster>.touch-control-label { font-size: 7px; }
-	.touch-enabled .weapon-console { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 197px); left: 16px; right: 16px; max-width: none; width: auto; }
-	.touch-enabled .weapon-console-heading { display: none; }
-	.touch-enabled #weapon-hint { display: none; }
-	.touch-enabled .weapon-bank { justify-content: center; gap: 5px; }
-	.touch-enabled .weapon { width: 54px; height: 48px; min-height: 48px; }
+	.touch-enabled :is(#touch-cruise, #touch-stop) { top: auto; bottom: 0; width: 48px; height: 48px; min-height: 48px; font-size: 10px; }
+	.touch-enabled #touch-cruise { left: 0; right: auto; }
+	.touch-enabled #touch-stop { right: 0; }
 	.touch-enabled .mission-bar { padding: max(14px, env(safe-area-inset-top)) 14px 10px; }
 	.touch-enabled .mission-heading { min-width: 0; }.touch-enabled .mission-heading>div { min-width: 0; }.touch-enabled .mission-heading .eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.touch-enabled .mission-heading b { font-size: 16px; }.touch-enabled #status { display: block; font-size: 8px; line-height: 1.4; max-width: 100%; }
@@ -108,15 +112,10 @@
 	.training-active.touch-enabled:not(.menu-open) :is(#battlefield, .world-labels) { position: absolute; top: 160px; height: calc(100% - var(--touch-dock) - 160px) !important; }
 }
 @media (orientation: landscape) {
-	.touch-drive-cluster, .touch-fire-cluster { bottom: max(10px, env(safe-area-inset-bottom)); height: 162px; }
-	.touch-enabled #touch-drive, .touch-enabled #touch-fire { width: 112px; height: 112px; top: 20px; }
+	.touch-drive-cluster { height: 162px; }
+	.touch-enabled #touch-drive { width: 112px; height: 112px; top: 20px; }
 	.touch-drive-cluster>small { top: 139px; width: 112px; font-size: 7px; }
 	.touch-drive-cluster>.touch-control-label { width: 112px; }
-	.touch-enabled :is(#touch-nearest, #touch-next, #touch-coolant) { width: 48px; height: 48px; min-height: 48px; }
-	.touch-enabled #touch-nearest { top: 8px; }
-	.touch-enabled #touch-coolant { bottom: 0; }
-	.touch-enabled .weapon-console { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 177px); }
-	.touch-enabled .weapon { height: 48px; min-height: 48px; width: 52px; }
 	.touch-enabled .left-instruments, .training-active.touch-enabled .left-instruments { top: 90px; }
 	.touch-enabled .frame-readout { padding: 4px 7px; }
 	.touch-enabled .training-guide, .touch-enabled #escape-guide { top: 60px; font-size: 10px; }
@@ -129,23 +128,17 @@
 	.training-active.touch-enabled .system-buttons { margin-left: auto; }
 	.training-active.touch-enabled .training-guide { top: max(14px, env(safe-area-inset-top)); left: 20px; right: auto; width: 280px; padding: 0; background: none; border: 0; }
 	.training-active.touch-enabled .left-instruments { top: 120px; }
-	.training-active.touch-enabled .weapon-console-heading { display: none; }
 	.training-active.touch-enabled .left-instruments { width: 220px; }
-	.touch-enabled .weapon-console #weapon-hint { display: none; }
 }
 
-/* Keep zoom with the right-hand controls, clear of the central playfield. */
-.touch-zoom { position: absolute; left: -64px; bottom: 0; width: 52px; height: 52px; z-index: 3; }
-.touch-enabled #zoom-hold { position: absolute; inset: 0; width: 52px; height: 52px; min-height: 52px; padding: 0; border: 1px solid var(--cyan); border-radius: 50%; background: #10211ff5; color: var(--cyan); display: grid; align-content: center; justify-items: center; gap: 3px; cursor: ns-resize; }
-#zoom-hold svg { width: 17px; height: 17px; pointer-events: none; }
-#touch #zoom-hold small { font: 8px var(--mono); color: var(--cyan); pointer-events: none; }
+/* The slider rises above the utility row, away from the weapon tiles. */
+.touch-zoom { position: relative; }
+#zoom-hold { cursor: ns-resize; }
+#zoom-hold svg { width: 15px; height: 15px; pointer-events: none; }
 .touch-zoom:has(.zoom-panel:not([hidden])) #zoom-hold { opacity: 0; }
-.zoom-panel { position: absolute; top: -26px; left: 0; width: 52px; height: 104px; border: 1px solid var(--cyan); border-radius: 28px; background: #10211ff5; box-shadow: 0 5px 20px #0005; pointer-events: none; }
+.zoom-panel { position: absolute; bottom: 0; left: 0; width: 44px; height: 104px; border: 1px solid var(--cyan); border-radius: 28px; background: #10211ff5; box-shadow: 0 5px 20px #0005; pointer-events: none; }
 .zoom-panel output { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 5px 8px; background: #10211ff5; border: 1px solid var(--border); color: var(--cyan); font: 11px var(--mono); white-space: nowrap; }
 .zoom-plus, .zoom-minus { position: absolute; left: 0; right: 0; text-align: center; color: var(--cyan); font: 15px var(--mono); }
 .zoom-plus { top: 3px; }.zoom-minus { bottom: 3px; }
-.zoom-track { position: absolute; left: 24px; top: 20px; bottom: 20px; width: 2px; background: #69897d; }
-#zoom-knob { position: absolute; left: 16px; top: 42px; width: 18px; height: 18px; border-radius: 50%; background: var(--cyan); }
-@media (orientation: portrait) {
-	.touch-zoom { left: auto; right: 64px; }
-}
+.zoom-track { position: absolute; left: 20px; top: 20px; bottom: 20px; width: 2px; background: #69897d; }
+#zoom-knob { position: absolute; left: 12px; top: 42px; width: 18px; height: 18px; border-radius: 50%; background: var(--cyan); }
