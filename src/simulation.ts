@@ -31,7 +31,7 @@ export interface Warning extends MissionSpawn { life: number }
 export interface ArtilleryStrike extends Point { id: number; life: number; duration: number; radius: number; damage: number; weapon?: WeaponId; slot?: number; owner?: number }
 export interface CombatStats { damageDealt: number; damageTaken: number; relayDamage: number; shotsFired: number; shotsHit: number; overheats: number; killScore: number; commanderDestroyed: boolean }
 export interface Wreck extends Point { kind: EnemyKind; angle: number }
-export interface Controls { heading?: number; throttleTarget?: number; turretTurn?: number; drive: number; stop: boolean; turn: number; aim: Point; targetId?: number; fire: FireInputs; coolant: boolean }
+export interface Controls { heading?: number; throttleTarget?: number; turretTurn?: number; centerTorso?: boolean; drive: number; stop: boolean; turn: number; aim: Point; targetId?: number; fire: FireInputs; coolant: boolean }
 export interface CombatCollection<T> extends ReadonlyArray<T> {
 	push(...items: T[]): number;
 }
@@ -584,8 +584,9 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 		: p.throttle + clamp(clamp(input.throttleTarget, 0, 1) - p.throttle, -throttleChange, throttleChange);
 	const modifier = frameWeight(state.frame, state.loadout).modifier;
 	advanceDrive(p, p.throttle * (p.throttle < 0 ? frame.reverseSpeed : frame.speed) * modifier, frame.acceleration, dt, bounds, state.mission?.map.terrain);
-	const aimAngle = Math.atan2(input.aim.y - p.y, input.aim.x - p.x);
-	p.turret = turnTorso(p.angle, p.turret, aimAngle, dt * frame.turretRate, input.turretTurn);
+	const aimAngle = input.centerTorso ? p.angle : Math.atan2(input.aim.y - p.y, input.aim.x - p.x);
+	const turretRate = input.centerTorso ? frame.turretRate * 0.5 : frame.turretRate;
+	p.turret = turnTorso(p.angle, p.turret, aimAngle, dt * turretRate, input.turretTurn);
 	if (advancePose) state.authoredPose = advancePose(before, p, state.time);
 
 };

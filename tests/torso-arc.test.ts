@@ -54,6 +54,19 @@ test('manual rate aim hits both stops, holds on release, and yields to legs whil
 	expect(p.speed).toBeLessThan(0); expect(p.throttle).toBe(-1);
 });
 
+test('unlocked touch aim recenters gradually to the current hull heading, even while steering', function () {
+	const state = createState();
+	const p = state.player;
+	p.angle = 0; p.turret = 1;
+	const controls = { ...idle, turn: 1, centerTorso: true, aim: point(p, 1) };
+	movementStep(state, controls, dt);
+	expect(p.angle).toBeGreaterThan(0);
+	expect(p.turret).toBeLessThan(1);
+	expect(p.turret).toBeGreaterThan(p.angle);
+	for (let tick = 0; tick < 120; tick++) movementStep(state, controls, dt);
+	expect(angleDelta(p.angle, p.turret)).toBeCloseTo(0);
+});
+
 test('out-of-arc selection blocks every weapon without spending ammo, heat or cooldown', function () {
 	const weapons: readonly WeaponId[] = ['autocannon', 'machine-gun', 'laser', 'ppc', 'stream-missiles', 'cluster-missiles', 'stream-rockets', 'cluster-rockets'];
 	for (const starter of weapons) {
