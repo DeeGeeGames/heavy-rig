@@ -1,7 +1,7 @@
 import { definePlugin } from 'ecspresso';
 import { createGroupComponents, createRenderer3DPlugin, type Renderer3DComponentTypes, type Renderer3DEventTypes, type Renderer3DResourceTypes } from 'ecspresso/plugins/rendering/renderer3D';
 import { clampCombatZoom, MIN_COMBAT_ZOOM, zoomForWheel } from './shared/camera-zoom';
-import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Fog, HemisphereLight, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, RingGeometry, Scene, Vector3, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Fog, HemisphereLight, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, RingGeometry, Scene, Vector3, WebGLRenderer, type Plane } from 'three';
 import { createGait, createEnemyGait, type Gaits } from './gait';
 import { getFrame, type FrameId } from './frames';
 import { FRAME_RIGS } from './frame-rig';
@@ -10,7 +10,7 @@ import { sampleMechResponses, type MechResponse } from './mech-response';
 import { drawOverlay, type ScreenRect } from './overlay';
 import { alignCamera, toGround, toScreen, viewScale } from './projection-3d';
 import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset, weaponCameraKick } from './camera-follow';
-import { playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView } from './simulation';
+import { ARENA, playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView } from './simulation';
 import type { SpatialPoint } from './weapon-rig';
 import type { AuthoredPoseContext } from './authored-pose';
 import type { WeaponMount } from './arsenal';
@@ -31,6 +31,7 @@ import { LAUNCH_TIMING } from './launch-timing';
 import type { FieldTerrain } from './field-terrain';
 import { groundAimSlope, groundHeight } from './terrain-elevation';
 import { drapeGroundGeometry } from './terrain-decals';
+import { fieldClippingPlanes } from './field-clipping';
 
 interface CombatEntities {
 	entityForPlayer: () => number | undefined;
@@ -46,7 +47,7 @@ interface MechView {
 	damage: { hp?: number; hitAt?: number; genericHitAt?: number; sampledAt?: number };
 }
 interface ViewBindings {
-	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechFinish) => MechView;
+	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechFinish, entryPlanes?: Plane[]) => MechView;
 	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, time: number, pose: MechPose) => void;
 	scale: (id: number, scale: number) => void;
 }
@@ -194,11 +195,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				});
 				world.registerDispose('mechView', function ({ value }) { value.model.dispose(); });
 				views = {
-					ensure: function (id, kind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original') {
+					ensure: function (id, kind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original', entryPlanes) {
 						const previous = world.getComponent(id, 'mechView');
 						if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame && previous.skin === skin) return previous;
 						if (previous) { world.removeComponent(id, 'group'); world.removeComponent(id, 'mechView'); }
-						const view: MechView = { model: createMech(kind, commander, frame, skin), kind, commander, frame, skin, damage: {} };
+						const view: MechView = { model: createMech(kind, commander, frame, skin, entryPlanes), kind, commander, frame, skin, damage: {} };
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
@@ -394,7 +395,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				for (const enemy of state.enemies) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
-					const view = views.ensure(id, enemy.catalog ? undefined : enemy.kind, Boolean(enemy.commander), enemy.catalog?.frameId ?? 'warden', opponentFinish);
+					const view = views.ensure(id, enemy.catalog ? undefined : enemy.kind, Boolean(enemy.commander), enemy.catalog?.frameId ?? 'warden', opponentFinish,
+						enemy.entry ? fieldClippingPlanes(state.mission?.map ?? ARENA) : undefined);
 					const gait = gaits.enemies.get(enemy.id) ?? createEnemyGait(enemy);
 					views.pose(id, view, gait, enemy.angle, enemy.hp, state.time, {
 						terrain, loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, response: responses.get(enemy.id), authoredPose: enemy.catalog?.authoredPose,

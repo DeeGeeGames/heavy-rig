@@ -1,6 +1,6 @@
 import type { CombatStateView, Point } from './simulation';
-import { distance } from './simulation';
-import { missionStructures, isPriorityTarget } from './missions';
+import { combatTargets, distance } from './simulation';
+import { isPriorityTarget } from './missions';
 import { getFrame } from './frames';
 import { targetElevation, type ScreenRect } from './overlay';
 import { inFiringArc } from './torso-arc';
@@ -11,12 +11,13 @@ export const isContactVisible = function ({ x, y }: Point, width: number, height
 		&& !obstructions.some(function (rect) { return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom; });
 };
 export const visibleTouchContacts = function (state: CombatStateView, project: (point: Point, elevation: number) => Point, width: number, height: number, obstructions: readonly ScreenRect[]): TouchContact[] {
-	const contacts: TouchContact[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) {
+	const contacts = combatTargets(state).map(function (target): TouchContact {
+		if (target.kind === 'structure') return { id: target.id, point: target.body, screen: project(target.body, 45), label: state.mission?.contract.kind === 'raid' ? 'RAID SITE' : 'FACILITY' };
+		const enemy = target.body;
 		const frame = enemy.catalog ? getFrame(enemy.catalog.frameId) : undefined;
 		const label = isPriorityTarget(state, enemy) ? 'PRIORITY TARGET' : frame ? `${frame.chassisName} ${frame.variant}` : enemy.kind.toUpperCase();
 		return { id: enemy.id, point: enemy, screen: project(enemy, targetElevation(enemy)), label };
 	});
-	for (const { id, body } of missionStructures(state.mission)) if (body.hp > 0) contacts.push({ id, point: body, screen: project(body, 45), label: state.mission?.contract.kind === 'raid' ? 'RAID SITE' : 'FACILITY' });
 	return contacts.filter(function (contact) { return isContactVisible(contact.screen, width, height, obstructions); })
 		.sort(function (a, b) { return a.id - b.id; });
 };

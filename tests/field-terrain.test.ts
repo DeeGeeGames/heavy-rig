@@ -8,6 +8,8 @@ import { MISSION_TIERS } from '../src/reputation';
 import { createFieldTrial } from '../src/field-trial';
 import { moveOnTerrain, terrainPathClear, terrainShotFraction, terrainWaypoint, type FieldTerrain, type TerrainObstacle } from '../src/field-terrain';
 import { groundHeight } from '../src/terrain-elevation';
+import { DROPSHIP_DECK, DROPSHIP_WIDTH } from '../src/launch-berths';
+import { createSituationMission } from '../src/situation-sim';
 import { CAPTURE_RADIUS, EXTRACTION_RADIUS, missionHostileCount } from '../src/missions';
 import { createMissionState, distance, spawningStep, type Point, type SquadmateOptions } from '../src/simulation';
 
@@ -117,7 +119,8 @@ test('campaign deployment keeps each contract role, full squad, and hostile rost
 				assert(clearAt(mate, RIG_RADIUS) && terrainPathClear(terrain, mate, map.drop, RIG_RADIUS), 'squad deployment slot');
 			}
 			for (const hostile of state.enemies) {
-				assert(clearAt(hostile, ENEMY_RADIUS) && reachable(hostile, map.objective, ENEMY_RADIUS), 'hostile deployment and egress');
+				const handoff = hostile.entry ?? hostile;
+				assert(clearAt(handoff, ENEMY_RADIUS) && reachable(handoff, map.objective, ENEMY_RADIUS), 'hostile deployment and egress');
 			}
 			const cut = terrain.obstacles.find(function (obstacle) { return obstacle.kind === 'fissure'; });
 			const cover = terrain.obstacles.find(function (obstacle) { return obstacle.kind === 'shed'; });
@@ -135,6 +138,28 @@ test('campaign deployment keeps each contract role, full squad, and hostile rost
 	}
 	expect(cutDirections).toEqual(new Set(['east-west', 'north-south']));
 }, 30_000);
+
+test('edge and hillside reinforcements keep the whole dropship on the field and the unloading ramp on the ground', function () {
+	for (const [planetId, seed, tier, index] of [['iolith', 3246141861, 6, 12], ['borealis', 1070406884, 1, 3]] as const) {
+		const state = createSituationMission({ kind: 'defend', planetId, tier, frame: 'warden', wing: [] }, seed, 'standard');
+		state.spawnIn = 0; state.spawned = index;
+		spawningStep(state, 1 / 60);
+		const map = state.mission?.map, drop = state.warnings[0]?.drop;
+		if (!map || !drop) throw new Error('Expected an incoming transport');
+		const { origin, heading, padHeight } = drop.flight;
+		const at = function (side: number, aft: number) {
+			return { x: origin.x + Math.cos(heading) * aft + Math.sin(heading) * side, y: origin.y + Math.sin(heading) * aft - Math.cos(heading) * side };
+		};
+		for (const width of [-DROPSHIP_WIDTH / 2, DROPSHIP_WIDTH / 2]) for (const aft of [-233, DROPSHIP_DECK.hinge]) {
+			const p = at(width, aft);
+			expect(Math.min(p.x, p.y, map.width - p.x, map.height - p.y)).toBeGreaterThanOrEqual(0);
+		}
+		for (const passenger of state.warnings.flatMap(function (w) { return w.drop ?? []; })) {
+			const ground = groundHeight(map.terrain, at(passenger.lane, DROPSHIP_DECK.toe));
+			expect(Math.abs(padHeight - ground)).toBeLessThanOrEqual(5);
+		}
+	}
+});
 
 test('the approved Cinder trial and opening campaign Recovery deploy the same terrain', function () {
 	const trial = createFieldTrial(283191706).mission?.map;

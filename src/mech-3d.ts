@@ -1,6 +1,6 @@
 import type { AuthoredGait } from './authored-run';
 import type { AuthoredPoseContext } from './authored-pose';
-import { Box3, Group, Matrix4, Mesh, Quaternion, Vector3 } from 'three';
+import { Box3, Group, Matrix4, Mesh, Quaternion, Vector3, type Plane } from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { getFrame, type FrameId } from './frames';
 import { mountInterval } from './frame-tactics';
@@ -41,8 +41,8 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[], family?: 
 
 // Weapon geometry shares its stable rig with combat. Suspension and leg motion
 // remain presentation data; every view uses this same production factory.
-export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original') {
-	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind);
+export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original', entryPlanes?: Plane[]) {
+	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind, entryPlanes);
 	const authored = kind ? undefined : getMechAssetBinding(frame);
 	const finish = kind || supportsMechSkin(frame) ? skin : 'original';
 	if (authored) return authored.create(finish);

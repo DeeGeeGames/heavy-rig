@@ -1,10 +1,12 @@
 import { expect, test } from 'bun:test';
 import { InstancedMesh, LineSegments, Mesh, Scene, Vector3, type BufferGeometry, type Material, type Object3D } from 'three';
 import { createMount } from '../src/arsenal';
+import { dropRigPose, rigReleaseTime } from '../src/enemy-deployment';
 import { getHardpoints } from '../src/hardpoints';
 import { createGaits } from '../src/gait';
 import { createMech } from '../src/mech-3d';
-import { createState, projectilesStep, step, weaponsStep } from '../src/simulation';
+import { createState, projectilesStep, spawningStep, step, weaponsStep } from '../src/simulation';
+import { createSituationMission } from '../src/situation-sim';
 import { createWorldObjects } from '../src/world-3d';
 
 test('world pools track live combat state and restart removes transient objects', function () {
@@ -28,6 +30,47 @@ test('world pools track live combat state and restart removes transient objects'
 		expect(floor instanceof InstancedMesh && floor.count).toBe(150);
 	} finally { presentation.dispose(); }
 	expect(scene.children).toHaveLength(0);
+});
+
+test('one transport unloads two rigs, stays for departure, and clears on mission replacement', function () {
+	const state = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, 123, 'story');
+	const scene = new Scene(); const world = createWorldObjects(scene);
+	const advanceTo = function (time: number) {
+		const dt = time - state.time; state.time = time;
+		spawningStep(state, dt); world.update(state);
+	};
+	try {
+		state.spawnIn = 0;
+		advanceTo(1 / 60);
+		const [first, second] = state.warnings;
+		if (!first?.drop || !second?.drop) throw new Error('Expected two inbound rigs');
+		const [ship] = scene.getObjectsByProperty('name', 'hostile-dropship-vehicle');
+		expect(scene.getObjectsByProperty('name', 'hostile-dropship-vehicle')).toHaveLength(1);
+		const release = first.drop.flight.startedAt + rigReleaseTime(first.drop);
+		advanceTo(release - 1);
+		const match = function (point: { x: number; y: number; elevation: number }) {
+			const position = new Vector3(point.x, point.elevation, point.y);
+			return scene.getObjectByName('heavy-rig-world')?.children.find(function (child) {
+				return child.position.distanceTo(position) < .001;
+			});
+		};
+		const lead = match(dropRigPose(first.drop, state.time));
+		const wing = match(dropRigPose(second.drop, state.time));
+		if (!lead || !wing || lead === wing) throw new Error('Missing disembarking models');
+		const wingPosition = wing.position.clone();
+		world.update(state);
+		expect(wing.position.equals(wingPosition)).toBe(true);
+		advanceTo(release + .001);
+		expect(lead.parent).toBeNull(); expect(wing.parent).not.toBeNull();
+		expect(wing.position.equals(wingPosition)).toBe(false);
+		advanceTo(second.drop.flight.startedAt + rigReleaseTime(second.drop) + .001);
+		expect(wing.parent).toBeNull(); expect(scene.getObjectByName('hostile-dropship-vehicle')).toBe(ship);
+		advanceTo(state.time + 2);
+		expect(ship?.position.y).toBeGreaterThan(second.drop.flight.padHeight);
+		world.update(createState());
+		expect(scene.getObjectByName('hostile-dropship-vehicle')).toBeUndefined();
+		expect(scene.getObjectByName('transport-ground-shadow')).toBeUndefined();
+	} finally { world.dispose(); }
 });
 
 test('transparent world effects retain depth tests without writing depth and disposal releases each shared asset once', function () {

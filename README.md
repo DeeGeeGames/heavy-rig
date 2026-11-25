@@ -283,8 +283,11 @@ The radar and squad orders map show terrain contours at 40-metre intervals
 alongside obstacles and routes. The radar also shows the elevation under your rig.
 Situation Sim offers all seven mission types
 in each biome.
-Defense drops the squad near the relay and brings in waves. Clearance, Raid,
-and Acquisition spread their sites across the field.
+Defense drops the squad near the relay. Hostile transports land during the
+assault, unload their rigs by ramp, and lift away. Tanks drive in from the map
+edge, while helicopters and VTOLs fly in. On offensive contracts the garrisons
+already hold their positions when you land. Clearance, Raid, and Acquisition
+spread their sites across the field.
 
 A sortie uses each assigned frame's saved integrity and installed weapons. There
 are **no random weapon drafts, combat repair/coolant pickups, or field-service

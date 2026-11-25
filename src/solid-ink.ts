@@ -179,6 +179,7 @@ const createPipeline = function (renderer: WebGLRenderer) {
 				renderer.shadowMap.autoUpdate = false;
 				renderer.autoClear = false;
 				if (!terrain) renderer.clearDepth();
+				sceneMaterials.prepareDepth();
 				scene.overrideMaterial = depth;
 				raster.projectionMatrix.copy(camera.projectionMatrix);
 				raster.projectionMatrixInverse.copy(camera.projectionMatrixInverse);

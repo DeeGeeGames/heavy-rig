@@ -2,6 +2,7 @@ import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, G
 import { ARENA, getEnemyDefense, type Effect, type Point, type Shot, type CombatStateView } from './simulation';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
+import { createEnemyDropshipViews } from './enemy-dropship-view';
 import { createMissionEnvironment } from './mission-environment';
 import type { MissionMap } from './campaign-types';
 import { createProjectileSmoke } from './projectile-smoke';
@@ -12,6 +13,7 @@ import { bakeTerrain, type BakedTerrain, type TerrainBakeSource } from './terrai
 import { groundHeight, groundNormal } from './terrain-elevation';
 import { drapeGroundGeometry } from './terrain-decals';
 import type { FieldTerrain } from './field-terrain';
+import { fieldClippingPlanes } from './field-clipping';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
 interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
@@ -20,6 +22,7 @@ interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefin
 // retain Three.js objects; pools shrink with live state, including on restart.
 export const createWorldObjects = function (scene: Scene) {
 	const root = new Group(); root.name = 'heavy-rig-world'; scene.add(root);
+	const dropships = createEnemyDropshipViews(root);
 	// Live effects retain their own materials and draw against the stylized world's depth.
 	const feedback = new Group(); feedback.name = 'combat-feedback'; feedback.userData['nativeEffects'] = true; root.add(feedback);
 	const projectileSmoke = createProjectileSmoke(); feedback.add(projectileSmoke.root);
@@ -136,6 +139,7 @@ export const createWorldObjects = function (scene: Scene) {
 	const armorArc = geometry(new RingGeometry(0.9, 1, 32, 1, -Math.PI / 3, Math.PI * 2 / 3));
 	const armorSurface = glow('#eec58b', 0.8); const exposedSurface = glow('#a2f0d2', 0.9);
 	const committedSurface = glow('#ff8f61', 0.8);
+	const groundMarkers = [shadow, armorSurface, exposedSurface, committedSurface];
 	const createDefense = function () {
 		const value = new Group(); value.name = 'siege-defense';
 		const shield = new Mesh(armorArc, armorSurface); shield.rotation.x = -Math.PI / 2; shield.position.y = 0.3;
@@ -211,6 +215,8 @@ export const createWorldObjects = function (scene: Scene) {
 			}
 			yard.visible = !state.mission;
 			const terrain = state.mission?.map.terrain;
+			const planes = fieldClippingPlanes(state.mission?.map ?? ARENA);
+			for (const surface of groundMarkers) surface.clippingPlanes = planes;
 			relay.visible = !state.mission || state.mission.contract.kind === 'defend';
 			const relaySite = state.mission?.map.objective ?? { x: ARENA.relayX, y: ARENA.relayY };
 			relay.position.set(relaySite.x, groundHeight(terrain, relaySite), relaySite.y);
@@ -233,8 +239,10 @@ export const createWorldObjects = function (scene: Scene) {
 				box(value, dark, 24, 0, -19, 24, 7, 5).rotation.y = 0.5; box(value, dark, -21, 0, 22, 17, 10, 4).rotation.y = -0.3;
 				return { root: value };
 			}, function (value, index) { const wreck = state.wrecks[index]; if (wreck) placeOnGround(value.root, terrain, wreck, 0, -wreck.angle); });
-			sync(feedback, warnings, state.warnings.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
-				const warning = state.warnings[index]; if (!warning) return; placeOnGround(value.root, terrain, warning, .3); value.root.scale.setScalar(45 + Math.sin(state.time * 8) * 5);
+			const inbound = state.warnings;
+			dropships.update(state, inbound);
+			sync(feedback, warnings, inbound.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
+				const warning = inbound[index]; if (!warning) return; placeOnGround(value.root, terrain, warning, .3); value.root.scale.setScalar(45 + Math.sin(state.time * 8) * 5);
 			});
 			sync(feedback, strikes, state.strikes.length, createStrike, function (value, index) {
 				const strike = state.strikes[index]; if (!strike) return;
@@ -300,6 +308,7 @@ export const createWorldObjects = function (scene: Scene) {
 			if (disposed) return; disposed = true;
 			for (const effect of effects) effect.dispose();
 			for (const shot of shots) shot.dispose();
+			dropships.dispose();
 			lasers.dispose();
 			weaponVfx.dispose();
 			for (const strike of strikes) strike.dispose();

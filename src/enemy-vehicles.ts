@@ -1,4 +1,4 @@
-import { Box3, Group, Matrix4, Mesh, Object3D, Quaternion, TorusGeometry, Vector3 } from 'three';
+import { Box3, Group, Matrix4, Mesh, Object3D, Quaternion, TorusGeometry, Vector3, type Plane } from 'three';
 import type { WalkerGait } from './gait';
 import { createLowPolyParts } from './low-poly-parts';
 import type { MechFeedback } from './mech-3d';
@@ -14,11 +14,14 @@ export const isVehicleKind = function (kind: string): kind is VehicleKind {
 
 // Vehicles share the mech view contract and combat weapon geometry. Cosmetic
 // motion follows combat time so pausing freezes moving parts.
-export const createEnemyVehicle = function (kind: VehicleKind) {
+export const createEnemyVehicle = function (kind: VehicleKind, entryPlanes?: Plane[]) {
 	const root = new Group(); root.name = `${kind}-vehicle`;
 	const anatomy = new Group(); anatomy.name = 'anatomy'; root.add(anatomy);
 	const colors = { helicopter: '#8b7054', vtol: '#736578', tank: '#77745b' };
 	const parts = createLowPolyParts({ steel: colors[kind], accent: '#c48b56', trim: '#c3b6a0', glass: '#ffae7e' });
+	if (entryPlanes) for (const material of [parts.solid, parts.glass]) {
+		material.clippingPlanes = entryPlanes; material.clipShadows = true;
+	}
 	const { group, housing, cylinder, steel, dark, trim, accent, glass, recess } = parts;
 	const hull = group(anatomy, 'hull');
 	const turret = group(anatomy, 'turret');

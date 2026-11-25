@@ -8,10 +8,10 @@ const clamp = function (value: number) { return Math.max(0, Math.min(1, value));
 
 // The open stern is +Z. The split shell leaves an actual hold between the forward
 // pressure bulkhead and the hinged aft ramp, visible from both camera positions.
-export const createDropship = function () {
-	const parts = createShipParts('#899ba4');
+export const createDropship = function (livery?: { steel: string; accent: string }) {
+	const parts = createShipParts(livery?.steel ?? '#899ba4', livery?.accent);
 	const { box, hull, beam, sash, steel, dark, trim, accent, piston, recess, glass } = parts;
-	const craft = new Group(); craft.name = 'company-dropship-vehicle';
+	const craft = new Group(); craft.name = livery ? 'hostile-dropship-vehicle' : 'company-dropship-vehicle';
 	// Only the pressure hull is widened for a pair of Mauls. The docking frame,
 	// embarked walking rigs, and twin bought-in lift modules retain world scale.
 	const root = parts.group(craft, 'pressure-hull'); root.scale.x = cabinBeam;

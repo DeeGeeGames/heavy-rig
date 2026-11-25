@@ -17,6 +17,8 @@ import type { FeedbackActor, FeedbackFamily, ImpactSurface, WeaponCue } from './
 import { inFiringArc, turnTorso } from './torso-arc';
 import { planSquads, type SquadOrder as EnemySquadOrder } from './enemy-squads';
 import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './enemy-tactics';
+import { dropRigPose, planRigDrop, rigReleaseTime, type DropPassenger } from './enemy-deployment';
+import { advancePerimeterEntry, isFieldContact, planPerimeterEntry, type PerimeterEntry } from './enemy-perimeter';
 import { SQUAD_SIZE, type Pilot } from './pilots';
 
 export interface Point { x: number; y: number }
@@ -26,11 +28,13 @@ export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
 interface CatalogPilot extends Pick<RigBody, 'throttle' | 'speed' | 'motorSpeed' | 'missileLock' | 'targetId' | 'brace' | 'designation'> { frameId: FrameId; shotsFired: number; authoredPose?: AuthoredPoseContext | undefined }
-export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: EnemySquadOrder; tactics?: EnemyTactics; stationary?: true; catalog?: CatalogPilot; formation?: number }
+export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: EnemySquadOrder; tactics?: EnemyTactics; stationary?: true; catalog?: CatalogPilot; formation?: number; entry?: Point }
 type EnemyTarget = 'player' | 'relay' | { squadmateId: string };
 export interface Shot extends Point { elevation?: number; vElevation?: number; origin?: SpatialPoint; age?: number; vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[]; weapon?: WeaponId; slot?: number; owner?: number; enemyTarget?: EnemyTarget; squadmateId?: string }
 export interface Effect extends Point { life: number; size: number; color: string; elevation?: number; source?: 'muzzle'; slot?: number; squadmateId?: string; feedback?: WeaponCue }
-export interface Warning extends MissionSpawn { life: number }
+export type Warning = MissionSpawn & { life: number } & (
+	{ drop: DropPassenger; perimeter?: never } | { drop?: never; perimeter?: PerimeterEntry }
+);
 export interface ArtilleryStrike extends Point { id: number; life: number; duration: number; radius: number; damage: number; weapon?: WeaponId; slot?: number; owner?: number; squadmateId?: string; facilityMultiplier?: number; friendly?: true }
 export interface CombatStats { damageDealt: number; damageTaken: number; relayDamage: number; shotsFired: number; shotsHit: number; overheats: number; killScore: number; commanderDestroyed: boolean }
 export interface Wreck extends Point { kind: EnemyKind; angle: number }
@@ -187,7 +191,8 @@ const createEnemy = function (state: CombatStateView, spawn: MissionSpawn): Unit
 };
 export type CombatTarget = { id: number; kind: 'enemy'; body: Unit; radius: number } | { id: number; kind: 'structure'; body: NonNullable<MissionRuntime['structure']>; radius: number };
 export const combatTargets = function (state: CombatStateView): CombatTarget[] {
-	const enemies: CombatTarget[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, kind: 'enemy', body: enemy, radius: enemy.catalog ? RIG_RADIUS : ENEMY_RADIUS }; });
+	const bounds = state.mission?.map ?? ARENA;
+	const enemies: CombatTarget[] = state.enemies.filter(function (enemy) { return enemy.hp > 0 && isFieldContact(enemy, bounds); }).map(function (enemy) { return { id: enemy.id, kind: 'enemy', body: enemy, radius: enemy.catalog ? RIG_RADIUS : ENEMY_RADIUS }; });
 	return [...enemies, ...missionStructures(state.mission).filter(function (target) { return target.body.hp > 0; }).map(function ({ id, body }): CombatTarget { return { id, kind: 'structure', body, radius: FACILITY_RADIUS }; })];
 };
 export const distance = function (a: Point, b: Point) { return Math.hypot(a.x - b.x, a.y - b.y); };
@@ -408,7 +413,7 @@ export const enemyAimPoint = function (state: CombatStateView, enemy: Unit): Spa
 	const target = enemy.squad ? enemy.squad.target === 'relay' && relay ? relay : rig : !relay || enemy.commander || distance(enemy, rig) < ENEMY_STATS[enemy.kind].aggro ? rig : relay;
 	return projectAim(enemy, enemy.angle, enemyTargetVolume(state, target));
 };
-const isEnemyMech = function (enemy: Unit): boolean { return enemy.kind === 'scout' || enemy.kind === 'striker' || enemy.kind === 'siege'; };
+const isEnemyMech = function (enemy: Pick<Unit, 'kind'>): boolean { return enemy.kind === 'scout' || enemy.kind === 'striker' || enemy.kind === 'siege'; };
 const enemyCanFire = function (enemy: Unit, target: Point): boolean { return !isEnemyMech(enemy) || inFiringArc(enemy, enemy.hullAngle ?? enemy.angle, target); };
 const volleySpacing = function (weapon: WeaponDefinition): number { return 0.1 * getWeaponTier(weapon.tier).interval; };
 const tubeIndex = function (count: number, sequence: number): number { return count > 0 ? sequence % count : 0; };
@@ -1070,38 +1075,70 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 	}
 };
 
+const queueReinforcements = function (state: CombatStateView, spawns: readonly MissionSpawn[], vehicleNotice: number, startedAt: number) {
+	const field = state.mission?.map ?? ARENA;
+	const terrain = state.mission?.map.terrain;
+	const objective = relayPosition(state) ?? state.player;
+	const rigs = spawns.filter(isEnemyMech);
+	const lead = rigs[0];
+	const occupied = [state.player, ...state.squadmates, ...state.enemies, ...state.warnings.flatMap(function (w) { return w.drop ? [w, w.drop.flight.origin] : []; })];
+	const berths = lead ? planRigDrop(lead, objective, field, occupied, rigs.length, startedAt) : [];
+	if (!berths) return false;
+	const warnings: Warning[] = [];
+	for (const spawn of spawns) {
+		if (isEnemyMech(spawn)) {
+			const drop = berths.shift();
+			if (!drop) return false;
+			const life = rigReleaseTime(drop);
+			const { x, y } = dropRigPose(drop, startedAt + life);
+			warnings.push({ ...spawn, x, y, drop, life });
+		} else {
+			const perimeter = planPerimeterEntry(spawn, objective, field, terrain, state.player);
+			if (!perimeter) return false;
+			warnings.push({ ...spawn, ...perimeter.end, perimeter, life: vehicleNotice });
+		}
+	}
+	state.warnings.push(...warnings);
+	return true;
+};
+
 export const spawningStep = function (state: CombatStateView, dt: number) {
 	const mission = state.mission;
 	const wave = getWaveDefinition(state.wave);
 	const quota = mission ? missionHostileCount(mission.contract) : wave.enemies.length;
 	state.spawnIn -= dt;
 	if (state.spawned < quota && state.spawnIn <= 0 && (!mission || mission.contract.kind === 'defend' && mission.stage === 'active')) {
+		const startedAt = state.time - dt;
 		if (mission) {
 			const spawn = missionSpawn(mission.contract, mission.map, state.spawned);
-			if (spawn.formation === undefined) {
-				state.warnings.push({ ...spawn, life: 3 });
+			const count = spawn.formation === undefined ? 1 : Math.min(3, quota - state.spawned);
+			const section = Array.from({ length: count }, function (_, i) { return i === 0 ? spawn : missionSpawn(mission.contract, mission.map, state.spawned + i); });
+			if (queueReinforcements(state, section, spawn.formation === undefined ? 3 : 10, startedAt)) {
+				state.spawned += count;
 				const interval = spawn.kind === 'siege' ? 28 : spawn.kind === 'striker' ? 16 : 8;
-				state.spawned++; state.spawnIn = interval * (state.spawned % 3 === 0 ? 1.5 : 1);
-			} else {
-				const count = Math.min(3, quota - state.spawned);
-				for (let offset = 0; offset < count; offset++) {
-					const wing = offset === 0 ? spawn : missionSpawn(mission.contract, mission.map, state.spawned + offset);
-					state.warnings.push({ ...wing, life: offset < 2 ? 8 : 10 });
-				}
-				state.spawned += count; state.spawnIn = 28;
-			}
+				state.spawnIn = spawn.formation === undefined ? interval * (state.spawned % 3 === 0 ? 1.5 : 1) : 28;
+			} else state.spawnIn = 1;
 		} else {
 			const spawn = wave.enemies[state.spawned];
 			if (!spawn) throw new Error('Missing wave spawn');
 			const theta = state.spawned * 2.4 + wave.bearing;
-			state.warnings.push({ x: 900 + Math.cos(theta) * 840, y: 600 + Math.sin(theta) * 530, ...spawn, life: spawn.commander ? 3 : 2 });
-			if (state.spawned === 0 && state.wave === 1) state.events.push('wave');
-			state.spawned++; state.spawnIn = state.wave === 1 ? wave.interval : state.spawned % 3 === 0 ? wave.interval * 2.4 : 4;
+			const approach = { x: ARENA.relayX + Math.cos(theta) * 840, y: ARENA.relayY + Math.sin(theta) * 530, ...spawn };
+			if (queueReinforcements(state, [approach], 2, startedAt)) {
+				if (state.spawned === 0 && state.wave === 1) state.events.push('wave');
+				state.spawned++; state.spawnIn = state.wave === 1 ? wave.interval : state.spawned % 3 === 0 ? wave.interval * 2.4 : 4;
+			} else state.spawnIn = 1;
 		}
 	}
 	for (const warning of state.warnings) {
 		warning.life -= dt;
-		if (warning.life <= 0) state.enemies.push(createEnemy(state, warning));
+		if (warning.life > 0) continue;
+		const entry = warning.perimeter;
+		const enemy = createEnemy(state, entry ? { ...warning, ...entry.start } : warning);
+		if (entry) {
+			enemy.entry = entry.end;
+			enemy.hullAngle = enemy.angle = Math.atan2(entry.end.y - entry.start.y, entry.end.x - entry.start.x);
+		} else if (warning.drop) enemy.hullAngle = enemy.angle = warning.drop.flight.heading;
+		state.enemies.push(enemy);
 	}
 	state.warnings = state.warnings.filter(function (warning) { return warning.life > 0; });
 
@@ -1171,7 +1208,7 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 		const lead = enemy.formation === undefined ? undefined : sectionLead.get(enemy.formation);
 		if (!enemy.catalog && lead?.engaged && distance(enemy, lead) < 420) enemy.engaged = true;
 	}
-	const ground = enemies.filter(function (enemy) { return enemy.hp > 0 && enemy.kind !== 'helicopter' && enemy.kind !== 'vtol'; });
+	const ground = enemies.filter(function (enemy) { return enemy.hp > 0 && !enemy.entry && enemy.kind !== 'helicopter' && enemy.kind !== 'vtol'; });
 	const skirmishers = ground.filter(function (enemy) {
 		return !enemy.stationary && (enemy.catalog || !enemy.commander && (enemy.kind === 'scout' || enemy.kind === 'striker')) && enemyMounts(enemy).some(usableMount) && (!mission || relay !== undefined || enemy.engaged);
 	});
@@ -1185,6 +1222,10 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 			target, at: target === 'relay' && relay ? relay : rig, ...(order ? { squad: order } : {}), ...(enemy.tactics ? { tactics: enemy.tactics } : {}) };
 	}), ground, bounds, dt);
 	for (const enemy of enemies) {
+		if (enemy.entry) {
+			if (enemy.hp > 0 && advancePerimeterEntry(enemy, enemy.entry, ENEMY_STATS[enemy.kind].speed * enemyWeight(enemy).modifier, dt)) delete enemy.entry;
+			continue;
+		}
 		const order = orders.get(enemy.id);
 		if (order) enemy.squad = order;
 		else delete enemy.squad;
