@@ -25,6 +25,7 @@ import type { AuthoredGait } from './authored-run';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { createFiringArc } from './firing-arc-3d';
 import { createLaunchFlight } from './launch-flight';
+import { createLaunchClouds } from './launch-clouds';
 import { createSurfaceLanding, planLaunchLanding } from './launch-surface';
 import { LAUNCH_TIMING } from './launch-timing';
 
@@ -131,9 +132,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let launchOwner: CombatStateView | undefined;
 		let launchPlan: ReturnType<typeof planLaunchLanding> | undefined;
 		let flight: ReturnType<typeof createLaunchFlight> | undefined;
+		let clouds: ReturnType<typeof createLaunchClouds> | undefined;
 		let surface: ReturnType<typeof createSurfaceLanding> | undefined;
 		const releaseLaunch = function () {
 			flight?.dispose(); flight = undefined;
+			clouds = undefined;
 			surface?.dispose(); surface = undefined;
 			launchOwner = undefined;
 			launchPlan = undefined;
@@ -296,6 +299,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				if (launchTime !== undefined && state.mission) {
 					launchOwner = state;
 					launchPlan ??= planLaunchLanding(state, state.mission.map);
+					clouds ??= createLaunchClouds(state.mission.map);
 					if (launchTime < LAUNCH_TIMING.approach) {
 						flight ??= createLaunchFlight(launchPlan.berths);
 						overlay = undefined;
@@ -398,7 +402,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			drawOverlay: function () {
 				if (launchTime !== undefined) {
 					ctx.clearRect(0, 0, width, height);
-					if (surface && launchTime < LAUNCH_TIMING.touchdown) surface.drawSurvey(ctx, width, height, camera, launchTime);
+					clouds?.(ctx, width, height, launchTime);
 					return;
 				}
 				if (disposed || !overlay || width <= 0 || height <= 0) return;

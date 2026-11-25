@@ -1,4 +1,4 @@
-import { DoubleSide, Group, IcosahedronGeometry, InstancedMesh, Mesh, MeshBasicMaterial, Object3D, Shape, ShapeGeometry, type OrthographicCamera, type Scene } from 'three';
+import { DoubleSide, Group, IcosahedronGeometry, InstancedMesh, Mesh, MeshBasicMaterial, Object3D, Shape, ShapeGeometry, type Scene } from 'three';
 import type { WeaponMount } from './arsenal';
 import type { MissionMap } from './campaign-types';
 import { terrainPathClear, terrainPointClear, type ObstacleField } from './field-terrain';
@@ -12,8 +12,11 @@ import { boardingLayouts, type LaunchBerth } from './launch-berths';
 import { footprintOverlap, launchFootprint, posedFootprint } from './launch-footprint';
 import { createDropship, DROPSHIP_DECK, DROPSHIP_WIDTH } from './launch-ships';
 import { LAUNCH_TIMING, sampleLaunchPoseTime } from './launch-timing';
-import { toScreen, viewScale } from './projection-3d';
+import { viewScale } from './projection-3d';
 import { angleDelta, combatTargets, type CombatStateView, type Point } from './simulation';
+
+const { touchdown, lift, end: handoff } = LAUNCH_TIMING;
+const lastPose = handoff - .125;
 
 const unit = function (x: number) { return Math.max(0, Math.min(1, x)); };
 const between = function (time: number, start: number, end: number) { return unit((time - start) / (end - start)); };
@@ -96,8 +99,8 @@ interface LandingRig extends LandingPose {
 }
 
 const altitude = function (time: number) {
-	return 54 * (1 - ease(between(time, LAUNCH_TIMING.touchdown, 7.5)))
-		+ 95 * ease(between(time, LAUNCH_TIMING.lift, 12.5)) + 400 * between(time, 12.5, LAUNCH_TIMING.end) ** 1.5;
+	return 54 * (1 - ease(between(time, touchdown, touchdown + .5)))
+		+ 95 * ease(between(time, lift, lift + 1)) + 400 * between(time, lift + 1, handoff) ** 1.5;
 };
 const deckHeight = function (aft: number) { return DROPSHIP_DECK.height * unit((DROPSHIP_DECK.toe - aft) / (DROPSHIP_DECK.toe - DROPSHIP_DECK.hinge)); };
 
@@ -124,7 +127,7 @@ const groundTrack = function (site: LandingSite, ramp: ReturnType<typeof rampTra
 	// send a turning rig back through the passenger behind it.
 	const forward = Math.max(0, DROPSHIP_DECK.toe + 50 - site.aftAt(control));
 	control.x += forward * Math.cos(site.heading); control.y += forward * Math.sin(site.heading);
-	const end = Math.min(13.0, ramp.clear + Math.hypot(span, bend) / (134 * pace));
+	const end = Math.min(handoff - 1, ramp.clear + Math.hypot(span, bend) / (134 * pace));
 	const finalCourse = site.heading + angleDelta(site.heading, Math.atan2(goal.y - control.y, goal.x - control.x));
 	const facing = finalCourse + angleDelta(finalCourse, goal.angle);
 	// Finish turning while there is still room between the formation slots.
@@ -150,12 +153,12 @@ interface LandingRoute {
 // Formation headings vary by mission. Plan the whole squad together: a path
 // that is individually clear may cross a wingmate or park in front of it.
 const rigPaths = function (site: LandingSite, terrain: ObstacleField, actors: readonly (Body & { shape: ReturnType<typeof launchFootprint> })[], berths: readonly LaunchBerth[], cache: Map<string, LandingRoute>) {
-	const times = Array.from({ length: 42 }, function (_, i) { return 8.75 + i / 8; });
+	const times = Array.from({ length: 42 }, function (_, i) { return touchdown + 1.75 + i / 8; });
 	// Two walkers following one another need room for a planted rear foot and
 	// the next rig's forward stride. Opposite lanes can unload more closely.
 	const byLane = new Map<number, number>();
 	const release: number[] = [];
-	const firstExit = actors.length === 1 ? 10 : 9.45;
+	const firstExit = touchdown + (actors.length === 1 ? 3 : 2.45);
 	let previous = firstExit - .63;
 	for (const berth of [...berths].sort(function (a, b) { return a.exitOrder - b.exitOrder; })) {
 		const last = byLane.get(berth.x) ?? -Infinity;
@@ -163,7 +166,7 @@ const rigPaths = function (site: LandingSite, terrain: ObstacleField, actors: re
 		byLane.set(berth.x, previous); release.push(previous);
 	}
 	// A full squad can start up to two held poses earlier to keep the handoff on time.
-	const advance = actors.length > 2 ? Math.max(0, Math.min(.25, previous - (9.45 + .63 * (actors.length - 1)))) : 0;
+	const advance = actors.length > 2 ? Math.max(0, Math.min(.25, previous - (firstExit + .63 * (actors.length - 1)))) : 0;
 	const tracks = actors.map(function (actor, index) {
 		const berth = berths[index];
 		if (!berth) throw new Error('Missing deployment berth');
@@ -273,9 +276,9 @@ export const planLaunchLanding = function (state: CombatStateView, map: MissionM
 		const sin = Math.sin(site.heading), cos = Math.cos(site.heading);
 		const sideways = function (p: Point) { return (p.x - toe.x) * sin - (p.y - toe.y) * cos; };
 		const backtrack = best.paths.reduce(function (sum, path) {
-			const start = sideways(path(8));
+			const start = sideways(path(touchdown + 1));
 			let last = start, travel = 0;
-			for (let t = 8.125; t <= 13.875; t += .125) {
+			for (let t = touchdown + 1.125; t <= lastPose; t += .125) {
 				const at = sideways(path(t)); travel += Math.abs(at - last); last = at;
 			}
 			return sum + travel - Math.abs(last - start);
@@ -297,12 +300,12 @@ export const planLaunchLanding = function (state: CombatStateView, map: MissionM
 	const { site } = best;
 	// Keep the ramp planted until the trailing rig, including its back foot and
 	// outboard equipment, has walked beyond the lip on the held-pose clock.
-	let closeAt = LAUNCH_TIMING.lift - .125;
+	let closeAt = lift - .125;
 	const clearOfRamp = function (path: GroundPath, index: number) {
 		const actor = actors[index]; if (!actor) throw new Error('Missing deployment rig');
 		return site.aftAt(path(closeAt)) > DROPSHIP_DECK.toe + actor.shape.radius + 12;
 	};
-	while (closeAt < 13.875 && !best.paths.every(clearOfRamp)) closeAt += .125;
+	while (closeAt < lastPose && !best.paths.every(clearOfRamp)) closeAt += .125;
 	return { site, berths: best.berths, paths: best.paths, closeAt };
 };
 
@@ -312,7 +315,7 @@ const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPa
 	const frame = getFrame(frameId), rig = FRAME_RIGS[frameId];
 	const advancePose = getMechAssetBinding(frameId)?.advancePose;
 	let tick = 0;
-	let gait = createGait(bodyAt(LAUNCH_TIMING.touchdown), frame.size, rig);
+	let gait = createGait(bodyAt(touchdown), frame.size, rig);
 	let authored = advancePose?.(undefined, gait.body, 0);
 	const capturePose = function (): LandingPose {
 		const base = deckHeight(site.aftAt(gait.body));
@@ -321,24 +324,23 @@ const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPa
 	};
 	let pose = capturePose();
 	return function (time: number, poseTime: number): LandingRig {
-		const until = Math.round((poseTime - LAUNCH_TIMING.touchdown) * 60);
+		const until = Math.round((poseTime - touchdown) * 60);
 		if (tick < until) {
 			while (tick < until) {
 				tick++;
-				const body = bodyAt(LAUNCH_TIMING.touchdown + tick / 60);
+				const body = bodyAt(touchdown + tick / 60);
 				authored = advancePose?.(authored, body, tick / 60);
 				gait = authored?.gait ?? advanceGait(gait, body, 1 / 60, frame.size, frame.stride, rig);
 			}
 			pose = capturePose();
 		}
-		const position = bodyAt(Math.max(time, LAUNCH_TIMING.touchdown));
-		const elevation = deckHeight(site.aftAt(position)) + altitude(Math.min(time, LAUNCH_TIMING.touchdown + .5));
+		const position = bodyAt(Math.max(time, touchdown));
+		const elevation = deckHeight(site.aftAt(position)) + altitude(Math.min(time, touchdown + .5));
 		return { ...pose, position, elevation };
 	};
 };
 
-// Plan view of the transport. This ground silhouette also draws the survey's
-// tracked contact, so the two meet exactly as the survey wipes off the field.
+// Plan view of the transport for its ground shadow.
 const silhouette = [[-78, -207], [78, -207], [110, -155], [110, -92], [135, -92], [140, -148], [175, -130], [180, 101], [157, 143], [128, 136], [119, 95], [108, 95], [107, 196], [-107, 196], [-108, 95], [-119, 95], [-128, 136], [-157, 143], [-180, 101], [-175, -130], [-140, -148], [-135, -92], [-110, -92], [-110, -155]] as const;
 
 export const createSurfaceLanding = function (scene: Scene, state: CombatStateView, map: MissionMap, { site, paths, closeAt } = planLaunchLanding(state, map)) {
@@ -361,36 +363,37 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		return rigTrack(site, frame, path);
 	});
 	const origin = site.at(0, 0), rear = site.at(0, 170);
+	const approachRun = 550, approachDescent = 150;
+	const midpoint = site.at(0, approachRun / 2);
+	// Aim the wide shot at the hull halfway along the flight path, above the ground.
+	const hullCenter = altitude(touchdown) + approachDescent / 2 + 100;
+	const approachFocus = { x: midpoint.x - hullCenter, y: midpoint.y - hullCenter };
 	const rampFocus = { x: rear.x - 71, y: rear.y - 71 };
 	const liftoffFocus = mixPoint({ x: origin.x - 60, y: origin.y - 60 }, state.player, .45);
-	const shadowAt = function (time: number): Point {
-		const progress = ease(between(time, LAUNCH_TIMING.approach, LAUNCH_TIMING.touchdown));
-		return { x: origin.x - 475 * (1 - progress) + 35 * progress, y: origin.y + 245 * (1 - progress) + 25 * progress };
-	};
-	const normalClose = LAUNCH_TIMING.lift - .125;
+	const normalClose = lift - .125;
 	const shipTimeAt = function (time: number) {
-		return time <= closeAt ? Math.min(time, normalClose) : mix(normalClose, LAUNCH_TIMING.end, between(time, closeAt, LAUNCH_TIMING.end));
+		return time <= closeAt ? Math.min(time, normalClose) : mix(normalClose, handoff, between(time, closeAt, handoff));
 	};
 	const rampAt = function (shipTime: number) {
-		return ease(between(shipTime, 7.125, 8.125)) * (1 - ease(between(shipTime, normalClose, LAUNCH_TIMING.lift + .625)));
+		return ease(between(shipTime, touchdown + .125, touchdown + 1.125)) * (1 - ease(between(shipTime, normalClose, lift + .625)));
 	};
 	const update = function (time: number, w: number, h: number) {
 		const poseTime = sampleLaunchPoseTime(time);
 		const shipTime = shipTimeAt(time), shipPoseTime = shipTimeAt(poseTime);
-		const airborne = altitude(shipTime);
-		const approach = time < LAUNCH_TIMING.touchdown;
-		const pullback = 1 - (1 - between(time, LAUNCH_TIMING.touchdown, 13.875)) ** 1.7;
-		const liftPose = between(shipPoseTime, LAUNCH_TIMING.lift, LAUNCH_TIMING.end);
-		const travel = site.at(0, -45 * ease(between(shipTime, LAUNCH_TIMING.lift, 12.5)) - 980 * between(shipTime, 12.45, LAUNCH_TIMING.end) ** 1.6);
-		ship.root.visible = !approach;
+		const inbound = (1 - between(shipTime, LAUNCH_TIMING.approach, touchdown)) ** 2;
+		const airborne = altitude(shipTime) + approachDescent * inbound;
+		const approach = time < touchdown;
+		const pullback = 1 - (1 - between(time, touchdown, lastPose)) ** 1.7;
+		const liftPose = between(shipPoseTime, lift, handoff);
+		const departure = 45 * ease(between(shipTime, lift, lift + 1)) + 980 * between(shipTime, lift + .95, handoff) ** 1.6;
+		const travel = site.at(0, approachRun * inbound - departure);
 		ship.root.position.set(travel.x, airborne, travel.y);
 		ship.root.rotation.z = Math.round(-liftPose * 5) * Math.PI / 90;
 		ship.setRamp(rampAt(shipTime), rampAt(shipPoseTime));
-		ship.setThrust(approach ? 0 : .14 + .86 * Math.max(1 - ease(between(time, 7.25, 8.0)), ease(between(time, 11, 12.5))));
-		const silhouetteAt = approach ? shadowAt(time) : { x: travel.x + 15 + airborne * .37, y: travel.y + 8 + airborne * .32 };
-		shadow.position.set(silhouetteAt.x, 1.05, silhouetteAt.y);
-		shadowPaint.opacity = approach ? .48 : Math.max(.15, .45 - airborne * .0005);
-		const wash = shipTime < 10 ? between(shipTime, 7.125, 8.5) : between(shipTime, normalClose, 13.0);
+		ship.setThrust(.14 + .86 * Math.max(1 - ease(between(time, touchdown + .25, touchdown + 1)), ease(between(time, lift - .5, lift + 1))));
+		shadow.position.set(travel.x + 15 + airborne * .37, 1.05, travel.y + 8 + airborne * .32);
+		shadowPaint.opacity = Math.max(.15, .45 - airborne * .0005);
+		const wash = shipTime < touchdown + 3 ? between(shipTime, touchdown + .125, touchdown + 1.5) : between(shipTime, normalClose, handoff - 1);
 		dust.visible = wash > 0 && wash < 1;
 		if (dust.visible) {
 			dustPaint.opacity = .44 * (1 - wash);
@@ -404,64 +407,13 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		}
 		const poses = tracks.map(function (sample) { return sample(time, poseTime); });
 		const scale = viewScale(w, h) * Math.sqrt(3 / 2);
+		const approachZoom = Math.min(.70, w / (scale * (approachRun + Math.SQRT2 * DROPSHIP_WIDTH)));
 		const tight = Math.max(1, Math.min(2.5, w / (scale * (DROPSHIP_WIDTH - 75)), h / (scale * 235)));
-		const wide = mixPoint(rampFocus, liftoffFocus, ease(between(time, 7, LAUNCH_TIMING.lift)));
-		return { poses, visible: !approach, zoom: approach ? .70 : mix(tight, 1, pullback), dockBlend: ease(between(time, LAUNCH_TIMING.lift, 13.875)),
-			focus: approach ? { x: origin.x - 110, y: origin.y + 64 } : mixPoint(wide, state.player, ease(between(time, 12.125, 13.875))) };
+		const wide = mixPoint(rampFocus, liftoffFocus, ease(between(time, touchdown, lift)));
+		return { poses, visible: !approach, zoom: approach ? approachZoom : mix(tight, 1, pullback), dockBlend: ease(between(time, lift, lastPose)),
+			focus: approach ? approachFocus : mixPoint(wide, state.player, ease(between(time, lift + .625, lastPose))) };
 	};
-	const drawSurvey = function (ctx: CanvasRenderingContext2D, w: number, h: number, camera: OrthographicCamera, time: number) {
-		const progress = between(time, LAUNCH_TIMING.approach, LAUNCH_TIMING.touchdown);
-		const edge = w * (1 - ease(progress));
-		ctx.save(); ctx.beginPath(); ctx.rect(0, 0, edge, h); ctx.clip();
-		ctx.fillStyle = '#183238'; ctx.fillRect(0, 0, w, h);
-		const project = function (pt: Point) { return toScreen(pt, camera, w, h); };
-		const line = function (points: readonly Point[]) {
-			ctx.beginPath(); points.forEach(function (p, i) { const at = project(p); if (i === 0) ctx.moveTo(at.x, at.y); else ctx.lineTo(at.x, at.y); }); ctx.stroke();
-		};
-		ctx.strokeStyle = '#2c4b4c'; ctx.lineWidth = 1;
-		for (let x = 0; x <= map.width; x += 180) line([{ x, y: 0 }, { x, y: map.height }]);
-		for (let y = 0; y <= map.height; y += 180) line([{ x: 0, y }, { x: map.width, y }]);
-		ctx.strokeStyle = '#577d75';
-		for (const mark of map.landmarks) {
-			const at = project(mark), margin = mark.radius + 80;
-			if (at.x < -margin || at.x > edge + margin || at.y < -margin || at.y > h + margin) continue;
-			for (const band of [.65, 1, 1.35]) {
-				line(Array.from({ length: 17 }, function (_, i) {
-					const a = i * Math.PI / 8;
-					const radius = mark.radius * band * (1 + .14 * Math.sin(a * 3 + mark.rotation));
-					return { x: mark.x + Math.cos(a) * radius, y: mark.y + Math.sin(a) * radius * .8 };
-				}));
-			}
-		}
-		ctx.strokeStyle = '#88a798'; ctx.lineWidth = 1.5;
-		for (const o of map.terrain?.obstacles ?? []) {
-			const hw = o.width / 2, hd = o.depth / 2;
-			for (const gap of [0, 14]) line([{ x: o.x - hw - gap, y: o.y - hd - gap }, { x: o.x + hw + gap, y: o.y - hd - gap }, { x: o.x + hw + gap, y: o.y + hd + gap }, { x: o.x - hw - gap, y: o.y + hd + gap }, { x: o.x - hw - gap, y: o.y - hd - gap }]);
-		}
-		ctx.strokeStyle = '#96bfac'; ctx.lineWidth = 3;
-		for (const road of map.terrain?.roads ?? [[map.drop, map.objective, map.extraction]]) line(road);
-		ctx.strokeStyle = '#edb765'; ctx.lineWidth = 3; ctx.setLineDash([8, 7]); line([shadowAt(LAUNCH_TIMING.approach), shadowAt(LAUNCH_TIMING.touchdown)]); ctx.setLineDash([]);
-		const lz = project(map.drop);
-		ctx.strokeStyle = '#c1d9b6'; ctx.lineWidth = 1.5;
-		ctx.strokeRect(lz.x - 6, lz.y - 6, 12, 12);
-		ctx.fillStyle = ctx.strokeStyle; ctx.font = 'bold 12px monospace'; ctx.fillText('LZ', lz.x + 12, lz.y + 4);
-		const contactScale = mix(.37, 1, ease(between(progress, .32, .84)));
-		const contact = function (x: number, z: number) {
-			const p = site.at(x * (DROPSHIP_WIDTH / 360) * contactScale, z * contactScale);
-			return project({ x: p.x - origin.x + shadow.position.x, y: p.y - origin.y + shadow.position.z });
-		};
-		ctx.fillStyle = '#243b39'; ctx.strokeStyle = '#f4c37a'; ctx.lineWidth = 2;
-		const polygon = function (points: readonly (readonly [number, number])[]) {
-			ctx.beginPath(); points.forEach(function ([x, z], i) { const v = contact(x, z); if (!i) ctx.moveTo(v.x, v.y); else ctx.lineTo(v.x, v.y); });
-			ctx.closePath(); ctx.fill(); ctx.stroke();
-		};
-		polygon(silhouette);
-		for (const side of [-1, 1]) polygon([[side * 137, -117], [side * 166, -100], [side * 166, 101], [side * 137, 119]]);
-		ctx.fillStyle = '#e8ba72'; polygon([[-57, -161], [57, -161], [70, -124], [-70, -124]]);
-		ctx.fillStyle = '#d2e2cb'; ctx.font = 'bold 12px monospace'; ctx.fillText('SURFACE APPROACH', 20, 30);
-		ctx.restore();
-	};
-	return { update, drawSurvey, dispose: function () {
+	return { update, dispose: function () {
 		root.removeFromParent(); ship.dispose(); dust.dispose(); dustShape.dispose(); dustPaint.dispose(); shadowGeometry.dispose(); shadowPaint.dispose(); root.clear();
 	} };
 };
