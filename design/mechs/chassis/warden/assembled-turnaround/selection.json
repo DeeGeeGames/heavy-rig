@@ -1,0 +1,28 @@
+{
+  "decision": "Selected by delegated art direction after inspection of front, rear, both profiles, three-quarter and underside renders of the assembled production geometry. Historical owner decisions retain their recorded scope.",
+  "renderer": "Three.js, neutral orthographic views of the production family in original paint. The far-side module is occluded in profile.",
+  "assets": {
+    "public/assets/mechs/warden/pixel.glb": "797b21e3fabdf88c3ca7e5cd5e1cff7b8e6761afd73923805fb47ea2516bf18a",
+    "public/assets/mechs/warden/variants.glb": "9e286cc2cf6a94bb5abedd96ac2b69ba82bee975f8169781c5879bdc8fa5d76a"
+  },
+  "variants": {
+    "c": {
+      "front": {
+        "path": "design/mechs/chassis/warden/assembled-turnaround/c/front.png",
+        "sha256": "3300480613d2574e50c61d1a61c1ab024412a5f7da51d8de7c796eb4774a249e"
+      },
+      "back": {
+        "path": "design/mechs/chassis/warden/assembled-turnaround/c/back.png",
+        "sha256": "5dc0c742a8a437b8ea85e460fbf07d73288c033a9f853f018f0b6b76f7a8ed16"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/warden/assembled-turnaround/c/own-left.png",
+        "sha256": "0984e7953d32b666dae8d19e68bbc5806d9183c5236e02df61d3a9fb970d74d3"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/warden/assembled-turnaround/c/own-right.png",
+        "sha256": "34bfd292bcfd6d41c2f524c0841d3aa7b5c13779170f4a88a313ca73aa127c9c"
+      }
+    }
+  }
+}

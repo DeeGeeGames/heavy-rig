@@ -72,5 +72,6 @@
   "approvedLocomotion": "design/mechs/chassis/warden/approved-locomotion.json",
   "articulationBase": "design/mechs/chassis/warden/articulation-base.json",
   "activeGameDerivative": "design/mechs/assets/warden/pixel/manifest.json",
-  "historicalDenseMaster": "design/mechs/chassis/warden/shared-master.json"
+  "historicalDenseMaster": "design/mechs/chassis/warden/shared-master.json",
+  "assembledTurnaround": "design/mechs/chassis/warden/assembled-turnaround/selection.json"
 }

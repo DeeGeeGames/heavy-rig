@@ -1,0 +1,33 @@
+{
+  "id": "harrow-b-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "harrow",
+  "variantId": "harrow-b",
+  "baselineId": "harrow-a-walking-carriage",
+  "baselineImageSha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885",
+  "source": "design/mechs/chassis/harrow/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/harrow/concept/b/image.png",
+    "sha256": "e9df440c965d062eb30b4038bf8c252e6b75e24cd27abd46c8a20680e263ba46"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/harrow/turnaround/b/front.png",
+      "sha256": "b3c857b30e1898a5da3ce43a7bcb59cd3effb0bc62f63d69155df13ba0569e78"
+    },
+    "back": {
+      "path": "design/mechs/chassis/harrow/turnaround/b/back.png",
+      "sha256": "93bb66cc030f356780552310145a75ed65e0c123684bb8b995214b8cc030c6f2"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/harrow/turnaround/b/own-left.png",
+      "sha256": "fa589c6c006b57353a373939df1c99ac8a9f693b9bd85d32ee99ed0b58ecc1f9"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/harrow/turnaround/b/own-right.png",
+      "sha256": "54adb39197d6a736795e24d0abb7fcd58377710e3346f4b8d699e1d9aa5f0edc"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "Three separate apertures form one slightly splayed dorsal cartridge. The indexed middle aperture is also the primary muzzle. The own-right machine gun reuses the A cartridge. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}

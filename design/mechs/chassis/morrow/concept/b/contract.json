@@ -1,0 +1,38 @@
+{
+  "chassisId": "morrow",
+  "variantId": "morrow-saturation",
+  "contractSignature": "50a973d4467bfed2d8283a2b8eacc2d8e6893cffec4e704f9d9c6122ff22d558",
+  "mounts": [
+    {
+      "id": "left-rack",
+      "name": "Left saturation rack",
+      "family": "launcher",
+      "maxSize": "large",
+      "weapons": [
+        "cluster-rockets-6"
+      ]
+    },
+    {
+      "id": "right-rack",
+      "name": "Right saturation rack",
+      "family": "launcher",
+      "maxSize": "large",
+      "weapons": [
+        "cluster-rockets-6"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "morrow-a-bulwark",
+    "image": "design/mechs/chassis/morrow/concept/a/image.png",
+    "imageSha256": "341ca182c494aa08d69227c8d28d856b3be20c19f22013173742345d8cb671e6",
+    "variantId": "morrow"
+  },
+  "reviewStatus": "selected-under-delegated-creative-authority",
+  "ownerApproval": null,
+  "method": "Render from the exact shared chassis and the fitted cartridge geometry.",
+  "sourceRecipe": "scripts/mech-design/pixel_mechs/morrow.py",
+  "assembledViewManifest": "design/mechs/chassis/morrow/assembled-turnaround/selection.json",
+  "imageSha256": "3eb94ac159668e8353fd0d204748883b170d1a77f1f7b9d51a89791872f2e204",
+  "mountReview": "Each aft saddle accepts a shorter and wider three-by-two rocket cassette. The six recessed openings and rectangular silhouette separate Saturation from the four-cell Salvo even when viewed head-on."
+}

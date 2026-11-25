@@ -1,0 +1,33 @@
+{
+  "id": "bastion-b-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "bastion",
+  "variantId": "bastion-b",
+  "baselineId": "bastion-a-split-mantlet",
+  "baselineImageSha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882",
+  "source": "design/mechs/chassis/bastion/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/bastion/concept/b/image.png",
+    "sha256": "0d97108a6fb8464572f672444b9c020ac13d968ca00c1a06d0056eca45dbccf9"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/bastion/turnaround/b/front.png",
+      "sha256": "d76c71d2aa84f5311768db09769d8b747820224350c90d1305ef59e6e9bc0cb7"
+    },
+    "back": {
+      "path": "design/mechs/chassis/bastion/turnaround/b/back.png",
+      "sha256": "279ac2dc8e29fba7bcc986647b61b77e552869ed5954f887c7f5590734a5e056"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/bastion/turnaround/b/own-left.png",
+      "sha256": "6b685ff07fc4fa4835ba344da7d3b60b2206f78a8578f801d88aacfd80af64c6"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/bastion/turnaround/b/own-right.png",
+      "sha256": "669f522797c2ba84a7526d8f584fdd93f77546dfaeb4d4c8180a3e8e14d450d2"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "A low closed teal lens is visible on the own-left. Four round wells form a 2 by 2 rocket rack inside the own-right hood. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}

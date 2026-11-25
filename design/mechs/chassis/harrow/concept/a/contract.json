@@ -1,0 +1,29 @@
+{
+  "chassisId": "harrow",
+  "variantId": "harrow",
+  "contractSignature": "bd7f9cead0bb3a4a1b493e8b13c9e223cf5b8fbeed211518170ceab89c3e0c36",
+  "mounts": [
+    {
+      "id": "dorsal-artillery",
+      "name": "Bombard mortar",
+      "family": "ballistic",
+      "maxSize": "medium",
+      "weapons": [
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "maxSize": "small",
+      "weapons": [
+        "machine-gun"
+      ]
+    }
+  ],
+  "baseline": null,
+  "reviewStatus": "selected-by-delegated-art-direction",
+  "ownerApproval": null,
+  "mountReview": "The large flared mortar cup belongs to the centered dorsal cartridge. The compact own-right barrel cluster under the deck is the only secondary."
+}

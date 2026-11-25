@@ -32,14 +32,19 @@ export const getMechAssetBinding = function (frame: FrameId): MechAssetBinding |
 	return bindings.get(frame);
 };
 
+export const validateMechWeaponRigs = function (frame: FrameId, rigs: readonly WeaponRig[]) {
+	const mounts = getHardpoints(frame);
+	if (rigs.length !== mounts.length) throw new Error(`Wrong authored weapon count for ${frame}`);
+	for (const [slot, rig] of rigs.entries()) {
+		if ([rig.muzzle, rig.pivot, ...rig.tubes].some(function (point) { return ![point.x, point.y, point.elevation].every(Number.isFinite); })) throw new Error(`Invalid authored weapon rig ${slot}`);
+		const mount = mounts[slot];
+		if (rig.tubes.length && mount?.family !== 'launcher' && mount?.id !== 'dorsal-artillery') throw new Error(`Unexpected indexed firing exits on ${frame} mount ${slot}`);
+	}
+};
+
 export const installMechAssetBinding = function (frame: FrameId, binding: MechAssetBinding): () => void {
 	if (bindings.has(frame)) throw new Error(`An authored asset is already installed for ${frame}`);
-	const mounts = getHardpoints(frame);
-	if (binding.weaponRigs.length !== mounts.length) throw new Error(`Wrong authored weapon count for ${frame}`);
-	for (const [slot, rig] of binding.weaponRigs.entries()) {
-		if ([rig.muzzle, rig.pivot, ...rig.tubes].some(function (point) { return ![point.x, point.y, point.elevation].every(Number.isFinite); })) throw new Error(`Invalid authored weapon rig ${slot}`);
-		if (mounts[slot]?.family !== 'launcher' && rig.tubes.length > 0) throw new Error(`Authored tube mapping on non-launcher ${slot}`);
-	}
+	validateMechWeaponRigs(frame, binding.weaponRigs);
 	bindings.set(frame, binding);
 	let disposed = false;
 	return function () {

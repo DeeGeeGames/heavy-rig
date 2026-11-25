@@ -1,0 +1,33 @@
+{
+  "id": "bastion-c-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "bastion",
+  "variantId": "bastion-c",
+  "baselineId": "bastion-a-split-mantlet",
+  "baselineImageSha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882",
+  "source": "design/mechs/chassis/bastion/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/bastion/concept/c/image.png",
+    "sha256": "e3647e4802110f9da3239fcc39aa4fe37b5169f31ad515fa8891734c15dd4d88"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/bastion/turnaround/c/front.png",
+      "sha256": "6aeeaed9d18b81777b308da47cb6042b64174dcd5b89e7b9424249db1cd69455"
+    },
+    "back": {
+      "path": "design/mechs/chassis/bastion/turnaround/c/back.png",
+      "sha256": "279ac2dc8e29fba7bcc986647b61b77e552869ed5954f887c7f5590734a5e056"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/bastion/turnaround/c/own-left.png",
+      "sha256": "315d1d5e45e1aa5a04887e576c1e1e8ca0c96669cb76daa220b32ffa682b698e"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/bastion/turnaround/c/own-right.png",
+      "sha256": "e65044560915666c1cfb73a9136d3944f32a16bfb06d8c29eb82f6dfcd8c0281"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "The long precision tube projects beyond the own-left brow. Two large side-by-side openings fill the own-right guided cassette. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}

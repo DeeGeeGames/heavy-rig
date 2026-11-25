@@ -1,0 +1,29 @@
+{
+  "chassisId": "specter",
+  "variantId": "specter",
+  "contractSignature": "efcb31a0f4208fcb71f78505670c9bdd60dce1d4d2ed960b4ea5fec6563d2d24",
+  "mounts": [
+    {
+      "id": "left-survey emitter",
+      "name": "Left survey emitter",
+      "family": "energy",
+      "maxSize": "small",
+      "weapons": [
+        "laser"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "maxSize": "small",
+      "weapons": [
+        "machine-gun"
+      ]
+    }
+  ],
+  "baseline": null,
+  "reviewStatus": "selected-by-delegated-art-direction",
+  "ownerApproval": null,
+  "mountReview": "Own-left compact laser and own-right machine gun flank the torso. The closed panoramic survey window rises behind the cockpit in a plum guard."
+}

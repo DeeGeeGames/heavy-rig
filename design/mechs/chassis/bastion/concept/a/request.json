@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "bastion",
+  "background": "Transparent",
+  "details": "BULWARK. Slope interlocking paired sea-green armor brow plates down toward a vertical central shield tooth. Own-left upper cheek takes one entire warm bone-painted panel. The little amber cab peeks over the upper inner brow. Keep both weapon ports real recesses with separate shelves, with a short single cannon in each. The dark bifurcated engine block, tiny amber glazing and short wide industrial shins support this defensive stance.",
+  "loadout": [
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    }
+  ]
+}

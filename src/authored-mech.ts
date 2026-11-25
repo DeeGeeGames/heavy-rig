@@ -1,6 +1,6 @@
-import { Box3, Color, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, SkinnedMesh, Texture, Vector2, Vector3, type BufferGeometry } from 'three';
+import { Box3, Color, FileLoader, Group, LoaderUtils, Material, Matrix4, Mesh, MeshStandardMaterial, Quaternion, SkinnedMesh, Texture, Vector2, Vector3, type BufferGeometry } from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
-import { installMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
+import { installMechAssetBinding, validateMechWeaponRigs, type MechAssetModel } from './mech-asset-registry';
 import type { WalkerGait } from './gait';
 import type { MechFeedback } from './mech-3d';
 import { createMechResponseRig } from './mech-response';
@@ -9,8 +9,9 @@ import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } f
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
 import { snapMechHeading } from './torso-arc';
 import { prepareAuthoredLocomotion, type AuthoredLocomotionOptions } from './authored-gait';
-import { KESTREL_RUN_PROFILE } from './authored-run';
-import type { FrameId } from './frames';
+import { KESTREL_RUN_PROFILE, WARDEN_RUN_PROFILE } from './authored-run';
+import { PLAYABLE_FRAMES, type ChassisId, type FrameId } from './frames';
+import { fitMechCartridges, named, type CartridgeSocket } from './mech-cartridges';
 import type { MechFinish } from './mech-skin';
 import { paintColorForZone } from './mech-paint';
 import { applySolidPlatePaint, authoredPaintZone } from './authored-paint';
@@ -49,14 +50,8 @@ const maulWeaponSpecs = [
 	{ group: 'rig_mount_left-inboard', muzzle: 'muzzle_left-inboard', side: 'left', launcher: false },
 	{ group: 'rig_mount_right-inboard', muzzle: 'muzzle_right-inboard', side: 'right', launcher: false },
 ] as const;
-export type AuthoredChassis = 'warden' | 'kestrel' | 'maul';
-interface AuthoredWeaponSpec {
-	readonly group: string;
-	readonly muzzle: string;
-	readonly side: 'left' | 'right';
-	readonly launcher: boolean;
-	readonly exits?: readonly string[];
-}
+export type AuthoredChassis = ChassisId;
+type AuthoredWeaponSpec = CartridgeSocket;
 interface AuthoredDescriptor {
 	readonly chassis: AuthoredChassis;
 	readonly height: number;
@@ -65,7 +60,7 @@ interface AuthoredDescriptor {
 	readonly tubeMapping?: readonly string[];
 	readonly launcherExitPrefix?: string;
 }
-const wardenDescriptor: AuthoredDescriptor = { chassis: 'warden', height: 101.75, weapons: wardenWeaponSpecs };
+const wardenDescriptor: AuthoredDescriptor = { chassis: 'warden', height: 101.75, weapons: wardenWeaponSpecs, locomotion: { walkStride: 0.5, walkExtension: 0.4, stableKneeBend: true, run: WARDEN_RUN_PROFILE } };
 const kestrelDescriptor: AuthoredDescriptor = {
 	// Existing procedural Kestrel, posed neutrally on its own rig: floor0, roof74.82.
 	chassis: 'kestrel', height: 74.82, weapons: kestrelWeaponSpecs,
@@ -89,13 +84,6 @@ export const authoredMaulUrl = function (): string {
 };
 interface AuthoredOptions { readonly height?: number; readonly diagnostics?: boolean }
 
-const named = function (root: Object3D, name: string): Object3D {
-	const found: Object3D[] = [];
-	root.traverse(function (node) { if (node.name === name || node.userData['name'] === name) found.push(node); });
-	const node = found[0];
-	if (!node || found.length !== 1) throw new Error(`Expected one authored node ${name}; found ${found.length}`);
-	return node;
-};
 const point = function (value: Vector3): SpatialPoint { return { x: value.x, y: value.z, elevation: value.y }; };
 const finitePoint = function (value: Vector3) { return [value.x, value.y, value.z].every(Number.isFinite); };
 const materialsOf = function (node: Mesh): Material[] { return Array.isArray(node.material) ? node.material : [node.material]; };
@@ -174,6 +162,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		});
 		return { pivot: point(pivot), muzzle: point(muzzle), tubes };
 	});
+	validateMechWeaponRigs(frame, weaponRigs);
 	const neutralTorso = named(probe.scene, 'rig_torso');
 	for (const spec of weaponSpecs) {
 		const mount = named(probe.scene, spec.group);
@@ -206,8 +195,8 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		// up axis while independent aiming continues to rotate it around that axis.
 		const gait = descriptor.chassis === 'maul' ? { ...advanced, motion: { ...advanced.motion, pitch: 0, roll: 0 } } : advanced;
 		const context = { ...advanceAuthoredPose(motions, valid, body, time), gait };
-		// Maul needs the displayed hip positions to keep its short legs bent over a planted shoe.
-		const supportHeading = descriptor.chassis === 'maul' ? snapMechHeading(gait.body.angle) : gait.body.angle;
+		// Measure guard clearance using the same displayed hip and foot positions as the leg solve.
+		const supportHeading = snapMechHeading(gait.body.angle);
 		return { ...context, pelvisDrop: locomotion.pelvisDrop(gait, sampler.pelvisMatrix(context), supportHeading), ...(standingPelvisDrop === undefined ? {} : { standingPelvisDrop }) };
 	};
 	const muzzle = function (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined): SpatialPoint {
@@ -243,7 +232,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			const nativeScale = node.getWorldScale(new Vector3()).divideScalar(scale);
 			if (hasPixelPlates) {
 				if (isPixelPlateMaterial(material)) {
-					if (typeof skin === 'string') applyMechSkinMaterial(material, skin, { surface: 'pixel-plates', scale: nativeScale });
+					if (typeof skin === 'string') applyMechSkinMaterial(material, skin, { surface: 'pixel-plates', scale: nativeScale, paintMask: node.geometry.hasAttribute('_mech_paint') });
 					else applySolidPlatePaint(material, node, descriptor.chassis, skin, emptyShoulders);
 				}
 				return material;
@@ -315,7 +304,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			sampleLegPose(feedback?.legGait);
 			// Empty authored equipment slots hide only the interchangeable assembly.
 			// Mount brackets remain torso-owned, and simulation retains slot anchors.
-			if (frame !== 'warden') for (const [slot, weapon] of weapons.entries()) weapon.mount.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
+			for (const [slot, weapon] of weapons.entries()) weapon.mount.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
 			// B/C remove the entire shoulder cartridge. Carry its cap color on
 			// the fixed cheek on each side whose cartridge is currently absent.
 			emptyShoulders?.set(weapons[2]?.mount.visible === false ? 1 : 0, weapons[3]?.mount.visible === false ? 1 : 0);
@@ -403,14 +392,31 @@ export const loadAuthoredMaul = async function (url: string, options: AuthoredOp
 	catch (error: unknown) { disposeAsset(asset); throw error; }
 };
 
-const playableDescriptors = { warden: wardenDescriptor, kestrel: kestrelDescriptor, maul: maulDescriptor };
+const classicDescriptors = { warden: wardenDescriptor, kestrel: kestrelDescriptor, maul: maulDescriptor };
+const isClassic = function (chassis: ChassisId): chassis is keyof typeof classicDescriptors {
+	return chassis === 'warden' || chassis === 'kestrel' || chassis === 'maul';
+};
+const kitHeights = { rook: 113, longbow: 145, morrow: 94, bastion: 113, harrow: 107, specter: 87 } as const;
+const kitDescriptor = function (chassis: keyof typeof kitHeights, weapons: readonly CartridgeSocket[]): AuthoredDescriptor {
+	const heavy = chassis === 'harrow' || chassis === 'bastion' || chassis === 'morrow';
+	return { chassis, weapons, height: kitHeights[chassis], locomotion: {
+		walkStride: heavy ? .50 : .58, walkExtension: heavy ? .16 : .22, stableKneeBend: true, walkLiftScale: heavy ? .64 : .88,
+		run: heavy ? { ...WARDEN_RUN_PROFILE, cycleSeconds: 1.01, stanceFraction: .48, swingLift: 5, bodyLift: .8, bodyPitch: .025, bodyRoll: .018 }
+			: chassis === 'specter' ? KESTREL_RUN_PROFILE : WARDEN_RUN_PROFILE,
+	} };
+};
 
-const loadPlayableAsset = async function (label: string, url: string): Promise<GLTF | undefined> {
+const loadPlayableAsset = async function (label: string, url: string, fingerprint = false): Promise<(GLTF & { sha256?: string }) | undefined> {
 	let expired = false;
 	let deadline: ReturnType<typeof setTimeout> | undefined;
-	const loading = new GLTFLoader().loadAsync(url).then(function (asset) {
+	const loading = new FileLoader<ArrayBuffer>().setResponseType('arraybuffer').loadAsync(url).then(async function (bytes) {
+		if (expired) return undefined;
+		const [asset, hash] = await Promise.all([
+			new GLTFLoader().parseAsync(bytes, url.startsWith('data:') ? '' : LoaderUtils.extractUrlBase(url)),
+			fingerprint && globalThis.crypto?.subtle ? crypto.subtle.digest('SHA-256', bytes) : undefined,
+		]);
 		if (expired) { disposeAsset(asset); return undefined; }
-		return asset;
+		return hash ? { ...asset, sha256: Array.from(new Uint8Array(hash), function (byte) { return byte.toString(16).padStart(2, '0'); }).join('') } : asset;
 	}).catch(function (error: unknown) {
 		console.warn(`${label} asset unavailable.`, error);
 		return undefined;
@@ -449,13 +455,19 @@ const assemblePlayableVariant = function (descriptor: AuthoredDescriptor, frame:
 
 export const loadPlayableMechFamily = async function (chassis: AuthoredChassis, url: string,
 	cartridges = url === playableMechUrl(chassis) ? playableMechUrl(chassis, 'variants') : null) {
-	const [base, modules] = await Promise.all([
-		loadPlayableAsset(chassis, url),
+	const [base, bundle] = await Promise.all([
+		loadPlayableAsset(chassis, url, Boolean(cartridges)),
 		cartridges ? loadPlayableAsset(`${chassis} B/C`, cartridges) : undefined,
 	]);
 	if (!base) {
-		if (modules) disposeAsset(modules);
+		if (bundle) disposeAsset(bundle);
 		return [];
+	}
+	const paired = !base.sha256 || bundle?.scene.userData['baseSha256'] === base.sha256;
+	const modules = paired ? bundle : undefined;
+	if (bundle && !paired) {
+		console.warn(`${chassis} cartridges belong to another chassis revision.`);
+		disposeAsset(bundle);
 	}
 	// Source meshes are shared by the base and both variants. Keep them alive
 	// until the last factory has closed and all of its instances are gone.
@@ -467,19 +479,29 @@ export const loadPlayableMechFamily = async function (chassis: AuthoredChassis, 
 		if (modules) disposeAsset(modules);
 	};
 	const factories: ReturnType<typeof prepareAuthored>[] = [];
-	const descriptor = playableDescriptors[chassis];
 	try {
 		const baseBounds = new Box3().setFromObject(base.scene);
-		factories.push(prepareAuthored(descriptor, base, {}, release));
-		references += 1;
-		if (modules) for (const suffix of ['b', 'c'] as const) {
-			const frame: FrameId = `${chassis}-${suffix}`;
+		for (const frame of PLAYABLE_FRAMES) {
+			if (frame.chassisId !== chassis || frame.variant !== 'A' && !modules) continue;
 			try {
-				const variant = assemblePlayableVariant(descriptor, frame, base, modules);
-				factories.push(prepareAuthored(variant.descriptor, variant, {}, release, { frame, baseBounds }));
+				let descriptor: AuthoredDescriptor;
+				let scene = base.scene;
+				if (isClassic(chassis)) {
+					descriptor = classicDescriptors[chassis];
+					if (frame.variant !== 'A' && modules) {
+						const assembled = assemblePlayableVariant(descriptor, frame.id, base, modules);
+						descriptor = assembled.descriptor;
+						scene = assembled.scene;
+					}
+				} else {
+					const kit = fitMechCartridges(frame.id, base.scene, modules?.scene);
+					descriptor = kitDescriptor(chassis, kit.weapons);
+					scene = kit.scene;
+				}
+				factories.push(prepareAuthored(descriptor, { scene, animations: base.animations }, {}, release, { frame: frame.id, baseBounds }));
 				references += 1;
 			} catch (error: unknown) {
-				console.warn(`${frame} asset invalid.`, error);
+				console.warn(`${frame.id} asset invalid.`, error);
 			}
 		}
 	} catch (error: unknown) {

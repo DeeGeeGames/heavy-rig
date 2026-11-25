@@ -55,7 +55,7 @@ test('company rejects incompatible equipment and forged saves without spending o
 test('owned chassis and refits persist exactly their visible hardpoint count', function () {
 	const company = unlockAllRigs(createCampaign(42));
 	expect(company.fleet.filter(function (mech) { return getFrame(rigFrameId(mech.frameId)).variant === 'A'; }).map(function (mech) { return [mech.frameId, mech.loadout.length]; })).toEqual([
-		['kestrel', 2], ['warden', 4], ['maul', 4],
+		['kestrel', 2], ['warden', 4], ['maul', 4], ['longbow', 1], ['morrow', 2], ['rook', 3], ['bastion', 2], ['harrow', 2], ['specter', 2],
 	]);
 	for (const mech of company.fleet) {
 		expect(mech.loadout).toHaveLength(getHardpoints(rigFrameId(mech.frameId)).length);

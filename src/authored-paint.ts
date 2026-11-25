@@ -11,13 +11,16 @@ export const authoredPaintZone = function (mesh: Mesh): { zone: PaintZone; side:
 	const name = joint?.name ?? '';
 	const side = name.includes('left') ? 'left' : name.includes('right') ? 'right' : 'center';
 	if (name.startsWith('rig_leg_')) return { zone: 'leg', side };
-	if (name.startsWith('rig_mount_')) return { zone: name.includes('shoulder') ? 'shoulder' : 'arm', side };
+	if (name.startsWith('rig_mount_')) return { zone: name.includes('shoulder') || name.endsWith('-silo') ? 'shoulder' : 'arm', side };
 	return { zone: name === 'rig_pelvis' ? 'pelvis' : 'hull', side: 'center' };
 };
 
 // Fixed fairings and pauldrons belong to the torso mesh. These coordinates
 // come from the pixel_mechs authoring recipes, in native rig_torso space.
 const fixedArmor = {
+	kit: `
+		if (abs(position.x) > shoulderEdge && position.y > 0.) return position.x < 0. ? rightShoulder : leftShoulder;
+	`,
 	warden: `
 		// The two pale cheek fairings sit outboard of the narrow pale nose panel.
 		if (plate.x > 1.5 && abs(position.x) > .05) {
@@ -43,10 +46,12 @@ const fixedArmor = {
 
 export const applySolidPlatePaint = function (material: MeshStandardMaterial, mesh: Mesh, chassis: AuthoredChassis, paint: SolidMechPaint, emptyShoulders?: Vector2): void {
 	const { zone, side } = authoredPaintZone(mesh);
-	const fixed = zone === 'hull' && (chassis !== 'warden' || emptyShoulders) ? chassis : undefined;
+	const masked = mesh.geometry.hasAttribute('_mech_paint');
+	const fixed = zone !== 'hull' ? undefined : masked && (mesh.name.startsWith('plates_rig_torso') || mesh.parent?.name === 'plates_rig_torso') ? 'kit'
+		: chassis === 'kestrel' || chassis === 'maul' || chassis === 'warden' && emptyShoulders ? chassis : undefined;
 	const pigment = function (area: PaintZone, flank: PaintSide) { return { value: new Color(paintColorForZone(paint, area, flank)) }; };
 	material.userData['mechSkin'] = 'solid';
-	material.customProgramCacheKey = function () { return `solid-plates:${fixed ?? 'part'}`; };
+	material.customProgramCacheKey = function () { return `solid-plates:${fixed ?? 'part'}:${masked}`; };
 	material.onBeforeCompile = function (shader) {
 		shader.uniforms['partPaint'] = pigment(zone, side);
 		let fixedZones = '';
@@ -54,7 +59,12 @@ export const applySolidPlatePaint = function (material: MeshStandardMaterial, me
 			shader.uniforms['leftShoulder'] = pigment('shoulder', 'left');
 			shader.uniforms['rightShoulder'] = pigment('shoulder', 'right');
 			fixedZones = 'uniform vec3 leftShoulder, rightShoulder;';
-			if (emptyShoulders) {
+			if (fixed === 'kit') {
+				mesh.geometry.computeBoundingBox();
+				const box = mesh.geometry.boundingBox;
+				shader.uniforms['shoulderEdge'] = { value: box ? Math.max(-box.min.x, box.max.x) * .6 : Infinity };
+				fixedZones += '\nuniform float shoulderEdge;';
+			} else if (emptyShoulders) {
 				shader.uniforms['emptyShoulders'] = { value: emptyShoulders };
 				fixedZones += '\nuniform vec2 emptyShoulders;';
 			} else {
@@ -66,12 +76,12 @@ export const applySolidPlatePaint = function (material: MeshStandardMaterial, me
 		shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
 uniform vec3 partPaint;
 ${fixedZones}
-${mechPlateShader}
+${mechPlateShader(masked)}
 vec3 solidArmorColor(vec2 plate) {
 	${fixed ? fixedArmor[fixed] : ''}
 	return partPaint;
 }`).replace('#include <color_vertex>', `#include <color_vertex>
 vec2 plate = mechPlate(color.rgb);
-if (plate.x > .5) vColor.rgb = solidArmorColor(plate) * (plate.y < 1. ? .79 : 1.);`);
+if (plate.x > .5) vColor.rgb = solidArmorColor(plate) * ${masked ? 'plate.y' : '(plate.y < 1. ? .79 : 1.)'};`);
 	};
 };

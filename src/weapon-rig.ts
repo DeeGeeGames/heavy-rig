@@ -24,6 +24,19 @@ const shoulderTubes = [0, 1].flatMap(function (row) { return [-1, 0, 1].map(func
 const rackTubes = function (rows: number, width: number): readonly SpatialPoint[] {
 	return [-1, 0, 1].flatMap(function (column) { return Array.from({ length: rows }, function (_, row) { return { x: 0, y: column * width / 3.4, elevation: row * 8 }; }); });
 };
+// Offsets are shared by procedural meshes and simulation when an authored
+// cartridge is unavailable. Their order defines physical firing exit indices.
+export const fallbackIndexedExits = function (frame: FrameId, slot: number): readonly SpatialPoint[] | undefined {
+	if (frame === 'harrow-b' && slot === 0) return [-12, 0, 12].map(function (y) { return { x: 0, y, elevation: 0 }; });
+	if (frame === 'bastion-b' && slot === 1) return [-3.7, 3.7].flatMap(function (y) {
+		return [-3.5, 3.5].map(function (elevation) { return { x: 0, y, elevation }; });
+	});
+	if (frame === 'morrow-saturation') return rackTubes(2, 22);
+	if (frame === 'morrow' || frame === 'morrow-pursuer') return [-6.5, 6.5].flatMap(function (y) {
+		return (frame === 'morrow' ? [0, 8] : [0]).map(function (elevation) { return { x: 0, y, elevation }; });
+	});
+	return undefined;
+};
 const scaleMechRig = function (rig: WeaponRig, size: number, rise = 0): WeaponRig {
 	const scale = function (point: SpatialPoint): SpatialPoint { return { x: point.x * size, y: point.y * size, elevation: (point.elevation + rise) * size }; };
 	return { mechTorsoMounted: true, muzzle: scale(rig.muzzle), pivot: scale(rig.pivot), tubes: rig.tubes.map(function (point) { return { x: point.x * size, y: point.y * size, elevation: point.elevation * size }; }) };
@@ -43,7 +56,16 @@ export const getPlayerWeaponRig = function (frame: FrameId): readonly WeaponRig[
 				? family === 'launcher' ? mount(25.8, 46, side * 41, rackTubes(2, 19)) : mount(family === 'ballistic' ? 41.1 : 33.2, 52, side * 41)
 				: family === 'launcher' ? mount(15.3, 91, side * 22, compactTubes) : mount(family === 'ballistic' ? 23.7 : 19.2, 91, side * 22);
 			case 'longbow': return slot === 0 ? mount(71.2, 72, -27) : family === 'energy' ? mount(31.2, 65, 27) : mount(28.3, 65, 27, compactTubes);
-			case 'morrow': return family === 'launcher' ? mount(-1.2, 73, side * 36, rackTubes(4, 22)) : mount(6.2, 87, side * 36);
+			case 'morrow': return family === 'launcher' ? mount(-1.2, 73, side * 36, fallbackIndexedExits(frame, slot) ?? rackTubes(4, 22)) : mount(6.2, 87, side * 36);
+			case 'harrow':
+			case 'specter':
+			case 'bastion': {
+				const mortar = definition.chassisId === 'harrow' && slot === 0;
+				const z = mortar ? 0 : side * (definition.chassisId === 'specter' ? 19 : 29);
+				const height = mortar ? 91 : 65;
+				const exits = fallbackIndexedExits(frame, slot);
+				return family === 'launcher' ? mount(25.3, height, z, exits ?? compactTubes) : mount(family === 'energy' ? 36.2 : mortar ? 46.7 : 34.7, height, z, exits);
+			}
 			case 'rook': return slot === 2 ? mount(3.3, 104, 0, compactTubes) : mount(family === 'ballistic' ? 48.2 : 47.2, 53, side * 29);
 		}
 	});

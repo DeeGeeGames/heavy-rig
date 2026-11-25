@@ -94,5 +94,6 @@
       }
     ],
     "modelApproval": "design/mechs/assets/maul/pixel/manifest.json"
-  }
+  },
+  "assembledTurnaround": "design/mechs/chassis/maul/assembled-turnaround/selection.json"
 }

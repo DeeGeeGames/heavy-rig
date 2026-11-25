@@ -1,0 +1,64 @@
+{
+  "decision": "Selected by delegated art direction after inspection of front, rear, both profiles, three-quarter and underside renders of the assembled production geometry. Historical owner decisions retain their recorded scope.",
+  "renderer": "Three.js, neutral orthographic views of the production family in original paint. The far-side module is occluded in profile.",
+  "assets": {
+    "public/assets/mechs/maul/pixel.glb": "096689db04899d107f504b0f8aaeef1f1c6d68a9103559edfdec2fc2aaa2e6a5",
+    "public/assets/mechs/maul/variants.glb": "7c8cf2e1baf32a17ba2ff22bc81465b4a890e1f6919b94b80824fc3c55699721"
+  },
+  "variants": {
+    "a": {
+      "front": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/a/front.png",
+        "sha256": "88cfad3cbd68ff7c19888409bfde0f732de11af4d4d062a92f73578567780c75"
+      },
+      "back": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/a/back.png",
+        "sha256": "469b533d9f3b85e279242470ae2989d8b98cda1c4c3eb23cf6973e19ce5cb5b5"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/a/own-left.png",
+        "sha256": "378887afe534da0b3dfc7c6113158760e4a96e447e7758bf6faca91b18f8aae7"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/a/own-right.png",
+        "sha256": "28f29cf68ff7c436738c17a9c15c561b3c717caf8892a4248ecd2fe31b81946b"
+      }
+    },
+    "b": {
+      "front": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/b/front.png",
+        "sha256": "7fc8e2a200ce68804013eced80fb30a680f05423db81f4f7c51e92bbe16bfa10"
+      },
+      "back": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/b/back.png",
+        "sha256": "469b533d9f3b85e279242470ae2989d8b98cda1c4c3eb23cf6973e19ce5cb5b5"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/b/own-left.png",
+        "sha256": "a1555e5458eb32ba70493edf8f7f1649ffdaeb9ecbe6d4e89bce789ababf45a5"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/b/own-right.png",
+        "sha256": "41bee58aaa497d3e2cc822b67332917c6a8e3bf0db15edcd8b1c7bdb26d8db28"
+      }
+    },
+    "c": {
+      "front": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/c/front.png",
+        "sha256": "58bd1696b932017a66f4e5d0ca468246e39e737cdc61e2739a614273806b36fb"
+      },
+      "back": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/c/back.png",
+        "sha256": "469b533d9f3b85e279242470ae2989d8b98cda1c4c3eb23cf6973e19ce5cb5b5"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/c/own-left.png",
+        "sha256": "4be2a1f2c708b7c4d2bd5f1160fbf100241842532225900c7405668ec6c13cae"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/maul/assembled-turnaround/c/own-right.png",
+        "sha256": "4a045f9d7cea0be95a69bcd6b38fb522d7b25eef06b7f16a82afd3022d60247d"
+      }
+    }
+  }
+}

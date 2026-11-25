@@ -92,7 +92,7 @@ for (const frame of FRAMES) {
 			const rest = parts.map(function (part) { return part.matrixWorld.clone(); });
 			const contact = addMissileTarget(state);
 			step(state, { ...idle, targetId: contact.id, fire: [true, false, false, false] }, dt);
-			const recoil = weaponRecoil(state.loadout);
+			const recoil = weaponRecoil(state.loadout, undefined, frame.id);
 			expect(recoil).toBeGreaterThan(0);
 			model.pose(gait, state.player.turret, { recoil, hit: 0, heat: state.player.heat, time: state.time });
 			expect(parts.some(function (part, index) { return !part.matrixWorld.equals(rest[index] ?? part.matrixWorld); })).toBe(true);

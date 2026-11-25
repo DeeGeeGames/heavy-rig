@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "morrow-pursuer",
+  "background": "Transparent",
+  "details": "Fit two long, narrow pursuit cassettes, each with a single vertical pair of guided wells, to the two common aft receivers. Preserve the under-slung trunnions and the rest of the Bulwark body.",
+  "loadout": [
+    {
+      "weaponId": "stream-missiles",
+      "rounds": 360
+    },
+    {
+      "weaponId": "stream-missiles",
+      "rounds": 360
+    }
+  ],
+  "baselineId": "morrow-a-bulwark"
+}

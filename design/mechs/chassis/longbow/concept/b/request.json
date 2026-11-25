@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "longbow-b",
+  "background": "Transparent",
+  "details": "Fit a long, exposed single-bore ballistic rifle to the left elbow. Add the fixed right load-bearing brace around the closed clamp and fit a compact turquoise laser. Keep the plum/bone Spire cell, cabinet, waist and legs.",
+  "loadout": [
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "laser",
+      "rounds": 0
+    }
+  ],
+  "baselineId": "longbow-a-spire"
+}

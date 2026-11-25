@@ -4,7 +4,7 @@ Use this kit to discuss and generate Heavy Rig art across chats. Start with “C
 
 ## Sources and tools
 
-Warden, Kestrel and Maul each have three playable SNES-style variants. Their current records pair the production exports with their high-detail sources and rebuild recipes. [In-game roster](assets/playable-variants.png) · [Model records and rebuild commands](assets/README.md)
+Nine playable chassis each have three fitted variants. Warden, Kestrel and Maul supply the shared-world finish references. The other six families are authored directly as rigid, vertex-painted plates and interchangeable cartridges. [Production roster](assets/field-roster.png) · [Model records and rebuild commands](assets/README.md)
 
 For the stages after reference approval, read [Mech asset production](asset-production.md): source audit, articulation, shared variant modules, optimization, in-game acceptance and repeatability. This is the evolving process record; experimental results are not yet production defaults.
 

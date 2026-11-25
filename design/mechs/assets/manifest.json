@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "Retained owner-approved mech checkpoints, playable A/B/C assets, and reproduction inputs.",
+  "scope": "Retained owner-approved checkpoints and delegated design selections, playable A/B/C assets, and their reproducible sources.",
   "playableVariantApproval": {
     "status": "owner-approved-for-play",
     "date": "2026-11-23",
@@ -39,6 +39,25 @@
       }
     ],
     "comparison": "design/mechs/assets/playable-variants.png"
+  },
+  "fieldRoster": {
+    "status": "implemented-awaiting-owner-gameplay-acceptance",
+    "playableVariants": 27,
+    "lineup": "design/mechs/assets/field-roster.png",
+    "gameplay": "design/mechs/assets/field-roster-practice.png",
+    "squad": "design/mechs/assets/field-roster-squad.png",
+    "measurements": "design/mechs/assets/field-roster.json",
+    "designs": {
+      "kestrel": "design/mechs/chassis/kestrel/design.json",
+      "warden": "design/mechs/chassis/warden/design.json",
+      "maul": "design/mechs/chassis/maul/design.json",
+      "rook": "design/mechs/chassis/rook/design.json",
+      "longbow": "design/mechs/chassis/longbow/design.json",
+      "morrow": "design/mechs/chassis/morrow/design.json",
+      "bastion": "design/mechs/chassis/bastion/design.json",
+      "harrow": "design/mechs/chassis/harrow/design.json",
+      "specter": "design/mechs/chassis/specter/design.json"
+    }
   },
   "files": [
     {
@@ -1030,6 +1049,1271 @@
       "path": "design/mechs/assets/playable-variants.png",
       "bytes": 141665,
       "sha256": "c55cdf4e21a3295a6384e3f8bf27e74523b4f40fe45e9c8cfc8dabc81b128b9e"
+    },
+    {
+      "path": "design/mechs/assets/field-roster-practice.png",
+      "bytes": 291055,
+      "sha256": "dcee20181fb53f7d084daef23c698c971dab5198952c06e92fd132173ed2110d"
+    },
+    {
+      "path": "design/mechs/assets/field-roster-squad.png",
+      "bytes": 446030,
+      "sha256": "ecf1effe3988cfd30e4fa34c544114e067582f59d028fb7289339c42f0cb6f55"
+    },
+    {
+      "path": "design/mechs/assets/field-roster.json",
+      "bytes": 25371,
+      "sha256": "c5026bd90a8c1f4ea5a4bf93394b362f3d0f04b92745cf35848bebaa2a4c7d93"
+    },
+    {
+      "path": "design/mechs/assets/field-roster.png",
+      "bytes": 306500,
+      "sha256": "1afcb9b2b890d3fc4ec3b4c3e3b12d3a8abfb34c7eb5388fd607e86973905419"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/assembly.json",
+      "bytes": 12948,
+      "sha256": "fa2e64854d6be39f3c1f9967073a5368e6db75a685865737c77319fb30d3ddbe"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/a/assembled.png",
+      "bytes": 157675,
+      "sha256": "d290497cf60d0d910bbc4744744fc9f4c50a2ba558e0381f9c7e084b2f64300a"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/a/attachments.json",
+      "bytes": 1212,
+      "sha256": "3687d5d7c2fdd9f72fa85e78ee90b7eda4167c317dff44a3ae102dab1192498b"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/a/contract.json",
+      "bytes": 778,
+      "sha256": "273e5eb074ecf7b2cf3727b03244c2b393687069e9cfaa7e5f3985a946055ba2"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/a/family-comparison.jpg",
+      "bytes": 88751,
+      "sha256": "5f665d30fea73d280befa894b04f0289ec9b45959c363bbedb8d3593ada6d9d2"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/a/family-review.json",
+      "bytes": 3575,
+      "sha256": "2b6f92b16811ec509e9c5b06f4290b3cc66ba7db9dc21a95ea3522027758ac96"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/a/image.png",
+      "bytes": 1039374,
+      "sha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/a/prompt.txt",
+      "bytes": 8184,
+      "sha256": "d2e9686beb7d69ad052b55f55a580402949216d5c32cea9c38e2f738d0b81126"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/a/request.json",
+      "bytes": 706,
+      "sha256": "77528f8c7247567eef2f3a19f4d1299a3d39a32b70f7e6385f87df07139941ea"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/b/contract.json",
+      "bytes": 1174,
+      "sha256": "c5c653b7a10a1fcc9b50772a0cb60ad855c8d19dabd19a3eb706d67b8355b31b"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/b/image.png",
+      "bytes": 159347,
+      "sha256": "0d97108a6fb8464572f672444b9c020ac13d968ca00c1a06d0056eca45dbccf9"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/b/prompt.txt",
+      "bytes": 5954,
+      "sha256": "d72028a2f536a68950349bb9e26cfd4f6b0dc7b8621ca28a90c311af72df4d5c"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/b/request.json",
+      "bytes": 487,
+      "sha256": "1ad7f9b34cca2e1131a3bbb7d4fb59a89a4128d75ab1ff966c7db27f41987cfa"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/c/contract.json",
+      "bytes": 1085,
+      "sha256": "e61737b92f3a5e74daf691f07865f9187ef22bb688048a349e9240d6d82865ec"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/c/image.png",
+      "bytes": 160055,
+      "sha256": "e3647e4802110f9da3239fcc39aa4fe37b5169f31ad515fa8891734c15dd4d88"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/c/prompt.txt",
+      "bytes": 5892,
+      "sha256": "346195de1af349f1116b56c493e7a828f3a81ec8bbf469e00da7d64450e2080d"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/concept/c/request.json",
+      "bytes": 494,
+      "sha256": "15326b282c73af0eef86000e270346cc9e3be5826aff649e613b732866523506"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/design.json",
+      "bytes": 3987,
+      "sha256": "6624f6d3daec9f6d0b1f789e04cc583b32f0160e9725d9d7f03934807d6911a4"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/practice-scale.png",
+      "bytes": 30655,
+      "sha256": "30c3225cb6d2e4c1f0124766e0eb041c8d981ba66d159e23c53e03c72b437e86"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/a/back.png",
+      "bytes": 27589,
+      "sha256": "279ac2dc8e29fba7bcc986647b61b77e552869ed5954f887c7f5590734a5e056"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/a/front.png",
+      "bytes": 33684,
+      "sha256": "760873edbe94a073cec374431dc443427ff3e330a5c06e01c51d9451ec78ab0d"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/a/manifest.json",
+      "bytes": 1603,
+      "sha256": "d63dc1699cd96e69ad2b16b94ef8f92e6cca1a1a50bb0aae6705d6714d37b74a"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/a/own-left.png",
+      "bytes": 22876,
+      "sha256": "8a3d992887795cf28558cd39d0a8445aa75bb5ae2d2b26a2938e671537d33ec8"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/a/own-right.png",
+      "bytes": 22356,
+      "sha256": "081e0ea269418c791f7f61caf43412f337c917ed66fb256524fed40f00e92ffa"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/b/back.png",
+      "bytes": 27589,
+      "sha256": "279ac2dc8e29fba7bcc986647b61b77e552869ed5954f887c7f5590734a5e056"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/b/front.png",
+      "bytes": 33524,
+      "sha256": "d76c71d2aa84f5311768db09769d8b747820224350c90d1305ef59e6e9bc0cb7"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/b/manifest.json",
+      "bytes": 1638,
+      "sha256": "06470ae83667f8503926788d82d5d8443ead4ca893f89b6d4986095bcc081989"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/b/own-left.png",
+      "bytes": 22904,
+      "sha256": "6b685ff07fc4fa4835ba344da7d3b60b2206f78a8578f801d88aacfd80af64c6"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/b/own-right.png",
+      "bytes": 22447,
+      "sha256": "669f522797c2ba84a7526d8f584fdd93f77546dfaeb4d4c8180a3e8e14d450d2"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/c/back.png",
+      "bytes": 27589,
+      "sha256": "279ac2dc8e29fba7bcc986647b61b77e552869ed5954f887c7f5590734a5e056"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/c/front.png",
+      "bytes": 33338,
+      "sha256": "6aeeaed9d18b81777b308da47cb6042b64174dcd5b89e7b9424249db1cd69455"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/c/manifest.json",
+      "bytes": 1644,
+      "sha256": "e0debfe6f651211e1441abc2236135715f363ea27037ec73e35755543df8a15c"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/c/own-left.png",
+      "bytes": 22785,
+      "sha256": "315d1d5e45e1aa5a04887e576c1e1e8ca0c96669cb76daa220b32ffa682b698e"
+    },
+    {
+      "path": "design/mechs/chassis/bastion/turnaround/c/own-right.png",
+      "bytes": 22423,
+      "sha256": "e65044560915666c1cfb73a9136d3944f32a16bfb06d8c29eb82f6dfcd8c0281"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/assembly.json",
+      "bytes": 12719,
+      "sha256": "9d536f77f217b8fb0cd15d74e6452a427bb7e0aecf0508cd9e9b469eba3294f3"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/a/assembled.png",
+      "bytes": 136673,
+      "sha256": "f087927aa5b1eddf48b0f0ef80127370773dd495b16c7f386c8bf013c4b319cd"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/a/attachments.json",
+      "bytes": 1212,
+      "sha256": "3687d5d7c2fdd9f72fa85e78ee90b7eda4167c317dff44a3ae102dab1192498b"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/a/contract.json",
+      "bytes": 779,
+      "sha256": "f193ceed422eb0836fd624018d62f0d256267a2bb22d9a7f7ce1ab0df1d8ea9c"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/a/family-comparison.jpg",
+      "bytes": 94654,
+      "sha256": "3f92b8e3a1072f85ff10cc1ee76c9c4e6075f26790cff3290b3ab0dc37307835"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/a/family-review.json",
+      "bytes": 3639,
+      "sha256": "9524f3c92d4ca172ef344fa81b0a88bb8b4ea7f928e033378c51948eba8f69e1"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/a/image.png",
+      "bytes": 1092672,
+      "sha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/a/prompt.txt",
+      "bytes": 8436,
+      "sha256": "f7b2bc77d6d9f11719707ddad1ee6ce0dfdbcc6e836ee5fe2f438b2fb8f7af64"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/a/request.json",
+      "bytes": 921,
+      "sha256": "c9bcef056444189db9cb71392edf459bfa14d1d3f006b6a012a175dd19194451"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/b/contract.json",
+      "bytes": 1028,
+      "sha256": "ba2bfd00cf39b762b237e7e4111e1a6abde99e7201c53dc1d57babef5aaf0777"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/b/image.png",
+      "bytes": 136184,
+      "sha256": "e9df440c965d062eb30b4038bf8c252e6b75e24cd27abd46c8a20680e263ba46"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/b/prompt.txt",
+      "bytes": 5757,
+      "sha256": "67327ce14484887501d43213093f84c5de4a67c1995a62b8a1a1dcdee688e767"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/b/request.json",
+      "bytes": 507,
+      "sha256": "90c77ff58ea2ffaf50b367dbe0c803c551a67ac8ab291cedd3a7402ef70eaab7"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/c/contract.json",
+      "bytes": 1000,
+      "sha256": "13d32afc96bf2aae21a1e1ffebcbe52bf9de238216c40c3a2aa2a72bdeb4676f"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/c/image.png",
+      "bytes": 137272,
+      "sha256": "1245bf19b3aeedaebd312bab9e60718f16efe78fbf012f25e9006236a91fb565"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/c/prompt.txt",
+      "bytes": 5772,
+      "sha256": "01fa7ab0cb69cceb5ad096e4f4c0aec51b8a44297885309955ac4b9ff4b35ee6"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/concept/c/request.json",
+      "bytes": 514,
+      "sha256": "2955232e93a304a521fa11f84e047aabb99833262b234529dd5a1884921b4678"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/design.json",
+      "bytes": 3970,
+      "sha256": "a0e30fcfb6e59febba2eb5b850c58a7f6cdc032807f44b8a9624941241c7d364"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/practice-scale.png",
+      "bytes": 30186,
+      "sha256": "479dc20e7661d9421b966ac6c4f3a167f9ae900f29f55bae0f98817aaf05f8b7"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/a/back.png",
+      "bytes": 25099,
+      "sha256": "69274d08e0b98e24c3f43dc3eeae5a8cff9383f0f0fbbba78d143f1594efafe0"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/a/front.png",
+      "bytes": 29157,
+      "sha256": "30ad5054b393be322cc2222b05fa8c226224ae8b270618c0e827816ee3ce3a40"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/a/manifest.json",
+      "bytes": 1646,
+      "sha256": "2ab8df2cdd6d21a18d0054c76fa63332e6cb5995a1d90e60213cab43262aa9fb"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/a/own-left.png",
+      "bytes": 23185,
+      "sha256": "3b87fcb8f0d5b3152d6e56a17f30b0f8b929ad3d5029a9b34c4fd6de9984a9c7"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/a/own-right.png",
+      "bytes": 24212,
+      "sha256": "3ba309c11a3f6d81fe72768c26018987a8ebe7bf633f3da7015ae4ba009605bd"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/b/back.png",
+      "bytes": 26847,
+      "sha256": "93bb66cc030f356780552310145a75ed65e0c123684bb8b995214b8cc030c6f2"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/b/front.png",
+      "bytes": 30892,
+      "sha256": "b3c857b30e1898a5da3ce43a7bcb59cd3effb0bc62f63d69155df13ba0569e78"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/b/manifest.json",
+      "bytes": 1685,
+      "sha256": "13dde61615f34097279fd5c114bdd85b2112e761f50b4623765e180c0db87d9d"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/b/own-left.png",
+      "bytes": 22988,
+      "sha256": "fa589c6c006b57353a373939df1c99ac8a9f693b9bd85d32ee99ed0b58ecc1f9"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/b/own-right.png",
+      "bytes": 24055,
+      "sha256": "54adb39197d6a736795e24d0abb7fcd58377710e3346f4b8d699e1d9aa5f0edc"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/c/back.png",
+      "bytes": 25094,
+      "sha256": "1d89d0d471bacded7a9757ccb6be49ff32491107e2acc7bcb6ebab1df63da9aa"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/c/front.png",
+      "bytes": 29086,
+      "sha256": "977cde020222b49e282cc5a61b7b6d13b727dcdcca20e9598cb9fd2bae4b788b"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/c/manifest.json",
+      "bytes": 1659,
+      "sha256": "11d0579b2298b63a7dcd6480a86d9bda014d5546eed746449660cb907c5c9c07"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/c/own-left.png",
+      "bytes": 23607,
+      "sha256": "2f3608fb70d8d6698ad8eca1b5c7421fc2af0f08d0556d2c6fdfad2d55498b0f"
+    },
+    {
+      "path": "design/mechs/chassis/harrow/turnaround/c/own-right.png",
+      "bytes": 24802,
+      "sha256": "735e6ab16d8355b4b02c1d6a802e8c279b3dd78986ae203ddb714416c13af7ab"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/assembled-concept-review.json",
+      "bytes": 6920,
+      "sha256": "c58023a3b0c2d6033c153a78c42e553c8f223bf4a40736a5295eece53c4761be"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/concept/b/kestrel-b.png",
+      "bytes": 44650,
+      "sha256": "e2cfb9d4c7aaa44ba04aae1152ded7c80cc35f42039be68b2c0da628103bf88b"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/concept/c/kestrel-c.png",
+      "bytes": 45298,
+      "sha256": "94242f2fc2891873d02ac0081a4427e904d3fd1e2185325d8bdd8a8c5be88125"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/design.json",
+      "bytes": 2454,
+      "sha256": "f9215da8ed2dc007b19cbd8a5712338b70e7f0a1f18b98e4690103f70e9b4aef"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/turnaround/b/back.png",
+      "bytes": 25305,
+      "sha256": "6384f4ce8128228ab0587e8a6edf2a276c5bde46fdf9761c647a6c0036c32b14"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/turnaround/b/front.png",
+      "bytes": 28913,
+      "sha256": "2dd443bd6c629e6f2971c8d14d815fd892ee4ca40db303eeaab3958bea8ad464"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/turnaround/b/own-left.png",
+      "bytes": 24191,
+      "sha256": "c41eb0f494eae712883fb46315c1362dc6b6e1476e57d69d74cd93105dedb238"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/turnaround/b/own-right.png",
+      "bytes": 24194,
+      "sha256": "71adcfd66f8b2b64f43f2122c67dfee43fc26b8de9c6881bc187cf76e15815f5"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/turnaround/c/back.png",
+      "bytes": 25305,
+      "sha256": "6384f4ce8128228ab0587e8a6edf2a276c5bde46fdf9761c647a6c0036c32b14"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/turnaround/c/front.png",
+      "bytes": 28646,
+      "sha256": "40a22c6c8dd2172b78790252195c44da170c5bd2b81aa723f5126202feed84bc"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/turnaround/c/own-left.png",
+      "bytes": 24221,
+      "sha256": "71613b37309441d8e0bd6ecb4fe129b6673fd959f57a272e7ae67409bca80ecf"
+    },
+    {
+      "path": "design/mechs/chassis/kestrel/turnaround/c/own-right.png",
+      "bytes": 24222,
+      "sha256": "3b7e4a6c424ebfbe5c3f7c9c61916ab75aa2484ecc53398c884b63062432aac2"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/a/back.png",
+      "bytes": 26846,
+      "sha256": "6adef6d249ee8496fa6d873bb33d6f9502d8e8cb37939d3678d6a5754ab753ce"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/a/front.png",
+      "bytes": 27749,
+      "sha256": "8a2cecfc4f5f104bfee14b3322662a9e81006f779e4ee8322cdef79d14afd1de"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/a/own-left.png",
+      "bytes": 23896,
+      "sha256": "cf69b3afafeb57a2ca02693a40b4577b6443734dd49125342b249bcf3e2b62c9"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/a/own-right.png",
+      "bytes": 24507,
+      "sha256": "f13e8b3aabd6c0a7510eb6acc19f0297fca65b8882b52663193512e3f8e220bd"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/a/three-quarter.png",
+      "bytes": 41057,
+      "sha256": "573eb44a541db414ccdde081a3ecae5bf59b41b25a22966e9056680303fa797b"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/a/underside.png",
+      "bytes": 33321,
+      "sha256": "ff57203546fe8bef8fec3137244eec7cb976acd75452d77940d30c8103aafbfd"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/b/back.png",
+      "bytes": 26279,
+      "sha256": "0ba2a5dcd1bb006d98b4d2b87dd3d7edface3fb6c666f58cb76f73f5413ee13f"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/b/front.png",
+      "bytes": 27552,
+      "sha256": "052955c62ea255db3eff40b49250e131f998f71686e760273d5058f1a670cc00"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/b/own-left.png",
+      "bytes": 23022,
+      "sha256": "5e53eec25e499140dc79ee9a03cca030d2b0ee4b004082a3aad906ed20b27db7"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/b/own-right.png",
+      "bytes": 23815,
+      "sha256": "0d3e4f66c9c716643228c1796f3a07014375dad4b3b3503fea3d5858ddac3406"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/b/underside.png",
+      "bytes": 33406,
+      "sha256": "e43535dbcf74c7cbd7e24b539c1c6646118946246beb1f49c87db3ad75cbe335"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/c/back.png",
+      "bytes": 28010,
+      "sha256": "4fb71fdd2112697b160c900f9b0156b0826f63fe5a162216a467ccfd87920f62"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/c/front.png",
+      "bytes": 28155,
+      "sha256": "10701b9d392e748a0e29811736467f1576ba7b13d92df890a4c69d2fba30e9b7"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/c/own-left.png",
+      "bytes": 24196,
+      "sha256": "9a088fb7f7c9964e54d2bf1fdf65745d25c2e0da6bca45b17924cef232990f61"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/c/own-right.png",
+      "bytes": 25108,
+      "sha256": "451b02bb2167e2f2a9b804bb1a6b1c4dd2135bc0581dc4809368049b5d06801e"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/c/underside.png",
+      "bytes": 34954,
+      "sha256": "d64d2433ccab9a0eb95731d102599a30940d3a2ea005ffd7e555b0121c347ce6"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/family-review.png",
+      "bytes": 459513,
+      "sha256": "49a1ee99523eb5028159f16a750245e454ca5c1bc014a126a164960423a53a2f"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/review.md",
+      "bytes": 1796,
+      "sha256": "e4c4ccf72ab2a341a433cc4847918d2fafb90e9aa96659ce74de865788db480d"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/selection.json",
+      "bytes": 9300,
+      "sha256": "07f4c917783448cc6bcca084226f5cc6990a4c431ff8ae190e9da37bb21f2e7d"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/assembled-turnaround/variants.png",
+      "bytes": 142997,
+      "sha256": "4a4d93ceda501ef008795ca962529cd8df3032462b565660c2930da048645695"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/a/attachments.json",
+      "bytes": 1696,
+      "sha256": "98ba7aded7fec682c61b0ac40fc69925ab5af921b2c54c3a35c08072545afac9"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/a/contract.json",
+      "bytes": 987,
+      "sha256": "8e4b527e43b08921219c8312ebacae49c66a22974e404378668a2ed986c2fd43"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/a/exploration.png",
+      "bytes": 866447,
+      "sha256": "76ff9c1732ea51056ee7d0e3a58caf79545a81a8f16b6ed862ba65d716f16d5b"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/a/family-review.json",
+      "bytes": 4148,
+      "sha256": "1f70841cf48edf6f49ab878d8298cb52da711d7cf522eb2d4c0ed181015c2390"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/a/image.png",
+      "bytes": 939560,
+      "sha256": "5791c6c05f878faffd00d5c4d51691637ef7fd46b5d8713a7c47f04017168b72"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/a/imagegen-prompt.txt",
+      "bytes": 8700,
+      "sha256": "caab062d68087514416b816c2a98102b66f6aa4ff5b3bfea1de7ffa522cb87d6"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/a/prompt.txt",
+      "bytes": 7967,
+      "sha256": "abcbf26bd4ad5bfd03dc10cc95d6fc130e2f8362ea7c43b090900c834fd95e4d"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/a/request.json",
+      "bytes": 846,
+      "sha256": "e8d007f411b754d579e47f5bd7662275324fab33c6faac3dd43087e79de3c9b0"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/b/contract.json",
+      "bytes": 1441,
+      "sha256": "bfc8ee02bb7fdd5a8cbd1026df700656fd24edc21261f1b4b542fdd7f6833d38"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/b/equipment-brief.txt",
+      "bytes": 5744,
+      "sha256": "78f64a041fe631ea87a1d6ca996e6a16d31c3bf1b3e184d7c2dc1615246ca68b"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/b/image.png",
+      "bytes": 40743,
+      "sha256": "6d6dc29fc11c495d95916031032eb1a35c975b28ff6eaca9b6397d1657212704"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/b/request.json",
+      "bytes": 519,
+      "sha256": "13404a62576597117ff085e17ee393be980cdf18a9d23b6b576d3b78311a4cf2"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/c/contract.json",
+      "bytes": 1513,
+      "sha256": "2030ebf1b0e15cdcaeb3179c956d35ebdbfcd3fe294f70a71c81d259b5b1ebbe"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/c/equipment-brief.txt",
+      "bytes": 5872,
+      "sha256": "3bceb42db849133a1f498d7dce2673fa7565c494b11519cb8f3683eac9bbb147"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/c/image.png",
+      "bytes": 42120,
+      "sha256": "53e3f3f7d97bef6b1bd369c7dd2dad0fa490eba94c6e825d69b5413472ba78e0"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/concept/c/request.json",
+      "bytes": 484,
+      "sha256": "09b25842508ee74700d4d52c677d8636d21e44122327507a7cda4002dac36618"
+    },
+    {
+      "path": "design/mechs/chassis/longbow/design.json",
+      "bytes": 3778,
+      "sha256": "c067fff50e7ccc4c7b652fd0031c031b7653948f52edca3fcb8f89d7cf2e5ec3"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/a/back.png",
+      "bytes": 27345,
+      "sha256": "469b533d9f3b85e279242470ae2989d8b98cda1c4c3eb23cf6973e19ce5cb5b5"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/a/front.png",
+      "bytes": 32960,
+      "sha256": "88cfad3cbd68ff7c19888409bfde0f732de11af4d4d062a92f73578567780c75"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/a/own-left.png",
+      "bytes": 21853,
+      "sha256": "378887afe534da0b3dfc7c6113158760e4a96e447e7758bf6faca91b18f8aae7"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/a/own-right.png",
+      "bytes": 21583,
+      "sha256": "28f29cf68ff7c436738c17a9c15c561b3c717caf8892a4248ecd2fe31b81946b"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/b/back.png",
+      "bytes": 27345,
+      "sha256": "469b533d9f3b85e279242470ae2989d8b98cda1c4c3eb23cf6973e19ce5cb5b5"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/b/front.png",
+      "bytes": 33122,
+      "sha256": "7fc8e2a200ce68804013eced80fb30a680f05423db81f4f7c51e92bbe16bfa10"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/b/own-left.png",
+      "bytes": 22369,
+      "sha256": "a1555e5458eb32ba70493edf8f7f1649ffdaeb9ecbe6d4e89bce789ababf45a5"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/b/own-right.png",
+      "bytes": 22101,
+      "sha256": "41bee58aaa497d3e2cc822b67332917c6a8e3bf0db15edcd8b1c7bdb26d8db28"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/c/back.png",
+      "bytes": 27345,
+      "sha256": "469b533d9f3b85e279242470ae2989d8b98cda1c4c3eb23cf6973e19ce5cb5b5"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/c/front.png",
+      "bytes": 33868,
+      "sha256": "58bd1696b932017a66f4e5d0ca468246e39e737cdc61e2739a614273806b36fb"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/c/own-left.png",
+      "bytes": 22525,
+      "sha256": "4be2a1f2c708b7c4d2bd5f1160fbf100241842532225900c7405668ec6c13cae"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/c/own-right.png",
+      "bytes": 22064,
+      "sha256": "4a045f9d7cea0be95a69bcd6b38fb522d7b25eef06b7f16a82afd3022d60247d"
+    },
+    {
+      "path": "design/mechs/chassis/maul/assembled-turnaround/selection.json",
+      "bytes": 2992,
+      "sha256": "8386ce94a84e116f3d53c4ee05b02dedc335d64614888da3756a121134503305"
+    },
+    {
+      "path": "design/mechs/chassis/maul/design.json",
+      "bytes": 5971,
+      "sha256": "469c512eb460b28adef4bbae63f5c59f56411dfffa72d7b6c1d333844a3f7885"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/a/back.png",
+      "bytes": 33983,
+      "sha256": "14f0489f05d6626855a37e716779a9c9231ab3d4c6ad33253527b92c6399fe3b"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/a/front.png",
+      "bytes": 35004,
+      "sha256": "cb66dd1305df7015adeacba91a3ca1d5868ae2d913a074f57e2c04942595a088"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/a/own-left.png",
+      "bytes": 31696,
+      "sha256": "dc90bbe74838a03bd7ce7c30d28c1da5d95de85926253e252253439d4dcc09ef"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/a/own-right.png",
+      "bytes": 31692,
+      "sha256": "f54309acfd47ac5c068a9bd728eab55ad60394b0eb700f01f20dd3e604fe8966"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/a/three-quarter.png",
+      "bytes": 53264,
+      "sha256": "ffbd55f80ab0a3cd1dd20a5e6e37250b9a48c64cb4bfd9c78c7aac8dddb01196"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/a/underside.png",
+      "bytes": 39570,
+      "sha256": "39b7edd4b0f338f73fa09faafd37efada415c7c3e88b163943d31da82050d5a5"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/b/back.png",
+      "bytes": 35977,
+      "sha256": "2c4d15df4a425402bb081b974fbedad106429fdc6f681c068150c04aff643e50"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/b/front.png",
+      "bytes": 35141,
+      "sha256": "54a498dc68a8429afe2e3a4fe9069d37e5e2b65adaf1b934c20fff42817174bb"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/b/own-left.png",
+      "bytes": 30359,
+      "sha256": "0caa223a0903cf46f1ad9fcb821a5226ef41b947831545c97a5895ef8b96f7b4"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/b/own-right.png",
+      "bytes": 30300,
+      "sha256": "9938e2658a1f2056077d45aedfdcfeff05707981c56103406ff95871fe2bf88e"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/b/underside.png",
+      "bytes": 40318,
+      "sha256": "59287e2899a2eed8744bd82cab9e19f9f7050639a789e435c9d2d3c1543c01d2"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/c/back.png",
+      "bytes": 34104,
+      "sha256": "a84e9154c0f92703df90494051d12757c46263f203d34f4c80653f861988102e"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/c/front.png",
+      "bytes": 34938,
+      "sha256": "386bbfbb49c733269862ba86587cca77127c57e5276b39a358a10bfbbd40738e"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/c/own-left.png",
+      "bytes": 32411,
+      "sha256": "11601d0498dea5f93aa9c0ed4ff65e5bb1496b26dcde5cefc7bc35f4b66aaa96"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/c/own-right.png",
+      "bytes": 32504,
+      "sha256": "8bb9f191b669c2821a6a192920414009ad4fe10a5dad640f71da6068604646dc"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/c/underside.png",
+      "bytes": 39100,
+      "sha256": "207343e7ada59b6f9bdd9f666bf6cc990ac0744e062b8bde5719365b519e3b06"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/family-review.png",
+      "bytes": 464596,
+      "sha256": "ea5c6d90c5665bb34818b8329a5b810504e852912fd30768d44ae15cfee245e8"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/review.md",
+      "bytes": 1671,
+      "sha256": "c8c1354f39a4be468e55bc304f4702ab47fdb7524c8fb0c231ef0281cf377515"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/selection.json",
+      "bytes": 9605,
+      "sha256": "655c19e34c64537f697e4320a23144ac535e308b84c60f09cb7d73a2639ad2cd"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/assembled-turnaround/variants.png",
+      "bytes": 217190,
+      "sha256": "d122d0d8e069421d3932d55207366725998bbc7a64e52a37a9ef6fa406cbaa39"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/a/attachments.json",
+      "bytes": 1682,
+      "sha256": "f6b619789c241afb1d123b82a149a76a4832fc919ed0b87cbd7414ab929df50e"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/a/contract.json",
+      "bytes": 1750,
+      "sha256": "46075c3aa1cd9e4a323458b49a918944a8e894c24d4ae0c3ea56d5e881e32f92"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/a/exploration.png",
+      "bytes": 1234144,
+      "sha256": "7bde01dbcb0ecb03b1e520991a99d9c742eb81d2d2f07ca6bf9313a6ec775c26"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/a/family-review.json",
+      "bytes": 4074,
+      "sha256": "84654679775fe7831f3196d1f8143e8c03563eefe62148612d6a03eb636408b7"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/a/image.png",
+      "bytes": 1167686,
+      "sha256": "341ca182c494aa08d69227c8d28d856b3be20c19f22013173742345d8cb671e6"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/a/imagegen-prompt.txt",
+      "bytes": 9647,
+      "sha256": "e354c5b1ab5a956685067d1fc95f9a094a1cb03031fe26144749be4b45e92075"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/a/prompt.txt",
+      "bytes": 8848,
+      "sha256": "6a8872250137e595ad54eb0daf6f02f8434bb82b2433ee3b40c83a0d4bcaed73"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/a/request.json",
+      "bytes": 893,
+      "sha256": "432297f609151d2d4465c66b0e7d50bce7cb1a902b55dd5cc4b1fd4daf1856e8"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/b/contract.json",
+      "bytes": 1410,
+      "sha256": "bd51e37e02df50a8fb13eac4b6df966e9fd62110398475f96b09aca0cefafb07"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/b/equipment-brief.txt",
+      "bytes": 5846,
+      "sha256": "d924f12dc3fa0bb16128fac274a50f45071dd13c699b8631fe0b15f5ad296326"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/b/image.png",
+      "bytes": 51944,
+      "sha256": "3eb94ac159668e8353fd0d204748883b170d1a77f1f7b9d51a89791872f2e204"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/b/request.json",
+      "bytes": 515,
+      "sha256": "086a9098669112d7a60be6b53b20407d49d72710e22de6f7d8dd1bb09458c69f"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/c/contract.json",
+      "bytes": 1386,
+      "sha256": "842a23db2d13b29d2e3f4c0c72729f5a6201a684365086c9316a27b131854130"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/c/equipment-brief.txt",
+      "bytes": 5820,
+      "sha256": "0d794aed16f9d3ec0b8e2800c28363b3e16ff1feb8be1f0f231aa6321f20c757"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/c/image.png",
+      "bytes": 51411,
+      "sha256": "001c158f8099448f52e3846ec135c5e6cf009d1c32c0f0d030e0ffdf6a0c62e2"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/concept/c/request.json",
+      "bytes": 513,
+      "sha256": "347e931d27fdea2b2e528bc93182ed5b7eb1b963f8ddfd87ce1bfec13f1c59bd"
+    },
+    {
+      "path": "design/mechs/chassis/morrow/design.json",
+      "bytes": 3768,
+      "sha256": "74583ca800cb2205830b61da0bb7953d1758a8fddb352ad77840acdb60ccffec"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/a/back.png",
+      "bytes": 31930,
+      "sha256": "433c1ceacea484f1cce3b0d87438ebac290aa0b4ce869a692b6f2cd31a8a46eb"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/a/front.png",
+      "bytes": 31784,
+      "sha256": "eaa0c0124543fc5ba52f8dee129a6e835956609c46cce4c26116800186ed89d5"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/a/own-left.png",
+      "bytes": 21704,
+      "sha256": "5e265e87f81e26e99fb978d0c24d38ab7c71bad54ae6a53ffea5a5163efb9420"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/a/own-right.png",
+      "bytes": 21631,
+      "sha256": "17fa08fbfc2d143173fcc38010caf1100d83b4163fb004ff19c44604ee7d6f2b"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/a/three-quarter.png",
+      "bytes": 46821,
+      "sha256": "6be495c494e46ec403b98506f7ab0024f18f1dc71e3ef4b4e9d8111dcaa8c9e7"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/a/underside.png",
+      "bytes": 40188,
+      "sha256": "b76af931849df9dbf8a874f6094c36a811a70eabdec0738d67b31229b0c33095"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/b/back.png",
+      "bytes": 31618,
+      "sha256": "43c86938940134c32a21c56da7f777d14c7dfe3205e0fdb4d95b222179b77a0d"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/b/front.png",
+      "bytes": 31528,
+      "sha256": "9762e6232a1efd144a2d06a1b3813d523c8798f0e74cc5a2a573c176b86d454c"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/b/own-left.png",
+      "bytes": 21683,
+      "sha256": "7c7bfbc75b634c091170cc7360d8e3cbd7a00b05d92ed2d1615efdeb046ea5c8"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/b/own-right.png",
+      "bytes": 21719,
+      "sha256": "01501d6b7464e2c2b099cc44832feed85f6a8d6323e57fa402d3a84a1fc22132"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/b/underside.png",
+      "bytes": 40540,
+      "sha256": "969bfb11144cdcfc132439f9e5b5cacaaef03c8e127d8399ad68f39f91e088ff"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/c/back.png",
+      "bytes": 31592,
+      "sha256": "258dee06536813d1d47df6295129d11b9a396526baaca729b889bc56ab2734dd"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/c/front.png",
+      "bytes": 31257,
+      "sha256": "fefaaeefcf74af94f37eb87944f3480ed56ee6524096e4e21f1dd4402d6a0c07"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/c/own-left.png",
+      "bytes": 21046,
+      "sha256": "ab2bdd6ea5ce20a9d511416f26ef350eca5771fea343c61242e9735fafc2b57f"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/c/own-right.png",
+      "bytes": 21760,
+      "sha256": "dfa87d34a6e43f5f0e2c4ba15724b23bfd27586c474d1752d497a71c2cd64175"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/c/underside.png",
+      "bytes": 39966,
+      "sha256": "814f1c547fad34197bd7e0ac480a83183da6106e08c45e021376a50ba887f2d3"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/family-review.png",
+      "bytes": 475523,
+      "sha256": "801c97a552f8a5393900ac2e05308b5aeeaee98a57ac5cf774728e573c0dca46"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/review.md",
+      "bytes": 1742,
+      "sha256": "362fb6173cd587714833e7ff97ff45717bae9bb7833c7eec3378162678fc4b08"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/selection.json",
+      "bytes": 9439,
+      "sha256": "b917ef22a89ef3c0486947f7b5618fa1696449785e0039f27125113b4ca23e92"
+    },
+    {
+      "path": "design/mechs/chassis/rook/assembled-turnaround/variants.png",
+      "bytes": 162344,
+      "sha256": "ad84a90cc5366a6295a9c8474109796084bed1a36cde553bd86cd3939ce88905"
+    },
+    {
+      "path": "design/mechs/chassis/rook/concept/b/contract.json",
+      "bytes": 1681,
+      "sha256": "c27c6db4d6ccb31a42cd39a662aa0d7378a90c0e701e6b90ee3a3ce21f100837"
+    },
+    {
+      "path": "design/mechs/chassis/rook/concept/b/equipment-brief.txt",
+      "bytes": 6245,
+      "sha256": "3956542a209c65c8459f60d4433fe6a4675022908f7baf9a7c407c962d9ee3be"
+    },
+    {
+      "path": "design/mechs/chassis/rook/concept/b/image.png",
+      "bytes": 46563,
+      "sha256": "4e610bbce7a7f287f4a57f388027791eae096893cc26b7e918154a098e3ebf23"
+    },
+    {
+      "path": "design/mechs/chassis/rook/concept/b/request.json",
+      "bytes": 608,
+      "sha256": "edea7107153f6845c2e5b2c3abaf768bd5e53f90a14b819d4b296fd7e7a44e30"
+    },
+    {
+      "path": "design/mechs/chassis/rook/concept/c/contract.json",
+      "bytes": 1617,
+      "sha256": "2892a296594e2e57bca0fd2cb024aa27c3b3507e820e946d7e197bbb8dd7ab42"
+    },
+    {
+      "path": "design/mechs/chassis/rook/concept/c/equipment-brief.txt",
+      "bytes": 6207,
+      "sha256": "cdb2d3d74cbdfc5fa9df7cfdd5e695d54dbb8f3b7cac1f0112a131216c3fbfc1"
+    },
+    {
+      "path": "design/mechs/chassis/rook/concept/c/image.png",
+      "bytes": 45908,
+      "sha256": "73ef007912cd3ea96a64e37974d3da511cda1b03672cfed95153e08fa4c83160"
+    },
+    {
+      "path": "design/mechs/chassis/rook/concept/c/request.json",
+      "bytes": 592,
+      "sha256": "d5571b86f539e3ddcb95b0af9cf6ecc03112dc4077aa67240aee11c55b3310eb"
+    },
+    {
+      "path": "design/mechs/chassis/rook/design.json",
+      "bytes": 4269,
+      "sha256": "cbb8d88b6bf7e5c0b736e997dd02dbfaa6ffddcaddf0a0b721493dc1b4151440"
+    },
+    {
+      "path": "design/mechs/chassis/specter/assembly.json",
+      "bytes": 12804,
+      "sha256": "156a8bf2a1070efe4a469ee5f240326724be7992529219c6e50f86fba681cf66"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/a/assembled.png",
+      "bytes": 101596,
+      "sha256": "4b73e6eaf51284240d5e71929c629e6ecbc3ec9cfe0d0daef61875b2c9dca949"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/a/attachments.json",
+      "bytes": 1212,
+      "sha256": "3687d5d7c2fdd9f72fa85e78ee90b7eda4167c317dff44a3ae102dab1192498b"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/a/contract.json",
+      "bytes": 778,
+      "sha256": "fd953ab1abbfe4c7e90cce372715aab23f4653cfc0aba55dd148b354d56e66bb"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/a/family-comparison.jpg",
+      "bytes": 86862,
+      "sha256": "89a55de6d3ebe177bf054cf94f8e272c2fe7cb2c3b0d11272ce069f6e2328dee"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/a/family-review.json",
+      "bytes": 3625,
+      "sha256": "c8b4119641e7b96979a7a0ee524fccbb27a19bb1403473943857a941f137393f"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/a/image.png",
+      "bytes": 820854,
+      "sha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/a/prompt.txt",
+      "bytes": 8468,
+      "sha256": "d14f742c4cd774c106bd2a1e71905c1490b779d1866da569decf01c106af05da"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/a/request.json",
+      "bytes": 951,
+      "sha256": "002c22ab5cdecccf732021dbaf2e335c8a3a567880f3991ae92f2af59c27c0e1"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/b/contract.json",
+      "bytes": 962,
+      "sha256": "fa575d44ca25ee698a38b3e00b943af77940f724d25f10d3e4adbfa5ef9a963c"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/b/image.png",
+      "bytes": 99636,
+      "sha256": "fa58ed92b35ee7b43854ff94d4e3a8932d70395a1ac3966256308aa49e585a85"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/b/prompt.txt",
+      "bytes": 5839,
+      "sha256": "03e7b8a34200891436dcb035a2d9e87e6ac538de157d3cb5332ea60c2bdb8484"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/b/request.json",
+      "bytes": 510,
+      "sha256": "2c71295a765a8dcf93a8b64423e0058658ff6ea5f4aef1740840234af6e1af0e"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/c/contract.json",
+      "bytes": 1104,
+      "sha256": "fdf985924526715009a5118109484098fcd978ed9e8078c6717c626bb2228d2a"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/c/image.png",
+      "bytes": 100237,
+      "sha256": "1c5a3f66ece4c997984fc519970e62c7d4ef3cfe26f0c8f33058c74228522e34"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/c/prompt.txt",
+      "bytes": 5951,
+      "sha256": "04cc87b7ef9314b9dd244202181731a8cd0361266274d20c6c0762d41883737a"
+    },
+    {
+      "path": "design/mechs/chassis/specter/concept/c/request.json",
+      "bytes": 497,
+      "sha256": "09588c5ad128147097fea83e7857a65321664e8140bf0f39fb5e7c9f9bb20d1c"
+    },
+    {
+      "path": "design/mechs/chassis/specter/design.json",
+      "bytes": 3983,
+      "sha256": "97f2eb3b1ff420a06a998ab4a03b1b402550bc7e08b20ce42cd04ab2030588e1"
+    },
+    {
+      "path": "design/mechs/chassis/specter/practice-scale.png",
+      "bytes": 27470,
+      "sha256": "eaea023eaa97e949a4686494bda719ef7a8818671afd4080fa444289b36469a0"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/a/back.png",
+      "bytes": 25272,
+      "sha256": "2e09d5fd0b30ed59be9fe13dafcb6682129ca57a2b241b7d6ceac80f2d1ffa03"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/a/front.png",
+      "bytes": 26145,
+      "sha256": "18d02ab32f02ec1d69a9d490e3b08d2532a16be14b4a941f6fe101313bfb95c5"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/a/manifest.json",
+      "bytes": 1633,
+      "sha256": "ec60f347ba200604b1df5775b4bb0bca34ca23f0e3ffcfba7a960a3f0609950b"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/a/own-left.png",
+      "bytes": 22331,
+      "sha256": "ffb3cd240357aff3521efa88370d0f3639b5e41538540b3c466b52650a155ff6"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/a/own-right.png",
+      "bytes": 21523,
+      "sha256": "f3bfaa5e2c17d2ae35158fa4ccc685360ec1f9179d0d8d0aa869f3cee279bff8"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/b/back.png",
+      "bytes": 24541,
+      "sha256": "5145e0ccd50bacc9d5c746c5904db25da67c9a6f90d1df9c792a9397917b6607"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/b/front.png",
+      "bytes": 25546,
+      "sha256": "2371cad53cf9ac6335496d6b253df9f3f3e48c1c2f5c91aac218578e9b253f2a"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/b/manifest.json",
+      "bytes": 1638,
+      "sha256": "853ad22d632657be654000a8e1707a8e8844acf5b7b98cca29779f23b7f13e61"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/b/own-left.png",
+      "bytes": 22397,
+      "sha256": "f2e87b9953224f0ed61516e75a1743b0609a416167f5c81c9f0309947251d977"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/b/own-right.png",
+      "bytes": 21591,
+      "sha256": "9fff7e0ca9eef8b38139f6d4f51071a173919f00e453a3785d564b466209a29f"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/c/back.png",
+      "bytes": 25531,
+      "sha256": "b171d7f616d1aa33d50dfcabae98ed50dd54e60bdf752b38e7f7cad49a288082"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/c/front.png",
+      "bytes": 26086,
+      "sha256": "8af4b05c44c00bcfe7b0e2be61ffab9677899059701dd51e795dc4a3ff89ebed"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/c/manifest.json",
+      "bytes": 1661,
+      "sha256": "f1f698899a09853992e40c7427724400b1fd7fbecb98284345916e62bad091b8"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/c/own-left.png",
+      "bytes": 22547,
+      "sha256": "3bfa6372b65e14327fac00e5cc50b727d2cf0a09129e2159c9bc10265cce5d8c"
+    },
+    {
+      "path": "design/mechs/chassis/specter/turnaround/c/own-right.png",
+      "bytes": 21864,
+      "sha256": "638a46df50776294c3eb277886bea5bfef08b2256674bfdf9ea07e7dbd71f59e"
+    },
+    {
+      "path": "design/mechs/chassis/warden/assembled-turnaround/c/back.png",
+      "bytes": 26717,
+      "sha256": "5dc0c742a8a437b8ea85e460fbf07d73288c033a9f853f018f0b6b76f7a8ed16"
+    },
+    {
+      "path": "design/mechs/chassis/warden/assembled-turnaround/c/front.png",
+      "bytes": 33800,
+      "sha256": "3300480613d2574e50c61d1a61c1ab024412a5f7da51d8de7c796eb4774a249e"
+    },
+    {
+      "path": "design/mechs/chassis/warden/assembled-turnaround/c/own-left.png",
+      "bytes": 23775,
+      "sha256": "0984e7953d32b666dae8d19e68bbc5806d9183c5236e02df61d3a9fb970d74d3"
+    },
+    {
+      "path": "design/mechs/chassis/warden/assembled-turnaround/c/own-right.png",
+      "bytes": 23795,
+      "sha256": "34bfd292bcfd6d41c2f524c0841d3aa7b5c13779170f4a88a313ca73aa127c9c"
+    },
+    {
+      "path": "design/mechs/chassis/warden/assembled-turnaround/selection.json",
+      "bytes": 1434,
+      "sha256": "3daa322582e49ae2694c4477939676aff205f47d98310e3542fbf91b01f1fb0c"
+    },
+    {
+      "path": "design/mechs/chassis/warden/design.json",
+      "bytes": 4942,
+      "sha256": "4024d98224a06a4bd472ecf7d13ae92b692567e8218589608028f3082b4fe45c"
+    },
+    {
+      "path": "public/assets/mechs/bastion/pixel.glb",
+      "bytes": 206724,
+      "sha256": "060bb822f32b37d65c6309524c9a2815dbc9d2a6e09ba138bf5e1818cb56590f"
+    },
+    {
+      "path": "public/assets/mechs/bastion/variants.glb",
+      "bytes": 62528,
+      "sha256": "6ba94e68ec4761c174c657c89162afc94c66856e8578c6e6060b7a7ca7997fc8"
+    },
+    {
+      "path": "public/assets/mechs/harrow/pixel.glb",
+      "bytes": 233328,
+      "sha256": "758f0ddb99253103d0d41b6a4d16c0bb784c667af14f5c636b57fac817b2ffbb"
+    },
+    {
+      "path": "public/assets/mechs/harrow/variants.glb",
+      "bytes": 43260,
+      "sha256": "d1f09e207dec9ed486d9280d1f42b674727fb995b1d23350ecf42d9be25cc275"
+    },
+    {
+      "path": "public/assets/mechs/longbow/pixel.glb",
+      "bytes": 333196,
+      "sha256": "03a567dc0a63ca43542dce436fa08426fb79649a0254eeffe11ecd94beafedb8"
+    },
+    {
+      "path": "public/assets/mechs/longbow/variants.glb",
+      "bytes": 57820,
+      "sha256": "fec40143fff8897f88440f9f6db18c24fabeb24e3eff6fed7516630c3c77bcd3"
+    },
+    {
+      "path": "public/assets/mechs/morrow/pixel.glb",
+      "bytes": 324084,
+      "sha256": "e7c2b720c52c2232c7585410e7eef26b883674dd8d5e61faa797a7f45a71746a"
+    },
+    {
+      "path": "public/assets/mechs/morrow/variants.glb",
+      "bytes": 102756,
+      "sha256": "b026441b9e39535845b8d00999365728f6980774cafe9d2898ae234fceb4745d"
+    },
+    {
+      "path": "public/assets/mechs/rook/pixel.glb",
+      "bytes": 350460,
+      "sha256": "4dd7d22a2f17df9985862d6fb53ffa0c1af69c4e583fb13e409764edfb08d147"
+    },
+    {
+      "path": "public/assets/mechs/rook/variants.glb",
+      "bytes": 95092,
+      "sha256": "56b7cb308806a376f6b908ad09181952d43820b6a87589121eb1a7d5c19fd2f4"
+    },
+    {
+      "path": "public/assets/mechs/specter/pixel.glb",
+      "bytes": 209564,
+      "sha256": "dd60961884473ae9e0cbbfc3abde4480f0083a2f3be9b36afd6e0fef999e828b"
+    },
+    {
+      "path": "public/assets/mechs/specter/variants.glb",
+      "bytes": 75244,
+      "sha256": "6830406a6a79afab6fb31e639c31ad8b07e1ab018ea457a8caf04cf3b55d4e92"
     }
   ]
 }

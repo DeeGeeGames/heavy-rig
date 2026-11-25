@@ -1,0 +1,246 @@
+{
+  "decision": "The assigned design agent selected these exact assembled views on 2026-11-24 under the owner’s delegated creative authority. Individual owner acceptance of these models and their runtime behavior remains separate.",
+  "method": "Hand-authored vertex-painted plates in millimetres. One exact body and rigid leg rig per family with fitted weapon cartridges.",
+  "recipe": {
+    "path": "scripts/mech-design/pixel_mechs/rook.py",
+    "sha256": "646f6d078386a31f8ee86ff9c0acdf7068d23a08ffb4b2e1e2b0dde0995bbf1b"
+  },
+  "sourceConcept": {
+    "path": "design/mechs/chassis/rook/concept/a/image.png",
+    "sha256": "3ef6b57d88be21bd0b9301974a3ce40189021aedd17136be0900182c69d3882c"
+  },
+  "assets": {
+    "public/assets/mechs/rook/pixel.glb": "4dd7d22a2f17df9985862d6fb53ffa0c1af69c4e583fb13e409764edfb08d147",
+    "public/assets/mechs/rook/variants.glb": "56b7cb308806a376f6b908ad09181952d43820b6a87589121eb1a7d5c19fd2f4"
+  },
+  "renderer": {
+    "program": "Blender 5.3 Cycles CPU",
+    "source": "Decoded GLB indexed positions, vertex colors and bind translations. Blender computed flat triangle normals. Includes common body, fitted cartridges and applicable offhand brace.",
+    "samples": 12,
+    "projection": "Orthographic",
+    "pose": "Neutral bind",
+    "light": "Diffuse world and three soft area lights, Standard color management. Shipped paint shader and runtime lighting are evaluated by integration.",
+    "viewDirectionsYUp": {
+      "three-quarter": [
+        0.64,
+        0.21,
+        1.32
+      ],
+      "front": [
+        0,
+        0.01,
+        1
+      ],
+      "back": [
+        0,
+        0.01,
+        -1
+      ],
+      "own-left": [
+        1,
+        0.01,
+        0
+      ],
+      "own-right": [
+        -1,
+        0.01,
+        0
+      ],
+      "underside": [
+        0.56,
+        -1,
+        0.68
+      ],
+      "range-angle": [
+        0.75,
+        1.2,
+        1
+      ]
+    },
+    "framing": "The same camera and scale for A, B and C within each view. Full neutral orthographic render at 550 px, reduced to 450 px for directional plates. The separate family sheet normalizes subject height against the input references."
+  },
+  "review": "design/mechs/chassis/rook/assembled-turnaround/review.md",
+  "comparison": {
+    "path": "design/mechs/chassis/rook/assembled-turnaround/variants.png",
+    "sha256": "ad84a90cc5366a6295a9c8474109796084bed1a36cde553bd86cd3939ce88905"
+  },
+  "familyComparison": {
+    "path": "design/mechs/chassis/rook/assembled-turnaround/family-review.png",
+    "sha256": "801c97a552f8a5393900ac2e05308b5aeeaee98a57ac5cf774728e573c0dca46"
+  },
+  "rangeReference": {
+    "path": "design/mechs/assets/playable-a-lineup.png",
+    "sha256": "d1594b6a860989d5757897caa311ef81837bc5a0b9162c589818985d0a42c1b6"
+  },
+  "variants": {
+    "a": {
+      "frameId": "rook",
+      "name": "Raider",
+      "decision": "The two underslung gun housings sit on separate low elbow pins. The own-left ported single-bore cuff, own-right six-barrel cluster, ivory chest, amber glass, forward knees, paired ivory boots and eight-cell high dorsal pod follow Square Slate. Two launch markers occupy the inner, diagonally opposed wells.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/a/three-quarter.png",
+        "sha256": "6be495c494e46ec403b98506f7ab0024f18f1dc71e3ef4b4e9d8111dcaa8c9e7"
+      },
+      "front": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/a/front.png",
+        "sha256": "eaa0c0124543fc5ba52f8dee129a6e835956609c46cce4c26116800186ed89d5"
+      },
+      "back": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/a/back.png",
+        "sha256": "433c1ceacea484f1cce3b0d87438ebac290aa0b4ce869a692b6f2cd31a8a46eb"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/a/own-left.png",
+        "sha256": "5e265e87f81e26e99fb978d0c24d38ab7c71bad54ae6a53ffea5a5163efb9420"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/a/own-right.png",
+        "sha256": "17fa08fbfc2d143173fcc38010caf1100d83b4163fb004ff19c44604ee7d6f2b"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/a/underside.png",
+        "sha256": "b76af931849df9dbf8a874f6094c36a811a70eabdec0738d67b31229b0c33095"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_a_0",
+          "kit_a_1",
+          "kit_a_2"
+        ],
+        "brace": null,
+        "triangles": 5210,
+        "visibleMeshNodes": 11,
+        "primitives": 12,
+        "materials": 2,
+        "dimensionsMm": [
+          719.9,
+          999.0,
+          418.0
+        ],
+        "renderedVertexAndIndexSha256": "d98ad4d490e1d2c4fbaa14d7ac4970aa3910ae9fffbcfc1e602148037d3431d7",
+        "launcherExitCounts": [
+          0,
+          0,
+          2
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": [
+          19.0,
+          19.0
+        ]
+      }
+    },
+    "b": {
+      "frameId": "rook-lancer",
+      "name": "Lancer",
+      "decision": "Retain the right Rattler and the complete chassis. The left arm now has a long pale-violet particle window. The guided insert keeps the original dorsal casing and replaces the eight-cell face with two larger guided wells.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/rook/concept/b/image.png",
+        "sha256": "4e610bbce7a7f287f4a57f388027791eae096893cc26b7e918154a098e3ebf23"
+      },
+      "front": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/b/front.png",
+        "sha256": "9762e6232a1efd144a2d06a1b3813d523c8798f0e74cc5a2a573c176b86d454c"
+      },
+      "back": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/b/back.png",
+        "sha256": "43c86938940134c32a21c56da7f777d14c7dfe3205e0fdb4d95b222179b77a0d"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/b/own-left.png",
+        "sha256": "7c7bfbc75b634c091170cc7360d8e3cbd7a00b05d92ed2d1615efdeb046ea5c8"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/b/own-right.png",
+        "sha256": "01501d6b7464e2c2b099cc44832feed85f6a8d6323e57fa402d3a84a1fc22132"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/b/underside.png",
+        "sha256": "969bfb11144cdcfc132439f9e5b5cacaaef03c8e127d8399ad68f39f91e088ff"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_b_0",
+          "kit_a_1",
+          "kit_b_2"
+        ],
+        "brace": null,
+        "triangles": 4740,
+        "visibleMeshNodes": 11,
+        "primitives": 12,
+        "materials": 2,
+        "dimensionsMm": [
+          719.9,
+          999.0,
+          368.0
+        ],
+        "renderedVertexAndIndexSha256": "b7e6334e60eff8782bbdb74eb7d496e7e76d02ee370ea172efc75012d0953238",
+        "launcherExitCounts": [
+          0,
+          0,
+          2
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": [
+          19.0,
+          19.0
+        ]
+      }
+    },
+    "c": {
+      "frameId": "rook-escort",
+      "name": "Escort",
+      "decision": "Shorten the own-left arm to the six-barrel Rattler and fit one compact turquoise Arc emitter on own-right. The two guided wells use the same dorsal cassette as Lancer.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/rook/concept/c/image.png",
+        "sha256": "73ef007912cd3ea96a64e37974d3da511cda1b03672cfed95153e08fa4c83160"
+      },
+      "front": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/c/front.png",
+        "sha256": "fefaaeefcf74af94f37eb87944f3480ed56ee6524096e4e21f1dd4402d6a0c07"
+      },
+      "back": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/c/back.png",
+        "sha256": "258dee06536813d1d47df6295129d11b9a396526baaca729b889bc56ab2734dd"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/c/own-left.png",
+        "sha256": "ab2bdd6ea5ce20a9d511416f26ef350eca5771fea343c61242e9735fafc2b57f"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/c/own-right.png",
+        "sha256": "dfa87d34a6e43f5f0e2c4ba15724b23bfd27586c474d1752d497a71c2cd64175"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/rook/assembled-turnaround/c/underside.png",
+        "sha256": "814f1c547fad34197bd7e0ac480a83183da6106e08c45e021376a50ba887f2d3"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_c_0",
+          "kit_c_1",
+          "kit_b_2"
+        ],
+        "brace": null,
+        "triangles": 4724,
+        "visibleMeshNodes": 11,
+        "primitives": 12,
+        "materials": 2,
+        "dimensionsMm": [
+          708.6,
+          999.0,
+          336.0
+        ],
+        "renderedVertexAndIndexSha256": "e2b8ef9d7436cd08c5ec8a2da4499519fe3fa1b42c69ac2eb2197a4aac0eb9ba",
+        "launcherExitCounts": [
+          0,
+          0,
+          2
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": [
+          19.0,
+          19.0
+        ]
+      }
+    }
+  },
+  "measurements": "Counts include the neutral body plus the fitted stock cartridges. Dimensions are width, height, depth. A ray from forward of each launcher marker through its center hit the recessed surface at the reported depth. An opposite-side assembly can be occluded in a true profile."
+}

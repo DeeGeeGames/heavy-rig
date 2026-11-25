@@ -1,0 +1,51 @@
+{
+  "chassisId": "rook",
+  "variantId": "rook-lancer",
+  "contractSignature": "75a88b104cc04cd9621c6de3daacd9fe3784eab9f4c2bdeb00ea0741cccb854a",
+  "mounts": [
+    {
+      "id": "left-accelerator",
+      "name": "Left accelerator",
+      "family": "energy",
+      "maxSize": "medium",
+      "weapons": [
+        "laser",
+        "ppc"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "maxSize": "small",
+      "weapons": [
+        "machine-gun"
+      ]
+    },
+    {
+      "id": "dorsal-launcher",
+      "name": "Compact dorsal launcher",
+      "family": "launcher",
+      "maxSize": "small",
+      "weapons": [
+        "stream-missiles",
+        "cluster-missiles",
+        "stream-rockets",
+        "cluster-rockets"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "rook-a-square-slate",
+    "image": "design/mechs/chassis/rook/concept/a/image.png",
+    "imageSha256": "3ef6b57d88be21bd0b9301974a3ce40189021aedd17136be0900182c69d3882c",
+    "variantId": "rook"
+  },
+  "reviewStatus": "selected-under-delegated-creative-authority",
+  "ownerApproval": null,
+  "method": "Render from the exact shared chassis and the fitted cartridge geometry.",
+  "sourceRecipe": "scripts/mech-design/pixel_mechs/rook.py",
+  "assembledViewManifest": "design/mechs/chassis/rook/assembled-turnaround/selection.json",
+  "imageSha256": "4e610bbce7a7f287f4a57f388027791eae096893cc26b7e918154a098e3ebf23",
+  "mountReview": "Retain the right Rattler and the complete chassis. The left arm now has a long pale-violet particle window. The guided insert keeps the original dorsal casing and replaces the eight-cell face with two larger guided wells."
+}

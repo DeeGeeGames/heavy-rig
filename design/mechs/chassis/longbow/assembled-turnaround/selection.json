@@ -1,0 +1,232 @@
+{
+  "decision": "The assigned design agent selected these exact assembled views on 2026-11-24 under the owner’s delegated creative authority. Individual owner acceptance of these models and their runtime behavior remains separate.",
+  "method": "Hand-authored vertex-painted plates in millimetres. One exact body and rigid leg rig per family with fitted weapon cartridges.",
+  "recipe": {
+    "path": "scripts/mech-design/pixel_mechs/longbow.py",
+    "sha256": "cf5b560dabe591f46dca8702f08c2bf3386b4330e1a42c705ef0e7c14ec4d577"
+  },
+  "sourceConcept": {
+    "path": "design/mechs/chassis/longbow/concept/a/image.png",
+    "sha256": "5791c6c05f878faffd00d5c4d51691637ef7fd46b5d8713a7c47f04017168b72"
+  },
+  "assets": {
+    "public/assets/mechs/longbow/pixel.glb": "03a567dc0a63ca43542dce436fa08426fb79649a0254eeffe11ecd94beafedb8",
+    "public/assets/mechs/longbow/variants.glb": "fec40143fff8897f88440f9f6db18c24fabeb24e3eff6fed7516630c3c77bcd3"
+  },
+  "renderer": {
+    "program": "Blender 5.3 Cycles CPU",
+    "source": "Decoded GLB indexed positions, vertex colors and bind translations. Blender computed flat triangle normals. Includes common body, fitted cartridges and applicable offhand brace.",
+    "samples": 12,
+    "projection": "Orthographic",
+    "pose": "Neutral bind",
+    "light": "Diffuse world and three soft area lights, Standard color management. Shipped paint shader and runtime lighting are evaluated by integration.",
+    "viewDirectionsYUp": {
+      "three-quarter": [
+        0.89,
+        0.21,
+        1.3
+      ],
+      "front": [
+        0,
+        0.01,
+        1
+      ],
+      "back": [
+        0,
+        0.01,
+        -1
+      ],
+      "own-left": [
+        1,
+        0.01,
+        0
+      ],
+      "own-right": [
+        -1,
+        0.01,
+        0
+      ],
+      "underside": [
+        0.56,
+        -1,
+        0.68
+      ],
+      "range-angle": [
+        0.75,
+        1.2,
+        1
+      ]
+    },
+    "framing": "The same camera and scale for A, B and C within each view. Full neutral orthographic render at 550 px, reduced to 450 px for directional plates. The separate family sheet normalizes subject height against the input references."
+  },
+  "review": "design/mechs/chassis/longbow/assembled-turnaround/review.md",
+  "comparison": {
+    "path": "design/mechs/chassis/longbow/assembled-turnaround/variants.png",
+    "sha256": "4a4d93ceda501ef008795ca962529cd8df3032462b565660c2930da048645695"
+  },
+  "familyComparison": {
+    "path": "design/mechs/chassis/longbow/assembled-turnaround/family-review.png",
+    "sha256": "49a1ee99523eb5028159f16a750245e454ca5c1bc014a126a164960423a53a2f"
+  },
+  "rangeReference": {
+    "path": "design/mechs/assets/playable-a-lineup.png",
+    "sha256": "d1594b6a860989d5757897caa311ef81837bc5a0b9162c589818985d0a42c1b6"
+  },
+  "variants": {
+    "a": {
+      "frameId": "longbow",
+      "name": "Marksman",
+      "decision": "Select the plum Spire with the tall cream-cheeked cockpit and rear cooler. The armored accelerator extends from the left pinned elbow and ends in one recessed violet ceramic window. The opposite forearm ends in a blunt closed service clamp.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/a/three-quarter.png",
+        "sha256": "573eb44a541db414ccdde081a3ecae5bf59b41b25a22966e9056680303fa797b"
+      },
+      "front": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/a/front.png",
+        "sha256": "8a2cecfc4f5f104bfee14b3322662a9e81006f779e4ee8322cdef79d14afd1de"
+      },
+      "back": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/a/back.png",
+        "sha256": "6adef6d249ee8496fa6d873bb33d6f9502d8e8cb37939d3678d6a5754ab753ce"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/a/own-left.png",
+        "sha256": "cf69b3afafeb57a2ca02693a40b4577b6443734dd49125342b249bcf3e2b62c9"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/a/own-right.png",
+        "sha256": "f13e8b3aabd6c0a7510eb6acc19f0297fca65b8882b52663193512e3f8e220bd"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/a/underside.png",
+        "sha256": "ff57203546fe8bef8fec3137244eec7cb976acd75452d77940d30c8103aafbfd"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_a_0"
+        ],
+        "brace": null,
+        "triangles": 4948,
+        "visibleMeshNodes": 9,
+        "primitives": 10,
+        "materials": 2,
+        "dimensionsMm": [
+          623.5,
+          1140.0,
+          673.0
+        ],
+        "renderedVertexAndIndexSha256": "471d018133ff60cd1757df668c2fc8e1053026bd25b0dfb5bd30dee14898f64d",
+        "launcherExitCounts": [
+          0
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": []
+      }
+    },
+    "b": {
+      "frameId": "longbow-b",
+      "name": "Rifleman",
+      "decision": "The left AC/38 has a long exposed barrel, single dark bore, broad side feed cover and recoil sleeve. A plum fixed brace encloses the right clamp and seats the short turquoise Arc lens. The long central cooler and body stay shared.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/longbow/concept/b/image.png",
+        "sha256": "6d6dc29fc11c495d95916031032eb1a35c975b28ff6eaca9b6397d1657212704"
+      },
+      "front": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/b/front.png",
+        "sha256": "052955c62ea255db3eff40b49250e131f998f71686e760273d5058f1a670cc00"
+      },
+      "back": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/b/back.png",
+        "sha256": "0ba2a5dcd1bb006d98b4d2b87dd3d7edface3fb6c666f58cb76f73f5413ee13f"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/b/own-left.png",
+        "sha256": "5e53eec25e499140dc79ee9a03cca030d2b0ee4b004082a3aad906ed20b27db7"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/b/own-right.png",
+        "sha256": "0d3e4f66c9c716643228c1796f3a07014375dad4b3b3503fea3d5858ddac3406"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/b/underside.png",
+        "sha256": "e43535dbcf74c7cbd7e24b539c1c6646118946246beb1f49c87db3ad75cbe335"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_b_0",
+          "kit_b_1"
+        ],
+        "brace": "fitting_b",
+        "triangles": 5194,
+        "visibleMeshNodes": 11,
+        "primitives": 12,
+        "materials": 2,
+        "dimensionsMm": [
+          650.5,
+          1140.0,
+          777.0
+        ],
+        "renderedVertexAndIndexSha256": "5e150c141b5baafbea6798415be165623959541bf0527445278006f72483040d",
+        "launcherExitCounts": [
+          0,
+          0
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": []
+      }
+    },
+    "c": {
+      "frameId": "longbow-c",
+      "name": "Overwatch",
+      "decision": "Reuse the Marksman accelerator cartridge and the Rifleman auxiliary brace. Two real round launch tubes sit under a common ivory brow at own-right. The same hand and mounting pins remain behind the adapter.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/longbow/concept/c/image.png",
+        "sha256": "53e3f3f7d97bef6b1bd369c7dd2dad0fa490eba94c6e825d69b5413472ba78e0"
+      },
+      "front": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/c/front.png",
+        "sha256": "10701b9d392e748a0e29811736467f1576ba7b13d92df890a4c69d2fba30e9b7"
+      },
+      "back": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/c/back.png",
+        "sha256": "4fb71fdd2112697b160c900f9b0156b0826f63fe5a162216a467ccfd87920f62"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/c/own-left.png",
+        "sha256": "9a088fb7f7c9964e54d2bf1fdf65745d25c2e0da6bca45b17924cef232990f61"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/c/own-right.png",
+        "sha256": "451b02bb2167e2f2a9b804bb1a6b1c4dd2135bc0581dc4809368049b5d06801e"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/longbow/assembled-turnaround/c/underside.png",
+        "sha256": "d64d2433ccab9a0eb95731d102599a30940d3a2ea005ffd7e555b0121c347ce6"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_a_0",
+          "kit_c_1"
+        ],
+        "brace": "fitting_b",
+        "triangles": 5324,
+        "visibleMeshNodes": 11,
+        "primitives": 12,
+        "materials": 2,
+        "dimensionsMm": [
+          659.0,
+          1140.0,
+          673.0
+        ],
+        "renderedVertexAndIndexSha256": "95e7a810de88fdd2ef8ffa640826aaa6ad7f052eaf64ee696e2606e9892df836",
+        "launcherExitCounts": [
+          0,
+          2
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": [
+          16.0,
+          16.0
+        ]
+      }
+    }
+  },
+  "measurements": "Counts include the neutral body plus the fitted stock cartridges. Dimensions are width, height, depth. A ray from forward of each launcher marker through its center hit the recessed surface at the reported depth. An opposite-side assembly can be occluded in a true profile."
+}

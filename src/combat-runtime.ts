@@ -17,7 +17,7 @@ export interface CombatComponents {
 	position: Point;
 	heading: { angle: number };
 	drive: Pick<Player, 'throttle' | 'speed' | 'motorSpeed'>;
-	aim: { missileLock: Player['missileLock']; turret: number; targetId: number | undefined };
+	aim: { brace: Player['brace']; designation: Player['designation']; missileLock: Player['missileLock']; turret: number; targetId: number | undefined };
 	health: { hp: number; maxHp: number };
 	reactor: Reactor;
 	weaponBank: { mounts: WeaponMount[] };
@@ -191,7 +191,7 @@ export const createCombatRuntime = function () {
 				world.addResource('combatConfig', config); world.addResource('combatProgress', progress); world.addResource('combatFeedback', feedback); world.addResource('combatStats', snapshot.stats);
 				bindMission(snapshot.mission);
 				const position = { x: snapshot.player.x, y: snapshot.player.y }; const heading = { angle: snapshot.player.angle };
-				const drive = { throttle: snapshot.player.throttle, speed: snapshot.player.speed, motorSpeed: snapshot.player.motorSpeed }; const aim = { missileLock: snapshot.player.missileLock, turret: snapshot.player.turret, targetId: snapshot.player.targetId };
+				const drive = { throttle: snapshot.player.throttle, speed: snapshot.player.speed, motorSpeed: snapshot.player.motorSpeed }; const aim = { brace: snapshot.player.brace, designation: snapshot.player.designation, missileLock: snapshot.player.missileLock, turret: snapshot.player.turret, targetId: snapshot.player.targetId };
 				const health = { hp: snapshot.player.hp, maxHp: 100 }; const reactor = { heat: snapshot.player.heat, overheated: snapshot.player.overheated, coolantCharges: snapshot.coolantCharges, coolantHeld: snapshot.coolantHeld };
 				const weaponBank = { mounts: snapshot.loadout };
 				const playerEntity = world.spawn({ combatOwned: true, player: true, position, heading, drive, aim, health, reactor, weaponBank });
@@ -204,6 +204,8 @@ export const createCombatRuntime = function () {
 					get speed() { return component(playerEntity.id, 'drive').speed; }, set speed(value) { writeField(playerEntity.id, 'drive', 'speed', value); },
 					get motorSpeed() { return component(playerEntity.id, 'drive').motorSpeed; }, set motorSpeed(value) { writeField(playerEntity.id, 'drive', 'motorSpeed', value); },
 					get turret() { return component(playerEntity.id, 'aim').turret; }, set turret(value) { writeField(playerEntity.id, 'aim', 'turret', value); },
+					get brace() { return component(playerEntity.id, 'aim').brace; }, set brace(value) { writeField(playerEntity.id, 'aim', 'brace', value); },
+					get designation() { return component(playerEntity.id, 'aim').designation; }, set designation(value) { writeField(playerEntity.id, 'aim', 'designation', value); },
 					get missileLock() { return component(playerEntity.id, 'aim').missileLock; }, set missileLock(value) { writeField(playerEntity.id, 'aim', 'missileLock', value); },
 					get targetId() { return component(playerEntity.id, 'aim').targetId; }, set targetId(value) { writeField(playerEntity.id, 'aim', 'targetId', value); },
 					get hp() { return component(playerEntity.id, 'health').hp; }, set hp(value) { writeField(playerEntity.id, 'health', 'hp', value); },
@@ -301,7 +303,14 @@ export const createCombatRuntime = function () {
 			world.addSystem('combat:enemies').withRef(refs.enemies).inPhase('fixedUpdate').inGroup('combat').after(refs.spawning).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatFeedback', 'combatProgress'])
 				.addQuery('enemies', { with: ['enemy', 'position', 'heading', 'health', 'enemyWeapons', 'enemyReactor'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; const current = state; trackSquadmateDamage(function () { enemiesStep(current, dt); }); markAll('enemy'); markAll('enemyWeapons'); markAll('enemyReactor'); });
 			world.addSystem('combat:artillery').withRef(refs.artillery).inPhase('fixedUpdate').inGroup('combat').after(refs.enemies).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatStats', 'combatFeedback', 'combatProgress'])
-				.addQuery('victims', { with: ['health'] }).addQuery('strikes', { with: ['artillery'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; const current = state; trackSquadmateDamage(function () { artilleryStep(current, dt); }); markAll('artillery'); });
+				.addQuery('strikes', { with: ['artillery'] }).setProcess(function ({ queries, resources, dt }) {
+					if (!resources.combatSession.active || !state) return;
+					const current = state;
+					if (queries.strikes.some(function (strike) { return strike.components.artillery.life <= dt; })) {
+						trackDamageTargets(function () { artilleryStep(current, dt); }, true);
+					} else artilleryStep(current, dt);
+					markAll('artillery');
+				});
 			world.addSystem('combat:projectiles').withRef(refs.projectiles).inPhase('fixedUpdate').inGroup('combat').after(refs.artillery).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatStats', 'combatFeedback', 'combatProgress'])
 				.addQuery('structures', { with: ['structure'] }).addQuery('targets', { with: ['enemy', 'health'] }).addQuery('projectiles', { with: ['projectile'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; const current = state; trackDamageTargets(function () { projectilesStep(current, dt); }, true); markAll('projectile'); });
 			world.addSystem('combat:deaths').withRef(refs.deaths).inPhase('fixedUpdate').inGroup('combat').after(refs.projectiles).withResources(['combatSession', 'combatOrdering', 'combatStats', 'combatProgress', 'combatFeedback'])

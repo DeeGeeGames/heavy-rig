@@ -1,7 +1,5 @@
-import { createHash } from 'node:crypto';
 import { expect, spyOn, test } from 'bun:test';
-import { Mesh, type Object3D } from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FileLoader, Mesh, type Object3D } from 'three';
 import { getWeapon } from '../src/arsenal';
 import { authoredMuzzleError, loadPlayableMechFamily, playableMechUrl } from '../src/authored-mech';
 import { createGait } from '../src/gait';
@@ -9,30 +7,24 @@ import { getHardpoints } from '../src/hardpoints';
 import { createMech } from '../src/mech-3d';
 import { getMechAssetBinding } from '../src/mech-asset-registry';
 import { getPlayerWeaponRig } from '../src/weapon-rig';
-import type { FrameId } from '../src/frames';
+import { CHASSIS_IDS, PLAYABLE_FRAMES } from '../src/frames';
 
 const chassisMeshes = function (node: Object3D) {
 	return node.children.flatMap(function collect(part): Mesh[] {
-		if (part.name.startsWith('rig_mount_')) return [];
+		if (part.name.startsWith('rig_mount_') || part.name.startsWith('fitting_')) return [];
 		return part instanceof Mesh ? [part] : part.children.flatMap(collect);
 	});
 };
 
 test('playable B/C cartridges fit their approved body and use their physical firing exits', async function () {
-	const load = spyOn(GLTFLoader.prototype, 'loadAsync').mockImplementation(async function (this: GLTFLoader, url: string) {
-		const path = new URL(url.replace('./assets/', '../public/assets/'), import.meta.url);
-		const asset = await this.parseAsync(await Bun.file(path).arrayBuffer(), '');
-		if (path.pathname.endsWith('/variants.glb')) {
-			const base = await Bun.file(new URL('pixel.glb', path)).arrayBuffer();
-			expect(asset.scene.userData['baseSha256']).toBe(createHash('sha256').update(new Uint8Array(base)).digest('hex'));
-		}
-		return asset;
+	const load = spyOn(FileLoader.prototype, 'loadAsync').mockImplementation(async function (url: string) {
+		return Bun.file(new URL(url.replace('./assets/', '../public/assets/'), import.meta.url)).arrayBuffer();
 	});
 	try {
-		for (const chassis of ['warden', 'kestrel', 'maul'] as const) {
+		for (const chassis of CHASSIS_IDS) {
 			const factories = await loadPlayableMechFamily(chassis, playableMechUrl(chassis));
 			const remove = factories.map(function (factory) { return factory.install(); });
-			const frames: FrameId[] = [chassis, `${chassis}-b`, `${chassis}-c`];
+			const frames = PLAYABLE_FRAMES.filter(function (frame) { return frame.chassisId === chassis; }).map(function (frame) { return frame.id; });
 			const models = frames.map(function (frame) { return createMech(undefined, false, frame); });
 			try {
 				expect(factories).toHaveLength(frames.length);
@@ -46,12 +38,20 @@ test('playable B/C cartridges fit their approved body and use their physical fir
 					const gait = createGait(body);
 					const rig = getPlayerWeaponRig(frame);
 					expect(rig.map(function (slot) { return slot.tubes.length; })).toEqual(getHardpoints(frame).map(function (mount) {
+						if (frame === 'morrow') return 4; // Six-round refits cycle the four physical apertures.
+						if (frame === 'harrow-b' && mount.id === 'dorsal-artillery') return 3;
 						return mount.family === 'launcher' ? Math.max(...mount.weapons.map(function (id) { return getWeapon(id).projectiles; })) : 0;
 					}));
 					const context = binding.advancePose(undefined, body, 0);
 					const heading = -0.6;
 					model.pose(gait, heading, { recoil: 0, hit: 0, heat: 0, time: 0, authoredPose: context });
 					expect(authoredMuzzleError(model, rig, gait, heading, undefined, context, frame)).toBeLessThan(1e-7);
+					model.pose(gait, heading, { recoil: 0, hit: 0, heat: 0, time: 0, authoredPose: context, equippedSlots: [] });
+					const fitted: string[] = [];
+					model.root.traverseVisible(function (part) {
+						if (part.name.startsWith('rig_mount_') && part.children.length) fitted.push(part.name);
+					});
+					expect(fitted).toEqual([]);
 					const shared = chassisMeshes(base.root);
 					expect(shared.length).toBeGreaterThan(6);
 					expect(chassisMeshes(model.root)).toHaveLength(shared.length);
@@ -69,4 +69,26 @@ test('playable B/C cartridges fit their approved body and use their physical fir
 			}
 		}
 	} finally { load.mockRestore(); }
+});
+
+test('a stale cartridge package leaves the base playable and both alternate fittings on their fallbacks', async function () {
+	const load = spyOn(FileLoader.prototype, 'loadAsync').mockImplementation(async function (url: string) {
+		const bytes = await Bun.file(new URL(url.replace('./assets/', '../public/assets/'), import.meta.url)).arrayBuffer();
+		if (url.endsWith('pixel.glb')) {
+			// A valid GLB with a different generator stamp stands in for a stale cached revision.
+			const data = Buffer.from(bytes);
+			const stamp = data.indexOf('Heavy Rig plate workshop');
+			if (stamp < 0) throw new Error('Missing generator stamp');
+			data[stamp] = 'h'.charCodeAt(0);
+		}
+		return bytes;
+	});
+	const warn = spyOn(console, 'warn').mockImplementation(function () {});
+	try {
+		const factories = await loadPlayableMechFamily('bastion', playableMechUrl('bastion'));
+		try {
+			expect(factories.map(function (factory) { return factory.frame; })).toEqual(['bastion']);
+			expect(warn).toHaveBeenCalledWith('bastion cartridges belong to another chassis revision.');
+		} finally { for (const factory of factories) factory.dispose(); }
+	} finally { warn.mockRestore(); load.mockRestore(); }
 });

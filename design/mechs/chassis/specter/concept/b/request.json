@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "specter-b",
+  "background": "Transparent",
+  "details": "Two compact machine guns mount below two broad canted receiving panels. The interfering array attaches to the mast and has no firing exit. Reuse the shared body and its two original slot pivots.",
+  "loadout": [
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    }
+  ],
+  "baselineId": "specter-a-survey-mast"
+}

@@ -1,6 +1,6 @@
 import { ACESFilmicToneMapping, Box3, Color, CylinderGeometry, DirectionalLight, Fog, GridHelper, Group, HemisphereLight, Mesh, MeshStandardMaterial, PCFShadowMap, PerspectiveCamera, PlaneGeometry, Scene, Vector3, WebGLRenderer, type BufferGeometry } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
+import { CHASSIS_IDS, PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
 import { FRAME_RIGS, STANDARD_LEG_RIG } from './frame-rig';
 import { advanceGait, createGait, mechScale } from './gait';
 import { createMech } from './mech-3d';
@@ -199,7 +199,7 @@ const startStudy = function () {
 	return dispose;
 };
 
-runModelStudy(['warden', 'kestrel', 'maul'], true, startStudy).catch(function (error: unknown) {
+runModelStudy(CHASSIS_IDS, true, startStudy).catch(function (error: unknown) {
 	const message = requireElement('error'); message.hidden = false;
 	message.textContent = error instanceof Error ? error.message : 'Could not initialize the model motion study.';
 });

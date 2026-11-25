@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "bastion-c",
+  "background": "Transparent",
+  "details": "The own-left precision sleeve projects past the brow. The own-right guided cartridge carries two side-by-side openings. Reuse the shared body and its two original slot pivots.",
+  "loadout": [
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "stream-missiles",
+      "rounds": 360
+    }
+  ],
+  "baselineId": "bastion-a-split-mantlet"
+}

@@ -1,17 +1,17 @@
+import { CHASSIS_IDS } from './frames';
 import { loadPlayableMechFamily, playableMechUrl, previewAssetOverride } from './authored-mech';
 import { loadMechSkinPatterns } from './mech-skin-material';
 
 // Install accepted visual assets before presentation creates synchronous models.
 // Each load has an independent deadline and retains the procedural fallback.
 // Each candidate replaces A on its own chassis. B/C use the body their cartridges were authored against.
-const frames = ['warden', 'kestrel', 'maul'] as const;
 const requested = document.documentElement.dataset['authoredFrame'];
 const previewFrame = requested === 'warden' || requested === 'kestrel' || requested === 'maul' ? requested
 	: location.pathname.endsWith('/maul-preview.html') ? 'maul' : 'kestrel';
 const override = previewAssetOverride();
 const hasCandidate = override !== undefined && override !== playableMechUrl(previewFrame);
 const [families, candidate, releasePatterns] = await Promise.all([
-	Promise.all(frames.map(function (chassis) { return loadPlayableMechFamily(chassis, playableMechUrl(chassis)); })),
+	Promise.all(CHASSIS_IDS.map(function (chassis) { return loadPlayableMechFamily(chassis, playableMechUrl(chassis)); })),
 	hasCandidate ? loadPlayableMechFamily(previewFrame, override, null) : [],
 	loadMechSkinPatterns(document.getElementById('mech-faction-patterns')?.textContent || undefined),
 ]);

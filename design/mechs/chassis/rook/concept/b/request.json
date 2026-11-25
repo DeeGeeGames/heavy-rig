@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "rook-lancer",
+  "background": "Transparent",
+  "details": "Keep the Square Slate body, high two-strut dorsal rack and low arm pivots. Fit the long violet precision emitter to own-left and retain the Rattler cluster on own-right. Exchange the dorsal unguided face for the paired guided insert.",
+  "loadout": [
+    {
+      "weaponId": "ppc",
+      "rounds": 0
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    },
+    {
+      "weaponId": "stream-missiles",
+      "rounds": 360
+    }
+  ],
+  "baselineId": "rook-a-square-slate"
+}

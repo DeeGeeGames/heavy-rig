@@ -1,0 +1,33 @@
+{
+  "id": "specter-b-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "specter",
+  "variantId": "specter-b",
+  "baselineId": "specter-a-survey-mast",
+  "baselineImageSha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4",
+  "source": "design/mechs/chassis/specter/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/specter/concept/b/image.png",
+    "sha256": "fa58ed92b35ee7b43854ff94d4e3a8932d70395a1ac3966256308aa49e585a85"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/specter/turnaround/b/front.png",
+      "sha256": "2371cad53cf9ac6335496d6b253df9f3f3e48c1c2f5c91aac218578e9b253f2a"
+    },
+    "back": {
+      "path": "design/mechs/chassis/specter/turnaround/b/back.png",
+      "sha256": "5145e0ccd50bacc9d5c746c5904db25da67c9a6f90d1df9c792a9397917b6607"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/specter/turnaround/b/own-left.png",
+      "sha256": "f2e87b9953224f0ed61516e75a1743b0609a416167f5c81c9f0309947251d977"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/specter/turnaround/b/own-right.png",
+      "sha256": "9fff7e0ca9eef8b38139f6d4f51071a173919f00e453a3785d564b466209a29f"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "Two grouped machine guns remain below the two solid, canted interference panels. The own-right gun reuses the A cartridge. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}
