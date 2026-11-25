@@ -10,6 +10,7 @@ import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECO
 import { FIELD_ROAD_MARKINGS } from './field-terrain-3d';
 import { terrainMapColors } from './terrain-map-colors';
 import { drawTerrainContours } from './terrain-contours';
+import { isFieldContact } from './enemy-perimeter';
 import { enemyVolume, playerVolume } from './combat-spatial';
 import { getFrame, type FrameId } from './frames';
 
@@ -182,7 +183,8 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const structures = missionStructures(mission);
 	const selectedStructure = structures.find(function (target) { return target.body.hp > 0 && target.id === state.player.targetId; });
 	const selectedFacility = selectedStructure?.body;
-	const selected = state.enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
+	const enemies = state.enemies.filter(function (enemy) { return isFieldContact(enemy, mission?.map ?? ARENA); });
+	const selected = enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
 	const selectedSize = (selected?.commander ? 90 : 74) * scale;
 	const selectedReticle = selected ? drawTargetReticle(selected, selected.id, selected.catalog ? enemyVolume(selected).elevation : ENEMY_STATS[selected.kind].elevation, selectedSize, selectedSize) : undefined;
 	const facilityReticle = selectedFacility && selectedStructure ? drawTargetReticle(selectedFacility, selectedStructure.id, 45, 130 * scale, 110 * scale) : undefined;
@@ -206,15 +208,25 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 				: `LIFT IN ${remaining.toFixed(1)}s · HOLD POSITION`;
 		text(label, mission.map.extraction, 40, '#b9f5ca', 12);
 	}
-	for (const warning of state.warnings) {
-		const frame = warning.frameId ? getFrame(warning.frameId) : undefined;
-		text(warning.commander ? 'COMMAND SIGNAL' : `INBOUND ${frame ? `${frame.chassisName} ${frame.variant}` : warning.kind.toUpperCase()}`, warning, 10, '#f3bd80', 10, -20);
+	const inbound = state.warnings;
+	for (const warning of inbound) {
+		const flight = warning.drop?.flight;
+		const group = flight ? inbound.filter(function (w) { return w.drop?.flight === flight; }) : [warning];
+		if (warning !== group[0]) continue;
+		const names = group.map(function (w) {
+			const frame = w.frameId ? getFrame(w.frameId) : undefined;
+			return frame ? `${frame.chassisName} ${frame.variant}` : w.kind.toUpperCase();
+		});
+		const roster = names.length > 1 && names.every(function (name) { return name === names[0]; }) ? `${names.length} × ${names[0]}` : names.join(' + ');
+		const wing = group[1];
+		const center = wing ? { x: (warning.x + wing.x) / 2, y: (warning.y + wing.y) / 2 } : warning;
+		text(warning.commander ? 'COMMAND SIGNAL' : `${flight ? 'DROPSHIP' : 'INBOUND'} ${roster}`, center, 10, '#f3bd80', 10, -20);
 	}
 	for (const [index, strike] of state.strikes.entries()) {
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		text(`${strike.friendly ? 'FRIENDLY' : 'INCOMING'} ${strike.life.toFixed(1)}s`, strike, 8, strike.friendly ? '#94ebe4' : '#ffd2a6', 11, -14);
 	}
-	for (const enemy of state.enemies) {
+	for (const enemy of enemies) {
 		const defense = getEnemyDefense(state, enemy);
 		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol';
 		const modelLabelHeight = options.enemyLabelHeights?.get(enemy.id) ?? (vehicle ? ENEMY_STATS[enemy.kind].elevation + 38 : (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind));
@@ -328,9 +340,9 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			ctx.fillStyle = color; ctx.fillText(label, labelX, edge.point.y + 26);
 		}
 	};
-	const survey = state.enemies.filter(function (enemy) { return surveyed(state, enemy) && edgeMarker(at(enemy, 40), width, height, options.obstructions); })
+	const survey = enemies.filter(function (enemy) { return surveyed(state, enemy) && edgeMarker(at(enemy, 40), width, height, options.obstructions); })
 		.sort(function (a, b) { return distance(a, state.player) - distance(b, state.player) || a.id - b.id; });
-	for (const enemy of state.enemies) {
+	for (const enemy of enemies) {
 		const detailed = survey.indexOf(enemy) >= 0 && survey.indexOf(enemy) < 2;
 		const category = enemy.catalog ? getFrame(enemy.catalog.frameId).chassisName : enemy.kind;
 		marker(enemy, detailed ? '#94ebe4' : isPriorityTarget(state, enemy) ? '#ffd3a3' : '#eead7c',
@@ -390,11 +402,11 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			if (mate.hp > 0) { ctx.fillStyle = '#84e3eb'; ctx.fillRect(at.x - 2, at.y - 2, 5, 5); }
 			else { ctx.strokeStyle = '#a8bcc0'; ctx.lineWidth = 1; ctx.strokeRect(at.x - 2, at.y - 2, 5, 5); }
 		}
-		for (const enemy of state.enemies) dot(enemy, isPriorityTarget(state, enemy) ? '#ffd6a7' : ENEMY_STATS[enemy.kind].elevation > 42 ? '#8fd6da' : '#f2a571', isPriorityTarget(state, enemy) ? 4 : enemy.heavy ? 3 : 2, ENEMY_STATS[enemy.kind].elevation > 42);
+		for (const enemy of enemies) dot(enemy, isPriorityTarget(state, enemy) ? '#ffd6a7' : ENEMY_STATS[enemy.kind].elevation > 42 ? '#8fd6da' : '#f2a571', isPriorityTarget(state, enemy) ? 4 : enemy.heavy ? 3 : 2, ENEMY_STATS[enemy.kind].elevation > 42);
 		for (const warning of state.warnings) dot(warning, '#e5a46f', 4, true);
 		for (const strike of state.strikes) dot(strike, strike.friendly ? '#94ebe4' : '#ff8154', strike.radius / bounds.width * w, true);
 		ctx.restore();
-		ctx.font = `${options.couchMode ? 14 : 11}px monospace`; ctx.textAlign = 'left'; ctx.fillStyle = '#91a9a3'; ctx.fillText(`${state.enemies.length.toString().padStart(2, '0')} CONTACTS`, x + 9, y + h + 15);
+		ctx.font = `${options.couchMode ? 14 : 11}px monospace`; ctx.textAlign = 'left'; ctx.fillStyle = '#91a9a3'; ctx.fillText(`${enemies.length.toString().padStart(2, '0')} CONTACTS`, x + 9, y + h + 15);
 		if (mission?.map.terrain?.elevation) {
 			ctx.textAlign = 'right'; ctx.fillText(`ALT ${Math.round(groundHeight(mission.map.terrain, state.player))} M`, x + w - 9, y + h + 15);
 		}

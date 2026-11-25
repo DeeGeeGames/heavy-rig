@@ -1,9 +1,10 @@
-import { CircleGeometry, Color, Float32BufferAttribute, Mesh, MeshBasicMaterial, Plane, PlaneGeometry, RingGeometry, Vector3, type BufferGeometry } from 'three';
+import { CircleGeometry, Color, Float32BufferAttribute, Mesh, MeshBasicMaterial, PlaneGeometry, RingGeometry, type BufferGeometry } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ARENA, type CombatStateView } from './simulation';
 import { TORSO_LIMIT } from './torso-arc';
 import { drapeGroundGeometry } from './terrain-decals';
 import { groundHeight } from './terrain-elevation';
+import { fieldClippingPlanes } from './field-clipping';
 
 const radius = 192;
 const stopStart = radius * 0.65;
@@ -54,14 +55,12 @@ export const createFiringArc = function () {
 	if (!geometry) throw new Error('Cannot batch firing arc geometry');
 
 	// Keep the markings on the playable surface when a mech turns at its edge.
-	const right = new Plane(new Vector3(-1, 0, 0), ARENA.width);
-	const far = new Plane(new Vector3(0, 0, -1), ARENA.height);
 	const material = new MeshBasicMaterial({
 		vertexColors: true,
 		transparent: true,
 		depthWrite: false,
 		toneMapped: false,
-		clippingPlanes: [new Plane(new Vector3(1, 0, 0)), new Plane(new Vector3(0, 0, 1)), right, far],
+		clippingPlanes: fieldClippingPlanes(ARENA),
 	});
 	const mesh = new Mesh(geometry, material);
 	mesh.name = 'player-firing-arc';
@@ -78,8 +77,7 @@ export const createFiringArc = function () {
 			mesh.position.set(player.x, groundHeight(terrain, player) + 1.5, player.y);
 			mesh.rotation.y = -player.angle;
 			drapeGroundGeometry(geometry, terrain, player, player.angle);
-			right.constant = mission?.map.width ?? ARENA.width;
-			far.constant = mission?.map.height ?? ARENA.height;
+			material.clippingPlanes = fieldClippingPlanes(mission?.map ?? ARENA);
 		},
 		dispose: function () { mesh.removeFromParent(); geometry.dispose(); material.dispose(); },
 	};

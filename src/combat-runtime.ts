@@ -179,7 +179,7 @@ export const createCombatRuntime = function () {
 				world.getResource('combatMission').value = mission;
 			};
 			attach = function (initial, training) {
-				const snapshot = { ...initial, mission: initial.mission ? { ...initial.mission } : undefined, player: { ...initial.player }, enemies: initial.enemies.map(function (enemy) { return { ...enemy }; }), shots: [...initial.shots], effects: [...initial.effects], warnings: [...initial.warnings], strikes: [...initial.strikes], wrecks: [...initial.wrecks] };
+				const snapshot = { ...initial, mission: initial.mission ? { ...initial.mission } : undefined, player: { ...initial.player }, enemies: initial.enemies.map(function (enemy) { return { ...enemy }; }), shots: [...initial.shots], effects: [...initial.effects], warnings: initial.warnings.map(function (warning) { return { ...warning }; }), strikes: [...initial.strikes], wrecks: [...initial.wrecks] };
 				const squadmates = initial.squadmates.map(function (mate) {
 					return { ...mate, loadout: mate.loadout.map(function (mount) { return { ...mount, ...(mount.rocketVolley ? { rocketVolley: { ...mount.rocketVolley } } : {}) }; }) };
 				});

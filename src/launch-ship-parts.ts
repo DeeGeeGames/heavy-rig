@@ -5,8 +5,8 @@ type HullStation = readonly [along: number, centerY: number, halfHeight: number,
 type XYZ = readonly [x: number, y: number, z: number];
 
 // Ship armor uses the same flat vertex paint and rigid-part batching as the surface vehicles.
-export const createShipParts = function (steel: string) {
-	const parts = createLowPolyParts({ steel, accent: '#b44a40', trim: '#c3cdcf', glass: '#acd9d8' });
+export const createShipParts = function (steel: string, accent = '#b44a40') {
+	const parts = createLowPolyParts({ steel, accent, trim: '#c3cdcf', glass: '#acd9d8' });
 	const unitBox = parts.own(new BoxGeometry(1, 1, 1));
 	const box = function (parent: Group, name: string, material: MeshStandardMaterial, x: number, y: number, z: number, width: number, height: number, length: number) {
 		const mesh = parts.mesh(parent, name, unitBox, material, x, y, z);

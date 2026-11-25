@@ -8,6 +8,7 @@ import { createStarterLoadout } from '../src/hardpoints';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS } from '../src/missions';
 import { createMissionState, createState, distance, step, type CombatStateView, type Controls, type SquadmateOptions } from '../src/simulation';
 import { createTraining, stepTraining } from '../src/training';
+import { createSituationMission } from '../src/situation-sim';
 
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 900, y: 500 }, fire: [false, false, false, false], coolant: false };
 const harness = async function (initial: CombatStateView) {
@@ -57,6 +58,33 @@ test('ECS combat preserves same-tick spawn, firing, piercing, committed artiller
 			}
 			if (tick === 5) { const actual = state.enemies.find(function (enemy) { return enemy.kind === 'siege'; }); const baseline = expected.enemies.find(function (enemy) { return enemy.kind === 'siege'; }); if (actual && baseline) { actual.hp = 0; baseline.hp = 0; } }
 		}
+	} finally { await world.dispose(); }
+});
+
+test('a live defense section survives pause and releases its two rigs and perimeter escort once each', async function () {
+	const initial = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, 25, 'standard');
+	initial.spawnIn = 0;
+	const { world, combat, state } = await harness(initial);
+	const advance = function (seconds: number) { for (let tick = 0; tick < seconds * 60; tick++) world.update(1 / 60); };
+	try {
+		advance(6);
+		const [first, second, support] = state.warnings;
+		if (!first?.drop || !first.frameId || !second?.drop || !second.frameId || !support?.perimeter) throw new Error('Missing defense section');
+		expect(first.drop.flight).toBe(second.drop.flight);
+		combat.setEnabled(false);
+		const before = state.time, remaining = first.life;
+		advance(5);
+		expect(state.time).toBe(before); expect(first.life).toBe(remaining); expect(state.enemies).toHaveLength(0);
+		combat.setEnabled(true); advance(4.1);
+		expect(state.enemies.map(function (e) { return e.catalog?.frameId ?? e.kind; })).toEqual([first.frameId, second.frameId, support.kind]);
+		const escort = state.enemies[2], map = state.mission?.map;
+		if (!escort?.entry || !map) throw new Error('Expected an approaching escort');
+		expect(Math.min(escort.x, escort.y, map.width - escort.x, map.height - escort.y)).toBeLessThan(0);
+		expect(distance(escort, support.perimeter.start)).toBeLessThan(12);
+		advance(9);
+		expect(escort.entry).toBeUndefined();
+		expect(Math.min(escort.x, escort.y, map.width - escort.x, map.height - escort.y)).toBeGreaterThanOrEqual(35);
+		expect(state.spawned).toBe(3); expect(state.warnings).toHaveLength(0);
 	} finally { await world.dispose(); }
 });
 

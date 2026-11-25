@@ -1,10 +1,10 @@
-import { DoubleSide, Group, IcosahedronGeometry, InstancedMesh, Mesh, MeshBasicMaterial, Object3D, Shape, ShapeGeometry, type Scene } from 'three';
+import { Group, IcosahedronGeometry, InstancedMesh, MeshBasicMaterial, Object3D, type Scene } from 'three';
 import type { WeaponMount } from './arsenal';
 import type { MissionMap } from './campaign-types';
 import { terrainPointClear, type FieldTerrain, type ObstacleField } from './field-terrain';
 import { altitude, approachDescent, approachRun, flightClearanceFor, flightPosition, landingFootprint, landingSites, supportRange, type LandingSite } from './landing-site';
 import { groundHeight } from './terrain-elevation';
-import { drapeGroundGeometry } from './terrain-decals';
+import { createDropshipShadow } from './dropship-shadow';
 import { FRAME_RIGS } from './frame-rig';
 import { getFrame, type FrameId } from './frames';
 import { advanceGait, advanceGaitHeading, createGait, type Foot, type WalkerGait } from './gait';
@@ -288,19 +288,11 @@ const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPa
 	};
 };
 
-// Plan view of the transport for its ground shadow.
-const silhouette = [[-78, -207], [78, -207], [110, -155], [110, -92], [135, -92], [140, -148], [175, -130], [180, 101], [157, 143], [128, 136], [119, 95], [108, 95], [107, 196], [-107, 196], [-108, 95], [-119, 95], [-128, 136], [-157, 143], [-180, 101], [-175, -130], [-140, -148], [-135, -92], [-110, -92], [-110, -155]] as const;
-
 export const createSurfaceLanding = function (scene: Scene, state: CombatStateView, map: MissionMap, { site, paths, closeAt } = planLaunchLanding(state, map)) {
 	const ship = createDropship();
 	const root = new Group(); root.name = 'mission-landing'; scene.add(root); root.add(ship.root);
 	ship.root.rotation.y = Math.PI / 2 - site.heading;
-	const shape = new Shape();
-	for (const [index, [x, z]] of silhouette.entries()) { if (index === 0) shape.moveTo(x * DROPSHIP_WIDTH / 360, -z); else shape.lineTo(x * DROPSHIP_WIDTH / 360, -z); }
-	shape.closePath();
-	const shadowGeometry = new ShapeGeometry(shape).rotateX(-Math.PI / 2);
-	const shadowPaint = new MeshBasicMaterial({ color: '#141a20', side: DoubleSide, transparent: true, opacity: .45, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-	const shadow = new Mesh(shadowGeometry, shadowPaint); shadow.name = 'transport-ground-shadow'; shadow.rotation.y = ship.root.rotation.y; root.add(shadow);
+	const shadow = createDropshipShadow(ship.root.rotation.y); root.add(shadow.root);
 	const dustShape = new IcosahedronGeometry(1, 0);
 	const dustPaint = new MeshBasicMaterial({ color: SURFACE_PALETTES[map.biome].dust, transparent: true, opacity: .38, depthWrite: false });
 	const dust = new InstancedMesh(dustShape, dustPaint, 16); dust.frustumCulled = false; root.add(dust);
@@ -342,10 +334,7 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		ship.root.rotation.z = Math.round(-liftPose * 5) * Math.PI / 90;
 		ship.setRamp(rampAt(shipTime), rampAt(shipPoseTime));
 		ship.setThrust(.14 + .86 * Math.max(1 - ease(between(time, touchdown + .25, touchdown + 1)), ease(between(time, lift - .5, lift + 1))));
-		const shadowAt = { x: travel.x + 15 + airborne * .37, y: travel.y + 8 + airborne * .32 };
-		shadow.position.set(shadowAt.x, groundHeight(map.terrain, shadowAt) + 1.05, shadowAt.y);
-		drapeGroundGeometry(shadowGeometry, map.terrain, shadowAt, -shadow.rotation.y);
-		shadowPaint.opacity = Math.max(.15, .45 - airborne * .0005);
+		shadow.update(map.terrain, travel, airborne);
 		const wash = shipTime < touchdown + 3 ? between(shipTime, touchdown + .125, touchdown + 1.5) : between(shipTime, normalClose, handoff - 1);
 		dust.visible = wash > 0 && wash < 1;
 		if (dust.visible) {
@@ -369,6 +358,6 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 			focus: { ...focus, elevation: approach ? flightGround : mix(padHeight, groundHeight(map.terrain, state.player), blend) } };
 	};
 	return { update, dispose: function () {
-		root.removeFromParent(); ship.dispose(); dust.dispose(); dustShape.dispose(); dustPaint.dispose(); shadowGeometry.dispose(); shadowPaint.dispose(); root.clear();
+		root.removeFromParent(); ship.dispose(); dust.dispose(); dustShape.dispose(); dustPaint.dispose(); shadow.dispose(); root.clear();
 	} };
 };

@@ -74,9 +74,15 @@ describe('Heavy Rig combat', function () {
 	test('spawn warnings precede units and block wave completion', function () {
 		const state = createCombatState(); state.spawned = 4; state.spawnIn = 0;
 		step(state, idle, 1 / 60);
-		expect(state.warnings).toHaveLength(1); expect(state.enemies).toHaveLength(0); expect(state.intermission).toBe(0);
-		run(state, 1.8); expect(state.enemies).toHaveLength(0);
-		run(state, 0.3); expect(state.warnings).toHaveLength(0); expect(state.enemies).toHaveLength(1);
+		const inbound = state.warnings[0];
+		if (!inbound?.drop) throw new Error('Expected a transport carrying the last rig');
+		run(state, inbound.life - .1);
+		expect(state.enemies).toHaveLength(0); expect(state.intermission).toBe(0);
+		run(state, .15);
+		expect(state.warnings).toHaveLength(0); expect(state.enemies).toHaveLength(1);
+		const rig = state.enemies[0];
+		if (!rig) throw new Error('Expected the last rig to disembark');
+		expect(Math.hypot(rig.x - inbound.x, rig.y - inbound.y)).toBeLessThan(5);
 	});
 	test('enemy roles have different movement speeds, engagement ranges and durability', function () {
 		const positions = new Map<EnemyKind, number>();

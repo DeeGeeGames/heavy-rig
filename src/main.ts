@@ -27,7 +27,7 @@ import { getFrame } from './frames';
 import { MOUNTS, loadSummary, massLabel } from './loadout-ui';
 import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
-import { artilleryAimStatus, createMissionState, createState, distance, getOperationReport, missileLockRange, type Controls, type Point, type SquadmateOptions } from './simulation';
+import { artilleryAimStatus, combatTargets, createMissionState, createState, distance, getOperationReport, missileLockRange, type Controls, type Point, type SquadmateOptions } from './simulation';
 import { createPresentation } from './presentation';
 import { LAUNCH_DURATION, launchSceneTime } from './launch-timing';
 import { advanceGaits, createGaits } from './gait';
@@ -1677,10 +1677,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (combatInput) {
 			if (pad.targetNearest) selectTarget('nearest');
 			if (pad.targetNext) selectTarget('cycle');
-			const aimTargets = [
-				...state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, point: enemy }; }),
-				...missionStructures(state.mission).filter(function (target) { return target.body.hp > 0; }).map(function ({ id, body }) { return { id, point: body }; }),
-			];
+			const aimTargets = combatTargets(state).map(function ({ id, body }) { return { id, point: body }; });
 			const mortar = mortarProfile(state.frame);
 			const reticleAcquisition = Boolean(mortar) || state.frame === 'specter-c';
 			const assistRange = pad.connected ? Math.max(missileLockRange(state.frame, state.loadout), mortar ? HARROW_MAX_RANGE : 0) : 0;

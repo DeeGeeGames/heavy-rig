@@ -13,6 +13,7 @@ interface LightBinding { light: Light; layers: number }
 
 export const createInkSurfaces = function () {
 	const materials = new Map<InkSource, Map<InkSurface, MaterialVariant>>();
+	const clipped: InkSource[] = [];
 	const bindings: MeshBinding[] = [], lights: LightBinding[] = [];
 	const meshEntries = new WeakMap<Mesh, MeshBinding>();
 	let frame = 0;
@@ -37,6 +38,7 @@ export const createInkSurfaces = function () {
 		}
 		if (entry.lastSeen !== frame) {
 			entry.lastSeen = frame;
+			if (source.allowOverride && source.clippingPlanes?.length) clipped.push(entry.ink);
 			entry.ink.color.copy(source.color);
 			if (entry.ink instanceof MeshStandardMaterial && source instanceof MeshStandardMaterial) {
 				entry.ink.emissive.copy(source.emissive); entry.ink.emissiveIntensity = source.emissiveIntensity;
@@ -105,7 +107,14 @@ export const createInkSurfaces = function () {
 			camera.layers.set(inkLayer);
 			return overlays;
 		},
+		prepareDepth: function () {
+			// The shared depth override has no local clipping planes. Replay
+			// boundary-crossing geometry with its own clipped shader, depth only.
+			for (const material of clipped) { material.allowOverride = false; material.colorWrite = false; }
+		},
 		restore: function () {
+			for (const material of clipped) { material.allowOverride = true; material.colorWrite = true; }
+			clipped.length = 0;
 			for (const binding of bindings) { binding.mesh.layers.mask = binding.layers; binding.mesh.material = binding.original; }
 			for (const binding of lights) binding.light.layers.mask = binding.layers;
 			bindings.length = 0; lights.length = 0;
