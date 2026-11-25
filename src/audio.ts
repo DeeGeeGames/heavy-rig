@@ -87,6 +87,8 @@ interface Noise {
 	duration: number;
 	volume: number;
 	frequency: number;
+	attack?: number;
+	hold?: number;
 	type?: BiquadFilterType;
 	pan?: number;
 	bus?: Bus;
@@ -232,7 +234,7 @@ export const createAudio = function () {
 		filter.frequency.setValueAtTime(sound.frequency, sound.at);
 		filter.frequency.exponentialRampToValueAtTime(Math.max(60, sound.frequency * 0.4), sound.at + sound.duration);
 		pan.pan.value = sound.pan ?? 0;
-		envelope(gain, sound.at, sound.duration, sound.volume);
+		envelope(gain, sound.at, sound.duration, sound.volume, sound.attack, sound.hold);
 		source.connect(filter).connect(gain).connect(pan).connect(bus === 'music' ? synth.musicInput : bus === 'ui' ? synth.ui : synth.effectsInput);
 		register({ source, nodes: [filter, gain, pan], bus }, sound.at, sound.duration);
 	};
@@ -592,9 +594,9 @@ export const createAudio = function () {
 		const explosive = cue.family === 'missile' || cue.family === 'rocket' || cue.family === 'artillery';
 		if (cue.surface === 'armor') {
 			if (light) {
-				hitNoise({ at, duration: 0.048, frequency: 4800 + variant * 1100, volume: 0.36, type: 'bandpass' });
-				hitTone({ at, frequency: 1120 + variant * 230, endFrequency: 710, duration: 0.084, volume: 0.2, type: 'triangle' });
-				hitTone({ at: at + 0.012, frequency: 213, endFrequency: 125, duration: 0.065, volume: 0.13 });
+				hitNoise({ at, duration: 0.055, frequency: 1200 + variant * 180, volume: 0.39 });
+				hitTone({ at, frequency: 360 + variant * 55, endFrequency: 285, duration: 0.066, volume: 0.2, type: 'triangle', cutoff: 840 });
+				hitTone({ at: at + 0.004, frequency: 190, endFrequency: 135, duration: 0.078, volume: 0.15 });
 				return;
 			}
 			if (cue.family === 'cannon') {
@@ -609,15 +611,15 @@ export const createAudio = function () {
 			hitNoise({ at, duration: 0.09, frequency: 2550 + variant * 1000, volume: 0.48, type: 'bandpass' });
 			hitTone({ at, frequency: 210 + variant * 70, endFrequency: 75, duration: 0.13, volume: 0.29, type: 'triangle' });
 		} else if (cue.surface === 'wood') {
-			hitNoise({ at, duration: light ? 0.033 : 0.065, frequency: 2300, type: 'bandpass', volume: light ? 0.22 : 0.46 });
-			hitTone({ at, frequency: 340, endFrequency: 140, duration: light ? 0.046 : 0.085, type: 'triangle', volume: light ? 0.12 : 0.26 });
+			hitNoise({ at, duration: light ? 0.033 : 0.065, frequency: light ? 860 : 2300, type: 'bandpass', volume: light ? 0.22 : 0.46 });
+			hitTone({ at, frequency: light ? 245 : 340, endFrequency: light ? 120 : 140, duration: light ? 0.046 : 0.085, type: 'triangle', volume: light ? 0.12 : 0.26 });
 			if (!explosive) return;
 		} else {
 			const concrete = cue.surface === 'concrete';
 			const grit = concrete ? 1 : 0.63;
-			hitNoise({ at, duration: light ? 0.059 : 0.14, frequency: (light ? 2000 : 1460) * grit, volume: light ? 0.34 : 0.61 });
-			hitTone({ at, frequency: light ? 195 : 150, endFrequency: light ? 83 : 52, duration: light ? 0.065 : 0.21, volume: light ? 0.18 : 0.39, type: 'triangle' });
-			hitNoise({ at: at + 0.055, duration: light ? 0.045 : 0.15, frequency: (light ? 3400 : 2860) * grit, volume: (light ? 0.1 : 0.25) * grit, type: 'bandpass' });
+			hitNoise({ at, duration: light ? 0.059 : 0.14, frequency: (light ? 1120 : 1460) * grit, volume: light ? 0.34 : 0.61 });
+			hitTone({ at, frequency: light ? 165 : 150, endFrequency: light ? 75 : 52, duration: light ? 0.065 : 0.21, volume: light ? 0.18 : 0.39, type: 'triangle' });
+			hitNoise({ at: at + 0.055, duration: light ? 0.045 : 0.15, frequency: (light ? 1420 : 2860) * grit, volume: (light ? 0.08 : 0.25) * grit, type: 'bandpass' });
 			if (light) return;
 			if (!explosive) {
 				hitNoise({ at: at + 0.12, duration: 0.17, frequency: 1900 * grit, volume: 0.24 * grit, type: 'bandpass' });
@@ -688,13 +690,12 @@ export const createAudio = function () {
 					noise({ at: at + 0.015, duration: 0.18, volume: 0.17, frequency: 4200, type: 'bandpass' });
 					break;
 				case 'cannon':
-					tone({ at, frequency: 145, endFrequency: 27, duration: 0.36, volume: 0.55, type: 'triangle' });
-					noise({ at, duration: 0.3, volume: 0.7, frequency: 2200 });
-					noise({ at: at + 0.04, duration: 0.4, volume: 0.18, frequency: 500, pan: -0.12 });
-					tone({ at: at + 0.19, frequency: 320, endFrequency: 170, duration: 0.09, volume: 0.09, type: 'triangle', pan: 0.15 });
-					noise({ at: at + 0.022, duration: 0.1, frequency: 930, volume: 0.38, pan: -0.38 });
-					tone({ at: at + 0.13, frequency: 224, endFrequency: 115, duration: 0.085, volume: 0.22, type: 'triangle', pan: -0.32 });
-					noise({ at: at + 0.19, duration: 0.047, frequency: 2900, volume: 0.28, type: 'bandpass', pan: -0.27 });
+				// A fast muzzle crack over a low concussion, followed by a short reflected blast.
+				noise({ at, frequency: 4700, duration: 0.055, volume: 0.95, attack: 0.001, hold: 0.003 });
+				noise({ at, frequency: 1500, duration: 0.28, volume: 1.15, attack: 0.002, hold: 0.023 });
+				tone({ at: at + 0.003, frequency: 88, endFrequency: 58, duration: 0.29, volume: 0.66, type: 'triangle', attack: 0.003, hold: 0.025 });
+				noise({ at: at + 0.037, frequency: 730, duration: 0.39, volume: 0.78, attack: 0.009, hold: 0.018, pan: -0.14 });
+				noise({ at: at + 0.077, frequency: 1350, duration: 0.17, volume: 0.32, type: 'bandpass', pan: 0.17 });
 					break;
 				case 'rocket':
 				case 'missile': {
