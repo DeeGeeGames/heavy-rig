@@ -18,8 +18,9 @@ A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,
 with a Rattler machine gun fitted to each of its two mounts.
 Campaign missions and a separate Frame Training simulator are the playable modes.
 
-New Campaign begins with a black-screen prologue, a choice of Kestrel or Warden,
-and a short escape from the northwest Rig Bay to a southeast evacuation point.
+New Campaign begins with a black-screen prologue, a choice of Kestrel A
+Skirmisher or Specter A Pathfinder, and a short escape from the northwest Rig
+Bay to a southeast evacuation point.
 Each narrative line types at ten characters per second with terminal chirps, holds
 for two seconds, and fades over one second. A first-input prompt enables browser
 audio before typing begins. The selection cards preview each actual rig model.
