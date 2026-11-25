@@ -1,13 +1,14 @@
 import { html, render } from 'lit-html';
 import { keyed } from 'lit-html/directives/keyed.js';
 import { getWeapon, WEAPONS, WEAPON_SIZE_LABELS, type WeaponId } from './arsenal';
+import type { ChoicePicker } from './choice-picker';
 import { defaultReserves } from './combat-resources';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import { canEquipWeapon, createStarterLoadout, getHardpoints } from './hardpoints';
 import { loadSummary, weaponClassLabel } from './loadout-ui';
 import type { TrainingSetup } from './training';
 
-export const mountTrainingSetup = function (root: HTMLElement) {
+export const mountTrainingSetup = function (root: HTMLElement, picker: ChoicePicker) {
 	let frame: FrameId = 'warden';
 	const drafts = new Map<FrameId, TrainingSetup>();
 	const current = function (): TrainingSetup {
@@ -19,43 +20,28 @@ export const mountTrainingSetup = function (root: HTMLElement) {
 	const refresh = function () {
 		const setup = current();
 		render(html`
-			<label class="training-frame-choice"><span>Frame</span>
-				<select id="training-frame" @change=${function (event: Event) {
-					if (!(event.target instanceof HTMLSelectElement)) return;
-					const choice = PLAYABLE_FRAMES[event.target.selectedIndex];
-					if (choice) { frame = choice.id; refresh(); }
-				}}>${PLAYABLE_FRAMES.map(function (option) {
-					return html`<option value=${option.id} ?selected=${frame === option.id}>${option.name}</option>`;
-				})}</select>
-			</label>
+			${picker.field('training-frame', 'Frame', frame, PLAYABLE_FRAMES.map(function (rig) {
+				return { value: rig.id, label: rig.name };
+			}), function (choice) { frame = choice; refresh(); })}
 			${keyed(frame, html`<div class="training-mounts">${getHardpoints(frame).map(function (hardpoint, slot) {
-				const weapons = WEAPONS.filter(function (weapon) { return canEquipWeapon(frame, slot, weapon.id); });
-				const weaponId = setup.loadout[slot];
+				const weapons = WEAPONS.filter(function (weapon) { return canEquipWeapon(frame, slot, weapon.id); }).map(function (weapon) {
+					return { value: weapon.id, label: `${weapon.name} · ${WEAPON_SIZE_LABELS[weapon.size]}` };
+				});
+				const weaponId = setup.loadout[slot] ?? null;
 				const ammunition = weaponId ? getWeapon(weaponId).ammunition : null;
-				const rounds = ammunition ? [0, ammunition.defaultLoad, ammunition.capacity] : [];
+				const mountLabel = `${slot + 1} · ${hardpoint.name} · ${weaponClassLabel(hardpoint.family, hardpoint.maxSize)}`;
 				return html`<div class="training-mount">
-					<label><span>${slot + 1} · ${hardpoint.name} · ${weaponClassLabel(hardpoint.family, hardpoint.maxSize)}</span>
-						<select data-training-mount=${slot} @change=${function (event: Event) {
-							if (!(event.target instanceof HTMLSelectElement)) return;
-							const weapon = weapons[event.target.selectedIndex - 1]?.id ?? null;
-							const loadout = setup.loadout.map(function (id, index): WeaponId | null { return index === slot ? weapon : id; });
-							const reserves = defaultReserves(loadout).map(function (value, index) { return index === slot ? value : setup.reserves[index] ?? value; });
-							drafts.set(frame, { frame, loadout, reserves }); refresh();
-						}}><option value="" ?selected=${weaponId === null}>Empty</option>${weapons.map(function (weapon) {
-							return html`<option value=${weapon.id} ?selected=${weapon.id === weaponId}>${weapon.name} · ${WEAPON_SIZE_LABELS[weapon.size]}</option>`;
-						})}</select>
-					</label>
-					${ammunition ? keyed(weaponId, html`<label><span>Rounds</span>
-						<select data-training-ammo=${slot} aria-label=${`${hardpoint.name} ammunition`} @change=${function (event: Event) {
-							if (!(event.target instanceof HTMLSelectElement)) return;
-							const amount = rounds[event.target.selectedIndex];
-							if (amount === undefined) return;
+					${picker.field(`training-mount-${slot}`, mountLabel, weaponId, [{ value: null, label: 'Empty' }, ...weapons], function (weapon) {
+						const loadout = setup.loadout.map(function (id, index): WeaponId | null { return index === slot ? weapon : id; });
+						const reserves = defaultReserves(loadout).map(function (value, index) { return index === slot ? value : setup.reserves[index] ?? value; });
+						drafts.set(frame, { frame, loadout, reserves }); refresh();
+					})}
+					${ammunition ? picker.field(`training-ammo-${slot}`, 'Rounds', setup.reserves[slot] ?? 0,
+						[0, ammunition.defaultLoad, ammunition.capacity].map(function (amount) { return { value: amount, label: String(amount) }; }),
+						function (amount) {
 							const reserves = setup.reserves.map(function (value, index) { return index === slot ? amount : value; });
 							drafts.set(frame, { ...setup, reserves }); refresh();
-						}}>${rounds.map(function (amount) {
-							return html`<option value=${amount} ?selected=${amount === setup.reserves[slot]}>${amount}</option>`;
-						})}</select>
-					</label>`) : ''}
+						}, `${hardpoint.name} ammunition`) : ''}
 				</div>`;
 			})}</div>`)}
 			<p class="training-fit-summary">${loadSummary(frame, setup.loadout, setup.reserves)}</p>

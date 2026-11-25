@@ -2,10 +2,10 @@ import { html, nothing, render } from 'lit-html';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { terrainMapColors } from './terrain-map-colors';
 import type { SquadOrderChange } from './combat-runtime';
+import { directionalControl, focusMenuControl, type MenuDirection } from './menu-focus';
 import { EXTRACTION_RADIUS, CAPTURE_RADIUS, isPriorityTarget } from './missions';
 import { ARENA, combatTargets, distance, squadMoveDestinations, type CombatStateView, type FireDiscipline, type Point, type Squadmate, type SquadOrder } from './simulation';
 
-type Direction = 'up' | 'down' | 'left' | 'right';
 type OrderKind = SquadOrder['kind'];
 type Contact = ReturnType<typeof combatTargets>[number];
 type Bounds = Readonly<{ width: number; height: number }>;
@@ -27,7 +27,7 @@ const fireModes = [
 	{ mode: 'hold', label: 'Hold Fire' },
 ] as const;
 
-const MOVE_VECTORS: Readonly<Record<Direction, Point>> = {
+const MOVE_VECTORS: Readonly<Record<MenuDirection, Point>> = {
 	up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 },
 };
 
@@ -199,7 +199,7 @@ export const mountSquadOrders = function (
 				<span class="squad-orders-paused">Ⅱ PAUSED</span>
 			</header>
 			<div class="squad-orders-body">
-				<div class="squad-console">
+				<div class="squad-console" ?inert=${Boolean(pick)}>
 					<div class="squad-selection">
 						<span>${selected.size} of ${living.length} selected</span>
 						<button type="button" data-squad-select-all @click=${selectAll} ?disabled=${living.length === 0}>${selected.size === living.length && living.length > 0 ? 'Clear selection' : 'Select all'}</button>
@@ -243,16 +243,16 @@ export const mountSquadOrders = function (
 							<span><i class="map-key-friendly"></i> Squad</span><span><i class="map-key-hostile"></i> Hostile</span>
 							${mission ? html`<span><i class="map-key-objective"></i> Objective</span><span><i class="map-key-pickup"></i> Pickup</span>` : nothing}`}
 						${pick === 'attack' && candidate ? html`<div class="squad-contact-picker">
-							<button type="button" aria-label="Previous contact" ?disabled=${contacts.length < 2} @click=${function () { cycleContact(-1); }}>‹</button>
+							<button type="button" aria-label="Previous contact" ?disabled=${contacts.length < 2} @click=${function () { stepContact(-1); }}><span data-menu-glyph="previousDepartment"></span></button>
 							<button type="button" @click=${function (event: MouseEvent) { markTarget(candidate.id, event.detail > 0); }}>${targetLabel(candidate)} <small>${contactIndex + 1}/${contacts.length}</small></button>
-							<button type="button" aria-label="Next contact" ?disabled=${contacts.length < 2} @click=${function () { cycleContact(1); }}>›</button>
+							<button type="button" aria-label="Next contact" ?disabled=${contacts.length < 2} @click=${function () { stepContact(1); }}><span data-menu-glyph="nextDepartment"></span></button>
 						</div>` : nothing}
 					</div>
 				</div>
 			</div>
 			<footer class="squad-orders-footer">
-				<span class="squad-orders-status">${status}</span>
 				<button type="button" data-squad-back @click=${function () { if (!cancelPick()) callbacks.back(); }}>${pick ? 'Cancel pick' : draft.size ? 'Discard & Back' : 'Back'}</button>
+				<span class="squad-orders-status">${status}</span>
 				<button type="button" ?disabled=${draft.size === 0 || Boolean(pick)} @click=${discard}>Discard</button>
 				<button type="button" class="squad-apply" ?disabled=${Boolean(pick)} @click=${apply}>${applyLabel}</button>
 			</footer>
@@ -273,7 +273,7 @@ export const mountSquadOrders = function (
 			${contacts.map(function (contact) {
 				const targeted = pick === 'attack' && contact.id === candidate?.id;
 				const priority = contact.kind === 'structure' || isPriorityTarget(current, contact.body);
-				return html`<span class="squad-mark map-hostile" ?data-targeted=${targeted} ?data-priority=${priority} style=${markerStyle(project(projection, contact.body))} aria-hidden="true"><i></i></span>`;
+				return html`<span class="squad-mark map-hostile" data-squad-contact=${contact.id} ?data-targeted=${targeted} ?data-priority=${priority} style=${markerStyle(project(projection, contact.body))} aria-hidden="true"><i></i></span>`;
 			})}
 			<span class="squad-mark map-player" style=${markerStyle(player)} aria-hidden="true"><b>▲</b><small>YOU</small></span>
 			${current.squadmates.map(function (mate, index) {
@@ -290,7 +290,7 @@ export const mountSquadOrders = function (
 				return html`${lead}${pick || mate.hp <= 0
 					? html`<span class="squad-mark map-pilot" ?data-selected=${selected.has(mate.pilotId)} ?data-disabled=${mate.hp <= 0} style=${at} aria-hidden="true"><b>${index + 1}</b><small>${mate.callsign}</small></span>`
 					: html`<button type="button" class="squad-mark map-pilot" ?data-selected=${selected.has(mate.pilotId)} style=${at} aria-label=${`Select ${mate.callsign}`}
-						aria-pressed=${selected.has(mate.pilotId)} @click=${function () { toggle(mate.pilotId); root.querySelector<HTMLElement>(`[data-squad-pilot="${CSS.escape(mate.pilotId)}"]`)?.focus({ preventScroll: true }); }}><b>${index + 1}</b><small>${mate.callsign}</small></button>`}`;
+						aria-pressed=${selected.has(mate.pilotId)} @click=${function () { toggle(mate.pilotId); }}><b>${index + 1}</b><small>${mate.callsign}</small></button>`}`;
 			})}
 			${pick === 'move' ? html`<span class="squad-mark map-cursor" style=${markerStyle(project(projection, cursor))} aria-hidden="true">＋</span>` : nothing}
 		`;
@@ -306,7 +306,12 @@ export const mountSquadOrders = function (
 	};
 
 	const resize = new ResizeObserver(syncMap);
-	const focus = function (selector: string, preventScroll = false) { root.querySelector<HTMLElement>(selector)?.focus({ preventScroll }); };
+	const focus = function (selector: string, preventScroll = false) {
+		const target = root.querySelector<HTMLElement>(selector);
+		if (!target) return;
+		if (preventScroll) target.focus({ preventScroll: true });
+		else focusMenuControl(target);
+	};
 	const setSelectedOrder = function (order: (mate: Squadmate) => SquadOrder | undefined) {
 		for (const mate of living) {
 			if (!selected.has(mate.pilotId)) continue;
@@ -337,11 +342,12 @@ export const mountSquadOrders = function (
 		update();
 	};
 
-	const cycleContact = function (step: number) {
-		if (!contacts.length) return;
-		contactIndex = (contactIndex + step + contacts.length) % contacts.length;
+	const stepContact = function (step: number): boolean {
+		if (pick !== 'attack' || contacts.length < 2 || !step) return false;
+		contactIndex = (contactIndex + Math.sign(step) + contacts.length) % contacts.length;
 		message = '';
 		update();
+		return true;
 	};
 
 	const cancelPick = function (preventScroll = false): boolean {
@@ -459,9 +465,15 @@ export const mountSquadOrders = function (
 		},
 		close,
 		cancelPick,
-		moveCursor: function (direction: Direction) {
+		stepContact,
+		moveCursor: function (direction: MenuDirection) {
 			if (!pick || document.activeElement !== root.querySelector('.squad-map-confirm')) return false;
-			if (pick === 'attack') cycleContact(direction === 'up' || direction === 'left' ? -1 : 1);
+			if (pick === 'attack') {
+				const markers = [...root.querySelectorAll<HTMLElement>('[data-squad-contact]')];
+				const current = markers[contactIndex];
+				const next = current && directionalControl(markers, current, direction);
+				if (next) { contactIndex = markers.indexOf(next); message = ''; update(); }
+			}
 			else {
 				const step = Math.max(20, 4 / projection.scale);
 				const vector = MOVE_VECTORS[direction];

@@ -23,6 +23,8 @@
 .system-marker.conflict-system>i { width: 15px; height: 15px; left: 4.5px; top: 4.5px; border: 1px dashed var(--map-alert); background: #ed80551c; box-shadow: 0 0 12px #f5855822; }
 .system-marker.conflict-system>i:after { content: ''; position: absolute; width: 3px; height: 3px; background: #fff0d0; border-radius: 50%; left: 5px; top: 5px; }
 .system-marker>span { position: absolute; top: 21px; left: 50%; transform: translateX(-50%); font: 10px var(--mono); color: #d4e3df; white-space: nowrap; text-shadow: 0 1px 4px #000; pointer-events: none; }
+.system-marker:not(:focus, :hover)>.minor-system-name, .using-gamepad .chart-tools span { display: none; }
+.system-marker:focus>span { background: #091b24; padding: 2px 4px; color: var(--paper); }
 .system-marker small { display: block; color: var(--amber); font-size: 7px; letter-spacing: 1px; margin-top: 2px; }
 .system-marker.story-system small, .workspace .system-transmission { color: var(--cyan); }
 .workspace .system-transmission { font: 11px/1.4 var(--mono); letter-spacing: .5px; }

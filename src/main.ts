@@ -5,9 +5,9 @@ import ECSpresso from 'ecspresso';
 import { mountRigTest, rigTestEnabled } from './rig-test';
 import { createFieldTrial } from './field-trial';
 import { drawFieldSurvey, fieldTrialSeed } from './field-trial-ui';
-import { html, render } from 'lit-html';
+import { html, nothing, render } from 'lit-html';
 import { createHangarPreview } from './hangar-preview';
-import { detectControllerFamily, controllerButtonLabel, renderAimGlyph, renderControllerButton, renderGlyph, renderKeyboardBindings, renderZoomGlyph, type ControllerFamily, type PromptDevice } from './input-prompts';
+import { detectControllerFamily, controllerButtonLabel, renderAimGlyph, renderControllerButton, renderGlyph, renderKeyboardBindings, renderScrollGlyph, renderZoomGlyph, type ControllerFamily, type PromptDevice } from './input-prompts';
 import { refreshNavigationGlyphs } from './menu-prompts';
 import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
 import { createCombatRuntime } from './combat-runtime';
@@ -50,9 +50,10 @@ import { missionStructures, missionObjective } from './missions';
 import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
 import { dismissPilot, getPilot, hirePilot } from './pilots';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
-import { directionalControl } from './menu-focus';
-import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane, focusWorkspace, rememberWorkspaceFocus, moveWorkspaceFocus, cycleWorkspaceView } from './workspace';
-import { mountDialogLayout } from './dialog-layout';
+import { availableMenuControl, focusMenuControl, menuControls, menuScrollArea, moveMenuFocus, scrollMenu, selectMenuControl, type MenuDirection } from './menu-focus';
+import { mountChoicePicker } from './choice-picker';
+import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane, focusWorkspace, rememberWorkspaceFocus, moveWorkspaceFocus, cycleWorkspaceView, inspectWorkspacePane, workspaceBackTarget, workspaceControls, workspaceNavigationLocked } from './workspace';
+import { mountDialogLayout, stepDialogNavigation } from './dialog-layout';
 import { createEscape, escapeMessage, INTRO_FRAMES, INTRO_LINES, narrativeFrame, SADDLE_LINES, type IntroFrame } from './intro';
 
 const element = function (id: string): HTMLElement {
@@ -145,8 +146,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		return button;
 	});
 	element('weapon-bank').replaceChildren(...weaponButtons);
-	const trainingSetup = mountTrainingSetup(element('training-fit'));
-	const situationSetup = mountSituationSetup(element('situation-fit'));
+	const choicePicker = mountChoicePicker(container, abort.signal, function () {
+		screenRevision++; padInput.requireNeutral(); updateMenuHint();
+	});
+	const trainingSetup = mountTrainingSetup(element('training-fit'), choicePicker);
+	const situationSetup = mountSituationSetup(element('situation-fit'), choicePicker);
 	let situationSim: { settings: Settings; storageStatus: string; run?: { seed: number; difficulty: Difficulty } } | undefined;
 	let training: Training | undefined;
 	let escape = false;
@@ -191,6 +195,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let returnFocus: HTMLElement | undefined; let confirmedAction: (() => void) | undefined;
 	let inputMode: 'keyboard' | 'gamepad' | 'touch' = primaryPointer.matches ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
 	const defaultAimMode = function () { return inputMode === 'keyboard' ? 'pointer' : inputMode; };
+	let capture: Action | undefined;
 	let currentPad: PadInput | undefined;
 	let controllerFamily: ControllerFamily = 'generic';
 	let lastMenuTarget: HTMLElement | undefined;
@@ -202,7 +207,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const promptDevice = function (): PromptDevice { return inputMode === 'gamepad' ? controllerFamily : inputMode; };
 	const hasRefitDraft = function () { const mech = getOwnedMech(campaign); return Boolean(mech && (editor.loadout.some(function (weapon, index) { return weapon !== mech.loadout[index]; }) || editor.reserves.some(function (rounds, index) { return rounds !== mech.reserves[index]; }))); };
 	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
-	const companyNavigationReady = function () { return companyOpen() && !navigation.transitioning && editor.slot === null && !campaignConflict && !contextLost; };
+	const companyNavigationReady = function () { return companyOpen() && !navigation.transitioning && !workspaceNavigationLocked(element(navigation.screen)) && !campaignConflict && !contextLost; };
 	let lastSoundState = '';
 	const clearTouchFacing = function () { touchFacing.clear(); touchAimPointer = undefined; };
 	const resetInput = function () { touchZoom.reset(); acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); clearTouchFacing(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); clearPointerActions(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
@@ -281,28 +286,38 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const root = menu();
 		const focusedElement = document.activeElement;
 		if (root && focusedElement instanceof HTMLElement && root.contains(focusedElement) && focusedElement.matches('button, input, select, a')) lastMenuTarget = focusedElement;
-		const target = root && lastMenuTarget?.isConnected && root.contains(lastMenuTarget) && !lastMenuTarget.closest('[hidden], [inert]') && !lastMenuTarget.matches(':disabled') ? lastMenuTarget : undefined;
+		const target = root && lastMenuTarget?.isConnected && root.contains(lastMenuTarget) && availableMenuControl(lastMenuTarget) ? lastMenuTarget : undefined;
 		const onCompany = companyOpen();
-		const adjusting = target instanceof HTMLSelectElement || target instanceof HTMLInputElement && target.type === 'range';
+		const pick = root === squadOrdersRoot ? root.querySelector<HTMLElement>('.squad-map')?.dataset['pick'] : undefined;
+		const pickingOrder = pick === 'move' || pick === 'attack';
+		const slider = target instanceof HTMLInputElement && target.type === 'range';
+		const directionLabel = slider ? '↑↓ Move · ←→ Adjust' : pickingOrder && target?.matches('.squad-map-confirm')
+			? pick === 'move' ? 'Move cursor' : 'Choose target' : 'Navigate';
 		const toggling = target?.matches('input[type="checkbox"], input[type="radio"]');
-		const canSelect = target && !adjusting && (target.matches('button, a') || toggling);
-		const useArrows = root === squadOrdersRoot || onCompany || !navigation.auxiliary && ['title', 'rig-bay', 'escape-result', 'field-trial'].includes(navigation.screen);
-		const canGoBack = navigation.auxiliary ? navigation.auxiliary !== 'save-conflict'
-			: root === titlePicker || onCompany || ['intro', 'rig-bay', 'escape-result', 'pause-panel', 'training-setup', 'training-result', 'situation-setup', 'situation-result'].includes(navigation.screen);
-		const backLabel = navigation.auxiliary ? 'Back' : navigation.screen === 'pause-panel' ? 'Resume' : onCompany && editor.slot === null && !assignmentBack() ? 'Title' : 'Back';
+		const canSelect = target && (target.matches('button, a') || toggling);
+		const popoverId = root?.matches('.planet-popover:popover-open') ? root.id : nothing;
+		const companyShortcuts = onCompany && !workspaceNavigationLocked(element(navigation.screen));
+		const canGoBack = choicePicker.root || (navigation.auxiliary ? navigation.auxiliary !== 'save-conflict'
+			: root === titlePicker || onCompany || ['intro', 'rig-bay', 'escape-result', 'pause-panel', 'training-setup', 'training-result', 'situation-setup', 'situation-result'].includes(navigation.screen));
+		const backLabel = choicePicker.root || capture || pickingOrder ? 'Cancel' : navigation.auxiliary ? 'Back' : navigation.screen === 'pause-panel' ? 'Resume'
+			: companyShortcuts && !workspaceBackTarget(element(navigation.screen)) ? 'Title' : 'Back';
 		render(html`
-			${root && device !== 'touch' && focusable(root).length > 1 ? html`<span class="menu-key">${renderGlyph(device, useArrows ? 'move' : 'tabMove')}<span class="key-label">${adjusting && inputMode === 'gamepad' ? '↑↓ Move · ←→ Adjust' : 'Navigate'}</span></span>` : ''}
-			${adjusting && device === 'keyboard' ? html`<span class="menu-key">${renderGlyph(device, 'move')}<span class="key-label">Adjust</span></span>` : ''}
-			${canSelect ? html`<button class="menu-key" @click=${function () { target.click(); }}>${device === 'keyboard' && toggling ? renderKeyboardBindings(['Space']) : renderGlyph(device, 'confirm')}<span class="key-label">Select</span></button>` : ''}
-			${canGoBack ? html`<button class="menu-key" @click=${back}>${renderGlyph(device, 'back')}<span class="key-label">${backLabel}</span></button>` : ''}
-			${onCompany && editor.slot === null ? html`<button class="menu-key" @click=${function () { showAuxiliary('handbook'); }}>${renderGlyph(device, 'help')}<span class="key-label">Button guide</span></button>` : ''}
-			${onCompany && editor.slot === null && hasRefitDraft() ? html`<button class="menu-key" @click=${discardDraft}>${renderGlyph(device, 'discard')}<span class="key-label">Discard draft</span></button>` : ''}
+			${root && device !== 'touch' && !capture && menuControls(root).length > 1 ? html`<span class="menu-key">${renderGlyph(device, 'move')}<span class="key-label">${directionLabel}</span></span>` : ''}
+			${root && inputMode === 'gamepad' && !capture && menuScrollArea(root) ? html`<span class="menu-key">${renderScrollGlyph()}<span class="key-label">Scroll</span></span>` : ''}
+			${canSelect && !capture ? html`<button class="menu-key" popovertarget=${popoverId} popovertargetaction="show" @click=${function (event: MouseEvent) {
+				event.preventDefault();
+				if (root && root === menu() && availableMenuControl(target)) { focusMenuControl(target); selectMenuControl(root, target); }
+			}}>${device === 'keyboard' && toggling ? renderKeyboardBindings(['Space']) : renderGlyph(device, 'confirm')}<span class="key-label">Select</span></button>` : ''}
+			${canGoBack ? html`<button class="menu-key" popovertarget=${popoverId} popovertargetaction="show" @click=${function (event: MouseEvent) { event.preventDefault(); back(); }}>${renderGlyph(device, 'back')}<span class="key-label">${backLabel}</span></button>` : ''}
+			${companyShortcuts ? html`<button class="menu-key" @click=${function () { showAuxiliary('handbook'); }}>${renderGlyph(device, 'help')}<span class="key-label">Button guide</span></button>` : ''}
+			${companyShortcuts && hasRefitDraft() ? html`<button class="menu-key" @click=${discardDraft}>${renderGlyph(device, 'discard')}<span class="key-label">Discard draft</span></button>` : ''}
 		`, element('menu-input-hint'));
 	};
 	const setInputMode = function (value: typeof inputMode) {
 		const touchLayout = value === 'touch' || value === 'keyboard' && profile.settings.touchControls;
 		if (container.classList.contains('touch-enabled') === touchLayout && inputMode === value && container.dataset['input'] === value && container.dataset['promptDevice'] === promptDevice() && container.classList.contains('couch-ui') === (value === 'gamepad' || profile.settings.couchUI)) return;
 		if (!touchLayout) touchZoom.reset();
+		if (inputMode === 'gamepad' && value !== 'gamepad' && menu()) padInput.requireNeutral();
 		if (inputMode !== value && (value === 'touch' || inputMode === 'touch')) {
 			aimMode = value === 'keyboard' ? 'pointer' : value;
 			pointer = undefined; acquiredTargetId = undefined; clearTouchFacing();
@@ -319,7 +334,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		container.classList.toggle('couch-ui', value === 'gamepad' || profile.settings.couchUI);
 		ui.inputMode.textContent = value === 'gamepad' ? 'GAMEPAD' : value === 'touch' ? 'TOUCH' : 'KB / MOUSE';
 		render(touchLayout ? '' : renderGlyph(promptDevice(), inputMode === 'keyboard' ? 'back' : 'settings'), element('pause-prompt'));
-		for (const select of container.querySelectorAll<HTMLSelectElement>('#controller-mappings select')) for (const option of select.options) option.textContent = controllerButtonLabel(controllerFamily, Number(option.value));
+		renderControllerMappings();
 		updateMenuHint();
 		updateWorkspaceLayout(); updateDialogLayout();
 	};
@@ -340,24 +355,16 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		setInputMode(inputMode);
 	};
 	const menu = function () {
+		if (choicePicker.root) return choicePicker.root;
 		if (navigation.auxiliary) return element(navigation.auxiliary);
 		if (navigation.screen === 'title') return titleGroup ? titlePicker : titleDeck;
-		return navigation.screen === 'playing' ? undefined : element(navigation.screen);
-	};
-	const focusable = function (root: HTMLElement) {
-		return [...root.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), [tabindex="0"]')].filter(function (item) { return !item.closest('[hidden], [inert]') && item.getClientRects().length > 0; });
-	};
-	const moveMenuFocus = function (root: HTMLElement, direction: 'up' | 'down' | 'left' | 'right', preventScroll = false) {
-		const items = focusable(root);
-		const current = document.activeElement;
-		const index = items.findIndex(function (item) { return item === current; });
-		const sign = direction === 'up' || direction === 'left' ? -1 : 1;
-		const next = index < 0 ? (sign < 0 ? items.length - 1 : 0) : (index + sign + items.length) % items.length;
-		const spatial = root === titleDeck && index >= 0 && current instanceof HTMLElement ? directionalControl(items, current, direction) : undefined;
-		(spatial ?? items[next])?.focus({ preventScroll });
+		if (navigation.screen === 'playing') return undefined;
+		const screen = element(navigation.screen);
+		return navigation.screen === 'starmap' ? screen.querySelector<HTMLElement>('.planet-popover:popover-open') ?? screen : screen;
 	};
 	const syncScreen = function (focus = true) {
 		screenRevision++;
+		if (capture && navigation.auxiliary !== 'settings') { capture = undefined; renderMappings(); }
 		const ordersWasOpen = !squadOrdersRoot.hidden;
 		const practice = training?.stage === 'range';
 		element('reset').hidden = !training && !escape && !situationSim;
@@ -392,18 +399,18 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!focus) return;
 		const root = menu();
 		if (root === squadOrdersRoot) {
-			if (!root.contains(document.activeElement)) focusable(root)[0]?.focus();
+			if (!root.contains(document.activeElement)) menuControls(root)[0]?.focus();
 			updateMenuHint(); updateDialogLayout();
 			return;
 		}
-		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? element('handbook') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'title' ? titleInitial() : navigation.screen === 'intro' ? element(narrativeWaiting ? 'intro-begin' : 'intro') : navigation.screen === 'escape-result' ? element('escape-retry') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : navigation.screen === 'field-trial' ? element('field-deploy') : navigation.screen === 'training-setup' ? element('training-frame') : navigation.screen === 'training-result' ? element('result-training-loadout') : navigation.screen === 'situation-setup' ? element('situation-mission') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
+		const initial = navigation.auxiliary === 'save-conflict' ? element('reload-company') : navigation.auxiliary === 'settings' ? element('master-volume') : navigation.auxiliary === 'handbook' ? root?.querySelector<HTMLElement>('[data-dialog-tab][aria-pressed="true"]') : navigation.auxiliary === 'confirm' ? element('confirm-cancel') : navigation.screen === 'title' ? titleInitial() : navigation.screen === 'intro' ? element(narrativeWaiting ? 'intro-begin' : 'intro') : navigation.screen === 'escape-result' ? element('escape-retry') : navigation.screen === 'bridge' ? element('bridge') : navigation.screen === 'pause-panel' ? element('resume') : navigation.screen === 'result' ? element('restart') : navigation.screen === 'field-trial' ? element('field-deploy') : navigation.screen === 'training-setup' ? element('training-frame') : navigation.screen === 'training-result' ? element('result-training-loadout') : navigation.screen === 'situation-setup' ? element('situation-mission') : root?.querySelector<HTMLElement>('[aria-current="page"]') ?? root?.querySelector<HTMLElement>('button');
 		if (root?.classList.contains('workspace')) focusWorkspace(root);
-		else (initial ?? canvas).focus({ preventScroll: navigation.screen !== 'training-setup' && navigation.screen !== 'situation-setup' });
+		else focusMenuControl(initial ?? canvas);
 		updateMenuHint(); updateDialogLayout();
 	};
 	let stopped = false;
 	const transition = function (operation: Promise<void>, after: () => void = syncScreen) {
-		pauseLaunchClock();
+		choicePicker.close(false); pauseLaunchClock();
 		screenRevision++; resetInput();
 		void operation.then(function () { if (!stopped) after(); }).catch(function (error: unknown) {
 			console.error(error); const node = element('error'); node.textContent = 'Could not change screen. Reload to recover.'; node.hidden = false;
@@ -536,7 +543,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		else if (!paused && navigation.screen === 'pause-panel' && !contextLost) { aimMode = defaultAimMode(); transition(navigation.resume()); unlockSound(); }
 	};
 	const showAuxiliary = function (value: RuntimeAuxiliary) {
-		if (document.activeElement instanceof HTMLElement) returnFocus = document.activeElement;
+		const root = menu();
+		const current = document.activeElement;
+		returnFocus = current instanceof HTMLElement && root?.contains(current) ? current : lastMenuTarget;
 		transition(navigation.showAuxiliary(value));
 	};
 	const closeAuxiliary = function () {
@@ -545,8 +554,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		confirmedAction = undefined;
 		transition(navigation.closeAuxiliary(), function () {
 			syncScreen(false);
-			if (returnFocus?.isConnected) updateDialogLayout(returnFocus);
-			if (returnFocus?.isConnected && !returnFocus.closest('[hidden], [inert]')) returnFocus.focus({ preventScroll: true });
+			if (returnFocus && menu()?.contains(returnFocus)) {
+				revealWorkspaceElement(returnFocus);
+				updateDialogLayout(returnFocus);
+			}
+			if (returnFocus && menu()?.contains(returnFocus) && !returnFocus.closest('[hidden], [inert]') && !returnFocus.matches(':disabled')) focusMenuControl(returnFocus);
 			else syncScreen();
 		});
 	};
@@ -632,7 +644,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const refreshCompany = function () {
 		if (!isShipScreen(navigation.screen) || navigation.screen === 'bridge' || navigation.screen === 'starmap') return;
 		const root = element(navigation.screen); const previousFocus = document.activeElement;
-		const focusIndex = focusable(root).findIndex(function (item) { return item === previousFocus; });
+		const focusIndex = menuControls(root).findIndex(function (item) { return item === previousFocus; });
 		const operation = getPlannedOperation(campaign, editedOperation) ?? campaign.operations?.[0];
 		const lineup = operation?.lineup ?? campaign.preferredLineup ?? campaign.lineup;
 		renderCompany(root, campaign, navigation.screen, editor, campaignSaved, {
@@ -715,7 +727,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			handbook: function () { showAuxiliary('handbook'); },
 		});
 		if (focusIndex >= 0 && (!(previousFocus instanceof HTMLElement) || !previousFocus.isConnected || previousFocus.matches(':disabled'))) {
-			const items = focusable(root); items[Math.min(focusIndex, items.length - 1)]?.focus({ preventScroll: true });
+			const items = menuControls(root); items[Math.min(focusIndex, items.length - 1)]?.focus({ preventScroll: true });
 		}
 	};
 	const refreshCampaign = function () {
@@ -749,14 +761,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				destination = id; selectedContract = undefined;
 				refreshCampaign();
 			},
-			selectContract: function (id) {
+			selectContract: function (id, opener) {
 				if (getTransmission(campaign)?.offers.some(function (step) { return step.contract.id === id; })) destination = campaign.planetId;
 				selectedContract = id;
 				refreshCampaign();
 				const bridge = element('bridge');
-				selectWorkspacePane(bridge, 'briefing', true);
-				const briefing = bridge.querySelector('[data-pane="briefing"]');
-				(briefing?.querySelector<HTMLElement>('.pane-actions button:not(:disabled)') ?? briefing?.querySelector<HTMLElement>('.paged-content'))?.focus({ preventScroll: true });
+				inspectWorkspacePane(bridge, 'briefing', opener);
 			},
 			plotStoryCourse: function (planet) {
 				if (campaign.active) return;
@@ -846,7 +856,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		toTitle('title-situation');
 	};
 	const back = function () {
-		if (navigation.transitioning) return;
+		if (navigation.transitioning || choicePicker.close()) return;
+		if (capture) { cancelKeyCapture(); return; }
 		if (navigation.auxiliary === 'squad-orders') { backFromSquadOrders(); return; }
 		if (navigation.auxiliary) { closeAuxiliary(); return; }
 		if (navigation.screen === 'title' && titleGroup) {
@@ -869,15 +880,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (navigation.screen === 'training-setup' || navigation.screen === 'training-result') { leaveTraining(); return; }
 		if (navigation.screen === 'situation-setup') { leaveSituation(); return; }
 		if (navigation.screen === 'situation-result') { showSituationSetup(); return; }
+		const detailBack = companyOpen() && workspaceBackTarget(element(navigation.screen));
+		if (detailBack) { detailBack(); return; }
 		if (isShipScreen(navigation.screen)) { confirm(toTitle, 'RETURN TO TITLE', hasRefitDraft() ? 'Company progress is saved. Your unqueued refit draft is kept while this session remains open.' : 'Company progress is saved on this device.', 'RETURN TO TITLE?'); return; }
 		setPaused(navigation.screen === 'playing');
 	};
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
-	// Touch and the shared Select prompt can activate a button without focusing it.
-	// Remember the actual title action before an auxiliary captures its return focus.
-	element('title').addEventListener('click', function (event) {
-		if (event.target instanceof Element) event.target.closest('button')?.focus({ preventScroll: true });
-	}, { signal: abort.signal, capture: true });
 	for (const group of ['company', 'simulator'] as const) {
 		listen(`title-${group}`, function () {
 			setTitleGroup(group);
@@ -989,7 +997,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	}, listenerOptions);
 	for (const id of ['pause-settings']) listen(id, function () { showAuxiliary('settings'); });
 	for (const id of ['pause-controls']) listen(id, function () { showAuxiliary('handbook'); });
-	let capture: Action | undefined;
 	const renderMappings = function () {
 		const root = element('keyboard-mappings'); const focusedAction = root.querySelector('button:focus')?.getAttribute('data-action'); root.replaceChildren();
 		for (const action of ACTIONS) {
@@ -1000,22 +1007,42 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			button.addEventListener('click', function () { capture = action; renderMappings(); }); root.append(button); if (capture === action || focusedAction === action) button.focus();
 		}
 	};
+	const cancelKeyCapture = function () {
+		if (!capture) return;
+		capture = undefined; renderMappings(); updateMenuHint();
+	};
+	element('settings').addEventListener('focusin', function (event) {
+		if (event.target instanceof HTMLElement && event.target.dataset['action'] !== capture) cancelKeyCapture();
+	}, listenerOptions);
 	const assignKey = function (code: string) {
 		if (!capture) return;
 		for (const action of ACTIONS) profile.settings.keyboard[action] = profile.settings.keyboard[action].filter(function (key) { return key !== code; });
 		profile.settings.keyboard[capture] = [code]; capture = undefined; resetInput(); save(); renderMappings();
 	};
-	element('keyboard-mappings').addEventListener('mousedown', function (event) { if (capture && navigation.auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); event.stopPropagation(); consumedMouseButtons.add(event.button); assignKey(`Mouse${event.button}`); } }, listenerOptions);
-	element('controller-mappings').replaceChildren();
-	for (const action of ['target-nearest', 'target-next', 'stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) {
-		const label = document.createElement('label'); label.textContent = `${LABELS[action]} `;
-		const select = document.createElement('select'); select.dataset['mapping'] = action;
-		for (let index = 1; index <= 17; index++) { if (index === 9) continue; const option = document.createElement('option'); option.value = String(index); option.textContent = controllerButtonLabel(controllerFamily, index); select.append(option); }
-		select.value = String(profile.settings.controller[action]);
-		select.addEventListener('change', function () { const previous = profile.settings.controller[action]; const next = Number(select.value); for (const other of ['target-nearest', 'target-next', 'stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const) if (other !== action && profile.settings.controller[other] === next) profile.settings.controller[other] = previous; profile.settings.controller[action] = next; resetInput(); save(); syncControllerMappings(); }, listenerOptions);
-		label.append(select); element('controller-mappings').append(label);
-	}
-	const syncControllerMappings = function () { for (const select of element('controller-mappings').querySelectorAll('select')) { const action = select.dataset['mapping']; if (action === 'target-nearest' || action === 'target-next' || action === 'stop' || action === 'coolant' || action === 'mount-0' || action === 'mount-1' || action === 'mount-2' || action === 'mount-3') select.value = String(profile.settings.controller[action]); } updateMenuHint(); };
+	element('keyboard-mappings').addEventListener('mousedown', function (event) {
+		const row = event.target instanceof Element ? event.target.closest<HTMLElement>('button[data-action]') : null;
+		if (!capture || row?.dataset['action'] !== capture || navigation.auxiliary !== 'settings') return;
+		event.preventDefault(); event.stopPropagation(); consumedMouseButtons.add(event.button); assignKey(`Mouse${event.button}`);
+	}, listenerOptions);
+	const controllerActions = ['target-nearest', 'target-next', 'stop', 'coolant', 'mount-0', 'mount-1', 'mount-2', 'mount-3'] as const;
+	const assignableButtons = Array.from({ length: 17 }, function (_, index) { return index + 1; }).filter(function (index) { return index !== 9; });
+	const renderControllerMappings = function () {
+		render(controllerActions.map(function (action) {
+			const options = assignableButtons.map(function (index) {
+				const assigned = controllerActions.filter(function (other) { return other !== action && profile.settings.controller[other] === index; });
+				return { value: index, label: controllerButtonLabel(controllerFamily, index), detail: assigned.length ? `Swap with ${assigned.map(function (other) { return LABELS[other]; }).join(', ')}` : '' };
+			});
+			return choicePicker.field(`mapping-${action}`, LABELS[action], profile.settings.controller[action], options, function (next) {
+				const previous = profile.settings.controller[action];
+				for (const other of controllerActions) {
+					if (other !== action && profile.settings.controller[other] === next) profile.settings.controller[other] = previous;
+				}
+				profile.settings.controller[action] = next;
+				resetInput(); save(); syncControllerMappings();
+			});
+		}), element('controller-mappings'));
+	};
+	const syncControllerMappings = function () { renderControllerMappings(); updateMenuHint(); };
 	element('control-mode').addEventListener('click', function () {
 		profile.settings.controlMode = profile.settings.controlMode === 'arcade' ? 'simulation' : 'arcade'; capture = undefined; resetInput(); aimMode = defaultAimMode(); save(); renderMappings(); updateSettings();
 	}, listenerOptions);
@@ -1171,13 +1198,41 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	container.addEventListener('focusin', function (event) { if (event.target instanceof HTMLElement && !event.target.closest('.menu-controls')) updateMenuHint(); }, listenerOptions);
 	container.addEventListener('workspacechange', updateMenuHint, listenerOptions);
+	const stepMenu = function (root: HTMLElement, section: 'topic' | 'page', delta: number) {
+		if (root === squadOrdersRoot && section === 'topic') return squadOrders.stepContact(delta);
+		if (root.classList.contains('modal')) return stepDialogNavigation(root, section, delta);
+		if (!root.classList.contains('workspace') || !companyNavigationReady() || !isShipScreen(navigation.screen)) return false;
+		if (section === 'topic') navigateShip(adjacentShipScreen(navigation.screen, delta));
+		else cycleWorkspaceView(root, delta);
+		return true;
+	};
+	const directMenu = function (root: HTMLElement, direction: MenuDirection) {
+		if (root === squadOrdersRoot && squadOrders.moveCursor(direction)) return;
+		const current = document.activeElement;
+		if ((direction === 'left' || direction === 'right') && current instanceof HTMLInputElement && current.type === 'range' && root.contains(current)) {
+			const steps = inputMode === 'gamepad' ? 5 : 1;
+			if (direction === 'right') current.stepUp(steps); else current.stepDown(steps);
+			current.dispatchEvent(new Event('input', { bubbles: true }));
+		} else if (root.classList.contains('workspace')) moveWorkspaceFocus(root, direction);
+		else moveMenuFocus(root, direction);
+		if (current !== document.activeElement) audio.cue('focus');
+	};
 	const rigCode = ['ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
 	let rigCodeInput: string[] = [];
 	window.addEventListener('keydown', function (event) {
 		if (rigTestEnabled && event.target instanceof Element && event.target.closest('#rig-test-panel')) return;
 		if (capture) rigCodeInput = [];
 		setInputMode('keyboard'); if (event.isTrusted) unlockSound();
-		if (capture && navigation.auxiliary === 'settings' && !element('keyboard-mappings').closest('[hidden], [inert]')) { event.preventDefault(); if (event.code === 'Escape') { capture = undefined; renderMappings(); } else if (!event.repeat && validKey(event.code)) assignKey(event.code); return; }
+		if (capture) {
+			const row = document.activeElement;
+			if (navigation.auxiliary === 'settings' && row instanceof HTMLElement && row.dataset['action'] === capture && availableMenuControl(row)) {
+				event.preventDefault();
+				if (event.code === 'Escape') { if (!event.repeat) cancelKeyCapture(); }
+				else if (!event.repeat && validKey(event.code)) assignKey(event.code);
+				return;
+			}
+			cancelKeyCapture();
+		}
 		if (capture || navigation.auxiliary || campaignConflict || trialSeed !== undefined || situationSim || training || navigation.screen === 'training-setup' || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLElement && event.target.isContentEditable) {
 			rigCodeInput = [];
 		} else if (!event.repeat) {
@@ -1189,35 +1244,32 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		}
 		if (event.code === 'Escape') { event.preventDefault(); if (!event.repeat) back(); return; }
 		const root = menu();
-		if (root?.classList.contains('workspace') && companyOpen()) {
-			if (['KeyQ', 'KeyE', 'KeyZ', 'KeyC', 'KeyH', 'KeyX', 'F1'].includes(event.code)) {
+		if (root) {
+			const direction = event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down'
+				: event.code === 'ArrowLeft' ? 'left' : event.code === 'ArrowRight' ? 'right' : undefined;
+			if (direction) { event.preventDefault(); directMenu(root, direction); return; }
+			if (['KeyQ', 'KeyE', 'KeyZ', 'KeyC'].includes(event.code)) {
 				event.preventDefault();
-				if (!event.repeat && companyNavigationReady() && isShipScreen(navigation.screen)) {
-					if (event.code === 'KeyQ' || event.code === 'KeyE') navigateShip(adjacentShipScreen(navigation.screen, event.code === 'KeyQ' ? -1 : 1));
-					else if (event.code === 'KeyZ' || event.code === 'KeyC') cycleWorkspaceView(root, event.code === 'KeyZ' ? -1 : 1);
-					else if (event.code === 'KeyH') showAuxiliary('handbook');
+				if (!event.repeat) stepMenu(root, event.code === 'KeyQ' || event.code === 'KeyE' ? 'topic' : 'page', event.code === 'KeyQ' || event.code === 'KeyZ' ? -1 : 1);
+				return;
+			}
+			if (companyNavigationReady() && ['KeyH', 'F1', 'KeyX'].includes(event.code)) {
+				event.preventDefault();
+				if (!event.repeat) {
+					if (event.code === 'KeyH') showAuxiliary('handbook');
 					else if (event.code === 'F1') showAuxiliary('settings');
-					else if (event.code === 'KeyX' && hasRefitDraft()) discardDraft();
+					else if (hasRefitDraft()) discardDraft();
 				}
 				return;
 			}
-			const direction = event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down' : event.code === 'ArrowLeft' ? 'left' : event.code === 'ArrowRight' ? 'right' : undefined;
-			if (direction) { event.preventDefault(); moveWorkspaceFocus(root, direction); audio.cue('focus'); return; }
-		}
-		if (root && (root === squadOrdersRoot || !navigation.auxiliary && ['title', 'rig-bay', 'escape-result', 'field-trial'].includes(navigation.screen))) {
-			const direction = event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down' : event.code === 'ArrowLeft' ? 'left' : event.code === 'ArrowRight' ? 'right' : undefined;
-			if (direction) {
-				event.preventDefault();
-				if (root !== squadOrdersRoot || !squadOrders.moveCursor(direction)) {
-					moveMenuFocus(root, direction);
-				}
-				audio.cue('focus'); return;
+			if (event.code === 'Enter' && event.target instanceof HTMLInputElement && event.target.matches('[type="radio"], [type="checkbox"]')) {
+				event.preventDefault(); if (!event.repeat) event.target.click(); return;
 			}
 		}
 		// Purchases and work orders require a fresh confirmation press.
 		if (root && event.repeat && (event.code === 'Enter' || event.code === 'Space')) { event.preventDefault(); return; }
 		if (root && event.code === 'Tab') {
-			const items = focusable(root); const first = items[0]; const last = items.at(-1);
+			const items = root.classList.contains('workspace') ? workspaceControls(root) : menuControls(root); const first = items[0]; const last = items.at(-1);
 			if (event.shiftKey && (document.activeElement === first || !root.contains(document.activeElement))) { event.preventDefault(); last?.focus(); }
 			else if (!event.shiftKey && (document.activeElement === last || !root.contains(document.activeElement))) { event.preventDefault(); first?.focus(); }
 			return;
@@ -1228,16 +1280,42 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		event.preventDefault(); if (action === 'target-nearest' || action === 'target-next') { if (!event.repeat) selectTarget(action === 'target-nearest' ? 'nearest' : 'cycle'); return; } if (event.repeat && !keys.has(event.code)) return; keys.add(event.code); if (!event.repeat) pending.add(action);
 	}, listenerOptions);
 	window.addEventListener('keyup', function (event) { const action = keyboardAction(event.code); if (action) keys.delete(event.code); }, listenerOptions);
+	let menuPointer: { id: number; device: 'touch' | 'keyboard'; control: Element } | undefined;
+	const finishMenuPointer = function () {
+		if (!menuPointer) return;
+		const { device } = menuPointer;
+		menuPointer = undefined;
+		setInputMode(device);
+	};
 	container.addEventListener('pointerdown', function (event) {
 		if (event.isTrusted) unlockSound();
 		// The battlefield picks the displayed scene before a touch reveals its dock.
 		if (event.target === canvas && event.pointerType === 'touch') return;
-		const touchControl = event.target instanceof Element && event.target.closest('#touch, .touch-combat-utilities');
-		setInputMode(event.pointerType === 'touch' || touchControl ? 'touch' : 'keyboard');
+		const target = event.target instanceof Element ? event.target : undefined;
+		const device = event.pointerType === 'touch' || target?.closest('#touch, .touch-combat-utilities') ? 'touch' : 'keyboard';
+		const control = target?.closest('button, input, select, a, label');
+		menuPointer = undefined;
+		// Changing the couch layout between down and up can move a different row
+		// under the pointer. Let a tap finish against the layout the player saw.
+		if (device !== inputMode && control && menu() && event.button === 0) {
+			menuPointer = { id: event.pointerId, device, control }; return;
+		}
+		setInputMode(device);
 	}, { ...listenerOptions, capture: true });
 	container.addEventListener('click', function (event) {
-		if (!(event.target instanceof Element) || !event.target.closest('button') || !menu()) return;
-		audio.cue(event.target.closest('#close-settings, #close-handbook, #confirm-cancel') ? 'back' : 'confirm');
+		if (event.isTrusted && event.detail > 0) finishMenuPointer();
+	}, listenerOptions);
+	window.addEventListener('pointercancel', function (event) { if (menuPointer?.id === event.pointerId) finishMenuPointer(); }, listenerOptions);
+	window.addEventListener('pointerup', function (event) {
+		if (menuPointer?.id === event.pointerId && (!(event.target instanceof Node) || !menuPointer.control.contains(event.target))) finishMenuPointer();
+	}, listenerOptions);
+	container.addEventListener('click', function (event) {
+		const button = event.target instanceof Element ? event.target.closest('button') : null;
+		const root = menu();
+		if (!button || !root) return;
+		// Some touch browsers activate a button without giving it focus.
+		if (event.detail > 0 && root.contains(button) && document.activeElement !== button) button.focus({ preventScroll: true });
+		audio.cue(button.matches('#close-settings, #close-handbook, #confirm-cancel') ? 'back' : 'confirm');
 	}, { ...listenerOptions, capture: true });
 	window.addEventListener('pagehide', checkpoint, listenerOptions);
 	window.addEventListener('blur', function () { checkpoint(); focused = false; padInput.suspend(); resetInput(); setPaused(true); }, listenerOptions);
@@ -1515,7 +1593,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			else startEscape();
 		}
 	});
-	world.addSystem('browser-input').inPhase('preUpdate').setProcess(function () {
+	world.addSystem('browser-input').inPhase('preUpdate').setProcess(function ({ dt }) {
 		const now = frameTime;
 		if (!navigation.transitioning && navigation.screen === 'jump' && focused && !document.hidden && jumpArrival && now >= jumpArrival.until) {
 			const { transmission } = jumpArrival;
@@ -1547,34 +1625,29 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			status.hidden = pad.connected || !pad.available && !controllerLost;
 			if (status.textContent !== controllerStatus) status.textContent = controllerStatus;
 		}
-		if (pad.pause && focused && !document.hidden && !contextLost) { audio.cue('back'); if (navigation.auxiliary === 'squad-orders') backFromSquadOrders(); else if (navigation.auxiliary) closeAuxiliary(); else if (companyNavigationReady()) showAuxiliary('settings'); else setPaused(navigation.screen === 'playing'); }
+		if (pad.pause && !navigation.transitioning && focused && !document.hidden && !contextLost) {
+			audio.cue('back');
+			if (choicePicker.root || capture || navigation.auxiliary) back();
+			else if (companyNavigationReady()) showAuxiliary('settings');
+			else setPaused(navigation.screen === 'playing');
+			return;
+		}
 		const root = menu();
-		if (root && !navigation.transitioning && pad.connected && screenRevision === revisionAtFrame && focused && !document.hidden && !contextLost) {
-			if (companyNavigationReady() && isShipScreen(navigation.screen)) {
-				if (pad.department) { navigateShip(adjacentShipScreen(navigation.screen, pad.department)); return; }
-				if (pad.page) { cycleWorkspaceView(root, pad.page); padInput.requireNeutral(); return; }
-				if (pad.help) { showAuxiliary('handbook'); return; }
-				if (pad.discard && hasRefitDraft()) { discardDraft(); return; }
-			}
-			const movedOrderCursor = root === squadOrdersRoot && pad.direction && squadOrders.moveCursor(pad.direction);
-			if (pad.navigate && !movedOrderCursor) {
-				const focusedElement = document.activeElement;
-				if (pad.adjust && focusedElement instanceof HTMLSelectElement) {
-					const enabled = [...focusedElement.options].filter(function (option) { return !option.disabled; });
-					const index = enabled.findIndex(function (option) { return option.index === focusedElement.selectedIndex; });
-					const next = enabled[(index + pad.adjust + enabled.length) % enabled.length];
-					if (next) { focusedElement.value = next.value; focusedElement.dispatchEvent(new Event('change', { bubbles: true })); }
-				} else if (pad.adjust && focusedElement instanceof HTMLInputElement && focusedElement.type === 'range') {
-					focusedElement.value = String(Math.max(Number(focusedElement.min), Math.min(Number(focusedElement.max), Number(focusedElement.value) + pad.adjust * 5)));
-					focusedElement.dispatchEvent(new Event('input', { bubbles: true }));
-				} else if (root.classList.contains('workspace') && pad.direction) { moveWorkspaceFocus(root, pad.direction);
-				} else if (pad.direction) {
-					moveMenuFocus(root, pad.direction, root !== squadOrdersRoot && root !== titlePicker && navigation.screen !== 'training-setup' && navigation.screen !== 'situation-setup');
+		if (root && !navigation.transitioning && inputMode === 'gamepad' && pad.connected && screenRevision === revisionAtFrame && focused && !document.hidden && !contextLost) {
+			if (pad.back) { audio.cue('back'); back(); return; }
+			if (capture) return;
+			if (pad.department && stepMenu(root, 'topic', pad.department)) return;
+			if (pad.page && stepMenu(root, 'page', pad.page)) return;
+			if (pad.help && companyNavigationReady()) { showAuxiliary('handbook'); return; }
+			if (pad.discard && companyNavigationReady() && hasRefitDraft()) { discardDraft(); return; }
+			if (pad.direction) directMenu(root, pad.direction);
+			else if (pad.confirm) {
+				const current = document.activeElement;
+				if (!(current instanceof HTMLElement) || !selectMenuControl(root, current)) {
+					if (root.classList.contains('workspace')) focusWorkspace(root);
+					else { const first = menuControls(root)[0]; if (first) focusMenuControl(first); }
 				}
-				audio.cue('focus');
-			}
-			if (pad.confirm && document.activeElement instanceof HTMLElement && root.contains(document.activeElement)) document.activeElement.click();
-			if (pad.back && screenRevision === revisionAtFrame) { audio.cue('back'); back(); }
+			} else if (pad.scroll) scrollMenu(root, pad.scroll, dt);
 		}
 		const combatInput = playing() && screenRevision === revisionAtFrame;
 		if (combatInput && pad.ready && pad.confirm) presentation.toggleWideView();
