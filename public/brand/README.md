@@ -1,5 +1,11 @@
 # Heavy Rig title artwork
 
+## DeeGee Games studio mark
+
+`deegee-mark-small.svg` is the original small-size DG mark from the studio's
+brand pack (`deegee-brand/svg/favicon.svg`). The title uses it alongside the
+studio name at 20–24 CSS pixels.
+
 ## Field Standard logo
 
 `heavy-rig.png` is the approved Field Standard revision with closer hip attachments,
