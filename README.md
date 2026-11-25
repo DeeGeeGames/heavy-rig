@@ -158,7 +158,7 @@ replenishes ammunition in combat.
 
 ## Contracts and surface missions
 
-The Starmap charts **75 seeded systems** across the Wayfarer Reach. The Frontier
+The Starmap charts **79 systems** across the Wayfarer Reach. The Frontier
 Freeholds, Ferric Combine, and Signal Accord hold contiguous territories with
 irregular borders; outer systems can remain unclaimed. Select a star to inspect
 its controller, biome, and conflict status. Orange dashed rings mark conflict
@@ -262,11 +262,16 @@ smaller mission rosters, and defense reinforcements leave more time after heavy
 contacts. Frontal armor still rewards flanking and siege cooling windows.
 
 Campaign and Career contracts generate fields 4,200–4,800 by 3,450–4,140 meters.
-The contract seed places the drop, objectives, pickup, and two marked crossings.
-The crossings offer direct and flanking routes through volcanic fissures, badlands
-canyons, and tundra crevasses. Ground rigs must drive around the cuts, while fire
-can cross them. Buildings and tundra conifers give ground units cover and can
-interrupt missile tracking. Radar draws the terrain footprints and routes.
+Each system has a fixed biome. The contract seed places the drop, objectives,
+pickup and terrain. Badlands canyons, volcanic fissures and tundra crevasses
+have two marked crossings. Brackwater's tidal wetlands have deep channels and
+levees. Elderholt's old-growth forest has logging roads through stands of giant
+trees. Galeward's wind steppe has open grassland and scattered turbine bases.
+Iolith's crystal barrens have branching pockets of quartz, with short ridges
+and isolated spires along the survey tracks.
+Shots can cross open cuts and water. Solid cover can interrupt missile tracking.
+Radar shows obstacles and routes. Situation Sim offers all seven mission types
+in each biome.
 Defense drops the squad near the relay and brings in waves. Clearance, Raid,
 and Acquisition spread their sites across the field.
 

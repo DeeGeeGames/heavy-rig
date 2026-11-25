@@ -1,5 +1,6 @@
 import { html, nothing, render } from 'lit-html';
 import { styleMap } from 'lit-html/directives/style-map.js';
+import { terrainMapColors } from './terrain-map-colors';
 import type { SquadOrderChange } from './combat-runtime';
 import { EXTRACTION_RADIUS, CAPTURE_RADIUS, isPriorityTarget } from './missions';
 import { ARENA, combatTargets, distance, squadMoveDestinations, type CombatStateView, type FireDiscipline, type Point, type Squadmate, type SquadOrder } from './simulation';
@@ -95,8 +96,8 @@ const paintGround = function (ctx: CanvasRenderingContext2D, state: CombatStateV
 		const at = project(projection, { x: obstacle.x - obstacle.width / 2, y: obstacle.y - obstacle.depth / 2 });
 		const width = obstacle.width * projection.scale;
 		const depth = obstacle.depth * projection.scale;
-		ctx.fillStyle = obstacle.kind === 'fissure' ? '#372c2a' : obstacle.kind === 'tree' ? '#577b64' : '#5a6d61';
-		ctx.strokeStyle = obstacle.kind === 'fissure' ? '#a17c67' : '#92ad96';
+		const [fill, edge] = terrainMapColors(obstacle.kind, map?.biome);
+		ctx.fillStyle = fill; ctx.strokeStyle = edge;
 		ctx.fillRect(at.x, at.y, width, depth);
 		ctx.strokeRect(at.x, at.y, width, depth);
 	}

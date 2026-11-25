@@ -3,8 +3,12 @@ import type { Point } from './simulation';
 import type { FieldTerrain } from './field-terrain';
 
 export type FactionId = 'freeholds' | 'combine' | 'accord';
-export type PlanetId = 'meridian' | 'cinder' | 'borealis' | `system-${number}`;
-export type Biome = 'badlands' | 'volcanic' | 'tundra';
+export type PlanetId = 'meridian' | 'cinder' | 'borealis' | 'brackwater' | 'elderholt' | 'galeward' | 'iolith' | `system-${number}`;
+export const BIOME_NAMES = {
+	badlands: 'Badlands', volcanic: 'Volcanic', tundra: 'Tundra', wetlands: 'Tidal wetlands',
+	forest: 'Old-growth forest', steppe: 'Wind steppe', crystal: 'Crystal barrens',
+} as const;
+export type Biome = keyof typeof BIOME_NAMES;
 export type MissionKind = 'defend' | 'demolition' | 'assassination' | 'clearance' | 'raid' | 'recovery' | 'acquisition';
 
 export const MISSION_NAMES: Readonly<Record<MissionKind, string>> = {

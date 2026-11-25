@@ -181,7 +181,7 @@ export const createWorldObjects = function (scene: Scene) {
 			for (const group of source.art) group.visible = terrain === undefined;
 			return terrain;
 		},
-		update: function (state: CombatStateView, frameEffects?: FrameEffects, landingShadows?: readonly (Point | undefined)[]) {
+		update: function (state: CombatStateView, frameEffects?: FrameEffects, landingShadows?: readonly (Point | undefined)[], sceneryTime = state.time) {
 			if (disposed) return;
 			weaponVfx.updateTime(state.time);
 			weaponVfx.updateAfterglows(state);
@@ -194,7 +194,7 @@ export const createWorldObjects = function (scene: Scene) {
 			yard.visible = !state.mission;
 			relay.visible = !state.mission || state.mission.contract.kind === 'defend';
 			relay.position.set(state.mission?.map.objective.x ?? ARENA.relayX, 0, state.mission?.map.objective.y ?? ARENA.relayY);
-			if (state.mission) missionEnvironment?.update(state.mission, state.time);
+			if (state.mission) missionEnvironment?.update(state.mission, sceneryTime);
 			const muzzles = frameEffects?.muzzles ?? [];
 			beaconSurface.color.set(state.relay < 30 ? '#ff865e' : '#b9fff0');
 			beacon.scale.setScalar(4 + Math.sin(state.time * 2.4) * 0.6);

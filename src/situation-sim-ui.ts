@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
-import { CONTRACT_COPY, getPlanet, MISSION_KINDS } from './campaign';
-import { MISSION_NAMES } from './campaign-types';
+import { CONTRACT_COPY, MISSION_KINDS, PLANETS } from './campaign';
+import { BIOME_NAMES, MISSION_NAMES } from './campaign-types';
 import { PLAYABLE_FRAMES } from './frames';
 import { getPilot, RECRUIT_IDS, SQUAD_SIZE } from './pilots';
 import { MISSION_TIERS } from './reputation';
@@ -19,10 +19,9 @@ const select = function <T extends string | number | null>(id: string, label: st
 };
 
 const missions = MISSION_KINDS.map(function (kind) { return { value: kind, label: MISSION_NAMES[kind] }; });
-const locations = (['meridian', 'cinder', 'borealis'] as const).map(function (id) {
-	const { name, biome } = getPlanet(id);
-	return { value: id, label: `${name} · ${biome}` };
-});
+const locations = PLANETS.filter(function (world) {
+	return !world.id.startsWith('system-');
+}).map(function ({ id, name, biome }) { return { value: id, label: `${name} · ${BIOME_NAMES[biome]}` }; });
 const tiers = MISSION_TIERS.map(function ({ tier, name }) { return { value: tier, label: `${tier} · ${name}` }; });
 const frames = PLAYABLE_FRAMES.map(function ({ id, name }) { return { value: id, label: name }; });
 

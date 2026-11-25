@@ -5,6 +5,7 @@ import { ENEMY_RADIUS, RIG_RADIUS } from './combat-spatial';
 import { SQUAD_SIZE } from './pilots';
 import { isAuthoredContract } from './contract-chains';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
+import { createBiomeLayout, type TerrainMap } from './biome-layout';
 import type { Contract, Landmark, MissionMap, MissionRuntime, MissionStructure } from './campaign-types';
 import type { EnemyKind, Point, CombatStateView } from './simulation';
 
@@ -109,17 +110,64 @@ export const missionSpawn = function (contract: Contract, map: MissionMap, index
 	return { ...at, kind, ...(commander ? { commander: true } : {}), ...(frameId ? { frameId } : {}), ...(!legacy ? { formation } : {}) };
 };
 
+const missionCover = function (contract: Contract, map: TerrainMap, lanes = map.terrain.roads) {
+	const obstacles = [...map.terrain.obstacles];
+	const slots = Array.from({ length: SQUAD_SIZE - 1 }, function (_, index) { return missionDeploymentSlot(map, index); });
+	const guards = Array.from({ length: missionHostileCount(contract) }, function (_, index) { return missionSpawn(contract, map, index); });
+
+	// Keep a rig-sized passage between pieces of cover; reserve deployment,
+	// capture and extraction circles, patrols and the full width of each road.
+	const addCover = function (candidate: TerrainObstacle) {
+		const footprint = { obstacles: [candidate] };
+		const footing = obstacles.every(function (other) {
+			return Math.abs(other.x - candidate.x) > (other.width + candidate.width) / 2 + 60
+				|| Math.abs(other.y - candidate.y) > (other.depth + candidate.depth) / 2 + 60;
+		});
+		if (!footing || !terrainPointClear(footprint, map.drop, 138)
+			|| !terrainPointClear(footprint, map.extraction, EXTRACTION_RADIUS + RIG_RADIUS)
+			|| map.sites.some(function (site) { return !terrainPointClear(footprint, site, 140); })
+			|| guards.some(function (guard) { return !terrainPointClear(footprint, guard, ENEMY_RADIUS); })
+			|| slots.some(function (slot) { return !terrainPathClear(footprint, slot, map.drop, RIG_RADIUS); })
+			|| lanes.some(function (lane) {
+				return lane.some(function (at, i) { const before = lane[i - 1]; return before && !terrainPathClear(footprint, before, at, 45); });
+			})) return;
+		obstacles.push(candidate);
+	};
+	return { obstacles, addCover };
+};
+
+const addLandmarks = function (map: TerrainMap, obstacles: readonly TerrainObstacle[], random: () => number): MissionMap {
+	const terrain = { obstacles, roads: map.terrain.roads };
+	const landmarks: Landmark[] = [];
+	const reserved = [map.drop, map.extraction, ...map.sites];
+	const between = function (min: number, max: number) { return Math.round(min + random() * (max - min)); };
+	for (let i = 0; i < 180 && landmarks.length < 56; i++) {
+		const at = { x: between(160, map.width - 160), y: between(160, map.height - 160) };
+		const radius = between(35, 135);
+		if (reserved.some(function (site) { return separation(at, site) < radius + 155; })
+			|| !terrainPointClear(terrain, at, radius)) continue;
+		landmarks.push({ ...at, radius, rotation: random() * Math.PI * 2, kind: i % 7 === 0 ? 'depot' : i % 3 === 0 ? 'crater' : 'rocks' });
+	}
+	return { ...map, landmarks, terrain };
+};
+
 export const generateMissionMap = function (contract: Contract): MissionMap {
 	const dimensions = randomSource(contract.seed);
 	const width = 4200 + Math.floor(dimensions() * 3) * 300;
 	const height = Math.round((3000 + Math.floor(dimensions() * 3) * 300) * 1.15);
 	const biome = getPlanet(contract.planetId).biome;
+	const random = randomSource(Math.imul(contract.seed, 0x9e3779b1) + 0x43494e44);
+	const between = function (min: number, max: number) { return Math.round(min + random() * (max - min)); };
+	if (biome !== 'badlands' && biome !== 'volcanic' && biome !== 'tundra') {
+		const { map, cover } = createBiomeLayout(biome, contract, width, height, hasMultipleSites(contract.kind), between);
+		const { obstacles, addCover } = missionCover(contract, map);
+		for (const feature of cover) addCover(feature);
+		return addLandmarks(map, obstacles, random);
+	}
 	// Shared Cinder Recovery seeds retain the survey orientation from the trial.
 	const eastWestCut = (contract.planetId !== 'cinder' || contract.kind !== 'recovery') && dimensions() < .5;
 	const acrossSpan = eastWestCut ? height : width;
 	const alongSpan = eastWestCut ? width : height;
-	const random = randomSource(Math.imul(contract.seed, 0x9e3779b1) + 0x43494e44);
-	const between = function (min: number, max: number) { return Math.round(min + random() * (max - min)); };
 	const across = random() < .5 ? -1 : 1;
 	const along = random() < .5 ? -1 : 1;
 	const acrossOrigin = acrossSpan / 2 + between(-220, 220);
@@ -182,31 +230,9 @@ export const generateMissionMap = function (contract: Contract): MissionMap {
 	] : crossingRoads;
 	if (multiSite) roads.push([serviceFork, nearSite], [objective, farSite]);
 	const lanes = defense ? roads : [...roads, [serviceFork, extraction]];
-	const map: MissionMap = { seed: contract.seed, biome, width, height, drop, objective, extraction, sites,
+	const map: TerrainMap = { seed: contract.seed, biome, width, height, drop, objective, extraction, sites,
 		landmarks: [], terrain: { obstacles: cuts, roads } };
-	const slots = Array.from({ length: SQUAD_SIZE - 1 }, function (_, index) { return missionDeploymentSlot(map, index); });
-	const guards = Array.from({ length: missionHostileCount(contract) }, function (_, index) { return missionSpawn(contract, map, index); });
-
-	// The cut is a row of disjoint holes, with open crossings and open ends.
-	// Keep isolated building footprints (including rig clearance), and reserve
-	// pads, formation slots and every advertised route before adding cover.
-	const obstacles = [...cuts];
-	const addCover = function (building: TerrainObstacle) {
-		const footprint = { obstacles: [building], roads: [] };
-		const footing = obstacles.every(function (other) {
-			return Math.abs(other.x - building.x) > (other.width + building.width) / 2 + 60
-				|| Math.abs(other.y - building.y) > (other.depth + building.depth) / 2 + 60;
-		});
-		if (!footing || !terrainPointClear(footprint, drop, 138)
-			|| !terrainPointClear(footprint, extraction, EXTRACTION_RADIUS + RIG_RADIUS)
-			|| sites.some(function (site) { return !terrainPointClear(footprint, site, 140); })
-			|| guards.some(function (guard) { return !terrainPointClear(footprint, guard, ENEMY_RADIUS); })
-			|| slots.some(function (slot) { return !terrainPathClear(footprint, slot, drop, RIG_RADIUS); })
-			|| lanes.some(function (lane) {
-				return lane.some(function (at, i) { const before = lane[i - 1]; return before && !terrainPathClear(footprint, before, at, 45); });
-			})) return;
-		obstacles.push(building);
-	};
+	const { obstacles, addCover } = missionCover(contract, map, lanes);
 	for (const building of buildings) addCover(building);
 	// Keep cover on the approaches even when objective and spawn reservations
 	// displace the original shed candidates.
@@ -219,17 +245,7 @@ export const generateMissionMap = function (contract: Contract): MissionMap {
 			addCover({ ...point(x + between(-30, 30), y + between(-30, 30)), kind: 'tree', width: 36, depth: 36, height: between(58, 74) });
 		}
 	}
-	const terrain = { obstacles, roads };
-	const landmarks: Landmark[] = [];
-	const reserved = [drop, extraction, ...sites];
-	for (let i = 0; i < 180 && landmarks.length < 56; i++) {
-		const at = { x: between(160, width - 160), y: between(160, height - 160) };
-		const radius = between(35, 135);
-		if (reserved.some(function (site) { return separation(at, site) < radius + 155; })
-			|| !terrainPointClear(terrain, at, radius)) continue;
-		landmarks.push({ ...at, radius, rotation: random() * Math.PI * 2, kind: i % 7 === 0 ? 'depot' : i % 3 === 0 ? 'crater' : 'rocks' });
-	}
-	return { ...map, landmarks, terrain };
+	return addLandmarks(map, obstacles, random);
 };
 
 export const missionObjective = function (state: CombatStateView): string {

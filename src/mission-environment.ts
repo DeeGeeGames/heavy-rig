@@ -2,6 +2,7 @@ import { BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry, Gr
 import type { Biome, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { createCutGround, createFieldStructures, paintFieldRoads } from './field-terrain-3d';
+import { hasBiomeGround, paintBiomeGround } from './biome-ground';
 import type { TerrainBakeSource } from './terrain-bake';
 
 interface SurfacePalette { ground: string; dust: string; rock: string; road: string; sky: string; haze: string; light: string }
@@ -9,6 +10,10 @@ export const SURFACE_PALETTES: Readonly<Record<Biome, SurfacePalette>> = {
 	badlands: { ground: '#645548', dust: '#97816a', rock: '#574c43', road: '#49433c', sky: '#342d29', haze: '#756354', light: '#ffe0af' },
 	volcanic: { ground: '#373c42', dust: '#60636a', rock: '#252d34', road: '#252d32', sky: '#242833', haze: '#4c4c59', light: '#ffd6c2' },
 	tundra: { ground: '#a3b6b8', dust: '#d6e0d9', rock: '#617b81', road: '#758c8f', sky: '#30444c', haze: '#8aa9af', light: '#e1f5ff' },
+	wetlands: { ground: '#73774f', dust: '#aab187', rock: '#536959', road: '#817c60', sky: '#365956', haze: '#8aa698', light: '#e6e9c5' },
+	forest: { ground: '#5c6b49', dust: '#a4ab71', rock: '#435a45', road: '#866f51', sky: '#344941', haze: '#798e75', light: '#fff0c1' },
+	steppe: { ground: '#ba9d56', dust: '#dbcc98', rock: '#716b5d', road: '#9f8963', sky: '#607779', haze: '#b7afa0', light: '#ffe6ad' },
+	crystal: { ground: '#716678', dust: '#b6a7ba', rock: '#665a79', road: '#8b7f8f', sky: '#494359', haze: '#9c8ca6', light: '#efe1fc' },
 };
 
 // The mission owns all ground, markers, and obstacle assets for its field.
@@ -38,44 +43,47 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		if (ctx) {
 			ctx.scale(canvas.width / map.width, canvas.height / map.height);
 			ctx.fillStyle = palette.ground; ctx.fillRect(0, 0, map.width, map.height);
-			for (let i = 0; i < 260; i++) {
-				const x = random() * map.width; const y = random() * map.height; const radius = 40 + random() * 240;
-				ctx.globalAlpha = 0.05 + random() * 0.12; ctx.fillStyle = i % 3 ? palette.dust : palette.rock;
-				ctx.beginPath(); ctx.ellipse(x, y, radius * 1.6, radius, random() * Math.PI, 0, Math.PI * 2); ctx.fill();
-			}
-			ctx.globalAlpha = 1;
-			// Tracks connect the generated combat sites, so each field has a
-			// readable travel network instead of a scaled-up empty apron.
-			if (!map.terrain) {
-				const route = [map.drop, ...map.sites, map.objective, map.extraction];
-				ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-				for (const [width, opacity] of [[108, 0.3], [80, 0.28], [52, 0.16]]) {
-					ctx.strokeStyle = palette.road; ctx.lineWidth = width ?? 1; ctx.globalAlpha = opacity ?? 1; ctx.beginPath();
-					for (const [index, point] of route.entries()) { if (index === 0) ctx.moveTo(point.x, point.y); else ctx.lineTo(point.x, point.y); }
-					ctx.stroke();
+			if (hasBiomeGround(map.biome)) paintBiomeGround(ctx, map, map.biome);
+			else {
+				for (let i = 0; i < 260; i++) {
+					const x = random() * map.width; const y = random() * map.height; const radius = 40 + random() * 240;
+					ctx.globalAlpha = 0.05 + random() * 0.12; ctx.fillStyle = i % 3 ? palette.dust : palette.rock;
+					ctx.beginPath(); ctx.ellipse(x, y, radius * 1.6, radius, random() * Math.PI, 0, Math.PI * 2); ctx.fill();
 				}
-			}
-			ctx.globalAlpha = 1;
-			for (const landmark of map.landmarks) {
-				ctx.save(); ctx.translate(landmark.x, landmark.y); ctx.rotate(landmark.rotation);
-				if (landmark.kind === 'depot') {
-					const radius = landmark.radius;
-					ctx.fillStyle = palette.road; ctx.globalAlpha = 0.7; ctx.fillRect(-radius, -radius * 0.6, radius * 2, radius * 1.2);
-					ctx.strokeStyle = palette.dust; ctx.lineWidth = 3; ctx.strokeRect(-radius + 8, -radius * 0.6 + 8, radius * 2 - 16, radius * 1.2 - 16);
-					ctx.setLineDash([12, 12]); ctx.beginPath(); ctx.moveTo(-radius, 0); ctx.lineTo(radius, 0); ctx.stroke();
-				} else {
-					const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, landmark.radius);
-					halo.addColorStop(0, palette.road); halo.addColorStop(0.7, palette.rock); halo.addColorStop(1, palette.ground);
-					ctx.globalAlpha = landmark.kind === 'crater' ? 0.8 : 0.35; ctx.fillStyle = halo;
-					ctx.beginPath(); ctx.ellipse(0, 0, landmark.radius, landmark.radius * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+				ctx.globalAlpha = 1;
+				// Tracks connect the generated combat sites, so each field has a
+				// readable travel network instead of a scaled-up empty apron.
+				if (!map.terrain) {
+					const route = [map.drop, ...map.sites, map.objective, map.extraction];
+					ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+					for (const [width, opacity] of [[108, 0.3], [80, 0.28], [52, 0.16]]) {
+						ctx.strokeStyle = palette.road; ctx.lineWidth = width ?? 1; ctx.globalAlpha = opacity ?? 1; ctx.beginPath();
+						for (const [index, point] of route.entries()) { if (index === 0) ctx.moveTo(point.x, point.y); else ctx.lineTo(point.x, point.y); }
+						ctx.stroke();
+					}
 				}
-				ctx.restore();
+				ctx.globalAlpha = 1;
+				for (const landmark of map.landmarks) {
+					ctx.save(); ctx.translate(landmark.x, landmark.y); ctx.rotate(landmark.rotation);
+					if (landmark.kind === 'depot') {
+						const radius = landmark.radius;
+						ctx.fillStyle = palette.road; ctx.globalAlpha = 0.7; ctx.fillRect(-radius, -radius * 0.6, radius * 2, radius * 1.2);
+						ctx.strokeStyle = palette.dust; ctx.lineWidth = 3; ctx.strokeRect(-radius + 8, -radius * 0.6 + 8, radius * 2 - 16, radius * 1.2 - 16);
+						ctx.setLineDash([12, 12]); ctx.beginPath(); ctx.moveTo(-radius, 0); ctx.lineTo(radius, 0); ctx.stroke();
+					} else {
+						const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, landmark.radius);
+						halo.addColorStop(0, palette.road); halo.addColorStop(0.7, palette.rock); halo.addColorStop(1, palette.ground);
+						ctx.globalAlpha = landmark.kind === 'crater' ? 0.8 : 0.35; ctx.fillStyle = halo;
+						ctx.beginPath(); ctx.ellipse(0, 0, landmark.radius, landmark.radius * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+					}
+					ctx.restore();
+				}
 			}
 			for (const [index, site] of map.sites.entries()) {
 				ctx.strokeStyle = palette.dust; ctx.globalAlpha = 0.35; ctx.lineWidth = 3; ctx.strokeRect(site.x - 110, site.y - 90, 220, 180);
 				ctx.font = 'bold 25px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = palette.dust; ctx.fillText(`SECTOR ${String(index + 1).padStart(2, '0')}`, site.x, site.y + 118);
 			}
-			if (map.terrain) paintFieldRoads(ctx, map.terrain);
+			if (map.terrain && !hasBiomeGround(map.biome)) paintFieldRoads(ctx, map.terrain);
 			ctx.globalAlpha = 0.28;
 			for (let i = 0; i < 24000; i++) { ctx.fillStyle = i % 3 ? palette.rock : palette.dust; ctx.fillRect(random() * map.width, random() * map.height, 1 + random() * 4, 1 + random() * 3); }
 			ctx.globalAlpha = 1;
@@ -87,6 +95,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	ground.name = 'planet-surface'; ground.rotation.x = -Math.PI / 2; ground.position.set(map.width / 2, -0.03, map.height / 2); ground.receiveShadow = true; staticArt.add(ground);
 	const field = map.terrain ? createFieldStructures(map.terrain, map.seed, map.biome) : undefined;
 	if (field) staticArt.add(field.root);
+	if (field?.rotors) root.add(field.rotors.mesh);
 	const scratch = new Object3D(); const color = new Color();
 	const rocks = map.landmarks.filter(function (landmark) { return landmark.kind === 'rocks'; });
 	const stones = new InstancedMesh(rockShape, material(new MeshStandardMaterial({ color: '#ffffff', roughness: 1 })), rocks.length * 6);
@@ -158,6 +167,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		root, bakeSource,
 		update: function (mission: MissionRuntime, time: number) {
 			if (disposed) return;
+			field?.rotors?.update(time);
 			const ready = mission.stage === 'extract';
 			extraction.value.visible = ready; objective.visible = !ready && (mission.contract.kind === 'defend' || mission.contract.kind === 'demolition');
 			extraction.value.scale.setScalar(1 + Math.sin(time * 2) * 0.015);

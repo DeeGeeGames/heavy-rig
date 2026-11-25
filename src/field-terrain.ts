@@ -10,7 +10,7 @@ export interface ObstacleField {
 	readonly obstacles: readonly GroundFootprint[];
 }
 export interface TerrainObstacle extends GroundFootprint {
-	readonly kind: 'fissure' | 'shed' | 'tree';
+	readonly kind: 'fissure' | 'channel' | 'shed' | 'tree' | 'turbine' | 'outcrop' | 'crystal';
 	readonly height: number;
 }
 
@@ -21,7 +21,7 @@ export interface FieldTerrain {
 
 interface Bounds { left: number; right: number; top: number; bottom: number }
 interface Contact { fraction: number; axis: 'x' | 'y' }
-interface Corner { point: Point; distances: Map<Corner, number> }
+interface Corner { point: Point; index: number; distances: Float64Array }
 interface Clearance { boxes: Bounds[]; corners?: Corner[] }
 const clearanceCache = new WeakMap<ObstacleField, Map<number, Clearance>>();
 
@@ -118,17 +118,21 @@ const navigationCorners = function (boxes: readonly Bounds[]): Corner[] {
 			return [box.top - margin, box.bottom + margin].map(function (y) { return { x, y }; });
 		});
 	}).filter(function (point) { return !boxes.some(function (box) { return inside(point, box); }); });
-	const corners: Corner[] = points.map(function (point) { return { point, distances: new Map() }; });
+	const corners: Corner[] = points.map(function (point, index) {
+		return { point, index, distances: new Float64Array(points.length).fill(Infinity) };
+	});
 	for (const a of corners) for (const b of corners) {
-		if (clear(a.point, b.point, boxes)) a.distances.set(b, distance(a.point, b.point));
+		if (clear(a.point, b.point, boxes)) a.distances[b.index] = distance(a.point, b.point);
 	}
 	// Only the first visible corner is needed per moving unit. Precompute the
-	// distances between this small fixed set of corners once per rig clearance.
+	// all-pairs distances in contiguous rows once per rig clearance. Forest
+	// groves have enough corners for hash lookups here to stall the first turn.
 	for (const via of corners) for (const from of corners) {
-		const firstLeg = from.distances.get(via);
-		if (firstLeg === undefined) continue;
-		for (const [end, lastLeg] of via.distances) {
-			if (firstLeg + lastLeg < (from.distances.get(end) ?? Infinity)) from.distances.set(end, firstLeg + lastLeg);
+		const firstLeg = from.distances[via.index] ?? Infinity;
+		if (firstLeg === Infinity || firstLeg === 0) continue;
+		for (let end = 0; end < corners.length; end++) {
+			const through = firstLeg + (via.distances[end] ?? Infinity);
+			if (through < (from.distances[end] ?? Infinity)) from.distances[end] = through;
 		}
 	}
 	return corners;
@@ -145,8 +149,7 @@ export const terrainWaypoint = function (terrain: FieldTerrain, from: Point, to:
 		if (!clear(from, entry.point, clearance.boxes)) continue;
 		const firstLeg = distance(from, entry.point);
 		for (const { corner, remaining } of exits) {
-			const between = entry.distances.get(corner);
-			if (between === undefined) continue;
+			const between = entry.distances[corner.index] ?? Infinity;
 			const total = firstLeg + between + remaining;
 			// Prefer the farther directly visible corner on an equal-length path,
 			// especially when the rig has already arrived at one of its corners.
@@ -161,7 +164,7 @@ export const terrainWaypoint = function (terrain: FieldTerrain, from: Point, to:
 export const terrainShotContact = function (terrain: FieldTerrain, from: SpatialPoint, to: SpatialPoint) {
 	let first: { fraction: number; obstacle: TerrainObstacle; normal: SpatialPoint } | undefined;
 	for (const obstacle of terrain.obstacles) {
-		if (obstacle.kind === 'fissure') continue;
+		if (obstacle.kind === 'fissure' || obstacle.kind === 'channel') continue;
 		const box = bounds(obstacle, 0);
 		const x = axisInterval(from.x, to.x - from.x, box.left, box.right);
 		const y = axisInterval(from.y, to.y - from.y, box.top, box.bottom);

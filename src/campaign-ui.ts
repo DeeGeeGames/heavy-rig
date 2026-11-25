@@ -7,7 +7,7 @@ import { selectWorkspacePane } from './workspace';
 import { html } from 'lit-html';
 import { renderWorkspace, textItems, type WorkspacePane } from './workspace';
 import { canStageOperation, FACTIONS, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, travelTo, type Campaign } from './campaign';
-import { MISSION_NAMES, type Contract, type MissionKind, type PlanetId } from './campaign-types';
+import { BIOME_NAMES, MISSION_NAMES, type Contract, type MissionKind, type PlanetId } from './campaign-types';
 import { getAuthoredStep, isAuthoredContract } from './contract-chains';
 import { getOwnedMech, workOrderFor } from './company';
 import { renderShipHeader, type ShipScreen } from './company-ui';
@@ -65,7 +65,7 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 		<p class="system-control">${intel.owner ? getFaction(intel.owner).name : 'Unclaimed space'}</p>
 		<p class=${intel.conflict ? 'system-conflict' : 'system-quiet'}>${intel.conflict ? '◌ ACTIVE CONFLICT ZONE' : 'NO ACTIVE CONFLICT'}</p>
 		<p class="planet-summary">${intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No ordinary contracts posted.'}</p>
-		<p class="planet-summary">${planet.description}</p>
+		<p class="planet-summary"><b>${BIOME_NAMES[planet.biome]}</b> · ${planet.description}</p>
 		<div class="planet-transit">${local ? 'Current location' : 'TRANSIT · 1 DAY · 0 CR'}</div>
 		<div class="planet-actions">${local && storyHere ? html`<button class="primary" @click=${function () { root.querySelector<HTMLElement>('.planet-popover')?.hidePopover(); openTransmission(); }}>OPEN SIGNAL →</button>` : html`<button class="primary" ?disabled=${local || Boolean(travelLock)} @click=${function () { root.querySelector<HTMLElement>('.planet-popover')?.hidePopover(); actions.travel(); }}>${local ? 'ORBIT ESTABLISHED' : travelLock || 'JUMP HERE →'}</button>`}<button @click=${function () { root.querySelector<HTMLElement>('.planet-popover')?.hidePopover(); actions.navigate('bridge', 'board'); }}>CONTRACTS →</button></div>
 		<button class="planet-full-intel" @click=${function () { root.querySelector<HTMLElement>('.planet-popover')?.hidePopover(); selectWorkspacePane(root, 'system'); }}>FULL SYSTEM INTEL →</button>`;
@@ -76,7 +76,7 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 			...(storyHere ? [html`<p class="system-transmission">◆ CAMPAIGN SIGNAL</p>`] : []),
 			html`<p class=${intel.conflict ? 'system-conflict' : 'system-quiet'}>${intel.conflict ? '◌ ACTIVE CONFLICT ZONE' : 'NO ACTIVE CONFLICT'}</p>`,
 			...textItems(intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No ordinary contracts posted.'),
-			...textItems(planet.description),
+			...textItems(`${BIOME_NAMES[planet.biome]} · ${planet.description}`),
 			...textItems('Fronts move with calendar days. Victories strengthen the employer locally; defeat or abort strengthens the opposition.'),
 			...textItems(order ? `Player rig in Engineering until day ${order.readyDay}.` : mech ? `${rigName(mech.frameId)} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Assign a rig to the player pilot before deploying.'),
 		], actions: html`${local && storyHere ? html`<button class="primary" @click=${openTransmission}>OPEN SIGNAL →</button>` : html`<button id="bridge-travel" class="primary" ?disabled=${local || Boolean(travelLock)} @click=${actions.travel}>${local ? 'ORBIT ESTABLISHED' : travelLock || `JUMP TO ${planet.name.toUpperCase()} →`}</button>`}<button @click=${function () { actions.navigate('bridge', 'board'); }}>CONTRACTS →</button>` },
