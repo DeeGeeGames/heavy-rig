@@ -111,11 +111,16 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .hangar-heading h2 small { color: var(--muted); font-size: 22px; }
 .hangar-heading .eyebrow { font-size: 10px; }
 .workspace .hangar-livery { flex: none; padding: 8px 10px; font: 11px var(--mono); }
-.mech-livery { display: grid; gap: 10px; }
+.mech-livery { display: grid; gap: 7px; }
+.mech-livery header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 3px 12px; }
 .mech-livery>div { display: flex; flex-wrap: wrap; gap: 6px; }
-.workspace .mech-livery button { padding: 10px 12px; font: 12px var(--mono); }
+.workspace .mech-livery button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 9px; min-height: 32px; font: 12px var(--mono); }
+.mech-livery .livery-layouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(110px, 28%)), 1fr)); }
+.workspace .livery-layouts button { flex-direction: column; align-items: flex-start; text-align: left; padding: 9px 10px; }
 .mech-livery button[aria-pressed='true'] { border-color: var(--cyan); color: var(--cyan); background: #153239; }
 .mech-livery small { font: 10px var(--mono); color: var(--muted); }
+.livery-swatch { width: 100%; height: 8px; border: 1px solid #b8cbc845; background: linear-gradient(90deg, var(--paint-main) 60%, var(--paint-accent) 60%); }
+.livery-swatch[data-pattern='camo'] { background: repeating-linear-gradient(125deg, var(--paint-main) 0 10px, var(--paint-accent) 10px 16px); }
 .hangar-model { flex: 1; min-height: 0; position: relative; overflow: clip; }
 #game #mechbay .hangar-model canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 1; pointer-events: none; }
 .hangar-fallback { position: absolute; left: 15px; bottom: 12px; color: var(--muted); font: 12px var(--mono); pointer-events: none; }
@@ -128,6 +133,7 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .hangar-specs small { display: block; color: var(--muted); font: 9px var(--mono); }
 .hangar-specs b { display: block; margin-top: 5px; font: 26px var(--display); }
 .hangar-specs em { font: 11px var(--mono); color: var(--muted); margin-left: 4px; }
+#mechbay[data-view='livery'] .hangar-service, #mechbay[data-view='livery'] .hangar-specs { display: none; }
 .workspace[data-picker='true'] .hangar-inspection { opacity: .5; }
 .workspace[data-picker='true'] .workspace-pane[data-pane='loadout'] { border-color: var(--amber); }
 .input-glyphs { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; }
@@ -182,6 +188,10 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.workspace-body { gap: 9px; }
 	.workspace.paired-workspace .workspace-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(145px, .65fr) minmax(0, 1fr); }
 	.workspace.has-hangar .workspace-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: 144px minmax(0, 1fr); }
+	#mechbay[data-view='livery'] .workspace-body { grid-template-rows: clamp(85px, 16dvh, 145px) minmax(0, 1fr); }
+	#mechbay[data-view='livery'] .hangar-inspection { grid-template-columns: minmax(0, 1fr) 44%; grid-template-rows: 1fr; }
+	#mechbay[data-view='livery'] .hangar-heading { flex-wrap: wrap; align-content: center; }
+	#mechbay[data-view='livery'] .hangar-model { display: block; }
 	.hangar-inspection { display: grid; grid-template-columns: minmax(0, 1fr) 110px; grid-template-rows: 64px minmax(0, 1fr); }
 	.hangar-heading { padding: 12px; }
 	.workspace .hangar-heading h2 { font-size: 26px; }
@@ -306,6 +316,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 
 @media (max-height: 360px) and (min-width: 561px) {
 	.hangar-model, .hangar-specs { display: none; }
+	#mechbay[data-view='livery'] .hangar-model { display: block; }
 	.hangar-service { margin-top: auto; }
 	#game .workspace { padding-top: 3px; gap: 3px; }
 	.workspace .bridge-brand h1 { font-size: 16px; }
