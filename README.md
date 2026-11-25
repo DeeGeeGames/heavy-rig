@@ -635,8 +635,10 @@ walk, reverse, turn, independent aim, firing, playback and orbit controls.
 and open directly from disk. Crowd profiling and shared model resources
 remain tracked in [performance issue #10](https://github.com/DeeGeeGames/heavy-rig/issues/10).
 
-An original locally synthesized 96-BPM score changes its layers with combat
-intensity and uses quieter ship arrangements. Mission launches play “Break the
+Combat and Frame Training rotate through “Two Tons Over,” “Shear Pin,” “Quarry
+Teeth” and “Governor Override.” Each sortie loops one cue and resumes it after
+a pause. The 96-BPM synth score plays in ship menus and covers combat while a
+recording loads or if it is unavailable. Mission launches play “Break the
 Clamps,” a 17-second industrial rock cue timed to the dropship sequence.
 The playable intro escape selects the
 144-BPM Pursuit theme with a running bass pulse, tense brass-like phrases, and
@@ -647,11 +649,7 @@ after browser activation and reports when a click or key press is required.
 Settings include master/music/effects levels, controller vibration, a larger
 interface, and optional touch controls.
 
-All gameplay geometry, surface graphics, and music are original to this demo.
-The bundled [Barlow Condensed](https://github.com/google/fonts/tree/main/ofl/barlowcondensed)
-typeface is by the Barlow Project Authors under the
-[SIL Open Font License](./public/licenses/Barlow-OFL.txt). No licensed BattleTech
-characters, names, graphics, music, or samples are included.
+See the [asset credits](./ASSET_CREDITS.md) for third-party contributions and licenses.
 
 ## Development and verification
 
