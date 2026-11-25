@@ -11,7 +11,7 @@ import { SURFACE_PALETTES } from './mission-environment';
 import { boardingLayouts, type LaunchBerth } from './launch-berths';
 import { footprintOverlap, launchFootprint, posedFootprint } from './launch-footprint';
 import { createDropship, DROPSHIP_DECK, DROPSHIP_WIDTH } from './launch-ships';
-import { LAUNCH_TIMING } from './launch-timing';
+import { LAUNCH_TIMING, sampleLaunchPoseTime } from './launch-timing';
 import { toScreen, viewScale } from './projection-3d';
 import { angleDelta, combatTargets, type CombatStateView, type Point } from './simulation';
 
@@ -85,9 +85,13 @@ const landingSites = function* (map: MissionMap, state: CombatStateView, terrain
 	if (best > 0) yield fallback;
 };
 
-interface LandingRig {
+interface LandingPose {
 	gait: WalkerGait;
 	authored: AuthoredPoseContext | undefined;
+}
+
+interface LandingRig extends LandingPose {
+	position: Point;
 	elevation: number;
 }
 
@@ -302,25 +306,34 @@ export const planLaunchLanding = function (state: CombatStateView, map: MissionM
 	return { site, berths: best.berths, paths: best.paths, closeAt };
 };
 
-// Advance the deployed rig's normal game gait and expose only poses on the
-// launch clock. Each sole takes the grade of the ramp under its planted foot.
+// Keep the gait in the sampled body's reference frame so the whole pose can
+// travel between exposures. Each sole still takes the grade of the ramp.
 const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPath) {
 	const frame = getFrame(frameId), rig = FRAME_RIGS[frameId];
 	const advancePose = getMechAssetBinding(frameId)?.advancePose;
 	let tick = 0;
 	let gait = createGait(bodyAt(LAUNCH_TIMING.touchdown), frame.size, rig);
 	let authored = advancePose?.(undefined, gait.body, 0);
-	return function (time: number): LandingRig {
-		const until = Math.max(0, Math.round((time - LAUNCH_TIMING.touchdown) * 60));
-		while (tick < until) {
-			tick++;
-			const body = bodyAt(LAUNCH_TIMING.touchdown + tick / 60);
-			authored = advancePose?.(authored, body, tick / 60);
-			gait = authored?.gait ?? advanceGait(gait, body, 1 / 60, frame.size, frame.stride, rig);
-		}
+	const capturePose = function (): LandingPose {
 		const base = deckHeight(site.aftAt(gait.body));
 		const sole = function (foot: Foot) { return { ...foot, lift: foot.lift + deckHeight(site.aftAt(foot)) - base }; };
-		return { gait: { ...gait, feet: [sole(gait.feet[0]), sole(gait.feet[1])] }, authored, elevation: base + altitude(Math.min(time, LAUNCH_TIMING.touchdown + .5)) };
+		return { gait: { ...gait, feet: [sole(gait.feet[0]), sole(gait.feet[1])] }, authored };
+	};
+	let pose = capturePose();
+	return function (time: number, poseTime: number): LandingRig {
+		const until = Math.round((poseTime - LAUNCH_TIMING.touchdown) * 60);
+		if (tick < until) {
+			while (tick < until) {
+				tick++;
+				const body = bodyAt(LAUNCH_TIMING.touchdown + tick / 60);
+				authored = advancePose?.(authored, body, tick / 60);
+				gait = authored?.gait ?? advanceGait(gait, body, 1 / 60, frame.size, frame.stride, rig);
+			}
+			pose = capturePose();
+		}
+		const position = bodyAt(Math.max(time, LAUNCH_TIMING.touchdown));
+		const elevation = deckHeight(site.aftAt(position)) + altitude(Math.min(time, LAUNCH_TIMING.touchdown + .5));
+		return { ...pose, position, elevation };
 	};
 };
 
@@ -347,8 +360,6 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		if (!path) throw new Error('Missing deployment berth');
 		return rigTrack(site, frame, path);
 	});
-	let poseTime = -1;
-	let poses: LandingRig[] = [];
 	const origin = site.at(0, 0), rear = site.at(0, 170);
 	const rampFocus = { x: rear.x - 71, y: rear.y - 71 };
 	const liftoffFocus = mixPoint({ x: origin.x - 60, y: origin.y - 60 }, state.player, .45);
@@ -356,18 +367,25 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		const progress = ease(between(time, LAUNCH_TIMING.approach, LAUNCH_TIMING.touchdown));
 		return { x: origin.x - 475 * (1 - progress) + 35 * progress, y: origin.y + 245 * (1 - progress) + 25 * progress };
 	};
+	const normalClose = LAUNCH_TIMING.lift - .125;
+	const shipTimeAt = function (time: number) {
+		return time <= closeAt ? Math.min(time, normalClose) : mix(normalClose, LAUNCH_TIMING.end, between(time, closeAt, LAUNCH_TIMING.end));
+	};
+	const rampAt = function (shipTime: number) {
+		return ease(between(shipTime, 7.125, 8.125)) * (1 - ease(between(shipTime, normalClose, LAUNCH_TIMING.lift + .625)));
+	};
 	const update = function (time: number, w: number, h: number) {
-		const normalClose = LAUNCH_TIMING.lift - .125;
-		const shipTime = time <= closeAt ? Math.min(time, normalClose) : mix(normalClose, LAUNCH_TIMING.end, between(time, closeAt, LAUNCH_TIMING.end));
+		const poseTime = sampleLaunchPoseTime(time);
+		const shipTime = shipTimeAt(time), shipPoseTime = shipTimeAt(poseTime);
 		const airborne = altitude(shipTime);
 		const approach = time < LAUNCH_TIMING.touchdown;
 		const pullback = 1 - (1 - between(time, LAUNCH_TIMING.touchdown, 13.875)) ** 1.7;
-		const lift = between(shipTime, LAUNCH_TIMING.lift, LAUNCH_TIMING.end);
+		const liftPose = between(shipPoseTime, LAUNCH_TIMING.lift, LAUNCH_TIMING.end);
 		const travel = site.at(0, -45 * ease(between(shipTime, LAUNCH_TIMING.lift, 12.5)) - 980 * between(shipTime, 12.45, LAUNCH_TIMING.end) ** 1.6);
 		ship.root.visible = !approach;
 		ship.root.position.set(travel.x, airborne, travel.y);
-		ship.root.rotation.z = Math.round(-lift * 5) * Math.PI / 90;
-		ship.setRamp(ease(between(shipTime, 7.125, 8.125)) * (1 - ease(between(shipTime, normalClose, LAUNCH_TIMING.lift + .625))));
+		ship.root.rotation.z = Math.round(-liftPose * 5) * Math.PI / 90;
+		ship.setRamp(rampAt(shipTime), rampAt(shipPoseTime));
 		ship.setThrust(approach ? 0 : .14 + .86 * Math.max(1 - ease(between(time, 7.25, 8.0)), ease(between(time, 11, 12.5))));
 		const silhouetteAt = approach ? shadowAt(time) : { x: travel.x + 15 + airborne * .37, y: travel.y + 8 + airborne * .32 };
 		shadow.position.set(silhouetteAt.x, 1.05, silhouetteAt.y);
@@ -384,7 +402,7 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 			}
 			dust.instanceMatrix.needsUpdate = true;
 		}
-		if (time !== poseTime) { poses = tracks.map(function (sample) { return sample(time); }); poseTime = time; }
+		const poses = tracks.map(function (sample) { return sample(time, poseTime); });
 		const scale = viewScale(w, h) * Math.sqrt(3 / 2);
 		const tight = Math.max(1, Math.min(2.5, w / (scale * (DROPSHIP_WIDTH - 75)), h / (scale * 235)));
 		const wide = mixPoint(rampFocus, liftoffFocus, ease(between(time, 7, LAUNCH_TIMING.lift)));
@@ -393,7 +411,7 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 	};
 	const drawSurvey = function (ctx: CanvasRenderingContext2D, w: number, h: number, camera: OrthographicCamera, time: number) {
 		const progress = between(time, LAUNCH_TIMING.approach, LAUNCH_TIMING.touchdown);
-		const edge = Math.round(w * (1 - ease(progress)) / 5) * 5;
+		const edge = w * (1 - ease(progress));
 		ctx.save(); ctx.beginPath(); ctx.rect(0, 0, edge, h); ctx.clip();
 		ctx.fillStyle = '#183238'; ctx.fillRect(0, 0, w, h);
 		const project = function (pt: Point) { return toScreen(pt, camera, w, h); };

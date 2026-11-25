@@ -92,8 +92,9 @@ dropship carries the assigned rigs to the mission’s landing site. The rigs boa
 in the left-to-right order of their ground formation. Wingmates unload in an
 order that leaves room for the rigs behind them. The commander steps off last,
 and the ramp stays down until the squad clears it. The camera
-pulls back to gameplay distance as the empty ship leaves. Ship motion, ramp
-travel and the camera move use eight held poses per second. **Skip Launch**
+pulls back to gameplay distance as the empty ship leaves. Travel and camera
+motion are smooth, while rig poses, ship banking and ramp angles update in steps.
+**Skip Launch**
 takes the squad straight to the same starting formation. Combat and the mission
 clock start at handoff. [Launch ship designs](design/mission-start/ship-designs.png)
 

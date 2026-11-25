@@ -27,7 +27,7 @@ import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
 import { createMissionState, createState, distance, getOperationReport, missileLockRange, type Controls, type Point, type SquadmateOptions } from './simulation';
 import { createPresentation } from './presentation';
-import { LAUNCH_TIMING, sampleLaunchTime } from './launch-timing';
+import { LAUNCH_TIMING } from './launch-timing';
 import { advanceGaits, createGaits } from './gait';
 import { viewScale } from './projection-3d';
 import { targetElevation, type ScreenRect } from './overlay';
@@ -1435,7 +1435,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		}
 		const elapsed = launchTimeNow();
 		const dockHeight = portrait.matches && container.classList.contains('touch-enabled') ? element('touch').offsetHeight : 0;
-		presentation.setLaunchTime(sampleLaunchTime(elapsed), dockHeight);
+		presentation.setLaunchTime(Math.min(elapsed, LAUNCH_TIMING.end), dockHeight);
 		if (elapsed >= LAUNCH_TIMING.end) finishLaunch();
 	});
 	world.addSystem('intro-narrative').inScreens(['intro']).inPhase('preUpdate').setProcess(function ({ dt }) {
