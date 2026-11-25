@@ -12,7 +12,7 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace .career-stats b { font-size: 23px; }
 .workspace .ship-navigation { display: flex; flex: none; padding: 7px 0; gap: 7px; border-block: 1px solid var(--border); }
 .workspace .ship-navigation button { flex: 1; display: flex; align-items: center; gap: 12px; padding: 10px 14px; min-height: 46px; background: transparent; border: 0; }
-.workspace .ship-navigation button span { font: 23px var(--display); white-space: nowrap; }
+.workspace .ship-navigation [data-ship-screen] > span { font: 23px var(--display); white-space: nowrap; }
 .workspace .ship-navigation button[aria-current='page'] { color: #0d1a20; background: var(--paper); box-shadow: 0 5px 0 var(--amber); }
 .workspace .ship-navigation button[aria-current='page'] small { color: #324341; }
 .workspace .ship-navigation button b { margin-left: auto; font: 11px var(--mono); }
@@ -136,9 +136,31 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 #mechbay[data-view='livery'] .hangar-service, #mechbay[data-view='livery'] .hangar-specs { display: none; }
 .workspace[data-picker='true'] .hangar-inspection { opacity: .5; }
 .workspace[data-picker='true'] .workspace-pane[data-pane='loadout'] { border-color: var(--amber); }
-.input-glyphs { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; }
-.input-glyph { width: 30px; height: 30px; object-fit: contain; }
+.input-glyphs { display: inline-flex; flex: none; align-items: center; gap: 4px; vertical-align: middle; white-space: nowrap; }
+.input-glyph { width: var(--input-icon-size, 30px); height: var(--input-icon-size, 30px); object-fit: contain; }
 .input-keycap { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 24px; padding: 0 5px; border: 1px solid currentColor; border-radius: 4px; font: 11px/1 var(--mono); box-shadow: 0 2px #83949440; }
+.input-control, .menu-controls .input-glyphs > .input-control:empty {
+	display: inline-grid; position: relative; place-items: center; box-sizing: border-box;
+	height: 22px; min-width: 22px; padding: 0 4px; color: #dce8e8;
+	background: #17272d; border: 1px solid #82989b; font: 700 10px/1 var(--mono); letter-spacing: 0;
+}
+.input-control[data-shape='bumper'] { min-width: 29px; height: 16px; border-radius: 8px 8px 3px 3px; box-shadow: 0 2px #82989b65; }
+.input-control[data-shape='trigger'] { min-width: 27px; border-radius: 4px 4px 9px 9px; box-shadow: inset 0 -3px #82989b35; }
+.input-control[data-shape='stick'], .input-control[data-shape='stick-press'] { border-radius: 50%; width: 22px; padding: 0; box-shadow: inset 0 0 0 2px #0c151b; }
+.input-control[data-shape='stick-press'] { box-shadow: inset 0 0 0 2px #0c151b, 0 2px #82989b; }
+.input-control[data-shape='dpad'] {
+	width: 22px; padding: 0; background: #324950; border: 0;
+	clip-path: polygon(32% 0, 68% 0, 68% 32%, 100% 32%, 100% 68%, 68% 68%, 68% 100%, 32% 100%, 32% 68%, 0 68%, 0 32%, 32% 32%);
+}
+.input-control[data-shape='dpad']:empty::after { content: ''; width: 5px; height: 5px; border: 1px solid #98aaae; transform: rotate(45deg); }
+.input-control[data-shape^='mouse'] {
+	width: 14px; min-width: 14px; height: 20px; padding: 0; overflow: hidden; border-radius: 6px 6px 7px 7px;
+	background: linear-gradient(#82989b, #82989b) 50% 0 / 1px 8px no-repeat, linear-gradient(#82989b, #82989b) 50% 8px / 100% 1px no-repeat, #17272d;
+}
+.input-control[data-shape^='mouse']::after { content: ''; position: absolute; top: 0; }
+.input-control[data-shape='mouse-left']::after { width: 50%; height: 8px; left: 0; background: var(--paper); }
+.input-control[data-shape='mouse-right']::after { width: 50%; height: 8px; right: 0; background: var(--paper); }
+.input-control[data-shape='mouse-wheel']::after { width: 3px; height: 6px; top: 1px; left: calc(50% - 1.5px); border-radius: 2px; background: var(--paper); }
 #game.menu-open .menu-controls { bottom: max(6px, env(safe-area-inset-bottom)); left: 24px; right: 24px; display: flex; justify-content: flex-start; gap: 5px 14px; font: 11px/1.4 var(--mono); z-index: 3; }
 #game.menu-open .menu-controls>span { padding: 0; }
 #menu-input-hint { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
@@ -155,7 +177,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 @media (max-width: 900px) {
 	#game .workspace { padding: 14px 16px 0; gap: 10px; }
 	.workspace .ship-navigation button { padding: 8px; gap: 5px; min-height: 40px; }
-	.workspace .ship-navigation button span { font-size: 19px; }
+	.workspace .ship-navigation [data-ship-screen] > span { font-size: 19px; }
 	.workspace .ship-navigation button small { display: none; }
 	.workspace .career-stats { gap: 16px; }
 	.workspace .command-heading h2 { font-size: 30px; }
@@ -179,7 +201,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.workspace .career-stats em { font-size: 9px; }
 	.workspace .ship-navigation { gap: 3px; padding: 5px 0; }
 	.workspace .ship-navigation button { justify-content: center; padding: 6px 2px; min-height: 38px; }
-	.workspace .ship-navigation button span { font-size: 16px; }
+	.workspace .ship-navigation [data-ship-screen] > span { font-size: 16px; }
 	.workspace .ship-navigation button b { display: none; }
 	.workspace-tabs { gap: 4px; justify-content: space-between; }
 	.workspace-tabs button { padding: 5px 8px; min-height: 30px; font-size: 17px; }
@@ -260,7 +282,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.workspace .career-stats b { font-size: 17px; }
 	.workspace .ship-navigation { padding: 3px 0; }
 	.workspace .ship-navigation button { padding: 4px 8px; min-height: 28px; }
-	.workspace .ship-navigation button span { font-size: 18px; }
+	.workspace .ship-navigation [data-ship-screen] > span { font-size: 18px; }
 	.workspace-tabs button { min-height: 26px; padding: 3px 12px; font-size: 16px; }
 	.workspace-tabs .nav-step { min-height: 24px; }
 	.workspace .input-glyph { height: 24px; width: 24px; }
@@ -311,9 +333,6 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.menu-key .input-keycap { min-width: 22px; height: 20px; font-size: 10px; }
 }
 
-#game .weapon .input-glyph, #game #coolant .input-glyph { width: 22px; height: 22px; }
-#game .weapon kbd:has(.input-glyphs), #game #coolant kbd:has(.input-glyphs) { padding: 0; border: 0; }
-
 @media (max-height: 360px) and (min-width: 561px) {
 	.hangar-model, .hangar-specs { display: none; }
 	#mechbay[data-view='livery'] .hangar-model { display: block; }
@@ -323,7 +342,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.workspace .career-stats b { font-size: 15px; }
 	.workspace .ship-navigation { padding: 2px 0; }
 	.workspace .ship-navigation button { min-height: 24px; padding: 2px 6px; }
-	.workspace .ship-navigation button span { font-size: 16px; }
+	.workspace .ship-navigation [data-ship-screen] > span { font-size: 16px; }
 	.workspace .ship-navigation .nav-step { min-height: 24px; }
 	.workspace-tabs button { min-height: 22px; padding: 2px 10px; font-size: 15px; }
 	.workspace-tabs .nav-step { min-height: 22px; }
@@ -377,7 +396,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 }
 @media (max-width: 380px) {
 	.workspace .command-heading { display: none; }
-	.workspace .ship-navigation button span { font-size: 14px; }
+	.workspace .ship-navigation [data-ship-screen] > span { font-size: 14px; }
 	.workspace-tabs button { padding-inline: 6px; font-size: 15px; white-space: nowrap; }
 }
 @media (max-width: 560px) and (max-height: 700px), (max-height: 520px) and (min-width: 561px) {
@@ -449,5 +468,5 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 }
 @media (561px <= width <= 740px) {
 	.workspace .ship-navigation button { padding-inline: 4px; }
-	.workspace .ship-navigation button span { font-size: 16px; }
+	.workspace .ship-navigation [data-ship-screen] > span { font-size: 16px; }
 }

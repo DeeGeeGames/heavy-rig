@@ -27,7 +27,7 @@
 	<div id="hud" inert>
 		<header class="mission-bar">
 			<div class="mission-heading"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow" id="mission-name">LAST TRANSMISSION</span><b id="phase">01 / FIRST CONTACT</b><span id="status">Protect Relay 09</span></div></div>
-			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="open-squad-orders" aria-label="Squad orders" hidden>ORDERS</button><button id="pause">PAUSE <kbd></kbd></button></div>
+			<div class="system-buttons"><span id="input-mode">KB / MOUSE</span><button id="sound" aria-label="Mute sound" aria-pressed="false">SOUND ON</button><button id="open-squad-orders" aria-label="Squad orders" hidden>ORDERS</button><button id="pause">PAUSE <span id="pause-prompt" class="combat-prompt"></span></button></div>
 		</header>
 		<div id="training-guide" class="training-guide" hidden><span id="training-progress" class="eyebrow"></span><b id="training-title"></b><p id="training-copy"></p><small>SAFE TRAINING · PAUSE TO EXIT</small></div>
 		<div id="message" class="field-message" role="status" aria-live="polite"></div>
@@ -38,7 +38,8 @@
 				<div class="heat-heading"><span>REACTOR</span><b id="heat-value">0%</b></div><div class="track heat-track"><i id="heat-fill"></i></div>
 				<div class="drive-heading"><span>DRIVE <b id="drive-value">NEUTRAL</b></span><span id="speed-value">SPD 0%</span></div><div class="throttle-track"><span></span><i id="throttle-fill"></i></div>
 				<div class="load-heading" id="weight-value"></div>
-				<div class="drive-assist"><span id="drive-behavior">RELEASE TO SLOW</span><span>STOP <kbd id="stop-prompt"></kbd></span></div>
+				<div class="drive-assist"><span id="drive-behavior">RELEASE TO SLOW</span><span>STOP <span id="stop-prompt" class="combat-prompt"></span></span></div>
+				<div id="drive-prompts" class="combat-prompt"></div>
 				<div id="squad-readout" class="squad-readout" hidden></div>
 			</div>
 		</div>
@@ -54,12 +55,11 @@
 			</div>
 			<div class="weapon-console">
 				<div class="weapon-console-heading"><span class="eyebrow">FIRE CONTROL</span><span id="weapon-hint">HOLD TO FIRE · COMBINE MOUNTS</span></div>
-				<div class="target-controls"><button id="target-nearest">CLOSEST <kbd></kbd></button><button id="target-next">NEXT <kbd></kbd></button></div>
+				<div class="target-controls"><button id="target-nearest">CLOSEST <span class="combat-prompt"></span></button><button id="target-next">NEXT <span class="combat-prompt"></span></button></div>
 				<div class="weapon-bank" id="weapon-bank"></div>
-				<button id="coolant" class="coolant-button" data-control="coolant"><span>VENT COOLANT <kbd></kbd></span><b id="coolant-value">2 CHARGES</b></button>
+				<button id="coolant" class="coolant-button" data-control="coolant"><span>VENT COOLANT <span class="combat-prompt"></span></span><b id="coolant-value">2 CHARGES</b></button>
 			</div>
 		</div>
-		<div id="pilot-hint" class="pilot-hint"><span id="hint-copy"></span><button id="dismiss-hint" aria-label="Dismiss piloting tip">×</button></div>
 		<div id="touch-lock-marker" hidden><span>TRACKING</span></div>
 		<nav id="touch" aria-label="Touch drive controls">
 			<div class="touch-drive-cluster"><span class="touch-control-label">HEADING / SPEED</span><button id="touch-drive" aria-label="Drag toward a heading; push farther for speed; release to slow"><span class="touch-up">↑</span><span class="touch-down">↓</span><span class="touch-left">‹</span><span class="touch-right">›</span><i id="touch-drive-knob"></i></button><small id="touch-drive-hint">RELEASE TO SLOW</small><button id="touch-cruise" aria-pressed="false">CRUISE<small>OFF</small></button><button id="touch-stop" data-control="stop">STOP<small>NEUTRAL</small></button></div>

@@ -14,5 +14,5 @@ No upstream author or separate license declaration accompanies these SVG files
 in either inspected source repository. This file records the source; it does
 not assign an unverified third-party license or claim the assets are CC0.
 
-Shoulder-button and other missing glyphs are rendered as platform-specific text
-keycaps in `src/input-prompts.ts`; they do not use additional third-party art.
+Shoulder buttons, triggers, sticks, the D-pad, and mouse controls use CSS
+shapes and labels defined in the game. Other missing glyphs use text keycaps.
