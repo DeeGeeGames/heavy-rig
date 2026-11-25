@@ -3,7 +3,7 @@ import { launchCues, type LaunchCue } from './launch-timing';
 import type { FeedbackFamily, WeaponCue } from './weapon-feedback';
 import { firingReportTime, reserveImpactOnsets, type FireReport } from './audio-timing';
 
-export type AudioPhase = 'briefing' | 'launch' | 'combat' | 'refit' | 'result';
+export type AudioPhase = 'briefing' | 'launch' | 'combat' | 'result';
 export type AudioTheme = 'standard' | 'pursuit';
 export type AudioCue = 'focus' | 'confirm' | 'back' | 'unavailable';
 export type AudioStatus = 'locked' | 'pending' | 'running' | 'unavailable';
