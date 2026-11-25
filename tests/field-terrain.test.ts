@@ -9,6 +9,7 @@ import { createFieldTrial } from '../src/field-trial';
 import { moveOnTerrain, terrainPathClear, terrainShotFraction, terrainWaypoint, type FieldTerrain, type TerrainObstacle } from '../src/field-terrain';
 import { groundHeight } from '../src/terrain-elevation';
 import { DROPSHIP_DECK, DROPSHIP_WIDTH } from '../src/launch-berths';
+import { dropRigPose, rigReleaseTime } from '../src/enemy-deployment';
 import { createSituationMission } from '../src/situation-sim';
 import { CAPTURE_RADIUS, EXTRACTION_RADIUS, missionHostileCount } from '../src/missions';
 import { createMissionState, distance, spawningStep, type Point, type SquadmateOptions } from '../src/simulation';
@@ -140,7 +141,7 @@ test('campaign deployment keeps each contract role, full squad, and hostile rost
 }, 30_000);
 
 test('edge and hillside reinforcements keep the whole dropship on the field and the unloading ramp on the ground', function () {
-	for (const [planetId, seed, tier, index] of [['iolith', 3246141861, 6, 12], ['borealis', 1070406884, 1, 3]] as const) {
+	for (const [planetId, seed, tier, index] of [['iolith', 3246141861, 6, 12], ['borealis', 1070406884, 1, 3], ['galeward', 831056492, 3, 3]] as const) {
 		const state = createSituationMission({ kind: 'defend', planetId, tier, frame: 'warden', wing: [] }, seed, 'standard');
 		state.spawnIn = 0; state.spawned = index;
 		spawningStep(state, 1 / 60);
@@ -157,6 +158,11 @@ test('edge and hillside reinforcements keep the whole dropship on the field and 
 		for (const passenger of state.warnings.flatMap(function (w) { return w.drop ?? []; })) {
 			const ground = groundHeight(map.terrain, at(passenger.lane, DROPSHIP_DECK.toe));
 			expect(Math.abs(padHeight - ground)).toBeLessThanOrEqual(5);
+			const release = passenger.flight.startedAt + rigReleaseTime(passenger);
+			for (let t = release - 1; t <= release; t += 1 / 60) {
+				const rig = dropRigPose(passenger, t);
+				expect(rig.elevation).toBeGreaterThanOrEqual(groundHeight(map.terrain, rig));
+			}
 		}
 	}
 });

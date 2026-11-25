@@ -54,7 +54,8 @@ export const dropSurfaceHeight = function (drop: DropPassenger, at: Point) {
 	const aft = (at.x - origin.x) * Math.cos(heading) + (at.y - origin.y) * Math.sin(heading);
 	const deck = DROPSHIP_DECK.height * fraction((DROPSHIP_DECK.toe - aft) / (DROPSHIP_DECK.toe - DROPSHIP_DECK.hinge));
 	const runout = ease((aft - DROPSHIP_DECK.toe) / (exit - DROPSHIP_DECK.toe));
-	return drop.flight.padHeight + deck + (groundHeight(drop.flight.terrain, at) - drop.flight.padHeight) * runout;
+	const ground = groundHeight(drop.flight.terrain, at);
+	return Math.max(ground, drop.flight.padHeight + deck + (ground - drop.flight.padHeight) * runout);
 };
 export const dropRigPose = function (drop: DropPassenger, time: number) {
 	const elapsed = time - drop.flight.startedAt - approachSeconds - openSeconds - drop.delay;
