@@ -158,8 +158,8 @@ export const terrainWaypoint = function (terrain: FieldTerrain, from: Point, to:
 	return best?.point ?? from;
 };
 
-export const terrainShotFraction = function (terrain: FieldTerrain, from: SpatialPoint, to: SpatialPoint): number | undefined {
-	let first: number | undefined;
+export const terrainShotContact = function (terrain: FieldTerrain, from: SpatialPoint, to: SpatialPoint) {
+	let first: { fraction: number; obstacle: TerrainObstacle; normal: SpatialPoint } | undefined;
 	for (const obstacle of terrain.obstacles) {
 		if (obstacle.kind === 'fissure') continue;
 		const box = bounds(obstacle, 0);
@@ -168,7 +168,16 @@ export const terrainShotFraction = function (terrain: FieldTerrain, from: Spatia
 		const z = axisInterval(from.elevation, to.elevation - from.elevation, 0, obstacle.height);
 		if (!x || !y || !z) continue;
 		const entry = Math.max(0, x[0], y[0], z[0]);
-		if (entry <= Math.min(1, x[1], y[1], z[1]) && (first === undefined || entry < first)) first = entry;
+		if (entry > Math.min(1, x[1], y[1], z[1]) || first && entry >= first.fraction) continue;
+		const normal = { x: 0, y: 0, elevation: 0 };
+		const leading = Math.max(x[0], y[0], z[0]);
+		if (leading === x[0]) normal.x = Math.sign(from.x - to.x);
+		else if (leading === y[0]) normal.y = Math.sign(from.y - to.y);
+		else normal.elevation = Math.sign(from.elevation - to.elevation);
+		first = { fraction: entry, obstacle, normal };
 	}
 	return first;
+};
+export const terrainShotFraction = function (terrain: FieldTerrain, from: SpatialPoint, to: SpatialPoint): number | undefined {
+	return terrainShotContact(terrain, from, to)?.fraction;
 };

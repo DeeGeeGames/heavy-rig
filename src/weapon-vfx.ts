@@ -1,9 +1,11 @@
 import { AdditiveBlending, BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Group, InstancedMesh, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, RingGeometry, ShaderMaterial, SphereGeometry, UniformsLib, UniformsUtils, Vector3, Object3D } from 'three';
 import type { CombatStateView, Effect, Shot } from './simulation';
+import { createWeaponContactVfx } from './weapon-contact-vfx';
 
 // Presentation only: every animation is sampled from simulation time. These
 // materials supply local glow without bloom passes, lights, or external textures.
 export const createWeaponVfx = function () {
+	const contacts = createWeaponContactVfx();
 	const geometries = new Set<BufferGeometry>(); const materials = new Set<Material>();
 	const ownGeometry = function <T extends BufferGeometry>(value: T): T { geometries.add(value); return value; };
 	const ownMaterial = function <T extends Material>(value: T): T { materials.add(value); return value; };
@@ -207,15 +209,14 @@ export const createWeaponVfx = function () {
 		}
 		value.sparks.instanceMatrix.needsUpdate = true;
 	};
-	const createEffect = function () {
-		const root = new Group(); root.name = 'impact-effect';
+	const createLegacyEffect = function (root: Group) {
 		const light = flare('#ffce83'); const sparkSurface = new MeshBasicMaterial({ color: '#fff0bf', transparent: true, depthWrite: false, blending: AdditiveBlending, toneMapped: false });
 		const halo = new Mesh(ring, sparkSurface); halo.rotation.x = -Math.PI / 2;
 		const sparks = new InstancedMesh(cylinder, sparkSurface, 12); sparks.frustumCulled = false;
 		const flash = new Mesh(plane, light.surface); root.add(halo, sparks, flash);
 		return { root, halo, sparks, flash, light, sparkSurface, dispose: function () { sparks.dispose(); light.surface.dispose(); sparkSurface.dispose(); } };
 	};
-	const updateEffect = function (value: ReturnType<typeof createEffect>, effect: Effect) {
+	const updateLegacyEffect = function (value: ReturnType<typeof createLegacyEffect>, effect: Effect) {
 		const age = Math.max(0, 0.5 - effect.life); const progress = Math.min(1, age * 2); const muzzle = effect.source === 'muzzle';
 		const energy = effect.color === '#b1a0ff';
 		const fade = Math.max(0, 1 - age / (muzzle ? energy ? 0.14 : 0.085 : 0.22));
@@ -237,9 +238,25 @@ export const createWeaponVfx = function () {
 		}
 		value.sparks.instanceMatrix.needsUpdate = true;
 	};
+	const createEffect = function () {
+		const root = new Group(); root.name = 'impact-effect';
+		let legacy: ReturnType<typeof createLegacyEffect> | undefined;
+		return {
+			root,
+			update: function (effect: Effect) {
+				// Typed events render in shared batches. Keep the original endpoint
+				// and only allocate legacy materials for effects that actually use them.
+				root.visible = !effect.feedback;
+				if (!root.visible) return;
+				legacy ??= createLegacyEffect(root);
+				updateLegacyEffect(legacy, effect);
+			},
+			dispose: function () { legacy?.dispose(); },
+		};
+	};
 	return {
-		styles, createShot, updateShot, createBeam, updateBeam, createEffect, updateEffect, afterglowRoot, updateAfterglows,
+		styles, createShot, updateShot, createBeam, updateBeam, createEffect, afterglowRoot, updateAfterglows, contacts,
 		updateTime: function (time: number) { clock.value = time; },
-		dispose: function () { clearAfterglows(); for (const value of geometries) value.dispose(); for (const value of materials) value.dispose(); },
+		dispose: function () { clearAfterglows(); contacts.dispose(); for (const value of geometries) value.dispose(); for (const value of materials) value.dispose(); },
 	};
 };

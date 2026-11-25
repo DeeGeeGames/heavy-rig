@@ -3,7 +3,7 @@ import type { AuthoredPoseContext } from './authored-pose';
 import { Box3, Group, Matrix4, Mesh, Vector3 } from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { getFrame, type FrameId } from './frames';
-import { getWeapon, type WeaponMount } from './arsenal';
+import { getWeapon, type WeaponFamily, type WeaponMount } from './arsenal';
 import { footPose, legJoints, mechScale, posedLegRig, STANDARD_LEG_RIG, type WalkerGait } from './gait';
 import { FRAME_RIGS } from './frame-rig';
 import { createLowPolyParts } from './low-poly-parts';
@@ -17,14 +17,16 @@ import { SKIN_PALETTES, supportsMechSkin, type MechFinish } from './mech-skin';
 import { applyMechSkinMaterial } from './mech-skin-material';
 import { snapMechHeading } from './torso-arc';
 import { createLegPoseSampling } from './leg-pose-sampling';
+import { createMechResponseRig, type MechResponse } from './mech-response';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; response?: MechResponse; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
-export const weaponRecoil = function (loadout: readonly WeaponMount[]): number {
+export const weaponRecoil = function (loadout: readonly WeaponMount[], family?: WeaponFamily): number {
 	return loadout.reduce(function (largest, mount) {
 		const weapon = getWeapon(mount.weapon);
+		if (family && weapon.family !== family) return largest;
 		if (weapon.kind === 'laser') return Math.max(largest, mount.firing ? 0.12 : 0);
 		const duration = Math.min(0.22, weapon.interval * 0.8);
 		const impulse = Math.max(0, (mount.cooldown - weapon.interval + duration) / duration);
@@ -103,6 +105,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	});
 	turret.position.y = rig.hipHeight;
 	const poseWeapons = articulateWeapons(root, hardware.assemblies, kind ? getEnemyWeaponRig(kind, commander) : getPlayerWeaponRig(frame));
+	const responseRig = createMechResponseRig(root, turret, hardware.assemblies.map(function (assembly) { return assembly.part; }), true);
 	const sampleLegPose = createLegPoseSampling(legs.flatMap(function (leg) {
 		return [leg.upper, leg.lower, leg.hip, leg.knee, leg.ankle, leg.sleeve, leg.rod, leg.contact, leg.foot, leg.toes];
 	}));
@@ -136,6 +139,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		get exhaust(): Vector3 | undefined { return hardware.vents.length > 0 ? exhaust : undefined; },
 		get labelHeight(): number { return labelHeight; },
 		pose: function (gait: WalkerGait, heading: number, feedback?: MechFeedback) {
+			responseRig.restore();
 			const body = { ...gait.body, angle: snapMechHeading(gait.body.angle) };
 			const torsoHeading = snapMechHeading(heading);
 			const poseRig = posedLegRig({ ...gait, body }, size, rig); const humanoid = rig.kneeDirection === 1;
@@ -149,7 +153,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			poseWeapons(gait.body, heading, feedback?.target);
 			for (const slide of hardware.slides) slide.position.x = -recoil * 5 * (kind ? 1 : definition.recoil);
 			for (const shutter of hardware.shutters) shutter.part.position.y = shutter.y + recoil * 5;
-			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = (feedback?.hit ?? 0) * 0.8;
+			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = Math.max(feedback?.hit ?? 0, feedback?.response?.flash ?? 0) * 0.8;
 			parts.glass.emissiveIntensity = 0.6 + (feedback?.heat ?? 0) / 170;
 			const legGait = feedback?.legGait ?? gait;
 			for (const leg of legs) {
@@ -178,6 +182,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			for (const [slot, tubes] of rocketTubes.entries()) for (const [index, tube] of tubes.entries()) rocketMuzzles[slot]?.[index]?.setFromMatrixPosition(tube.matrixWorld).applyMatrix4(inverseRoot);
 			exhaust.set(0, 0, 0); for (const anchor of hardware.vents) exhaust.add(vertex.setFromMatrixPosition(anchor.matrixWorld).applyMatrix4(inverseRoot));
 			if (hardware.vents.length > 0) exhaust.divideScalar(hardware.vents.length);
+			responseRig.apply(feedback?.response);
 			labelHeight = 0;
 			for (const bound of bounds) {
 				relative.multiplyMatrices(inverseRoot, bound.part.matrixWorld);

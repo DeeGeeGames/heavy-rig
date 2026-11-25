@@ -1,5 +1,7 @@
 import type { CombatEvent } from './simulation';
 import { launchCues, type LaunchCue } from './launch-timing';
+import type { FeedbackFamily, WeaponCue } from './weapon-feedback';
+import { firingReportTime, reserveImpactOnsets, type FireReport } from './audio-timing';
 
 export type AudioPhase = 'briefing' | 'launch' | 'combat' | 'refit' | 'result';
 export type AudioTheme = 'standard' | 'pursuit';
@@ -29,7 +31,12 @@ export interface AudioFrame {
 export interface AudioMix { master: number; music: number; effects: number }
 export const DEFAULT_AUDIO_MIX: Readonly<AudioMix> = { master: 0.8, music: 0.55, effects: 0.85 };
 
-type Bus = 'music' | 'effects' | 'ui' | 'alarm' | 'narrative';
+type Bus = 'music' | 'effects' | 'contact' | 'ui' | 'alarm' | 'narrative';
+type ImpactCue = Extract<WeaponCue, { type: 'impact' }>;
+const VOICE_LIMITS: Readonly<Record<Bus, number>> = { music: 48, effects: 40, contact: 32, ui: 8, alarm: 40, narrative: 40 };
+// Upgraded launchers can fire successive rounds about 82 ms apart.
+const EVENT_INTERVALS: Readonly<Partial<Record<CombatEvent, number>>> = { 'machine-gun': 0.07, rocket: 0.07, missile: 0.07, impact: 0.07, explosion: 0.1 };
+const FIRE_FAMILIES: Readonly<Partial<Record<CombatEvent, FeedbackFamily>>> = { 'machine-gun': 'bullet', cannon: 'cannon', rocket: 'rocket', missile: 'missile' };
 interface Recording {
 	file: string;
 	buffer?: AudioBuffer;
@@ -131,6 +138,11 @@ export const createAudio = function () {
 	let musicStep = 0;
 	let musicDuckUntil = 0;
 	let lastCue = -10;
+	let nextContact = 0;
+	let lastBlastContact = -10;
+	let lastBlastTail = -10;
+	let foregroundTail = false;
+	let contactSerial = 0;
 	const jog: Recording = { file: 'boots-concrete-cleaned.wav' };
 	const hatch: Recording = { file: 'mech-hatch-close.wav' };
 	const launchScore: Recording = { file: 'break-the-clamps.flac' };
@@ -142,6 +154,7 @@ export const createAudio = function () {
 	const recordingRequests = new AbortController();
 	const voices = new Set<Voice>();
 	const lastEvent = new Map<CombatEvent, number>();
+	const lastReport = new Map<CombatEvent, FireReport>();
 
 	const finish = function (voice: Voice) {
 		voice.source.onended = null;
@@ -156,14 +169,18 @@ export const createAudio = function () {
 		finish(voice);
 	};
 	const clearVoices = function (bus?: Bus) {
-		for (const voice of voices) if (!bus || voice.bus === bus) stopVoice(voice);
+		for (const voice of voices) if (!bus || voice.bus === bus || (bus === 'effects' && voice.bus === 'contact')) stopVoice(voice);
 		if (!bus || bus === 'music') launchScoreStarted = false;
-		if (!bus || bus === 'effects') launchEffectsScheduled = false;
+		if (!bus || bus === 'effects') {
+			launchEffectsScheduled = false;
+			nextContact = 0; lastBlastContact = -10; lastBlastTail = -10; foregroundTail = false; contactSerial = 0;
+			lastReport.clear();
+		}
 	};
 	const register = function (voice: Voice, at: number, duration: number, offset = 0) {
-		// Dense battles cannot steal pad voices, and pads cannot steal gun reports.
+		// Salvos share the effects fader but have their own voice budget so they cannot cut off a warning or player gun report.
 		const sameBus = [...voices].filter(function (entry) { return entry.bus === voice.bus; });
-		if (sameBus.length >= (voice.bus === 'music' ? 48 : voice.bus === 'ui' ? 8 : 40)) {
+		if (sameBus.length >= VOICE_LIMITS[voice.bus]) {
 			const oldest = sameBus[0]; if (oldest) stopVoice(oldest);
 		}
 		voices.add(voice);
@@ -546,20 +563,111 @@ export const createAudio = function () {
 		}
 	};
 
-	const play = function (events: readonly CombatEvent[]) {
+	const claimBlastTail = function (now: number, foreground = true) {
+		// Staggered rockets arrive about 100 ms apart. Give one boom to a six-round volley; rearm during sustained fire.
+		const sameVolley = now - lastBlastContact <= 0.12;
+		lastBlastContact = now;
+		if (sameVolley && now - lastBlastTail < 0.55 && (foregroundTail || !foreground)) return false;
+		lastBlastTail = now;
+		foregroundTail = foreground;
+		return true;
+	};
+
+	const hitsPlayer = function (cue: ImpactCue) {
+		return cue.target === 0 || cue.affected?.includes(0) === true;
+	};
+	const contactPriority = function (cue: ImpactCue) {
+		if (hitsPlayer(cue)) return 2;
+		return cue.shooter === 0 || cue.family === 'artillery' ? 1 : 0;
+	};
+	const playContact = function (cue: ImpactCue, now: number, at: number, layers: number) {
+		const foreground = contactPriority(cue) > 0;
+		const variant = (contactSerial++ % 4) / 3;
+		const level = foreground ? 1 : 0.45;
+		// In the isometric camera, right is ground +X, -Y. Keep hits on the listener centered.
+		const pan = cue.shooter === 0 ? (cue.direction.x - cue.direction.y) * Math.SQRT1_2 * 0.42 : 0;
+		const hitNoise = function (sound: Noise) { if (layers-- > 0) noise({ ...sound, pan, bus: 'contact', volume: level * sound.volume }); };
+		const hitTone = function (sound: Tone) { if (layers-- > 0) tone({ ...sound, pan, bus: 'contact', volume: level * sound.volume }); };
+		const light = cue.family === 'bullet';
+		const explosive = cue.family === 'missile' || cue.family === 'rocket' || cue.family === 'artillery';
+		if (cue.surface === 'armor') {
+			if (light) {
+				hitNoise({ at, duration: 0.048, frequency: 4800 + variant * 1100, volume: 0.36, type: 'bandpass' });
+				hitTone({ at, frequency: 1120 + variant * 230, endFrequency: 710, duration: 0.084, volume: 0.2, type: 'triangle' });
+				hitTone({ at: at + 0.012, frequency: 213, endFrequency: 125, duration: 0.065, volume: 0.13 });
+				return;
+			}
+			if (cue.family === 'cannon') {
+				hitNoise({ at, duration: 0.103, frequency: 3200, volume: 0.61 });
+				hitTone({ at, frequency: 202, endFrequency: 68, duration: 0.22, volume: 0.55, type: 'triangle' });
+				hitTone({ at: at + 0.005, frequency: 408, endFrequency: 293, duration: 0.33, volume: 0.23 });
+				hitTone({ at: at + 0.013, frequency: 716, endFrequency: 620, duration: 0.21, volume: 0.105 });
+				hitTone({ at: at + 0.016, frequency: 85, endFrequency: 37, duration: 0.25, volume: 0.23 });
+				hitNoise({ at: at + 0.078, duration: 0.22, frequency: 790, volume: 0.22 });
+				return;
+			}
+			hitNoise({ at, duration: 0.09, frequency: 2550 + variant * 1000, volume: 0.48, type: 'bandpass' });
+			hitTone({ at, frequency: 210 + variant * 70, endFrequency: 75, duration: 0.13, volume: 0.29, type: 'triangle' });
+		} else if (cue.surface === 'wood') {
+			hitNoise({ at, duration: light ? 0.033 : 0.065, frequency: 2300, type: 'bandpass', volume: light ? 0.22 : 0.46 });
+			hitTone({ at, frequency: 340, endFrequency: 140, duration: light ? 0.046 : 0.085, type: 'triangle', volume: light ? 0.12 : 0.26 });
+			if (!explosive) return;
+		} else {
+			const concrete = cue.surface === 'concrete';
+			const grit = concrete ? 1 : 0.63;
+			hitNoise({ at, duration: light ? 0.059 : 0.14, frequency: (light ? 2000 : 1460) * grit, volume: light ? 0.34 : 0.61 });
+			hitTone({ at, frequency: light ? 195 : 150, endFrequency: light ? 83 : 52, duration: light ? 0.065 : 0.21, volume: light ? 0.18 : 0.39, type: 'triangle' });
+			hitNoise({ at: at + 0.055, duration: light ? 0.045 : 0.15, frequency: (light ? 3400 : 2860) * grit, volume: (light ? 0.1 : 0.25) * grit, type: 'bandpass' });
+			if (light) return;
+			if (!explosive) {
+				hitNoise({ at: at + 0.12, duration: 0.17, frequency: 1900 * grit, volume: 0.24 * grit, type: 'bandpass' });
+				return;
+			}
+		}
+		// The crack belongs to each round, while nearby detonations share the low decay.
+		if (!claimBlastTail(now, foreground)) return;
+		layers = 3;
+		const heavy = cue.heavy || cue.family === 'artillery';
+		if (cue.surface === 'armor') {
+			hitNoise({ at: at + 0.012, duration: heavy ? 0.72 : 0.42, frequency: heavy ? 1200 : 1650, volume: heavy ? 0.64 : 0.53 });
+			hitTone({ at, frequency: 111, endFrequency: 33, duration: heavy ? 0.58 : 0.32, volume: heavy ? 0.59 : 0.44 });
+		} else {
+			hitNoise({ at: at + 0.12, duration: heavy ? 0.29 : 0.17, frequency: cue.surface === 'concrete' ? 1900 : 1200, volume: 0.24, type: 'bandpass' });
+			hitTone({ at, frequency: 99, endFrequency: 32, duration: heavy ? 0.56 : 0.33, volume: heavy ? 0.56 : 0.35 });
+			hitNoise({ at: at + 0.023, duration: heavy ? 0.63 : 0.37, frequency: 900, volume: heavy ? 0.65 : 0.49 });
+		}
+	};
+
+	const play = function (events: readonly CombatEvent[], cues: readonly WeaponCue[] = []) {
 		if (!synth || disposed || muted || !active || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
-		const at = synth.context.currentTime;
-		for (const event of events.slice(0, 16)) {
-			const previous = lastEvent.get(event) ?? -10;
-			const interval = event === 'impact' || event === 'machine-gun' ? 0.07 : event === 'explosion' || event === 'rocket' || event === 'missile' ? 0.1 : 0.03;
-			if (at - previous < interval) continue;
+		if (events.length === 0 && cues.length === 0) return;
+		const now = synth.context.currentTime;
+		const contacts = cues.filter(function (cue) { return cue.type === 'impact'; });
+		const reports = new Set<CombatEvent>();
+		let artillery = contacts.filter(function (contact) { return contact.family === 'artillery'; }).length;
+		let ordinary = contacts.length - artillery;
+		for (const event of events) {
+			// The simulation also publishes a generic event for each contact. Leave unrelated PPC hits and death explosions audible.
+			if (event === 'impact' && ordinary > 0) { ordinary--; continue; }
+			if (event === 'explosion' && artillery > 0) { artillery--; continue; }
+			const family = FIRE_FAMILIES[event];
+			const launch = family && cues.find(function (cue) { return cue.type === 'fire' && cue.shooter === 0 && cue.family === family; });
+			let at = now;
+			if (launch) {
+				if (reports.has(event)) continue;
+				reports.add(event);
+				at = firingReportTime(now, launch.time, lastReport.get(event));
+				lastReport.set(event, { time: launch.time, onset: at });
+			} else if (now - (lastEvent.get(event) ?? -10) < (EVENT_INTERVALS[event] ?? 0.03)) continue;
 			lastEvent.set(event, at);
 			switch (event) {
-				case 'player-hit':
+				case 'player-hit': {
+					const materialHit = contacts.some(hitsPlayer);
 					musicDuckUntil = at + 0.4;
-					tone({ at, frequency: 76, endFrequency: 27, duration: 0.3, volume: 0.4, type: 'triangle' });
-					noise({ at, duration: 0.2, volume: 0.32, frequency: 800, type: 'bandpass' });
+					if (!materialHit) tone({ at, frequency: 76, endFrequency: 27, duration: 0.3, volume: 0.4, type: 'triangle' });
+					noise({ at, duration: 0.2, volume: materialHit ? 0.18 : 0.32, frequency: 800, type: 'bandpass' });
 					break;
+				}
 				case 'relay-hit':
 					musicDuckUntil = at + 0.65;
 					tone({ at, frequency: 620, endFrequency: 430, duration: 0.12, volume: 0.12, type: 'triangle' });
@@ -572,34 +680,45 @@ export const createAudio = function () {
 				case 'machine-gun':
 					noise({ at, duration: 0.07, volume: 0.18, frequency: 3400, type: 'bandpass', pan: -0.12 });
 					tone({ at, frequency: 160, endFrequency: 75, duration: 0.055, volume: 0.12, type: 'triangle' });
+					noise({ at: at + 0.035, duration: 0.037, frequency: 1750, volume: 0.2, type: 'bandpass', pan: -0.32 });
 					break;
 				case 'ppc':
 					tone({ at, frequency: 720, endFrequency: 110, duration: 0.36, volume: 0.21, type: 'sawtooth', cutoff: 2600, endCutoff: 500 });
 					tone({ at, frequency: 147, endFrequency: 42, duration: 0.5, volume: 0.3, type: 'triangle' });
 					noise({ at: at + 0.015, duration: 0.18, volume: 0.17, frequency: 4200, type: 'bandpass' });
 					break;
-				case 'rocket':
-					noise({ at, duration: 0.25, volume: 0.24, frequency: 980, type: 'bandpass' });
-					tone({ at, frequency: 96, endFrequency: 48, duration: 0.18, volume: 0.18, type: 'triangle' });
-					break;
 				case 'cannon':
 					tone({ at, frequency: 145, endFrequency: 27, duration: 0.36, volume: 0.55, type: 'triangle' });
 					noise({ at, duration: 0.3, volume: 0.7, frequency: 2200 });
 					noise({ at: at + 0.04, duration: 0.4, volume: 0.18, frequency: 500, pan: -0.12 });
 					tone({ at: at + 0.19, frequency: 320, endFrequency: 170, duration: 0.09, volume: 0.09, type: 'triangle', pan: 0.15 });
+					noise({ at: at + 0.022, duration: 0.1, frequency: 930, volume: 0.38, pan: -0.38 });
+					tone({ at: at + 0.13, frequency: 224, endFrequency: 115, duration: 0.085, volume: 0.22, type: 'triangle', pan: -0.32 });
+					noise({ at: at + 0.19, duration: 0.047, frequency: 2900, volume: 0.28, type: 'bandpass', pan: -0.27 });
 					break;
-				case 'missile':
-					noise({ at, duration: 0.32, volume: 0.22, frequency: 2400, type: 'bandpass', pan: 0.18 });
-					tone({ at, frequency: 115, endFrequency: 420, duration: 0.24, volume: 0.09, type: 'sawtooth', cutoff: 950, pan: -0.18 });
+				case 'rocket':
+				case 'missile': {
+					const heavy = cues.some(function (cue) { return cue.type === 'fire' && cue.shooter === 0 && cue.family === event && cue.heavy; });
+					if (event === 'rocket') {
+						noise({ at, duration: 0.25, volume: 0.24, frequency: 980, type: 'bandpass' });
+						tone({ at, frequency: 96, endFrequency: 48, duration: 0.18, volume: 0.18, type: 'triangle' });
+					} else {
+						noise({ at, duration: 0.32, volume: 0.22, frequency: 2400, type: 'bandpass', pan: 0.18 });
+						tone({ at, frequency: 115, endFrequency: 420, duration: 0.24, volume: 0.09, type: 'sawtooth', cutoff: 950, pan: -0.18 });
+					}
+					noise({ at: at + 0.012, duration: event === 'missile' ? 0.28 : 0.16, frequency: heavy ? 1050 : 1680, volume: 0.32, pan: -0.36 });
 					break;
+				}
 				case 'impact':
 					noise({ at, duration: 0.13, volume: 0.34, frequency: 3600, type: 'bandpass' });
 					tone({ at, frequency: 560, endFrequency: 155, duration: 0.11, volume: 0.16, type: 'triangle' });
 					tone({ at, frequency: 105, endFrequency: 47, duration: 0.16, volume: 0.16 });
 					break;
 				case 'explosion':
-					noise({ at, duration: 0.8, volume: 0.75, frequency: 1600 });
-					tone({ at, frequency: 105, endFrequency: 23, duration: 0.65, volume: 0.55 });
+					if (claimBlastTail(at)) {
+						noise({ at, duration: 0.8, volume: 0.75, frequency: 1600 });
+						tone({ at, frequency: 105, endFrequency: 23, duration: 0.65, volume: 0.55 });
+					}
 					noise({ at: at + 0.14, duration: 0.7, volume: 0.28, frequency: 520, pan: 0.2 });
 					noise({ at: at + 0.28, duration: 0.35, volume: 0.12, frequency: 3200, type: 'bandpass', pan: -0.25 });
 					break;
@@ -630,6 +749,23 @@ export const createAudio = function () {
 					break;
 			}
 		}
+		contacts.sort(function (a, b) { return contactPriority(b) - contactPriority(a); });
+		const foreground = contacts.filter(function (contact) { return contactPriority(contact) > 0; }).length;
+		// Four six-round banks fit in the contact bus. For a broadside, thin out the
+		// layers of each attack so the first rounds survive until they are heard.
+		const { first, count: audible, spacing } = reserveImpactOnsets(now, nextContact, foreground);
+		const layers = audible > 12 ? 1 : audible > 6 ? 2 : Infinity;
+		contacts.forEach(function (contact, index) {
+			if (index < audible) {
+				const onset = first + index * spacing;
+				playContact(contact, now, onset, layers);
+				nextContact = onset + spacing;
+			} else if (index >= foreground && nextContact <= now + 0.045) {
+				const onset = Math.max(now, nextContact);
+				playContact(contact, now, onset, Infinity);
+				nextContact = onset + 0.022;
+			}
+		});
 	};
 
 	const dispose = async function () {

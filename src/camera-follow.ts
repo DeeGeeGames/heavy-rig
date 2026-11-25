@@ -1,4 +1,52 @@
-import type { Point } from './simulation';
+import type { Effect, Point } from './simulation';
+import type { FeedbackFamily } from './weapon-feedback';
+
+const cameraImpulse: Readonly<Record<FeedbackFamily, { fire: number; impact: number }>> = {
+	bullet: { fire: 0.30, impact: 0.30 }, cannon: { fire: 3.6, impact: 2.8 },
+	missile: { fire: 1.3, impact: 2.4 }, rocket: { fire: 1.5, impact: 2.6 }, artillery: { fire: 0, impact: 3.2 },
+};
+export const weaponCameraKick = function (effects: readonly Effect[], player: Point, time: number): Point {
+	let fireX = 0, fireY = 0, fireMagnitude = 0;
+	let impactX = 0, impactY = 0;
+	for (const effect of effects) {
+		const cue = effect.feedback;
+		if (!cue) continue;
+		const age = time - cue.time;
+		if (age < 0 || age >= 0.5) continue;
+		let direction = cue.direction;
+		let gain = cue.heavy ? 1.48 : 0.19;
+		if (cue.shooter !== 0) {
+			if (cue.type === 'fire') continue;
+			if (cue.heavy) {
+				const x = player.x - effect.x, y = player.y - effect.y;
+				const distance = Math.hypot(x, y);
+				const proximity = Math.max(0, 1 - distance / 450);
+				if (proximity === 0) continue;
+				gain *= proximity;
+				if (distance > 1) direction = { x: x / distance, y: y / distance, elevation: 0 };
+			} else if (cue.target !== 0) continue;
+		}
+		// Project the 3D impulse onto the isometric camera's right and down axes.
+		const x = (direction.x - direction.y) / Math.SQRT2;
+		const y = (direction.x + direction.y - 2 * direction.elevation) / Math.sqrt(6);
+		const length = Math.hypot(x, y);
+		if (length < 0.001) continue;
+		const strength = cameraImpulse[cue.family];
+		if (cue.type === 'fire') {
+			const kick = strength.fire * gain * Math.exp(-age * (cue.family === 'bullet' ? 27 : 14)) * Math.cos(age * 34);
+			if (Math.abs(kick) > fireMagnitude) {
+				fireMagnitude = Math.abs(kick); fireX = x / length * kick; fireY = y / length * kick;
+			}
+		} else {
+			const kick = strength.impact * gain * Math.exp(-age * 12) * Math.cos(age * 40);
+			impactX -= x / length * kick; impactY -= y / length * kick;
+			if (cue.heavy) impactY += gain / 1.48 * strength.impact * 0.67 * Math.sin(age * 64) * Math.exp(-age * 15);
+		}
+	}
+	// Salvos land in the same tick. Limit their combined camera travel.
+	const scale = Math.min(1, 6 / (Math.hypot(impactX, impactY) || 1));
+	return { x: fireX + impactX * scale, y: fireY + impactY * scale };
+};
 
 export interface CameraObstruction { readonly left: number; readonly right: number; readonly top: number; readonly bottom: number }
 interface FollowInput {

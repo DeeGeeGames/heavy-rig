@@ -2,6 +2,7 @@ import { Box3, Group, Matrix4, Mesh, Object3D, TorusGeometry, Vector3 } from 'th
 import type { WalkerGait } from './gait';
 import { createLowPolyParts } from './low-poly-parts';
 import type { MechFeedback } from './mech-3d';
+import { createMechResponseRig } from './mech-response';
 import { articulateWeapons } from './weapon-articulation';
 import { getEnemyWeaponRig } from './weapon-rig';
 
@@ -124,6 +125,7 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 		return { part, muzzle };
 	});
 	const poseWeapons = articulateWeapons(root, assemblies, getEnemyWeaponRig(kind));
+	const responseRig = createMechResponseRig(root, kind === 'tank' ? turret : anatomy, assemblies.map(function (assembly) { return assembly.part; }), true);
 	parts.batch(root);
 	const bounds: { part: Mesh; corners: Vector3[] }[] = [];
 	root.traverse(function (object) {
@@ -146,6 +148,7 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 		get exhaust(): Vector3 | undefined { return vents.length > 0 ? exhaust : undefined; },
 		get labelHeight(): number { return labelHeight; },
 		pose: function (gait: WalkerGait, heading: number, feedback?: MechFeedback) {
+			responseRig.restore();
 			const time = feedback?.time ?? 0;
 			const flying = kind !== 'tank'; const altitude = kind === 'helicopter' ? 100 : kind === 'vtol' ? 135 : 0;
 			anatomy.position.y = altitude + (flying ? Math.sin(time * 2.4) * 2.8 : 0);
@@ -166,13 +169,14 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 			previousPose = { time, x: gait.body.x, y: gait.body.y };
 			for (const wheel of wheels) wheel.rotation.z = wheelPhase;
 			for (const sleeve of recoilSleeves) sleeve.position.x = -(feedback?.recoil ?? 0) * (kind === 'tank' ? 6 : 2);
-			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = (feedback?.hit ?? 0) * 0.8;
+			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = Math.max(feedback?.hit ?? 0, feedback?.response?.flash ?? 0) * 0.8;
 			root.updateMatrixWorld(true); inverseRoot.copy(root.matrixWorld).invert();
 			for (const [index, muzzle] of muzzles.entries()) muzzlePositions[index]?.setFromMatrixPosition(muzzle.matrixWorld).applyMatrix4(inverseRoot);
 			for (const [slot, tubes] of rocketTubes.entries()) for (const [index, tube] of tubes.entries()) rocketPositions[slot]?.[index]?.setFromMatrixPosition(tube.matrixWorld).applyMatrix4(inverseRoot);
 			exhaust.set(0, 0, 0);
 			for (const vent of vents) exhaust.add(vertex.setFromMatrixPosition(vent.matrixWorld).applyMatrix4(inverseRoot));
 			if (vents.length > 0) exhaust.divideScalar(vents.length);
+			responseRig.apply(feedback?.response);
 			labelHeight = 0;
 			for (const bound of bounds) {
 				relative.multiplyMatrices(inverseRoot, bound.part.matrixWorld);

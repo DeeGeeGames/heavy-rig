@@ -4,6 +4,7 @@ import type { Contract } from '../src/campaign-types';
 import { createCombatRuntime } from '../src/combat-runtime';
 import { generateMissionMap } from '../src/missions';
 import { createMissionState, enemiesStep, missileTracking, projectilesStep, weaponsStep, type Controls, type Unit } from '../src/simulation';
+import type { WeaponCue } from '../src/weapon-feedback';
 
 const contract: Contract = {
 	id: 'cover', seed: 123, planetId: 'cinder', kind: 'recovery', employer: 'accord', opponent: 'combine',
@@ -55,6 +56,43 @@ test('a shed intercepts both sides, ends a piercing shot after the exposed targe
 	state.shots.push({ x: 620, y: 948, elevation: 42, vx: 1800, vy: 0, life: 1, target: undefined, kind: 'rocket', splash: 110, damage: 10 });
 	projectilesStep(state, 0.2);
 	expect(exposed.hp).toBe(984); expect(sheltered.hp).toBe(1000);
+	expect(state.effects.at(-1)?.feedback).toMatchObject({ type: 'impact', family: 'rocket', heavy: true, surface: 'concrete', scuff: true, affected: [31], normal: { x: -1, y: 0, elevation: 0 } });
+});
+
+test('a fixed step publishes every swept contact once, with the struck surface and firing actor', async function () {
+	const initial = scenario(); initial.enemies = [{ ...scout(31, 610), stationary: true, cooldown: Infinity }];
+	const map = initial.mission?.map;
+	if (!map?.terrain) throw new Error('Missing field terrain');
+	map.terrain = { ...map.terrain, obstacles: [...map.terrain.obstacles, { kind: 'tree', x: 700, y: 1100, width: 20, depth: 30, height: 60 }] };
+	const rounds = { vx: 4000, vy: 0, elevation: 36, life: 1, damage: 4, target: undefined, kind: 'bullet' } as const;
+	initial.shots = [
+		{ ...rounds, x: 565, y: 900 },
+		{ ...rounds, x: 570, y: 900, squadmateId: 'wing' },
+		{ ...rounds, x: 670, y: 935, kind: 'enemy', owner: 43, weapon: 'autocannon' },
+		{ ...rounds, x: 650, y: 790, elevation: 3, vElevation: -600 },
+		{ ...rounds, x: 675, y: 1100, elevation: 55 },
+	];
+	const runtime = createCombatRuntime();
+	const world = ECSpresso.create().withPlugin(runtime.plugin).withFixedTimestep(1 / 60).build();
+	await world.initialize();
+	try {
+		const state = runtime.attach(initial); runtime.setEnabled(true);
+		const steps: (readonly WeaponCue[])[] = [];
+		world.eventBus.subscribe('combatStepFinished', function (data) { steps.push(data.weaponCues); });
+		world.update(1 / 60); world.update(1 / 60);
+		expect(steps).toHaveLength(2);
+		expect(steps[0]).toMatchObject([
+			{ type: 'impact', family: 'bullet', shooter: 0, surface: 'armor', target: 31, direction: { x: 1, y: 0, elevation: 0 } },
+			{ type: 'impact', shooter: 'wing', surface: 'armor', target: 31 },
+			{ type: 'impact', family: 'cannon', shooter: 43, surface: 'concrete', normal: { x: -1, y: 0, elevation: 0 } },
+			{ type: 'impact', family: 'bullet', surface: 'ground', normal: { x: 0, y: 0, elevation: 1 } },
+			{ type: 'impact', family: 'bullet', surface: 'wood', normal: { x: -1, y: 0, elevation: 0 } },
+		]);
+		expect(steps[0]?.at(-1)).not.toHaveProperty('scuff');
+		expect(steps[1]).toEqual([]);
+		expect(state.effects).toHaveLength(5); expect(state.shots).toHaveLength(0);
+		expect(state.enemies[0]?.hp).toBe(992);
+	} finally { await world.dispose(); }
 });
 
 test('laser endpoint, damage and missile acquisition switch together when the line of fire clears the roof', function () {
