@@ -13,8 +13,6 @@ export interface FrameDefinition {
 	cooling: number; incomingDamage: number;
 	size: number; stride: number; suspension: number; recoil: number;
 }
-// Integrity is a normalized percentage on every frame. Resistance changes the
-// cost of a hit without changing repair, report, or persisted record formats.
 type ChassisDefinition = Omit<FrameDefinition, 'id' | 'name' | 'chassisId' | 'chassisName' | 'variant' | 'variantName'>;
 const CHASSIS: Readonly<Record<ChassisId, ChassisDefinition>> = {
 	warden: { price: 5000, designation: '08', role: 'Line fighter', description: 'A balanced siege chassis. Accurate shells and steady handling hold the relay line.', tradeoff: 'Balanced armor and mobility; no specialized advantage.', starter: 'autocannon', color: '#d7ad61', mass: 80, recommendedMass: 122, speed: 90, reverseSpeed: 48, acceleration: 1.5, turnRate: 1.05, turretRate: 2.3, cooling: 12, incomingDamage: 1, size: 1, stride: 1, suspension: 1, recoil: 1 },
@@ -114,4 +112,11 @@ export const getFrame = function (id: FrameId): FrameDefinition {
 	const frame = FRAMES.find(function (candidate) { return candidate.id === id; });
 	if (!frame) throw new RangeError(`Unknown Heavy Rig frame: ${id}`);
 	return frame;
+};
+
+// Mounted weapons deal armor points. Use the bare chassis tonnage so fitting
+// equipment, including a variant's extra mounting structure, can't buy armor.
+export const rigIntegrityDamage = function (frameId: FrameId, weaponDamage: number): number {
+	const armorPoints = 25 * CHASSIS[getFrame(frameId).chassisId].mass;
+	return weaponDamage * 100 / armorPoints;
 };

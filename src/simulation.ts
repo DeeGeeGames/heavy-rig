@@ -4,7 +4,7 @@ import type { AuthoredPoseContext } from './authored-pose';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { consumeFire, coolReactor, frameWeight, loadedMounts, usableMount, weightMetrics, type ReactorState } from './combat-resources';
 import { createMount, getWeapon, getWeaponTier, weaponIdForTier, withinWeaponRange, type WeaponTier, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
-import { FRAMES, getFrame, type FrameId } from './frames';
+import { FRAMES, getFrame, rigIntegrityDamage, type FrameId } from './frames';
 import { canEquipWeapon, stockPackage, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionMap, MissionRuntime } from './campaign-types';
@@ -493,7 +493,8 @@ const hurtEnemy = function (state: CombatStateView, enemy: Unit, damage: number,
 	const frontal = Math.abs(angleDelta(enemy.kind === 'tank' ? enemy.hullAngle ?? enemy.angle : enemy.angle, Math.atan2(from.y - enemy.y, from.x - enemy.x))) < Math.PI / 3;
 	const armor = enemy.catalog ? incomingArmor(enemy.catalog.frameId, enemy.angle, incoming) : undefined;
 	if (armor === BASTION_PLATE_DAMAGE) plateFeedback(state, enemy, enemy.angle);
-	const applied = damage * (armor ?? (defense.exposed ? 1.35 : frontal ? defense.frontalMultiplier : 1));
+	const hit = enemy.catalog ? rigIntegrityDamage(enemy.catalog.frameId, damage) : damage;
+	const applied = hit * (armor ?? (defense.exposed ? 1.35 : frontal ? defense.frontalMultiplier : 1));
 	if (playerFire) state.stats.damageDealt += Math.min(Math.max(0, enemy.hp), applied);
 	enemy.hp -= applied;
 	if (state.mission) enemy.engaged = true;
@@ -548,16 +549,17 @@ const friendlyContacts = function (state: CombatStateView, relay = relayPosition
 const friendlyActor = function (target: FriendlyContact): FeedbackActor | undefined {
 	return target.side === 'squadmate' ? target.mate.pilotId : target.side === 'player' ? 0 : undefined;
 };
-const hurtFriendly = function (state: CombatStateView, target: FriendlyContact, damage: number, directionalFeedback = false, incoming?: SpatialPoint) {
+const hurtFriendlyIntegrity = function (state: CombatStateView, target: FriendlyContact, damage: number, directionalFeedback = false, incoming?: SpatialPoint) {
 	damage *= targetMarked(state, target.id, true) ? SPECTER_MARK_DAMAGE : 1;
 	if (target.side === 'squadmate') hurtSquadmate(state, target.mate, damage, incoming);
 	else if (target.side === 'player') hurtPlayer(state, damage, directionalFeedback, incoming);
-	else {
-		// Apply the same tier's structure HP budget behind the relay's normal
-		// 0–100 readout. Catalog damage stays unscaled against friendly rigs.
-		const structureHp = state.mission ? getMissionTier(state.mission.contract.tier).objectiveHp : 450;
-		hurtRelay(state, damage * 100 / structureHp);
-	}
+	else hurtRelay(state, damage);
+};
+const hurtFriendlyWithWeapon = function (state: CombatStateView, target: FriendlyContact, damage: number, directionalFeedback = false, incoming?: SpatialPoint) {
+	const loss = target.side === 'relay'
+		? damage * 100 / getMissionTier(state.mission?.contract.tier ?? 1).objectiveHp
+		: rigIntegrityDamage(target.side === 'squadmate' ? target.mate.frameId : state.frame, damage);
+	hurtFriendlyIntegrity(state, target, loss, directionalFeedback, incoming);
 };
 export const isJammed = function (state: CombatStateView, body: Point, hostile = false): boolean {
 	const near = function (source: Point & { hp: number }) { return source.hp > 0 && distance(body, source) <= SPECTER_JAM_RANGE; };
@@ -1106,7 +1108,7 @@ const catalogFight = function (state: CombatStateView, enemy: Unit, pilot: Catal
 		source: { owner: enemy.id }, shots: function () { return pilot.shotsFired; }, countShot: function () { return ++pilot.shotsFired; },
 	}, { aim: target, fire: [ready, ready, ready, ready], ...(selected ? { targetId: selected.id } : {}) }, contacts, function (id, damage, _origin, incoming) {
 		const contact = contacts.find(function (candidate) { return candidate.id === id; });
-		if (contact) hurtFriendly(state, contact, damage, false, incoming);
+		if (contact) hurtFriendlyWithWeapon(state, contact, damage, false, incoming);
 	}, dt);
 	enemy.x = body.x; enemy.y = body.y; enemy.hullAngle = body.angle; enemy.angle = body.turret;
 	pilot.speed = body.speed; pilot.motorSpeed = body.motorSpeed; pilot.throttle = body.throttle; pilot.missileLock = body.missileLock; pilot.targetId = body.targetId; pilot.brace = body.brace; pilot.designation = body.designation;
@@ -1304,8 +1306,10 @@ export const artilleryStep = function (state: CombatStateView, dt: number) {
 				if (!contactAlive(target) || !inBlast(target.volume, strike.radius + (target.side === 'relay' ? 30 : 20))) continue;
 				const actor = friendlyActor(target);
 				if (actor !== undefined) affected.push(actor);
-				if (target.side === 'relay' && strike.facilityMultiplier === undefined) hurtRelay(state, strike.damage * .6);
-				else hurtFriendly(state, target, strike.damage * (target.side === 'relay' ? strike.facilityMultiplier ?? 1 : 1), true);
+				// Mounted mortars carry a facility modifier. Scripted barrages already deal integrity damage.
+				if (strike.facilityMultiplier !== undefined) hurtFriendlyWithWeapon(state, target, strike.damage * (target.side === 'relay' ? strike.facilityMultiplier : 1), true);
+				else if (target.side === 'relay') hurtRelay(state, strike.damage * .6);
+				else hurtFriendlyIntegrity(state, target, strike.damage, true);
 			}
 		} else {
 			const playerFire = strike.squadmateId === undefined;
@@ -1430,7 +1434,7 @@ export const projectilesStep = function (state: CombatStateView, dt: number) {
 				.filter(function (hit): hit is { target: FriendlyContact; entry: number } { return hit.entry !== undefined && hit.entry <= groundHit && hit.entry < coverHit; })
 				.sort(function (a, b) { return a.entry - b.entry || a.target.id - b.target.id; });
 			for (const hit of hits) {
-				hurtFriendly(state, hit.target, shot.damage, family !== undefined, incoming);
+				hurtFriendlyWithWeapon(state, hit.target, shot.damage, family !== undefined, incoming);
 				const impact = pointAlong(origin, end, hit.entry);
 				if (shot.hitIds) shot.hitIds.push(hit.target.id); else stopFraction = hit.entry;
 				const affected = shot.splash ? splashFriendly(state, friendlies, impact, shot, hit.target.id) : undefined;
@@ -1480,7 +1484,7 @@ const splashFriendly = function (state: CombatStateView, contacts: readonly Frie
 		if (terrain && (terrainShotFraction(terrain, contact.volume, impact) ?? 1) < 1 - 1e-8) continue;
 		const actor = friendlyActor(contact);
 		if (actor !== undefined && contactAlive(contact)) affected.push(actor);
-		hurtFriendly(state, contact, shot.damage * 0.6, true);
+		hurtFriendlyWithWeapon(state, contact, shot.damage * 0.6, true);
 	}
 	return affected;
 };

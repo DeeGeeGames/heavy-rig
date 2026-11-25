@@ -4,7 +4,7 @@ import { getWeapon } from '../src/arsenal';
 import type { Contract, MissionMap } from '../src/campaign-types';
 import { defaultReserves, loadedMounts } from '../src/combat-resources';
 import { createCombatRuntime } from '../src/combat-runtime';
-import { getFrame, type FrameId } from '../src/frames';
+import { getFrame, rigIntegrityDamage, type FrameId } from '../src/frames';
 import { createStarterLoadout } from '../src/hardpoints';
 import { createTouchFacing } from '../src/touch-controls';
 import { artilleryAimStatus, artilleryStep, coolingStep, createMissionState, createState, enemiesStep, projectilesStep, squadmatesStep, surveyed, targetMarked, weaponsStep, type CombatStateView, type Controls, type Point, type Shot, type Unit } from '../src/simulation';
@@ -102,7 +102,7 @@ test('friendly Harrow allies stop to lob at range, and catalog Harrows commit ho
 	if (!strike) throw new Error('Missing catalog strike');
 	state.enemies = [];
 	artilleryStep(state, strike.life + dt);
-	expect(state.player.hp).toBeCloseTo(100 - strike.damage * getFrame('warden').incomingDamage);
+	expect(state.player.hp).toBeCloseTo(100 - rigIntegrityDamage(state.frame, strike.damage) * getFrame(state.frame).incomingDamage);
 });
 
 test('Bastion plates follow the torso on player, ally and catalog damage, and ignore overhead impacts', function () {
@@ -117,12 +117,12 @@ test('Bastion plates follow the torso on player, ally and catalog damage, and ig
 	Object.assign(wing, { x: 1100, y: 1100, angle: Math.PI / 2, turret: 0 });
 	state.shots = [hit(state.player, 1, { kind: 'enemy' }), hit(wing, 1, { kind: 'bullet', owner: 88 })];
 	projectilesStep(state, .1);
-	expect(state.player.hp).toBeCloseTo(94.7); expect(wing.hp).toBeCloseTo(94.7);
+	expect(state.player.hp).toBeCloseTo(94.7); expect(wing.hp).toBeCloseTo(100 - rigIntegrityDamage(wing.frameId, 5.3));
 	const enemy = hostile(90, { x: 1500, y: 1200 }, 'striker', 'bastion');
 	enemy.hullAngle = Math.PI / 2;
 	state.enemies = [enemy]; state.shots = [hit(enemy, 1, { kind: 'cannon' }), hit(enemy, -1, { kind: 'cannon' }), { ...hit(enemy, 1, { kind: 'cannon' }), x: enemy.x, vx: 0, elevation: 135, vElevation: -1000 }];
 	projectilesStep(state, .15);
-	expect(enemy.hp).toBeCloseTo(500 - 5.3 - 20 * getFrame('bastion').incomingDamage);
+	expect(enemy.maxHp - enemy.hp).toBeCloseTo(rigIntegrityDamage('bastion', 5.3 + 20 * getFrame('bastion').incomingDamage));
 	state.strikes = [{ ...state.player, life: dt, id: 92, duration: dt, radius: 85, damage: 10 }];
 	artilleryStep(state, dt);
 	expect(state.player.hp).toBeCloseTo(94.7 - 10 * getFrame('bastion-b').incomingDamage);

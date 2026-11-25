@@ -2,9 +2,10 @@ import { expect, test } from 'bun:test';
 import { getWeapon } from '../src/arsenal';
 import type { Contract, MissionMap } from '../src/campaign-types';
 import { frameWeight } from '../src/combat-resources';
-import { PLAYABLE_FRAMES, type FrameId } from '../src/frames';
-import { createStarterLoadout } from '../src/hardpoints';
-import { createMissionState, enemiesStep, enemyWeight, MISSILE_LOCK_SECONDS, projectilesStep, weaponsStep, type Controls } from '../src/simulation';
+import { PLAYABLE_FRAMES, rigIntegrityDamage, type FrameId } from '../src/frames';
+import { createStarterLoadout, stockPackage } from '../src/hardpoints';
+import { missionStructures } from '../src/missions';
+import { createMissionState, enemiesStep, enemyWeight, MISSILE_LOCK_SECONDS, projectilesStep, step, weaponsStep, type Controls, type Point, type State } from '../src/simulation';
 
 const contract: Contract = { id: 'catalog-fixture', seed: 0, planetId: 'meridian', kind: 'clearance', tier: 2,
 	employer: 'freeholds', opponent: 'combine', title: 'Field test', briefing: '', reward: 100, favor: 1, hostility: 1, requiredReputation: 0 };
@@ -43,8 +44,9 @@ test('a stock enemy rig shares its player counterpart’s weight, PPC behavior, 
 	expect(friendly?.life).toBe(hostile?.life);
 	expect(Math.hypot(friendly?.vx ?? 0, friendly?.vy ?? 0, friendly?.vElevation ?? 0)).toBeCloseTo(getWeapon(ppc.weapon).speed);
 	projectilesStep(state, 0.5);
-	expect(state.player.hp).toBe(0);
-	expect(enemy.hp).toBeLessThanOrEqual(0);
+	expect(state.player.hp).toBeGreaterThan(80);
+	expect(state.player.hp).toBeLessThan(100);
+	expect(enemy.hp).toBeCloseTo(state.player.hp);
 });
 
 test('catalog missiles must acquire lock and can hit past the old enemy firing range', function () {
@@ -57,8 +59,60 @@ test('catalog missiles must acquire lock and can hit past the old enemy firing r
 	if (!shot?.weapon) throw new Error('Catalog rig never launched its missile');
 	expect(shot).toMatchObject({ owner: enemy.id, kind: 'missile', target: 0 });
 	projectilesStep(state, 1.5);
-	expect(state.player.hp).toBeCloseTo(100 - getWeapon(shot.weapon).damage);
+	expect(state.player.hp).toBeCloseTo(100 - rigIntegrityDamage(state.frame, getWeapon(shot.weapon).damage));
 	expect(enemy.hp).toBe(100);
+});
+
+const timeUnderFire = function (state: State, targetId: number, target: Point & { hp: number }) {
+	const start = state.time;
+	const input: Controls = { ...idle, aim: target, targetId, fire: [true, true, true, true] };
+	while (target.hp > 0 && state.time - start < 60 && state.outcome === 'playing') step(state, input, dt);
+	expect(target.hp).toBeLessThanOrEqual(0);
+	return state.time - start;
+};
+
+test('a stock Warden needs repeated volleys to disable a full-health campaign Warden', function () {
+	const { state, enemy } = duel('warden', 400);
+	enemy.cooldown = 3600;
+	const seconds = timeUnderFire(state, enemy.id, enemy);
+	expect(seconds).toBeGreaterThan(10);
+	expect(seconds).toBeLessThan(30);
+});
+
+test('a solo stock Kestrel can clear a Frontier roster on one ammunition load', function () {
+	const state = createMissionState({ ...contract, seed: 11 }, { frame: 'kestrel', map });
+	// Present the generated contacts one at a time in the same firing lane.
+	// Keep the pilot's ammo, heat and weapon cooldowns between engagements.
+	const roster = state.enemies;
+	for (const enemy of roster) {
+		state.enemies = [enemy];
+		Object.assign(enemy, { ...map.objective, angle: 0, hullAngle: 0, stationary: true, cooldown: Infinity });
+		timeUnderFire(state, enemy.id, enemy);
+	}
+	expect(state.mission?.stage).toBe('extract');
+	expect(state.loadout.every(function (mount) { return mount.rounds > 100; })).toBe(true);
+});
+
+test('demolition and raid targets withstand a squad opening volley and fall faster under focused fire', function () {
+	const field = { ...map, sites: [map.objective, { x: 150, y: 150 }, { x: 150, y: 2450 }] };
+	const wing = ['flint', 'glass', 'brace'].map(function (pilotId) {
+		return { pilotId, callsign: pilotId, specialty: 'marksman' as const, frameId: 'warden' as const, integrity: 100, ...stockPackage('warden') };
+	});
+	for (const kind of ['demolition', 'raid'] as const) {
+		const engage = function (withWing: boolean) {
+			const state = createMissionState({ ...contract, kind, tier: 3 }, { frame: 'warden', map: field, squadmates: withWing ? wing : [] });
+			state.enemies = [];
+			const target = missionStructures(state.mission)[0];
+			if (!target) throw new Error('Missing objective');
+			return timeUnderFire(state, target.id, target.body);
+		};
+		const solo = engage(false);
+		const squad = engage(true);
+		expect(solo).toBeGreaterThan(kind === 'demolition' ? 15 : 9);
+		expect(solo).toBeLessThan(40);
+		expect(squad).toBeGreaterThan(kind === 'demolition' ? 4 : 2);
+		expect(squad).toBeLessThan(solo * .5);
+	}
 });
 
 test('the complete playable roster is eligible without using the deployed frame', function () {
