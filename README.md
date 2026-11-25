@@ -6,7 +6,8 @@ refits, accept faction contracts, and extract from surface missions. Persistent
 throttle and independent turret tracking remain the combat core.
 
 Rig previews and battlefields use solid-ink contours and stepped
-color ramps. Walking and reversing expose four leg poses per step; running
+color ramps. Battlefield rigs and terrain share two-metre cells that scale
+with camera zoom. Walking and reversing expose four leg poses per step; running
 uses eight poses per second, favoring footfalls. Each sample holds the complete
 solved leg pose until the next sample, so moving hips do not smooth the legs
 between stills. Held poses can slide with chassis travel. The pelvis and upper

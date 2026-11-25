@@ -1,4 +1,5 @@
 import { Box3, Color, DepthTexture, DirectionalLight, HemisphereLight, LinearFilter, LinearMipmapLinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OrthographicCamera, Scene, UnsignedIntType, Vector3, Vector4, WebGLRenderTarget, type BufferGeometry, type Group, type Object3D, type WebGLRenderer } from 'three';
+import { BATTLEFIELD_CELL_WORLD_UNITS } from './solid-ink-grid';
 
 export interface TerrainBakeSource {
 	art: readonly Group[];
@@ -46,8 +47,7 @@ export const bakeTerrain = function (renderer: WebGLRenderer, { art, ground, cov
 		camera.position.copy(center).add(new Vector3(0, 0, distance).applyQuaternion(camera.quaternion));
 		camera.updateMatrixWorld(true);
 		const projected = bounds.clone().applyMatrix4(camera.matrixWorldInverse);
-		// This grid covers four world units per texel along the fixed view axes.
-		const cell = 4;
+		const cell = BATTLEFIELD_CELL_WORLD_UNITS;
 		camera.left = Math.floor(projected.min.x / cell) * cell - cell;
 		camera.right = Math.ceil(projected.max.x / cell) * cell + cell;
 		camera.bottom = Math.floor(projected.min.y / cell) * cell - cell;
@@ -82,8 +82,8 @@ export const bakeTerrain = function (renderer: WebGLRenderer, { art, ground, cov
 		const projection = new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
 		const [, xToY, , , , yToY, , , , zToY, , , , offsetY] = projection.clone().invert().elements;
 		const floorDepth = new Vector4(-xToY / zToY, -yToY / zToY, (ground.getWorldPosition(new Vector3()).y - offsetY) / zToY, 0.2 / Math.abs(zToY));
-		// The color atlas is four metres per texel. Draw the shared ground mesh
-		// depth-only so feet, shadows and overlays meet even steep slopes exactly.
+		// Draw the shared ground mesh depth-only so feet, shadows and overlays
+		// meet even steep slopes exactly between the baked color texels.
 		const groundDepth = relief ? new Scene() : undefined;
 		const depthMaterial = groundDepth ? new MeshBasicMaterial({ colorWrite: false }) : undefined;
 		if (groundDepth && depthMaterial) {
