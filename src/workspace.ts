@@ -1,5 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import { directionalControl } from './menu-focus';
+import { directionalControl, focusMenuControl, menuControls, moveMenuFocus, type MenuDirection } from './menu-focus';
 
 export interface WorkspacePane {
 	id: string;
@@ -22,11 +22,15 @@ interface WorkspaceState {
 	pages: Map<string, number>;
 	groups: Map<string, readonly (readonly HTMLElement[])[]>;
 	focus: Map<string, { node: HTMLElement; index: number }>;
+	detail?: { view: string; pane: HTMLElement; opener: HTMLElement };
 }
 const states = new Map<HTMLElement, WorkspaceState>();
-const visible = function (item: HTMLElement) { return !item.closest('[hidden], [inert]') && item.getClientRects().length > 0; };
+const openPopover = function (root: HTMLElement) { return root.querySelector<HTMLElement>('.planet-popover:popover-open'); };
+export const workspaceNavigationLocked = function (root: HTMLElement) {
+	return root.dataset['picker'] === 'true' || Boolean(openPopover(root));
+};
 export const workspaceControls = function (root: HTMLElement) {
-	return [...root.querySelectorAll<HTMLElement>('.workspace-body button:not(:disabled), .workspace-body a[href], .workspace-body input:not(:disabled), .workspace-body select:not(:disabled), .bridge-footer button:not(:disabled), .bridge-footer a[href]')].filter(visible);
+	return menuControls(openPopover(root) ?? root);
 };
 export const textItems = function (text: string): TemplateResult[] {
 	const words = text.split(/\s+/).filter(Boolean);
@@ -47,7 +51,7 @@ const stateFor = function (root: HTMLElement): WorkspaceState {
 };
 export const rememberWorkspaceFocus = function (root: HTMLElement) {
 	const node = document.activeElement;
-	if (!(node instanceof HTMLElement)) return;
+	if (!(node instanceof HTMLElement) || node.closest('.workspace-tabs, .ship-navigation, .planet-popover')) return;
 	const index = workspaceControls(root).indexOf(node);
 	if (index >= 0) stateFor(root).focus.set(stateFor(root).renderedView, { node, index });
 };
@@ -55,8 +59,14 @@ export const focusWorkspace = function (root: HTMLElement) {
 	const state = stateFor(root);
 	const remembered = state.focus.get(state.active);
 	const controls = workspaceControls(root);
-	const target = remembered && controls.includes(remembered.node) ? remembered.node : controls[Math.min(remembered?.index ?? 0, controls.length - 1)];
-	(target ?? root.querySelector<HTMLElement>('.workspace-pane:not([hidden]) .paged-content') ?? root).focus({ preventScroll: true });
+	const previous = remembered && (controls.includes(remembered.node) ? remembered.node : controls[Math.min(remembered.index, controls.length - 1)]);
+	const target = previous
+		?? controls.find(function (item) { return item.matches('.system-marker[aria-pressed="true"], .equipment-choice[aria-pressed="true"]'); })
+		?? controls.find(function (item) { return item.closest('.workspace-pane'); })
+		?? controls.find(function (item) { return item.matches('[data-pane-target][aria-pressed="true"]'); })
+		?? controls.find(function (item) { return item.matches('[data-ship-screen][aria-current="page"]'); })
+		?? controls[0];
+	focusMenuControl(target ?? root);
 };
 const changed = function (root: HTMLElement) { root.dispatchEvent(new CustomEvent('workspacechange', { bubbles: true })); };
 const setPage = function (root: HTMLElement, pane: HTMLElement, page: number, focusContent = false) {
@@ -75,9 +85,10 @@ const setPage = function (root: HTMLElement, pane: HTMLElement, page: number, fo
 	if (next) next.disabled = index >= groups.length - 1;
 	if (count) count.textContent = `${index + 1} OF ${Math.max(1, groups.length)}`;
 	if (focusContent || losesFocus) {
-		const target = items.flatMap(function (item) { return [...item.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input')]; })[0]
-			?? pane.querySelector<HTMLElement>('.pane-actions button:not(:disabled), .page-controls button:not(:disabled), .paged-content');
-		target?.focus({ preventScroll: true });
+		const target = items.flatMap(menuControls)[0]
+			?? (focused instanceof HTMLElement && pane.contains(focused) && !focused.matches(':disabled') && focused.closest('.page-controls') ? focused : undefined)
+			?? pane.querySelector<HTMLElement>('.pane-actions button:not(:disabled), .page-controls button:not(:disabled)');
+		if (target) focusMenuControl(target);
 	} else if (focused instanceof HTMLButtonElement && focused.disabled && pane.contains(focused)) {
 		(previous && !previous.disabled ? previous : next && !next.disabled ? next : pane.querySelector<HTMLElement>('.paged-content'))?.focus({ preventScroll: true });
 	}
@@ -116,6 +127,7 @@ export const selectWorkspacePane = function (root: HTMLElement, id: string, rese
 	const current = state.views.find(function (view) { return view.id === state.active; });
 	const view = state.views.find(function (entry) { return entry.id === id; }) ?? (current?.panes.includes(id) ? current : state.views.find(function (entry) { return entry.panes.includes(id); }));
 	if (!view) return;
+	delete state.detail;
 	rememberWorkspaceFocus(root); const switched = state.active !== view.id; state.active = view.id;
 	if (resetPage) state.pages.set(id, 0);
 	if (switched) view.select?.();
@@ -123,8 +135,33 @@ export const selectWorkspacePane = function (root: HTMLElement, id: string, rese
 	if (switched) focusWorkspace(root);
 	changed(root);
 };
+export const inspectWorkspacePane = function (root: HTMLElement, id: string, opener: EventTarget | null) {
+	const state = stateFor(root);
+	const view = state.active;
+	selectWorkspacePane(root, id, true);
+	const pane = root.querySelector<HTMLElement>(`.workspace-pane[data-pane="${id}"]:not([hidden])`);
+	if (!pane) return;
+	if (opener instanceof HTMLElement && root.contains(opener)) state.detail = { view, pane, opener };
+	const target = pane.querySelector<HTMLElement>('.pane-actions .primary:not(:disabled)')
+		?? pane.querySelector<HTMLElement>('.pane-actions button:not(:disabled)')
+		?? pane.querySelector<HTMLElement>('.page-controls button:not(:disabled)')
+		?? pane.querySelector<HTMLElement>('.paged-content');
+	if (target) focusMenuControl(target);
+	changed(root);
+};
+export const workspaceBackTarget = function (root: HTMLElement) {
+	const detail = stateFor(root).detail;
+	if (!detail || detail.pane.hidden || !root.contains(detail.pane)) return undefined;
+	return function () {
+		selectWorkspacePane(root, detail.view);
+		if (root.contains(detail.opener) && !detail.opener.matches(':disabled')) {
+			revealWorkspaceElement(detail.opener);
+			focusMenuControl(detail.opener);
+		} else focusWorkspace(root);
+	};
+};
 export const cycleWorkspaceView = function (root: HTMLElement, delta: number) {
-	if (root.dataset['picker'] === 'true') return;
+	if (workspaceNavigationLocked(root)) return;
 	const state = stateFor(root); const index = state.views.findIndex(function (view) { return view.id === state.active; });
 	const view = state.views[(index + delta + state.views.length) % state.views.length];
 	if (view) { selectWorkspacePane(root, view.id); focusWorkspace(root); }
@@ -134,6 +171,8 @@ export const revealWorkspaceElement = function (target: HTMLElement) {
 	if (!root || !pane) return;
 	const state = stateFor(root); const id = pane.dataset['pane'] ?? '';
 	if (!state.views.find(function (view) { return view.id === state.active; })?.panes.includes(id)) selectWorkspacePane(root, id);
+	const popover = target.closest<HTMLElement>('[popover]');
+	if (popover && !popover.matches(':popover-open')) popover.showPopover();
 	if (pane.dataset['scrollable'] === 'true') {
 		const content = target.closest<HTMLElement>('.paged-content');
 		if (content) {
@@ -147,15 +186,26 @@ export const revealWorkspaceElement = function (target: HTMLElement) {
 	}
 	const groups = state.groups.get(id) ?? [];
 	const page = groups.findIndex(function (group) { return group.some(function (item) { return item.contains(target); }); });
-	if (page >= 0) setPage(root, pane, page);
+	if (page >= 0 && page !== state.pages.get(id)) setPage(root, pane, page);
 };
-export const moveWorkspaceFocus = function (root: HTMLElement, direction: 'up' | 'down' | 'left' | 'right') {
-	const items = workspaceControls(root); const focused = document.activeElement;
-	const index = items.findIndex(function (item) { return item === focused; });
-	if (index < 0 || !(focused instanceof HTMLElement)) { focusWorkspace(root); return; }
-	const sign = direction === 'left' || direction === 'up' ? -1 : 1;
-	const target = directionalControl(items, focused, direction) ?? items[Math.max(0, Math.min(items.length - 1, index + sign))];
-	target?.focus({ preventScroll: true }); rememberWorkspaceFocus(root); changed(root);
+const centerInViewport = function (item: HTMLElement, viewport: Element) {
+	const bounds = viewport.getBoundingClientRect();
+	const rect = item.getBoundingClientRect();
+	const x = (rect.left + rect.right) / 2;
+	const y = (rect.top + rect.bottom) / 2;
+	return x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
+};
+export const moveWorkspaceFocus = function (root: HTMLElement, direction: MenuDirection) {
+	const items = workspaceControls(root);
+	const focused = document.activeElement;
+	if (!(focused instanceof HTMLElement) || !items.includes(focused)) { focusWorkspace(root); return; }
+	const chart = root.querySelector<HTMLElement>('.territory-viewport');
+	if (chart?.contains(focused)) {
+		// Moving across the zoomed chart pans the next system into view.
+		const marker = directionalControl(items.filter(function (item) { return chart.contains(item); }), focused, direction);
+		if (marker) { focusMenuControl(marker); return; }
+	}
+	moveMenuFocus(root, direction, chart ? items.filter(function (item) { return !chart.contains(item) || centerInViewport(item, chart); }) : items);
 };
 export const renderWorkspace = function (root: HTMLElement, header: TemplateResult, panes: readonly WorkspacePane[], footer: TemplateResult, initial: string, views: readonly WorkspaceView[] = panes.map(function (pane) { return { id: pane.id, label: pane.label, panes: [pane.id] }; }), hero?: TemplateResult) {
 	const state = stateFor(root); rememberWorkspaceFocus(root); state.views = views;
@@ -173,7 +223,7 @@ export const renderWorkspace = function (root: HTMLElement, header: TemplateResu
 			<section class="workspace-pane" data-pane=${pane.id} data-scrollable=${String(Boolean(pane.scrollable))} aria-label=${pane.label}>
 				<h2 class="pane-heading">${pane.label}</h2>
 				<div class="paged-content" tabindex="-1">${pane.items.map(function (item) { return html`<div class="page-item">${item}</div>`; })}</div>
-				${pane.scrollable ? '' : html`<nav class="page-controls" aria-label="${pane.label} content pages"><button data-page-previous aria-label="Previous ${pane.label} content page" @click=${function () { const element = root.querySelector<HTMLElement>(`[data-pane="${pane.id}"]`); if (element) { setPage(root, element, (state.pages.get(pane.id) ?? 0) - 1); changed(root); } }}>← PREV</button><span data-page-count role="status"></span><button data-page-next aria-label="Next ${pane.label} content page" @click=${function () { const element = root.querySelector<HTMLElement>(`[data-pane="${pane.id}"]`); if (element) { setPage(root, element, (state.pages.get(pane.id) ?? 0) + 1); changed(root); } }}>NEXT →</button></nav>`}
+				${pane.scrollable ? '' : html`<nav class="page-controls" aria-label="${pane.label} content pages"><button data-page-previous aria-label="Previous ${pane.label} content page" @click=${function () { const element = root.querySelector<HTMLElement>(`[data-pane="${pane.id}"]`); if (element) { setPage(root, element, (state.pages.get(pane.id) ?? 0) - 1, true); changed(root); } }}>← PREV</button><span data-page-count role="status"></span><button data-page-next aria-label="Next ${pane.label} content page" @click=${function () { const element = root.querySelector<HTMLElement>(`[data-pane="${pane.id}"]`); if (element) { setPage(root, element, (state.pages.get(pane.id) ?? 0) + 1, true); changed(root); } }}>NEXT →</button></nav>`}
 				${pane.actions ? html`<div class="pane-actions">${pane.actions}</div>` : ''}
 			</section>`; })}</div>${footer}`, root);
 	state.renderedView = state.active; refreshWorkspace(root); changed(root);
@@ -185,7 +235,12 @@ export const mountWorkspaceLayout = function (container: HTMLElement, signal: Ab
 	const focus = function (event: FocusEvent) {
 		if (!(event.target instanceof HTMLElement)) return;
 		const root = event.target.closest<HTMLElement>('.workspace');
-		if (root && event.target.closest('.workspace-pane')) { revealWorkspaceElement(event.target); rememberWorkspaceFocus(root); }
+		if (!root) return;
+		const state = stateFor(root);
+		const pane = event.target.closest('.workspace-pane');
+		if (state.detail && pane && pane !== state.detail.pane) delete state.detail;
+		revealWorkspaceElement(event.target);
+		rememberWorkspaceFocus(root);
 	};
 	container.addEventListener('focusin', focus, { signal });
 	signal.addEventListener('abort', function () { observer.disconnect(); states.clear(); }, { once: true });

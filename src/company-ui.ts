@@ -2,7 +2,7 @@ import { rigFrameId, rigName, type RigId } from './rigs';
 import { getFrameOffer } from './market';
 import { companyRank, reputationProgress, unlockedMissionTier } from './reputation';
 import { html } from 'lit-html';
-import { renderWorkspace, revealWorkspaceElement, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
+import { inspectWorkspacePane, renderWorkspace, revealWorkspaceElement, selectWorkspacePane, textItems, workspaceBackTarget, type WorkspacePane } from './workspace';
 import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_FAMILY_LABELS, WEAPON_SIZE_LABELS, type WeaponId, type WeaponModelId } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { FACTIONS, getFaction, getPlanet, type Campaign, type PlannedOperation } from './campaign';
@@ -209,7 +209,7 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 			...textItems(order ? `${order.kind === 'repair' ? 'Repairs' : 'Refit'} underway. Ready day ${order.readyDay} · ${daysLabel(order.readyDay - campaign.day)} remaining.` : changed > 0 ? `Fitting estimate: ${daysLabel(changed)}. Ready day ${campaign.day + changed}. Parts are reserved when queued. Installed weapons stay in place until work finishes.` : `${hardpointSummary(frame.id)} Select a mount to fit a compatible owned weapon. Each changed mount takes one calendar day.`),
 			...(changed > 0 && !editor.loadout.some(function (weapon) { return weapon !== null; }) ? textItems('An unarmed frame cannot deploy. Removed equipment returns to stores when the refit finishes.') : []),
 			...(story ? [] : [html`<span class="eyebrow">${campaign.active ? `ACCEPTED / ${campaign.active.title}` : 'NO CONTRACT ACCEPTED'}</span>`, ...textItems(status)]),
-		], actions: equipment ? html`<button class="secondary" @click=${actions.closePicker}>BACK TO MOUNTS</button><button class="text-button" @click=${function () { actions.navigate('market'); }}>MARKET →</button>` : draft ? html`<button id="queue-refit" class="primary" ?disabled=${!canRefit(campaign, mech.frameId, editor.loadout, editor.reserves)} @click=${actions.queueRefit}>${changed > 0 ? `QUEUE ${daysLabel(changed)} REFIT →` : 'APPLY AMMUNITION · FREE'}</button><button class="text-button" data-discard-refit @click=${actions.discardRefit}>DISCARD DRAFT</button>` : order ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW ENGINEERING →</button>` : html`<button class="primary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
+		], actions: equipment ? html`<button class="secondary" @click=${actions.closePicker}>BACK TO MOUNTS</button><button class="text-button" @click=${function () { actions.closePicker(); actions.navigate('market'); }}>MARKET →</button>` : draft ? html`<button id="queue-refit" class="primary" ?disabled=${!canRefit(campaign, mech.frameId, editor.loadout, editor.reserves)} @click=${actions.queueRefit}>${changed > 0 ? `QUEUE ${daysLabel(changed)} REFIT →` : 'APPLY AMMUNITION · FREE'}</button><button class="text-button" data-discard-refit @click=${actions.discardRefit}>DISCARD DRAFT</button>` : order ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW ENGINEERING →</button>` : html`<button class="primary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
 	];
 };
 
@@ -223,10 +223,17 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 	const price = weaponMarket ? WEAPON_PRICES[weapon.id] : offer.price;
 	const owned = campaign.fleet.filter(function (mech) { return rigFrameId(mech.frameId) === frame.id; }).length;
 	const affordable = campaign.credits >= price;
-	const select = function () { refresh(); selectWorkspacePane(root, 'details', true); };
+	const select = function (event: Event) { refresh(); inspectWorkspacePane(root, 'details', event.currentTarget); };
+	const returnToCatalogue = function () {
+		const back = workspaceBackTarget(root);
+		if (back) { back(); return; }
+		selectWorkspacePane(root, view.kind);
+		const selected = root.querySelector<HTMLElement>('.catalogue-item[aria-pressed="true"]');
+		if (selected) { revealWorkspaceElement(selected); selected.focus({ preventScroll: true }); }
+	};
 	return [
 		{ id: 'catalogue', label: 'Catalogue', items: [
-			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function () { view.weapon = item.modelId; select(); }}><span><b>${item.name}</b><small>${weaponClassLabel(item.family, item.size)} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : PLAYABLE_FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function () { view.frame = item.id; select(); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${creditsLabel(getFrameOffer(campaign, item.id).price)}</span></button>`; })),
+			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function (event: Event) { view.weapon = item.modelId; select(event); }}><span><b>${item.name}</b><small>${weaponClassLabel(item.family, item.size)} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : PLAYABLE_FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function (event: Event) { view.frame = item.id; select(event); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${creditsLabel(getFrameOffer(campaign, item.id).price)}</span></button>`; })),
 			...textItems(weaponMarket ? 'Weapon purchases arrive in stores. Install them through a Mech Bay refit.' : 'Frames include the displayed weapons and standard ammunition. Packages refresh after a jump or contract. You can buy multiple copies of any variant.'),
 		] },
 		{ id: 'details', label: 'Item details', items: weaponMarket ? [
@@ -248,7 +255,7 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 			...getHardpoints(frame.id).flatMap(function (hardpoint, index) { const id = stock[index]; const item = id ? getWeapon(id) : undefined; return textItems(`${index + 1}. ${hardpoint.name}: ${item?.name ?? 'Empty'}${item?.ammunition ? ` / ${stockReserves[index] ?? 0} rounds` : ' / energy'}.`); }),
 			...textItems(`STOCK: ${loadSummary(frame.id, stock, stockReserves)}`),
 			html`<p class="workspace-copy">All stock weapons and ammunition are included. ${creditsLabel(price)}${owned ? ` · ${owned} owned` : ''}</p>`,
-		], actions: html`<button class="secondary" @click=${function () { selectWorkspacePane(root, view.kind); }}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${!affordable || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>BUY · ${creditsLabel(price)}</button>` },
+		], actions: html`<button class="secondary" @click=${returnToCatalogue}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${!affordable || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>BUY · ${creditsLabel(price)}</button>` },
 	];
 };
 
@@ -288,7 +295,9 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 		if (picker) view.assignment = picker; else delete view.assignment;
 		refresh();
 		selectWorkspacePane(root, picker ? 'assignment' : 'squad', true);
-		const target = previous && !picker ? root.querySelector<HTMLElement>(`[data-choose-${previous.kind}="${previous.slot}"]`) : undefined;
+		const target = picker ? root.querySelector<HTMLElement>('[data-pane="assignment"] .equipment-choice[aria-pressed="true"]:not(:disabled)')
+			?? root.querySelector<HTMLElement>('[data-pane="assignment"] button:not(:disabled)')
+			: previous && root.querySelector<HTMLElement>(`[data-choose-${previous.kind}="${previous.slot}"]`);
 		if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); }
 	};
 	const panes = screen === 'mechbay' ? mechBayPanes(campaign, editor, actions)
@@ -296,9 +305,9 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 		: screen === 'pilots' ? pilotPanes(campaign, actions)
 		: screen === 'deploy' ? deploymentPanes(campaign, actions, view.assignment, selectAssignment, function () { selectAssignment(); })
 		: engineeringPanes(campaign, actions);
-	const locked = screen === 'mechbay' && editor.slot !== null;
+	const locked = screen === 'mechbay' && editor.slot !== null || screen === 'deploy' && view.assignment !== undefined;
 	root.dataset['picker'] = String(locked);
-	const footer = html`<footer class="bridge-footer"><div><button @click=${actions.handbook}>HANDBOOK</button><button @click=${actions.settings}>SETTINGS</button></div><span class="company-notice" role="status">${editor.notice}</span><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'}>${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span></footer>`;
+	const footer = html`<footer class="bridge-footer"><div><button ?disabled=${locked} @click=${actions.handbook}>HANDBOOK</button><button ?disabled=${locked} @click=${actions.settings}>SETTINGS</button></div><span class="company-notice" role="status">${editor.notice}</span><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'}>${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span></footer>`;
 	const mech = getOwnedMech(campaign); const frame = mech ? getFrame(rigFrameId(mech.frameId)) : undefined;
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	const installedWeight = mech && frame ? frameWeight(frame.id, loadedMounts(mech.loadout, mech.reserves)) : undefined;

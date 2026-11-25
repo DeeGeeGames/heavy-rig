@@ -1,0 +1,92 @@
+.choice-field {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-content: center;
+	gap: 3px 8px;
+	min-width: 0;
+	min-height: 48px;
+	padding: 7px 10px;
+	text-align: left;
+}
+.choice-caption {
+	grid-column: 1 / -1;
+	color: var(--muted);
+	font: 10px/1.25 var(--mono);
+	text-transform: uppercase;
+}
+.choice-value { font: 13px/1.3 var(--mono); overflow-wrap: anywhere; }
+.choice-field::after {
+	content: '';
+	align-self: center;
+	width: 6px;
+	height: 6px;
+	margin: -3px 2px 0 0;
+	border: solid var(--cyan);
+	border-width: 0 1.5px 1.5px 0;
+	transform: rotate(45deg);
+}
+#controller-mappings .choice-field {
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	align-items: center;
+	min-height: 40px;
+}
+#controller-mappings .choice-caption { grid-column: 1; font-size: 12px; }
+.training-mount > .choice-field:only-child { grid-column: 1 / -1; }
+.couch-ui .choice-value { font-size: 16px; }
+.couch-ui .choice-caption { font-size: 12px; }
+
+.choice-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: grid;
+	grid-template-rows: minmax(0, 1fr);
+	place-items: center;
+	padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) var(--dialog-bottom-gap, 64px) max(16px, env(safe-area-inset-left));
+	background: #050c11d9;
+}
+.choice-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: min(100%, 480px);
+	max-height: 100%;
+	padding: 18px;
+	background: #111e24;
+	border: 1px solid var(--border);
+	border-top: 3px solid var(--amber);
+	box-shadow: 0 18px 48px #0007;
+}
+.choice-panel h2 { margin: 0; font: 26px/1.1 var(--display); }
+.choice-options { display: grid; gap: 4px; overflow-y: auto; overscroll-behavior: contain; }
+.choice-options button {
+	min-height: 42px;
+	padding: 8px 12px;
+	text-align: left;
+	font: 14px/1.35 var(--mono);
+}
+.choice-option {
+	display: grid;
+	grid-template-columns: 1em minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 7px;
+}
+.choice-option::before { content: ''; }
+.choice-option[aria-pressed='true'] { color: var(--cyan); border-color: var(--cyan); }
+.choice-option[aria-pressed='true']::before { content: '✓'; }
+.choice-option small { color: var(--muted); font-size: 11px; }
+.choice-cancel { margin-top: 4px; background: transparent; color: var(--muted); }
+#game .choice-field:focus-visible, #game.using-gamepad .choice-field:focus, #choice-picker button:focus {
+	outline: 2px solid var(--amber);
+	outline-offset: -2px;
+	box-shadow: inset 4px 0 var(--amber);
+	background-color: #39382a;
+}
+.couch-ui .choice-options button { font-size: 17px; min-height: 46px; }
+.couch-ui .choice-option small { font-size: 13px; }
+@media (max-height: 460px) {
+	.choice-field { padding: 5px 7px; gap: 2px 5px; min-height: 34px; }
+	.choice-panel { padding: 10px 14px; gap: 6px; }
+	.choice-panel h2 { font-size: 22px; }
+	.choice-options button { min-height: 34px; padding-block: 5px; }
+}

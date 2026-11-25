@@ -55,6 +55,7 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace .company-notice:empty { display: none; }
 .workspace button:focus-visible, .workspace button:focus { outline: 2px solid var(--amber); outline-offset: -2px; background-color: #3a3d2e; box-shadow: inset 4px 0 var(--amber); }
 .workspace button.primary:focus-visible, .workspace button.primary:focus { color: #101b20; background: var(--amber); outline-color: var(--paper); }
+.workspace .ship-navigation [aria-current='page']:focus { color: #101b20; background: var(--amber); outline-color: var(--paper); }
 .workspace .company-mount, .workspace .fleet-frame, .workspace .catalogue-item, .workspace .equipment-choice, .workspace .contract-card { border-radius: 0; }
 .workspace .star-map { height: min(clamp(100px, 24dvh, 230px), var(--page-height, 230px)); margin: 0; }
 .workspace .planet-node { min-width: 68px; gap: 4px; padding: 4px; }
