@@ -191,6 +191,14 @@ or abort earns neither and retains the original opposition penalty. Faction
 standing is bounded to −100…100, modifies offered payment, and gates employer
 access. Local-tier contracts remain available even with hostile factions.
 
+On success the employer also pays the field lead a fee equal to 25% of the
+posted reward. The Commander leads every live sortie, and their fee goes into
+company funds. For crew-only sorties, choose an assigned hire in Deploy. The
+hire keeps their fee, and the company keeps the full posted reward. The crew
+lead's Leadership adds up to 12 percentage points to the extraction check
+without changing the objective check. Deploy shows the change before commitment,
+and the debrief reports the fee alongside the contract outcome.
+
 Company reputation is separate, permanent progression earned only by successful
 extraction. New companies start at rank 1 with mission tier 1 and weapon tier 0.
 Failures, aborts, travel, waiting, and training grant no company reputation;

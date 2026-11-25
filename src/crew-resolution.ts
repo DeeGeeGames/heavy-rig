@@ -4,13 +4,14 @@ import type { Contract, MissionKind } from './campaign-types';
 import { frameWeight, HEAT_LOCK, loadedMounts, usableMount } from './combat-resources';
 import { getOwnedMech, type DeployedPilot, type OwnedMech } from './company';
 import { getFrame } from './frames';
-import { getPilotStats, type PilotAssignment } from './pilots';
+import { getPilotStats, type PilotAssignment, type PilotId } from './pilots';
 import { getMissionTier } from './reputation';
 import { rigFrameId, type RigId } from './rigs';
 import { randomSource } from './universe';
 
 export interface CrewForecast {
 	readonly objectiveChance: number;
+	readonly baseExtractionChance: number;
 	readonly extractionChance: number;
 	readonly successChance: number;
 	readonly factors: readonly string[];
@@ -26,6 +27,7 @@ export interface CrewResolution {
 	readonly objective: CrewCheck;
 	readonly extraction: CrewCheck;
 	readonly squad: readonly DeployedPilot[];
+	readonly leaderId?: PilotId;
 }
 
 interface Capabilities { firepower: number; precision: number; mobility: number; armor: number }
@@ -106,9 +108,9 @@ const teamRating = function (ratings: number[]): number {
 
 const percentage = function (chance: number): number { return Math.max(5, Math.min(97, Math.round(chance))); };
 
-const assessCrew = function (campaign: Campaign, contract: Contract, lineup: readonly PilotAssignment[]) {
+const assessCrew = function (campaign: Campaign, contract: Contract, lineup: readonly PilotAssignment[], leaderId: PilotId) {
 	const members = membersFor(campaign, lineup);
-	if (members.length === 0) throw new RangeError('Crew resolution requires at least one hire');
+	if (!members.some(function (member) { return member.pilotId === leaderId; })) throw new RangeError('Crew resolution requires an assigned hire as field lead');
 	const profile = OBJECTIVES[contract.kind];
 	const objectiveStrength = teamRating(members.map(function ({ capability }) {
 		return capability.firepower * profile.firepower + capability.precision * profile.precision + capability.mobility * profile.mobility + capability.armor * profile.armor;
@@ -116,15 +118,17 @@ const assessCrew = function (campaign: Campaign, contract: Contract, lineup: rea
 	const extractionStrength = teamRating(members.map(function ({ capability }) { return .6 * capability.mobility + .4 * capability.armor; }));
 	const opposition = contract.tier - 1;
 	const objectiveChance = percentage(58 + (objectiveStrength - 1) * 36 - opposition * 8);
-	const extractionChance = percentage(78 + (extractionStrength - 1) * 28 - opposition * 5);
-	return { members, profile, objectiveChance, extractionChance };
+	const baseExtractionChance = percentage(78 + (extractionStrength - 1) * 28 - opposition * 5);
+	const extractionChance = percentage(baseExtractionChance + (getPilotStats(campaign, leaderId).leadership - 1) * 3);
+	return { members, profile, objectiveChance, baseExtractionChance, extractionChance };
 };
 
-export const forecastCrew = function (campaign: Campaign, contract: Contract, lineup: readonly PilotAssignment[]): CrewForecast {
-	const { members, profile, objectiveChance, extractionChance } = assessCrew(campaign, contract, lineup);
+export const forecastCrew = function (campaign: Campaign, contract: Contract, lineup: readonly PilotAssignment[], leaderId: PilotId): CrewForecast {
+	const { members, profile, objectiveChance, baseExtractionChance, extractionChance } = assessCrew(campaign, contract, lineup, leaderId);
 	const integrity = members.reduce(function (sum, member) { return sum + member.integrity; }, 0) / members.length;
 	return {
 		objectiveChance,
+		baseExtractionChance,
 		extractionChance,
 		successChance: objectiveChance * extractionChance / 100,
 		factors: [
@@ -154,8 +158,8 @@ const damageRoll = function (seed: number, frameId: RigId) {
 	return Math.floor(randomSource(keyedSeed(seed, `damage:${frameId}`))() * 100) + 1;
 };
 
-export const resolveCrew = function (campaign: Campaign, contract: Contract, lineup: readonly PilotAssignment[]): CrewResolution {
-	const { members, objectiveChance, extractionChance } = assessCrew(campaign, contract, lineup);
+export const resolveCrew = function (campaign: Campaign, contract: Contract, lineup: readonly PilotAssignment[], leaderId: PilotId): CrewResolution {
+	const { members, objectiveChance, extractionChance } = assessCrew(campaign, contract, lineup, leaderId);
 	// A posting keeps its rolls regardless of the calendar, squad order, or refits.
 	const seed = keyedSeed(0x811c9dc5, `crew:${campaign.seed}/${contract.seed}/${contract.id}`);
 	const random = randomSource(seed);
@@ -176,5 +180,5 @@ export const resolveCrew = function (campaign: Campaign, contract: Contract, lin
 		const minimum = extraction.passed && entry === bestRemaining && entry.remaining <= 0 ? Math.min(1, integrity) : 0;
 		return { frameId, pilotId, startingIntegrity: integrity, integrity: Math.max(minimum, entry.remaining) };
 	});
-	return { objective, extraction, squad };
+	return { objective, extraction, squad, leaderId };
 };

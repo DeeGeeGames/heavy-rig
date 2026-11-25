@@ -9,15 +9,15 @@ test('a posting keeps its dice across reload, waiting, and lineup edits while re
 	const posting = getContracts(company).find(function (contract) { return contract.kind === 'defend' && contract.tier === 1; });
 	if (!posting) throw new Error('Defense fixture requires a local posting');
 	const lineup = [{ pilotId: 'flint', frameId: 'warden' }, { pilotId: 'kite', frameId: 'kestrel' }] as const satisfies readonly PilotAssignment[];
-	const comparison = forecastCrew(company, posting, lineup);
-	const planned = resolveCrew(company, posting, lineup);
+	const comparison = forecastCrew(company, posting, lineup, 'flint');
+	const planned = resolveCrew(company, posting, lineup, 'flint');
 	const reloaded = parseCampaign(JSON.stringify(company));
-	expect(resolveCrew({ ...reloaded, day: reloaded.day + 1 }, posting, [...lineup].reverse())).toEqual(planned);
+	expect(resolveCrew({ ...reloaded, day: reloaded.day + 1 }, posting, [...lineup].reverse(), 'flint')).toEqual(planned);
 	expect(planned.objective.chance).toBe(comparison.objectiveChance);
 	expect(planned.extraction.chance).toBe(comparison.extractionChance);
 
 	const damaged = { ...reloaded, fleet: reloaded.fleet.map(function (rig) { return { ...rig, integrity: 20 }; }) };
-	const weakened = resolveCrew(damaged, posting, lineup);
+	const weakened = resolveCrew(damaged, posting, lineup, 'flint');
 	expect(weakened.objective.roll).toBe(planned.objective.roll);
 	expect(weakened.extraction.roll).toBe(planned.extraction.roll);
 	expect(weakened.objective.chance).toBeLessThan(planned.objective.chance);
@@ -27,4 +27,23 @@ test('a posting keeps its dice across reload, waiting, and lineup edits while re
 		expect(member.integrity).toBeGreaterThanOrEqual(0);
 		expect(member.integrity).toBeLessThanOrEqual(member.startingIntegrity);
 	}
+});
+
+test('changing only field lead changes extraction odds without rerolling the posting or changing the objective', function () {
+	const company = hirePilot(hirePilot(buyFrame({ ...createCampaign(23), credits: 20_000 }, 'warden'), 'flint'), 'kite');
+	const worn = { ...company, fleet: company.fleet.map(function (rig) { return { ...rig, integrity: 60 }; }) };
+	const posting = getContracts(worn).find(function (contract) { return contract.kind === 'defend' && contract.tier === 1; });
+	if (!posting) throw new Error('Missing defense posting');
+	const lineup = [{ pilotId: 'flint', frameId: 'warden' }, { pilotId: 'kite', frameId: 'kestrel' }] as const satisfies readonly PilotAssignment[];
+	const flint = forecastCrew(worn, posting, lineup, 'flint');
+	const kite = forecastCrew(worn, posting, lineup, 'kite');
+	expect(flint.baseExtractionChance).toBe(kite.baseExtractionChance);
+	expect(flint.extractionChance).toBe(flint.baseExtractionChance + 9);
+	expect(kite.extractionChance).toBe(kite.baseExtractionChance + 3);
+	const flintResult = resolveCrew(worn, posting, lineup, 'flint');
+	const kiteResult = resolveCrew(worn, posting, lineup, 'kite');
+	expect(flintResult.objective).toEqual(kiteResult.objective);
+	expect(flintResult.extraction.roll).toBe(kiteResult.extraction.roll);
+	expect(flintResult.extraction.chance).toBe(flint.extractionChance);
+	expect(kiteResult.extraction.chance).toBe(kite.extractionChance);
 });

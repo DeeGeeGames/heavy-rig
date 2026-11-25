@@ -47,6 +47,7 @@ export interface CompanyActions {
 	dismiss: (id: PilotId) => void;
 	assignPilot: (slot: number, id: PilotId | null) => void;
 	assignRig: (slot: number, id: RigId | null) => void;
+	assignLead: (id: PilotId) => void;
 	deploy: () => void;
 	settings: () => void;
 	handbook: () => void;

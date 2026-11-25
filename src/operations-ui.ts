@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { getPlanet, reviewOperations, type Campaign } from './campaign';
+import { fieldLeadFee, getPlanet, reviewOperations, type Campaign } from './campaign';
 import { MISSION_NAMES, type MissionKind } from './campaign-types';
 import { isAuthoredContract } from './contract-chains';
 import { getPilot, SQUAD_SIZE } from './pilots';
@@ -13,6 +13,7 @@ export interface OperationsActions {
 }
 
 type OperationEntry = ReturnType<typeof reviewOperations>['entries'][number];
+const companyPay = function ({ operation: { contract }, live }: OperationEntry): number { return contract.reward + (live ? fieldLeadFee(contract) : 0); };
 const SHIP_NAMES = { wayfarer: 'HRV Wayfarer' } as const;
 const MISSION_MARKS: Readonly<Record<MissionKind, string>> = {
 	defend: '◉', demolition: '▧', assassination: '⊕', clearance: '⌖', raid: '▥', recovery: '▣', acquisition: '◈',
@@ -23,7 +24,7 @@ const shipLabel = function (ship: string, location: string) {
 };
 
 const operationCard = function (entry: OperationEntry, actions: OperationsActions) {
-	const { operation: { contract, lineup }, live, issues, forecast } = entry;
+	const { operation: { contract, lineup }, live, leaderId, issues, forecast } = entry;
 	const assigned = lineup.filter(function (slot) { return slot.pilotId !== null; });
 	const readyRigs = assigned.filter(function (slot) { return slot.frameId !== null; }).length;
 	const story = isAuthoredContract(contract);
@@ -35,12 +36,12 @@ const operationCard = function (entry: OperationEntry, actions: OperationsAction
 				<span class="operation-kind">${story ? html`<em>Story</em> / ` : ''}${MISSION_NAMES[contract.kind]}</span>
 				<strong class="operation-name">${contract.title}</strong>
 				<span class="operation-pilots">${assigned.length ? assigned.map(function ({ pilotId, frameId }) {
-					return pilotId ? html`<span><b>${getPilot(pilotId).callsign}</b> / ${frameId ? rigName(frameId) : 'Rig needed'}</span>` : '';
+					return pilotId ? html`<span><b>${getPilot(pilotId).callsign}</b>${pilotId === leaderId ? html` <em class="operation-field-lead">Lead</em>` : ''} / ${frameId ? rigName(frameId) : 'Rig needed'}</span>` : '';
 				}) : 'No squad assigned'}</span>
 				<span class="operation-status">${mode ? html`<span class="operation-mode">${mode}</span>` : ''}<span class="operation-seats" role="img" aria-label=${`${readyRigs} of ${SQUAD_SIZE} rigs assigned`}>${lineup.map(function (_, index) { return html`<i data-filled=${String(index < readyRigs)}></i>`; })}</span>${issues.length ? html`<span class="operation-held">On hold</span>` : forecast ? html`<span>${Math.round(forecast.successChance)}% success</span>` : ''}</span>
 				${issues[0] ? html`<span class="operation-blocker">${issues[0]}</span>` : ''}
 			</span>
-			<span class="operation-card-end"><span class="operation-pay">${contract.reward.toLocaleString()} <small>CR</small></span><span class="operation-edit">Edit lineup ↗</span></span>
+			<span class="operation-card-end"><span class="operation-pay">${companyPay(entry).toLocaleString()} <small>CR</small></span><span class="operation-edit">Edit lineup ↗</span></span>
 		</button>
 	</article>`;
 };
@@ -64,7 +65,7 @@ export const operationPanes = function (campaign: Campaign, actions: OperationsA
 	const crewCount = entries.filter(function (entry) { return !entry.live; }).length;
 	const blocked = entries.filter(function (entry) { return entry.issues.length > 0; });
 	const ready = count > 0 && issues.length === 0 && blocked.length === 0;
-	const pay = entries.reduce(function (total, entry) { return total + entry.operation.contract.reward; }, 0);
+	const pay = entries.reduce(function (total, entry) { return total + companyPay(entry); }, 0);
 	const commitLabel = ready ? (live ? 'Commit & play' : 'Commit & advance') : 'Commit day';
 	const state = count === 0 ? 'Empty plan' : ready ? 'All squads ready' : 'On hold';
 	const manifest: WorkspacePane = {
@@ -94,7 +95,7 @@ export const operationPanes = function (campaign: Campaign, actions: OperationsA
 			]),
 		],
 		actions: html`
-			${count ? html`<div class="operations-total"><span>${count === 1 ? 'Pay on success' : 'Pay if all succeed'}</span><strong>${pay.toLocaleString()} <small>CR</small></strong></div>` : ''}
+			${count ? html`<div class="operations-total"><span>${count === 1 ? 'Company pay on success' : 'Company pay if all succeed'}</span><strong>${pay.toLocaleString()} <small>CR</small></strong></div>` : ''}
 			<button id="operations-commit" class="primary" type="button" ?disabled=${!ready} @click=${actions.commitDay}><span>${commitLabel}</span><span aria-hidden="true">${ready && live ? '↘' : '→'}</span></button>
 			${ready ? html`<p class="operations-note">${live && crewCount ? 'Locks all lineups. Crew sorties finish even if you abort.' : live ? 'Locks the lineup and opens the live mission.' : 'Locks all lineups and advances one campaign day.'}</p>` : ''}
 		`,
