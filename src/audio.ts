@@ -42,6 +42,9 @@ interface Recording {
 	buffer?: AudioBuffer;
 	loading?: boolean;
 }
+interface CombatRecording extends Recording {
+	request?: AbortController;
+}
 interface Voice {
 	source: OscillatorNode | AudioBufferSourceNode;
 	nodes: AudioNode[];
@@ -106,6 +109,7 @@ const CHORDS = [
 	{ root: 36, notes: [48, 55, 62, 64] }, // C suspended / added ninth
 ];
 const FIGURE = [0, 2, 1, 3, 2, 1, 3, 2];
+const COMBAT_TRACKS = ['two-tons-over.flac', 'shear-pin.flac', 'quarry-teeth.flac', 'governor-override.flac'] as const;
 const PURSUIT_SIXTEENTH = 60 / 144 / 4;
 const PURSUIT_CHORDS = [
 	{ root: 38, notes: [50, 57, 62, 65] }, // D minor, held over the running bass
@@ -121,8 +125,7 @@ const PURSUIT_MOTIF = [
 	[64, 0, 61, 64, 0, 70, 69, 61],
 ];
 
-// An original, locally synthesized score. The game frame schedules a short
-// look-ahead against the audio clock; no timers survive a paused or closed game.
+// The game frame schedules synthesized notes against the audio clock.
 export const createAudio = function () {
 	let synth: Synth | undefined;
 	let disposed = false;
@@ -149,6 +152,10 @@ export const createAudio = function () {
 	const jog: Recording = { file: 'boots-concrete-cleaned.wav' };
 	const hatch: Recording = { file: 'mech-hatch-close.wav' };
 	const launchScore: Recording = { file: 'break-the-clamps.flac' };
+	let nextCombatTrack = 0;
+	let combatScore: CombatRecording | undefined;
+	let combatPlayback: { voice: Voice; origin: number } | undefined;
+	let combatOffset = 0;
 	let launchScoreStarted = false;
 	let launchEffectsScheduled = false;
 	let jogVoice: Voice | undefined;
@@ -166,6 +173,10 @@ export const createAudio = function () {
 		voices.delete(voice);
 		if (jogVoice === voice) jogVoice = undefined;
 		if (hatchVoice === voice) hatchVoice = undefined;
+		if (combatPlayback?.voice === voice) {
+			combatOffset = voice.source.context.currentTime - combatPlayback.origin;
+			combatPlayback = undefined;
+		}
 	};
 	const stopVoice = function (voice: Voice) {
 		try { voice.source.stop(); } catch { /* A scheduled source can already have ended. */ }
@@ -180,7 +191,7 @@ export const createAudio = function () {
 			lastReport.clear();
 		}
 	};
-	const register = function (voice: Voice, at: number, duration: number, offset = 0) {
+	const register = function (voice: Voice, at: number, duration: number | undefined, offset = 0) {
 		// Salvos share the effects fader but have their own voice budget so they cannot cut off a warning or player gun report.
 		const sameBus = [...voices].filter(function (entry) { return entry.bus === voice.bus; });
 		if (sameBus.length >= VOICE_LIMITS[voice.bus]) {
@@ -193,7 +204,7 @@ export const createAudio = function () {
 		};
 		if ('buffer' in voice.source) voice.source.start(at, offset);
 		else voice.source.start(at);
-		voice.source.stop(at + duration + 0.025);
+		if (duration !== undefined) voice.source.stop(at + duration + 0.025);
 	};
 	const envelope = function (gain: GainNode, at: number, duration: number, volume: number, attack = 0.006, hold = 0) {
 		const rise = Math.min(attack, duration * 0.4);
@@ -260,20 +271,29 @@ export const createAudio = function () {
 	};
 	const reset = function () {
 		clearVoices(); lastEvent.clear();
+		combatOffset = 0;
 		hatchComplete = false;
 		nextWarning = 0; nextAlarm = 0; nextMusic = 0; musicStep = 0; intensity = 0; musicDuckUntil = 0; lastCue = -10;
 	};
+	const beginSortie = function () {
+		reset();
+		combatScore?.request?.abort();
+		combatScore = { file: COMBAT_TRACKS[nextCombatTrack] ?? COMBAT_TRACKS[0] };
+		nextCombatTrack = (nextCombatTrack + 1) % COMBAT_TRACKS.length;
+	};
 
-	const preload = async function (context: AudioContext, recording: Recording) {
+	const preload = async function (context: AudioContext, recording: Recording, signal = recordingRequests.signal) {
 		if (recording.buffer || recording.loading) return;
 		recording.loading = true;
 		try {
-			const response = await fetch(`./audio/${recording.file}`, { signal: recordingRequests.signal });
+			const response = await fetch(`./audio/${recording.file}`, { signal });
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
-			const buffer = await context.decodeAudioData(await response.arrayBuffer());
-			if (!disposed) recording.buffer = buffer;
+			const data = await response.arrayBuffer();
+			if (signal.aborted) return;
+			const buffer = await context.decodeAudioData(data);
+			if (!signal.aborted) recording.buffer = buffer;
 		} catch (error) {
-			if (!disposed) console.warn(`Could not load ${recording.file}.`, error);
+			if (!signal.aborted) console.warn(`Could not load ${recording.file}.`, error);
 		} finally { recording.loading = false; }
 	};
 	const unlock = async function (): Promise<boolean> {
@@ -432,6 +452,21 @@ export const createAudio = function () {
 		register({ source, nodes: [trim], bus: 'music' }, at, buffer.duration - time, time);
 		launchScoreStarted = true;
 	};
+	const playCombatScore = function (output: Synth, buffer: AudioBuffer) {
+		if (combatPlayback) return;
+		clearVoices('music');
+		const at = output.context.currentTime;
+		const offset = combatOffset % buffer.duration;
+		const source = output.context.createBufferSource();
+		source.buffer = buffer; source.loop = true;
+		const gain = output.context.createGain();
+		gain.gain.setValueAtTime(0, at);
+		gain.gain.linearRampToValueAtTime(1, at + 0.02);
+		source.connect(gain).connect(output.music);
+		const voice: Voice = { source, nodes: [gain], bus: 'music' };
+		combatPlayback = { voice, origin: at - offset };
+		register(voice, at, undefined, offset);
+	};
 	const scoreStep = function (at: number, frame: AudioFrame) {
 		const bar = Math.floor(musicStep / 16); const beat = musicStep % 16;
 		const chord = CHORDS[Math.floor(bar / 2) % CHORDS.length]; if (!chord) return;
@@ -551,18 +586,26 @@ export const createAudio = function () {
 		laserGain.gain.setTargetAtTime(driving && frame.laser ? 0.09 : 0, at, 0.015);
 		if (!uiActive) clearVoices('ui');
 		if (!audible) { clearVoices('music'); clearVoices('effects'); nextMusic = 0; return; }
+		if (combatScore && !combatScore.request && mix.music > 0 && theme === 'standard' && (phase === 'launch' || driving)) {
+			combatScore.request = new AbortController();
+			void preload(context, combatScore, combatScore.request.signal);
+		}
 		if (phase === 'launch') { updateLaunch(frame.launchTime); return; }
+		if (driving && mix.effects > 0 && (frame.danger ?? 0) > 0.4 && at >= nextWarning) {
+			tone({ at, frequency: 440, duration: 0.13, volume: 0.07, type: 'triangle' });
+			tone({ at: at + 0.18, frequency: 330, duration: 0.13, volume: 0.06, type: 'triangle' });
+			nextWarning = at + 4;
+		}
+		if (driving && theme === 'standard' && mix.music > 0 && combatScore?.buffer) {
+			playCombatScore(synth, combatScore.buffer);
+			return;
+		}
 		intensity += (clamp(frame.intensity ?? 0.3) - intensity) * 0.025;
 		if (nextMusic < at - 0.2 || nextMusic === 0) nextMusic = at + 0.035;
 		// Bound catch-up work after a slow frame; normal frames schedule 0–2 notes.
 		for (let scheduled = 0; nextMusic < at + 0.16 && scheduled < 4; scheduled++) {
 			if (mix.music > 0) { if (theme === 'pursuit') pursuitStep(nextMusic); else scoreStep(nextMusic, frame); }
 			nextMusic += theme === 'pursuit' ? PURSUIT_SIXTEENTH : SIXTEENTH; musicStep++;
-		}
-		if (driving && mix.effects > 0 && (frame.danger ?? 0) > 0.4 && at >= nextWarning) {
-			tone({ at, frequency: 440, duration: 0.13, volume: 0.07, type: 'triangle' });
-			tone({ at: at + 0.18, frequency: 330, duration: 0.13, volume: 0.06, type: 'triangle' });
-			nextWarning = at + 4;
 		}
 	};
 
@@ -777,6 +820,8 @@ export const createAudio = function () {
 		if (disposed) return;
 		disposed = true; active = false; clearVoices();
 		recordingRequests.abort();
+		combatScore?.request?.abort();
+		combatScore = undefined;
 		for (const recording of [jog, hatch, launchScore]) delete recording.buffer;
 		if (!synth) return;
 		const current = synth; synth = undefined;
@@ -786,5 +831,5 @@ export const createAudio = function () {
 		for (const node of current.nodes) node.disconnect();
 		if (current.context.state !== 'closed') await current.context.close();
 	};
-	return { unlock, status, cue, launchCue, footstep, typeText, setMuted, setMix, reset, update, play, dispose };
+	return { unlock, status, cue, launchCue, footstep, typeText, setMuted, setMix, reset, beginSortie, update, play, dispose };
 };

@@ -1,45 +1,18 @@
-# Asset credits for future credits screen
+# Asset credits
 
 ## Mission launch music
 
-“Break the Clamps” is an original 120 BPM industrial rock cue composed for Heavy Rig. Its guitars, bass and drums use MuseScore General (MS Basic), based on FluidR3 by Frank Wen, the mono conversion by Michael Cowgill and the adaptation by S. Christian Collins. The [instrument credits and MIT license](./public/licenses/MS-Basic.txt) accompany the recording.
+“Break the Clamps” uses the MuseScore General (MS Basic) instrument bank. Frank Wen created FluidR3, Michael Cowgill made the mono conversion, and S. Christian Collins adapted it for MuseScore General. [Instrument credits and MIT license](./public/licenses/MS-Basic.txt)
 
-The 17-second stereo recording ships as `public/audio/break-the-clamps.flac`. An extra bar accompanies the atmospheric descent, with two more beats as the ship crosses the clouds. Its master includes the approved 25% gain reduction and four brief dips under the dropship effects. The game plays those effects separately.
+## Intro sound effects
 
-## Intro: boots running on concrete
+- Rig Bay footsteps use “concrete_17c_boots_run.wav” by sturmankin, edited for the intro. [Freesound recording](https://freesound.org/people/sturmankin/sounds/272301/) · [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- The mech hatch uses the closing portion of “Smooth_Scifi_Sliding_Door_Open_and_Close” by SoundsofTheMachine. [Freesound recording](https://freesound.org/people/SoundsofTheMachine/sounds/809436/) · [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 
-Suggested credit:
+## Typeface
 
-> “concrete_17c_boots_run.wav” by sturmankin, Freesound, CC0 1.0. Edited for Heavy Rig.
+Barlow Condensed © 2017 The Barlow Project Authors. [SIL Open Font License 1.1](./public/licenses/Barlow-OFL.txt)
 
-- Author: **sturmankin**
-- Original title: **concrete_17c_boots_run.wav**
-- Source: https://freesound.org/people/sturmankin/sounds/272301/
-- Author profile: https://freesound.org/people/sturmankin/
-- License: **Creative Commons Zero (CC0) 1.0 Universal**
-- License text: https://creativecommons.org/publicdomain/zero/1.0/
-- Attribution is optional under CC0; retain the credit above for provenance.
-- Downloaded public HQ preview: https://cdn.freesound.org/previews/272/272301_4181170-hq.mp3
-- Local asset: `public/audio/boots-concrete-cleaned.wav` (48 kHz, mono, 16-bit PCM).
-- Processing: 65 Hz high-pass filter; noise profile from quiet frames; smoothed spectral subtraction capped at 18 dB; footfalls isolated with 8 ms attack and 50 ms release fades into silence between steps. Original sequence, timing, and gain retained.
-- Playback: 1.5× rate during “Just a little more to the Rig Bay.” in the opening narrative. Playback rate also raises pitch.
-- Cleaned asset SHA-256: `19db0a4b4642df7739ce7157963a64e1980225f2e96583848df2c95b39cd2aa7`.
+## Music audition
 
-## Intro: mech hatch closing
-
-Suggested credit:
-
-> “Smooth_Scifi_Sliding_Door_Open_and_Close” by SoundsofTheMachine, Freesound, CC0 1.0. Closing stage extracted and amplified for Heavy Rig.
-
-- Author: **SoundsofTheMachine**
-- Original title: **Smooth_Scifi_Sliding_Door_Open_and_Close**
-- Source: https://freesound.org/people/SoundsofTheMachine/sounds/809436/
-- Author profile: https://freesound.org/people/SoundsofTheMachine/
-- License: **Creative Commons Zero (CC0) 1.0 Universal**
-- License text: https://creativecommons.org/publicdomain/zero/1.0/
-- Attribution is optional under CC0; retain the credit above for provenance.
-- Downloaded public HQ preview: https://cdn.freesound.org/previews/809/809436_7602203-hq.mp3
-- Local asset: `public/audio/mech-hatch-close.wav` (48 kHz, stereo, 16-bit PCM; 3.95 seconds).
-- Processing: extract 4.10–8.05 seconds of the preview (second stage: closing); boost gain by 10 dB; apply a 10 ms opening fade and 50 ms ending fade. Original pitch and playback speed retained.
-- Playback: once during “It's good to be back in the saddle.” after choosing either loaner rig. Uses the master and effects volume controls.
-- Edited asset SHA-256: `2e0111b05d7c98d4803c5813a062bb7399de0f9c640ce4da9a6519ab23e20180`.
+“Ballast Procession” adapts the pedal theme and part of the first soprano variation from J. S. Bach’s *Passacaglia in C minor*, BWV 582. Urs Metzger typeset the public-domain Mutopia edition, based on C. F. Peters edition 8656. [Source score](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=741) · [Mutopia’s public-domain terms](https://www.mutopiaproject.org/legal.html)

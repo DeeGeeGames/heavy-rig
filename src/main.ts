@@ -430,7 +430,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const startLaunch = function () {
 		launchElapsed = 0;
 		presentation.setLaunchTime(0);
-		audio.reset(); transition(navigation.setScreen('launch')); unlockSound();
+		audio.beginSortie(); transition(navigation.setScreen('launch')); unlockSound();
 	};
 	const finishLaunch = function () {
 		if (navigation.screen !== 'launch' || navigation.transitioning || navigation.auxiliary || campaignConflict || contextLost || document.hidden || !focused) return;
@@ -481,7 +481,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		training = createTraining(setup); state = combatRuntime.attach(training.state, training); gaits = createGaits(state);
 		aimMode = defaultAimMode(); pointer = undefined; aim = { x: state.player.x, y: 450 };
 		message = ''; messageUntil = 0; terminalUntil = 0;
-		audio.reset(); transition(navigation.setScreen('playing', true)); unlockSound();
+		audio.beginSortie(); transition(navigation.setScreen('playing', true)); unlockSound();
 	};
 	const showSituationSetup = function () {
 		if (!situationSim) {
