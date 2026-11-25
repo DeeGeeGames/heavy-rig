@@ -6,13 +6,16 @@ import { toScreen } from './projection-3d';
 import { ARENA, missileTracking, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
 import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { FIELD_ROAD_MARKINGS } from './field-terrain-3d';
+import { enemyVolume, playerVolume } from './combat-spatial';
+import { getFrame, type FrameId } from './frames';
 
 const RADAR_CUT_COLORS = {
 	volcanic: ['#35282a', '#9c6a54'], badlands: ['#3d2922', '#bd9164'], tundra: ['#294657', '#abd2df'],
 } as const;
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
-export const targetElevation = function (target: Point): number {
+export const targetElevation = function (target: Point & { catalog?: { frameId: FrameId } }): number {
+	if (target.catalog) return playerVolume(target, target.catalog.frameId).elevation;
 	if (!('kind' in target)) return 45;
 	const kind = target.kind;
 	return kind === 'helicopter' || kind === 'vtol' || kind === 'tank' ? ENEMY_STATS[kind].elevation : 45;
@@ -179,7 +182,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const selectedFacility = selectedStructure?.body;
 	const selected = state.enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
 	const selectedSize = (selected?.commander ? 90 : 74) * scale;
-	const selectedReticle = selected ? drawTargetReticle(selected, selected.id, ENEMY_STATS[selected.kind].elevation, selectedSize, selectedSize) : undefined;
+	const selectedReticle = selected ? drawTargetReticle(selected, selected.id, selected.catalog ? enemyVolume(selected).elevation : ENEMY_STATS[selected.kind].elevation, selectedSize, selectedSize) : undefined;
 	const facilityReticle = selectedFacility && selectedStructure ? drawTargetReticle(selectedFacility, selectedStructure.id, 45, 130 * scale, 110 * scale) : undefined;
 	for (const [index, { id, body: facility }] of structures.entries()) {
 		const labelHeight = id === selectedStructure?.id && facilityReticle?.guided ? Math.max(124, 45 + facilityReticle.labelOffset / scale) : 124;
@@ -201,18 +204,28 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 				: `LIFT IN ${remaining.toFixed(1)}s · HOLD POSITION`;
 		text(label, mission.map.extraction, 40, '#b9f5ca', 12);
 	}
-	for (const warning of state.warnings) text(warning.commander ? 'COMMAND SIGNAL' : `INBOUND ${warning.kind.toUpperCase()}`, warning, 10, '#f3bd80', 10, -20);
+	for (const warning of state.warnings) {
+		const frame = warning.frameId ? getFrame(warning.frameId) : undefined;
+		text(warning.commander ? 'COMMAND SIGNAL' : `INBOUND ${frame ? `${frame.chassisName} ${frame.variant}` : warning.kind.toUpperCase()}`, warning, 10, '#f3bd80', 10, -20);
+	}
 	for (const [index, strike] of state.strikes.entries()) {
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		text(`IMPACT ${strike.life.toFixed(1)}`, strike, 8, '#ffd2a6', 11, -14);
 	}
 	for (const enemy of state.enemies) {
 		const defense = getEnemyDefense(state, enemy);
-		if (enemy.hp >= enemy.maxHp && enemy !== selected && !isPriorityTarget(state, enemy) && !defense.exposed) continue;
 		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol';
 		const modelLabelHeight = options.enemyLabelHeights?.get(enemy.id) ?? (vehicle ? ENEMY_STATS[enemy.kind].elevation + 38 : (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind));
-		const labelHeight = enemy === selected && selectedReticle?.guided ? Math.max(modelLabelHeight, ENEMY_STATS[enemy.kind].elevation + selectedReticle.labelOffset / scale) : modelLabelHeight;
+		const elevation = enemy.catalog ? enemyVolume(enemy).elevation : ENEMY_STATS[enemy.kind].elevation;
+		const labelHeight = enemy === selected && selectedReticle?.guided ? Math.max(modelLabelHeight, elevation + selectedReticle.labelOffset / scale) : modelLabelHeight;
 		const anchor = at(enemy, labelHeight);
+		if (enemy.hp >= enemy.maxHp && enemy !== selected && !isPriorityTarget(state, enemy) && !defense.exposed) {
+			if (enemy.catalog) {
+				ctx.beginPath(); ctx.moveTo(anchor.x - 5, anchor.y - 5); ctx.lineTo(anchor.x + 5, anchor.y - 5); ctx.lineTo(anchor.x, anchor.y + 2); ctx.closePath();
+				ctx.fillStyle = '#ff9c78'; ctx.fill(); ctx.strokeStyle = '#261414'; ctx.lineWidth = 1; ctx.stroke();
+			}
+			continue;
+		}
 		const barWidth = isPriorityTarget(state, enemy) ? options.couchMode ? 100 : 76 : options.couchMode ? 56 : 42;
 		ctx.fillStyle = '#0a151be6'; ctx.fillRect(anchor.x - barWidth / 2 - 1, anchor.y - 1, barWidth + 2, 5);
 		ctx.fillStyle = isPriorityTarget(state, enemy) ? '#f3ad7e' : '#dfaa82'; ctx.fillRect(anchor.x - barWidth / 2, anchor.y, barWidth * Math.max(0, enemy.hp) / enemy.maxHp, 3);
@@ -232,11 +245,12 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		text(`${mate.callsign.toUpperCase()}${active ? '' : ' / OFFLINE'}`, mate, heightAboveRig, active ? '#84e3eb' : '#a8bcc0', 9);
 	}
 	if (selected && selectedReticle) {
-		const elevation = ENEMY_STATS[selected.kind].elevation;
+		const elevation = selected.catalog ? enemyVolume(selected).elevation : ENEMY_STATS[selected.kind].elevation;
 		const reticle = selectedReticle;
 		const solution = targetSolution(state, selected, aim);
 		const defense = getEnemyDefense(state, selected);
-		const role = isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
+		const frame = selected.catalog ? getFrame(selected.catalog.frameId) : undefined;
+		const role = frame ? `${frame.chassisName} ${frame.variant}` : isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
 		text(role, selected, elevation, '#ffe1aa', 10, reticle.labelOffset / scale);
 		text(`${Math.round(distance(selected, state.player))} M / ${getWeaponFeedback(state, selected, selected.id)}`, selected, elevation, reticle.locked ? '#ff6863' : solution.inRange ? '#ebc184' : '#98a8a7', 8, (reticle.labelOffset + minimumText + 7) / scale);
 	}

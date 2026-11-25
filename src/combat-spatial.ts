@@ -9,7 +9,10 @@ const ENEMY_VOLUMES: Readonly<Record<EnemyKind, { elevation: number; halfHeight:
 	scout: { elevation: 36, halfHeight: 36 }, striker: { elevation: 45, halfHeight: 45 }, siege: { elevation: 65, halfHeight: 65 },
 	tank: { elevation: 30, halfHeight: 30 }, helicopter: { elevation: 112, halfHeight: 20 }, vtol: { elevation: 147, halfHeight: 22 },
 };
-export const enemyVolume = function (enemy: Unit): HitVolume { return { x: enemy.x, y: enemy.y, radius: ENEMY_RADIUS, ...ENEMY_VOLUMES[enemy.kind] }; };
+export const enemyVolume = function (enemy: Unit): HitVolume {
+	const point = { x: enemy.x, y: enemy.y };
+	return enemy.catalog ? playerVolume(point, enemy.catalog.frameId) : { ...point, radius: ENEMY_RADIUS, ...ENEMY_VOLUMES[enemy.kind] };
+};
 export const playerVolume = function (point: Point, frame: FrameId): HitVolume {
 	const height = getFrame(frame).chassisId === 'longbow' ? 145 : getFrame(frame).chassisId === 'maul' || getFrame(frame).chassisId === 'rook' ? 125 : 90;
 	return { ...point, elevation: height * getFrame(frame).size / 2, halfHeight: height * getFrame(frame).size / 2, radius: RIG_RADIUS };

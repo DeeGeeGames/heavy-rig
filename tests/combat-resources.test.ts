@@ -93,7 +93,7 @@ test('burning carried ammunition changes target speed smoothly in forward and re
 
 test('all dry enemy classes remain targetable without falsely clearing objectives and use the shared weight curve', function () {
 	for (const kind of ['scout', 'striker', 'siege', 'helicopter', 'vtol', 'tank'] as const) {
-		const state = createMissionState(contract);
+		const state = createMissionState({ ...contract, id: 'story:resource-fixture' });
 		const enemy = state.enemies[0]; if (!enemy) throw new Error('Missing enemy');
 		enemy.kind = kind; enemy.loadout = []; enemy.engaged = true; state.enemies = [enemy];
 		const position = { x: enemy.x, y: enemy.y };

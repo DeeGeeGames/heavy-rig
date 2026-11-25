@@ -85,6 +85,7 @@ export const createWeaponVfx = function () {
 	const sharedFlare = function (color: string) { const value = flare(color); ownMaterial(value.surface); return value.surface; };
 	const white = emissive('#f4ffff'); const amber = emissive('#ffbd57');
 	const violet = emissive('#ae83ff'); const hot = emissive('#fff1c4');
+	const hostileFlare = sharedFlare('#ff855d'); const hostileSheath = softBeam('#f06440', 0.52);
 	const tealFlare = sharedFlare('#46e6cc'); const violetFlare = sharedFlare('#9165ff');
 	const laserSheath = softBeam('#37d6bf', 0.44); const particleWake = softBeam('#8e67ff', 0.55, true);
 	const metal = ownMaterial(new MeshStandardMaterial({ color: '#b4beb3', roughness: 0.65, metalness: 0.45 }));
@@ -185,10 +186,10 @@ export const createWeaponVfx = function () {
 			value.corona.instanceMatrix.needsUpdate = true;
 		}
 	};
-	const createBeam = function (slot: number) {
+	const createBeam = function (slot: number, hostile = false) {
 		const root = new Group(); root.name = slot === 0 ? 'laser' : `laser-${slot}`; root.visible = false;
-		const halo = new Mesh(cylinder, laserSheath); const core = new Mesh(cylinder, white);
-		const impact = new Mesh(plane, tealFlare); const emitter = new Mesh(plane, tealFlare);
+		const halo = new Mesh(cylinder, hostile ? hostileSheath : laserSheath); const core = new Mesh(cylinder, white);
+		const impact = new Mesh(plane, hostile ? hostileFlare : tealFlare); const emitter = new Mesh(plane, hostile ? hostileFlare : tealFlare);
 		const sparks = new InstancedMesh(cylinder, white, 7); sparks.frustumCulled = false;
 		root.add(halo, core, impact, emitter, sparks);
 		return { root, halo, core, impact, emitter, sparks, dispose: function () { sparks.dispose(); } };

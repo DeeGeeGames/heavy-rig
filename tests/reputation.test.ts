@@ -78,8 +78,8 @@ test('sale packages are complete, compatible, bounded in weight, reproducible, a
 	}
 	expect(packages.size).toBeGreaterThan(40);
 });
-test('mission tiers produce progressively larger forces, tougher objectives and commanders, and tiered enemy weapons', function () {
-	let previousCount = 0; let previousObjective = 0; let previousCommander = 0;
+test('mission tiers produce larger forces and tougher structures without granting catalog commanders inflated integrity', function () {
+	let previousCount = 0; let previousObjective = 0;
 	for (const level of MISSION_TIERS) {
 		const contract = getContracts(ranked(level.rank)).find(function (entry) { return entry.tier === level.tier && entry.kind === 'demolition'; });
 		if (!contract) throw new Error('Missing tiered contract');
@@ -87,7 +87,8 @@ test('mission tiers produce progressively larger forces, tougher objectives and 
 		expect(state.enemies.length).toBeGreaterThan(previousCount);
 		expect(state.mission?.structure?.hp ?? 0).toBeGreaterThan(previousObjective);
 		const commander = assassination.enemies.find(function (enemy) { return enemy.id === assassination.mission?.targetId; });
-		expect(commander?.hp ?? 0).toBeGreaterThan(previousCommander);
+		expect(commander?.hp).toBe(100);
+		expect(PLAYABLE_FRAMES.some(function (frame) { return frame.id === commander?.catalog?.frameId; })).toBe(true);
 		if (!commander) throw new Error('Missing priority target');
 		expect(isPriorityTarget(assassination, commander)).toBe(true);
 		expect(Boolean(commander.commander)).toBe(level.tier >= 4);
@@ -95,6 +96,6 @@ test('mission tiers produce progressively larger forces, tougher objectives and 
 		expect(state.enemies.every(function (enemy) { return enemy.loadout?.every(function (mount) { return getWeapon(mount.weapon).tier === level.weaponTier; }); })).toBe(true);
 		if (level.tier === 1) expect(state.enemies.every(function (enemy) { return enemy.kind === 'scout' || enemy.kind === 'helicopter'; })).toBe(true);
 		if (level.tier >= 4) expect(state.enemies.some(function (enemy) { return enemy.kind === 'siege'; })).toBe(true);
-		previousCount = state.enemies.length; previousObjective = state.mission?.structure?.hp ?? 0; previousCommander = commander?.hp ?? 0;
+		previousCount = state.enemies.length; previousObjective = state.mission?.structure?.hp ?? 0;
 	}
 });

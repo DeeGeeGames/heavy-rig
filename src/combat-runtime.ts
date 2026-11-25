@@ -221,7 +221,7 @@ export const createCombatRuntime = function () {
 					get outcome() { return world.getResource('combatProgress').outcome; }, set outcome(value) { world.getResource('combatProgress').outcome = value; },
 					get nextId() { return world.getResource('combatProgress').nextId; }, set nextId(value) { world.getResource('combatProgress').nextId = value; },
 					get beams() { return world.getResource('combatFeedback').beams; }, set beams(value) { world.getResource('combatFeedback').beams = value; },
-					get beam() { return world.getResource('combatFeedback').beams.find(function (beam) { return beam.squadmateId === undefined; }); },
+					get beam() { return world.getResource('combatFeedback').beams.find(function (beam) { return beam.squadmateId === undefined && beam.owner === undefined; }); },
 					set beam(value) { world.getResource('combatFeedback').beams = value ? [{ ...value, slot: value.slot ?? 0 }] : []; },
 					get shake() { return world.getResource('combatFeedback').shake; }, set shake(value) { world.getResource('combatFeedback').shake = value; },
 					get cannonIn() { return world.getResource('combatFeedback').cannonIn; }, set cannonIn(value) { world.getResource('combatFeedback').cannonIn = value; },
@@ -291,7 +291,7 @@ export const createCombatRuntime = function () {
 			world.addSystem('combat:spawning').withRef(refs.spawning).inPhase('fixedUpdate').inGroup('combat').after(refs.squadmates).withResources(['combatSession', 'combatOrdering', 'combatProgress', 'combatMission', 'combatConfig', 'combatFeedback'])
 				.setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; spawningStep(state, dt); markAll('warning'); });
 			world.addSystem('combat:enemies').withRef(refs.enemies).inPhase('fixedUpdate').inGroup('combat').after(refs.spawning).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatFeedback', 'combatProgress'])
-				.addQuery('enemies', { with: ['enemy', 'position', 'heading', 'health', 'enemyWeapons', 'enemyReactor'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; enemiesStep(state, dt); markAll('enemy'); markAll('enemyWeapons'); markAll('enemyReactor'); });
+				.addQuery('enemies', { with: ['enemy', 'position', 'heading', 'health', 'enemyWeapons', 'enemyReactor'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; const current = state; trackSquadmateDamage(function () { enemiesStep(current, dt); }); markAll('enemy'); markAll('enemyWeapons'); markAll('enemyReactor'); });
 			world.addSystem('combat:artillery').withRef(refs.artillery).inPhase('fixedUpdate').inGroup('combat').after(refs.enemies).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatStats', 'combatFeedback', 'combatProgress'])
 				.addQuery('victims', { with: ['health'] }).addQuery('strikes', { with: ['artillery'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; const current = state; trackSquadmateDamage(function () { artilleryStep(current, dt); }); markAll('artillery'); });
 			world.addSystem('combat:projectiles').withRef(refs.projectiles).inPhase('fixedUpdate').inGroup('combat').after(refs.artillery).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatStats', 'combatFeedback', 'combatProgress'])
