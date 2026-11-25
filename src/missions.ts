@@ -3,6 +3,8 @@ import { getPlanet, randomSource } from './universe';
 import { terrainPathClear, terrainPointClear, type TerrainObstacle } from './field-terrain';
 import { ENEMY_RADIUS, RIG_RADIUS } from './combat-spatial';
 import { SQUAD_SIZE } from './pilots';
+import { isAuthoredContract } from './contract-chains';
+import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import type { Contract, Landmark, MissionMap, MissionRuntime, MissionStructure } from './campaign-types';
 import type { EnemyKind, Point, CombatStateView } from './simulation';
 
@@ -42,42 +44,69 @@ export const missionDeploymentSlot = function (map: MissionMap, index: number): 
 	return squadDestination(map.drop, heading, index, 80, 95);
 };
 
-export interface MissionSpawn extends Point { kind: EnemyKind; commander?: boolean }
+export interface MissionSpawn extends Point { kind: EnemyKind; commander?: boolean; frameId?: FrameId; formation?: number }
 export const missionHostileCount = function (contract: Contract): number {
 	const level = getMissionTier(contract.tier);
 	return contract.kind === 'defend' || contract.kind === 'clearance' ? level.assault : level.patrol;
 };
+const legacyRosters: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = {
+	1: ['scout', 'helicopter', 'scout', 'scout'],
+	2: ['scout', 'helicopter', 'striker', 'scout'],
+	3: ['striker', 'tank', 'scout', 'vtol', 'striker', 'helicopter'],
+	4: ['striker', 'tank', 'siege', 'vtol', 'helicopter', 'scout'],
+	5: ['siege', 'tank', 'striker', 'vtol', 'siege'],
+	6: ['siege', 'tank', 'siege', 'vtol', 'striker', 'siege'],
+};
+// Every section starts with two rigs. The third contact supports the section
+// and is omitted if the contract quota ends before its slot.
+const formations: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = {
+	1: ['scout', 'scout', 'helicopter'],
+	2: ['scout', 'striker', 'helicopter'],
+	3: ['striker', 'scout', 'tank', 'striker', 'scout', 'helicopter'],
+	4: ['striker', 'siege', 'tank', 'scout', 'striker', 'vtol'],
+	5: ['siege', 'striker', 'tank', 'striker', 'siege', 'vtol'],
+	6: ['siege', 'striker', 'vtol', 'siege', 'scout', 'tank'],
+};
+const catalogFrame = function (contract: Contract, role: EnemyKind, random: () => number): FrameId | undefined {
+	if (role === 'tank' || role === 'helicopter' || role === 'vtol') return undefined;
+	const eligible = PLAYABLE_FRAMES.filter(function (frame) {
+		return (contract.tier > 1 || frame.variant === 'A') && (contract.tier >= 4 || frame.mass < 95);
+	});
+	const preferred = eligible.filter(function (frame) {
+		return role === (frame.mass < 50 ? 'scout' : frame.mass >= 95 ? 'siege' : 'striker');
+	});
+	const pool = preferred.length ? preferred : eligible;
+	return pool[Math.floor(random() * pool.length)]?.id;
+};
 export const missionSpawn = function (contract: Contract, map: MissionMap, index: number): MissionSpawn {
 	const random = randomSource((contract.seed + Math.imul(index + 1, 104729)) >>> 0);
 	const commander = contract.kind === 'assassination' && index === 0;
-	const site = hasMultipleSites(contract.kind) ? map.sites[index % map.sites.length] ?? map.objective : map.objective;
-	const angle = index * 2.399963 + random() * 0.6;
-	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 : 180 + random() * 250;
-	const rosters: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = {
-		1: ['scout', 'helicopter', 'scout', 'scout'],
-		2: ['scout', 'helicopter', 'striker', 'scout'],
-		3: ['striker', 'tank', 'scout', 'vtol', 'striker', 'helicopter'],
-		4: ['striker', 'tank', 'siege', 'vtol', 'helicopter', 'scout'],
-		5: ['siege', 'tank', 'striker', 'vtol', 'siege'],
-		6: ['siege', 'tank', 'siege', 'vtol', 'striker', 'siege'],
-	};
-	const roster = rosters[contract.tier];
+	const legacy = isAuthoredContract(contract);
+	const formation = Math.floor(index / 3);
+	const siteIndex = legacy ? index : formation + (index % 3 === 1 ? 1 : 0);
+	const site = hasMultipleSites(contract.kind) ? map.sites[siteIndex % map.sites.length] ?? map.objective : map.objective;
+	const wingOffsets = [0, 0.65, -0.26];
+	const angle = (legacy ? index * 2.399963 : formation * 2.399963 + (wingOffsets[index % 3] ?? 0)) + random() * (legacy ? .6 : .16);
+	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 + (!legacy && index % 3 === 2 ? 90 : 0) : 180 + random() * 250;
+	const roster = (legacy ? legacyRosters : formations)[contract.tier];
 	const kind: EnemyKind = commander ? contract.tier === 1 ? 'scout' : contract.tier < 4 ? 'striker' : 'siege' : roster[index % roster.length] ?? 'scout';
+	const frameId = legacy ? undefined : catalogFrame(contract, kind, random);
 	const atBearing = function (bearing: number): Point {
 		return { x: Math.max(100, Math.min(map.width - 100, site.x + Math.cos(bearing) * radius)),
 			y: Math.max(100, Math.min(map.height - 100, site.y + Math.sin(bearing) * radius)) };
 	};
 	let at = atBearing(angle);
 	const terrain = map.terrain;
-	if (terrain && !commander && !terrainPointClear(terrain, at, ENEMY_RADIUS)) {
+	const clearance = frameId ? RIG_RADIUS : ENEMY_RADIUS;
+	if (terrain && !commander && !terrainPointClear(terrain, at, clearance)) {
 		// Try nearby points on the spawn ring, then both axes. Every site
 		// has an open bearing leading away from the cut on its own bank.
 		for (const bearing of [angle + .5, angle - .5, angle + 1, angle - 1, angle + 1.5, angle - 1.5, 0, Math.PI, Math.PI / 2, -Math.PI / 2]) {
 			const candidate = atBearing(bearing);
-			if (terrainPointClear(terrain, candidate, ENEMY_RADIUS)) { at = candidate; break; }
+			if (terrainPointClear(terrain, candidate, clearance)) { at = candidate; break; }
 		}
 	}
-	return { ...at, kind, ...(commander ? { commander: true } : {}) };
+	return { ...at, kind, ...(commander ? { commander: true } : {}), ...(frameId ? { frameId } : {}), ...(!legacy ? { formation } : {}) };
 };
 
 export const generateMissionMap = function (contract: Contract): MissionMap {

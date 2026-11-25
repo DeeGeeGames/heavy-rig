@@ -1,6 +1,7 @@
 import type { CombatStateView, Point } from './simulation';
 import { distance } from './simulation';
 import { missionStructures, isPriorityTarget } from './missions';
+import { getFrame } from './frames';
 import { targetElevation, type ScreenRect } from './overlay';
 
 export interface TouchContact { id: number; point: Point; screen: Point; label: string }
@@ -10,7 +11,9 @@ export const isContactVisible = function ({ x, y }: Point, width: number, height
 };
 export const visibleTouchContacts = function (state: CombatStateView, project: (point: Point, elevation: number) => Point, width: number, height: number, obstructions: readonly ScreenRect[]): TouchContact[] {
 	const contacts: TouchContact[] = state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) {
-		return { id: enemy.id, point: enemy, screen: project(enemy, targetElevation(enemy)), label: isPriorityTarget(state, enemy) ? 'PRIORITY TARGET' : enemy.kind.toUpperCase() };
+		const frame = enemy.catalog ? getFrame(enemy.catalog.frameId) : undefined;
+		const label = isPriorityTarget(state, enemy) ? 'PRIORITY TARGET' : frame ? `${frame.chassisName} ${frame.variant}` : enemy.kind.toUpperCase();
+		return { id: enemy.id, point: enemy, screen: project(enemy, targetElevation(enemy)), label };
 	});
 	for (const { id, body } of missionStructures(state.mission)) if (body.hp > 0) contacts.push({ id, point: body, screen: project(body, 45), label: state.mission?.contract.kind === 'raid' ? 'RAID SITE' : 'FACILITY' });
 	return contacts.filter(function (contact) { return isContactVisible(contact.screen, width, height, obstructions); })

@@ -156,6 +156,7 @@ export const createWorldObjects = function (scene: Scene) {
 		const beam = weaponVfx.createBeam(slot); feedback.add(beam.root); return beam;
 	});
 	const squadmateBeams: ReturnType<typeof weaponVfx.createBeam>[] = [];
+	const hostileBeams: ReturnType<typeof weaponVfx.createBeam>[] = [];
 	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); feedback.add(smoke);
 	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0);
 	const flashes = new WeakMap<Effect, Vector3>();
@@ -211,7 +212,7 @@ export const createWorldObjects = function (scene: Scene) {
 			const muzzles = frameEffects?.muzzles ?? [];
 			beaconSurface.color.set(state.relay < 30 ? '#ff865e' : '#b9fff0');
 			beacon.scale.setScalar(4 + Math.sin(state.time * 2.4) * 0.6);
-			const siege = state.enemies.filter(function (enemy) { return enemy.kind === 'siege' || enemy.kind === 'tank'; });
+			const siege = state.enemies.filter(function (enemy) { return !enemy.catalog && (enemy.kind === 'siege' || enemy.kind === 'tank'); });
 			sync(feedback, defenses, siege.length, createDefense, function (value, index) {
 				const enemy = siege[index]; if (!enemy) return;
 				const defense = getEnemyDefense(state, enemy); const radius = (enemy.commander ? 67 : 56) * mechScale(enemy.kind);
@@ -273,7 +274,7 @@ export const createWorldObjects = function (scene: Scene) {
 				weaponVfx.updateEffect(value, effect);
 			});
 			beams.forEach(function (beam, slot) {
-				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot && candidate.squadmateId === undefined; });
+				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot && candidate.squadmateId === undefined && candidate.owner === undefined; });
 				updateBeam(beam, endpoint, state.player, state.time, muzzles[slot]);
 			});
 			const squadmateSlots = state.squadmates.flatMap(function (mate) {
@@ -285,6 +286,11 @@ export const createWorldObjects = function (scene: Scene) {
 				beam.root.name = `squad-laser-${mate.pilotId}-${slot}`;
 				const endpoint = state.beams.find(function (candidate) { return candidate.slot === slot && candidate.squadmateId === mate.pilotId; });
 				updateBeam(beam, endpoint, mate, state.time);
+			});
+			const hostile = state.beams.filter(function (beam) { return beam.owner !== undefined; });
+			sync(feedback, hostileBeams, hostile.length, function () { return weaponVfx.createBeam(0, true); }, function (beam, index) {
+				const endpoint = hostile[index]; if (!endpoint?.origin) return;
+				updateBeam(beam, endpoint, endpoint.origin, state.time);
 			});
 			smoke.visible = state.player.heat > 60;
 			if (smoke.visible) {
@@ -301,6 +307,7 @@ export const createWorldObjects = function (scene: Scene) {
 			for (const shot of shots) shot.dispose();
 			for (const beam of beams) beam.dispose();
 			for (const beam of squadmateBeams) beam.dispose();
+			for (const beam of hostileBeams) beam.dispose();
 			weaponVfx.dispose();
 			for (const strike of strikes) strike.dispose();
 			for (const batch of relayBatches) batch.dispose();

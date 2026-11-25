@@ -32,11 +32,16 @@ test('campaign rosters deploy mixed forces at every difficulty and keep the assa
 					step(state, idle, 1 / 60);
 				}
 				expect(state.kills).toBe(missionHostileCount(contract));
-				for (const vehicleKind of kinds) expect(deployed.has(vehicleKind)).toBe(true);
+				expect(deployed.has('tank')).toBe(true); expect(deployed.has('vtol')).toBe(true);
 				continue;
 			}
 			expect(state.enemies).toHaveLength(missionHostileCount(contract));
-			for (const vehicleKind of kinds) {
+			const rigs = state.enemies.filter(function (enemy) { return enemy.catalog; });
+			expect(rigs.length).toBeGreaterThan(state.enemies.length / 2);
+			for (const escort of state.enemies.filter(function (enemy) { return !enemy.catalog; })) {
+				expect(rigs.some(function (rig) { return rig.formation === escort.formation; })).toBe(true);
+			}
+			for (const vehicleKind of ['tank', 'vtol'] as const) {
 				const enemy = state.enemies.find(function (candidate) { return candidate.kind === vehicleKind; });
 				expect(enemy?.hp).toBe(Math.round(ENEMY_STATS[vehicleKind].hp * 1.15 * getDifficultyDefinition(difficulty).enemyArmor));
 				expect(enemy?.loadout?.length).toBe(vehicleKind === 'vtol' ? 2 : 1);

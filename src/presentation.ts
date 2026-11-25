@@ -2,7 +2,7 @@ import { definePlugin } from 'ecspresso';
 import { createGroupComponents, createRenderer3DPlugin, type Renderer3DComponentTypes, type Renderer3DEventTypes, type Renderer3DResourceTypes } from 'ecspresso/plugins/rendering/renderer3D';
 import { clampCombatZoom, MIN_COMBAT_ZOOM, zoomForWheel } from './shared/camera-zoom';
 import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Fog, HemisphereLight, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, RingGeometry, Scene, Vector3, WebGLRenderer } from 'three';
-import { createGait, mechScale, type Gaits } from './gait';
+import { createGait, createEnemyGait, type Gaits } from './gait';
 import { getFrame, type FrameId } from './frames';
 import { FRAME_RIGS } from './frame-rig';
 import { createMech, weaponRecoil } from './mech-3d';
@@ -361,12 +361,13 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				for (const enemy of state.enemies) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
-					const view = views.ensure(id, enemy.kind, Boolean(enemy.commander), 'warden', factionMechSkin(state.mission?.contract.opponent));
-					const gait = gaits.enemies.get(enemy.id) ?? createGait({ x: enemy.x, y: enemy.y, angle: enemy.hullAngle ?? enemy.angle }, mechScale(enemy.kind));
+					const view = views.ensure(id, enemy.catalog ? undefined : enemy.kind, Boolean(enemy.commander), enemy.catalog?.frameId ?? 'warden', factionMechSkin(state.mission?.contract.opponent));
+					const gait = gaits.enemies.get(enemy.id) ?? createEnemyGait(enemy);
 					views.pose(id, view, gait, enemy.angle, enemy.hp, state.time, {
-						loadout: enemy.loadout ?? [], target: enemyAimPoint(state, enemy), legGait: sampledLegs(enemy, gait),
+						loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, authoredPose: enemy.catalog?.authoredPose,
+							target: enemyAimPoint(state, enemy), legGait: sampledLegs(enemy, enemy.catalog?.authoredPose?.gait ?? gait),
 					});
-					if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
+					if (enemy.catalog || enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
 				objects.update(state, player ? {
