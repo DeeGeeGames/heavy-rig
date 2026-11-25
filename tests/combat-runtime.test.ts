@@ -28,6 +28,60 @@ const scenario = function () {
 	return state;
 };
 
+test('a fixed battery can engage across the entire map and each committed round gets two full seconds of flight', async function () {
+	const initial = createSituationMission({ kind: 'clearance', planetId: 'meridian', tier: 4, frame: 'warden', wing: [] }, 15, 'standard');
+	const map = initial.mission?.map;
+	if (!map) throw new Error('Missing battlefield');
+	map.terrain = { roads: [], obstacles: [{ kind: 'shed', x: map.width / 2, y: map.height / 2, width: 320, depth: 320, height: 200 }] };
+	initial.enemies = initial.enemies.filter(function (unit) { return unit.kind === 'artillery'; }).slice(0, 2);
+	expect(initial.enemies).toHaveLength(2);
+	const pads = initial.enemies.map(function (gun, index) {
+		const pad = { x: 100, y: 100 + 140 * index, hullAngle: Math.PI };
+		Object.assign(gun, pad, { cooldown: 0 });
+		return pad;
+	});
+	Object.assign(initial.player, { x: map.width - 800, y: map.height - 700 });
+	const { world, state } = await harness(initial);
+	const ticks = function (count: number) { for (let i = 0; i < count; i++) world.update(1 / 60); };
+	try {
+		ticks(1);
+		expect(state.enemies.map(function (gun) { return gun.artilleryAim?.remaining; })).toEqual([2, 2]);
+		ticks(60);
+		const destination = { x: map.width - 55, y: map.height - 55 };
+		Object.assign(state.player, destination);
+		ticks(59);
+		expect(state.strikes).toHaveLength(0);
+		ticks(1);
+		expect(state.strikes).toHaveLength(2);
+		const [first, second] = state.strikes;
+		if (!first || !second) throw new Error('Missing battery rounds');
+		expect(distance(first, second)).toBeGreaterThan(first.radius);
+		expect([first, second].some(function (round) { return distance(round, destination) > round.radius; })).toBe(true);
+		expect(state.enemies.map(function ({ x, y, hullAngle }) { return { x, y, hullAngle }; })).toEqual(pads);
+		for (const gun of state.enemies) {
+			expect(distance(gun, destination)).toBeGreaterThan(5200);
+			const shot = state.strikes.find(function (round) { return round.owner === gun.id; });
+			if (!shot?.emplacement) throw new Error('Missing gun launch');
+			expect(distance(shot.emplacement.origin, gun)).toBeLessThan(100);
+			expect(shot).toMatchObject({ life: 2, duration: 2, slot: 0 });
+			expect(distance(shot, destination)).toBeLessThanOrEqual(240);
+			expect(shot.x).toBeWithin(0, map.width); expect(shot.y).toBeWithin(0, map.height);
+			gun.hp = 0;
+		}
+		const mark = { x: first.x, y: first.y };
+		// After firing, moving the target or destroying the guns cannot move or cancel a marker.
+		Object.assign(state.player, { x: mark.x - 400, y: mark.y - 400 });
+		ticks(119);
+		expect(state.enemies).toHaveLength(0); expect(state.wrecks).toHaveLength(2);
+		expect(state.strikes[0]).toMatchObject(mark);
+		expect(state.player.hp).toBe(100);
+		Object.assign(state.player, mark);
+		ticks(1);
+		expect(state.strikes).toHaveLength(0);
+		expect(state.player.hp).toBeLessThan(100);
+	} finally { await world.dispose(); }
+});
+
 test('mixed vehicle combat stays authoritative in ECS through movement, pause, and mission replacement', async function () {
 	const initial = createState(); initial.spawnIn = 3600;
 	for (const [index, kind] of (['helicopter', 'vtol', 'tank'] as const).entries()) initial.warnings.push({ kind, x: initial.player.x - 250 - index * 60, y: initial.player.y, life: 0.001 });
@@ -122,7 +176,7 @@ test('ECS training uses the same combat systems through every qualification stag
 	try {
 		for (let tick = 0; tick < 3600 && expected.stage !== 'complete'; tick++) {
 			const stage = expected.stage;
-			const controls: Controls = { ...idle, ...(expected.state.enemies[0] ? { targetId: expected.state.enemies[0].id } : {}), aim: expected.state.enemies[0] ?? expected.state.player, drive: stage === 'drive' || stage === 'evade' && expected.strikeIssued ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon', stage === 'combined', stage === 'missiles' || stage === 'heat', stage === 'combined'], coolant: stage === 'coolant' };
+			const controls: Controls = { ...idle, ...(expected.state.enemies[0] ? { targetId: expected.state.enemies[0].id } : {}), aim: expected.state.enemies[0] ?? expected.state.player, drive: stage === 'drive' || stage === 'evade' && expected.state.strikes.length > 0 ? 1 : 0, stop: stage === 'neutral', turn: stage === 'steer' ? 1 : 0, fire: [stage === 'cannon', stage === 'combined', stage === 'missiles' || stage === 'heat', stage === 'combined'], coolant: stage === 'coolant' };
 			combat.setControls(function () { return controls; }); stepTraining(expected, controls, 1 / 60); world.update(1 / 60);
 			expect(training).toEqual(expected);
 		}

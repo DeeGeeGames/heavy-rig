@@ -59,8 +59,8 @@ const gradeSlopes = function (heights: Float32Array, xs: readonly number[], ys: 
 // four corners. Lower a hill's footing or fill a valley's footing toward the
 // datum; grade any newly exposed steps into the neighbouring ground. Nearby
 // footings can share a vertex, so propagate the lower level between them.
-const levelFoundations = function (heights: Float32Array, xs: readonly number[], ys: readonly number[], obstacles: readonly TerrainObstacle[]) {
-	const footings = obstacles.filter(function (o) { return o.kind === 'shed' || o.kind === 'turbine'; }).map(function (o) {
+const levelFoundations = function (heights: Float32Array, xs: readonly number[], ys: readonly number[], foundations: ObstacleField['obstacles']) {
+	const footings = foundations.map(function (o) {
 		const vertices: number[] = [];
 		for (let row = 0; row < ys.length; row++) {
 			if ((ys[row + 1] ?? Infinity) <= o.y - o.depth / 2 || (ys[row - 1] ?? -Infinity) >= o.y + o.depth / 2) continue;
@@ -123,7 +123,7 @@ const surveyGully = function (map: MissionMap, obstacles: readonly TerrainObstac
 		return original + (profile - original) * blend;
 	};
 };
-export const generateElevation = function (map: MissionMap, obstacles: readonly TerrainObstacle[], formation: readonly Point[], reserves: ObstacleField['obstacles']): TerrainElevation {
+export const generateElevation = function (map: MissionMap, obstacles: readonly TerrainObstacle[], formation: readonly Point[], reserves: ObstacleField['obstacles'], emplacements: ObstacleField['obstacles'] = []): TerrainElevation {
 	const random = randomSource(map.seed ^ 0x5ed174e3);
 	const approach = map.terrain?.roads[0]?.[0] ?? map.drop;
 	const heading = Math.atan2(map.objective.y - approach.y, map.objective.x - approach.x) + (random() - .5) * 1.35;
@@ -190,7 +190,8 @@ export const generateElevation = function (map: MissionMap, obstacles: readonly 
 		}
 		heights[i++] = height;
 	}
-	levelFoundations(heights, xs, ys, obstacles);
+	const buildings = obstacles.filter(function (o) { return o.kind === 'shed' || o.kind === 'turbine'; });
+	levelFoundations(heights, xs, ys, [...buildings, ...emplacements]);
 	let minHeight = 0, maxHeight = 0;
 	for (const [index, surface] of heights.entries()) {
 		const h = surface - (depths?.[index] ?? 0); heights[index] = h;

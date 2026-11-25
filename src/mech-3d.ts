@@ -13,6 +13,7 @@ import type { EnemyKind } from './simulation';
 import { articulateWeapons } from './weapon-articulation';
 import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
+import { createArtilleryEmplacement } from './artillery-emplacement';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { SKIN_PALETTES, supportsMechSkin, type MechFinish } from './mech-skin';
 import { applyMechSkinMaterial } from './mech-skin-material';
@@ -42,6 +43,7 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[], family?: 
 // Weapon geometry shares its stable rig with combat. Suspension and leg motion
 // remain presentation data; every view uses this same production factory.
 export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original', entryPlanes?: Plane[]) {
+	if (kind === 'artillery') return createArtilleryEmplacement(entryPlanes);
 	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind, entryPlanes);
 	const authored = kind ? undefined : getMechAssetBinding(frame);
 	const finish = kind || supportsMechSkin(frame) ? skin : 'original';

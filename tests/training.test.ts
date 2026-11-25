@@ -17,7 +17,7 @@ const advanceToEvasion = function (training: Training) {
 test('the real control sequence completes training without spawning an assault or ending the operation', function () {
 	const training = createTraining();
 	advanceToEvasion(training);
-	for (let tick = 0; tick < 600 && training.stage !== 'complete'; tick++) stepTraining(training, { ...idle(training), drive: training.strikeIssued ? 1 : 0 }, 1 / 60);
+	for (let tick = 0; tick < 600 && training.stage !== 'complete'; tick++) stepTraining(training, { ...idle(training), drive: training.state.strikes.length ? 1 : 0 }, 1 / 60);
 	expect(training.stage).toBe('complete');
 	expect(training.state.wave).toBe(1);
 	expect(training.state.spawned).toBe(0);
@@ -40,10 +40,21 @@ test('missing the artillery exercise retries safely and coolant instruction cann
 	for (let tick = 0; tick < 3600; tick++) stepTraining(training, idle(training), 1 / 60);
 	stepTraining(training, { ...idle(training), coolant: true }, 1 / 60);
 	expect(training.stage).toBe('evade');
-	for (let tick = 0; tick < 420; tick++) stepTraining(training, idle(training), 1 / 60);
+	const gun = training.state.enemies[0];
+	const mount = gun?.loadout?.[0]; if (!gun || !mount) throw new Error('Missing practice artillery');
+	mount.rounds = 1;
+	stepTraining(training, idle(training), 1 / 60);
+	expect(gun.artilleryAim).toMatchObject({ targetId: 0, remaining: 2 });
+	for (let tick = 0; tick < 119; tick++) stepTraining(training, idle(training), 1 / 60);
+	expect(training.state.strikes).toHaveLength(0);
+	stepTraining(training, idle(training), 1 / 60);
+	expect(gun.artilleryAim).toBeUndefined(); expect(mount.rounds).toBe(0);
+	expect(training.state.strikes[0]).toMatchObject({ owner: gun.id, life: 2 });
+	for (let tick = 0; tick < 120; tick++) stepTraining(training, idle(training), 1 / 60);
 	expect(training.stage).toBe('evade');
+	expect(training.state.strikes).toHaveLength(0); expect(mount.rounds).toBeGreaterThan(0);
 	expect(training.state.player.hp).toBe(100);
-	for (let tick = 0; tick < 600 && training.stage !== 'complete'; tick++) stepTraining(training, { ...idle(training), drive: training.strikeIssued ? 1 : 0 }, 1 / 60);
+	for (let tick = 0; tick < 600 && training.stage !== 'complete'; tick++) stepTraining(training, { ...idle(training), drive: training.state.strikes.length ? 1 : 0 }, 1 / 60);
 	expect(training.stage).toBe('complete');
 });
 
@@ -52,8 +63,26 @@ test('entering evasion from an outward-facing arena boundary still gives the ins
 	training.state.player.x = 35; training.state.player.y = 600; training.state.player.angle = Math.PI;
 	stepTraining(training, { ...idle(training), coolant: true }, 1 / 60);
 	expect(training.stage).toBe('evade');
-	for (let tick = 0; tick < 600 && training.stage !== 'complete'; tick++) stepTraining(training, { ...idle(training), drive: training.strikeIssued ? 1 : 0 }, 1 / 60);
+	for (let tick = 0; tick < 600 && training.stage !== 'complete'; tick++) stepTraining(training, { ...idle(training), drive: training.state.strikes.length ? 1 : 0 }, 1 / 60);
 	expect(training.stage).toBe('complete');
+});
+
+test('the fitted ARC can destroy the practice artillery before launch or while a live shell is incoming', function () {
+	for (const incoming of [false, true]) {
+		const training = createTraining(); advanceToEvasion(training);
+		const gun = training.state.enemies[0]; if (!gun) throw new Error('Missing practice artillery');
+		for (let tick = 0; tick < (incoming ? 121 : 1); tick++) stepTraining(training, idle(training), 1 / 60);
+		for (let tick = 0; tick < 120 && training.state.enemies.length; tick++) {
+			stepTraining(training, { ...idle(training), fire: [false, false, true, false] }, 1 / 60);
+		}
+		expect(training.state.enemies).toHaveLength(0); expect(training.state.wrecks.at(-1)?.kind).toBe('artillery');
+		if (incoming) {
+			expect(training.stage).toBe('evade'); expect(training.state.strikes[0]?.owner).toBe(gun.id);
+			for (let tick = 0; tick < 120 && training.stage !== 'complete'; tick++) stepTraining(training, idle(training), 1 / 60);
+			expect(training.state.events).toContain('explosion');
+		}
+		expect(training.stage).toBe('complete'); expect(training.state.strikes).toHaveLength(0);
+	}
 });
 
 // This drill must exercise simultaneous mounts, including the new fourth input.

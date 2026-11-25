@@ -1,13 +1,13 @@
 import { rigName } from './rigs';
 import { companyRank, getMissionTier, reputationProgress, unlockedMissionTier } from './reputation';
-import { ACQUISITION_SECONDS, missionHostileCount } from './missions';
+import { ACQUISITION_SECONDS, missionOpposition } from './missions';
 import { getSystemIntel } from './universe';
 import { closePlanetDetails, renderTerritoryMap } from './territory-map';
 import { html } from 'lit-html';
 import { inspectWorkspacePane, renderWorkspace, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
 import { canStageOperation, FACTIONS, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, travelTo, type Campaign } from './campaign';
 import { BIOME_NAMES, MISSION_NAMES, type Contract, type MissionKind, type PlanetId } from './campaign-types';
-import { getAuthoredStep, isAuthoredContract } from './contract-chains';
+import { getAuthoredStep } from './contract-chains';
 import { getOwnedMech, workOrderFor } from './company';
 import { renderShipHeader, type ShipScreen } from './company-ui';
 import { operationPanes, type OperationsActions } from './operations-ui';
@@ -153,7 +153,7 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			html`<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span><h2>${selected.title}</h2>`,
 			...(storyStep ? [html`<span class="eyebrow">${storyStep.contact} · COMMANDER REQUIRED</span>`, ...textItems(storyStep.pitch)] : []),
 			...textItems(selected.briefing),
-			...textItems(`${missionHostileCount(selected)} hostiles. ${isAuthoredContract(selected) ? 'Light scouts and helicopters.' : getMissionTier(selected.tier).opposition}`),
+			...textItems(missionOpposition(selected)),
 			...textItems(`SUCCESS: +${getMissionTier(selected.tier).reputation} company reputation. ${reputationProgress(campaign)}.`),
 			...textItems('Success expands employer influence around this system. Failure or abort strengthens the opposition. Repeated victories can move the border and end a local conflict.'),
 			...(storyStep ? [] : [html`<span class="eyebrow">SURFACE OBJECTIVE</span>`, ...textItems(OBJECTIVES[selected.kind])]),

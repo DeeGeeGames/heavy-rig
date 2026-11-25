@@ -1,4 +1,5 @@
 import { BASTION_PLATE_HALF_ARC, SPECTER_MARK_SECONDS, hasBastionPlate, mortarInRange, mortarProfile } from './frame-tactics';
+import { ARTILLERY_TARGETING_SECONDS } from './artillery';
 import type { OrthographicCamera } from 'three';
 import { inFiringArc } from './torso-arc';
 import { getWeapon, withinWeaponRange } from './arsenal';
@@ -19,7 +20,7 @@ export const targetElevation = function (target: Point & { catalog?: { frameId: 
 	if (target.catalog) return playerVolume(target, target.catalog.frameId).elevation;
 	if (!('kind' in target)) return 45;
 	const kind = target.kind;
-	return kind === 'helicopter' || kind === 'vtol' || kind === 'tank' ? ENEMY_STATS[kind].elevation : 45;
+	return kind === 'helicopter' || kind === 'vtol' || kind === 'tank' || kind === 'artillery' ? ENEMY_STATS[kind].elevation : 45;
 };
 export interface OverlayOptions {
 	enemyLabelHeights?: ReadonlyMap<number, number>;
@@ -100,6 +101,49 @@ const bracket = function (ctx: CanvasRenderingContext2D, x: number, y: number, w
 		ctx.moveTo(px - horizontal * length, py); ctx.lineTo(px, py); ctx.lineTo(px, py - vertical * length);
 	}
 	ctx.stroke();
+};
+
+const artilleryClock = function (seconds: number) { return `${(Math.max(1, Math.ceil(seconds * 10 - 1e-9)) / 10).toFixed(1)}s`; };
+
+const drawArtilleryTargeting = function (ctx: CanvasRenderingContext2D, enemies: readonly Unit[], anchor: Point, width: number, height: number, fontSize: number, options: OverlayOptions) {
+	let remaining = Infinity;
+	let guns = 0;
+	for (const enemy of enemies) {
+		if (enemy.artilleryAim?.targetId !== 0 || enemy.hp <= 0) continue;
+		remaining = Math.min(remaining, enemy.artilleryAim.remaining);
+		guns++;
+	}
+	if (!guns) return;
+	ctx.save();
+	const title = 'ARTILLERY TARGETING YOU';
+	const timer = `${guns > 1 ? `×${guns}  ` : ''}${artilleryClock(remaining)}`;
+	const titleFont = `700 ${fontSize + 6}px "Barlow Condensed", sans-serif`;
+	ctx.font = titleFont;
+	const titleWidth = ctx.measureText(title).width;
+	ctx.font = `600 ${fontSize}px monospace`;
+	const timerWidth = ctx.measureText(timer).width;
+	const barHeight = fontSize + 18;
+	const barWidth = Math.min(width - 8, Math.ceil(barHeight + titleWidth + timerWidth + 30));
+	const left = Math.round(Math.max(4, Math.min(width - barWidth - 4, anchor.x - barWidth / 2)));
+	const panels = (options.obstructions ?? []).filter(function (rect) { return rect.right > left - 6 && rect.left < left + barWidth + 6; });
+	const rows = [anchor.y, ...panels.flatMap(function (rect) { return [rect.top - barHeight - 6, rect.bottom + 6]; })]
+		.map(function (row) { return Math.round(Math.max(4, Math.min(height - barHeight - 4, row))); })
+		.sort(function (a, b) { return Math.abs(a - anchor.y) - Math.abs(b - anchor.y); });
+	const top = rows.find(function (row) { return panels.every(function (rect) { return row >= rect.bottom || row + barHeight <= rect.top; }); }) ?? rows[0] ?? 4;
+	const middle = top + barHeight / 2;
+	const icon = left + barHeight / 2;
+	ctx.fillStyle = '#151c20f5'; ctx.fillRect(left, top, barWidth, barHeight);
+	ctx.strokeStyle = '#a5814c'; ctx.lineWidth = 1; ctx.strokeRect(left + .5, top + .5, barWidth - 1, barHeight - 1);
+	ctx.fillStyle = '#ffc574'; ctx.beginPath();
+	ctx.moveTo(icon, middle - 9); ctx.lineTo(icon + 9, middle + 7); ctx.lineTo(icon - 9, middle + 7); ctx.closePath(); ctx.fill();
+	ctx.fillStyle = '#35251a'; ctx.fillRect(icon - 1, middle - 3, 2, 5); ctx.fillRect(icon - 1, middle + 3, 2, 2);
+	ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; ctx.fillStyle = '#ffd399';
+	ctx.fillText(timer, left + barWidth - 10, middle);
+	ctx.textAlign = 'left'; ctx.font = titleFont; ctx.fillStyle = '#fff0d8';
+	ctx.fillText(title, left + barHeight + 2, middle, Math.max(1, barWidth - barHeight - timerWidth - 26));
+	ctx.fillStyle = '#ffc574';
+	ctx.fillRect(left, top + barHeight - 2, barWidth * (1 - Math.min(1, remaining / ARTILLERY_TARGETING_SECONDS)), 2);
+	ctx.restore();
 };
 
 // World labels use the same projection as ground picking and the 3D scene.
@@ -222,13 +266,10 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const center = wing ? { x: (warning.x + wing.x) / 2, y: (warning.y + wing.y) / 2 } : warning;
 		text(warning.commander ? 'COMMAND SIGNAL' : `${flight ? 'DROPSHIP' : 'INBOUND'} ${roster}`, center, 10, '#f3bd80', 10, -20);
 	}
-	for (const [index, strike] of state.strikes.entries()) {
-		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
-		text(`${strike.friendly ? 'FRIENDLY' : 'INCOMING'} ${strike.life.toFixed(1)}s`, strike, 8, strike.friendly ? '#94ebe4' : '#ffd2a6', 11, -14);
-	}
+	const strikes = state.strikes;
 	for (const enemy of enemies) {
 		const defense = getEnemyDefense(state, enemy);
-		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol';
+		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'artillery';
 		const modelLabelHeight = options.enemyLabelHeights?.get(enemy.id) ?? (vehicle ? ENEMY_STATS[enemy.kind].elevation + 38 : (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind));
 		const elevation = enemy.catalog ? enemyVolume(enemy).elevation : ENEMY_STATS[enemy.kind].elevation;
 		const labelHeight = enemy === selected && selectedReticle?.guided ? Math.max(modelLabelHeight, elevation + selectedReticle.labelOffset / scale) : modelLabelHeight;
@@ -240,7 +281,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			text(marked && jammed ? 'MARKED +20% / JAMMED' : marked ? 'MARKED +20%' : 'JAMMED', enemy, labelHeight, '#91eadd', 10, -rows * (minimumText + 6) / scale);
 		}
 		if (enemy.hp >= enemy.maxHp && enemy !== selected && !isPriorityTarget(state, enemy) && !defense.exposed) {
-			if (enemy.catalog) {
+			if (enemy.catalog || enemy.kind === 'artillery') {
 				ctx.beginPath(); ctx.moveTo(anchor.x - 5, anchor.y - 5); ctx.lineTo(anchor.x + 5, anchor.y - 5); ctx.lineTo(anchor.x, anchor.y + 2); ctx.closePath();
 				ctx.fillStyle = '#ff9c78'; ctx.fill(); ctx.strokeStyle = '#261414'; ctx.lineWidth = 1; ctx.stroke();
 			}
@@ -272,7 +313,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const solution = targetSolution(state, selected, aim);
 		const defense = getEnemyDefense(state, selected);
 		const frame = selected.catalog ? getFrame(selected.catalog.frameId) : undefined;
-		const role = frame ? `${frame.chassisName} ${frame.variant}` : isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
+		const role = frame ? `${frame.chassisName} ${frame.variant}` : isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'artillery' ? 'ARTILLERY EMPLACEMENT' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
 		text(role, selected, elevation, '#ffe1aa', 10, reticle.labelOffset / scale);
 		text(`${Math.round(distance(selected, state.player))} M / ${getWeaponFeedback(state, selected, selected.id)}`, selected, elevation, reticle.locked ? '#ff6863' : solution.inRange ? '#ebc184' : '#98a8a7', 8, (reticle.labelOffset + minimumText + 7) / scale);
 	}
@@ -351,6 +392,16 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	for (const warning of state.warnings) marker(warning, '#d29b66');
 	if (navigation) marker(navigation.point, navigation.color, `${navigation.label} ${Math.round(distance(navigation.point, state.player))} M`);
 	else marker(relay, '#a3ddd0', 'UPLINK');
+	for (const [index, strike] of strikes.entries()) {
+		if (strikes.some(function (other, otherIndex) { return other.friendly === strike.friendly && Boolean(other.emplacement) === Boolean(strike.emplacement) && otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
+		if (!strike.emplacement) text(`${strike.friendly ? 'FRIENDLY' : 'INCOMING'} ${strike.life.toFixed(1)}s`, strike, 8, strike.friendly ? '#94ebe4' : '#ffd2a6', 11, -14);
+		else {
+			// The camera looks along the map diagonal. Label the far lip so the impact center stays visible.
+			const inset = strike.radius * Math.SQRT1_2;
+			text(`IMPACT ${artilleryClock(strike.life)}`, { x: strike.x - inset, y: strike.y - inset }, 0, '#ffcfb4', 11, -7 / scale);
+		}
+	}
+	drawArtilleryTargeting(ctx, enemies, { x: ground.x, y: ground.y + Math.max(24, 32 * scale) }, width, height, minimumText, options);
 	if (options.showRadar) {
 		const w = options.couchMode ? 208 : 174; const h = options.couchMode ? 136 : 116; const x = width - w - 26; const y = 112;
 		ctx.fillStyle = '#0c1c22e6'; ctx.fillRect(x - 1, y - 24, w + 2, h + 49);
@@ -404,7 +455,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		}
 		for (const enemy of enemies) dot(enemy, isPriorityTarget(state, enemy) ? '#ffd6a7' : ENEMY_STATS[enemy.kind].elevation > 42 ? '#8fd6da' : '#f2a571', isPriorityTarget(state, enemy) ? 4 : enemy.heavy ? 3 : 2, ENEMY_STATS[enemy.kind].elevation > 42);
 		for (const warning of state.warnings) dot(warning, '#e5a46f', 4, true);
-		for (const strike of state.strikes) dot(strike, strike.friendly ? '#94ebe4' : '#ff8154', strike.radius / bounds.width * w, true);
+		for (const strike of strikes) dot(strike, strike.friendly ? '#94ebe4' : '#ff8154', strike.radius / bounds.width * w, true);
 		ctx.restore();
 		ctx.font = `${options.couchMode ? 14 : 11}px monospace`; ctx.textAlign = 'left'; ctx.fillStyle = '#91a9a3'; ctx.fillText(`${enemies.length.toString().padStart(2, '0')} CONTACTS`, x + 9, y + h + 15);
 		if (mission?.map.terrain?.elevation) {

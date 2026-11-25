@@ -240,7 +240,7 @@ export const advanceGaits = function (gaits: Gaits, state: CombatStateView): Gai
 				const frame = getFrame(enemy.catalog.frameId);
 				return [enemy.id, advanceGait(previous, body, dt, frame.size, frame.stride, FRAME_RIGS[frame.id])];
 			}
-			if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') {
+			if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank' || enemy.kind === 'artillery') {
 				const forward = (body.x - previous.body.x) * Math.cos(body.angle) + (body.y - previous.body.y) * Math.sin(body.angle);
 				return [enemy.id, { ...previous, body, travelSpeed: forward / dt }];
 			}

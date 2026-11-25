@@ -1,5 +1,9 @@
 import { expect, test } from 'bun:test';
 import { Vector3 } from 'three';
+import { emplacementLaunch } from '../src/artillery-emplacement-rig';
+import { sampleMechResponses } from '../src/mech-response';
+import { createState } from '../src/simulation';
+import { groundHeight, groundNormal } from '../src/terrain-elevation';
 import { FRAMES } from '../src/frames';
 import { createGait } from '../src/gait';
 import { createMech } from '../src/mech-3d';
@@ -50,4 +54,44 @@ test('enemy muzzle and tube positions match combat while aircraft pivots follow 
 			}
 		} finally { model.dispose(); }
 	}
+});
+
+test('the emplacement stays planted on a slope as its barrel traverses, fires from the bore and recoils along it', function () {
+	const model = createMech('artillery'); const state = createState();
+	const terrain = { obstacles: [], roads: [], elevation: { xs: [0, 1000], ys: [0, 1000], heights: new Float32Array([0, 230, 150, 380]), minHeight: 0, maxHeight: 380 } };
+	const body = { x: 620, y: 630, angle: .47 }; const gait = createGait(body);
+	const elevation = groundHeight(terrain, body); model.root.position.set(body.x, elevation, body.y);
+	const target = { x: 810, y: 850, elevation: -210 };
+	const pose = function (heading: number) {
+		const response = sampleMechResponses(state).get(9);
+		model.pose(gait, heading, { recoil: 0, hit: 0, heat: 0, time: state.time, terrain, target, ...(response ? { response } : {}) });
+		model.root.updateMatrixWorld(true);
+	};
+	try {
+		const bore = model.root.getObjectByName('weapon-muzzle'), base = model.root.getObjectByName('emplacement-foundation');
+		if (!bore || !base) throw new Error('Missing emplacement assemblies');
+		pose(-1.3); const foundation = base.matrixWorld.clone();
+		const up = new Vector3(0, 1, 0).transformDirection(foundation);
+		const slope = groundNormal(terrain, body);
+		expect(up.distanceTo(new Vector3(slope.x, slope.elevation, slope.y))).toBeLessThan(1e-7);
+		for (const heading of [-1.3, .72, 2.14]) {
+			pose(heading); const { origin, direction } = emplacementLaunch(body, heading, elevation);
+			const exit = bore.getWorldPosition(new Vector3());
+			expect(exit.distanceTo(new Vector3(origin.x, origin.elevation, origin.y))).toBeLessThan(1e-7);
+			expect(new Vector3(1, 0, 0).transformDirection(bore.matrixWorld).distanceTo(new Vector3(direction.x, direction.elevation, direction.y))).toBeLessThan(1e-7);
+			const combat = getEnemyMuzzle('artillery', false, 0, { ...body, groundElevation: elevation }, heading, undefined, target);
+			expect(exit.distanceTo(new Vector3(combat.x, combat.elevation, combat.y))).toBeLessThan(1e-7);
+			expect(base.matrixWorld).toEqual(foundation);
+		}
+		const heading = 2.14; const { direction } = emplacementLaunch(body, heading, elevation);
+		const home = bore.getWorldPosition(new Vector3());
+		state.effects = [{ x: body.x, y: body.y, life: .4, size: 10, color: '#fff', feedback: { type: 'fire', slot: 0, family: 'artillery', shooter: 9, heavy: true, time: 0, direction } }];
+		state.time = 0; pose(heading); expect(bore.getWorldPosition(new Vector3())).toEqual(home);
+		state.time = .035; pose(heading);
+		const recoil = home.clone().sub(bore.getWorldPosition(new Vector3()));
+		expect(recoil.length()).toBeGreaterThan(10);
+		expect(recoil.normalize().dot(new Vector3(direction.x, direction.elevation, direction.y))).toBeCloseTo(1, 7);
+		expect(base.matrixWorld).toEqual(foundation);
+		state.time = .5; pose(heading); expect(bore.getWorldPosition(new Vector3())).toEqual(home);
+	} finally { model.dispose(); }
 });

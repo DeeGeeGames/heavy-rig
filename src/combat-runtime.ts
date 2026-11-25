@@ -307,9 +307,9 @@ export const createCombatRuntime = function () {
 				.addQuery('strikes', { with: ['artillery'] }).setProcess(function ({ queries, resources, dt }) {
 					if (!resources.combatSession.active || !state) return;
 					const current = state;
-					if (queries.strikes.some(function (strike) { return strike.components.artillery.life <= dt; })) {
-						trackDamageTargets(function () { artilleryStep(current, dt); }, true);
-					} else artilleryStep(current, dt);
+					if (queries.strikes.some(function (strike) { return strike.components.artillery.life <= dt + 1e-9; })) {
+						trackDamageTargets(function () { artilleryStep(current, dt, current.time); }, true);
+					} else artilleryStep(current, dt, current.time);
 					markAll('artillery');
 				});
 			world.addSystem('combat:projectiles').withRef(refs.projectiles).inPhase('fixedUpdate').inGroup('combat').after(refs.artillery).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatStats', 'combatFeedback', 'combatProgress'])

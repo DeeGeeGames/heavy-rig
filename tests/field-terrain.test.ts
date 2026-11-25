@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import type { Contract } from '../src/campaign-types';
-import { ENEMY_RADIUS, RIG_RADIUS } from '../src/combat-spatial';
+import { EMPLACEMENT_RADIUS, enemyRadius, RIG_RADIUS } from '../src/combat-spatial';
 import { defaultReserves } from '../src/combat-resources';
 import { createOpeningProgress, getChainStatus } from '../src/contract-chains';
 import { createStarterLoadout } from '../src/hardpoints';
@@ -9,6 +9,7 @@ import { createFieldTrial } from '../src/field-trial';
 import { moveOnTerrain, terrainPathClear, terrainShotFraction, terrainWaypoint, type FieldTerrain, type TerrainObstacle } from '../src/field-terrain';
 import { groundHeight } from '../src/terrain-elevation';
 import { DROPSHIP_DECK, DROPSHIP_WIDTH } from '../src/launch-berths';
+import { landingFootprint } from '../src/landing-site';
 import { dropRigPose, rigReleaseTime } from '../src/enemy-deployment';
 import { createSituationMission } from '../src/situation-sim';
 import { CAPTURE_RADIUS, EXTRACTION_RADIUS, missionHostileCount } from '../src/missions';
@@ -119,9 +120,33 @@ test('campaign deployment keeps each contract role, full squad, and hostile rost
 			for (const mate of state.squadmates) {
 				assert(clearAt(mate, RIG_RADIUS) && terrainPathClear(terrain, mate, map.drop, RIG_RADIUS), 'squad deployment slot');
 			}
+			const guns = state.enemies.filter(function (enemy) { return enemy.kind === 'artillery'; });
+			const fortified = kind === 'demolition' || kind === 'raid' || kind === 'clearance';
+			assert(fortified ? guns.length >= tier && guns.length <= 2 * tier : guns.length === 0, 'artillery garrison size');
+			const coverage = map.sites.map(function () { return 0; });
+			for (const gun of guns) {
+				const ranges = map.sites.map(function (site) { return distance(site, gun); });
+				const closest = Math.min(...ranges), siteIndex = ranges.indexOf(closest);
+				assert(closest < Math.min(map.width, map.height) / 4, 'gun guards a local objective');
+				coverage[siteIndex] = (coverage[siteIndex] ?? 0) + 1;
+				assert(state.enemies.every(function (other) { return other === gun || distance(other, gun) > enemyRadius(other) + EMPLACEMENT_RADIUS; })
+					&& [state.player, ...state.squadmates].every(function (rig) { return distance(rig, gun) > RIG_RADIUS + EMPLACEMENT_RADIUS; }), 'gun clear of other contacts');
+				assert(map.sites.every(function (site) { return distance(site, gun) > CAPTURE_RADIUS + EMPLACEMENT_RADIUS; })
+					&& distance(map.extraction, gun) > EXTRACTION_RADIUS + EMPLACEMENT_RADIUS, 'gun clear of objective and pickup');
+				assert(map.landmarks.every(function (landmark) { return distance(landmark, gun) >= landmark.radius + EMPLACEMENT_RADIUS; }), 'exposed gun foundation');
+				const footprint = { obstacles: [landingFootprint(gun, EMPLACEMENT_RADIUS)] };
+				assert(terrain.roads.every(function (road) { return road.every(function (at, i) {
+					const prev = road[i - 1]; return !prev || terrainPathClear(footprint, prev, at, RIG_RADIUS);
+				}); }), 'gun leaves the approach road clear');
+				const base = groundHeight(terrain, gun);
+				for (const dx of [-EMPLACEMENT_RADIUS, EMPLACEMENT_RADIUS]) for (const dy of [-EMPLACEMENT_RADIUS, EMPLACEMENT_RADIUS]) {
+					assert(Math.abs(base - groundHeight(terrain, { x: gun.x + dx, y: gun.y + dy })) < .001, 'level gun foundation');
+				}
+			}
+			assert(Math.max(...coverage) - Math.min(...coverage) <= 1, 'balanced coverage of the defended sites');
 			for (const hostile of state.enemies) {
 				const handoff = hostile.entry ?? hostile;
-				assert(clearAt(handoff, ENEMY_RADIUS) && reachable(handoff, map.objective, ENEMY_RADIUS), 'hostile deployment and egress');
+				assert(clearAt(handoff, enemyRadius(hostile)) && reachable(handoff, map.objective, RIG_RADIUS), 'hostile deployment and egress');
 			}
 			const cut = terrain.obstacles.find(function (obstacle) { return obstacle.kind === 'fissure'; });
 			const cover = terrain.obstacles.find(function (obstacle) { return obstacle.kind === 'shed'; });

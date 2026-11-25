@@ -465,6 +465,19 @@ use larger barrages that expand below half integrity. Radar, target brackets,
 range labels, impact flashes, recoil, and distinct silhouettes communicate the
 fight.
 
+On procedural Demolition contracts, fixed guns guard the processing facility's
+perimeter. Raid spreads them among the supply installations. Area Clearance
+posts them on the approaches to the occupied sites. Each contract rolls a gun
+count from its tier through twice its tier, inclusive, in addition to its mobile
+defenders. The briefing reports the roll, which stays the same on replay.
+
+Each emplacement can fire across the entire map. It tracks a rig for two
+seconds, then fires toward a random point within 240 m of that rig. An orange
+circle marks the 64 m blast radius for the two seconds the shell is airborne.
+Ground units on either side can take damage inside the circle. Destroying an
+emplacement during targeting interrupts its shot. A shell already in flight
+still lands.
+
 ## Frame Training
 
 Open Frame Training from the title, Bridge, or Starmap. Choose any frame
