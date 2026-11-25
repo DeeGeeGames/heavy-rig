@@ -20,7 +20,7 @@ export const createWorldObjects = function (scene: Scene) {
 	// Live effects retain their own materials and draw against the stylized world's depth.
 	const feedback = new Group(); feedback.name = 'combat-feedback'; feedback.userData['nativeEffects'] = true; root.add(feedback);
 	const projectileSmoke = createProjectileSmoke(); feedback.add(projectileSmoke.root);
-	const weaponVfx = createWeaponVfx(); feedback.add(weaponVfx.afterglowRoot);
+	const weaponVfx = createWeaponVfx(); feedback.add(weaponVfx.afterglowRoot, weaponVfx.contacts.root);
 	const lasers = createCuttingLasers(); feedback.add(lasers.root);
 	const { createShot, createEffect } = weaponVfx;
 	const yard = new Group(); yard.name = 'legacy-terrain'; root.add(yard);
@@ -246,8 +246,10 @@ export const createWorldObjects = function (scene: Scene) {
 				if (shot.kind === 'missile' || shot.kind === 'rocket') smokePositions.set(shot, to.clone());
 			});
 			projectileSmoke.update(state, smokePositions);
-			sync(feedback, effects, state.effects.length, createEffect, function (value, index) {
-				const effect = state.effects[index]; if (!effect) return;
+			const activeEffects = state.effects;
+			weaponVfx.contacts.update(state, activeEffects);
+			sync(feedback, effects, activeEffects.length, createEffect, function (value, index) {
+				const effect = activeEffects[index]; if (!effect) return;
 				value.root.position.set(effect.x, effect.elevation ?? 36, effect.y);
 				if (effect.source === 'muzzle' && effect.squadmateId === undefined && effect.elevation === undefined && muzzles.length > 0) {
 					let origin = flashes.get(effect);
@@ -257,7 +259,7 @@ export const createWorldObjects = function (scene: Scene) {
 					}
 					if (origin) value.root.position.copy(origin);
 				}
-				weaponVfx.updateEffect(value, effect);
+				value.update(effect);
 			});
 			lasers.update(state, muzzles);
 			smoke.visible = state.player.heat > 60;

@@ -11,6 +11,18 @@ const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 1300, y: 780 
 const enemy = function (id: number, x: number, kind: EnemyKind): Unit { return { id, x, y: 780, kind, hp: 1000, maxHp: 1000, angle: 0, cooldown: 999, heavy: false }; };
 const setup = function () { const state = createState(); state.spawnIn = 999; state.player.turret = 0; return state; };
 
+test('frontal armor takes the same glancing hit at the old and new ballistic speeds', function () {
+	for (const [kind, damage, oldSpeed] of [['cannon', 38, 650], ['bullet', 4, 1000]] as const) {
+		for (const speed of [oldSpeed, oldSpeed * 4]) {
+			const state = setup();
+			const siege = { ...enemy(1, 660, 'siege'), angle: Math.PI / 2 }; state.enemies = [siege];
+			state.shots.push({ kind, x: 400, y: siege.y + 18, elevation: 55.5, vx: speed, vy: 0, life: 2, damage, target: undefined });
+			while (state.shots.length) projectilesStep(state, 1 / 60);
+			expect(siege.hp).toBeCloseTo(1000 - damage * 0.6);
+		}
+	}
+});
+
 test('acquired aircraft fire starts at the articulated muzzle and stays straight after the target and shooter move', function () {
 	const state = setup(); const target = enemy(1, 1300, 'vtol'); state.enemies = [target];
 	weaponsStep(state, { ...idle, targetId: target.id, fire: [true, false, false, false] }, 1 / 60);

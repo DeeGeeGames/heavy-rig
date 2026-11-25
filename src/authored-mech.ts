@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { installMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
 import type { WalkerGait } from './gait';
 import type { MechFeedback } from './mech-3d';
+import { createMechResponseRig } from './mech-response';
 import { createLegPoseSampling } from './leg-pose-sampling';
 import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
@@ -274,6 +275,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			return { mount, muzzle, exits };
 		});
 		const muzzles = weapons.map(function () { return new Vector3(); });
+		const responseRig = createMechResponseRig(root, torso, weapons.map(function (weapon) { return weapon.mount; }));
 		const rocketMuzzles = weapons.map(function (weapon) { return weapon.exits.map(function () { return new Vector3(); }); });
 		const legs = (['left', 'right'] as const).map(function (side) { return { thigh: named(scene, `rig_leg_${side}_thigh`), shin: named(scene, `rig_leg_${side}_shin`), foot: named(scene, `rig_leg_${side}_foot`) }; });
 		const sampleLegPose = createLegPoseSampling(legs.flatMap(function (leg) { return [leg.thigh, leg.shin, leg.foot]; }));
@@ -288,11 +290,13 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		const neutralMaterials = [...ownedMaterials.values()].flatMap(function (material) {
 			return material instanceof MeshStandardMaterial ? [{ material, emissive: material.emissive.clone(), intensity: material.emissiveIntensity }] : [];
 		});
+		const flashColor = new Color('#ffae73'); const radiance = new Color();
 		let previous: AuthoredPoseContext | undefined;
 		let disposed = false; let labelHeight = height;
 		instances += 1;
 		const pose = function (gait: WalkerGait, heading: number, feedback?: MechFeedback) {
 			if (disposed) return;
+			responseRig.restore();
 			const context = feedback?.authoredPose ?? advancePose(previous, gait.body, feedback?.time ?? previous?.time ?? 0);
 			for (const transform of sampler.sample(context)) {
 				const target = upperBody.find(function (entry) { return entry.name === transform.name; })?.node;
@@ -315,16 +319,23 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			// B/C remove the entire shoulder cartridge. Carry its cap color on
 			// the fixed cheek on each side whose cartridge is currently absent.
 			emptyShoulders?.set(weapons[2]?.mount.visible === false ? 1 : 0, weapons[3]?.mount.visible === false ? 1 : 0);
-			// Weapons and structural necks retain their authored local transforms.
+			// Sample the simulation-aligned exits before cosmetic weapon travel.
 			root.updateMatrixWorld(true); inverse.copy(root.matrixWorld).invert();
 			for (const [slot, weapon] of weapons.entries()) {
 				muzzles[slot]?.copy(weapon.muzzle.getWorldPosition(position)).applyMatrix4(inverse);
 				for (const [index, exit] of weapon.exits.entries()) rocketMuzzles[slot]?.[index]?.copy(exit.getWorldPosition(position)).applyMatrix4(inverse);
 			}
+			responseRig.apply(feedback?.response);
+			const flash = feedback?.response?.flash ?? 0;
+			radiance.copy(flashColor).multiplyScalar(flash * 0.8);
 			for (const entry of neutralMaterials) {
 				entry.material.emissive.copy(entry.emissive);
 				entry.material.emissiveIntensity = entry.intensity;
-				if ((feedback?.hit ?? 0) > 0) { entry.material.emissive.set('#ffae73'); entry.material.emissiveIntensity = Math.max(entry.intensity, (feedback?.hit ?? 0) * 0.8); }
+				if ((feedback?.hit ?? 0) > 0) { entry.material.emissive.copy(flashColor); entry.material.emissiveIntensity = Math.max(entry.intensity, (feedback?.hit ?? 0) * 0.8); }
+				else if (flash > 0) {
+					entry.material.emissive.multiplyScalar(entry.intensity).add(radiance);
+					entry.material.emissiveIntensity = 1;
+				}
 			}
 			labelHeight = 0;
 			for (const bound of bounds) {

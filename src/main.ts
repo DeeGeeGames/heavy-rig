@@ -1634,7 +1634,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	});
 	world.addSystem('combat-feedback').setEventHandlers({
 		combatStepFinished: function ({ data }) {
-			audio.update(audioFrame(frameTime)); audio.play(data.events);
+			audio.update(audioFrame(frameTime)); audio.play(data.events, data.weaponCues);
 			feedback.play(data.events, frameTime);
 		},
 	});

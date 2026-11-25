@@ -5,6 +5,7 @@ import type { ReactorState } from './combat-resources';
 import type { WeaponMount } from './arsenal';
 import type { MissionRuntime } from './campaign-types';
 import type { FireDiscipline, SquadOrder } from './simulation';
+import type { WeaponCue } from './weapon-feedback';
 
 type Player = State['player'];
 interface Reactor { heat: number; overheated: boolean; coolantCharges: number; coolantHeld: boolean }
@@ -37,7 +38,7 @@ export interface CombatResources {
 	combatConfig: Pick<State, 'frame' | 'difficulty' | 'phase' | 'seed'>;
 	combatMission: { value: MissionRuntime | undefined };
 	combatProgress: Pick<State, 'relay' | 'wave' | 'spawned' | 'spawnIn' | 'intermission' | 'time' | 'kills' | 'outcome' | 'nextId'>;
-	combatFeedback: Pick<State, 'beams' | 'shake' | 'cannonIn' | 'events'>;
+	combatFeedback: Pick<State, 'beams' | 'shake' | 'cannonIn' | 'events'> & { weaponCues: WeaponCue[] };
 	combatStats: CombatStats;
 	combatControls: { raw: Controls; current: Controls };
 	combatSession: { enabled: boolean; active: boolean; training: Training | undefined; before: TrainingBefore | undefined };
@@ -83,7 +84,7 @@ export const createCombatRuntime = function () {
 	const plugin = definePlugin('heavy-rig:combat')
 		.withComponentTypes<CombatComponents>()
 		.withResourceTypes<CombatResources>()
-		.withEventTypes<{ combatEvent: { event: CombatEvent; time: number }; combatStepFinished: { events: readonly CombatEvent[]; time: number } }>()
+		.withEventTypes<{ combatEvent: { event: CombatEvent; time: number }; combatStepFinished: { events: readonly CombatEvent[]; weaponCues: readonly WeaponCue[]; time: number } }>()
 		.withGroups<'combat'>()
 		.install(function (world, onCleanup) {
 			const empty = createState();
@@ -94,7 +95,7 @@ export const createCombatRuntime = function () {
 			world.addResource('combatConfig', { frame: empty.frame, difficulty: empty.difficulty, phase: empty.phase, seed: empty.seed });
 			world.addResource('combatMission', { value: undefined });
 			world.addResource('combatProgress', { relay: empty.relay, wave: empty.wave, spawned: empty.spawned, spawnIn: empty.spawnIn, intermission: empty.intermission, time: empty.time, kills: empty.kills, outcome: empty.outcome, nextId: empty.nextId });
-			world.addResource('combatFeedback', { beams: [], shake: 0, cannonIn: 0, events: [] });
+			world.addResource('combatFeedback', { beams: [], shake: 0, cannonIn: 0, events: [], weaponCues: [] });
 			world.addResource('combatStats', empty.stats);
 			world.addResource('combatControls', { raw: controls(), current: controls() });
 			world.addResource('combatSession', { enabled: false, active: false, training: undefined, before: undefined });
@@ -151,7 +152,13 @@ export const createCombatRuntime = function () {
 				spawn: function (enemy) { world.spawn({ combatOwned: true, combatOrder: nextOrder(), enemy }); },
 			});
 			const shots = collection<Shot>({ list: function () { return world.getEntitiesWithQuery(['projectile', 'combatOrder']).sort(function (a, b) { return a.components.combatOrder - b.components.combatOrder; }).map(function (entity) { return { id: entity.id, value: entity.components.projectile }; }); }, spawn: function (value) { world.spawn({ combatOwned: true, combatOrder: nextOrder(), projectile: value }); }, remove, setOrder });
-			const effects = collection<Effect>({ list: function () { return world.getEntitiesWithQuery(['effect', 'combatOrder']).sort(function (a, b) { return a.components.combatOrder - b.components.combatOrder; }).map(function (entity) { return { id: entity.id, value: entity.components.effect }; }); }, spawn: function (value) { world.spawn({ combatOwned: true, combatOrder: nextOrder(), effect: value }); }, remove, setOrder });
+			const effects = collection<Effect>({
+				list: function () { return world.getEntitiesWithQuery(['effect', 'combatOrder']).sort(function (a, b) { return a.components.combatOrder - b.components.combatOrder; }).map(function (entity) { return { id: entity.id, value: entity.components.effect }; }); },
+				spawn: function (value) {
+					world.spawn({ combatOwned: true, combatOrder: nextOrder(), effect: value });
+					if (value.feedback) world.getResource('combatFeedback').weaponCues.push(value.feedback);
+				}, remove, setOrder,
+			});
 			const warnings = collection<Warning>({ list: function () { return world.getEntitiesWithQuery(['warning', 'combatOrder']).sort(function (a, b) { return a.components.combatOrder - b.components.combatOrder; }).map(function (entity) { return { id: entity.id, value: entity.components.warning }; }); }, spawn: function (value) { world.spawn({ combatOwned: true, combatOrder: nextOrder(), warning: value }); }, remove, setOrder });
 			const strikes = collection<ArtilleryStrike>({ list: function () { return world.getEntitiesWithQuery(['artillery', 'combatOrder']).sort(function (a, b) { return a.components.combatOrder - b.components.combatOrder; }).map(function (entity) { return { id: entity.id, value: entity.components.artillery }; }); }, spawn: function (value) { world.spawn({ combatOwned: true, combatOrder: nextOrder(), artillery: value }); }, remove, setOrder });
 			const wrecks = collection<Wreck>({ list: function () { return world.getEntitiesWithQuery(['wreck', 'combatOrder']).sort(function (a, b) { return a.components.combatOrder - b.components.combatOrder; }).map(function (entity) { return { id: entity.id, value: entity.components.wreck }; }); }, spawn: function (value) { world.spawn({ combatOwned: true, combatOrder: nextOrder(), wreck: value }); }, remove, setOrder });
@@ -179,7 +186,7 @@ export const createCombatRuntime = function () {
 				for (const entity of world.getEntitiesWithQuery(['combatOwned'])) remove(entity.id);
 				const config = { frame: snapshot.frame, difficulty: snapshot.difficulty, phase: snapshot.phase, seed: snapshot.seed };
 				const progress = { relay: snapshot.relay, wave: snapshot.wave, spawned: snapshot.spawned, spawnIn: snapshot.spawnIn, intermission: snapshot.intermission, time: snapshot.time, kills: snapshot.kills, outcome: snapshot.outcome, nextId: snapshot.nextId };
-				const feedback = { beams: snapshot.beams.map(function (beam) { return { ...beam }; }), shake: snapshot.shake, cannonIn: snapshot.cannonIn, events: snapshot.events };
+				const feedback = { beams: snapshot.beams.map(function (beam) { return { ...beam }; }), shake: snapshot.shake, cannonIn: snapshot.cannonIn, events: snapshot.events, weaponCues: [] };
 				world.addResource('combatPose', { value: snapshot.authoredPose });
 				world.addResource('combatConfig', config); world.addResource('combatProgress', progress); world.addResource('combatFeedback', feedback); world.addResource('combatStats', snapshot.stats);
 				bindMission(snapshot.mission);
@@ -271,6 +278,7 @@ export const createCombatRuntime = function () {
 					hooks.beforeStep?.();
 					if (!session.enabled) { session.active = false; return; }
 					resources.combatFeedback.events = [];
+					resources.combatFeedback.weaponCues = [];
 					resources.combatControls.raw = controls();
 					session.before = { x: state.player.x, y: state.player.y, angle: state.player.angle, hits: state.stats.shotsHit };
 					resources.combatControls.current = session.training ? prepareTraining(session.training, resources.combatControls.raw) : resources.combatControls.raw;
@@ -307,7 +315,7 @@ export const createCombatRuntime = function () {
 					const session = resources.combatSession; if (!session.active || !state) return;
 					if (session.training && session.before) finishTraining(session.training, resources.combatControls.raw, dt, session.before);
 					for (const event of resources.combatFeedback.events) world.eventBus.publish('combatEvent', { event, time: resources.combatProgress.time });
-					world.eventBus.publish('combatStepFinished', { events: [...resources.combatFeedback.events], time: resources.combatProgress.time });
+					world.eventBus.publish('combatStepFinished', { events: [...resources.combatFeedback.events], weaponCues: resources.combatFeedback.weaponCues, time: resources.combatProgress.time });
 					hooks.afterStep?.();
 				});
 			onCleanup(function () { state = undefined; attach = undefined; applySquadOrders = undefined; setEnabled = undefined; playerId = undefined; squadmateId = undefined; enemyId = undefined; hooks = {}; });

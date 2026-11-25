@@ -1,10 +1,25 @@
 import { expect, test } from 'bun:test';
 import { OrthographicCamera } from 'three';
-import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset } from '../src/camera-follow';
+import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset, weaponCameraKick } from '../src/camera-follow';
 import { alignCamera, toGround, toScreen } from '../src/projection-3d';
-import { createState } from '../src/simulation';
+import { createState, type Effect } from '../src/simulation';
 
 const viewports = [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }];
+
+test('blast kick follows the pilot’s position, stays bounded across overlapping salvos, and settles', function () {
+	const impact: Effect = { x: 100, y: 100, life: 0.75, size: 12, color: '#fff', feedback: {
+		type: 'impact', family: 'rocket', surface: 'ground', heavy: true, time: 2, shooter: 1, direction: { x: 0, y: 0, elevation: -1 },
+	} };
+	const salvo = Array.from({ length: 18 }, function () { return impact; });
+	const near = { x: 125, y: 75 };
+	const single = weaponCameraKick([impact], near, 2);
+	const peak = weaponCameraKick(salvo, near, 2);
+	expect(single.x).toBeLessThan(0); expect(peak.x).toBeLessThan(single.x);
+	expect(Math.abs(peak.x)).toBeLessThan(2 * Math.abs(single.x));
+	expect(weaponCameraKick(salvo, { x: 75, y: 125 }, 2).x).toBeCloseTo(-peak.x);
+	expect(weaponCameraKick(salvo, { x: 1100, y: 1100 }, 2)).toEqual({ x: 0, y: 0 });
+	expect(weaponCameraKick(salvo, near, 3)).toEqual({ x: 0, y: 0 });
+});
 
 test('travel lead follows signed movement while retreating preserves a view toward the guns', function () {
 	for (const viewport of viewports) {

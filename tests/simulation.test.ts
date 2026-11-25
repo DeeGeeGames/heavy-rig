@@ -155,6 +155,8 @@ describe('Heavy Rig combat', function () {
 		const enemy = state.enemies[0]; if (!enemy) throw new Error('Missing commander');
 		const positions = state.strikes.map(function (strike) { return { x: strike.x, y: strike.y }; });
 		expect(positions.length).toBeGreaterThan(1);
+		expect(state.effects.filter(function (effect) { return effect.feedback?.type === 'fire'; }).map(function (effect) { return effect.feedback; }))
+			.toMatchObject([{ type: 'fire', family: 'artillery', shooter: enemy.id, slot: 4, heavy: true }]);
 		state.player.x = 500; state.player.y = 200;
 		run(state, 1);
 		expect(enemy.angle).toBe(0); expect(enemy.x).toBe(400); expect(enemy.y).toBe(600);

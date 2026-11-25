@@ -6,9 +6,10 @@ import { createGait, createEnemyGait, type Gaits } from './gait';
 import { getFrame, type FrameId } from './frames';
 import { FRAME_RIGS } from './frame-rig';
 import { createMech, weaponRecoil } from './mech-3d';
+import { sampleMechResponses, type MechResponse } from './mech-response';
 import { drawOverlay, type ScreenRect } from './overlay';
 import { alignCamera, toGround, toScreen, viewScale } from './projection-3d';
-import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset } from './camera-follow';
+import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset, weaponCameraKick } from './camera-follow';
 import { playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView } from './simulation';
 import type { SpatialPoint } from './weapon-rig';
 import type { AuthoredPoseContext } from './authored-pose';
@@ -38,7 +39,7 @@ interface MechView {
 	commander: boolean;
 	frame: FrameId;
 	skin: MechFinish;
-	damage: { hp: number | undefined; hitAt: number };
+	damage: { hp?: number; hitAt?: number; genericHitAt?: number; sampledAt?: number };
 }
 interface ViewBindings {
 	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechFinish) => MechView;
@@ -47,6 +48,7 @@ interface ViewBindings {
 }
 interface MechPose {
 	loadout: readonly WeaponMount[];
+	response?: MechResponse | undefined;
 	position?: Point | undefined;
 	elevation?: number;
 	visible?: boolean;
@@ -117,6 +119,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let playerSkin: MechFinish = 'original';
 		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
 		let cameraOffset: Point = { x: 0, y: 0 };
+		let weaponKick: { state: CombatStateView; time: number; offset: Point } | undefined;
 		let cameraSample: { state: CombatStateView; time: number; position: Point } | undefined;
 		let biome: Biome | undefined;
 		let relayHp: number | undefined; let relayHitAt = -10;
@@ -186,20 +189,25 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						const previous = world.getComponent(id, 'mechView');
 						if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame && previous.skin === skin) return previous;
 						if (previous) { world.removeComponent(id, 'group'); world.removeComponent(id, 'mechView'); }
-						const view: MechView = { model: createMech(kind, commander, frame, skin), kind, commander, frame, skin, damage: { hp: undefined, hitAt: -10 } };
+						const view: MechView = { model: createMech(kind, commander, frame, skin), kind, commander, frame, skin, damage: {} };
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
-					pose: function (id, view, gait, heading, hp, time, { loadout, heat = 0, authoredPose, target, legGait, position = gait.body, elevation = 0, visible = true }) {
-						if (view.damage.hp !== undefined && hp < view.damage.hp) view.damage.hitAt = time;
+					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, legGait, position = gait.body, elevation = 0, visible = true }) {
+						if (view.damage.hp !== undefined && hp < view.damage.hp) {
+							view.damage.hitAt = time;
+							if (!response || response.lastImpact <= (view.damage.sampledAt ?? -Infinity)) view.damage.genericHitAt = time;
+						}
 						view.damage.hp = hp;
+						view.damage.sampledAt = time;
 						const transform = world.getComponent(id, 'localTransform3D');
 						if (!transform) return;
 						transform.x = position.x; transform.y = elevation; transform.z = position.y;
 						world.markChanged(id, 'localTransform3D');
 						view.model.root.visible = visible;
 						view.model.pose(gait, heading, {
-							hit: Math.max(0, 1 - (time - view.damage.hitAt) / 0.16), recoil: weaponRecoil(loadout), heat, time,
+							hit: Math.max(0, 1 - (time - (view.damage.genericHitAt ?? -Infinity)) / 0.16),
+							recoil: weaponRecoil(loadout, 'energy'), heat, time, ...(response ? { response } : {}),
 							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
 							...(legGait ? { legGait } : {}), ...(authoredPose ? { authoredPose } : {}), ...(target ? { target } : {}),
 						});
@@ -235,7 +243,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			camera.clearViewOffset(); camera.zoom = 1; alignCamera(centeredCamera, width, height, state, zoom);
 			const focus = toGround({ x: width * (0.5 + cameraOffset.x), y: height * (0.52 + cameraOffset.y) }, centeredCamera, width, height) ?? state.player;
 			alignView(state, height, focus);
-			if (state.shake > 0) camera.setViewOffset(width, height, -Math.sin(state.time * 79) * state.shake, -Math.cos(state.time * 91) * state.shake, width, height);
+			if (weaponKick?.state !== state || weaponKick.time !== state.time) weaponKick = { state, time: state.time, offset: weaponCameraKick(state.effects, state.player, state.time) };
+			const gain = Math.min(1.6, width / 700);
+			const x = weaponKick.offset.x * gain + Math.sin(state.time * 79) * state.shake;
+			const y = weaponKick.offset.y * gain + Math.cos(state.time * 91) * state.shake;
+			if (Math.abs(x) + Math.abs(y) > 0.015) camera.setViewOffset(width, height, -x, -y, width, height);
 			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		};
 		const updateCamera = function (state: CombatStateView, pointer: Point | undefined, obstructions: readonly ScreenRect[]) {
@@ -306,7 +318,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					sun.color.set(palette?.light ?? '#ffd9a0');
 				}
 				if (state !== previousState || state.time < previousStateTime) {
-					if (player) { player.damage.hp = undefined; player.damage.hitAt = -10; }
+					if (player) player.damage = {};
 					relayHp = undefined; relayHitAt = -10;
 				}
 				if (relayHp !== undefined && state.relay < relayHp) relayHitAt = state.time;
@@ -331,12 +343,13 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					camera.setViewOffset(width, height, -width * 0.2, -height * 0.11, width, height);
 					camera.updateProjectionMatrix();
 				}
+				const responses = sampleMechResponses(state);
 				if (player && playerId !== undefined) {
 					const arrival = landing?.poses[0];
 					const heading = arrival?.gait.body.angle ?? (attract ? Math.PI / 4 - 0.22 : state.player.turret);
 					const gait = arrival?.gait ?? (attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player);
 					views.pose(playerId, player, gait, heading, state.player.hp, state.time, {
-						loadout: state.loadout, heat: state.player.heat, authoredPose: arrival ? arrival.authored : state.authoredPose,
+						loadout: state.loadout, heat: state.player.heat, response: responses.get(0), authoredPose: arrival ? arrival.authored : state.authoredPose,
 						position: arrival?.position, elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? (attract ? undefined : sampledLegs(state.player, state.authoredPose?.gait ?? gait)),
 						target: attract || hangar || landing ? undefined : playerAimPoint(state),
@@ -351,7 +364,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const arrival = landing?.poses[index + 1];
 					const gait = arrival?.gait ?? gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
 					views.pose(id, view, gait, arrival?.gait.body.angle ?? mate.turret, mate.hp, state.time, {
-						loadout: mate.loadout, heat: mate.heat, authoredPose: arrival ? arrival.authored : mate.authoredPose,
+						loadout: mate.loadout, heat: mate.heat, response: responses.get(mate.pilotId), authoredPose: arrival ? arrival.authored : mate.authoredPose,
 						position: arrival?.position, elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? sampledLegs(mate, mate.authoredPose?.gait ?? gait),
 						target: !landing && mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
@@ -366,8 +379,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const view = views.ensure(id, enemy.catalog ? undefined : enemy.kind, Boolean(enemy.commander), enemy.catalog?.frameId ?? 'warden', opponentFinish);
 					const gait = gaits.enemies.get(enemy.id) ?? createEnemyGait(enemy);
 					views.pose(id, view, gait, enemy.angle, enemy.hp, state.time, {
-						loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, authoredPose: enemy.catalog?.authoredPose,
-							target: enemyAimPoint(state, enemy), legGait: sampledLegs(enemy, enemy.catalog?.authoredPose?.gait ?? gait),
+						loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, response: responses.get(enemy.id), authoredPose: enemy.catalog?.authoredPose,
+						target: enemyAimPoint(state, enemy), legGait: sampledLegs(enemy, enemy.catalog?.authoredPose?.gait ?? gait),
 					});
 					if (enemy.catalog || enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
