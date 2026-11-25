@@ -1285,7 +1285,8 @@ export const projectilesStep = function (state: CombatStateView, dt: number) {
 			const impact = pointAlong(origin, end, surfaceHit); shot.life = 0;
 			const affected = shot.splash && shot.kind !== 'enemy' ? (catalog ? splashFriendly(state, friendlies, impact, shot) : splashDamage(state, impact, shot)) : undefined;
 			const obstacle = cover?.fraction === surfaceHit ? cover : undefined;
-			const surface = obstacle?.obstacle.kind === 'shed' ? 'concrete' : obstacle?.obstacle.kind === 'tree' ? 'wood' : 'ground';
+			const kind = obstacle?.obstacle.kind;
+			const surface = kind === 'shed' || kind === 'turbine' ? 'concrete' : kind === 'tree' ? 'wood' : 'ground';
 			projectileImpact(state, shot, family, impact, shot.splash ?? 18, '#ffb477', { surface,
 				normal: obstacle?.normal ?? { x: 0, y: 0, elevation: 1 }, affected, scuff: surface !== 'wood' });
 		}

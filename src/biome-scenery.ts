@@ -163,8 +163,27 @@ const sawmill = function ({ x, y: z, width: w, depth: d, height: h }: TerrainObs
 };
 
 interface Rotor { x: number; y: number; z: number; yaw: number; radius: number; phase: number }
-const windTower = function ({ x, y: z, width: w, height: h, depth: d }: TerrainObstacle, draw: Part, random: () => number): Rotor {
-	const hubHeight = h + (w + d) * .80, yaw = .65 + random() * .15;
+const turbineHubHeight = function (o: TerrainObstacle) { return o.height + (o.width + o.depth) * .80; };
+const rotorRadius = function (hubHeight: number) { return hubHeight * .46; };
+
+// Ground units can walk under branches and blades. Aircraft need the whole crown
+// or swept rotor disk, including its offset from the concrete foundation.
+export const sceneryFlightBounds = function (o: TerrainObstacle): TerrainObstacle {
+	if (o.kind === 'tree' && o.height > 50) {
+		const crown = Math.max(o.width, o.depth) * 3.5;
+		return { ...o, width: crown, depth: crown, height: o.height * 1.06 };
+	}
+	if (o.kind === 'turbine') {
+		const hub = turbineHubHeight(o), radius = rotorRadius(hub);
+		const span = 2 * (radius + o.width * .41);
+		return { ...o, width: span, depth: span, height: hub + radius };
+	}
+	return o;
+};
+
+const windTower = function (o: TerrainObstacle, draw: Part, random: () => number): Rotor {
+	const { x, y: z, width: w, height: h, depth: d } = o;
+	const hubHeight = turbineHubHeight(o), yaw = .65 + random() * .15;
 	draw('box', x, h * .15, z, w, h * .30, d, 0x6f685a);
 	draw('box', x, h * .53, z, w * .92, h * .48, d * .92, 0xb7a785);
 	draw('box', x, h * .82, z, w * .94, h * .10, d * .94, 0x5a6562);
@@ -176,7 +195,7 @@ const windTower = function ({ x, y: z, width: w, height: h, depth: d }: TerrainO
 	const rx = x + Math.sin(yaw) * offset, rz = z + Math.cos(yaw) * offset;
 	draw('drum', rx, hubHeight, rz, w * .18, w * .19, w * .18, 0x8a7462, yaw, 0, Math.PI / 2);
 	return { x: rx + Math.sin(yaw) * w * .09, y: hubHeight, z: rz + Math.cos(yaw) * w * .09,
-		yaw, radius: hubHeight * .46, phase: random() * Math.PI * 2 };
+		yaw, radius: rotorRadius(hubHeight), phase: random() * Math.PI * 2 };
 };
 
 const createRotors = function (hubs: readonly Rotor[]) {
