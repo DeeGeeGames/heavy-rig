@@ -67,7 +67,6 @@
 .touch-enabled .armor-track { grid-column: 1; grid-row: 2; }.touch-enabled .heat-track { grid-column: 2; grid-row: 2; }
 .touch-enabled .drive-heading { grid-row: 3; grid-column: 1 / -1; width: 100%; margin: 3px 0 0; font-size: 9px; }
 .touch-enabled .throttle-track { display: none; }
-.touch-enabled .pilot-hint { display: none; }
 .touch-enabled .training-guide { top: 74px; left: 260px; width: min(390px, calc(100% - 280px)); padding: 9px 12px; }
 .touch-enabled .training-guide b { font-size: 18px; }.touch-enabled .training-guide p { font-size: 11px; margin: 6px 0; }.touch-enabled .training-guide small { display: none; }
 .touch-enabled #escape-guide { top: 74px; left: 260px; right: 20px; width: auto; max-width: 460px; transform: none; padding: 9px 12px; font-size: 11px; }

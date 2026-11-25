@@ -7,8 +7,8 @@ import { createFieldTrial } from './field-trial';
 import { drawFieldSurvey, fieldTrialSeed } from './field-trial-ui';
 import { html, render } from 'lit-html';
 import { createHangarPreview } from './hangar-preview';
-import { detectControllerFamily, controllerButtonLabel, renderControllerButton, renderGlyph, type ControllerFamily, type PromptDevice } from './input-prompts';
-import { refreshNavigationGlyphs, menuActionLabel } from './menu-prompts';
+import { detectControllerFamily, controllerButtonLabel, renderAimGlyph, renderControllerButton, renderGlyph, renderKeyboardBindings, renderZoomGlyph, type ControllerFamily, type PromptDevice } from './input-prompts';
+import { refreshNavigationGlyphs } from './menu-prompts';
 import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
 import { createCombatRuntime } from './combat-runtime';
 import { mountSquadOrders } from './squad-orders-ui';
@@ -19,7 +19,7 @@ import { inFiringArc } from './torso-arc';
 import { mountTouchZoom } from './touch-zoom';
 import { mountMobileFullscreen } from './mobile-fullscreen';
 import { mountFullscreenViewport } from './fullscreen-viewport';
-import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey, type Action } from './bindings';
+import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey, type Action, type ControllerBindings } from './bindings';
 import { getWeapon, isReserve, WEAPON_FAMILY_LABELS, withinWeaponRange } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getFrame } from './frames';
@@ -131,7 +131,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		relay: element('relay-value'), relayFill: element('relay-fill'), heat: element('heat-value'), heatFill: element('heat-fill'),
 		drive: element('drive-value'), throttleFill: element('throttle-fill'), speed: element('speed-value'), squad: element('squad-readout'),
 		coolant: element('coolant-value'), message: element('message'),
-		sound: element('sound'), hint: element('pilot-hint'), hintCopy: element('hint-copy'), inputMode: element('input-mode'),
+		sound: element('sound'), inputMode: element('input-mode'),
 	};
 	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.mission-bar, .left-instruments, .weapon-console, .touch-drive-cluster, .touch-combat-utilities, #training-guide, #escape-guide')];
 	let hudObstructions: ScreenRect[] = [];
@@ -141,7 +141,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const weaponButtons = MOUNTS.map(function (binding) {
 		const button = document.createElement('button'); button.className = 'weapon'; button.dataset['control'] = binding.action;
-		button.innerHTML = '<span class="weapon-mount"></span><span class="weapon-icon" aria-hidden="true"></span><b></b><span class="weapon-ammo"></span><small><kbd></kbd></small><em></em><i></i>';
+		button.innerHTML = '<span class="weapon-mount"></span><span class="weapon-icon" aria-hidden="true"></span><b></b><span class="weapon-ammo"></span><small class="weapon-prompt"></small><em></em><i></i>';
 		return button;
 	});
 	element('weapon-bank').replaceChildren(...weaponButtons);
@@ -188,7 +188,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let frame = 0; let previous = 0; let lastHud = 0;
 	onCleanup(function () { cancelAnimationFrame(frame); });
 	let message = ''; let messageUntil = 0; let terminalUntil = 0; let contextLost = false; let focused = true;
-	let returnFocus: HTMLElement | undefined; let confirmedAction: (() => void) | undefined; let tipDismissed = false;
+	let returnFocus: HTMLElement | undefined; let confirmedAction: (() => void) | undefined;
 	let inputMode: 'keyboard' | 'gamepad' | 'touch' = primaryPointer.matches ? 'touch' : 'keyboard'; let controllerLost = false; let screenRevision = 0;
 	const defaultAimMode = function () { return inputMode === 'keyboard' ? 'pointer' : inputMode; };
 	let currentPad: PadInput | undefined;
@@ -283,15 +283,18 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (root && focusedElement instanceof HTMLElement && root.contains(focusedElement) && focusedElement.matches('button, input, select, a')) lastMenuTarget = focusedElement;
 		const target = root && lastMenuTarget?.isConnected && root.contains(lastMenuTarget) && !lastMenuTarget.closest('[hidden], [inert]') && !lastMenuTarget.matches(':disabled') ? lastMenuTarget : undefined;
 		const onCompany = companyOpen();
-		const fitting = root?.id === 'training-setup' || root?.id === 'situation-setup';
-		const fittingSelect = fitting && target instanceof HTMLSelectElement;
-		const useTab = device === 'keyboard' && (fitting || training && root?.id === 'pause-panel');
-		const label = root === squadOrdersRoot || root === titleDeck || root === titlePicker ? 'Select' : menuActionLabel(target);
+		const adjusting = target instanceof HTMLSelectElement || target instanceof HTMLInputElement && target.type === 'range';
+		const toggling = target?.matches('input[type="checkbox"], input[type="radio"]');
+		const canSelect = target && !adjusting && (target.matches('button, a') || toggling);
+		const useArrows = root === squadOrdersRoot || onCompany || !navigation.auxiliary && ['title', 'rig-bay', 'escape-result', 'field-trial'].includes(navigation.screen);
+		const canGoBack = navigation.auxiliary ? navigation.auxiliary !== 'save-conflict'
+			: root === titlePicker || onCompany || ['intro', 'rig-bay', 'escape-result', 'pause-panel', 'training-setup', 'training-result', 'situation-setup', 'situation-result'].includes(navigation.screen);
+		const backLabel = navigation.auxiliary ? 'Back' : navigation.screen === 'pause-panel' ? 'Resume' : onCompany && editor.slot === null && !assignmentBack() ? 'Title' : 'Back';
 		render(html`
-			${device !== 'touch' ? html`<span class="menu-key">${useTab ? html`<kbd class="input-keycap">Tab</kbd>` : renderGlyph(device, 'move')}<span class="key-label">${fittingSelect && inputMode === 'gamepad' ? '↑↓ Move · ←→ Adjust' : 'Move'}</span></span>` : ''}
-			${fittingSelect && device === 'keyboard' ? html`<span class="menu-key">${renderGlyph(device, 'move')}<span class="key-label">Adjust</span></span>` : ''}
-			${target && !fittingSelect ? html`<button class="menu-key" @click=${function () { target.click(); }}>${renderGlyph(device, 'confirm')}<span class="key-label">${label}</span></button>` : ''}
-			${navigation.screen !== 'title' && navigation.screen !== 'field-trial' || navigation.auxiliary || root === titlePicker ? html`<button class="menu-key" @click=${back}>${renderGlyph(device, 'back')}<span class="key-label">${onCompany && editor.slot === null && !assignmentBack() ? 'Title' : 'Back'}</span></button>` : ''}
+			${root && device !== 'touch' && focusable(root).length > 1 ? html`<span class="menu-key">${renderGlyph(device, useArrows ? 'move' : 'tabMove')}<span class="key-label">${adjusting && inputMode === 'gamepad' ? '↑↓ Move · ←→ Adjust' : 'Navigate'}</span></span>` : ''}
+			${adjusting && device === 'keyboard' ? html`<span class="menu-key">${renderGlyph(device, 'move')}<span class="key-label">Adjust</span></span>` : ''}
+			${canSelect ? html`<button class="menu-key" @click=${function () { target.click(); }}>${device === 'keyboard' && toggling ? renderKeyboardBindings(['Space']) : renderGlyph(device, 'confirm')}<span class="key-label">Select</span></button>` : ''}
+			${canGoBack ? html`<button class="menu-key" @click=${back}>${renderGlyph(device, 'back')}<span class="key-label">${backLabel}</span></button>` : ''}
 			${onCompany && editor.slot === null ? html`<button class="menu-key" @click=${function () { showAuxiliary('handbook'); }}>${renderGlyph(device, 'help')}<span class="key-label">Button guide</span></button>` : ''}
 			${onCompany && editor.slot === null && hasRefitDraft() ? html`<button class="menu-key" @click=${discardDraft}>${renderGlyph(device, 'discard')}<span class="key-label">Discard draft</span></button>` : ''}
 		`, element('menu-input-hint'));
@@ -315,8 +318,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		container.classList.toggle('using-gamepad', value === 'gamepad');
 		container.classList.toggle('couch-ui', value === 'gamepad' || profile.settings.couchUI);
 		ui.inputMode.textContent = value === 'gamepad' ? 'GAMEPAD' : value === 'touch' ? 'TOUCH' : 'KB / MOUSE';
-		const pausePrompt = element('pause').querySelector('kbd');
-		if (pausePrompt) render(renderGlyph(promptDevice(), inputMode === 'keyboard' ? 'back' : 'settings'), pausePrompt);
+		render(touchLayout ? '' : renderGlyph(promptDevice(), inputMode === 'keyboard' ? 'back' : 'settings'), element('pause-prompt'));
 		for (const select of container.querySelectorAll<HTMLSelectElement>('#controller-mappings select')) for (const option of select.options) option.textContent = controllerButtonLabel(controllerFamily, Number(option.value));
 		updateMenuHint();
 		updateWorkspaceLayout(); updateDialogLayout();
@@ -442,7 +444,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		aim = state.mission ? { ...state.mission.map.objective } : { ...state.player };
 		pointer = undefined;
 		message = squadmates.length ? '' : `${rigName(mech.frameId)} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`;
-		messageUntil = message ? 5 : 0; tipDismissed = false;
+		messageUntil = message ? 5 : 0;
 		terminalUntil = 0; startLaunch();
 	};
 	const start = function () {
@@ -463,7 +465,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		presentation.resetZoom();
 		training = createTraining(setup); state = combatRuntime.attach(training.state, training); gaits = createGaits(state);
 		aimMode = defaultAimMode(); pointer = undefined; aim = { x: state.player.x, y: 450 };
-		message = ''; messageUntil = 0; tipDismissed = true; terminalUntil = 0;
+		message = ''; messageUntil = 0; terminalUntil = 0;
 		audio.reset(); transition(navigation.setScreen('playing', true)); unlockSound();
 	};
 	const showSituationSetup = function () {
@@ -484,7 +486,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		presentation.resetZoom(); state = combatRuntime.attach(createSituationMission(situationSetup(), run.seed, run.difficulty));
 		gaits = createGaits(state); aim = { ...(state.mission?.map.objective ?? state.player) }; pointer = undefined;
 		aimMode = defaultAimMode();
-		message = ''; messageUntil = 0; terminalUntil = 0; tipDismissed = false;
+		message = ''; messageUntil = 0; terminalUntil = 0;
 		startLaunch();
 	};
 	const showFieldTrial = function (seed: number, outcome: 'playing' | 'won' | 'lost' = 'playing') {
@@ -498,7 +500,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			gaits = createGaits(state); presentation.resetZoom();
 			pointer = undefined; aim = { ...map.objective };
 			aimMode = defaultAimMode();
-			audio.reset(); message = ''; messageUntil = 0; terminalUntil = 0; tipDismissed = false;
+			audio.reset(); message = ''; messageUntil = 0; terminalUntil = 0;
 			element('field-trial-title').textContent = outcome === 'won' ? 'Recorder extracted' : outcome === 'lost' ? 'Frame disabled' : 'Courier recovery';
 			element('field-deploy').textContent = outcome === 'playing' ? 'DEPLOY →' : 'REPLAY FIELD →';
 			element('field-trial-seed').textContent = `SEED ${seed} · ${(map.width / 1000).toFixed(2)} × ${(map.height / 1000).toFixed(2)} KM`;
@@ -523,7 +525,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			presentation.resetZoom(); state = combatRuntime.attach(createEscape(introFrame)); gaits = createGaits(state);
 			aimMode = defaultAimMode(); pointer = undefined;
 			aim = state.mission ? { ...state.mission.map.extraction } : { ...state.player };
-			message = ''; messageUntil = 0; tipDismissed = true; terminalUntil = 0;
+			message = ''; messageUntil = 0; terminalUntil = 0;
 			audio.reset(); syncScreen(); unlockSound();
 		});
 	};
@@ -1022,7 +1024,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	renderMappings();
 	for (const tab of element('settings').querySelectorAll('[data-dialog-tab]')) tab.addEventListener('click', function () { capture = undefined; renderMappings(); }, listenerOptions);
 	listen('close-settings', function () { capture = undefined; renderMappings(); closeAuxiliary(); }); listen('close-handbook', closeAuxiliary);
-	listen('dismiss-hint', function () { tipDismissed = true; ui.hint.hidden = true; canvas.focus({ preventScroll: true }); });
 	listen('sound', function () {
 		if (audio.status() !== 'running') { muted = false; audio.setMuted(false); unlockSound(); }
 		else { muted = !muted; audio.setMuted(muted); }
@@ -1324,12 +1325,31 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		} }, listenerOptions);
 		button.addEventListener('lostpointercapture', release, listenerOptions);
 	}
-	const combatKeyboardPrompt = function (action: Action) {
-		const bindings = profile.settings.keyboard[action];
+	const keysForPrompt = function (action: Action) {
+		const bindings = profile.settings.keyboard[action].filter(function (code) { return keyboardAction(code) === action; });
 		const mouse = bindings.find(function (code) { return code.startsWith('Mouse'); });
 		const key = bindings.find(function (code) { return code.startsWith('Digit'); }) ?? bindings.find(function (code) { return !code.startsWith('Mouse'); });
-		const mouseNames: Readonly<Record<string, string>> = { Mouse0: 'LMB', Mouse1: 'MMB', Mouse2: 'RMB', Mouse3: 'M4', Mouse4: 'M5' };
-		return [mouse ? mouseNames[mouse] ?? keyLabel(mouse) : undefined, key ? keyLabel(key) : undefined].filter(Boolean).join(' / ') || 'UNBOUND';
+		return [key, mouse].filter(function (code) { return code !== undefined; });
+	};
+	const combatPrompt = function (action: keyof ControllerBindings) {
+		return inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[action]) : renderKeyboardBindings(keysForPrompt(action));
+	};
+	const drivePrompts = function (arcade: boolean) {
+		const device = promptDevice();
+		const row = function (glyph: ReturnType<typeof renderGlyph>, label: string) {
+			return html`<span class="drive-prompt">${glyph}<span>${label}</span></span>`;
+		};
+		const directions = function (actions: readonly Action[]) {
+			return renderKeyboardBindings(actions.flatMap(function (action) { return keysForPrompt(action).slice(0, 1); }));
+		};
+		const controller = inputMode === 'gamepad';
+		return html`
+			${controller ? row(renderGlyph(device, 'move'), arcade ? 'Move' : '↑↓ Throttle · ←→ Steer')
+				: arcade ? row(directions(['forward', 'left', 'back', 'right']), 'Move')
+					: html`${row(directions(['forward', 'back']), 'Throttle')}${row(directions(['left', 'right']), 'Steer')}`}
+			${row(renderAimGlyph(device), controller && !arcade ? 'Rotate turret' : 'Aim')}
+			${row(controller ? renderControllerButton(controllerFamily, 0) : renderZoomGlyph(), 'Zoom')}
+		`;
 	};
 	const updateHud = function () {
 		const squad = state.squadmates;
@@ -1337,7 +1357,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		render(html`${squad.map(function (member) {
 			return html`<div class="squad-contact" data-disabled=${member.hp <= 0}><span>${member.callsign}</span><strong>${member.hp <= 0 ? 'DOWN' : `${Math.ceil(member.hp)}%`}</strong></div>`;
 		})}`, ui.squad);
-		refreshHudObstructions();
 		const p = state.player;
 		const touchLayout = container.classList.contains('touch-enabled');
 		ui.phase.textContent = 'FRAME TRAINING'; ui.status.textContent = 'SIMULATOR';
@@ -1377,7 +1396,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const arcadeMovement = inputMode === 'touch' || profile.settings.controlMode === 'arcade';
 		element('combat-control-mode').textContent = arcadeMovement ? 'ARCADE' : 'SIMULATION';
 		element('drive-behavior').textContent = arcadeMovement ? 'RELEASE TO SLOW' : 'RELEASE TO CRUISE';
-		render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.stop) : html`${combatKeyboardPrompt('stop')}`, element('stop-prompt'));
+		render(touchLayout ? '' : combatPrompt('stop'), element('stop-prompt'));
+		render(touchLayout ? '' : drivePrompts(arcadeMovement), element('drive-prompts'));
 		container.classList.toggle('reactor-locked', p.overheated);
 		container.classList.toggle('hull-critical', p.hp < 30);
 		ui.throttleFill.style.left = `${p.throttle < 0 ? 50 + p.throttle * 50 : 50}%`; ui.throttleFill.style.width = `${Math.abs(p.throttle) * 50}%`; ui.speed.textContent = `${Math.abs(p.speed).toFixed(0)} / ${(p.speed < 0 ? definition.reverseSpeed * weight.modifier : weight.speed).toFixed(0)} m/s`;
@@ -1404,7 +1424,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const title = button.querySelector('b');
 			if (title) title.textContent = weapon ? touchLayout ? weapon.name.replace(` · T${weapon.tier}`, '') : weapon.name : 'EMPTY';
 			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}`;
-			const prompt = button.querySelector('kbd'); if (prompt && !touchLayout) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[binding.action]) : html`${combatKeyboardPrompt(binding.action)}`, prompt);
+			const prompt = button.querySelector<HTMLElement>('.weapon-prompt');
+			if (prompt) render(touchLayout || button.disabled ? '' : combatPrompt(binding.action), prompt);
 			const ammunitionLabel = !mount || !weapon ? '' : weapon.ammunition ? `${mount.rounds}${touchLayout ? '' : ' RDS'}` : 'ENERGY';
 			const ammunition = button.querySelector('.weapon-ammo'); if (ammunition) ammunition.textContent = ammunitionLabel && touchLayout && weapon ? `${ammunitionLabel} T${weapon.tier}` : ammunitionLabel;
 			const status = !mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : dry ? 'NO AMMO' : p.overheated ? 'HEAT LOCK' : mount.cooldown > 0 ? `CD ${mount.cooldown.toFixed(1)}s` : firing ? 'FIRING' : 'READY';
@@ -1420,9 +1441,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		ui.coolant.textContent = `${state.coolantCharges} ${state.coolantCharges === 1 ? 'CHARGE' : 'CHARGES'}`;
 		element('open-squad-orders').hidden = !canIssueSquadOrders();
 		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE CONTROLLER INPUTS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
-		ui.hint.hidden = tipDismissed || state.time > 35 || navigation.screen !== 'playing';
-		const coolantPrompt = element('coolant').querySelector('kbd'); if (coolantPrompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller.coolant) : html`${combatKeyboardPrompt('coolant')}`, coolantPrompt);
-		ui.hintCopy.textContent = inputMode === 'gamepad' ? profile.settings.controlMode === 'arcade' ? `D-pad or left stick sets movement direction; release to slow. Right stick aims. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : `D-pad or left stick up/down adjusts persistent throttle; left/right turns legs. Right stick left/right rotates torso; release to hold. ${controllerButtonLabel(controllerFamily, profile.settings.controller.stop)} stops.` : touchLayout ? 'Point the left stick to choose heading; push farther for speed. Release to slow. Tap a hostile to track it. Hold a weapon tile to fire its mount. STOP sets neutral.' : profile.settings.controlMode === 'arcade' ? 'WASD / mapped movement keys choose direction; release to slow. Mouse aims. STOP sets neutral.' : state.time < 14 ? `${profile.settings.keyboard.forward.map(keyLabel).join(' / ')} increases throttle; ${profile.settings.keyboard.back.map(keyLabel).join(' / ')} decreases it. Release to cruise. ${profile.settings.keyboard.stop.map(keyLabel).join(' / ')} stops.` : 'Hold mapped weapon inputs together to combine mounts. Check Settings for keyboard / mouse and controller mappings.';
+		for (const action of ['target-nearest', 'target-next', 'coolant'] as const) {
+			const prompt = element(action).querySelector<HTMLElement>('.combat-prompt');
+			if (prompt) render(touchLayout ? '' : combatPrompt(action), prompt);
+		}
+		refreshHudObstructions();
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
 		const soundState = audioState === 'unavailable' ? 'UNAVAILABLE' : needsGesture ? 'ENABLE SOUND' : muted ? 'SOUND OFF' : 'SOUND ON';
 		if (lastSoundState !== soundState) { lastSoundState = soundState; ui.sound.textContent = soundState; ui.sound.setAttribute('aria-label', needsGesture ? 'Click to enable audio' : audioState === 'unavailable' ? 'Retry audio' : muted ? 'Unmute sound' : 'Mute sound'); ui.sound.setAttribute('aria-pressed', String(muted)); }
@@ -1707,11 +1730,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (locked) { const rect = canvas.getBoundingClientRect(); marker.style.left = `${rect.left - container.getBoundingClientRect().left + locked.screen.x}px`; marker.style.top = `${rect.top - container.getBoundingClientRect().top + locked.screen.y}px`; }
 			element('touch-target-status').textContent = locked ? `TRACKING / ${locked.label}` : touchTracking ? 'TRACKING / OFF SCREEN'
 				: aimMode === 'touch' ? touchFacing.active() ? 'FACING LOCK / TAP TO AIM' : 'FORWARD / TAP TO AIM' : 'MANUAL / TAP A HOSTILE';
-			for (const action of ['target-nearest', 'target-next'] as const) {
-				element(action).toggleAttribute('disabled', contacts.length === 0);
-				const prompt = element(action).querySelector('kbd');
-				if (prompt) render(inputMode === 'gamepad' ? renderControllerButton(controllerFamily, profile.settings.controller[action]) : html`${combatKeyboardPrompt(action)}`, prompt);
-			}
+			for (const action of ['target-nearest', 'target-next'] as const) element(action).toggleAttribute('disabled', contacts.length === 0);
 			const touchHasTargets = contacts.some(withinTouchTraverse);
 			element('touch-next').toggleAttribute('disabled', !touchHasTargets);
 			element('touch-nearest').toggleAttribute('disabled', !touchHasTargets);
@@ -1762,7 +1781,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			state = combatRuntime.attach(initial); gaits = createGaits(state);
 			presentation.resetZoom(); pointer = undefined; aim = { x: 900, y: 450 };
 			aimMode = defaultAimMode();
-			message = ''; messageUntil = 0; terminalUntil = 0; tipDismissed = true;
+			message = ''; messageUntil = 0; terminalUntil = 0;
 			audio.reset(); transition(navigation.setScreen('playing', true));
 		}, function () { return state; }, presentation);
 		onCleanup(rigTest);
