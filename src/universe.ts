@@ -30,6 +30,10 @@ const COLORS: Readonly<Record<Biome, string>> = {
 	badlands: '#d9ac78', volcanic: '#e77b5d', tundra: '#9bd6e6', wetlands: '#6bc5b6',
 	forest: '#94b979', steppe: '#dec36c', crystal: '#c3a0e2',
 };
+export const mixSeed = function (seed: number, value: number) {
+	const mixed = Math.imul(seed ^ value, 0x45d9f3b);
+	return (mixed ^ (mixed >>> 16)) >>> 0;
+};
 export const randomSource = function (seed: number) {
 	let value = seed >>> 0;
 	return function () { value = (Math.imul(value, 1664525) + 1013904223) >>> 0; return value / 4294967296; };

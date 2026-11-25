@@ -10,6 +10,8 @@ import { PERIMETER_RIDGE_HEIGHT } from '../src/scenery-flight';
 import { MIN_COMBAT_ZOOM } from '../src/shared/camera-zoom';
 import { createState, projectilesStep, spawningStep, step, weaponsStep } from '../src/simulation';
 import { createSituationMission } from '../src/situation-sim';
+import { groundHeight } from '../src/terrain-elevation';
+import { emplacementLaunch } from '../src/artillery-emplacement-rig';
 import { createWorldObjects } from '../src/world-3d';
 
 test('world pools track live combat state and restart removes transient objects', function () {
@@ -18,15 +20,15 @@ test('world pools track live combat state and restart removes transient objects'
 	state.strikes.push({ id: 2, x: 180, y: 200, life: 1.8, duration: 2.8, radius: 62, damage: 13 });
 	state.shots.push({ x: 100, y: 120, vx: 200, vy: 100, life: 1, kind: 'cannon', target: undefined, damage: 38 });
 	state.effects.push({ x: 100, y: 120, life: 0.4, size: 30, color: '#ff8866' });
-	state.wrecks.push({ x: 60, y: 90, angle: 0.4, kind: 'striker' });
+	state.wrecks.push({ x: 60, y: 90, angle: 0.4, kind: 'striker' }, { x: 70, y: 290, angle: 1.2, kind: 'artillery' });
 	state.enemies.push({ id: 3, x: 300, y: 320, angle: 0, hp: 125, maxHp: 125, cooldown: 0, heavy: true, kind: 'siege', attack: { phase: 'committed', remaining: 2, cycle: 1 } });
 	state.player.heat = 80; state.beam = { x: 300, y: 400 };
 	try {
 		presentation.update(state);
-		for (const name of ['inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeDefined();
+		for (const name of ['inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'artillery-emplacement-wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeDefined();
 		expect(scene.getObjectByName('laser')?.visible).toBe(true); expect(scene.getObjectByName('reactor-vent')?.visible).toBe(true);
 		presentation.update(createState());
-		for (const name of ['inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeUndefined();
+		for (const name of ['inbound-warning', 'artillery-warning', 'projectile', 'impact-effect', 'wreck', 'artillery-emplacement-wreck', 'siege-defense']) expect(scene.getObjectByName(name)).toBeUndefined();
 		expect(scene.getObjectByName('laser')?.visible).toBe(false); expect(scene.getObjectByName('reactor-vent')?.visible).toBe(false);
 		expect(scene.getObjectByName('relay')).toBeDefined();
 		const floor = scene.getObjectByName('industrial-apron');
@@ -175,6 +177,41 @@ test('aircraft proximity never changes an unguided projectile simulation height'
 const segmentEnds = function (mesh: Mesh) {
 	return [mesh.localToWorld(new Vector3(0, -0.5, 0)), mesh.localToWorld(new Vector3(0, 0.5, 0))] as const;
 };
+
+test('hostile artillery leaves along the barrel axis, crests and lands at a laterally scattered marker', function () {
+	const state = createSituationMission({ kind: 'recovery', planetId: 'cinder', tier: 2, frame: 'warden', wing: [] }, 91, 'standard');
+	const terrain = state.mission?.map.terrain;
+	const gun = { x: 860, y: 740 };
+	const { origin, direction: departure } = emplacementLaunch(gun, 0, groundHeight(terrain, gun));
+	const barrel = new Vector3(departure.x, departure.elevation, departure.y);
+	const strike = { id: 40, x: 1400, y: origin.y + 210, life: 2, duration: 2, radius: 62, damage: 6,
+		emplacement: { origin, direction: departure, firedAt: state.time } };
+	const launch = new Vector3(origin.x, origin.elevation, origin.y);
+	const impact = new Vector3(strike.x, groundHeight(terrain, strike), strike.y);
+	const scene = new Scene(); const world = createWorldObjects(scene); state.strikes = [strike];
+	try {
+		world.update(state);
+		const shell = scene.getObjectByName('artillery-shell'); const trail = scene.getObjectByName('artillery-tracer');
+		if (!shell || !(trail instanceof Mesh)) throw new Error('Missing artillery round');
+		const position = function () { return shell.getWorldPosition(new Vector3()); };
+		const direction = function () { return new Vector3(0, 1, 0).applyQuaternion(shell.quaternion); };
+		expect(position().distanceTo(launch)).toBeLessThan(1e-6); expect(direction().distanceTo(barrel)).toBeLessThan(1e-6);
+		expect(trail.visible).toBe(false);
+		strike.life -= 1 / 60; world.update(state);
+		expect(position().sub(launch).angleTo(barrel)).toBeLessThan(Math.PI / 90);
+		strike.life = 1; world.update(state);
+		const mid = position();
+		expect(mid.x).toBeGreaterThan(launch.x); expect(mid.x).toBeLessThan(impact.x);
+		expect(mid.z).toBeGreaterThan(launch.z); expect(mid.z).toBeLessThan(impact.z);
+		expect(mid.y).toBeGreaterThan(Math.max(launch.y, impact.y));
+		expect(trail.visible).toBe(true); expect(segmentEnds(trail)[1].distanceTo(mid)).toBeLessThan(1e-6);
+		world.update(state); expect(position().equals(mid)).toBe(true);
+		strike.life = 0; world.update(state);
+		expect(position().distanceTo(impact)).toBeLessThan(1e-6); expect(direction().y).toBeLessThan(0);
+		state.strikes = []; world.update(state);
+		expect(scene.getObjectByName('artillery-shell')).toBeUndefined(); expect(scene.getObjectByName('artillery-tracer')).toBeUndefined();
+	} finally { world.dispose(); }
+});
 
 test('all frames launch from posed weapon faces even before ECS updates a stale root transform', function () {
 	for (const frame of ['warden', 'kestrel', 'maul', 'longbow', 'morrow'] as const) {

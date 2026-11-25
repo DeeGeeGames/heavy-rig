@@ -94,7 +94,7 @@ const nearestFree = function (point: Point, boxes: readonly Bounds[]): Point {
 		.sort(function (a, b) { return distance(a, point) - distance(b, point); })[0] ?? point;
 };
 
-export const moveOnTerrain = function (terrain: FieldTerrain, from: Point, to: Point, radius: number): Point {
+export const moveOnTerrain = function (terrain: ObstacleField, from: Point, to: Point, radius: number): Point {
 	const { boxes } = clearanceFor(terrain, radius);
 	const origin = nearestFree(from, boxes);
 	let at = origin; let destination = origin === from ? to : { x: origin.x + to.x - from.x, y: origin.y + to.y - from.y };
@@ -139,7 +139,7 @@ const navigationCorners = function (boxes: readonly Bounds[]): Corner[] {
 	}
 	return corners;
 };
-export const terrainWaypoint = function (terrain: FieldTerrain, from: Point, to: Point, radius: number): Point {
+export const terrainWaypoint = function (terrain: ObstacleField, from: Point, to: Point, radius: number): Point {
 	const clearance = clearanceFor(terrain, radius);
 	const goal = nearestFree(to, clearance.boxes);
 	if (clear(from, goal, clearance.boxes)) return goal;

@@ -1,8 +1,10 @@
 import { acquireMissileTarget } from './missile-fixture';
 import { describe, expect, test } from 'bun:test';
 import { createMount, WEAPONS } from '../src/arsenal';
-import type { Contract, MissionKind } from '../src/campaign-types';
-import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, missionStructures, generateMissionMap, missionHostileCount } from '../src/missions';
+import type { Contract, MissionKind, MissionMap } from '../src/campaign-types';
+import { createOpeningProgress, getChainStatus } from '../src/contract-chains';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, missionStructures, generateMissionMap, missionArtilleryCount, missionHostileCount, missionOpposition, missionSpawn } from '../src/missions';
+import { getMissionTier, MISSION_TIERS } from '../src/reputation';
 import { ARENA, createState, createMissionState, distance, step, type Controls, type State } from '../src/simulation';
 
 const contract = function (kind: MissionKind, seed = 123): Contract {
@@ -32,12 +34,88 @@ describe('Heavy Rig surface contracts', function () {
 		expect(generateMissionMap({ ...contract('demolition'), planetId: 'cinder' }).biome).toBe('volcanic');
 	});
 
-	test('offensive patrols stay at their sites until contacted and player movement uses the mission boundary', function () {
-		const state = createMissionState(contract('assassination')); const mission = missionOf(state);
+	test('fortified contracts can deploy every artillery count from the mission tier through twice the tier', function () {
+		const samples = 768;
+		for (const { tier } of MISSION_TIERS) for (const kind of ['demolition', 'raid', 'clearance'] as const) {
+			const rolls = new Map<number, { frequency: number; job: Contract }>();
+			for (let i = 0; i < samples; i++) {
+				const job = { ...contract(kind, Math.imul(i + 1, 0x9e3779b1) >>> 0), tier };
+				const count = missionArtilleryCount(job);
+				const roll = rolls.get(count);
+				if (roll) roll.frequency++;
+				else rolls.set(count, { frequency: 1, job });
+			}
+			const counts = Array.from({ length: tier + 1 }, function (_, i) { return tier + i; });
+			expect([...rolls.keys()].sort(function (a, b) { return a - b; })).toEqual(counts);
+			const expectedFrequency = samples / counts.length;
+			for (const [count, { frequency, job }] of rolls) {
+				expect(frequency).toBeGreaterThan(expectedFrequency * .75);
+				expect(frequency).toBeLessThan(expectedFrequency * 1.25);
+				expect(createMissionState(job).enemies.filter(function (enemy) { return enemy.kind === 'artillery'; })).toHaveLength(count);
+			}
+		}
+		const opening = createOpeningProgress(), recorder = getChainStatus(opening)?.offers[0]?.contract;
+		if (!recorder) throw new Error('Missing authored recorder mission');
+		const fuelWorks = getChainStatus({ ...opening, completed: [recorder.id] })?.offers.find(function (entry) { return entry.contract.kind === 'demolition'; })?.contract;
+		if (!fuelWorks) throw new Error('Missing authored fuel works');
+		expect(createMissionState(fuelWorks).enemies.map(function (enemy) { return enemy.kind; })).toEqual(['scout', 'helicopter', 'scout', 'scout']);
+	});
+
+	test('a supplied field only briefs and deploys guns with a reachable, supported foundation', function () {
+		const job: Contract = { ...contract('clearance', 2563011894), tier: 6 };
+		const site = { x: 200, y: 600 };
+		const wall = { kind: 'fissure' as const, x: 350, y: 600, width: 140, depth: 1200, height: 0 };
+		const map: MissionMap = { seed: job.seed, biome: 'badlands', width: 1800, height: 1200, sites: [site], objective: site,
+			drop: { x: 130, y: 1100 }, extraction: { x: 120, y: 120 }, landmarks: [], terrain: { roads: [], obstacles: [wall] } };
+		const field = createMissionState(job, { map });
+		const guns = field.enemies.filter(function (unit) { return unit.kind === 'artillery'; });
+		expect(guns.length).toBeGreaterThan(0);
+		expect(guns.every(function (gun) { return gun.x < wall.x - wall.width / 2; })).toBe(true);
+		expect(field.mission?.required).toBe(field.enemies.length);
+		expect(missionHostileCount(job, map)).toBe(field.enemies.length);
+		expect(missionOpposition(job, map)).toContain(`${guns.length} fixed artillery`);
+		expect(function () { missionSpawn(job, map, field.enemies.length); }).toThrow(RangeError);
+
+		const slope = { xs: [0, map.width], ys: [0, map.height], heights: new Float32Array([0, 200, 0, 200]), minHeight: 0, maxHeight: 200 };
+		const hillside = { ...map, terrain: { roads: [], obstacles: [], elevation: slope } };
+		const onSlope = createMissionState(job, { map: hillside });
+		expect(onSlope.enemies.every(function (unit) { return unit.kind !== 'artillery'; })).toBe(true);
+		expect(onSlope.mission?.required).toBe(getMissionTier(6).assault - 2);
+		expect(missionOpposition(job, hillside)).toContain('0 fixed artillery guns');
+	});
+
+	test('artillery surrounds demolition facilities, guards the far side of raid yards, and covers clearance road shoulders', function () {
+		for (const planetId of ['meridian', 'elderholt'] as const) for (const kind of ['demolition', 'raid', 'clearance'] as const) {
+			const state = createMissionState({ ...contract(kind, 2563011894), planetId, tier: 6 });
+			const map = missionOf(state).map, guns = state.enemies.filter(function (unit) { return unit.kind === 'artillery'; });
+			if (kind === 'demolition') {
+				const quadrants = new Set(guns.map(function (gun) { return `${gun.x >= map.objective.x}/${gun.y >= map.objective.y}`; }));
+				expect(quadrants.size).toBeGreaterThanOrEqual(3);
+				continue;
+			}
+			const coveringApproach = guns.filter(function (gun) {
+				const site = map.sites.reduce(function (near, other) { return distance(gun, near) < distance(gun, other) ? near : other; });
+				const road = map.terrain?.roads.find(function (route) { const end = route.at(-1); return end && distance(end, site) < 1; });
+				const from = road?.at(-2) ?? map.drop;
+				const angle = Math.atan2(gun.y - site.y, gun.x - site.x) - Math.atan2(from.y - site.y, from.x - site.x);
+				return kind === 'raid' ? Math.cos(angle) < 0 : Math.cos(angle) > 0 && Math.abs(Math.sin(angle)) > .35;
+			});
+			expect(coveringApproach.length).toBeGreaterThan(guns.length / 2);
+		}
+	});
+
+	test('fixed guns can shell the drop while mobile patrols hold their sites until contacted', function () {
+		const state = createMissionState({ ...contract('demolition'), tier: 2 }); const mission = missionOf(state);
 		const original = state.enemies.map(function (enemy) { return { x: enemy.x, y: enemy.y }; });
-		run(state, 10);
+		const guns = state.enemies.filter(function (enemy) { return enemy.kind === 'artillery'; });
+		expect(guns.length).toBeGreaterThanOrEqual(2);
+		const shooters = new Set<number | undefined>();
+		for (let tick = 0; tick < 270; tick++) {
+			step(state, idle, 1 / 60);
+			for (const shell of state.strikes) shooters.add(shell.owner);
+		}
 		expect(state.enemies.map(function (enemy) { return { x: enemy.x, y: enemy.y }; })).toEqual(original);
-		expect(state.shots).toHaveLength(0); expect(state.strikes).toHaveLength(0);
+		expect(shooters).toEqual(new Set(guns.map(function (gun) { return gun.id; }))); expect(state.shots).toHaveLength(0);
 		state.player.x = mission.map.width - 40; state.player.y = mission.map.height - 40; state.player.angle = 0;
 		run(state, 3, { ...idle, drive: 1 });
 		expect(state.player.x).toBe(mission.map.width - 35); expect(state.player.y).toBeGreaterThan(ARENA.height);
@@ -63,9 +141,10 @@ describe('Heavy Rig surface contracts', function () {
 	});
 
 	test('clearance requires every deployed hostile and fatal damage wins over extraction on the same tick', function () {
-		const state = createMissionState(contract('clearance')); const mission = missionOf(state);
-		for (const [index, enemy] of state.enemies.entries()) if (index > 0) enemy.hp = 0;
+		const state = createMissionState({ ...contract('clearance'), tier: 2 }); const mission = missionOf(state);
+		for (const enemy of state.enemies) if (enemy.kind !== 'artillery') enemy.hp = 0;
 		step(state, idle, 1 / 60); expect(mission.stage).toBe('active');
+		expect(state.kills).toBe(getMissionTier(2).assault - 1);
 		for (const enemy of state.enemies) enemy.hp = 0;
 		step(state, idle, 1 / 60); expect(mission.stage).toBe('extract'); expect(mission.progress).toBe(mission.required);
 		state.player.x = mission.map.extraction.x; state.player.y = mission.map.extraction.y;

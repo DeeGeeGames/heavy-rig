@@ -4,10 +4,11 @@ import { getWeapon } from '../src/arsenal';
 import type { Contract, MissionMap } from '../src/campaign-types';
 import { defaultReserves, loadedMounts } from '../src/combat-resources';
 import { createCombatRuntime } from '../src/combat-runtime';
+import { EMPLACEMENT_RADIUS, RIG_RADIUS } from '../src/combat-spatial';
 import { getFrame, rigIntegrityDamage, type FrameId } from '../src/frames';
 import { createStarterLoadout } from '../src/hardpoints';
 import { createTouchFacing } from '../src/touch-controls';
-import { artilleryAimStatus, artilleryStep, coolingStep, createMissionState, createState, enemiesStep, projectilesStep, squadmatesStep, surveyed, targetMarked, weaponsStep, type CombatStateView, type Controls, type Point, type Shot, type Unit } from '../src/simulation';
+import { artilleryAimStatus, artilleryStep, coolingStep, createMissionState, createState, deathsStep, enemiesStep, movementStep, projectilesStep, squadmatesStep, squadOrderDestinationClear, surveyed, targetMarked, weaponsStep, type CombatStateView, type Controls, type Point, type Shot, type Unit } from '../src/simulation';
 
 const dt = 1 / 60;
 const terrain = { roads: [], obstacles: [{ kind: 'shed' as const, x: 1050, y: 800, width: 35, depth: 100, height: 120 }] };
@@ -103,6 +104,43 @@ test('friendly Harrow allies stop to lob at range, and catalog Harrows commit ho
 	state.enemies = [];
 	artilleryStep(state, strike.life + dt);
 	expect(state.player.hp).toBeCloseTo(100 - rigIntegrityDamage(state.frame, strike.damage) * getFrame(state.frame).incomingDamage);
+});
+
+test('an emplacement can fire at close range and its marked circle damages ground units on both sides', function () {
+	const state = createMissionState(contract, { frame: 'warden', map, squadmates: [kit('warden')] });
+	const wing = state.squadmates[0];
+	if (!wing) throw new Error('Missing wing');
+	const gun = hostile(90, { x: state.player.x + 1, y: state.player.y }, 'artillery');
+	state.enemies = [gun];
+	for (let tick = 0; tick <= 120; tick++) enemiesStep(state, dt);
+	const shot = state.strikes[0];
+	if (!shot?.emplacement) throw new Error('Missing emplacement round');
+	expect(shot.owner).toBe(gun.id);
+	const inside = { x: shot.x + shot.radius - .25, y: shot.y };
+	const outside = { x: shot.x + shot.radius + .25, y: shot.y };
+	const ground = hostile(91, inside), clear = hostile(92, outside), aircraft = hostile(93, shot, 'vtol');
+	state.enemies = [gun, ground, clear, aircraft];
+	Object.assign(wing, inside); Object.assign(state.player, outside);
+	artilleryStep(state, 2);
+	expect(wing.hp).toBeLessThan(100); expect(state.player.hp).toBe(100);
+	expect(ground.hp).toBe(ground.maxHp - shot.damage);
+	expect(clear.hp).toBe(clear.maxHp); expect(aircraft.hp).toBe(aircraft.maxHp);
+	expect(state.stats.damageDealt).toBe(0); expect(state.stats.shotsHit).toBe(0);
+});
+
+test('the gun foundation blocks a driving rig and squad move orders, including after the carriage is destroyed', function () {
+	const state = createMissionState(contract, { frame: 'warden', map });
+	const gun = hostile(90, { x: 1100, y: 800 }, 'artillery');
+	state.enemies = [gun];
+	const drive = { ...input(gun, false), drive: 1 };
+	for (const intact of [true, false]) {
+		if (!intact) { gun.hp = 0; deathsStep(state); }
+		Object.assign(state.player, { x: 850, y: gun.y, angle: 0, speed: 0, motorSpeed: 0, throttle: 0 });
+		for (let tick = 0; tick < 600; tick++) movementStep(state, drive, dt);
+		expect(state.player.x).toBeCloseTo(gun.x - EMPLACEMENT_RADIUS - RIG_RADIUS, 2);
+		expect(state.player.y).toBe(gun.y);
+		expect(squadOrderDestinationClear(state, gun)).toBe(false);
+	}
 });
 
 test('Bastion plates follow the torso on player, ally and catalog damage, and ignore overhead impacts', function () {

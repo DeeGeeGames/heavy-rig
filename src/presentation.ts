@@ -1,3 +1,4 @@
+import { isVehicleKind } from './enemy-vehicles';
 import { definePlugin } from 'ecspresso';
 import { createGroupComponents, createRenderer3DPlugin, type Renderer3DComponentTypes, type Renderer3DEventTypes, type Renderer3DResourceTypes } from 'ecspresso/plugins/rendering/renderer3D';
 import { clampCombatZoom, MIN_COMBAT_ZOOM, zoomForWheel } from './shared/camera-zoom';
@@ -395,7 +396,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						terrain, loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, response: responses.get(enemy.id), authoredPose: enemy.catalog?.authoredPose,
 						target: enemyAimPoint(state, enemy), legGait: sampledLegs(enemy, enemy.catalog?.authoredPose?.gait ?? gait),
 					});
-					if (enemy.catalog || enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
+					if (enemy.catalog || enemy.kind === 'artillery' || isVehicleKind(enemy.kind)) enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y + playerGround, anchor.z + state.player.y); };
 				// The simulation clock starts at touchdown handoff. Run surface scenery

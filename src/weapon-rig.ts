@@ -5,6 +5,7 @@ import { getHardpoints } from './hardpoints';
 import { getMechAssetBinding } from './mech-asset-registry';
 import type { EnemyKind, Point } from './simulation';
 import { snapMechHeading } from './torso-arc';
+import { emplacementWeaponRig } from './artillery-emplacement-rig';
 
 export interface SpatialPoint extends Point { elevation: number }
 export interface WeaponBody extends Point {
@@ -19,6 +20,7 @@ export interface WeaponRig {
 	readonly pivot: SpatialPoint;
 	readonly tubes: readonly SpatialPoint[];
 	readonly hullMounted?: boolean;
+	readonly fixedPitch?: number;
 	readonly mechTorsoMounted?: boolean;
 }
 
@@ -79,6 +81,7 @@ export const getPlayerWeaponRig = function (frame: FrameId): readonly WeaponRig[
 	playerRigs.set(frame, result); return result;
 };
 export const getEnemyWeaponRig = function (kind: EnemyKind, commander = false): readonly WeaponRig[] {
+	if (kind === 'artillery') return [emplacementWeaponRig];
 	if (kind === 'helicopter') return [{ ...mount(44, 84, 0), pivot: { x: 15, y: 0, elevation: 84 }, hullMounted: true }];
 	if (kind === 'tank') return [mount(57, 36, 0)];
 	if (kind === 'vtol') {
@@ -110,6 +113,7 @@ export const weaponPivot = function (rig: WeaponRig, body: WeaponBody, heading: 
 	return { x: body.x + Math.cos(bearing) * rig.pivot.x - Math.sin(bearing) * rig.pivot.y, y: body.y + Math.sin(bearing) * rig.pivot.x + Math.cos(bearing) * rig.pivot.y, elevation: (body.groundElevation ?? 0) + rig.pivot.elevation };
 };
 export const weaponDirection = function (rig: WeaponRig, body: WeaponBody, heading: number, target?: SpatialPoint): SpatialPoint {
+	if (rig.fixedPitch !== undefined) return forwardDirection(heading, Math.tan(rig.fixedPitch));
 	const pivot = weaponPivot(rig, body, heading);
 	if (!target) return forwardDirection(mountHeading(rig, heading), body.aimSlope);
 	// Gimbals converge toward targets ahead, without swiveling backward through the chassis.

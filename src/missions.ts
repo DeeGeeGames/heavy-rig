@@ -1,14 +1,14 @@
 import { getMissionTier } from './reputation';
-import { getPlanet, randomSource } from './universe';
-import { terrainPathClear, terrainPointClear, type TerrainObstacle } from './field-terrain';
-import { ENEMY_RADIUS, RIG_RADIUS } from './combat-spatial';
+import { getPlanet, mixSeed, randomSource } from './universe';
+import { terrainPathClear, terrainPointClear, type ObstacleField, type TerrainObstacle } from './field-terrain';
+import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS } from './combat-spatial';
 import { SQUAD_SIZE } from './pilots';
 import { isAuthoredContract } from './contract-chains';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import { createBiomeLayout, type TerrainMap } from './biome-layout';
 import { generateElevation } from './mission-elevation';
 import { landingFootprint } from './landing-site';
-import type { TerrainElevation } from './terrain-elevation';
+import { hasLevelFoundation, type TerrainElevation } from './terrain-elevation';
 import type { Contract, Landmark, MissionMap, MissionRuntime, MissionStructure } from './campaign-types';
 import type { EnemyKind, Point, CombatStateView } from './simulation';
 
@@ -48,12 +48,20 @@ export const missionDeploymentSlot = function (map: MissionMap, index: number): 
 	return squadDestination(map.drop, heading, index, 80, 95);
 };
 
-export interface MissionSpawn extends Point { kind: EnemyKind; commander?: boolean; frameId?: FrameId; formation?: number }
-export const missionHostileCount = function (contract: Contract): number {
+type MobileEnemyKind = Exclude<EnemyKind, 'artillery'>;
+export type MissionSpawn = Point & (
+	{ kind: MobileEnemyKind; commander?: boolean; frameId?: FrameId; formation?: number }
+	| { kind: EnemyKind; commander?: never; frameId?: never; formation?: never }
+);
+const mobileHostileCount = function (contract: Contract): number {
 	const level = getMissionTier(contract.tier);
-	return contract.kind === 'defend' || contract.kind === 'clearance' ? level.assault : level.patrol;
+	const roster = contract.kind === 'defend' || contract.kind === 'clearance' ? level.assault : level.patrol;
+	// Fortified garrisons already reserve one slot for fixed defenses, two
+	// from Heavy tier up. The independent gun roll keeps their mobile strength.
+	const reserved = artilleryPosting(contract) ? (contract.tier >= 4 ? 2 : 1) : 0;
+	return roster - reserved;
 };
-const legacyRosters: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = {
+const legacyRosters: Readonly<Record<Contract['tier'], readonly MobileEnemyKind[]>> = {
 	1: ['scout', 'helicopter', 'scout', 'scout'],
 	2: ['scout', 'helicopter', 'striker', 'scout'],
 	3: ['striker', 'tank', 'scout', 'vtol', 'striker', 'helicopter'],
@@ -63,7 +71,7 @@ const legacyRosters: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = 
 };
 // Every section starts with two rigs. The third contact supports the section
 // and is omitted if the contract quota ends before its slot.
-const formations: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = {
+const formations: Readonly<Record<Contract['tier'], readonly MobileEnemyKind[]>> = {
 	1: ['scout', 'scout', 'helicopter'],
 	2: ['scout', 'striker', 'helicopter'],
 	3: ['striker', 'scout', 'tank', 'striker', 'scout', 'helicopter'],
@@ -72,7 +80,7 @@ const formations: Readonly<Record<Contract['tier'], readonly EnemyKind[]>> = {
 	6: ['siege', 'striker', 'vtol', 'siege', 'scout', 'tank'],
 };
 const catalogFrame = function (contract: Contract, role: EnemyKind, random: () => number): FrameId | undefined {
-	if (role === 'tank' || role === 'helicopter' || role === 'vtol') return undefined;
+	if (role !== 'scout' && role !== 'striker' && role !== 'siege') return undefined;
 	const eligible = PLAYABLE_FRAMES.filter(function (frame) {
 		return (contract.tier > 1 || frame.variant === 'A') && (contract.tier >= 4 || frame.mass < 95);
 	});
@@ -82,7 +90,7 @@ const catalogFrame = function (contract: Contract, role: EnemyKind, random: () =
 	const pool = preferred.length ? preferred : eligible;
 	return pool[Math.floor(random() * pool.length)]?.id;
 };
-export const missionSpawn = function (contract: Contract, map: MissionMap, index: number): MissionSpawn {
+const mobileSpawn = function (contract: Contract, map: MissionMap, index: number): MissionSpawn {
 	const random = randomSource((contract.seed + Math.imul(index + 1, 104729)) >>> 0);
 	const commander = contract.kind === 'assassination' && index === 0;
 	const legacy = isAuthoredContract(contract);
@@ -93,7 +101,7 @@ export const missionSpawn = function (contract: Contract, map: MissionMap, index
 	const angle = (legacy ? index * 2.399963 : formation * 2.399963 + (wingOffsets[index % 3] ?? 0)) + random() * (legacy ? .6 : .16);
 	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 + (!legacy && index % 3 === 2 ? 90 : 0) : 180 + random() * 250;
 	const roster = (legacy ? legacyRosters : formations)[contract.tier];
-	const kind: EnemyKind = commander ? contract.tier === 1 ? 'scout' : contract.tier < 4 ? 'striker' : 'siege' : roster[index % roster.length] ?? 'scout';
+	const kind = commander ? contract.tier === 1 ? 'scout' : contract.tier < 4 ? 'striker' : 'siege' : roster[index % roster.length] ?? 'scout';
 	const frameId = legacy ? undefined : catalogFrame(contract, kind, random);
 	const atBearing = function (bearing: number): Point {
 		return { x: Math.max(100, Math.min(map.width - 100, site.x + Math.cos(bearing) * radius)),
@@ -113,10 +121,114 @@ export const missionSpawn = function (contract: Contract, map: MissionMap, index
 	return { ...at, kind, ...(commander ? { commander: true } : {}), ...(frameId ? { frameId } : {}), ...(!legacy ? { formation } : {}) };
 };
 
+const artilleryPosting = function (contract: Contract) {
+	if (isAuthoredContract(contract)) return undefined;
+	switch (contract.kind) {
+		case 'demolition': return 'on the facility perimeter';
+		case 'raid': return 'at the supply installations';
+		case 'clearance': return 'on the approaches to the occupied sites';
+		default: return undefined;
+	}
+};
+export const missionArtilleryCount = function (contract: Contract, map?: MissionMap): number {
+	if (!artilleryPosting(contract)) return 0;
+	const roll = randomSource(mixSeed(contract.seed, 0x47554e53));
+	const count = contract.tier + Math.floor(roll() * (contract.tier + 1));
+	return map ? placeArtillery(contract, map, mobileSpawns(contract, map), count).length : count;
+};
+export const missionHostileCount = function (contract: Contract, map?: MissionMap) {
+	return mobileHostileCount(contract) + missionArtilleryCount(contract, map);
+};
+export const missionOpposition = function (contract: Contract, map?: MissionMap) {
+	const mobile = isAuthoredContract(contract) ? 'Light scouts and helicopters.' : getMissionTier(contract.tier).opposition;
+	const posting = artilleryPosting(contract);
+	const guns = missionArtilleryCount(contract, map);
+	const garrison = posting ? ` ${guns} fixed artillery ${guns === 1 ? 'gun' : 'guns'} ${posting}.` : '';
+	return `${mobileHostileCount(contract) + guns} hostiles. ${mobile}${garrison}`;
+};
+const roadsClear = function (footprint: ObstacleField, roads: readonly (readonly Point[])[]) {
+	return roads.every(function (road) {
+		return road.every(function (point, i) { const prev = road[i - 1]; return !prev || terrainPathClear(footprint, prev, point, 45); });
+	});
+};
+const mobileSpawns = function (contract: Contract, map: MissionMap) {
+	return Array.from({ length: mobileHostileCount(contract) }, function (_, i) { return mobileSpawn(contract, map, i); });
+};
+const placeArtillery = function (contract: Contract, map: MissionMap, guards: readonly MissionSpawn[], count: number): Point[] {
+	if (!count) return [];
+	const random = randomSource(mixSeed(contract.seed, 0x41525459));
+	const sites = contract.kind === 'demolition' || !map.sites.length ? [map.objective] : map.sites;
+	const first = Math.floor(random() * sites.length);
+	const guns: Point[] = [];
+	const clear = function (at: Point, site: Point, allowDetour: boolean) {
+		if (at.x < 100 || at.y < 100 || at.x > map.width - 100 || at.y > map.height - 100
+			|| separation(at, map.drop) <= 300 || separation(at, map.extraction) <= EXTRACTION_RADIUS + EMPLACEMENT_RADIUS) return false;
+		const range = separation(at, site);
+		if (sites.some(function (other) { return other !== site && separation(at, other) < range; })
+			|| map.landmarks.some(function (p) { return separation(at, p) < p.radius + EMPLACEMENT_RADIUS; })) return false;
+		const pad = { obstacles: [landingFootprint(at, EMPLACEMENT_RADIUS)] };
+		if (!terrainPointClear(pad, site, CAPTURE_RADIUS)
+			|| guns.some(function (gun) { return !terrainPointClear(pad, gun, EMPLACEMENT_RADIUS + 2 * RIG_RADIUS); })
+			|| guards.some(function (guard) { return !terrainPointClear(pad, guard, guard.frameId ? RIG_RADIUS : ENEMY_RADIUS); })) return false;
+		const terrain = map.terrain;
+		if (!terrain) return true;
+		if (!terrainPointClear(terrain, at, EMPLACEMENT_RADIUS) || !roadsClear(pad, terrain.roads)
+			|| !hasLevelFoundation(terrain, at, EMPLACEMENT_RADIUS)) return false;
+		if (terrainPathClear(terrain, site, at, RIG_RADIUS)) return true;
+		// A local service route can bend around cover. Both legs stay inside
+		// the field, including on supplied maps with a barrier spanning an edge.
+		return allowDetour && [{ x: site.x, y: at.y }, { x: at.x, y: site.y }].some(function (bend) {
+			return terrainPathClear(terrain, site, bend, RIG_RADIUS) && terrainPathClear(terrain, bend, at, RIG_RADIUS);
+		});
+	};
+	const findPost = function (site: Point, bearing: number, radius: number) {
+		// Try the assigned shoulder first. Search nearby bearings on both sides
+		// when a road, another foundation, or terrain occupies the intended post.
+		const nearby = [radius, radius + 90, radius - 55, radius + 180];
+		const outer = [...nearby, radius + 270, radius + 360];
+		for (const allowDetour of [false, true]) for (let i = 0; i < 32; i++) {
+			const angle = bearing + Math.ceil(i / 2) * (i % 2 ? 1 : -1) * Math.PI / 16;
+			for (const r of allowDetour ? outer : nearby) {
+				const at = { x: site.x + r * Math.cos(angle), y: site.y + r * Math.sin(angle) };
+				if (clear(at, site, allowDetour)) return at;
+			}
+		}
+		return undefined;
+	};
+	for (const [index, site] of [...sites.slice(first), ...sites.slice(0, first)].entries()) {
+		const quota = Math.floor(count / sites.length) + Number(index < count % sites.length);
+		const road = map.terrain?.roads.find(function (lane) { const end = lane.at(-1); return end && separation(end, site) < 1; });
+		const from = road?.at(-2) ?? map.drop;
+		const approach = Math.atan2(from.y - site.y, from.x - site.x);
+		const phase = (random() - .5) * .28, shoulder = random() < .5 ? -1 : 1;
+		for (let slot = 0; slot < quota; slot++) {
+			const radius = 210 + random() * 48 + (contract.kind === 'demolition' ? 55 : 95 * Math.floor(slot / 2));
+			const flank = (slot % 2 ? -shoulder : shoulder) * (.76 + .14 * Math.floor(slot / 2));
+			const offset = contract.kind === 'demolition' ? Math.PI / 4 + slot * 2 * Math.PI / quota
+				: contract.kind === 'raid' ? Math.PI + flank : flank;
+			const gun = findPost(site, approach + phase + offset, radius);
+			if (gun) guns.push(gun);
+		}
+	}
+	return guns;
+};
+const missionGarrison = function (contract: Contract, map: MissionMap): MissionSpawn[] {
+	if (contract.kind === 'defend') return [];
+	const guards = mobileSpawns(contract, map);
+	const guns = placeArtillery(contract, map, guards, missionArtilleryCount(contract));
+	return [...guards, ...guns.map(function (at): MissionSpawn { return { ...at, kind: 'artillery' }; })];
+};
+export const missionSpawn = function (contract: Contract, map: MissionMap, index: number): MissionSpawn {
+	if (Number.isInteger(index) && index >= 0 && index < mobileHostileCount(contract)) return mobileSpawn(contract, map, index);
+	const spawn = missionGarrison(contract, map)[index];
+	if (spawn) return spawn;
+	throw new RangeError(`No hostile at deployment slot ${index} on this field`);
+};
+
 const missionCover = function (contract: Contract, map: TerrainMap, lanes = map.terrain.roads) {
 	const obstacles = [...map.terrain.obstacles];
 	const slots = Array.from({ length: SQUAD_SIZE - 1 }, function (_, index) { return missionDeploymentSlot(map, index); });
-	const guards = Array.from({ length: missionHostileCount(contract) }, function (_, index) { return missionSpawn(contract, map, index); });
+	const guards = mobileSpawns(contract, map);
 
 	// Keep a rig-sized passage between pieces of cover; reserve deployment,
 	// capture and extraction circles, patrols and the full width of each road.
@@ -131,35 +243,38 @@ const missionCover = function (contract: Contract, map: TerrainMap, lanes = map.
 			|| map.sites.some(function (site) { return !terrainPointClear(footprint, site, 140); })
 			|| guards.some(function (guard) { return !terrainPointClear(footprint, guard, ENEMY_RADIUS); })
 			|| slots.some(function (slot) { return !terrainPathClear(footprint, slot, map.drop, RIG_RADIUS); })
-			|| lanes.some(function (lane) {
-				return lane.some(function (at, i) { const before = lane[i - 1]; return before && !terrainPathClear(footprint, before, at, 45); });
-			})) return;
+			|| !roadsClear(footprint, lanes)) return;
 		obstacles.push(candidate);
 	};
 	return { obstacles, addCover };
 };
 
-const surveyElevation = function (contract: Contract, map: TerrainMap) {
+const surveyElevation = function (contract: Contract, map: TerrainMap, garrison: readonly MissionSpawn[]) {
 	const slots = Array.from({ length: SQUAD_SIZE - 1 }, function (_, i) { return missionDeploymentSlot(map, i); });
-	const guards = contract.kind === 'defend' ? [] : Array.from({ length: missionHostileCount(contract) }, function (_, i) {
-		const spawn = missionSpawn(contract, map, i);
-		return landingFootprint(spawn, spawn.frameId ? RIG_RADIUS : ENEMY_RADIUS);
-	});
+	const guards = [], emplacements = [];
+	for (const spawn of garrison) {
+		const footprint = landingFootprint(spawn, spawn.kind === 'artillery' ? EMPLACEMENT_RADIUS : spawn.frameId ? RIG_RADIUS : ENEMY_RADIUS);
+		guards.push(footprint);
+		if (spawn.kind === 'artillery') emplacements.push(footprint);
+	}
 	const siteRadius = contract.kind === 'defend' ? 68 : contract.kind === 'demolition' || contract.kind === 'raid' ? FACILITY_RADIUS
 		: contract.kind === 'acquisition' || contract.kind === 'recovery' ? 24 : 0;
 	const sites = siteRadius ? map.sites.map(function (p) { return landingFootprint(p, siteRadius); }) : [];
-	return generateElevation(map, map.terrain.obstacles, [map.drop, ...slots], [...guards, ...sites]);
+	return generateElevation(map, map.terrain.obstacles, [map.drop, ...slots], [...guards, ...sites], emplacements);
 };
 
-const addLandmarks = function (contract: Contract, map: TerrainMap, obstacles: readonly TerrainObstacle[], random: () => number): MissionMap {
+const finishMissionField = function (contract: Contract, map: TerrainMap, obstacles: readonly TerrainObstacle[], random: () => number) {
 	const terrain = { obstacles, roads: map.terrain.roads };
 	const landmarks: Landmark[] = [];
+	const garrison = missionGarrison(contract, { ...map, terrain });
+	const guns = garrison.filter(function (spawn) { return spawn.kind === 'artillery'; });
 	const reserved = [map.drop, map.extraction, ...map.sites];
 	const between = function (min: number, max: number) { return Math.round(min + random() * (max - min)); };
 	for (let i = 0; i < 180 && landmarks.length < 56; i++) {
 		const at = { x: between(160, map.width - 160), y: between(160, map.height - 160) };
 		const radius = between(35, 135);
 		if (reserved.some(function (site) { return separation(at, site) < radius + 155; })
+			|| guns.some(function (gun) { return separation(at, gun) < radius + EMPLACEMENT_RADIUS; })
 			|| !terrainPointClear(terrain, at, radius)) continue;
 		landmarks.push({ ...at, radius, rotation: random() * Math.PI * 2, kind: i % 7 === 0 ? 'depot' : i % 3 === 0 ? 'crater' : 'rocks' });
 	}
@@ -167,10 +282,11 @@ const addLandmarks = function (contract: Contract, map: TerrainMap, obstacles: r
 	// height mesh. Every consumer of a deployed field shares the first survey.
 	const field = { ...map, landmarks, terrain };
 	let elevation: TerrainElevation | undefined;
-	return { ...field, terrain: { ...terrain, get elevation() { return elevation ??= surveyElevation(contract, field); } } };
+	return { map: { ...field, terrain: { ...terrain, get elevation() { return elevation ??= surveyElevation(contract, field, garrison); } } }, garrison };
 };
 
-export const generateMissionMap = function (contract: Contract): MissionMap {
+export const generateMissionField = function (contract: Contract, suppliedMap?: MissionMap): { map: MissionMap; garrison: MissionSpawn[] } {
+	if (suppliedMap) return { map: suppliedMap, garrison: missionGarrison(contract, suppliedMap) };
 	const dimensions = randomSource(contract.seed);
 	const width = 4200 + Math.floor(dimensions() * 3) * 300;
 	const height = Math.round((3000 + Math.floor(dimensions() * 3) * 300) * 1.15);
@@ -181,7 +297,7 @@ export const generateMissionMap = function (contract: Contract): MissionMap {
 		const { map, cover } = createBiomeLayout(biome, contract, width, height, hasMultipleSites(contract.kind), between);
 		const { obstacles, addCover } = missionCover(contract, map);
 		for (const feature of cover) addCover(feature);
-		return addLandmarks(contract, map, obstacles, random);
+		return finishMissionField(contract, map, obstacles, random);
 	}
 	// Shared Cinder Recovery seeds retain the survey orientation from the trial.
 	const eastWestCut = (contract.planetId !== 'cinder' || contract.kind !== 'recovery') && dimensions() < .5;
@@ -264,8 +380,9 @@ export const generateMissionMap = function (contract: Contract): MissionMap {
 			addCover({ ...point(x + between(-30, 30), y + between(-30, 30)), kind: 'tree', width: 36, depth: 36, height: between(58, 74) });
 		}
 	}
-	return addLandmarks(contract, map, obstacles, random);
+	return finishMissionField(contract, map, obstacles, random);
 };
+export const generateMissionMap = function (contract: Contract): MissionMap { return generateMissionField(contract).map; };
 
 export const missionObjective = function (state: CombatStateView): string {
 	const mission = state.mission;

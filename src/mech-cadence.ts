@@ -116,7 +116,7 @@ export const createMechCadences = function () {
 			stepActor(mate, mate.frameId, mate.authoredPose?.gait ?? gaits.squadmates.get(mate.pilotId), state.time);
 		}
 		for (const enemy of state.enemies) {
-			if (!isVehicleKind(enemy.kind)) stepActor(enemy, enemy.kind, gaits.enemies.get(enemy.id), state.time);
+			if (enemy.kind !== 'artillery' && !isVehicleKind(enemy.kind)) stepActor(enemy, enemy.kind, gaits.enemies.get(enemy.id), state.time);
 		}
 	};
 	const visualGait = function (actor: Point, gait: AuthoredGait) {

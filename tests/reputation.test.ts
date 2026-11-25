@@ -9,7 +9,7 @@ import { getFrameOffer } from '../src/market';
 import { companyRank, MISSION_TIERS, REPUTATION_RANKS, unlockedMissionTier } from '../src/reputation';
 import { createMissionState } from '../src/simulation';
 import { visibleTouchContacts } from '../src/touch-controls';
-import { isPriorityTarget } from '../src/missions';
+import { generateMissionMap, isPriorityTarget, missionHostileCount, missionSpawn } from '../src/missions';
 
 const ranked = function (rank: number): Campaign {
 	return { ...createCampaign(317), companyReputation: REPUTATION_RANKS[rank - 1] ?? 0, credits: 1_000_000, reputation: { freeholds: 100, combine: 100, accord: 100 }, boardReputation: { freeholds: 100, combine: 100, accord: 100 } };
@@ -79,12 +79,15 @@ test('sale packages are complete, compatible, bounded in weight, reproducible, a
 	expect(packages.size).toBeGreaterThan(40);
 });
 test('mission tiers produce larger forces and tougher structures without granting catalog commanders inflated integrity', function () {
-	let previousCount = 0; let previousObjective = 0;
-	for (const level of MISSION_TIERS) {
-		const contract = getContracts(ranked(level.rank)).find(function (entry) { return entry.tier === level.tier && entry.kind === 'demolition'; });
+	let previousObjective = 0;
+	for (const [index, level] of MISSION_TIERS.entries()) {
+		const company = ranked(level.rank);
+		const contract = getContracts(company).find(function (entry) { return entry.tier === level.tier && entry.kind === 'demolition'; });
 		if (!contract) throw new Error('Missing tiered contract');
 		const state = createMissionState(contract); const assassination = createMissionState({ ...contract, kind: 'assassination' });
-		expect(state.enemies.length).toBeGreaterThan(previousCount);
+		// Compare tiers on the same contract seed because their artillery ranges overlap.
+		const lowerTier = MISSION_TIERS[index - 1];
+		if (lowerTier) expect(state.enemies.length).toBeGreaterThan(missionHostileCount({ ...contract, tier: lowerTier.tier }));
 		expect(state.mission?.structure?.hp ?? 0).toBeGreaterThan(previousObjective);
 		const commander = assassination.enemies.find(function (enemy) { return enemy.id === assassination.mission?.targetId; });
 		expect(commander?.hp).toBe(100);
@@ -94,8 +97,16 @@ test('mission tiers produce larger forces and tougher structures without grantin
 		expect(Boolean(commander.commander)).toBe(level.tier >= 4);
 		expect(visibleTouchContacts(assassination, function () { return { x: 100, y: 100 }; }, 400, 400, []).find(function (contact) { return contact.id === commander.id; })?.label).toBe('PRIORITY TARGET');
 		expect(state.enemies.every(function (enemy) { return enemy.loadout?.every(function (mount) { return getWeapon(mount.weapon).tier === level.weaponTier; }); })).toBe(true);
-		if (level.tier === 1) expect(state.enemies.every(function (enemy) { return enemy.kind === 'scout' || enemy.kind === 'helicopter'; })).toBe(true);
+		expect(state.enemies.filter(function (enemy) { return enemy.kind !== 'artillery'; })).toHaveLength(level.patrol - (level.tier >= 4 ? 2 : 1));
+		expect(assassination.enemies).toHaveLength(level.patrol);
+		const restored = parseCampaign(JSON.stringify(acceptContract(company, contract.id))).active;
+		if (!restored) throw new Error('Missing saved contract');
+		const map = generateMissionMap(restored);
+		const surveyed = Array.from({ length: missionHostileCount(restored) }, function (_, i) { return missionSpawn(restored, map, i); });
+		expect(surveyed.map(function ({ kind, x, y }) { return { kind, x, y }; })).toEqual(
+			state.enemies.map(function ({ kind, x, y }) { return { kind, x, y }; }));
+		if (level.tier === 1) expect(state.enemies.every(function (enemy) { return enemy.kind === 'scout' || enemy.kind === 'helicopter' || enemy.kind === 'artillery'; })).toBe(true);
 		if (level.tier >= 4) expect(state.enemies.some(function (enemy) { return enemy.kind === 'siege'; })).toBe(true);
-		previousCount = state.enemies.length; previousObjective = state.mission?.structure?.hp ?? 0;
+		previousObjective = state.mission?.structure?.hp ?? 0;
 	}
 });

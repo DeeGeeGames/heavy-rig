@@ -5,8 +5,9 @@ import type { Contract } from '../src/campaign-types';
 import { enemyVolume } from '../src/combat-spatial';
 import { createGait } from '../src/gait';
 import { createMech } from '../src/mech-3d';
-import { missionHostileCount } from '../src/missions';
+import { missionArtilleryCount, missionHostileCount } from '../src/missions';
 import { getDifficultyDefinition, WAVES } from '../src/operation';
+import { getMissionTier } from '../src/reputation';
 import { coolingStep, createMissionState, createState, distance, ENEMY_STATS, projectilesStep, step, weaponsStep, type Controls, type State, type Unit } from '../src/simulation';
 
 const kinds = ['helicopter', 'vtol', 'tank'] as const;
@@ -33,18 +34,28 @@ test('campaign rosters deploy mixed forces at every difficulty and keep the assa
 				}
 				expect(state.kills).toBe(missionHostileCount(contract));
 				expect(deployed.has('tank')).toBe(true); expect(deployed.has('vtol')).toBe(true);
+				expect(deployed.has('artillery')).toBe(false);
 				continue;
 			}
 			expect(state.enemies).toHaveLength(missionHostileCount(contract));
+			const mobile = state.enemies.filter(function (enemy) { return enemy.kind !== 'artillery'; });
+			const tier = getMissionTier(contract.tier);
+			const mobileCount = kind === 'clearance' ? tier.assault - 2 : kind === 'demolition' ? tier.patrol - 2 : tier.patrol;
+			expect(mobile).toHaveLength(mobileCount);
 			const rigs = state.enemies.filter(function (enemy) { return enemy.catalog; });
-			expect(rigs.length).toBeGreaterThan(state.enemies.length / 2);
-			for (const escort of state.enemies.filter(function (enemy) { return !enemy.catalog; })) {
-				expect(rigs.some(function (rig) { return rig.formation === escort.formation; })).toBe(true);
+			expect(rigs.length).toBeGreaterThan(mobile.length / 2);
+			const guns = state.enemies.filter(function (enemy) { return enemy.kind === 'artillery'; });
+			expect(guns).toHaveLength(missionArtilleryCount(contract));
+			for (const gun of guns) {
+				expect(gun.stationary).toBe(true); expect(gun.catalog).toBeUndefined(); expect(gun.formation).toBeUndefined();
 			}
-			for (const vehicleKind of ['tank', 'vtol'] as const) {
-				const enemy = state.enemies.find(function (candidate) { return candidate.kind === vehicleKind; });
-				expect(enemy?.hp).toBe(Math.round(ENEMY_STATS[vehicleKind].hp * 1.15 * getDifficultyDefinition(difficulty).enemyArmor));
-				expect(enemy?.loadout?.length).toBe(vehicleKind === 'vtol' ? 2 : 1);
+			const escorts = state.enemies.filter(function (enemy) { return enemy.kind === 'tank' || enemy.kind === 'vtol'; });
+			expect(escorts.some(function (enemy) { return enemy.kind === 'tank'; })).toBe(true);
+			if (kind !== 'demolition') expect(escorts.some(function (enemy) { return enemy.kind === 'vtol'; })).toBe(true);
+			for (const escort of escorts) {
+				expect(rigs.some(function (rig) { return rig.formation === escort.formation; })).toBe(true);
+				expect(escort.hp).toBe(Math.round(ENEMY_STATS[escort.kind].hp * 1.15 * getDifficultyDefinition(difficulty).enemyArmor));
+				expect(escort.loadout?.length).toBe(escort.kind === 'vtol' ? 2 : 1);
 			}
 			if (kind === 'assassination') {
 				const commander = state.enemies.find(function (enemy) { return enemy.id === state.mission?.targetId; });

@@ -6,16 +6,21 @@ import type { SpatialPoint } from './weapon-rig';
 
 export interface HitVolume extends SpatialPoint { radius: number; halfHeight: number }
 export const ENEMY_RADIUS = 25;
+export const EMPLACEMENT_RADIUS = 47;
 export const RIG_RADIUS = 27;
 const ENEMY_VOLUMES: Readonly<Record<EnemyKind, { elevation: number; halfHeight: number }>> = {
 	scout: { elevation: 36, halfHeight: 36 }, striker: { elevation: 45, halfHeight: 45 }, siege: { elevation: 65, halfHeight: 65 },
-	tank: { elevation: 30, halfHeight: 30 }, helicopter: { elevation: 112, halfHeight: 20 }, vtol: { elevation: 147, halfHeight: 22 },
+	tank: { elevation: 30, halfHeight: 30 }, artillery: { elevation: 36, halfHeight: 36 },
+	helicopter: { elevation: 112, halfHeight: 20 }, vtol: { elevation: 147, halfHeight: 22 },
+};
+export const enemyRadius = function (enemy: Unit) {
+	return enemy.kind === 'artillery' ? EMPLACEMENT_RADIUS : enemy.catalog ? RIG_RADIUS : ENEMY_RADIUS;
 };
 export const enemyVolume = function (enemy: Unit, terrain?: FieldTerrain): HitVolume {
 	const point = { x: enemy.x, y: enemy.y };
 	if (enemy.catalog) return playerVolume(point, enemy.catalog.frameId, terrain);
 	const volume = ENEMY_VOLUMES[enemy.kind];
-	return { ...point, radius: ENEMY_RADIUS, halfHeight: volume.halfHeight, elevation: groundHeight(terrain, point) + volume.elevation };
+	return { ...point, radius: enemyRadius(enemy), halfHeight: volume.halfHeight, elevation: groundHeight(terrain, point) + volume.elevation };
 };
 export const playerVolume = function (point: Point, frame: FrameId, terrain?: FieldTerrain): HitVolume {
 	const { chassisId, size } = getFrame(frame);

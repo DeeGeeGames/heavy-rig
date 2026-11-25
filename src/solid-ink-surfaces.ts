@@ -61,7 +61,7 @@ export const createInkSurfaces = function () {
 				if (node.userData['nativeEffects'] === true) { overlays = true; return; }
 				const skin: unknown = node.userData['mechSkin'];
 				if (typeof skin === 'string') { actor = true; accord = skin === 'accord'; }
-				else if (node.name.endsWith('-vehicle')) actor = true;
+				else if (node.name.endsWith('-vehicle') || node.name === 'artillery-emplacement') actor = true;
 				if (camera.layers.test(node.layers)) {
 					if (node instanceof Light) {
 						lights.push({ light: node, layers: node.layers.mask }); node.layers.enable(inkLayer);

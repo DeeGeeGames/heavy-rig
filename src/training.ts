@@ -2,9 +2,10 @@ import { defaultKeyboard, defaultController, keyLabel, padLabel, type KeyboardBi
 import type { ControlMode } from './profile';
 import { createMount, getWeapon, type WeaponId } from './arsenal';
 import { loadedMounts } from './combat-resources';
+import { RIG_RADIUS } from './combat-spatial';
 import type { FrameId } from './frames';
 import { isFrameLoadout } from './hardpoints';
-import { angleDelta, createEnemyLoadout, createState, distance, step, type Controls, type Point, type CombatStateView } from './simulation';
+import { angleDelta, createEnemyLoadout, createState, distance, step, type Controls, type CombatStateView } from './simulation';
 
 export const TRAINING_STAGES = ['drive', 'neutral', 'steer', 'cannon', 'missiles', 'combined', 'heat', 'coolant', 'evade', 'complete'] as const;
 export type TrainingStage = typeof TRAINING_STAGES[number];
@@ -14,9 +15,6 @@ export interface Training {
 	distance: number;
 	turn: number;
 	combinedTime: number;
-	startedAt: number;
-	strikeOrigin: Point | undefined;
-	strikeIssued: boolean;
 }
 
 export interface TrainingSetup {
@@ -47,7 +45,7 @@ export const createTraining = function (setup?: TrainingSetup): Training {
 		state.player.x = RANGE_LANE_X;
 		placeRangeTargets(state);
 	}
-	return { state, stage: setup ? 'range' : 'drive', distance: 0, turn: 0, combinedTime: 0, startedAt: 0, strikeOrigin: undefined, strikeIssued: false };
+	return { state, stage: setup ? 'range' : 'drive', distance: 0, turn: 0, combinedTime: 0 };
 };
 
 const placeTarget = function (state: CombatStateView) {
@@ -59,7 +57,6 @@ const placeTarget = function (state: CombatStateView) {
 
 const advance = function (training: Training, stage: TrainingStage) {
 	training.stage = stage;
-	training.startedAt = training.state.time;
 	if (stage === 'cannon' || stage === 'missiles' || stage === 'combined') placeTarget(training.state);
 	if (stage === 'combined') { training.state.player.heat = 0; training.state.player.overheated = false; }
 	if (stage === 'heat') {
@@ -70,13 +67,18 @@ const advance = function (training: Training, stage: TrainingStage) {
 	}
 	if (stage === 'coolant') training.state.coolantCharges = 3;
 	if (stage === 'evade') {
+		const { state } = training;
 		// Start the committed-strike exercise with clear runway in every direction.
-		training.state.player.x = 900; training.state.player.y = 780;
-		training.state.player.angle = -Math.PI / 2; training.state.player.turret = -Math.PI / 2;
-		training.state.player.throttle = 0;
-		training.state.player.speed = 0;
-		training.state.shots = [];
-		training.state.enemies = [];
+		state.player.x = 900; state.player.y = 780;
+		state.player.angle = -Math.PI / 2; state.player.turret = -Math.PI / 2;
+		state.player.throttle = 0; state.player.speed = 0;
+		state.shots = [];
+		const x = 620, y = 630;
+		state.enemies = [{
+			id: state.nextId++, kind: 'artillery', heavy: true, stationary: true,
+			x, y, angle: Math.atan2(state.player.y - y, state.player.x - x),
+			hp: 50, maxHp: 50, cooldown: 0, loadout: createEnemyLoadout('artillery'), reactor: { heat: 0, overheated: false },
+		}];
 	}
 };
 
@@ -97,7 +99,7 @@ const retryDryDrill = function (training: Training) {
 
 export interface TrainingBefore { x: number; y: number; angle: number; hits: number }
 export const trainingFireSlot = function (stage: TrainingStage | undefined): number {
-	return stage === 'cannon' ? 0 : stage === 'missiles' || stage === 'heat' ? 2 : -1;
+	return stage === 'cannon' ? 0 : stage === 'missiles' || stage === 'heat' || stage === 'evade' ? 2 : -1;
 };
 
 export const prepareTraining = function (training: Training, controls: Controls): Controls {
@@ -135,15 +137,15 @@ export const finishTraining = function (training: Training, controls: Controls, 
 	} else if (training.stage === 'heat' && state.player.heat >= 45) advance(training, 'coolant');
 	else if (training.stage === 'coolant' && state.events.includes('coolant')) advance(training, 'evade');
 	else if (training.stage === 'evade') {
-		if (!training.strikeIssued && state.time - training.startedAt >= 2) {
-			training.strikeOrigin = { x: state.player.x, y: state.player.y };
-			state.strikes.push({ ...training.strikeOrigin, id: state.nextId++, life: 3.6, duration: 3.6, radius: 62, damage: 1 });
-			state.events.push('artillery'); training.strikeIssued = true;
-		}
-		if (training.strikeIssued && state.strikes.length === 0 && training.strikeOrigin) {
-			if (distance(state.player, training.strikeOrigin) > 82) advance(training, 'complete');
-			else { training.strikeIssued = false; training.startedAt = state.time; }
-		}
+		if (state.events.includes('artillery')) training.distance = 0;
+		if (state.strikes.length) return;
+		const gun = state.enemies[0];
+		if (!gun) { advance(training, 'complete'); return; }
+		// With the one practice gun alive, its shell is the only explosion.
+		if (!state.events.includes('explosion')) return;
+		if (training.distance >= RIG_RADIUS && !state.events.includes('player-hit')) { advance(training, 'complete'); return; }
+		const mortar = gun.loadout?.[0];
+		if (mortar?.rounds === 0) mortar.rounds = getWeapon(mortar.weapon).ammunition?.defaultLoad ?? 0;
 	}
 };
 export const stepTraining = function (training: Training, controls: Controls, dt: number) {
@@ -172,7 +174,7 @@ export const trainingCopy = function (stage: TrainingStage, controller: boolean,
 		combined: ['COMBINE YOUR FIRE', mappings.touch ? 'Tap at least two mount chips to arm them, then hold FIRE. All mounts share reactor heat.' : 'Hold any two mapped weapon inputs or on-screen mounts together for a moment. Warden has two ballistic guns and two launcher pods; all share reactor heat.'],
 		heat: ['FEEL THE REACTOR', `Switched to Warden B: ARC draws reactor power and builds heat. Hold ${controls.mountThree} to build heat to 45%.`],
 		coolant: ['VENT THE HEAT', `Press ${controls.coolant}. One charge purges 55 heat. At 100% heat, weapons lock until heat falls to 35%.`],
-		evade: ['CLEAR THE IMPACT ZONE', `Frame reset to the practice lane. ${controls.drive} when the orange circle appears. Leave it before impact; the strike stays where marked.`],
+		evade: ['CLEAR THE IMPACT ZONE', `${controls.drive} when the orange circle appears. Travel at least ${RIG_RADIUS} m and finish outside the circle. To destroy the gun emplacement, aim at it and use ${controls.mountThree}.`],
 		complete: ['FRAME QUALIFICATION COMPLETE', 'You are ready for the operation. Flank armored siege frames and strike while they recover from a barrage.'],
 	};
 	const [title, instruction] = copy[stage];

@@ -26,6 +26,22 @@ const cellIndex = function (axis: readonly number[], value: number, direction = 
 	}
 	return lo;
 };
+
+// Generated fields level these vertices during construction. A supplied field
+// can host the same foundation wherever its existing support is already level.
+export const hasLevelFoundation = function (terrain: Surface, at: Point, radius: number) {
+	const grid = terrain?.elevation;
+	if (!grid) return true;
+	const left = cellIndex(grid.xs, at.x - radius), right = cellIndex(grid.xs, at.x + radius, -1) + 1;
+	const top = cellIndex(grid.ys, at.y - radius), bottom = cellIndex(grid.ys, at.y + radius, -1) + 1;
+	const base = grid.heights[top * grid.xs.length + left];
+	if (base === undefined) return false;
+	for (let row = top; row <= bottom; row++) for (let col = left; col <= right; col++) {
+		const height = grid.heights[row * grid.xs.length + col];
+		if (height === undefined || Math.abs(height - base) > .01) return false;
+	}
+	return true;
+};
 const cellAt = function (grid: TerrainElevation, col: number, row: number): Cell {
 	const x = grid.xs[col] ?? 0, y = grid.ys[row] ?? 0;
 	const nx = grid.xs.length, i = row * nx + col;

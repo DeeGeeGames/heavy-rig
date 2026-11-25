@@ -74,9 +74,11 @@ const SIEGE_HARDPOINTS: readonly Hardpoint[] = [...LINE_HARDPOINTS, fixedHardpoi
 const HELICOPTER_HARDPOINTS: readonly Hardpoint[] = [fixedHardpoint('chin-gun', 'Chin machine gun', 'machine-gun')];
 const VTOL_HARDPOINTS: readonly Hardpoint[] = [launcher('left', 'wing pod'), launcher('right', 'wing pod')];
 const TANK_HARDPOINTS: readonly Hardpoint[] = [fixedHardpoint('turret-cannon', 'Turret cannon', 'autocannon')];
+const EMPLACEMENT_HARDPOINTS: readonly Hardpoint[] = [fixedHardpoint('emplaced-gun', 'Emplaced artillery gun', 'autocannon')];
 
 export const getHardpoints = function (frame: FrameId): readonly Hardpoint[] { return FRAME_HARDPOINTS[frame]; };
 export const getEnemyHardpoints = function (kind: EnemyKind, commander = false): readonly Hardpoint[] {
+	if (kind === 'artillery') return EMPLACEMENT_HARDPOINTS;
 	if (kind === 'helicopter') return HELICOPTER_HARDPOINTS;
 	if (kind === 'vtol') return VTOL_HARDPOINTS;
 	if (kind === 'tank') return TANK_HARDPOINTS;

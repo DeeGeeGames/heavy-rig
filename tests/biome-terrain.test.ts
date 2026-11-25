@@ -1,10 +1,10 @@
 import { expect, test } from 'bun:test';
 import { MISSION_KINDS } from '../src/campaign';
 import type { Contract } from '../src/campaign-types';
-import { ENEMY_RADIUS, playerVolume, RIG_RADIUS } from '../src/combat-spatial';
+import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, playerVolume, RIG_RADIUS } from '../src/combat-spatial';
 import { terrainPathClear, terrainPointClear, terrainShotFraction, terrainWaypoint } from '../src/field-terrain';
 import { groundHeight } from '../src/terrain-elevation';
-import { CAPTURE_RADIUS, EXTRACTION_RADIUS, generateMissionMap, missionDeploymentSlot, missionHostileCount, missionSpawn } from '../src/missions';
+import { CAPTURE_RADIUS, EXTRACTION_RADIUS, generateMissionMap, missionArtilleryCount, missionDeploymentSlot, missionHostileCount, missionSpawn } from '../src/missions';
 import { SQUAD_SIZE } from '../src/pilots';
 import type { Point } from '../src/simulation';
 import { getPlayerMuzzle } from '../src/weapon-rig';
@@ -16,7 +16,7 @@ const contract = function (planetId: typeof worlds[number], kind: Contract['kind
 };
 
 test('squads can deploy and reach every objective and pickup in the four new biomes', function () {
-	for (const world of worlds) for (const kind of MISSION_KINDS) for (const seed of [1740197091, 1500846699]) {
+	for (const world of worlds) for (const kind of MISSION_KINDS) for (const seed of [1740197091, 1500846699, 2563011894]) {
 		const job = contract(world, kind, seed), map = generateMissionMap(job), terrain = map.terrain;
 		if (!terrain) throw new Error('Missing mission terrain');
 		const reachable = function (from: Point, goal: Point) {
@@ -66,10 +66,17 @@ test('squads can deploy and reach every objective and pickup in the four new bio
 		for (let i = 0; i < SQUAD_SIZE - 1; i++) {
 			expect(terrainPathClear(terrain, missionDeploymentSlot(map, i), map.drop, RIG_RADIUS)).toBe(true);
 		}
-		for (let i = 0; i < missionHostileCount(job); i++) {
-			const spawn = missionSpawn(job, map, i);
-			expect(terrainPointClear(terrain, spawn, spawn.frameId ? RIG_RADIUS : ENEMY_RADIUS)).toBe(true);
+		const spawns = Array.from({ length: missionHostileCount(job) }, function (_, i) { return missionSpawn(job, map, i); });
+		const guns = spawns.filter(function (spawn) { return spawn.kind === 'artillery'; });
+		expect(guns).toHaveLength(missionArtilleryCount(job));
+		for (const gun of guns) {
+			const base = groundHeight(terrain, gun);
+			for (const dx of [-EMPLACEMENT_RADIUS, EMPLACEMENT_RADIUS]) for (const dy of [-EMPLACEMENT_RADIUS, EMPLACEMENT_RADIUS]) {
+				expect(groundHeight(terrain, { x: gun.x + dx, y: gun.y + dy })).toBeCloseTo(base, 3);
+			}
 		}
+		for (const spawn of spawns) expect(terrainPointClear(terrain, spawn,
+			spawn.kind === 'artillery' ? EMPLACEMENT_RADIUS : spawn.frameId ? RIG_RADIUS : ENEMY_RADIUS)).toBe(true);
 	}
 });
 

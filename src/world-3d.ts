@@ -1,5 +1,5 @@
-import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, Group, InstancedMesh, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector3, type OrthographicCamera, type WebGLRenderer } from 'three';
-import { ARENA, getEnemyDefense, type Effect, type Point, type Shot, type CombatStateView } from './simulation';
+import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CubicBezierCurve3, CylinderGeometry, Float32BufferAttribute, Group, InstancedMesh, LatheGeometry, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector2, Vector3, type OrthographicCamera, type WebGLRenderer } from 'three';
+import { ARENA, getEnemyDefense, type ArtilleryStrike, type Effect, type Point, type Shot, type CombatStateView } from './simulation';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
 import { createEnemyDropshipViews } from './enemy-dropship-view';
@@ -14,6 +14,7 @@ import { groundHeight, groundNormal } from './terrain-elevation';
 import { drapeGroundGeometry } from './terrain-decals';
 import type { FieldTerrain } from './field-terrain';
 import { fieldClippingPlanes } from './field-clipping';
+import { createArtilleryWreckAssets } from './artillery-emplacement';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
 interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
@@ -127,8 +128,14 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 		for (const group of terrainBakeSource()?.art ?? []) group.visible = true;
 	};
 	const wrecks: PooledObject[] = [];
+	let wreckAssets: ReturnType<typeof createArtilleryWreckAssets> | undefined;
+	const createEmplacementWreck = function () {
+		wreckAssets ??= createArtilleryWreckAssets();
+		return wreckAssets.create();
+	};
+	const emplacementWrecks: ReturnType<typeof createEmplacementWreck>[] = [];
 	const warnings: PooledObject[] = []; const shots: ReturnType<typeof createShot>[] = []; const effects: ReturnType<typeof createEffect>[] = [];
-	const strikes: ReturnType<typeof createStrike>[] = [];
+	const strikePools: { emplacement: boolean; views: ReturnType<typeof createStrike>[] }[] = [{ emplacement: false, views: [] }, { emplacement: true, views: [] }];
 	const defenses: ReturnType<typeof createDefense>[] = [];
 	const shadows: PooledObject[] = [];
 	const sync = function <T extends PooledObject>(parent: Group, pool: T[], count: number, create: () => T, update: (value: T, index: number) => void) {
@@ -139,7 +146,8 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 	const armorArc = geometry(new RingGeometry(0.9, 1, 32, 1, -Math.PI / 3, Math.PI * 2 / 3));
 	const armorSurface = glow('#eec58b', 0.8); const exposedSurface = glow('#a2f0d2', 0.9);
 	const committedSurface = glow('#ff8f61', 0.8);
-	const groundMarkers = [shadow, armorSurface, exposedSurface, committedSurface];
+	const impactClockSurface = glow('#ffe4c6', .94);
+	const groundMarkers = [shadow, armorSurface, exposedSurface, committedSurface, impactClockSurface];
 	const createDefense = function () {
 		const value = new Group(); value.name = 'siege-defense';
 		const shield = new Mesh(armorArc, armorSurface); shield.rotation.x = -Math.PI / 2; shield.position.y = 0.3;
@@ -149,18 +157,37 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 		return { root: value, shield, exposed, commitment };
 	};
 	const normal = new Vector3(1, 1, 1).normalize(); const zAxis = new Vector3(0, 0, 1);
-	const createStrike = function () {
+	// The shell's nose is its position on the flight path. The copper driving band
+	// and pale nose share one mesh across every round in a battery.
+	const shellHull = geometry(new LatheGeometry([
+		new Vector2(0, -20), new Vector2(3.4, -20), new Vector2(4.2, -18), new Vector2(4.2, -16),
+		new Vector2(3.9, -15.5), new Vector2(3.9, -8.5), new Vector2(3.9, -8), new Vector2(2.8, -4), new Vector2(0, 0),
+	], 10));
+	const shellVertices = shellHull.getAttribute('position');
+	const shellColors = new Float32BufferAttribute(shellVertices.count * 3, 3);
+	for (let i = 0; i < shellVertices.count; i++) {
+		const y = shellVertices.getY(i);
+		tint.set(y <= -16 ? '#ffad62' : y < -8 ? '#83513c' : '#ffe2a8');
+		shellColors.setXYZ(i, tint.r, tint.g, tint.b);
+	}
+	shellHull.setAttribute('color', shellColors);
+	const shellMetal = material(new MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .65, metalness: .18, emissive: '#251609' }));
+	const strikeSegments = 64;
+	const createStrike = function (emplacement: boolean) {
 		const value = new Group(); value.name = 'artillery-warning';
-		const surface = new MeshBasicMaterial({ color: '#ff793b', transparent: true, opacity: 0.2, depthWrite: false });
-		const line = new MeshBasicMaterial({ color: '#f3a16c', transparent: true, opacity: .85, depthWrite: false });
+		const surface = new MeshBasicMaterial({ transparent: true, depthWrite: false });
+		const line = new MeshBasicMaterial({ transparent: true, opacity: emplacement ? .96 : .85, depthWrite: false });
 		const fill = new Mesh(new RingGeometry(0, 1, 48, 5).rotateX(-Math.PI / 2), surface);
-		const boundary = new Mesh(ring.clone().rotateX(-Math.PI / 2), line);
-		const countdown = new Mesh(ring.clone().rotateX(-Math.PI / 2), line);
+		const boundary = new Mesh((emplacement ? new RingGeometry(.944, 1, strikeSegments) : ring.clone()).rotateX(-Math.PI / 2), line);
+		const countdown = new Mesh((emplacement ? new RingGeometry(.969, 1, strikeSegments, 1, Math.PI * .75) : ring.clone()).rotateX(-Math.PI / 2), emplacement ? impactClockSurface : line);
 		value.add(fill, boundary, countdown);
-		fill.position.y = 0.14; boundary.position.y = 0.18; countdown.position.y = 0.2;
-		for (const axis of [0, Math.PI / 2]) { const cross = box(value, line, 0, 0.24, 0, 18, 1.5, 0.02); cross.rotation.y = axis; }
-		const shell = new Mesh(sphere, line); shell.scale.set(4, 12, 4); value.add(shell);
-		return { root: value, fill, boundary, countdown, shell, surface, line, dispose: function () {
+		fill.position.y = emplacement ? 1.4 : .14; boundary.position.y = emplacement ? 1.5 : .18; countdown.position.y = emplacement ? 1.6 : .2;
+		for (const axis of [0, Math.PI / 2]) { const cross = box(value, line, 0, emplacement ? 1.7 : .24, 0, 18, emplacement ? 2.5 : 1.5, .02); cross.rotation.y = axis; }
+		const shell = emplacement ? new Mesh(shellHull, shellMetal) : new Mesh(sphere, line); value.add(shell);
+		const trail = emplacement ? new Mesh(cylinder, weaponVfx.styles.cannon.trail) : undefined;
+		if (trail) { shell.name = 'artillery-shell'; trail.name = 'artillery-tracer'; value.add(trail); }
+		else shell.scale.set(4, 12, 4);
+		return { root: value, fill, boundary, countdown, shell, trail, surface, line, dispose: function () {
 			for (const mark of [fill, boundary, countdown]) mark.geometry.dispose();
 			surface.dispose(); line.dispose();
 		} };
@@ -182,6 +209,34 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 		delta.subVectors(to, from); const length = delta.length();
 		mesh.visible = length > 0.0001; if (!mesh.visible) return;
 		mesh.position.copy(from).add(to).multiplyScalar(0.5); mesh.scale.set(width, length, width); mesh.quaternion.setFromUnitVectors(up, delta.normalize());
+	};
+	const shellArc = new CubicBezierCurve3(); const betweenHandles = new Vector3();
+	const updateArtilleryShell = function (view: ReturnType<typeof createStrike>, strike: ArtilleryStrike, remaining: number) {
+		const launch = strike.emplacement;
+		const shell = view.shell;
+		if (!launch || !view.trail) {
+			shell.visible = strike.life < .7;
+			shell.position.y = 20 + strike.life * 600;
+			return;
+		}
+		// The first control point lies on the bore axis. The second sets the descent
+		// into the scattered marker, whose local position (v3) is always zero.
+		const { origin, direction } = launch;
+		const start = shellArc.v0.set(origin.x, origin.elevation, origin.y).sub(view.root.position);
+		const range = Math.hypot(start.x, start.z);
+		const departure = shellArc.v1.set(direction.x, direction.elevation, direction.y).normalize()
+			.multiplyScalar(Math.max(140, range * .45)).add(start);
+		const approach = shellArc.v2.copy(start).multiplyScalar(1 / 3);
+		approach.y = Math.max(0, start.y) + Math.min(390, Math.max(190, range * .32));
+		const progress = 1 - remaining;
+		shellArc.getPoint(progress, to);
+		shellArc.getPoint(Math.max(0, progress - .10 / strike.duration), from);
+		shell.position.copy(to);
+		delta.subVectors(departure, start).multiplyScalar(remaining * remaining);
+		delta.addScaledVector(betweenHandles.subVectors(approach, departure), 2 * remaining * progress);
+		delta.addScaledVector(approach, -progress * progress);
+		shell.quaternion.setFromUnitVectors(up, delta.normalize());
+		segment(view.trail, 2.8);
 	};
 	let disposed = false;
 	return {
@@ -233,30 +288,46 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 				value.exposed.scale.setScalar(radius); value.exposed.visible = defense.exposed;
 				value.commitment.scale.setScalar(radius + 8); value.commitment.visible = enemy.attack?.phase === 'committed';
 			});
-			sync(root, wrecks, state.wrecks.length, function () {
+			const fallen = state.wrecks;
+			const vehicleWrecks = fallen.filter(function (wreck) { return wreck.kind !== 'artillery'; });
+			const gunWrecks = fallen.filter(function (wreck) { return wreck.kind === 'artillery'; });
+			sync(root, emplacementWrecks, gunWrecks.length, createEmplacementWreck, function (view, index) {
+				const wreck = gunWrecks[index]; if (wreck) view.place(terrain, wreck);
+			});
+			sync(root, wrecks, vehicleWrecks.length, function () {
 				const value = new Group(); value.name = 'wreck'; disc(value, shadow, 40).position.y = 0.04;
 				box(value, dark, 0, 0, 0, 32, 29, 8); box(value, steel, -8, 8, 0, 19, 23, 7).rotation.z = -0.2;
 				box(value, dark, 24, 0, -19, 24, 7, 5).rotation.y = 0.5; box(value, dark, -21, 0, 22, 17, 10, 4).rotation.y = -0.3;
 				return { root: value };
-			}, function (value, index) { const wreck = state.wrecks[index]; if (wreck) placeOnGround(value.root, terrain, wreck, 0, -wreck.angle); });
+			}, function (value, index) { const wreck = vehicleWrecks[index]; if (wreck) placeOnGround(value.root, terrain, wreck, 0, -wreck.angle); });
 			const inbound = state.warnings;
 			dropships.update(state, inbound, planes);
 			sync(feedback, warnings, inbound.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
 				const warning = inbound[index]; if (!warning) return; placeOnGround(value.root, terrain, warning, .3); value.root.scale.setScalar(45 + Math.sin(state.time * 8) * 5);
 			});
-			sync(feedback, strikes, state.strikes.length, createStrike, function (value, index) {
-				const strike = state.strikes[index]; if (!strike) return;
-				value.root.position.set(strike.x, groundHeight(terrain, strike), strike.y);
-				value.surface.color.set(strike.friendly ? '#60dfc7' : '#ff793b');
-				value.line.color.set(strike.friendly ? '#94ebe4' : '#f3a16c');
-				for (const mark of [value.fill, value.boundary, value.countdown]) {
-					const radius = mark === value.countdown ? strike.radius * Math.max(.03, strike.life / strike.duration) : strike.radius;
-					mark.scale.set(radius, 1, radius);
-					drapeGroundGeometry(mark.geometry, terrain, strike, 0, radius);
-				}
-				value.surface.opacity = 0.12 + (1 - strike.life / strike.duration) * 0.18;
-				value.shell.visible = strike.life < 0.7; value.shell.position.y = 20 + strike.life * 600;
-			});
+			const activeStrikes = state.strikes;
+			for (const { emplacement, views } of strikePools) {
+				const incoming = activeStrikes.filter(function (strike) { return Boolean(strike.emplacement) === emplacement; });
+				sync(feedback, views, incoming.length, function () { return createStrike(emplacement); }, function (value, index) {
+					const strike = incoming[index]; if (!strike) return;
+					value.root.position.set(strike.x, groundHeight(terrain, strike), strike.y);
+					const remaining = Math.max(0, Math.min(1, strike.life / strike.duration));
+					value.surface.color.set(emplacement ? '#ff502f' : strike.friendly ? '#60dfc7' : '#ff793b');
+					value.line.color.set(emplacement ? '#ff8050' : strike.friendly ? '#94ebe4' : '#f3a16c');
+					if (emplacement) {
+						value.surface.clippingPlanes = planes; value.line.clippingPlanes = planes;
+						value.countdown.geometry.setDrawRange(0, Math.ceil(remaining * strikeSegments) * 6);
+					}
+					const clockRadius = strike.radius * (emplacement ? .86 : Math.max(.03, remaining));
+					for (const mark of [value.fill, value.boundary, value.countdown]) {
+						const radius = mark === value.countdown ? clockRadius : strike.radius;
+						mark.scale.set(radius, 1, radius);
+						drapeGroundGeometry(mark.geometry, terrain, strike, 0, radius);
+					}
+					value.surface.opacity = (emplacement ? .19 : .12) + (1 - remaining) * .18;
+					updateArtilleryShell(value, strike, remaining);
+				});
+			}
 			sync(feedback, shadows, state.enemies.length + state.squadmates.length + 1, function () { const value = new Group(); value.name = 'mech-shadow'; disc(value, shadow, 35); return { root: value }; }, function (value, index) {
 				const enemy = state.enemies[index - 1];
 				const mate = state.squadmates[index - state.enemies.length - 1];
@@ -311,7 +382,8 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 			dropships.dispose();
 			lasers.dispose();
 			weaponVfx.dispose();
-			for (const strike of strikes) strike.dispose();
+			for (const pool of strikePools) for (const strike of pool.views) strike.dispose();
+			wreckAssets?.dispose();
 			for (const batch of relayBatches) batch.dispose();
 			missionEnvironment?.dispose();
 			resetTerrainBake();

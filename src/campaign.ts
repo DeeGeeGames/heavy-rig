@@ -2,7 +2,7 @@ import { companyRank, getMissionTier, isMissionTier, MAX_COMPANY_REPUTATION, MIS
 import { ACQUISITION_SECONDS } from './missions';
 import type { Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
 import { createOpeningProgress, getAuthoredStep, getChainStatus, isAuthoredContract, parseChainProgress, type ChainProgress } from './contract-chains';
-import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, PLANETS, type UniverseState } from './universe';
+import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, mixSeed, PLANETS, type UniverseState } from './universe';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
 
 import { advanceDays, beginDeployment, createCompany, deploymentIssue, isAssignment, isDeployedSquad, isSortieSquad, MAX_DAY, parseCompany, type CompanyState, type DeployedPilot } from './company';
@@ -122,11 +122,6 @@ export const reputationLabel = function (score: number): string {
 	return score >= 50 ? 'ALLIED' : score >= 20 ? 'TRUSTED' : score >= 5 ? 'FAVORED' : score > -15 ? 'NEUTRAL' : score > -40 ? 'DISTRUSTED' : 'HOSTILE';
 };
 
-const mixSeed = function (seed: number, value: number) {
-	const mixed = Math.imul(seed ^ value, 0x45d9f3b);
-	return (mixed ^ (mixed >>> 16)) >>> 0;
-};
-
 export const CONTRACT_COPY: Readonly<Record<MissionKind, Readonly<{ title: string; briefing: string; reward: number }>>> = {
 	defend: { title: 'Hold the signal', briefing: 'Defend the contracted uplink through the hostile assault. Keep its integrity above zero, then rendezvous with your dropship.', reward: 1200 },
 	demolition: { title: 'Break the supply line', briefing: 'Locate and destroy the marked processing facility. Its garrison is expendable; the facility is the objective. Reach extraction after demolition.', reward: 1400 },
@@ -134,7 +129,7 @@ export const CONTRACT_COPY: Readonly<Record<MissionKind, Readonly<{ title: strin
 	raid: { title: 'Sever the supply network', briefing: 'Destroy three marked supply installations in any order. Their defenders are optional. Return to extraction after all three are destroyed.', reward: 1700 },
 	recovery: { title: 'Recover the black box', briefing: 'Reach the marked cache and stay inside its zone for five uninterrupted seconds to recover the data. Fighting the guards is optional. Extract with the recovered data.', reward: 1500 },
 	acquisition: { title: 'Mark the strike corridor', briefing: `Activate three targeting beacons within ${ACQUISITION_SECONDS / 60} minutes. Stay in each zone for three uninterrupted seconds; activated beacons remain active. Then return to extraction. Fighting defenders is optional.`, reward: 1900 },
-	clearance: { title: 'Sweep the basin', briefing: 'Eliminate every hostile patrol across the marked sector. Once the region is clear, return to the extraction zone.', reward: 1600 },
+	clearance: { title: 'Sweep the basin', briefing: 'Clear all three occupied sites of patrols and any fixed guns, then return to the extraction zone.', reward: 1600 },
 };
 
 // A board is a pure function of its campaign seed and revision. Acceptance keeps
