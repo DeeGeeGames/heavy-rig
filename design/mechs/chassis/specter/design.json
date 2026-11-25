@@ -1,0 +1,74 @@
+{
+  "chassisId": "specter",
+  "activeBaseline": "specter-a-survey-mast",
+  "baselines": [
+    {
+      "id": "specter-a-survey-mast",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/specter/concept/a/image.png",
+      "imageSha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4",
+      "request": "design/mechs/chassis/specter/concept/a/request.json",
+      "requestSha256": "002c22ab5cdecccf732021dbaf2e335c8a3a567880f3991ae92f2af59c27c0e1",
+      "prompt": "design/mechs/chassis/specter/concept/a/prompt.txt",
+      "promptSha256": "d14f742c4cd774c106bd2a1e71905c1490b779d1866da569decf01c106af05da",
+      "contractSignature": "efcb31a0f4208fcb71f78505670c9bdd60dce1d4d2ed960b4ea5fec6563d2d24",
+      "generation": "Built-in image generation, with the four actual PNGs in attachments.json and transparent background.",
+      "familyReview": "design/mechs/chassis/specter/concept/a/family-review.json",
+      "approval": "Owner-delegated creative decision by the design agent on 2026-11-24 for the new playable family. Selected the Pathfinder concept and representative two-mount layout for ticket #82."
+    }
+  ],
+  "variants": [
+    {
+      "variantId": "specter-b",
+      "revision": "specter-b-fitted",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/specter/concept/b/image.png",
+      "imageSha256": "fa58ed92b35ee7b43854ff94d4e3a8932d70395a1ac3966256308aa49e585a85",
+      "baselineId": "specter-a-survey-mast",
+      "baselineImageSha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4",
+      "request": "design/mechs/chassis/specter/concept/b/request.json",
+      "requestSha256": "2c71295a765a8dcf93a8b64423e0058658ff6ea5f4aef1740840234af6e1af0e",
+      "prompt": "design/mechs/chassis/specter/concept/b/prompt.txt",
+      "contractSignature": "efcb31a0f4208fcb71f78505670c9bdd60dce1d4d2ed960b4ea5fec6563d2d24",
+      "approval": "Design agent selected this exact rendered Disruptor stock fit under the owner’s delegated creative authority on 2026-11-24.",
+      "method": "Stock cartridge assembly rendered from the shared A body. The composed prompt records the variant brief."
+    },
+    {
+      "variantId": "specter-c",
+      "revision": "specter-c-fitted",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/specter/concept/c/image.png",
+      "imageSha256": "1c5a3f66ece4c997984fc519970e62c7d4ef3cfe26f0c8f33058c74228522e34",
+      "baselineId": "specter-a-survey-mast",
+      "baselineImageSha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4",
+      "request": "design/mechs/chassis/specter/concept/c/request.json",
+      "requestSha256": "09588c5ad128147097fea83e7857a65321664e8140bf0f39fb5e7c9f9bb20d1c",
+      "prompt": "design/mechs/chassis/specter/concept/c/prompt.txt",
+      "contractSignature": "efcb31a0f4208fcb71f78505670c9bdd60dce1d4d2ed960b4ea5fec6563d2d24",
+      "approval": "Design agent selected this exact rendered Designator stock fit under the owner’s delegated creative authority on 2026-11-24.",
+      "method": "Stock cartridge assembly rendered from the shared A body. The composed prompt records the variant brief."
+    }
+  ],
+  "activeGameDerivative": "design/mechs/chassis/specter/assembly.json",
+  "turnarounds": [
+    {
+      "id": "specter-fitted-turnaround",
+      "variantId": "specter",
+      "manifest": "design/mechs/chassis/specter/turnaround/a/manifest.json"
+    },
+    {
+      "id": "specter-b-fitted-turnaround",
+      "variantId": "specter-b",
+      "manifest": "design/mechs/chassis/specter/turnaround/b/manifest.json"
+    },
+    {
+      "id": "specter-c-fitted-turnaround",
+      "variantId": "specter-c",
+      "manifest": "design/mechs/chassis/specter/turnaround/c/manifest.json"
+    }
+  ],
+  "activeTurnaround": "specter-fitted-turnaround"
+}

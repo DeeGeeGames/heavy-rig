@@ -1,0 +1,34 @@
+{
+  "chassisId": "specter",
+  "variantId": "specter-b",
+  "contractSignature": "efcb31a0f4208fcb71f78505670c9bdd60dce1d4d2ed960b4ea5fec6563d2d24",
+  "mounts": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "maxSize": "small",
+      "weapons": [
+        "machine-gun"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "maxSize": "small",
+      "weapons": [
+        "machine-gun"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "specter-a-survey-mast",
+    "image": "design/mechs/chassis/specter/concept/a/image.png",
+    "imageSha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4",
+    "variantId": "specter"
+  },
+  "reviewStatus": "selected-by-delegated-art-direction",
+  "ownerApproval": null,
+  "mountReview": "Two grouped machine guns remain below the two solid, canted interference panels. The own-right gun reuses the A cartridge."
+}

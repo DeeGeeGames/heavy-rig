@@ -1,3 +1,4 @@
+import { CHASSIS_IDS } from '../src/frames';
 import { join } from 'node:path';
 import type { AuthoredChassis } from '../src/authored-mech';
 
@@ -23,7 +24,7 @@ export const buildStandaloneStudy = async function (name: 'warden' | 'models') {
 	const script = result.outputs[0];
 	if (!result.success || result.outputs.length !== 1 || !script) throw new AggregateError(result.logs, `Could not bundle the ${name} motion study`);
 
-	const assets = name === 'warden' ? await embedPlayableMechs(['warden'], false) : await embedPlayableMechs(['warden', 'kestrel', 'maul'], true);
+	const assets = name === 'warden' ? await embedPlayableMechs(['warden'], false) : await embedPlayableMechs(CHASSIS_IDS, true);
 	const template = await Bun.file(join(root, `${name}-preview.html`)).text();
 	const tag = `<script type="module" src="./${source}"></script>`;
 	if (!template.includes(tag)) throw new Error(`Missing motion study entry for ${name}`);

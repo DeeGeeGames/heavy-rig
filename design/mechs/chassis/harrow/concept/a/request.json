@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "harrow",
+  "background": "Transparent",
+  "details": "BOMBARD. Treat the one centerline dorsal hardpoint as a large thick raised mortar for lobbed shots. Mount it on a very legible twin-cheek recoil carriage perched over the rear, pitched up enough to see its thick ring and single dark open mouth in a front three-quarter. Only one secondary, compact own-right machine gun below the deck. Give the own-left a low offset mustard cab with a teal windshield. Build a low cross-bridge on stout splayed, reverse-jointed walking legs, broad ground spades and a pair of graphite recoil links. Mustard/clay yellow structural castings and pale barrel bands. A clean angular field machine with broad paint planes.",
+  "loadout": [
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    }
+  ]
+}

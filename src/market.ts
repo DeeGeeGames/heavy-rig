@@ -1,9 +1,8 @@
 import { getWeapon, WEAPON_TIERS, weaponIdForTier, type WeaponId } from './arsenal';
 import type { Campaign } from './campaign';
-import { defaultReserves } from './combat-resources';
 import { WEAPON_PRICES } from './equipment-prices';
 import { getFrame, type FrameId } from './frames';
-import { createStarterLoadout, getHardpoints } from './hardpoints';
+import { createStarterLoadout, getHardpoints, stockReserve } from './hardpoints';
 import { unlockedMissionTier } from './reputation';
 
 export interface FrameOffer {
@@ -12,9 +11,9 @@ export interface FrameOffer {
 	readonly reserves: readonly number[];
 	readonly price: number;
 }
-const loadedMass = function (id: WeaponId): number {
+const loadedMass = function (frame: FrameId, slot: number, id: WeaponId): number {
 	const weapon = getWeapon(id);
-	return weapon.mass + (weapon.ammunition ? weapon.ammunition.mass * weapon.ammunition.defaultLoad : 0);
+	return weapon.mass + (weapon.ammunition ? weapon.ammunition.mass * stockReserve(frame, slot, id) : 0);
 };
 // A posting is stable across navigation, purchases, waiting and reload. A jump,
 // settled contract or quality unlock changes the seed; no persisted stock is needed.
@@ -26,15 +25,15 @@ export const getFrameOffer = function (campaign: Campaign, frameId: FrameId): Fr
 	const hardpoints = getHardpoints(frameId);
 	let remainingMass = frame.recommendedMass * 1.1 - frame.mass;
 	const loadout = hardpoints.map(function (hardpoint, slot) {
-		const reservedMass = hardpoints.slice(slot + 1).reduce(function (sum, mount) { return sum + Math.min(...mount.weapons.map(loadedMass)); }, 0);
-		const candidates = hardpoint.weapons.filter(function (id) { return loadedMass(id) + reservedMass <= remainingMass + 0.000001; });
+		const reservedMass = hardpoints.slice(slot + 1).reduce(function (sum, mount, index) { return sum + Math.min(...mount.weapons.map(function (id) { return loadedMass(frameId, slot + index + 1, id); })); }, 0);
+		const candidates = hardpoint.weapons.filter(function (id) { return loadedMass(frameId, slot, id) + reservedMass <= remainingMass + 0.000001; });
 		const model = candidates[Math.floor(random() * candidates.length)];
 		if (!model) throw new RangeError(`No complete market loadout fits ${frameId}/${hardpoint.id}`);
-		remainingMass -= loadedMass(model);
+		remainingMass -= loadedMass(frameId, slot, model);
 		const tier = ceiling > 0 && random() < .3 ? WEAPON_TIERS.find(function (entry) { return entry.tier === ceiling - 1; })?.tier ?? 0 : ceiling;
 		return weaponIdForTier(model, tier);
 	});
 	const equipmentPrice = loadout.reduce(function (sum, id) { return sum + WEAPON_PRICES[id]; }, 0);
 	const includedPrice = createStarterLoadout(frameId).reduce(function (sum, id) { return sum + WEAPON_PRICES[id]; }, 0);
-	return { frameId, loadout, reserves: defaultReserves(loadout), price: frame.price + Math.max(0, equipmentPrice - includedPrice) };
+	return { frameId, loadout, reserves: loadout.map(function (weapon, slot) { return stockReserve(frameId, slot, weapon); }), price: frame.price + Math.max(0, equipmentPrice - includedPrice) };
 };

@@ -1,0 +1,42 @@
+{
+  "chassisId": "longbow",
+  "variantId": "longbow-c",
+  "contractSignature": "7b68c40684b9dffd1ee3fea1c818b9cb7ac2e11a6a9cb5219a53a8220a4c3463",
+  "mounts": [
+    {
+      "id": "left-accelerator",
+      "name": "Left accelerator arm",
+      "family": "energy",
+      "maxSize": "medium",
+      "weapons": [
+        "laser",
+        "ppc"
+      ]
+    },
+    {
+      "id": "right-compact offhand",
+      "name": "Right compact offhand",
+      "family": "launcher",
+      "maxSize": "small",
+      "weapons": [
+        "stream-missiles",
+        "cluster-missiles",
+        "stream-rockets",
+        "cluster-rockets"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "longbow-a-spire",
+    "image": "design/mechs/chassis/longbow/concept/a/image.png",
+    "imageSha256": "5791c6c05f878faffd00d5c4d51691637ef7fd46b5d8713a7c47f04017168b72",
+    "variantId": "longbow"
+  },
+  "reviewStatus": "selected-under-delegated-creative-authority",
+  "ownerApproval": null,
+  "method": "Render from the exact shared chassis and the fitted cartridge geometry.",
+  "sourceRecipe": "scripts/mech-design/pixel_mechs/longbow.py",
+  "assembledViewManifest": "design/mechs/chassis/longbow/assembled-turnaround/selection.json",
+  "imageSha256": "53e3f3f7d97bef6b1bd369c7dd2dad0fa490eba94c6e825d69b5413472ba78e0",
+  "mountReview": "Reuse the Marksman accelerator cartridge and the Rifleman auxiliary brace. Two real round launch tubes sit under a common ivory brow at own-right. The same hand and mounting pins remain behind the adapter."
+}

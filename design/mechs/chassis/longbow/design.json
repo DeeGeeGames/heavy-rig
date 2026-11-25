@@ -1,0 +1,63 @@
+{
+  "chassisId": "longbow",
+  "activeBaseline": "longbow-a-spire",
+  "baselines": [
+    {
+      "id": "longbow-a-spire",
+      "status": "approved",
+      "image": "design/mechs/chassis/longbow/concept/a/image.png",
+      "imageSha256": "5791c6c05f878faffd00d5c4d51691637ef7fd46b5d8713a7c47f04017168b72",
+      "request": "design/mechs/chassis/longbow/concept/a/request.json",
+      "requestSha256": "e8d007f411b754d579e47f5bd7662275324fab33c6faac3dd43087e79de3c9b0",
+      "prompt": "design/mechs/chassis/longbow/concept/a/imagegen-prompt.txt",
+      "contractSignature": "7b68c40684b9dffd1ee3fea1c818b9cb7ac2e11a6a9cb5219a53a8220a4c3463",
+      "familyReview": "design/mechs/chassis/longbow/concept/a/family-review.json",
+      "decisionAuthority": "Owner-delegated design selection",
+      "ownerApproval": null,
+      "approval": "On 2026-11-24 the assigned design agent selected this exact image under the owner’s delegated creative authority. The upright Spire silhouette from the November 22 exploration was selected for its single rear cooling cabinet, high pilot cell, narrow plum legs and long, low left arm. The selected edit adds a visible violet ceramic window to the particle accelerator."
+    }
+  ],
+  "variants": [
+    {
+      "variantId": "longbow-b",
+      "variant": "B",
+      "variantName": "Rifleman",
+      "revision": "assembled-2026-11-24",
+      "status": "approved",
+      "approval": "The assigned design agent selected the exact stock assembly image on 2026-11-24 under delegated creative authority.",
+      "decisionAuthority": "Owner-delegated design selection",
+      "ownerApproval": null,
+      "image": "design/mechs/chassis/longbow/concept/b/image.png",
+      "imageSha256": "6d6dc29fc11c495d95916031032eb1a35c975b28ff6eaca9b6397d1657212704",
+      "parentBaselineId": "longbow-a-spire",
+      "parentImageSha256": "5791c6c05f878faffd00d5c4d51691637ef7fd46b5d8713a7c47f04017168b72",
+      "request": "design/mechs/chassis/longbow/concept/b/request.json",
+      "requestSha256": "13404a62576597117ff085e17ee393be980cdf18a9d23b6b576d3b78311a4cf2",
+      "prompt": "design/mechs/chassis/longbow/concept/b/equipment-brief.txt",
+      "promptRole": "The composer checked the equipment brief. The image was rendered directly from the fitted GLBs.",
+      "contract": "design/mechs/chassis/longbow/concept/b/contract.json",
+      "contractSignature": "7b68c40684b9dffd1ee3fea1c818b9cb7ac2e11a6a9cb5219a53a8220a4c3463"
+    },
+    {
+      "variantId": "longbow-c",
+      "variant": "C",
+      "variantName": "Overwatch",
+      "revision": "assembled-2026-11-24",
+      "status": "approved",
+      "approval": "The assigned design agent selected the exact stock assembly image on 2026-11-24 under delegated creative authority.",
+      "decisionAuthority": "Owner-delegated design selection",
+      "ownerApproval": null,
+      "image": "design/mechs/chassis/longbow/concept/c/image.png",
+      "imageSha256": "53e3f3f7d97bef6b1bd369c7dd2dad0fa490eba94c6e825d69b5413472ba78e0",
+      "parentBaselineId": "longbow-a-spire",
+      "parentImageSha256": "5791c6c05f878faffd00d5c4d51691637ef7fd46b5d8713a7c47f04017168b72",
+      "request": "design/mechs/chassis/longbow/concept/c/request.json",
+      "requestSha256": "09b25842508ee74700d4d52c677d8636d21e44122327507a7cda4002dac36618",
+      "prompt": "design/mechs/chassis/longbow/concept/c/equipment-brief.txt",
+      "promptRole": "The composer checked the equipment brief. The image was rendered directly from the fitted GLBs.",
+      "contract": "design/mechs/chassis/longbow/concept/c/contract.json",
+      "contractSignature": "7b68c40684b9dffd1ee3fea1c818b9cb7ac2e11a6a9cb5219a53a8220a4c3463"
+    }
+  ],
+  "assembledTurnaround": "design/mechs/chassis/longbow/assembled-turnaround/selection.json"
+}

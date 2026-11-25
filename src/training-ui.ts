@@ -4,7 +4,7 @@ import { getWeapon, WEAPONS, WEAPON_SIZE_LABELS, type WeaponId } from './arsenal
 import type { ChoicePicker } from './choice-picker';
 import { defaultReserves } from './combat-resources';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
-import { canEquipWeapon, createStarterLoadout, getHardpoints } from './hardpoints';
+import { canEquipWeapon, stockPackage, getHardpoints } from './hardpoints';
 import { loadSummary, weaponClassLabel } from './loadout-ui';
 import type { TrainingSetup } from './training';
 
@@ -14,8 +14,7 @@ export const mountTrainingSetup = function (root: HTMLElement, picker: ChoicePic
 	const current = function (): TrainingSetup {
 		const draft = drafts.get(frame);
 		if (draft) return draft;
-		const loadout = createStarterLoadout(frame);
-		return { frame, loadout, reserves: defaultReserves(loadout) };
+		return { frame, ...stockPackage(frame) };
 	};
 	const refresh = function () {
 		const setup = current();
@@ -37,7 +36,7 @@ export const mountTrainingSetup = function (root: HTMLElement, picker: ChoicePic
 						drafts.set(frame, { frame, loadout, reserves }); refresh();
 					})}
 					${ammunition ? picker.field(`training-ammo-${slot}`, 'Rounds', setup.reserves[slot] ?? 0,
-						[0, ammunition.defaultLoad, ammunition.capacity].map(function (amount) { return { value: amount, label: String(amount) }; }),
+						[...new Set([0, setup.reserves[slot] ?? 0, ammunition.defaultLoad, ammunition.capacity])].sort(function (a, b) { return a - b; }).map(function (amount) { return { value: amount, label: String(amount) }; }),
 						function (amount) {
 							const reserves = setup.reserves.map(function (value, index) { return index === slot ? amount : value; });
 							drafts.set(frame, { ...setup, reserves }); refresh();

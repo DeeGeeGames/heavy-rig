@@ -1,0 +1,37 @@
+{
+  "chassisId": "specter",
+  "variantId": "specter-c",
+  "contractSignature": "efcb31a0f4208fcb71f78505670c9bdd60dce1d4d2ed960b4ea5fec6563d2d24",
+  "mounts": [
+    {
+      "id": "left-precision emitter",
+      "name": "Left precision emitter",
+      "family": "energy",
+      "maxSize": "small",
+      "weapons": [
+        "laser"
+      ]
+    },
+    {
+      "id": "right-compact pod",
+      "name": "Right compact pod",
+      "family": "launcher",
+      "maxSize": "small",
+      "weapons": [
+        "stream-missiles",
+        "cluster-missiles",
+        "stream-rockets",
+        "cluster-rockets"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "specter-a-survey-mast",
+    "image": "design/mechs/chassis/specter/concept/a/image.png",
+    "imageSha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4",
+    "variantId": "specter"
+  },
+  "reviewStatus": "selected-by-delegated-art-direction",
+  "ownerApproval": null,
+  "mountReview": "The longer own-left emitter has a small bright optical core. Two physical wells on the own-right guided pod sit below the hooded designator mask."
+}

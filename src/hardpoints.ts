@@ -55,6 +55,19 @@ const FRAME_HARDPOINTS: Readonly<Record<FrameId, readonly Hardpoint[]>> = {
 	rook: [gun('left'), gun('right'), DORSAL_LAUNCHER],
 	'rook-b': [energy('left', 'arm bank'), energy('right', 'arm bank'), DORSAL_LAUNCHER],
 	'rook-c': [gun('left'), energy('right', 'arm bank'), DORSAL_LAUNCHER],
+	'rook-lancer': [energy('left', 'accelerator'), gun('right', 'small'), DORSAL_LAUNCHER],
+	'rook-escort': [gun('left', 'small'), energy('right', 'escort emitter', 'small'), DORSAL_LAUNCHER],
+	'morrow-saturation': [fixedHardpoint('left-rack', 'Left saturation rack', 'cluster-rockets-6'), fixedHardpoint('right-rack', 'Right saturation rack', 'cluster-rockets-6')],
+	'morrow-pursuer': [fixedHardpoint('left-rack', 'Left pursuit rack', 'stream-missiles'), fixedHardpoint('right-rack', 'Right pursuit rack', 'stream-missiles')],
+	bastion: [gun('left'), gun('right')],
+	'bastion-b': [energy('left', 'casemate', 'small'), launcher('right', 'casemate', 'medium')],
+	'bastion-c': [gun('left'), launcher('right', 'casemate', 'small')],
+	harrow: [fixedHardpoint('dorsal-artillery', 'Bombard mortar', 'autocannon'), gun('right', 'small')],
+	'harrow-b': [fixedHardpoint('dorsal-artillery', 'Barrage mortar', 'autocannon'), gun('right', 'small')],
+	'harrow-c': [fixedHardpoint('dorsal-artillery', 'Siege mortar', 'autocannon'), gun('right', 'small')],
+	specter: [energy('left', 'survey emitter', 'small'), gun('right', 'small')],
+	'specter-b': [gun('left', 'small'), gun('right', 'small')],
+	'specter-c': [energy('left', 'precision emitter', 'small'), launcher('right', 'compact pod', 'small')],
 };
 const SCOUT_HARDPOINTS: readonly Hardpoint[] = [gun('left', 'small'), gun('right', 'small')];
 const SIEGE_HARDPOINTS: readonly Hardpoint[] = [...LINE_HARDPOINTS, fixedHardpoint('dorsal-artillery', 'Dorsal artillery', 'autocannon')];
@@ -88,18 +101,46 @@ const STOCK_LOADOUTS: Readonly<Record<FrameId, readonly WeaponModelId[]>> = {
 	'warden-c': ['autocannon', 'machine-gun', 'laser', 'stream-missiles'],
 	kestrel: ['machine-gun', 'machine-gun'],
 	'kestrel-b': ['machine-gun', 'laser'],
-	'kestrel-c': ['machine-gun', 'stream-rockets'],
+	'kestrel-c': ['machine-gun', 'stream-missiles'],
 	maul: ['cluster-rockets-4', 'cluster-rockets-4', 'machine-gun', 'machine-gun'],
 	'maul-b': ['autocannon', 'autocannon', 'laser', 'laser'],
 	'maul-c': ['autocannon', 'ppc', 'laser', 'stream-rockets'],
 	longbow: ['ppc'],
-	'longbow-b': ['machine-gun', 'laser'],
-	'longbow-c': ['laser', 'stream-missiles'],
-	morrow: ['cluster-missiles', 'cluster-missiles'],
+	'longbow-b': ['autocannon', 'laser'],
+	'longbow-c': ['ppc', 'stream-missiles'],
+	morrow: ['cluster-missiles-4', 'cluster-missiles-4'],
 	'morrow-b': ['laser', 'ppc'],
 	'morrow-c': ['ppc', 'cluster-missiles'],
 	rook: ['autocannon', 'machine-gun', 'stream-rockets'],
 	'rook-b': ['laser', 'laser', 'stream-missiles'],
 	'rook-c': ['machine-gun', 'laser', 'stream-rockets'],
+	'rook-lancer': ['ppc', 'machine-gun', 'stream-missiles'],
+	'rook-escort': ['machine-gun', 'laser', 'stream-missiles'],
+	'morrow-saturation': ['cluster-rockets-6', 'cluster-rockets-6'],
+	'morrow-pursuer': ['stream-missiles', 'stream-missiles'],
+	bastion: ['autocannon', 'autocannon'],
+	'bastion-b': ['laser', 'cluster-rockets-4'],
+	'bastion-c': ['autocannon', 'stream-missiles'],
+	harrow: ['autocannon', 'machine-gun'],
+	'harrow-b': ['autocannon', 'machine-gun'],
+	'harrow-c': ['autocannon', 'machine-gun'],
+	specter: ['laser', 'machine-gun'],
+	'specter-b': ['machine-gun', 'machine-gun'],
+	'specter-c': ['laser', 'stream-missiles'],
 };
 export const createStarterLoadout = function (frame: FrameId): WeaponId[] { return [...STOCK_LOADOUTS[frame]]; };
+
+// The compact guided bins on Harrier and Overwatch ship part-loaded. These
+// are new issue quantities; the refit ceiling and existing saves are unchanged.
+export const stockReserve = function (frame: FrameId, slot: number, id: WeaponId): number {
+	const weapon = getWeapon(id);
+	if (slot === 1 && weapon.kind === 'missile') {
+		if (frame === 'kestrel-c') return 220;
+		if (frame === 'longbow-c') return 240;
+	}
+	return weapon.ammunition?.defaultLoad ?? 0;
+};
+export const stockPackage = function (frame: FrameId) {
+	const loadout = createStarterLoadout(frame);
+	return { loadout, reserves: loadout.map(function (weapon, slot) { return stockReserve(frame, slot, weapon); }) };
+};

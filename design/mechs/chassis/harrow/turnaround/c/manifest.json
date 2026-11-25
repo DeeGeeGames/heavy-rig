@@ -1,0 +1,33 @@
+{
+  "id": "harrow-c-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "harrow",
+  "variantId": "harrow-c",
+  "baselineId": "harrow-a-walking-carriage",
+  "baselineImageSha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885",
+  "source": "design/mechs/chassis/harrow/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/harrow/concept/c/image.png",
+    "sha256": "1245bf19b3aeedaebd312bab9e60718f16efe78fbf012f25e9006236a91fb565"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/harrow/turnaround/c/front.png",
+      "sha256": "977cde020222b49e282cc5a61b7b6d13b727dcdcca20e9598cb9fd2bae4b788b"
+    },
+    "back": {
+      "path": "design/mechs/chassis/harrow/turnaround/c/back.png",
+      "sha256": "1d89d0d471bacded7a9757ccb6be49ff32491107e2acc7bcb6ebab1df63da9aa"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/harrow/turnaround/c/own-left.png",
+      "sha256": "2f3608fb70d8d6698ad8eca1b5c7421fc2af0f08d0556d2c6fdfad2d55498b0f"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/harrow/turnaround/c/own-right.png",
+      "sha256": "735e6ab16d8355b4b02c1d6a802e8c279b3dd78986ae203ddb714416c13af7ab"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "The stepped long barrel and pale siege jacket replace the flared cup above the same recoil cheeks. The own-right machine gun reuses the A cartridge. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}

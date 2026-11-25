@@ -1,0 +1,23 @@
+{
+  "chassisId": "longbow",
+  "variantId": "longbow",
+  "contractSignature": "7b68c40684b9dffd1ee3fea1c818b9cb7ac2e11a6a9cb5219a53a8220a4c3463",
+  "mounts": [
+    {
+      "id": "left-accelerator",
+      "name": "Left accelerator arm",
+      "family": "energy",
+      "maxSize": "medium",
+      "weapons": [
+        "laser",
+        "ppc"
+      ]
+    }
+  ],
+  "baseline": null,
+  "reviewStatus": "delegated-selection",
+  "ownerApproval": null,
+  "generationContractSignature": "7b68c40684b9dffd1ee3fea1c818b9cb7ac2e11a6a9cb5219a53a8220a4c3463",
+  "contractRevalidation": "Verified the same A mount IDs, families, size limits, ordered compatible weapons and representative fit against the current family snapshot.",
+  "selection": "The upright Spire silhouette from the November 22 exploration was selected for its single rear cooling cabinet, high pilot cell, narrow plum legs and long, low left arm. The selected edit adds a visible violet ceramic window to the particle accelerator."
+}

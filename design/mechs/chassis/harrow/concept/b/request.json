@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "harrow-b",
+  "background": "Transparent",
+  "details": "A three-aperture fan replaces the mortar cup on the same elevated carriage. The same compact machine gun occupies the own-right flank. Reuse the shared body and its two original slot pivots.",
+  "loadout": [
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    }
+  ],
+  "baselineId": "harrow-a-walking-carriage"
+}

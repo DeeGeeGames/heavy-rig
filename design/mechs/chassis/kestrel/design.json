@@ -14,7 +14,26 @@
       "approval": "2026-11-13: owner said \"This is good. Stage this.\" for option 2 with enlarged guns (baseline-v4)."
     }
   ],
-  "variants": [],
+  "variants": [
+    {
+      "variantId": "kestrel-b",
+      "variantName": "Spark",
+      "baselineId": "kestrel-a-baseline-v4",
+      "status": "selected-by-delegated-art-direction",
+      "image": "design/mechs/chassis/kestrel/concept/b/kestrel-b.png",
+      "imageSha256": "e2cfb9d4c7aaa44ba04aae1152ded7c80cc35f42039be68b2c0da628103bf88b",
+      "review": "design/mechs/chassis/kestrel/assembled-concept-review.json"
+    },
+    {
+      "variantId": "kestrel-c",
+      "variantName": "Harrier",
+      "baselineId": "kestrel-a-baseline-v4",
+      "status": "selected-by-delegated-art-direction",
+      "image": "design/mechs/chassis/kestrel/concept/c/kestrel-c.png",
+      "imageSha256": "94242f2fc2891873d02ac0081a4427e904d3fd1e2185325d8bdd8a8c5be88125",
+      "review": "design/mechs/chassis/kestrel/assembled-concept-review.json"
+    }
+  ],
   "activeTurnaround": "kestrel-a-turnaround",
   "turnarounds": [
     {
@@ -26,5 +45,6 @@
   ],
   "generatedSource": "design/mechs/assets/kestrel/generated-source/approval.json",
   "articulationBase": "design/mechs/assets/kestrel/articulation-base/approval.json",
-  "activeGameDerivative": "design/mechs/assets/kestrel/pixel/manifest.json"
+  "activeGameDerivative": "design/mechs/assets/kestrel/pixel/manifest.json",
+  "assembledConceptReview": "design/mechs/chassis/kestrel/assembled-concept-review.json"
 }

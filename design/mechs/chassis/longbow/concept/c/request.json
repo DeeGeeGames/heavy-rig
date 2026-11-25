@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "longbow-c",
+  "background": "Transparent",
+  "details": "Reuse the exact Marksman particle accelerator on own-left. Add the same fixed right brace as Rifleman and fit a compact two-cell guided cassette. Preserve the complete Spire chassis.",
+  "loadout": [
+    {
+      "weaponId": "ppc",
+      "rounds": 0
+    },
+    {
+      "weaponId": "stream-missiles",
+      "rounds": 240
+    }
+  ],
+  "baselineId": "longbow-a-spire"
+}

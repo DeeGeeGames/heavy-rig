@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "status": "selected-under-delegated-creative-authority",
+  "referenceSetId": "heavy-rig-concept-family-v4",
+  "references": [
+    {
+      "chassisId": "warden",
+      "baselineId": "warden-v1-candidate-01",
+      "image": "design/mechs/chassis/warden/concept/a/image.png",
+      "imageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3"
+    },
+    {
+      "chassisId": "kestrel",
+      "baselineId": "kestrel-a-baseline-v4",
+      "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+      "imageSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+    },
+    {
+      "chassisId": "maul",
+      "baselineId": "maul-four-mount-baseline",
+      "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+      "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0"
+    }
+  ],
+  "finishReference": {
+    "image": "design/mechs/assets/playable-a-lineup.png",
+    "imageSha256": "d1594b6a860989d5757897caa311ef81837bc5a0b9162c589818985d0a42c1b6"
+  },
+  "styleSha256": "82413290a6c3bc82312411bb8c5e32994fc910fd562781528e28e078163577e7",
+  "candidateImage": "design/mechs/chassis/longbow/concept/a/image.png",
+  "candidateImageSha256": "5791c6c05f878faffd00d5c4d51691637ef7fd46b5d8713a7c47f04017168b72",
+  "criteria": [
+    {
+      "criterion": "Color and value: check for coherent blocks of chassis paint, dark mechanisms and a small visor accent against the playable lineup.",
+      "result": "pass",
+      "evidence": "Plum fields carry the cabinet, upper arms, thighs and greaves. Bone panels lead from the amber pilot glass down the narrow breast and along the left weapon. The dark waist and working knee rams separate those fields."
+    },
+    {
+      "criterion": "Armor construction: broad facets and selective bevels describe the main volumes in the Mech Bay view.",
+      "result": "pass",
+      "evidence": "The tall cooler has a squared crown, clipped corners and recessed ventilation. The particle cradle uses a broad flat side plane, a substantial collar and a protected lens."
+    },
+    {
+      "criterion": "Detail scale: compare at Practice range size. The cockpit, stance and fitted weapon housings remain legible without fine texture.",
+      "result": "pass",
+      "evidence": "At matched range size the high pilot cell, rear cabinet and long own-left arm remain visible above the slender forward-kneed frame. The own-right hand is secondary to the rifle."
+    },
+    {
+      "criterion": "Joints and interfaces: reinforced load-bearing pivots, protected waist connections and functional weapon attachments share the same industrial construction language.",
+      "result": "pass",
+      "evidence": "A visible bent yoke connects the left shoulder and low elbow pin. The cabinet is seated behind the ribbed waist, and the legs carry continuous hip, knee and ankle joints."
+    },
+    {
+      "criterion": "Distinct chassis identity: preserve the requested role, silhouette, cockpit, leg anatomy, proportions and legal mounts; do not copy another reference chassis or blend their equipment.",
+      "result": "pass",
+      "evidence": "The vertical Spire cabinet and asymmetric low rifle distinguish Longbow from Warden’s paired shoulder pods, Kestrel’s horizontal nose and Maul’s broad paired gauntlets. Marksman has exactly one fitted accelerator."
+    }
+  ],
+  "ownerApproval": null,
+  "gate": "Selected by the assigned design agent on 2026-11-24. Individual owner review of this raster and integrated acceptance remain separate.",
+  "comparison": {
+    "path": "design/mechs/chassis/longbow/assembled-turnaround/family-review.png",
+    "sha256": "49a1ee99523eb5028159f16a750245e454ca5c1bc014a126a164960423a53a2f"
+  },
+  "decisionAuthority": "Assigned design agent acting under the owner’s delegated creative authority",
+  "visibleMountReview": "Select the plum Spire with the tall cream-cheeked cockpit and rear cooler. The armored accelerator extends from the left pinned elbow and ends in one recessed violet ceramic window. The opposite forearm ends in a blunt closed service clamp."
+}

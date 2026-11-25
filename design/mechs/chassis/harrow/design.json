@@ -1,0 +1,74 @@
+{
+  "chassisId": "harrow",
+  "activeBaseline": "harrow-a-walking-carriage",
+  "baselines": [
+    {
+      "id": "harrow-a-walking-carriage",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/harrow/concept/a/image.png",
+      "imageSha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885",
+      "request": "design/mechs/chassis/harrow/concept/a/request.json",
+      "requestSha256": "c9bcef056444189db9cb71392edf459bfa14d1d3f006b6a012a175dd19194451",
+      "prompt": "design/mechs/chassis/harrow/concept/a/prompt.txt",
+      "promptSha256": "f7b2bc77d6d9f11719707ddad1ee6ce0dfdbcc6e836ee5fe2f438b2fb8f7af64",
+      "contractSignature": "bd7f9cead0bb3a4a1b493e8b13c9e223cf5b8fbeed211518170ceab89c3e0c36",
+      "generation": "Built-in image generation, with the four actual PNGs in attachments.json and transparent background.",
+      "familyReview": "design/mechs/chassis/harrow/concept/a/family-review.json",
+      "approval": "Owner-delegated creative decision by the design agent on 2026-11-24 for the new playable family. Selected the Bombard concept and representative two-mount layout for ticket #81."
+    }
+  ],
+  "variants": [
+    {
+      "variantId": "harrow-b",
+      "revision": "harrow-b-fitted",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/harrow/concept/b/image.png",
+      "imageSha256": "e9df440c965d062eb30b4038bf8c252e6b75e24cd27abd46c8a20680e263ba46",
+      "baselineId": "harrow-a-walking-carriage",
+      "baselineImageSha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885",
+      "request": "design/mechs/chassis/harrow/concept/b/request.json",
+      "requestSha256": "90c77ff58ea2ffaf50b367dbe0c803c551a67ac8ab291cedd3a7402ef70eaab7",
+      "prompt": "design/mechs/chassis/harrow/concept/b/prompt.txt",
+      "contractSignature": "bd7f9cead0bb3a4a1b493e8b13c9e223cf5b8fbeed211518170ceab89c3e0c36",
+      "approval": "Design agent selected this exact rendered Barrage stock fit under the owner’s delegated creative authority on 2026-11-24.",
+      "method": "Stock cartridge assembly rendered from the shared A body. The composed prompt records the variant brief."
+    },
+    {
+      "variantId": "harrow-c",
+      "revision": "harrow-c-fitted",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/harrow/concept/c/image.png",
+      "imageSha256": "1245bf19b3aeedaebd312bab9e60718f16efe78fbf012f25e9006236a91fb565",
+      "baselineId": "harrow-a-walking-carriage",
+      "baselineImageSha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885",
+      "request": "design/mechs/chassis/harrow/concept/c/request.json",
+      "requestSha256": "2955232e93a304a521fa11f84e047aabb99833262b234529dd5a1884921b4678",
+      "prompt": "design/mechs/chassis/harrow/concept/c/prompt.txt",
+      "contractSignature": "bd7f9cead0bb3a4a1b493e8b13c9e223cf5b8fbeed211518170ceab89c3e0c36",
+      "approval": "Design agent selected this exact rendered Siegebreaker stock fit under the owner’s delegated creative authority on 2026-11-24.",
+      "method": "Stock cartridge assembly rendered from the shared A body. The composed prompt records the variant brief."
+    }
+  ],
+  "activeGameDerivative": "design/mechs/chassis/harrow/assembly.json",
+  "turnarounds": [
+    {
+      "id": "harrow-fitted-turnaround",
+      "variantId": "harrow",
+      "manifest": "design/mechs/chassis/harrow/turnaround/a/manifest.json"
+    },
+    {
+      "id": "harrow-b-fitted-turnaround",
+      "variantId": "harrow-b",
+      "manifest": "design/mechs/chassis/harrow/turnaround/b/manifest.json"
+    },
+    {
+      "id": "harrow-c-fitted-turnaround",
+      "variantId": "harrow-c",
+      "manifest": "design/mechs/chassis/harrow/turnaround/c/manifest.json"
+    }
+  ],
+  "activeTurnaround": "harrow-fitted-turnaround"
+}

@@ -145,11 +145,12 @@ export const createWorldObjects = function (scene: Scene) {
 	const createStrike = function () {
 		const value = new Group(); value.name = 'artillery-warning';
 		const surface = new MeshBasicMaterial({ color: '#ff793b', transparent: true, opacity: 0.2, depthWrite: false });
-		const fill = disc(value, surface, 1); const boundary = disc(value, warningMaterial, 1, true); const countdown = disc(value, warningMaterial, 1, true);
+		const line = new MeshBasicMaterial({ color: '#f3a16c', transparent: true, opacity: .85, depthWrite: false });
+		const fill = disc(value, surface, 1); const boundary = disc(value, line, 1, true); const countdown = disc(value, line, 1, true);
 		fill.position.y = 0.14; boundary.position.y = 0.18; countdown.position.y = 0.2;
-		for (const axis of [0, Math.PI / 2]) { const cross = box(value, warningMaterial, 0, 0.24, 0, 18, 1.5, 0.02); cross.rotation.y = axis; }
-		const shell = new Mesh(sphere, warningMaterial); shell.scale.set(4, 12, 4); value.add(shell);
-		return { root: value, fill, boundary, countdown, shell, surface, dispose: function () { surface.dispose(); } };
+		for (const axis of [0, Math.PI / 2]) { const cross = box(value, line, 0, 0.24, 0, 18, 1.5, 0.02); cross.rotation.y = axis; }
+		const shell = new Mesh(sphere, line); shell.scale.set(4, 12, 4); value.add(shell);
+		return { root: value, fill, boundary, countdown, shell, surface, line, dispose: function () { surface.dispose(); line.dispose(); } };
 	};
 	const warningMaterial = glow('#f3a16c');
 	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); feedback.add(smoke);
@@ -219,6 +220,8 @@ export const createWorldObjects = function (scene: Scene) {
 			sync(feedback, strikes, state.strikes.length, createStrike, function (value, index) {
 				const strike = state.strikes[index]; if (!strike) return;
 				value.root.position.set(strike.x, 0, strike.y);
+				value.surface.color.set(strike.friendly ? '#60dfc7' : '#ff793b');
+				value.line.color.set(strike.friendly ? '#94ebe4' : '#f3a16c');
 				value.fill.scale.setScalar(strike.radius); value.boundary.scale.setScalar(strike.radius);
 				value.countdown.scale.setScalar(strike.radius * Math.max(0.03, strike.life / strike.duration));
 				value.surface.opacity = 0.12 + (1 - strike.life / strike.duration) * 0.18;

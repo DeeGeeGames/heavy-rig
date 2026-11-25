@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "longbow",
+  "background": "Transparent",
+  "details": "Spire construction. Keep the full silhouette of the supplied exploratory concept: tall slim upright plum thorax topped by a narrow raised cockpit, small amber sight glass, bone ceramic central chest, one high slab intercooler behind the shoulders, and long plum forward-jointed legs with paired bone toe caps. Own-left hangs low with one dominant squared particle accelerator in a long underslung cradle with a recessed pale-violet ceramic lens. Own-right is a compact unarmed closed maintenance claw. Show the whole vertical machine, both hands, the asymmetry of the long main arm and separate feet. Clean continuous surfaces and broad paint planes.",
+  "loadout": [
+    {
+      "weaponId": "ppc",
+      "rounds": 0
+    }
+  ]
+}

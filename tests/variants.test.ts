@@ -4,7 +4,7 @@ import { expect, test } from 'bun:test';
 import { acceptContract, abandonContract, createCampaign, getContracts, parseCampaign, type Campaign } from '../src/campaign';
 import { advanceDays, assignRig, beginDeployment, buyFrame, buyWeapon, canRefit, checkpointDeployment, getOwnedMech, isFrameId, queueRefit, queueRepair, selectFrame } from '../src/company';
 import { frameWeight, loadedMounts } from '../src/combat-resources';
-import { PLAYABLE_FRAMES, getFrame } from '../src/frames';
+import { CHASSIS_IDS, PLAYABLE_FRAMES, getFrame } from '../src/frames';
 import { canEquipWeapon, createStarterLoadout, getHardpoints, isFrameLoadout } from '../src/hardpoints';
 import { createMissionState } from '../src/simulation';
 
@@ -14,10 +14,10 @@ const accept = function (campaign: Campaign): Campaign {
 	return acceptContract(campaign, contract.id);
 };
 
-test('the three playable chassis each offer three distinct variants with legal starter equipment', function () {
-	expect(PLAYABLE_FRAMES).toHaveLength(9);
-	expect(new Set(PLAYABLE_FRAMES.map(function (frame) { return frame.id; })).size).toBe(9);
-	for (const chassisId of ['warden', 'kestrel', 'maul'] as const) {
+test('all nine playable chassis each offer three distinct variants with legal starter equipment', function () {
+	expect(PLAYABLE_FRAMES).toHaveLength(27);
+	expect(new Set(PLAYABLE_FRAMES.map(function (frame) { return frame.id; })).size).toBe(27);
+	for (const chassisId of CHASSIS_IDS) {
 		const variants = PLAYABLE_FRAMES.filter(function (frame) { return frame.chassisId === chassisId; });
 		expect(variants.map(function (frame) { return frame.variant; })).toEqual(['A', 'B', 'C']);
 		expect(variants[0]?.id).toBe(chassisId);

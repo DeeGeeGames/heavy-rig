@@ -6,7 +6,7 @@ import { unlockedMissionTier } from './reputation';
 import { WEAPONS, createWeaponRecord, getWeapon, type WeaponId } from './arsenal';
 import { MAX_CREDITS, type Campaign } from './campaign';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
-import { createStarterLoadout, isFrameLoadout } from './hardpoints';
+import { stockPackage, isFrameLoadout } from './hardpoints';
 import { defaultReserves, isReserveLoadout, loadedMounts, usableMount } from './combat-resources';
 import { isPilotId, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
 
@@ -43,8 +43,7 @@ export const isFrameId = function (value: unknown): value is FrameId { return PL
 export const isWeaponId = function (value: unknown): value is WeaponId { return WEAPONS.some(function (weapon) { return weapon.id === value; }); };
 const countWeapon = function (loadout: Loadout, weapon: WeaponId) { return loadout.filter(function (entry) { return entry === weapon; }).length; };
 const createOwnedMech = function (frameId: FrameId): OwnedMech {
-	const loadout = createStarterLoadout(frameId);
-	return { frameId, integrity: 100, loadout, reserves: defaultReserves(loadout) };
+	return { frameId, integrity: 100, ...stockPackage(frameId) };
 };
 const refitReserves = function (mech: OwnedMech, target: Loadout): readonly number[] {
 	return defaultReserves(target).map(function (rounds, slot) { return target[slot] === mech.loadout[slot] ? mech.reserves[slot] ?? rounds : rounds; });

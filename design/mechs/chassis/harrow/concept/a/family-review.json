@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "status": "selected-by-delegated-art-direction",
+  "referenceSetId": "heavy-rig-concept-family-v4",
+  "references": [
+    {
+      "chassisId": "warden",
+      "baselineId": "warden-v1-candidate-01",
+      "image": "design/mechs/chassis/warden/concept/a/image.png",
+      "imageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3"
+    },
+    {
+      "chassisId": "kestrel",
+      "baselineId": "kestrel-a-baseline-v4",
+      "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+      "imageSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+    },
+    {
+      "chassisId": "maul",
+      "baselineId": "maul-four-mount-baseline",
+      "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+      "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0"
+    }
+  ],
+  "finishReference": {
+    "image": "design/mechs/assets/playable-a-lineup.png",
+    "imageSha256": "d1594b6a860989d5757897caa311ef81837bc5a0b9162c589818985d0a42c1b6"
+  },
+  "styleSha256": "980b5040031bd4beaadf59aa286f593e0f8f84d981ba47fbfe73b12a6a4fb674",
+  "candidateImage": "design/mechs/chassis/harrow/concept/a/image.png",
+  "candidateImageSha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885",
+  "criteria": [
+    {
+      "criterion": "Color and value: check for coherent blocks of chassis paint, dark mechanisms and a small visor accent against the playable lineup.",
+      "result": "pass",
+      "evidence": "Clay-yellow framing and the off-white barrel collar are separated by the graphite firing tube. The offset cab carries a small cool windshield."
+    },
+    {
+      "criterion": "Armor construction: broad facets and selective bevels describe the main volumes in the Mech Bay view.",
+      "result": "pass",
+      "evidence": "The two raised cheek pieces sit around a single trunnion and step down to the wide transverse deck. Side armor steps back for the small backup weapon."
+    },
+    {
+      "criterion": "Detail scale: compare at Practice range size. The cockpit, stance and fitted weapon housings remain legible without fine texture.",
+      "result": "pass",
+      "evidence": "The elevated mortar leaves the body silhouette in profile and presents a dark open cup from the Practice viewing angle. A low sidecar cab breaks the symmetry."
+    },
+    {
+      "criterion": "Joints and interfaces: reinforced load-bearing pivots, protected waist connections and functional weapon attachments share the same industrial construction language.",
+      "result": "pass",
+      "evidence": "The axle is supported by a paired cradle on the walking crosshead. The thigh folds rearward and the diagonal shin links meet split toes and a projecting heel spade."
+    },
+    {
+      "criterion": "Distinct chassis identity: preserve the requested role, silhouette, cockpit, leg anatomy, proportions and legal mounts; do not copy another reference chassis or blend their equipment.",
+      "result": "pass",
+      "evidence": "One central dorsal mount and one much smaller own-right backup establish an artillery walker with a low cockpit on the opposite flank."
+    }
+  ],
+  "ownerApproval": null,
+  "selection": {
+    "date": "2026-11-24",
+    "authority": "Owner-delegated creative decision by the design agent on 2026-11-24 for the new playable family.",
+    "scope": "A concept appearance and shared-world family review."
+  },
+  "comparison": {
+    "path": "design/mechs/chassis/harrow/concept/a/family-comparison.jpg",
+    "sha256": "3f92b8e3a1072f85ff10cc1ee76c9c4e6075f26790cff3290b3ab0dc37307835"
+  }
+}

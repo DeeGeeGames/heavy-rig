@@ -240,10 +240,10 @@ describe('Company ownership and workshop transactions', function () {
 	});
 });
 
-test('retired rigs cannot be bought and saves containing them restart at the starter company', function () {
+test('retired prototype contracts stay out of the market when their new production families return', function () {
 	const company = funded();
 	expect(roundTrip(company)).toEqual(company);
-	for (const frameId of ['longbow', 'longbow-b', 'longbow-c', 'morrow', 'morrow-b', 'morrow-c', 'rook', 'rook-b', 'rook-c'] as const) {
+	for (const frameId of ['morrow-b', 'morrow-c', 'rook-b', 'rook-c'] as const) {
 		expect(buyFrame(company, frameId)).toBe(company);
 		const loadout = createStarterLoadout(frameId);
 		const reserves = defaultReserves(loadout);
@@ -375,7 +375,7 @@ test('all acquired variants include legal tier-zero equipment and every physical
 	const company = unlockAllRigs(createCampaign(912));
 	for (const mech of company.fleet) {
 		expect(mech.loadout.every(function (weapon) { return weapon !== null && getWeapon(weapon).tier === 0; })).toBe(true);
-		expect(mech.reserves).toEqual(defaultReserves(mech.loadout));
+		expect(mech.reserves).toEqual(mech.frameId === 'kestrel-c' ? [1200, 220] : mech.frameId === 'longbow-c' ? [0, 240] : defaultReserves(mech.loadout));
 		const weight = frameWeight(rigFrameId(mech.frameId), loadedMounts(mech.loadout, mech.reserves));
 		expect(weight.total).toBeLessThanOrEqual(weight.recommended * 1.1);
 	}

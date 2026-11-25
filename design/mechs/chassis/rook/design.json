@@ -10,10 +10,66 @@
       "request": "design/mechs/chassis/rook/concept/a/request.json",
       "requestSha256": "edc932fcb604ab85c1fda07ad080c7a048069e0e4733bda6d2a2f9f4c2c124b9",
       "prompt": "design/mechs/chassis/rook/concept/a/imagegen-prompt.txt",
-      "contractSignature": "a52dce3522675d0cd854b4d7147e6e0c6258fd048e7621fea3c4972ee24c43b7",
+      "contractSignature": "75a88b104cc04cd9621c6de3daacd9fe3784eab9f4c2bdeb00ea0741cccb854a",
       "familyReview": "design/mechs/chassis/rook/concept/a/family-review.json",
-      "approval": "On 2026-11-22 the owner selected Square Slate (design B) as the Rook A concept: “This is good. Let's go ahead and lock in design B. We'll proceed with the rest of the asset creation process later.”"
+      "approval": "On 2026-11-22 the owner selected Square Slate (design B) as the Rook A concept: “This is good. Let's go ahead and lock in design B. We'll proceed with the rest of the asset creation process later.”",
+      "originalContractSignature": "a52dce3522675d0cd854b4d7147e6e0c6258fd048e7621fea3c4972ee24c43b7",
+      "contractRevalidation": {
+        "date": "2026-11-24",
+        "authority": "Delegated design agent",
+        "originalContract": "design/mechs/chassis/rook/concept/a/contract.json",
+        "currentFrameIds": [
+          "rook",
+          "rook-b",
+          "rook-c",
+          "rook-lancer",
+          "rook-escort"
+        ],
+        "decision": "Retain the exact Square Slate image, original request and recorded owner approval for Raider. The A image and request hashes match. The three A mount IDs, families and ordered compatible models match the original snapshot. The revised family includes Lancer and Escort in addition to the legacy prototypes."
+      }
     }
   ],
-  "variants": []
+  "variants": [
+    {
+      "variantId": "rook-lancer",
+      "variant": "B",
+      "variantName": "Lancer",
+      "revision": "assembled-2026-11-24",
+      "status": "approved",
+      "approval": "The assigned design agent selected the exact stock assembly image on 2026-11-24 under delegated creative authority.",
+      "decisionAuthority": "Owner-delegated design selection",
+      "ownerApproval": null,
+      "image": "design/mechs/chassis/rook/concept/b/image.png",
+      "imageSha256": "4e610bbce7a7f287f4a57f388027791eae096893cc26b7e918154a098e3ebf23",
+      "parentBaselineId": "rook-a-square-slate",
+      "parentImageSha256": "3ef6b57d88be21bd0b9301974a3ce40189021aedd17136be0900182c69d3882c",
+      "request": "design/mechs/chassis/rook/concept/b/request.json",
+      "requestSha256": "edea7107153f6845c2e5b2c3abaf768bd5e53f90a14b819d4b296fd7e7a44e30",
+      "prompt": "design/mechs/chassis/rook/concept/b/equipment-brief.txt",
+      "promptRole": "The composer checked the equipment brief. The image was rendered directly from the fitted GLBs.",
+      "contract": "design/mechs/chassis/rook/concept/b/contract.json",
+      "contractSignature": "75a88b104cc04cd9621c6de3daacd9fe3784eab9f4c2bdeb00ea0741cccb854a"
+    },
+    {
+      "variantId": "rook-escort",
+      "variant": "C",
+      "variantName": "Escort",
+      "revision": "assembled-2026-11-24",
+      "status": "approved",
+      "approval": "The assigned design agent selected the exact stock assembly image on 2026-11-24 under delegated creative authority.",
+      "decisionAuthority": "Owner-delegated design selection",
+      "ownerApproval": null,
+      "image": "design/mechs/chassis/rook/concept/c/image.png",
+      "imageSha256": "73ef007912cd3ea96a64e37974d3da511cda1b03672cfed95153e08fa4c83160",
+      "parentBaselineId": "rook-a-square-slate",
+      "parentImageSha256": "3ef6b57d88be21bd0b9301974a3ce40189021aedd17136be0900182c69d3882c",
+      "request": "design/mechs/chassis/rook/concept/c/request.json",
+      "requestSha256": "d5571b86f539e3ddcb95b0af9cf6ecc03112dc4077aa67240aee11c55b3310eb",
+      "prompt": "design/mechs/chassis/rook/concept/c/equipment-brief.txt",
+      "promptRole": "The composer checked the equipment brief. The image was rendered directly from the fitted GLBs.",
+      "contract": "design/mechs/chassis/rook/concept/c/contract.json",
+      "contractSignature": "75a88b104cc04cd9621c6de3daacd9fe3784eab9f4c2bdeb00ea0741cccb854a"
+    }
+  ],
+  "assembledTurnaround": "design/mechs/chassis/rook/assembled-turnaround/selection.json"
 }

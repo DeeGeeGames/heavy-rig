@@ -1,0 +1,33 @@
+{
+  "id": "harrow-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "harrow",
+  "variantId": "harrow",
+  "baselineId": "harrow-a-walking-carriage",
+  "baselineImageSha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885",
+  "source": "design/mechs/chassis/harrow/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/harrow/concept/a/assembled.png",
+    "sha256": "f087927aa5b1eddf48b0f0ef80127370773dd495b16c7f386c8bf013c4b319cd"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/harrow/turnaround/a/front.png",
+      "sha256": "30ad5054b393be322cc2222b05fa8c226224ae8b270618c0e827816ee3ce3a40"
+    },
+    "back": {
+      "path": "design/mechs/chassis/harrow/turnaround/a/back.png",
+      "sha256": "69274d08e0b98e24c3f43dc3eeae5a8cff9383f0f0fbbba78d143f1594efafe0"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/harrow/turnaround/a/own-left.png",
+      "sha256": "3b87fcb8f0d5b3152d6e56a17f30b0f8b929ad3d5029a9b34c4fd6de9984a9c7"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/harrow/turnaround/a/own-right.png",
+      "sha256": "3ba309c11a3f6d81fe72768c26018987a8ebe7bf633f3da7015ae4ba009605bd"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "The flared single mortar sits on the central inclined cradle. The own-right compact gun is tucked under a much smaller outboard shroud. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}

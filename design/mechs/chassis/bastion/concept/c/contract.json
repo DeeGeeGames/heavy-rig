@@ -1,0 +1,38 @@
+{
+  "chassisId": "bastion",
+  "variantId": "bastion-c",
+  "contractSignature": "0f5a2ec7374ce4d905e99b90e6e757054c9038b962de0f4ca10cfb16ce08192c",
+  "mounts": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "maxSize": "medium",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-casemate",
+      "name": "Right casemate",
+      "family": "launcher",
+      "maxSize": "small",
+      "weapons": [
+        "stream-missiles",
+        "cluster-missiles",
+        "stream-rockets",
+        "cluster-rockets"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "bastion-a-split-mantlet",
+    "image": "design/mechs/chassis/bastion/concept/a/image.png",
+    "imageSha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882",
+    "variantId": "bastion"
+  },
+  "reviewStatus": "selected-by-delegated-art-direction",
+  "ownerApproval": null,
+  "mountReview": "The long precision tube projects beyond the own-left brow. Two large side-by-side openings fill the own-right guided cassette."
+}

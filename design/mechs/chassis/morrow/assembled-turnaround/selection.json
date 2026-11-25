@@ -1,0 +1,258 @@
+{
+  "decision": "The assigned design agent selected these exact assembled views on 2026-11-24 under the owner’s delegated creative authority. Individual owner acceptance of these models and their runtime behavior remains separate.",
+  "method": "Hand-authored vertex-painted plates in millimetres. One exact body and rigid leg rig per family with fitted weapon cartridges.",
+  "recipe": {
+    "path": "scripts/mech-design/pixel_mechs/morrow.py",
+    "sha256": "3cc3acaeaf8fa6b17132ec092e388f4f0f7cfc8cd10a29ccd332b64efb2752dd"
+  },
+  "sourceConcept": {
+    "path": "design/mechs/chassis/morrow/concept/a/image.png",
+    "sha256": "341ca182c494aa08d69227c8d28d856b3be20c19f22013173742345d8cb671e6"
+  },
+  "assets": {
+    "public/assets/mechs/morrow/pixel.glb": "e7c2b720c52c2232c7585410e7eef26b883674dd8d5e61faa797a7f45a71746a",
+    "public/assets/mechs/morrow/variants.glb": "b026441b9e39535845b8d00999365728f6980774cafe9d2898ae234fceb4745d"
+  },
+  "renderer": {
+    "program": "Blender 5.3 Cycles CPU",
+    "source": "Decoded GLB indexed positions, vertex colors and bind translations. Blender computed flat triangle normals. Includes common body, fitted cartridges and applicable offhand brace.",
+    "samples": 12,
+    "projection": "Orthographic",
+    "pose": "Neutral bind",
+    "light": "Diffuse world and three soft area lights, Standard color management. Shipped paint shader and runtime lighting are evaluated by integration.",
+    "viewDirectionsYUp": {
+      "three-quarter": [
+        0.64,
+        0.21,
+        1.32
+      ],
+      "front": [
+        0,
+        0.01,
+        1
+      ],
+      "back": [
+        0,
+        0.01,
+        -1
+      ],
+      "own-left": [
+        1,
+        0.01,
+        0
+      ],
+      "own-right": [
+        -1,
+        0.01,
+        0
+      ],
+      "underside": [
+        0.56,
+        -1,
+        0.68
+      ],
+      "range-angle": [
+        0.75,
+        1.2,
+        1
+      ]
+    },
+    "framing": "The same camera and scale for A, B and C within each view. Full neutral orthographic render at 550 px, reduced to 450 px for directional plates. The separate family sheet normalizes subject height against the input references."
+  },
+  "review": "design/mechs/chassis/morrow/assembled-turnaround/review.md",
+  "comparison": {
+    "path": "design/mechs/chassis/morrow/assembled-turnaround/variants.png",
+    "sha256": "d122d0d8e069421d3932d55207366725998bbc7a64e52a37a9ef6fa406cbaa39"
+  },
+  "familyComparison": {
+    "path": "design/mechs/chassis/morrow/assembled-turnaround/family-review.png",
+    "sha256": "ea5c6d90c5665bb34818b8329a5b810504e852912fd30768d44ae15cfee245e8"
+  },
+  "rangeReference": {
+    "path": "design/mechs/assets/playable-a-lineup.png",
+    "sha256": "d1594b6a860989d5757897caa311ef81837bc5a0b9162c589818985d0a42c1b6"
+  },
+  "variants": {
+    "a": {
+      "frameId": "morrow",
+      "name": "Salvo",
+      "decision": "Select the low Bulwark bridge between two olive receivers. Each broad buff nose has four cut-through octagonal mouths in a two-by-two matrix, on a carrier with two visible rearward hocks and three short forefoot pads per side.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/a/three-quarter.png",
+        "sha256": "ffbd55f80ab0a3cd1dd20a5e6e37250b9a48c64cb4bfd9c78c7aac8dddb01196"
+      },
+      "front": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/a/front.png",
+        "sha256": "cb66dd1305df7015adeacba91a3ca1d5868ae2d913a074f57e2c04942595a088"
+      },
+      "back": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/a/back.png",
+        "sha256": "14f0489f05d6626855a37e716779a9c9231ab3d4c6ad33253527b92c6399fe3b"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/a/own-left.png",
+        "sha256": "dc90bbe74838a03bd7ce7c30d28c1da5d95de85926253e252253439d4dcc09ef"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/a/own-right.png",
+        "sha256": "f54309acfd47ac5c068a9bd728eab55ad60394b0eb700f01f20dd3e604fe8966"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/a/underside.png",
+        "sha256": "39b7edd4b0f338f73fa09faafd37efada415c7c3e88b163943d31da82050d5a5"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_a_0",
+          "kit_a_1"
+        ],
+        "brace": null,
+        "triangles": 4832,
+        "visibleMeshNodes": 10,
+        "primitives": 11,
+        "materials": 2,
+        "dimensionsMm": [
+          855.0,
+          792.0,
+          467.0
+        ],
+        "renderedVertexAndIndexSha256": "5067a07832852a176a01e5b868d93352c83e1889826eea72393fec8bc47e6b73",
+        "launcherExitCounts": [
+          4,
+          4
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": [
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ]
+      }
+    },
+    "b": {
+      "frameId": "morrow-saturation",
+      "name": "Saturation",
+      "decision": "Each aft saddle accepts a shorter and wider three-by-two rocket cassette. The six recessed openings and rectangular silhouette separate Saturation from the four-cell Salvo even when viewed head-on.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/morrow/concept/b/image.png",
+        "sha256": "3eb94ac159668e8353fd0d204748883b170d1a77f1f7b9d51a89791872f2e204"
+      },
+      "front": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/b/front.png",
+        "sha256": "54a498dc68a8429afe2e3a4fe9069d37e5e2b65adaf1b934c20fff42817174bb"
+      },
+      "back": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/b/back.png",
+        "sha256": "2c4d15df4a425402bb081b974fbedad106429fdc6f681c068150c04aff643e50"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/b/own-left.png",
+        "sha256": "0caa223a0903cf46f1ad9fcb821a5226ef41b947831545c97a5895ef8b96f7b4"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/b/own-right.png",
+        "sha256": "9938e2658a1f2056077d45aedfdcfeff05707981c56103406ff95871fe2bf88e"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/b/underside.png",
+        "sha256": "59287e2899a2eed8744bd82cab9e19f9f7050639a789e435c9d2d3c1543c01d2"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_b_0",
+          "kit_b_1"
+        ],
+        "brace": null,
+        "triangles": 4984,
+        "visibleMeshNodes": 10,
+        "primitives": 11,
+        "materials": 2,
+        "dimensionsMm": [
+          912.0,
+          792.0,
+          467.0
+        ],
+        "renderedVertexAndIndexSha256": "df3a27c6a6811a86535bfc4117918aa6fee3571fcf202e862b7632a5b0e8a2cc",
+        "launcherExitCounts": [
+          6,
+          6
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": [
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ]
+      }
+    },
+    "c": {
+      "frameId": "morrow-pursuer",
+      "name": "Pursuer",
+      "decision": "Each common receiver narrows into a long two-well nose. The vertical pair and pronounced forward taper distinguish Pursuer from both broader variants without changing the bridge or legs.",
+      "three-quarter": {
+        "path": "design/mechs/chassis/morrow/concept/c/image.png",
+        "sha256": "001c158f8099448f52e3846ec135c5e6cf009d1c32c0f0d030e0ffdf6a0c62e2"
+      },
+      "front": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/c/front.png",
+        "sha256": "386bbfbb49c733269862ba86587cca77127c57e5276b39a358a10bfbbd40738e"
+      },
+      "back": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/c/back.png",
+        "sha256": "a84e9154c0f92703df90494051d12757c46263f203d34f4c80653f861988102e"
+      },
+      "own-left": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/c/own-left.png",
+        "sha256": "11601d0498dea5f93aa9c0ed4ff65e5bb1496b26dcde5cefc7bc35f4b66aaa96"
+      },
+      "own-right": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/c/own-right.png",
+        "sha256": "8bb9f191b669c2821a6a192920414009ad4fe10a5dad640f71da6068604646dc"
+      },
+      "underside": {
+        "path": "design/mechs/chassis/morrow/assembled-turnaround/c/underside.png",
+        "sha256": "207343e7ada59b6f9bdd9f666bf6cc990ac0744e062b8bde5719365b519e3b06"
+      },
+      "neutralAssembly": {
+        "stockCartridges": [
+          "kit_c_0",
+          "kit_c_1"
+        ],
+        "brace": null,
+        "triangles": 4680,
+        "visibleMeshNodes": 10,
+        "primitives": 11,
+        "materials": 2,
+        "dimensionsMm": [
+          855.0,
+          792.0,
+          504.0
+        ],
+        "renderedVertexAndIndexSha256": "4d72d153178444c096bacbff1628e232be076caebd6cf4c0f5e78a64b9f91fff",
+        "launcherExitCounts": [
+          2,
+          2
+        ],
+        "forwardRayToFirstSurfaceDepthsMm": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ]
+      }
+    }
+  },
+  "measurements": "Counts include the neutral body plus the fitted stock cartridges. Dimensions are width, height, depth. A ray from forward of each launcher marker through its center hit the recessed surface at the reported depth. An opposite-side assembly can be occluded in a true profile."
+}

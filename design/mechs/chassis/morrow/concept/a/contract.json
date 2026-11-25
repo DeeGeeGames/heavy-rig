@@ -1,0 +1,53 @@
+{
+  "chassisId": "morrow",
+  "variantId": "morrow",
+  "contractSignature": "50a973d4467bfed2d8283a2b8eacc2d8e6893cffec4e704f9d9c6122ff22d558",
+  "mounts": [
+    {
+      "id": "left-silo",
+      "name": "Left silo",
+      "family": "launcher",
+      "maxSize": "large",
+      "weapons": [
+        "stream-missiles",
+        "stream-missiles-4",
+        "stream-missiles-6",
+        "cluster-missiles",
+        "cluster-missiles-4",
+        "cluster-missiles-6",
+        "stream-rockets",
+        "stream-rockets-4",
+        "stream-rockets-6",
+        "cluster-rockets",
+        "cluster-rockets-4",
+        "cluster-rockets-6"
+      ]
+    },
+    {
+      "id": "right-silo",
+      "name": "Right silo",
+      "family": "launcher",
+      "maxSize": "large",
+      "weapons": [
+        "stream-missiles",
+        "stream-missiles-4",
+        "stream-missiles-6",
+        "cluster-missiles",
+        "cluster-missiles-4",
+        "cluster-missiles-6",
+        "stream-rockets",
+        "stream-rockets-4",
+        "stream-rockets-6",
+        "cluster-rockets",
+        "cluster-rockets-4",
+        "cluster-rockets-6"
+      ]
+    }
+  ],
+  "baseline": null,
+  "reviewStatus": "delegated-selection",
+  "ownerApproval": null,
+  "generationContractSignature": "18c1e00ecabef46848668f6adcd9118ced65be969b1b457a4e874a28fad1a071",
+  "contractRevalidation": "Verified the same A mount IDs, families, size limits, ordered compatible weapons and representative fit against the current family snapshot.",
+  "selection": "The hock-corrected Bulwark from the November 22 exploration was selected for the low bridge, blunt side-loading receiver saddles and short, broad feet. The selected edit changes the old six-well cassette to the four-cell guided A cartridge."
+}

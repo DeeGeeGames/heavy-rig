@@ -1,0 +1,34 @@
+{
+  "chassisId": "harrow",
+  "variantId": "harrow-b",
+  "contractSignature": "bd7f9cead0bb3a4a1b493e8b13c9e223cf5b8fbeed211518170ceab89c3e0c36",
+  "mounts": [
+    {
+      "id": "dorsal-artillery",
+      "name": "Barrage mortar",
+      "family": "ballistic",
+      "maxSize": "medium",
+      "weapons": [
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "maxSize": "small",
+      "weapons": [
+        "machine-gun"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "harrow-a-walking-carriage",
+    "image": "design/mechs/chassis/harrow/concept/a/image.png",
+    "imageSha256": "2851356ab69e8ba01cbd0637f49992fd151393aec21355640c7cbf0093c49885",
+    "variantId": "harrow"
+  },
+  "reviewStatus": "selected-by-delegated-art-direction",
+  "ownerApproval": null,
+  "mountReview": "Three separate apertures form one slightly splayed dorsal cartridge. The indexed middle aperture is also the primary muzzle. The own-right machine gun reuses the A cartridge."
+}

@@ -1,0 +1,33 @@
+{
+  "id": "bastion-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "bastion",
+  "variantId": "bastion",
+  "baselineId": "bastion-a-split-mantlet",
+  "baselineImageSha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882",
+  "source": "design/mechs/chassis/bastion/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/bastion/concept/a/assembled.png",
+    "sha256": "d290497cf60d0d910bbc4744744fc9f4c50a2ba558e0381f9c7e084b2f64300a"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/bastion/turnaround/a/front.png",
+      "sha256": "760873edbe94a073cec374431dc443427ff3e330a5c06e01c51d9451ec78ab0d"
+    },
+    "back": {
+      "path": "design/mechs/chassis/bastion/turnaround/a/back.png",
+      "sha256": "279ac2dc8e29fba7bcc986647b61b77e552869ed5954f887c7f5590734a5e056"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/bastion/turnaround/a/own-left.png",
+      "sha256": "8a3d992887795cf28558cd39d0a8445aa75bb5ae2d2b26a2938e671537d33ec8"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/bastion/turnaround/a/own-right.png",
+      "sha256": "081e0ea269418c791f7f61caf43412f337c917ed66fb256524fed40f00e92ffa"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "Paired service cannon breeches sit between the lower shelves and split upper mantlet. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}

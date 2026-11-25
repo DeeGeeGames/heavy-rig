@@ -1,0 +1,50 @@
+{
+  "chassisId": "rook",
+  "variantId": "rook-escort",
+  "contractSignature": "75a88b104cc04cd9621c6de3daacd9fe3784eab9f4c2bdeb00ea0741cccb854a",
+  "mounts": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "maxSize": "small",
+      "weapons": [
+        "machine-gun"
+      ]
+    },
+    {
+      "id": "right-escort emitter",
+      "name": "Right escort emitter",
+      "family": "energy",
+      "maxSize": "small",
+      "weapons": [
+        "laser"
+      ]
+    },
+    {
+      "id": "dorsal-launcher",
+      "name": "Compact dorsal launcher",
+      "family": "launcher",
+      "maxSize": "small",
+      "weapons": [
+        "stream-missiles",
+        "cluster-missiles",
+        "stream-rockets",
+        "cluster-rockets"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "rook-a-square-slate",
+    "image": "design/mechs/chassis/rook/concept/a/image.png",
+    "imageSha256": "3ef6b57d88be21bd0b9301974a3ce40189021aedd17136be0900182c69d3882c",
+    "variantId": "rook"
+  },
+  "reviewStatus": "selected-under-delegated-creative-authority",
+  "ownerApproval": null,
+  "method": "Render from the exact shared chassis and the fitted cartridge geometry.",
+  "sourceRecipe": "scripts/mech-design/pixel_mechs/rook.py",
+  "assembledViewManifest": "design/mechs/chassis/rook/assembled-turnaround/selection.json",
+  "imageSha256": "73ef007912cd3ea96a64e37974d3da511cda1b03672cfed95153e08fa4c83160",
+  "mountReview": "Shorten the own-left arm to the six-barrel Rattler and fit one compact turquoise Arc emitter on own-right. The two guided wells use the same dorsal cassette as Lancer."
+}

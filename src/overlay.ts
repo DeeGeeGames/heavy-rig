@@ -1,9 +1,10 @@
+import { BASTION_PLATE_HALF_ARC, SPECTER_MARK_SECONDS, hasBastionPlate, mortarInRange, mortarProfile } from './frame-tactics';
 import type { OrthographicCamera } from 'three';
 import { inFiringArc } from './torso-arc';
 import { getWeapon, withinWeaponRange } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
-import { ARENA, missileTracking, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
+import { ARENA, artilleryAimStatus, missileTracking, distance, ENEMY_STATS, getEnemyDefense, isJammed, surveyed, targetMarked, type Point, type CombatStateView, type Unit } from './simulation';
 import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { FIELD_ROAD_MARKINGS } from './field-terrain-3d';
 import { terrainMapColors } from './terrain-map-colors';
@@ -62,10 +63,10 @@ export const targetSolution = function (state: CombatStateView, target: Unit, _a
 	return solutionFor(state, target, target.id);
 };
 const solutionFor = function (state: CombatStateView, target: Point, id: number): { guided: boolean; inRange: boolean } {
-	const weapons = state.loadout.map(function (mount) { return getWeapon(mount.weapon); });
+	const weapons = state.loadout;
 	const separation = distance(target, state.player);
 	const guided = missileTracking(state, id) === 'TRACKING' && state.player.targetId === id && state.player.missileLock?.targetId === id && state.player.missileLock.progress >= 1 - 1e-9;
-	return { guided, inRange: weapons.some(function (weapon) { return withinWeaponRange(separation, weapon.range); }) };
+	return { guided, inRange: weapons.some(function (mount, index) { return mortarProfile(state.frame, mount.slot ?? index) ? mortarInRange(separation) : withinWeaponRange(separation, getWeapon(mount.weapon).range); }) };
 };
 
 const getWeaponFeedback = function (state: CombatStateView, target: Point, id: number): string {
@@ -207,7 +208,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	}
 	for (const [index, strike] of state.strikes.entries()) {
 		if (state.strikes.some(function (other, otherIndex) { return otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
-		text(`IMPACT ${strike.life.toFixed(1)}`, strike, 8, '#ffd2a6', 11, -14);
+		text(`${strike.friendly ? 'FRIENDLY' : 'INCOMING'} ${strike.life.toFixed(1)}s`, strike, 8, strike.friendly ? '#94ebe4' : '#ffd2a6', 11, -14);
 	}
 	for (const enemy of state.enemies) {
 		const defense = getEnemyDefense(state, enemy);
@@ -216,6 +217,12 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const elevation = enemy.catalog ? enemyVolume(enemy).elevation : ENEMY_STATS[enemy.kind].elevation;
 		const labelHeight = enemy === selected && selectedReticle?.guided ? Math.max(modelLabelHeight, elevation + selectedReticle.labelOffset / scale) : modelLabelHeight;
 		const anchor = at(enemy, labelHeight);
+		const marked = targetMarked(state, enemy.id);
+		const jammed = isJammed(state, enemy, true);
+		if (marked || jammed) {
+			const rows = 1 + (isPriorityTarget(state, enemy) ? 1 : 0) + (enemy.attack ? 1 : 0);
+			text(marked && jammed ? 'MARKED +20% / JAMMED' : marked ? 'MARKED +20%' : 'JAMMED', enemy, labelHeight, '#91eadd', 10, -rows * (minimumText + 6) / scale);
+		}
 		if (enemy.hp >= enemy.maxHp && enemy !== selected && !isPriorityTarget(state, enemy) && !defense.exposed) {
 			if (enemy.catalog) {
 				ctx.beginPath(); ctx.moveTo(anchor.x - 5, anchor.y - 5); ctx.lineTo(anchor.x + 5, anchor.y - 5); ctx.lineTo(anchor.x, anchor.y + 2); ctx.closePath();
@@ -239,7 +246,9 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		if (anchor.x < 0 || anchor.x > width || anchor.y < 0 || anchor.y > height) continue;
 		if (options.obstructions?.some(function (rect) { return anchor.x >= rect.left && anchor.x <= rect.right && anchor.y >= rect.top && anchor.y <= rect.bottom; })) continue;
 		const active = mate.hp > 0;
-		text(`${mate.callsign.toUpperCase()}${active ? '' : ' / OFFLINE'}`, mate, heightAboveRig, active ? '#84e3eb' : '#a8bcc0', 9);
+		const jammed = active && isJammed(state, mate);
+		const marked = active && targetMarked(state, state.squadmates.indexOf(mate) + 1, true);
+		text(`${mate.callsign.toUpperCase()}${active ? [jammed ? 'JAMMED' : '', marked ? 'MARKED' : ''].filter(Boolean).map(function (status) { return ` / ${status}`; }).join('') : ' / OFFLINE'}`, mate, heightAboveRig, active ? '#84e3eb' : '#a8bcc0', 9);
 	}
 	if (selected && selectedReticle) {
 		const elevation = selected.catalog ? enemyVolume(selected).elevation : ENEMY_STATS[selected.kind].elevation;
@@ -256,8 +265,45 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		text(`${Math.round(distance(selectedFacility, state.player))} M / ${getWeaponFeedback(state, selectedFacility, selectedStructure.id)}`, selectedFacility, 45, reticle.locked ? '#ff6863' : '#ebc184', 10, reticle.labelOffset / scale);
 	}
 	// A precise sight remains useful when aiming ahead of a moving contact.
-	const cursor = at(aim, 0);
-	if (!selected && !selectedFacility && !inFiringArc(state.player, state.player.angle, aim)) text('OUT OF ARC', aim, 0, '#ffd199', 10, 24);
+	const mortar = mortarProfile(state.frame);
+	const aimGround = mortar ? selected ?? selectedFacility ?? aim : aim;
+	const cursor = at(aimGround, 0);
+	const groundArc = function (point: Point, radius: number, start: number, end: number, color: string) {
+		ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.beginPath();
+		for (let i = 0; i <= 34; i++) {
+			const heading = start + (end - start) * i / 34;
+			const p = at({ x: point.x + Math.cos(heading) * radius, y: point.y + Math.sin(heading) * radius });
+			if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+		}
+		ctx.stroke();
+	};
+	if (mortar) {
+		const status = artilleryAimStatus(state, aimGround);
+		const color = status === 'BRACED / READY' ? '#93e8d8' : '#eeb88d';
+		const range = distance(state.player, aimGround);
+		const bearing = Math.atan2(aimGround.y - state.player.y, aimGround.x - state.player.x);
+		const bounds = state.mission?.map ?? ARENA;
+		const showFootprint = mortarInRange(range) && (status === 'BRACED / READY' || status.startsWith('BRACING') || status === 'STOP TO BRACE');
+		for (const offset of showFootprint ? mortar.offsets : []) {
+			const point = { x: Math.max(0, Math.min(bounds.width, aimGround.x - Math.sin(bearing) * offset)),
+				y: Math.max(0, Math.min(bounds.height, aimGround.y + Math.cos(bearing) * offset)) };
+			groundArc(point, mortar.radius, 0, Math.PI * 2, `${color}a0`);
+		}
+		text(`${Math.round(range)} M / ${status}`, aimGround, 0, color, 10, 30);
+	}
+	if (hasBastionPlate(state.frame)) {
+		const bearing = state.player.turret;
+		groundArc(state.player, 54, bearing - BASTION_PLATE_HALF_ARC, bearing + BASTION_PLATE_HALF_ARC, '#83ddffb0');
+	}
+	const designation = state.player.designation;
+	const watched = state.frame === 'specter-c' && designation && (selected ?? selectedFacility);
+	if (watched && designation.seconds < SPECTER_MARK_SECONDS - 1e-9) {
+		text(`DESIGNATING ${Math.floor(100 * designation.seconds / SPECTER_MARK_SECONDS)}%`, watched, 0, '#96e6db', 10, 24);
+	}
+	if (selectedStructure && selectedFacility && targetMarked(state, selectedStructure.id)) text('MARKED +20%', selectedFacility, 0, '#96e6db', 10, 24);
+	const impairments = [isJammed(state, state.player) ? 'JAMMED' : '', targetMarked(state, 0, true) ? 'MARKED' : ''].filter(Boolean);
+	if (impairments.length) text(impairments.join(' / '), state.player, 0, '#96e6db', 10, 21);
+	if (!mortar && !selected && !selectedFacility && !inFiringArc(state.player, state.player.angle, aim)) text('OUT OF ARC', aim, 0, '#ffd199', 10, 24);
 	ctx.strokeStyle = selected || selectedFacility ? '#f6c77c' : '#d9e5d1'; ctx.lineWidth = 1;
 	bracket(ctx, cursor.x, cursor.y, 15, 15, 4);
 	ctx.fillStyle = '#f1e9c7'; ctx.fillRect(cursor.x - 1, cursor.y - 1, 2, 2);
@@ -278,7 +324,14 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			ctx.fillStyle = color; ctx.fillText(label, labelX, edge.point.y + 26);
 		}
 	};
-	for (const enemy of state.enemies) marker(enemy, isPriorityTarget(state, enemy) ? '#ffd3a3' : '#eead7c');
+	const survey = state.enemies.filter(function (enemy) { return surveyed(state, enemy) && edgeMarker(at(enemy, 40), width, height, options.obstructions); })
+		.sort(function (a, b) { return distance(a, state.player) - distance(b, state.player) || a.id - b.id; });
+	for (const enemy of state.enemies) {
+		const detailed = survey.indexOf(enemy) >= 0 && survey.indexOf(enemy) < 2;
+		const category = enemy.catalog ? getFrame(enemy.catalog.frameId).chassisName : enemy.kind;
+		marker(enemy, detailed ? '#94ebe4' : isPriorityTarget(state, enemy) ? '#ffd3a3' : '#eead7c',
+			detailed ? `${category.toUpperCase()} ${Math.round(distance(enemy, state.player))} M` : undefined);
+	}
 	for (const warning of state.warnings) marker(warning, '#d29b66');
 	if (navigation) marker(navigation.point, navigation.color, `${navigation.label} ${Math.round(distance(navigation.point, state.player))} M`);
 	else marker(relay, '#a3ddd0', 'UPLINK');
@@ -334,7 +387,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		}
 		for (const enemy of state.enemies) dot(enemy, isPriorityTarget(state, enemy) ? '#ffd6a7' : ENEMY_STATS[enemy.kind].elevation > 42 ? '#8fd6da' : '#f2a571', isPriorityTarget(state, enemy) ? 4 : enemy.heavy ? 3 : 2, ENEMY_STATS[enemy.kind].elevation > 42);
 		for (const warning of state.warnings) dot(warning, '#e5a46f', 4, true);
-		for (const strike of state.strikes) dot(strike, '#ff8154', strike.radius / bounds.width * w, true);
+		for (const strike of state.strikes) dot(strike, strike.friendly ? '#94ebe4' : '#ff8154', strike.radius / bounds.width * w, true);
 		ctx.restore();
 		ctx.font = `${options.couchMode ? 14 : 11}px monospace`; ctx.textAlign = 'left'; ctx.fillStyle = '#91a9a3'; ctx.fillText(`${state.enemies.length.toString().padStart(2, '0')} CONTACTS`, x + 9, y + h + 15);
 	}

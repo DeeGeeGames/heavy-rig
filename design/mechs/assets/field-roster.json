@@ -1,0 +1,1053 @@
+{
+  "scope": "Measured on the production roster with the original paint and stock loadout. The creative selections were made under delegated authority. Owner gameplay acceptance is pending.",
+  "views": {
+    "lineup": "field-roster.png",
+    "practice": {
+      "image": "field-roster-practice.png",
+      "viewport": [
+        1060,
+        720
+      ],
+      "cropXYWH": [
+        340,
+        269,
+        182,
+        168
+      ],
+      "scale": 1
+    },
+    "situationSim": {
+      "image": "field-roster-squad.png",
+      "player": "harrow-b",
+      "squad": [
+        "bastion",
+        "specter-c",
+        "morrow-pursuer"
+      ]
+    }
+  },
+  "checks": {
+    "assembly": "The game GLTFLoader and fitted factory, original finish, mesh primitives and indexed geometry. Every removable mount was hidden in the empty loadout.",
+    "fixedStep": "420 pose ticks per fit covering pivot, walking, full stock speed, reverse and stop. All central and indexed simulation exits were compared with the rendered model on every tick. Terrain clearance was sampled on the transformed mesh vertices every third tick. Units are game world units.",
+    "gameplay": "Normal title, Simulator, Frame Training and Enter Range. Each fitted variant emitted its primary weapon and showed forward movement; all 18 authored packages loaded. The squad image comes from a separate Situation Sim deployment.",
+    "renderer": "Chromium using SwiftShader for the range captures. Simulated keyboard input and mouse targeting."
+  },
+  "variants": {
+    "kestrel": {
+      "name": "KESTREL A \u00b7 SKIRMISHER",
+      "triangles": 3183,
+      "drawSections": 11,
+      "materials": [
+        "Kestrel plate colors",
+        "Kestrel visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "maxMuzzleError": 2.978e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "1200 RDS",
+        "after": "1199 RDS",
+        "heatBefore": 0,
+        "heatAfter": 0
+      }
+    },
+    "kestrel-b": {
+      "name": "KESTREL B \u00b7 SPARK",
+      "triangles": 2743,
+      "drawSections": 12,
+      "materials": [
+        "Kestrel plate colors",
+        "Kestrel visor"
+      ],
+      "meshCount": 12,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "right-compact emitter",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        }
+      ],
+      "maxMuzzleError": 3.333e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "1200 RDS",
+        "after": "1199 RDS",
+        "heatBefore": 0,
+        "heatAfter": 0
+      }
+    },
+    "kestrel-c": {
+      "name": "KESTREL C \u00b7 HARRIER",
+      "triangles": 2835,
+      "drawSections": 11,
+      "materials": [
+        "Kestrel plate colors",
+        "Kestrel visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "right-compact pod",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 220
+        }
+      ],
+      "maxMuzzleError": 3.117e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "1200 RDS",
+        "after": "1199 RDS",
+        "heatBefore": 0,
+        "heatAfter": 0
+      }
+    },
+    "warden": {
+      "name": "WARDEN A \u00b7 LINE",
+      "triangles": 4542,
+      "drawSections": 14,
+      "materials": [
+        "Warden plate colors",
+        "Warden visor"
+      ],
+      "meshCount": 14,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "left-shoulder pod",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        },
+        {
+          "id": "right-shoulder pod",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "stream-rockets",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 3.366e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 7
+      }
+    },
+    "warden-b": {
+      "name": "WARDEN B \u00b7 BATTERY",
+      "triangles": 4158,
+      "drawSections": 16,
+      "materials": [
+        "Warden plate colors",
+        "Warden visor"
+      ],
+      "meshCount": 16,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "left-shoulder bank",
+          "family": "energy",
+          "size": "medium",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "id": "right-shoulder bank",
+          "family": "energy",
+          "size": "medium",
+          "weapon": "ppc",
+          "reserve": 0
+        }
+      ],
+      "maxMuzzleError": 3.015e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 6
+      }
+    },
+    "warden-c": {
+      "name": "WARDEN C \u00b7 COMBINED",
+      "triangles": 4300,
+      "drawSections": 15,
+      "materials": [
+        "Warden plate colors",
+        "Warden visor"
+      ],
+      "meshCount": 15,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "left-shoulder bank",
+          "family": "energy",
+          "size": "medium",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "id": "right-shoulder pod",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 3.015e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 7
+      }
+    },
+    "maul": {
+      "name": "MAUL A \u00b7 BREACHER",
+      "triangles": 4854,
+      "drawSections": 13,
+      "materials": [
+        "Maul plate colors",
+        "Maul visor"
+      ],
+      "meshCount": 13,
+      "stock": [
+        {
+          "id": "left-forearm pod",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "cluster-rockets-4",
+          "reserve": 360
+        },
+        {
+          "id": "right-forearm pod",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "cluster-rockets-4",
+          "reserve": 360
+        },
+        {
+          "id": "left-inboard",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "right-inboard",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "maxMuzzleError": 6.512e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "360 RDS",
+        "after": "358 RDS",
+        "heatBefore": 0,
+        "heatAfter": 8
+      }
+    },
+    "maul-b": {
+      "name": "MAUL B \u00b7 BREAKER",
+      "triangles": 3938,
+      "drawSections": 13,
+      "materials": [
+        "Maul plate colors",
+        "Maul visor"
+      ],
+      "meshCount": 13,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "left-inboard bank",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "id": "right-inboard bank",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        }
+      ],
+      "maxMuzzleError": 6.215e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 7
+      }
+    },
+    "maul-c": {
+      "name": "MAUL C \u00b7 FURNACE",
+      "triangles": 4032,
+      "drawSections": 13,
+      "materials": [
+        "Maul plate colors",
+        "Maul visor"
+      ],
+      "meshCount": 13,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gauntlet bank",
+          "family": "energy",
+          "size": "medium",
+          "weapon": "ppc",
+          "reserve": 0
+        },
+        {
+          "id": "left-inboard bank",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "id": "right-inboard pod",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-rockets",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 6.444e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 7
+      }
+    },
+    "rook": {
+      "name": "ROOK A \u00b7 RAIDER",
+      "triangles": 5210,
+      "drawSections": 12,
+      "materials": [
+        "Rook plate colors",
+        "Rook visor"
+      ],
+      "meshCount": 12,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "dorsal-launcher",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-rockets",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 4.409e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 7
+      }
+    },
+    "rook-lancer": {
+      "name": "ROOK B \u00b7 LANCER",
+      "triangles": 4740,
+      "drawSections": 12,
+      "materials": [
+        "Rook plate colors",
+        "Rook visor"
+      ],
+      "meshCount": 12,
+      "stock": [
+        {
+          "id": "left-accelerator",
+          "family": "energy",
+          "size": "medium",
+          "weapon": "ppc",
+          "reserve": 0
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "dorsal-launcher",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 4.608e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "ENERGY",
+        "after": "ENERGY",
+        "heatBefore": 0,
+        "heatAfter": 35
+      }
+    },
+    "rook-escort": {
+      "name": "ROOK C \u00b7 ESCORT",
+      "triangles": 4724,
+      "drawSections": 12,
+      "materials": [
+        "Rook plate colors",
+        "Rook visor"
+      ],
+      "meshCount": 12,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "right-escort emitter",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "id": "dorsal-launcher",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 4.438e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "1200 RDS",
+        "after": "1199 RDS",
+        "heatBefore": 0,
+        "heatAfter": 0
+      }
+    },
+    "longbow": {
+      "name": "LONGBOW A \u00b7 MARKSMAN",
+      "triangles": 4948,
+      "drawSections": 10,
+      "materials": [
+        "Longbow plate colors",
+        "Longbow visor"
+      ],
+      "meshCount": 10,
+      "stock": [
+        {
+          "id": "left-accelerator",
+          "family": "energy",
+          "size": "medium",
+          "weapon": "ppc",
+          "reserve": 0
+        }
+      ],
+      "maxMuzzleError": 3.553e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "ENERGY",
+        "after": "ENERGY",
+        "heatBefore": 0,
+        "heatAfter": 33
+      }
+    },
+    "longbow-b": {
+      "name": "LONGBOW B \u00b7 RIFLEMAN",
+      "triangles": 5194,
+      "drawSections": 12,
+      "materials": [
+        "Longbow plate colors",
+        "Longbow visor"
+      ],
+      "meshCount": 12,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-compact offhand",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        }
+      ],
+      "maxMuzzleError": 4.974e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 5
+      }
+    },
+    "longbow-c": {
+      "name": "LONGBOW C \u00b7 OVERWATCH",
+      "triangles": 5324,
+      "drawSections": 12,
+      "materials": [
+        "Longbow plate colors",
+        "Longbow visor"
+      ],
+      "meshCount": 12,
+      "stock": [
+        {
+          "id": "left-accelerator",
+          "family": "energy",
+          "size": "medium",
+          "weapon": "ppc",
+          "reserve": 0
+        },
+        {
+          "id": "right-compact offhand",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 240
+        }
+      ],
+      "maxMuzzleError": 4.494e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "ENERGY",
+        "after": "ENERGY",
+        "heatBefore": 0,
+        "heatAfter": 33
+      }
+    },
+    "morrow": {
+      "name": "MORROW A \u00b7 SALVO",
+      "triangles": 4832,
+      "drawSections": 11,
+      "materials": [
+        "Morrow plate colors",
+        "Morrow visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "left-silo",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "cluster-missiles-4",
+          "reserve": 360
+        },
+        {
+          "id": "right-silo",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "cluster-missiles-4",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 3.764e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "360 RDS",
+        "after": "356 RDS",
+        "heatBefore": 0,
+        "heatAfter": 20
+      }
+    },
+    "morrow-saturation": {
+      "name": "MORROW B \u00b7 SATURATION",
+      "triangles": 4984,
+      "drawSections": 11,
+      "materials": [
+        "Morrow plate colors",
+        "Morrow visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "left-rack",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "cluster-rockets-6",
+          "reserve": 360
+        },
+        {
+          "id": "right-rack",
+          "family": "launcher",
+          "size": "large",
+          "weapon": "cluster-rockets-6",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 4.55e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "360 RDS",
+        "after": "358 RDS",
+        "heatBefore": 0,
+        "heatAfter": 8
+      }
+    },
+    "morrow-pursuer": {
+      "name": "MORROW C \u00b7 PURSUER",
+      "triangles": 4680,
+      "drawSections": 11,
+      "materials": [
+        "Morrow plate colors",
+        "Morrow visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "left-rack",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        },
+        {
+          "id": "right-rack",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 3.709e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "360 RDS",
+        "after": "359 RDS",
+        "heatBefore": 0,
+        "heatAfter": 3
+      }
+    },
+    "bastion": {
+      "name": "BASTION A \u00b7 BULWARK",
+      "triangles": 2922,
+      "drawSections": 11,
+      "materials": [
+        "Bastion plate colors",
+        "Bastion visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        }
+      ],
+      "maxMuzzleError": 4.019e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 6
+      }
+    },
+    "bastion-b": {
+      "name": "BASTION B \u00b7 GATEKEEPER",
+      "triangles": 2962,
+      "drawSections": 11,
+      "materials": [
+        "Bastion plate colors",
+        "Bastion visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "left-casemate",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "id": "right-casemate",
+          "family": "launcher",
+          "size": "medium",
+          "weapon": "cluster-rockets-4",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 4.263e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "ENERGY",
+        "after": "ENERGY",
+        "heatBefore": 0,
+        "heatAfter": 0
+      }
+    },
+    "bastion-c": {
+      "name": "BASTION C \u00b7 SENTINEL",
+      "triangles": 2882,
+      "drawSections": 11,
+      "materials": [
+        "Bastion plate colors",
+        "Bastion visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-casemate",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 3.892e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 6
+      }
+    },
+    "harrow": {
+      "name": "HARROW A \u00b7 BOMBARD",
+      "triangles": 3324,
+      "drawSections": 11,
+      "materials": [
+        "Harrow plate colors",
+        "Harrow visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "dorsal-artillery",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "maxMuzzleError": 3.256e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 6
+      }
+    },
+    "harrow-b": {
+      "name": "HARROW B \u00b7 BARRAGE",
+      "triangles": 3536,
+      "drawSections": 11,
+      "materials": [
+        "Harrow plate colors",
+        "Harrow visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "dorsal-artillery",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "maxMuzzleError": 3.28e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "237 RDS",
+        "heatBefore": 0,
+        "heatAfter": 21
+      }
+    },
+    "harrow-c": {
+      "name": "HARROW C \u00b7 SIEGEBREAKER",
+      "triangles": 3364,
+      "drawSections": 11,
+      "materials": [
+        "Harrow plate colors",
+        "Harrow visor"
+      ],
+      "meshCount": 11,
+      "stock": [
+        {
+          "id": "dorsal-artillery",
+          "family": "ballistic",
+          "size": "medium",
+          "weapon": "autocannon",
+          "reserve": 240
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "maxMuzzleError": 3.256e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "240 RDS",
+        "after": "239 RDS",
+        "heatBefore": 0,
+        "heatAfter": 7
+      }
+    },
+    "specter": {
+      "name": "SPECTER A \u00b7 PATHFINDER",
+      "triangles": 2956,
+      "drawSections": 13,
+      "materials": [
+        "Specter plate colors",
+        "Specter visor"
+      ],
+      "meshCount": 13,
+      "stock": [
+        {
+          "id": "left-survey emitter",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "maxMuzzleError": 2.568e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "ENERGY",
+        "after": "ENERGY",
+        "heatBefore": 0,
+        "heatAfter": 2
+      }
+    },
+    "specter-b": {
+      "name": "SPECTER B \u00b7 DISRUPTOR",
+      "triangles": 3070,
+      "drawSections": 12,
+      "materials": [
+        "Specter plate colors",
+        "Specter visor"
+      ],
+      "meshCount": 12,
+      "stock": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "id": "right-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "maxMuzzleError": 2.383e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "1200 RDS",
+        "after": "1199 RDS",
+        "heatBefore": 0,
+        "heatAfter": 0
+      }
+    },
+    "specter-c": {
+      "name": "SPECTER C \u00b7 DESIGNATOR",
+      "triangles": 2974,
+      "drawSections": 13,
+      "materials": [
+        "Specter plate colors",
+        "Specter visor"
+      ],
+      "meshCount": 13,
+      "stock": [
+        {
+          "id": "left-precision emitter",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "id": "right-compact pod",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        }
+      ],
+      "maxMuzzleError": 2.6e-14,
+      "minimumVertexHeight": 0,
+      "firing": {
+        "before": "ENERGY",
+        "after": "ENERGY",
+        "heatBefore": 0,
+        "heatAfter": 1
+      }
+    }
+  }
+}

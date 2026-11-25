@@ -1,0 +1,31 @@
+{
+  "chassisId": "bastion",
+  "variantId": "bastion",
+  "contractSignature": "0f5a2ec7374ce4d905e99b90e6e757054c9038b962de0f4ca10cfb16ce08192c",
+  "mounts": [
+    {
+      "id": "left-gun",
+      "name": "Left gun",
+      "family": "ballistic",
+      "maxSize": "medium",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    },
+    {
+      "id": "right-gun",
+      "name": "Right gun",
+      "family": "ballistic",
+      "maxSize": "medium",
+      "weapons": [
+        "machine-gun",
+        "autocannon"
+      ]
+    }
+  ],
+  "baseline": null,
+  "reviewStatus": "selected-by-delegated-art-direction",
+  "ownerApproval": null,
+  "mountReview": "Short sustained cannon under each cheek. Both muzzles are visible under their hoods in the frontal reference."
+}

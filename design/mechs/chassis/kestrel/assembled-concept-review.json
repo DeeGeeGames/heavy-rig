@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "status": "selected-by-delegated-agent",
+  "decision": {
+    "authority": "Parent design agent exercising explicit user delegation for creative/taste decisions",
+    "thread": "t3-thread://v2/58e68f90-3431-4623-a854-98a5f9093e83/eae430a4-3997-43b8-986e-02628b0c87ca",
+    "scope": "Selection of these exact rendered B/C concept PNGs, four-view reference sets and representative equipment. Not a past owner image approval, source approval or gameplay/physical acceptance. A keeps its existing, separately recorded owner approval."
+  },
+  "parent": {
+    "conceptBaselineId": "kestrel-a-baseline-v4",
+    "conceptBaselineSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4",
+    "assembledBase": "public/assets/mechs/kestrel/pixel.glb",
+    "assembledBaseSha256": "1b419a93fba96e799b6371e60069b27df9c2cefb6a2d8f2b11fd7f5a789d88ab",
+    "moduleBundle": "public/assets/mechs/kestrel/variants.glb",
+    "moduleBundleSha256": "e2038cf1301ceb2caf7b3c0dd009413f79ce629426d7faecfc097a024ac81142",
+    "renderSourceRevision": "cf30410d3c44fb7113e686afb9e8423ba5bbcddd",
+    "gameplaySource": [
+      "src/hardpoints.ts",
+      "src/arsenal.ts",
+      "src/combat-resources.ts"
+    ]
+  },
+  "render": {
+    "method": "Three.js 0.186.1 production loadPlayableMechFamily and neutral authored factories, original finish, orthographic, 512 x 512, matching A/B/C framing and lighting. No image prompt or externally generated artwork.",
+    "viewport": [
+      512,
+      512
+    ],
+    "background": "#151c24",
+    "orthographicHalfExtent": "0.73 * largest dimension of the union of A/B/C neutral world-space bounds",
+    "lookAt": "center of the union bounds",
+    "distance": "5 * orthographic half extent",
+    "directionsFromTarget": {
+      "own-right-three-quarter": [
+        1,
+        0.32,
+        0.64
+      ],
+      "front": [
+        1,
+        0,
+        0
+      ],
+      "back": [
+        -1,
+        0,
+        0
+      ],
+      "own-left": [
+        0,
+        0,
+        -1
+      ],
+      "own-right": [
+        0,
+        0,
+        1
+      ]
+    },
+    "lights": {
+      "ambient": {
+        "color": "#e4edff",
+        "intensity": 1.5
+      },
+      "directional": [
+        {
+          "color": "#ffebd4",
+          "intensity": 2.5,
+          "position": [
+            4,
+            7,
+            6
+          ]
+        },
+        {
+          "color": "#caddff",
+          "intensity": 1.5,
+          "position": [
+            -5,
+            4,
+            -4
+          ]
+        },
+        {
+          "color": "#ffffff",
+          "intensity": 0.75,
+          "position": [
+            0,
+            -5,
+            2
+          ]
+        }
+      ]
+    },
+    "familyReview": "A, B and C inspected side by side from the same production assembly and unchanged chassis references. The assets were rendered without alterations."
+  },
+  "variants": [
+    {
+      "frame": "kestrel-b",
+      "variantName": "Spark",
+      "concept": {
+        "image": "design/mechs/chassis/kestrel/concept/b/kestrel-b.png",
+        "sha256": "e2cfb9d4c7aaa44ba04aae1152ded7c80cc35f42039be68b2c0da628103bf88b"
+      },
+      "turnaround": {
+        "front": {
+          "image": "design/mechs/chassis/kestrel/turnaround/b/front.png",
+          "sha256": "2dd443bd6c629e6f2971c8d14d815fd892ee4ca40db303eeaab3958bea8ad464"
+        },
+        "back": {
+          "image": "design/mechs/chassis/kestrel/turnaround/b/back.png",
+          "sha256": "6384f4ce8128228ab0587e8a6edf2a276c5bde46fdf9761c647a6c0036c32b14"
+        },
+        "own-left": {
+          "image": "design/mechs/chassis/kestrel/turnaround/b/own-left.png",
+          "sha256": "c41eb0f494eae712883fb46315c1362dc6b6e1476e57d69d74cd93105dedb238"
+        },
+        "own-right": {
+          "image": "design/mechs/chassis/kestrel/turnaround/b/own-right.png",
+          "sha256": "71adcfd66f8b2b64f43f2122c67dfee43fc26b8de9c6881bc187cf76e15815f5"
+        }
+      },
+      "mountContract": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200,
+          "side": "own-left",
+          "selectedWeapon": "RATTLER"
+        },
+        {
+          "id": "right-compact emitter",
+          "family": "energy",
+          "size": "small",
+          "weapon": "laser",
+          "reserve": 0,
+          "side": "own-right",
+          "selectedWeapon": "ARC"
+        }
+      ],
+      "visualReview": "Two assemblies. Own-left seven-bore Rattler and own-right square inset ARC optical emitter. Far-side assemblies are occluded in profile. Shared cockpit, rear counterweight, brackets and reverse-jointed legs retain the A assembly geometry.",
+      "stockFitAtRenderSource": "Same as selected equipment."
+    },
+    {
+      "frame": "kestrel-c",
+      "variantName": "Harrier",
+      "concept": {
+        "image": "design/mechs/chassis/kestrel/concept/c/kestrel-c.png",
+        "sha256": "94242f2fc2891873d02ac0081a4427e904d3fd1e2185325d8bdd8a8c5be88125"
+      },
+      "turnaround": {
+        "front": {
+          "image": "design/mechs/chassis/kestrel/turnaround/c/front.png",
+          "sha256": "40a22c6c8dd2172b78790252195c44da170c5bd2b81aa723f5126202feed84bc"
+        },
+        "back": {
+          "image": "design/mechs/chassis/kestrel/turnaround/c/back.png",
+          "sha256": "6384f4ce8128228ab0587e8a6edf2a276c5bde46fdf9761c647a6c0036c32b14"
+        },
+        "own-left": {
+          "image": "design/mechs/chassis/kestrel/turnaround/c/own-left.png",
+          "sha256": "71613b37309441d8e0bd6ecb4fe129b6673fd959f57a272e7ae67409bca80ecf"
+        },
+        "own-right": {
+          "image": "design/mechs/chassis/kestrel/turnaround/c/own-right.png",
+          "sha256": "3b7e4a6c424ebfbe5c3f7c9c61916ab75aa2484ecc53398c884b63062432aac2"
+        }
+      },
+      "mountContract": [
+        {
+          "id": "left-gun",
+          "family": "ballistic",
+          "size": "small",
+          "weapon": "machine-gun",
+          "reserve": 1200,
+          "side": "own-left",
+          "selectedWeapon": "RATTLER"
+        },
+        {
+          "id": "right-compact pod",
+          "family": "launcher",
+          "size": "small",
+          "weapon": "stream-missiles",
+          "reserve": 220,
+          "side": "own-right",
+          "selectedWeapon": "NEEDLE/2"
+        }
+      ],
+      "visualReview": "Two assemblies. Own-left seven-bore Rattler and own-right compact paired-exit launcher cartridge. Needle and Lance use the same launcher-family geometry. Far-side assemblies are occluded in profile. Shared cockpit, rear counterweight, brackets and reverse-jointed legs retain the A assembly geometry.",
+      "stockFitAtRenderSource": "The render used the same two-aperture cartridge already installed on the ship. Harrier now stocks NEEDLE/2 with 220 rounds to meet the 55 T stock-package limit."
+    }
+  ]
+}

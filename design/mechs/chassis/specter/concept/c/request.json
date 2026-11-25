@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "specter-c",
+  "background": "Transparent",
+  "details": "Own-left precision emitter, own-right two-well guided pod. A narrower hooded instrument carries two flush glazed designator optics. Reuse the shared body and its two original slot pivots.",
+  "loadout": [
+    {
+      "weaponId": "laser",
+      "rounds": 0
+    },
+    {
+      "weaponId": "stream-missiles",
+      "rounds": 360
+    }
+  ],
+  "baselineId": "specter-a-survey-mast"
+}

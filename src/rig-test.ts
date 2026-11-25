@@ -1,7 +1,6 @@
 import { PLAYABLE_FRAMES } from './frames';
-import { createMount } from './arsenal';
-import { getHardpoints } from './hardpoints';
-import { frameWeight } from './combat-resources';
+import { stockPackage } from './hardpoints';
+import { frameWeight, loadedMounts } from './combat-resources';
 import { createState, type CombatStateView, type State } from './simulation';
 import type { Settings } from './profile';
 
@@ -74,9 +73,10 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 		settings.controlMode = mode.value === 'arcade' ? 'arcade' : 'simulation';
 		const state = createState({ frame: frame.id });
 		if (equipment.value === 'empty') state.loadout = [];
-		if (equipment.value === 'loaded') state.loadout = getHardpoints(frame.id).flatMap(function (mount, slot) {
-			const weapon = mount.weapons[0]; return weapon ? [{ ...createMount(weapon), slot }] : [];
-		});
+		if (equipment.value === 'loaded') {
+			const stock = stockPackage(frame.id);
+			state.loadout = loadedMounts(stock.loadout, stock.reserves);
+		}
 		state.spawnIn = Infinity;
 		start(state); scenario = current(); applyFinish();
 	};

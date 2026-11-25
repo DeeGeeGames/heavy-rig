@@ -1,0 +1,41 @@
+{
+  "chassisId": "bastion",
+  "variantId": "bastion-b",
+  "contractSignature": "0f5a2ec7374ce4d905e99b90e6e757054c9038b962de0f4ca10cfb16ce08192c",
+  "mounts": [
+    {
+      "id": "left-casemate",
+      "name": "Left casemate",
+      "family": "energy",
+      "maxSize": "small",
+      "weapons": [
+        "laser"
+      ]
+    },
+    {
+      "id": "right-casemate",
+      "name": "Right casemate",
+      "family": "launcher",
+      "maxSize": "medium",
+      "weapons": [
+        "stream-missiles",
+        "stream-missiles-4",
+        "cluster-missiles",
+        "cluster-missiles-4",
+        "stream-rockets",
+        "stream-rockets-4",
+        "cluster-rockets",
+        "cluster-rockets-4"
+      ]
+    }
+  ],
+  "baseline": {
+    "id": "bastion-a-split-mantlet",
+    "image": "design/mechs/chassis/bastion/concept/a/image.png",
+    "imageSha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882",
+    "variantId": "bastion"
+  },
+  "reviewStatus": "selected-by-delegated-art-direction",
+  "ownerApproval": null,
+  "mountReview": "A low closed teal lens is visible on the own-left. Four round wells form a 2 by 2 rocket rack inside the own-right hood."
+}

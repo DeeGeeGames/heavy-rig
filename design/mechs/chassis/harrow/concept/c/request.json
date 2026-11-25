@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "harrow-c",
+  "background": "Transparent",
+  "details": "One long stepped siege barrel and its reinforced breech replace the cup. The long pale jacket and narrow nose remain recognizable in profile. Reuse the shared body and its two original slot pivots.",
+  "loadout": [
+    {
+      "weaponId": "autocannon",
+      "rounds": 240
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    }
+  ],
+  "baselineId": "harrow-a-walking-carriage"
+}

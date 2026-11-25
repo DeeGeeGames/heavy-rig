@@ -4,8 +4,7 @@ import type { FrameId } from './frames';
 import type { Difficulty } from './operation';
 import { getPilot, type RECRUIT_IDS } from './pilots';
 import type { MissionTier } from './reputation';
-import { createStarterLoadout } from './hardpoints';
-import { defaultReserves } from './combat-resources';
+import { stockPackage } from './hardpoints';
 import { createMissionState, type SquadmateOptions } from './simulation';
 
 export interface SituationSetup {
@@ -26,8 +25,8 @@ export const createSituationMission = function (setup: SituationSetup, seed: num
 		if (!pilotId) return [];
 		const { callsign, specialty } = getPilot(pilotId);
 		if (specialty === 'commander') return [];
-		const loadout = createStarterLoadout(frame);
-		return [{ pilotId, callsign, specialty, frameId: frame, integrity: 100, loadout, reserves: defaultReserves(loadout) }];
+		const equipment = stockPackage(frame);
+		return [{ pilotId, callsign, specialty, frameId: frame, integrity: 100, ...equipment }];
 	});
 	return createMissionState(contract, { difficulty, frame: setup.frame, squadmates });
 };

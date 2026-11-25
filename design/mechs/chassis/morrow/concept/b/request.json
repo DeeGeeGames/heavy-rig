@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "morrow-saturation",
+  "background": "Transparent",
+  "details": "Fit a widened, shorter three-by-two nose to each common aft receiver. Twelve physical openings in two pods. Keep the olive cockpit bridge, tan visor roof and rearward-hock undercarriage.",
+  "loadout": [
+    {
+      "weaponId": "cluster-rockets-6",
+      "rounds": 360
+    },
+    {
+      "weaponId": "cluster-rockets-6",
+      "rounds": 360
+    }
+  ],
+  "baselineId": "morrow-a-bulwark"
+}

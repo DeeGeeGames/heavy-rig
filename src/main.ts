@@ -1,3 +1,4 @@
+import { HARROW_MAX_RANGE, mortarProfile, mountInterval } from './frame-tactics';
 import { rigFrameId, rigName } from './rigs';
 import { getFrameOffer } from './market';
 import { companyRank } from './reputation';
@@ -26,7 +27,7 @@ import { getFrame } from './frames';
 import { MOUNTS, loadSummary, massLabel } from './loadout-ui';
 import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
-import { createMissionState, createState, distance, getOperationReport, missileLockRange, type Controls, type Point, type SquadmateOptions } from './simulation';
+import { artilleryAimStatus, createMissionState, createState, distance, getOperationReport, missileLockRange, type Controls, type Point, type SquadmateOptions } from './simulation';
 import { createPresentation } from './presentation';
 import { LAUNCH_DURATION, launchSceneTime } from './launch-timing';
 import { advanceGaits, createGaits } from './gait';
@@ -1341,9 +1342,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				clearTouchFacing();
 				if (!touchTargeting.select(point, contacts) && ground) {
 					touchAimPointer = event.pointerId;
-					touchFacing.select(ground, state.player);
+					touchFacing.select(ground, state.player, Boolean(mortarProfile(state.frame)));
 				}
-			} else if (touchAimPointer === event.pointerId && ground) touchFacing.select(ground, state.player);
+			} else if (touchAimPointer === event.pointerId && ground) touchFacing.select(ground, state.player, Boolean(mortarProfile(state.frame)));
 			return;
 		}
 		setInputMode('keyboard');
@@ -1487,29 +1488,34 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const hardpoint = hardpoints[index];
 			button.hidden = hardpoint === undefined;
 			if (!hardpoint) { button.disabled = true; continue; }
-			const family = WEAPON_FAMILY_LABELS[hardpoint.family];
+			const mortar = mortarProfile(state.frame, index);
+			const family = mortar ? 'ARTILLERY' : WEAPON_FAMILY_LABELS[hardpoint.family];
 			const mount = state.loadout.find(function (entry, position) { return (entry.slot ?? position) === index; }); const binding = MOUNTS[index]; if (!binding) continue;
 			const weapon = mount ? getWeapon(mount.weapon) : undefined;
 			button.hidden = !hardpoint || touchLayout && !mount;
 			button.disabled = !mount || Boolean(drill && drill !== 'combined' && index !== drillSlot);
 			const dry = Boolean(mount && !usableMount(mount));
+			const mortarAim = mortar && (state.enemies.find(function (enemy) { return enemy.id === p.targetId && enemy.hp > 0; })
+				?? missionStructures(state.mission).find(function (target) { return target.id === p.targetId && target.body.hp > 0; })?.body ?? aim);
+			const mortarStatus = mortarAim ? artilleryAimStatus(state, mortarAim) : undefined;
+			const weaponName = weapon && (mortar ? `${mortar.name}${touchLayout ? '' : ` · T${weapon.tier}`}` : touchLayout ? weapon.name.replace(` · T${weapon.tier}`, '') : weapon.name);
 			const firing = Boolean(mount && !dry && !button.disabled && !p.overheated && playing() && (mount.firing || active(binding.action) || currentPad?.fire[index]));
 			button.classList.toggle('empty', !mount || dry); button.classList.toggle('firing', firing); button.classList.toggle('locked', p.overheated);
 			const mapped = touchLayout ? '' : ` ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${controllerButtonLabel(controllerFamily, profile.settings.controller[binding.action])}.`;
-			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}, ${hardpoint.name}, ${family}: ${weapon.name}, ${weapon.ammunition ? `${mount.rounds} rounds remaining` : 'no ammunition required'}.${dry ? ' Empty ammunition.' : p.overheated ? ' Heat locked.' : ''}${mapped}` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. ${practice ? 'Pause to change loadout.' : 'Equip compatible purchased weapons in the Mech Bay.'}`);
+			button.setAttribute('aria-label', mount && weapon ? `Fire mount ${index + 1}, ${hardpoint.name}, ${family}: ${weaponName}, ${weapon.ammunition ? `${mount.rounds} rounds remaining` : 'no ammunition required'}.${dry ? ' Empty ammunition.' : p.overheated ? ' Heat locked.' : ''}${mapped}` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. ${practice ? 'Pause to change loadout.' : 'Equip compatible purchased weapons in the Mech Bay.'}`);
 			const location = button.querySelector('.weapon-mount'); if (location) location.textContent = `${hardpoint.name}${!touchLayout && mount ? ` · ${weapon?.ammunition ? `${mount.rounds} RDS` : 'ENERGY'}` : ''}`;
-			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${weapon.type}` : ' · Empty'}`;
+			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${mortar ? '200–1250 M · AC rounds' : weapon.type}` : ' · Empty'}`;
 			const title = button.querySelector('b');
-			if (title) title.textContent = weapon ? touchLayout ? weapon.name.replace(` · T${weapon.tier}`, '') : weapon.name : 'EMPTY';
+			if (title) title.textContent = weaponName ?? 'EMPTY';
 			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}`;
 			const prompt = button.querySelector<HTMLElement>('.weapon-prompt');
 			if (prompt) render(touchLayout || button.disabled ? '' : combatPrompt(binding.action), prompt);
 			const ammunitionLabel = !mount || !weapon ? '' : weapon.ammunition ? `${mount.rounds}${touchLayout ? '' : ' RDS'}` : 'ENERGY';
 			const ammunition = button.querySelector('.weapon-ammo'); if (ammunition) ammunition.textContent = ammunitionLabel && touchLayout && weapon ? `${ammunitionLabel} T${weapon.tier}` : ammunitionLabel;
-			const status = !mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : dry ? 'NO AMMO' : p.overheated ? 'HEAT LOCK' : mount.cooldown > 0 ? `CD ${mount.cooldown.toFixed(1)}s` : firing ? 'FIRING' : 'READY';
+			const status = !mount ? 'EMPTY' : button.disabled ? 'DRILL LOCK' : dry ? 'NO AMMO' : p.overheated ? 'HEAT LOCK' : mortarStatus ?? (mount.cooldown > 0 ? `CD ${mount.cooldown.toFixed(1)}s` : firing ? 'FIRING' : 'READY');
 			button.dataset['resourceState'] = dry ? 'dry' : p.overheated ? 'heat' : mount && mount.cooldown > 0 ? 'cooldown' : 'ready';
 			const label = button.querySelector('em'); if (label) label.textContent = status;
-			const fill = button.querySelector('i'); if (fill) fill.style.width = `${mount && weapon ? Math.max(0, 1 - mount.cooldown / Math.max(.01, weapon.interval)) * 100 : 0}%`;
+			const fill = button.querySelector('i'); if (fill) fill.style.width = `${mount && weapon ? Math.max(0, 1 - mount.cooldown / Math.max(.01, mountInterval(state.frame, index, weapon))) * 100 : 0}%`;
 			button.style.setProperty('--weapon-color', weapon?.color ?? 'var(--muted)');
 		}
 		const coolantLocked = state.coolantCharges <= 0 || Boolean(drill && drill !== 'coolant');
@@ -1660,10 +1666,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				...state.enemies.filter(function (enemy) { return enemy.hp > 0; }).map(function (enemy) { return { id: enemy.id, point: enemy }; }),
 				...missionStructures(state.mission).filter(function (target) { return target.body.hp > 0; }).map(function ({ id, body }) { return { id, point: body }; }),
 			];
-			const missileRange = pad.connected ? missileLockRange(state.frame, state.loadout) : 0;
+			const mortar = mortarProfile(state.frame);
+			const reticleAcquisition = Boolean(mortar) || state.frame === 'specter-c';
+			const assistRange = pad.connected ? Math.max(missileLockRange(state.frame, state.loadout), mortar ? HARROW_MAX_RANGE : 0) : 0;
 			const inStickRange = function (point: Point, assistDistance: number) {
 				if (assistDistance < 850) return true;
-				if (!withinWeaponRange(distance(point, state.player), missileRange)) return false;
+				if (!withinWeaponRange(distance(point, state.player), assistRange)) return false;
 				return isContactVisible(presentation.toScreen(point, targetElevation(point)), width, height, hudObstructions);
 			};
 			if (!aimTargets.some(function (target) { return target.id === acquiredTargetId; })) acquiredTargetId = undefined;
@@ -1684,7 +1692,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					return { ...target, alignment: (dx * pad.aimX + dy * pad.aimY) / Math.max(1, Math.hypot(dx, dy) * length) };
 				}).filter(function (target) { return target.alignment > 0.975 && inStickRange(target.point, distance(target.point, state.player)); })
 					.sort(function (a, b) { return b.alignment - a.alignment; });
-				const target = targets[0]; acquiredTargetId ??= target?.id;
+				const target = targets[0];
+				if (reticleAcquisition) acquiredTargetId = target?.id;
+				else acquiredTargetId ??= target?.id;
 				if (target) aim = { x: target.point.x, y: target.point.y };
 			} else if (pointer && aimMode === 'pointer') {
 				aim = presentation.toGround(pointer) ?? aim;
@@ -1692,7 +1702,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const targetScreen = function (target: Point) { return presentation.toScreen(target, targetElevation(target)); };
 				const picked = aimTargets.sort(function (a, b) { return distance(targetScreen(a.point), cursor) - distance(targetScreen(b.point), cursor); })[0];
 				const target = picked && distance(targetScreen(picked.point), cursor) < 42 * viewScale(width, height) ? picked : undefined;
-				acquiredTargetId ??= target?.id;
+				if (reticleAcquisition) acquiredTargetId = target?.id;
+				else acquiredTargetId ??= target?.id;
 				if (target) aim = { x: target.point.x, y: target.point.y };
 			}
 			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') {
@@ -1703,7 +1714,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					return { ...candidate, along: dx * forwardX + dy * forwardY, across: Math.abs(dx * forwardY - dy * forwardX) };
 				}).filter(function (candidate) { return candidate.along > 0 && candidate.across <= 25 && inStickRange(candidate.point, candidate.along); })
 					.sort(function (a, b) { return a.along - b.along; })[0];
-				acquiredTargetId ??= target?.id;
+				if (reticleAcquisition) acquiredTargetId = target?.id;
+				else acquiredTargetId ??= target?.id;
 			} else if (aimMode === 'gamepad' && acquiredTargetId !== undefined) {
 				const target = aimTargets.find(function (candidate) { return candidate.id === acquiredTargetId; });
 				if (target) aim = { x: target.point.x, y: target.point.y };

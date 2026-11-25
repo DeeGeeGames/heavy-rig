@@ -1,6 +1,17 @@
 # Retained mech authoring inputs
 
-All nine playable variants use hand-faceted armor, blocks of chassis paint and a small emissive visor. Each family shares a body, articulated legs and firing mounts. The mounted weapons distinguish its variants. Compare the [nine production models in the Mech Bay](playable-variants.png) and the [three A models in Practice and the Mech Bay](playable-a-lineup.png).
+All 27 playable variants use hand-faceted armor, blocks of chassis paint and a small emissive visor. Each family shares a body, articulated legs and firing mounts. The mounted weapons distinguish its variants. Compare the [full roster](field-roster.png), the [first nine production models in the Mech Bay](playable-variants.png) and the [three shared finish references in Practice and the Mech Bay](playable-a-lineup.png).
+
+The [Practice contact sheet](field-roster-practice.png) shows unscaled crops of all 27 stock variants. The [Situation Sim sortie](field-roster-squad.png) shows Harrow Barrage deployed with Bastion Bulwark, Specter Designator and Morrow Pursuer. The [per-variant measurements](field-roster.json) record geometry, loaded weapons, firing and terrain clearance.
+
+The six new families share the same source format. Each recipe owns the outline, plate colors, faction paint mask, joints, receivers and individual cartridges. The packer emits one base GLB and a second GLB containing only the additional fittings. It records which parts each variant reuses and the SHA-256 of the base it fits. Player, squad and opposition all use the fitted rig's measured firing exits.
+
+```sh
+python3 scripts/mech-design/build-roster-kits.py --check
+python3 scripts/mech-design/build-roster-kits.py --family rook --out design/mechs/generated/rook-inspection
+```
+
+The three earlier families retain their source-specific rebuilds.
 
 | Playable family | A-model triangles | Selected silhouette | High-detail source |
 | --- | ---: | --- | --- |

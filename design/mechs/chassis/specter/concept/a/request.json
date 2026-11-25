@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "specter",
+  "background": "Transparent",
+  "details": "PATHFINDER. A narrow upright off-white and aubergine reconnaissance biped, with a tiny forward-canted cab offset towards its own right and an aqua pilot slit. Give the permanent protected survey instrument one clearly glazed, sideways-surveying wide solid head in an open-edged roll hoop: asymmetrical and unmistakably a receiver, with neither barrel nor black hole. The two compact guns are lower and separated from it: own-left small lens emitter and own-right light machine gun. Lanky open-link legs; splayed compact two-prong field shoes with a rear heel. Strong Negative space around protected optics. Contract the chassis around the survey head; avoid the horizontal Kestrel beak.",
+  "loadout": [
+    {
+      "weaponId": "laser",
+      "rounds": 0
+    },
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    }
+  ]
+}

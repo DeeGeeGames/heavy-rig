@@ -64,16 +64,20 @@ const platePaintCases = [
 	return `${cases.join(' ')} return ${paint};`;
 }).join('\n');
 
-export const mechPlateShader = `vec2 mechPlate(vec3 pigment) {
+export const mechPlateShader = function (paintMask = false) {
+	if (paintMask) return `attribute vec4 _mech_paint;
+vec2 mechPlate(vec3 pigment) { return vec2(floor(_mech_paint.r * 2. + .5), _mech_paint.g); }`;
+	return `vec2 mechPlate(vec3 pigment) {
 	ivec3 rgb = ivec3(pigment * 255.0 + 0.5);
 	switch (rgb.r * 65536 + rgb.g * 256 + rgb.b) {
 		${platePaintCases}
 	}
 	return vec2(0.);
 }`;
+};
 
 export type SkinSurface = 'primary' | 'secondary' | 'palette-primary' | 'palette-secondary' | 'pixel-plates' | 'pod' | 'mechanism' | 'gun' | 'procedural';
-interface SkinMaterialOptions { surface: SkinSurface; scale: Vector3; barrelCutoff?: number }
+interface SkinMaterialOptions { surface: SkinSurface; scale: Vector3; barrelCutoff?: number; paintMask?: boolean }
 
 export const applyMechSkinMaterial = function (material: MeshStandardMaterial, skin: MechSkinId | Color, options: SkinMaterialOptions): void {
 	if (skin === 'original') return;
@@ -93,7 +97,7 @@ export const applyMechSkinMaterial = function (material: MeshStandardMaterial, s
 	const second = surface === 'secondary' || surface === 'palette-secondary' || surface === 'pod' || surface === 'gun';
 	const colors = second ? secondary : primary;
 	const thresholds = second ? palette.secondaryThresholds : palette.thresholds;
-	material.customProgramCacheKey = function () { return `mech-skin-1:${skinName}:${mode}`; };
+	material.customProgramCacheKey = function () { return `mech-skin-1:${skinName}:${mode}:${options.paintMask === true}`; };
 	material.onBeforeCompile = function (shader) {
 		shader.uniforms['mechPattern'] = pattern;
 		shader.uniforms['mechPatternReady'] = patternReady;
@@ -110,7 +114,7 @@ export const applyMechSkinMaterial = function (material: MeshStandardMaterial, s
 		if (mode === 'pixel-plates') {
 			shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
 varying vec2 vMechPlate;
-${mechPlateShader}`).replace('#include <color_vertex>', '#include <color_vertex>\nvMechPlate = mechPlate(color.rgb);');
+${mechPlateShader(options.paintMask)}`).replace('#include <color_vertex>', '#include <color_vertex>\nvMechPlate = mechPlate(color.rgb);');
 			shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\n#define MECH_PIXEL_PLATES\nvarying vec2 vMechPlate;');
 		}
 		shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>

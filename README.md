@@ -289,10 +289,10 @@ extraction pays once.
 
 ## Frames and variants
 
-There are three playable chassis with three separately purchasable variants each.
-All nine use SNES-style models. Each family shares its body and gait, with fitted weapons that identify the variant. [In-game roster](design/mechs/assets/playable-variants.png) · [Model records](design/mechs/assets/README.md)
-Longbow, Morrow and Rook are out of the playable roster. A save containing one
-of those rigs loads as a fresh company.
+The Market and Simulator offer 27 separately fitted variants across nine chassis.
+Each family shares its faceted body and articulated legs. Its cartridges and specialist equipment distinguish the three variants. [Roster comparison](design/mechs/assets/field-roster.png) · [Model records](design/mechs/assets/README.md)
+
+Longbow keeps its three original IDs. Rook Lancer and Escort, and Morrow Saturation and Pursuer, use distinct IDs to preserve the retired prototypes’ equipment contracts.
 Each variant has its own crew, equipment, ammunition settings, and condition;
 shared weapon inventory prevents double allocation. Dealer purchases include a
 complete random loadout within unlocked weapon quality. The Market lists every
@@ -305,6 +305,14 @@ and refitted elsewhere.
 | Kestrel | Skirmisher: 2 Small B | Spark: Small B + Small E | Harrier: Small B + Small L |
 | Warden | Line: 2 Medium B + 2 Large L | Battery: 2 Medium B + 2 Medium E | Combined: 2 Medium B + Medium E + Large L |
 | Maul | Breacher · 2 Large L + 2 Small B | Breaker · 2 Medium B + 2 Small E | Furnace · Medium B + Medium E + Small E + Small L |
+| Rook | Raider · AC/38, Rattler, Lance/2 | Lancer · Tempest, Rattler, Needle/2 | Escort · Rattler, ARC, Needle/2 |
+| Longbow | Marksman · Tempest | Rifleman · AC/38 and ARC | Overwatch · Tempest and Needle/2 |
+| Morrow | Salvo · twin Trident/4 | Saturation · twin Hailstorm/6 | Pursuer · twin fast-cycling Needle/2 |
+| Bastion | Bulwark · twin AC/38 | Gatekeeper · ARC and Hailstorm/4 | Sentinel · AC/38 and Needle/2 |
+| Harrow | Bombard · blast mortar | Barrage · three-impact mortar | Siegebreaker · anti-facility mortar |
+| Specter | Pathfinder · survey, ARC and Rattler | Disruptor · jammer and twin Rattlers | Designator · marking optics, ARC and Needle/2 |
+
+All Harrows retain a right-hand Rattler for close defense. Their dorsal cartridges use AC/38 ammunition. In a stock package, Harrier carries 220 guided rounds and Overwatch carries 240.
 
 B means ballistic, E energy, and L launcher. Each hardpoint holds one weapon
 of the same family, up to its listed size. Rattler and ARC are Small. AC/38
@@ -605,7 +613,7 @@ Each family shares a rigid gait and sockets for its variant weapons. Weapon and
 cooling effects follow their posed anchors. Hostile walkers and vehicles have
 their own models.
 
-`models-preview.html` shows all nine playable models and seven hostiles with
+`models-preview.html` shows all 27 playable models and seven hostiles with
 walk, reverse, turn, independent aim, firing, playback and orbit controls.
 **Circle walk** repeats the silhouette test with two torso sweeps per lap.
 `warden-preview.html` opens the Warden A study. The standalone equivalents
@@ -749,7 +757,7 @@ Run `bun run test:rigs` to build and serve a dedicated playground on port 3003,
 bound to all network interfaces. Open `http://localhost:3003/` or use the host's
 LAN address from another device. The script stays running until Ctrl+C.
 
-Choose any of the nine playable frame variants, Simulation or Arcade controls, and starter,
+Choose any of the 27 playable frame variants, Simulation or Arcade controls, and starter,
 fully loaded, or empty mounts. Switching a choice or pressing Reset starts a
 fresh run. Collapse the test panel for more battlefield space. Compare acceleration,
 coasting, braking, reversing, hull turning, independent aim, and firing while moving.

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "bastion-b",
+  "background": "Transparent",
+  "details": "The closed laser face sits in the own-left recess. The own-right rack presents a 2 by 2 group of four separate wells. Reuse the shared body and its two original slot pivots.",
+  "loadout": [
+    {
+      "weaponId": "laser",
+      "rounds": 0
+    },
+    {
+      "weaponId": "cluster-rockets-4",
+      "rounds": 360
+    }
+  ],
+  "baselineId": "bastion-a-split-mantlet"
+}

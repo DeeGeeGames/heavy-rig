@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "mode": "variant",
+  "variantId": "rook-escort",
+  "background": "Transparent",
+  "details": "Fit the short ballistic cluster to own-left, the small sea-green optical emitter to own-right, and the two-cell guided insert in the same center dorsal casing. Preserve the cream chest, split boots and blue greaves.",
+  "loadout": [
+    {
+      "weaponId": "machine-gun",
+      "rounds": 1200
+    },
+    {
+      "weaponId": "laser",
+      "rounds": 0
+    },
+    {
+      "weaponId": "stream-missiles",
+      "rounds": 360
+    }
+  ],
+  "baselineId": "rook-a-square-slate"
+}

@@ -58,21 +58,23 @@ export const touchAimPoint = function (origin: Point, heading: number): Point {
 	return { x: origin.x + Math.cos(heading) * 600, y: origin.y + Math.sin(heading) * 600 };
 };
 
-// An explicit ground aim holds a world heading until the legs turn it out of arc.
+// Direct fire holds a heading. Artillery can keep an exact ground coordinate.
 export const createTouchFacing = function () {
 	let heading: number | undefined;
-	const clear = function () { heading = undefined; };
+	let ground: Point | undefined;
+	const clear = function () { heading = undefined; ground = undefined; };
 	return {
 		clear,
 		active: function () { return heading !== undefined; },
-		select: function (point: Point, origin: Point) {
+		select: function (point: Point, origin: Point, fixedGround = false) {
+			ground = fixedGround ? { ...point } : undefined;
 			if (point.x === origin.x && point.y === origin.y) clear();
 			else heading = Math.atan2(point.y - origin.y, point.x - origin.x);
 		},
 		resolve: function (origin: Point & { angle: number }): Point | undefined {
 			if (heading === undefined) return undefined;
-			const aim = touchAimPoint(origin, heading);
-			if (inFiringArc(origin, origin.angle, aim)) return aim;
+			const aim = ground ?? touchAimPoint(origin, heading);
+			if (ground || inFiringArc(origin, origin.angle, aim)) return aim;
 			clear();
 			return undefined;
 		},

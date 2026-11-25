@@ -3,6 +3,7 @@ import type { AuthoredPoseContext } from './authored-pose';
 import { Box3, Group, Matrix4, Mesh, Vector3 } from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { getFrame, type FrameId } from './frames';
+import { mountInterval } from './frame-tactics';
 import { getWeapon, type WeaponFamily, type WeaponMount } from './arsenal';
 import { footPose, legJoints, mechScale, posedLegRig, STANDARD_LEG_RIG, type WalkerGait } from './gait';
 import { FRAME_RIGS } from './frame-rig';
@@ -23,13 +24,14 @@ export interface MechFeedback { recoil: number; hit: number; heat: number; time:
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
-export const weaponRecoil = function (loadout: readonly WeaponMount[], family?: WeaponFamily): number {
-	return loadout.reduce(function (largest, mount) {
+export const weaponRecoil = function (loadout: readonly WeaponMount[], family?: WeaponFamily, frame?: FrameId): number {
+	return loadout.reduce(function (largest, mount, index) {
 		const weapon = getWeapon(mount.weapon);
 		if (family && weapon.family !== family) return largest;
 		if (weapon.kind === 'laser') return Math.max(largest, mount.firing ? 0.12 : 0);
-		const duration = Math.min(0.22, weapon.interval * 0.8);
-		const impulse = Math.max(0, (mount.cooldown - weapon.interval + duration) / duration);
+		const interval = frame ? mountInterval(frame, mount.slot ?? index, weapon) : weapon.interval;
+		const duration = Math.min(0.22, interval * 0.8);
+		const impulse = Math.max(0, (mount.cooldown - interval + duration) / duration);
 		const weight = weapon.kind === 'bullet' ? 0.35 : weapon.kind === 'missile' ? 0.65 : 1;
 		return Math.max(largest, Math.min(1, impulse) * weight);
 	}, 0);
@@ -47,7 +49,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	const root = new Group(); root.name = kind ? `${commander ? 'commander' : kind}-frame` : `${frame}-frame`;
 	const anatomy = new Group(); anatomy.name = 'anatomy'; anatomy.scale.setScalar(size); root.add(anatomy);
 	const enemyColors = { scout: '#9c6f4e', striker: '#8d5350', siege: '#6b5f60' };
-	const frameColors = { warden: '#738986', kestrel: '#597a73', maul: '#896650', longbow: '#6b6b89', morrow: '#6a7961', rook: '#667a8a' };
+	const frameColors = { warden: '#738986', kestrel: '#597a73', maul: '#896650', longbow: '#6b6b89', morrow: '#6a7961', rook: '#667a8a', bastion: '#408885', harrow: '#995c40', specter: '#537b76' };
 	const camouflage = typeof finish === 'string' && finish !== 'original' ? SKIN_PALETTES[finish] : undefined;
 	const solidPaint = typeof finish === 'object' ? finish : undefined;
 	const base = solidPaint ? { steel: '#6c7376', accent: '#738086', trim: '#adb7b2' } : {
@@ -65,8 +67,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	for (const part of turret.children) part.position.y -= rig.hipHeight - (rig.torsoRise ?? 0);
 	// Roll about the forward axis before pitching so suspension cannot rotate the displayed heading.
 	turret.rotation.order = 'YZX';
-	const slender = !kind && (chassis === 'kestrel' || chassis === 'longbow');
-	const broad = !kind && (chassis === 'maul' || chassis === 'morrow');
+	const slender = !kind && (chassis === 'kestrel' || chassis === 'longbow' || chassis === 'specter');
+	const broad = !kind && (chassis === 'maul' || chassis === 'morrow' || chassis === 'harrow' || chassis === 'bastion');
 	const legArmor = function (parent: Group, name: string, length: number, upper: boolean, lateral: number) {
 		const assembly = group(parent, name); const width = slender ? 4.7 : broad ? 8.5 : 7;
 		cylinder(assembly, 'load-bearing-strut', slender ? 2.3 : 3.3, length, dark, 0, 0, 0);
@@ -119,8 +121,10 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		if (!box) return;
 		bounds.push({ part: object, corners: [box.min.x, box.max.x].flatMap(function (x) { return [box.min.y, box.max.y].flatMap(function (y) { return [box.min.z, box.max.z].map(function (z) { return new Vector3(x, y, z); }); }); }) });
 	});
-	const rocketTubes = hardware.muzzles.map(function (anchor) { return anchor.children.filter(function (child) { return child.name === 'rocket-tube'; }); });
-	const rocketMuzzles = rocketTubes.map(function (tubes) { return tubes.map(function () { return new Vector3(); }); });
+	const indexedExits = hardware.muzzles.map(function (anchor) {
+		return anchor.children.filter(function (child) { return child.name === 'rocket-tube' || child.name === 'indexed-muzzle'; });
+	});
+	const rocketMuzzles = indexedExits.map(function (exits) { return exits.map(function () { return new Vector3(); }); });
 	const muzzles = hardware.muzzles.map(function () { return new Vector3(); }); const exhaust = new Vector3(); let labelHeight = 0;
 	const axis = new Vector3(0, 1, 0); const start = new Vector3(); const end = new Vector3(); const direction = new Vector3();
 	const forward = new Vector3(); const lateral = new Vector3(); const basis = new Matrix4(); const inverseRoot = new Matrix4(); const relative = new Matrix4(); const vertex = new Vector3();
@@ -151,6 +155,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			turret.rotation.z = (Math.sin(relativeHeading) * roll + Math.cos(relativeHeading) * pitch) * suspension;
 			const recoil = feedback?.recoil ?? 0;
 			poseWeapons(gait.body, heading, feedback?.target);
+			if (!kind) for (const [slot, assembly] of hardware.assemblies.entries()) assembly.part.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
 			for (const slide of hardware.slides) slide.position.x = -recoil * 5 * (kind ? 1 : definition.recoil);
 			for (const shutter of hardware.shutters) shutter.part.position.y = shutter.y + recoil * 5;
 			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = Math.max(feedback?.hit ?? 0, feedback?.response?.flash ?? 0) * 0.8;
@@ -179,7 +184,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			sampleLegPose(feedback?.legGait);
 			root.updateMatrixWorld(true); inverseRoot.copy(root.matrixWorld).invert();
 			for (const [index, anchor] of hardware.muzzles.entries()) muzzles[index]?.setFromMatrixPosition(anchor.matrixWorld).applyMatrix4(inverseRoot);
-			for (const [slot, tubes] of rocketTubes.entries()) for (const [index, tube] of tubes.entries()) rocketMuzzles[slot]?.[index]?.setFromMatrixPosition(tube.matrixWorld).applyMatrix4(inverseRoot);
+			for (const [slot, exits] of indexedExits.entries()) for (const [index, exit] of exits.entries()) rocketMuzzles[slot]?.[index]?.setFromMatrixPosition(exit.matrixWorld).applyMatrix4(inverseRoot);
 			exhaust.set(0, 0, 0); for (const anchor of hardware.vents) exhaust.add(vertex.setFromMatrixPosition(anchor.matrixWorld).applyMatrix4(inverseRoot));
 			if (hardware.vents.length > 0) exhaust.divideScalar(hardware.vents.length);
 			responseRig.apply(feedback?.response);

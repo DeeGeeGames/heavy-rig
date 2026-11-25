@@ -1,0 +1,74 @@
+{
+  "chassisId": "bastion",
+  "activeBaseline": "bastion-a-split-mantlet",
+  "baselines": [
+    {
+      "id": "bastion-a-split-mantlet",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/bastion/concept/a/image.png",
+      "imageSha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882",
+      "request": "design/mechs/chassis/bastion/concept/a/request.json",
+      "requestSha256": "77528f8c7247567eef2f3a19f4d1299a3d39a32b70f7e6385f87df07139941ea",
+      "prompt": "design/mechs/chassis/bastion/concept/a/prompt.txt",
+      "promptSha256": "d2e9686beb7d69ad052b55f55a580402949216d5c32cea9c38e2f738d0b81126",
+      "contractSignature": "0f5a2ec7374ce4d905e99b90e6e757054c9038b962de0f4ca10cfb16ce08192c",
+      "generation": "Built-in image generation, with the four actual PNGs in attachments.json and transparent background.",
+      "familyReview": "design/mechs/chassis/bastion/concept/a/family-review.json",
+      "approval": "Owner-delegated creative decision by the design agent on 2026-11-24 for the new playable family. Selected the Bulwark concept and representative two-mount layout for ticket #80."
+    }
+  ],
+  "variants": [
+    {
+      "variantId": "bastion-b",
+      "revision": "bastion-b-fitted",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/bastion/concept/b/image.png",
+      "imageSha256": "0d97108a6fb8464572f672444b9c020ac13d968ca00c1a06d0056eca45dbccf9",
+      "baselineId": "bastion-a-split-mantlet",
+      "baselineImageSha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882",
+      "request": "design/mechs/chassis/bastion/concept/b/request.json",
+      "requestSha256": "1ad7f9b34cca2e1131a3bbb7d4fb59a89a4128d75ab1ff966c7db27f41987cfa",
+      "prompt": "design/mechs/chassis/bastion/concept/b/prompt.txt",
+      "contractSignature": "0f5a2ec7374ce4d905e99b90e6e757054c9038b962de0f4ca10cfb16ce08192c",
+      "approval": "Design agent selected this exact rendered Gatekeeper stock fit under the owner’s delegated creative authority on 2026-11-24.",
+      "method": "Stock cartridge assembly rendered from the shared A body. The composed prompt records the variant brief."
+    },
+    {
+      "variantId": "bastion-c",
+      "revision": "bastion-c-fitted",
+      "status": "approved",
+      "approvalAuthority": "delegated-art-direction",
+      "image": "design/mechs/chassis/bastion/concept/c/image.png",
+      "imageSha256": "e3647e4802110f9da3239fcc39aa4fe37b5169f31ad515fa8891734c15dd4d88",
+      "baselineId": "bastion-a-split-mantlet",
+      "baselineImageSha256": "29442b822fbd997bafb3f5674bf39229815cd972b832e4a4c101cffb49256882",
+      "request": "design/mechs/chassis/bastion/concept/c/request.json",
+      "requestSha256": "15326b282c73af0eef86000e270346cc9e3be5826aff649e613b732866523506",
+      "prompt": "design/mechs/chassis/bastion/concept/c/prompt.txt",
+      "contractSignature": "0f5a2ec7374ce4d905e99b90e6e757054c9038b962de0f4ca10cfb16ce08192c",
+      "approval": "Design agent selected this exact rendered Sentinel stock fit under the owner’s delegated creative authority on 2026-11-24.",
+      "method": "Stock cartridge assembly rendered from the shared A body. The composed prompt records the variant brief."
+    }
+  ],
+  "activeGameDerivative": "design/mechs/chassis/bastion/assembly.json",
+  "turnarounds": [
+    {
+      "id": "bastion-fitted-turnaround",
+      "variantId": "bastion",
+      "manifest": "design/mechs/chassis/bastion/turnaround/a/manifest.json"
+    },
+    {
+      "id": "bastion-b-fitted-turnaround",
+      "variantId": "bastion-b",
+      "manifest": "design/mechs/chassis/bastion/turnaround/b/manifest.json"
+    },
+    {
+      "id": "bastion-c-fitted-turnaround",
+      "variantId": "bastion-c",
+      "manifest": "design/mechs/chassis/bastion/turnaround/c/manifest.json"
+    }
+  ],
+  "activeTurnaround": "bastion-fitted-turnaround"
+}

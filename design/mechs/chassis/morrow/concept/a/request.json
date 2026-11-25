@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "mode": "baseline",
+  "variantId": "morrow",
+  "background": "Transparent",
+  "details": "Bulwark construction. Low olive-green carrier, two huge flanking elongated horizontally-mounted tapered silos with buff front collars, sloping central armored olive cockpit bridge beneath and between the pods, one short amber visor below a buff roof, two widely splayed reverse-jointed legs with visible rearward hocks and broad short dark contact pads. Exactly one pod on each side, on close-coupled armored cheek trunnions. Each nose has four substantial guided cells arranged 2 across and 2 high. Keep a squat, broad front view and substantial fore-aft depth in both pods. No arms, hands or extra weapons.",
+  "loadout": [
+    {
+      "weaponId": "cluster-missiles-4",
+      "rounds": 240
+    },
+    {
+      "weaponId": "cluster-missiles-4",
+      "rounds": 240
+    }
+  ]
+}

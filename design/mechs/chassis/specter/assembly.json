@@ -1,0 +1,365 @@
+{
+  "schemaVersion": 1,
+  "chassisId": "specter",
+  "status": "selected-by-delegated-art-direction",
+  "selection": {
+    "date": "2026-11-24",
+    "authority": "Design agent exercising the owner’s creative delegation for these mech-design tickets.",
+    "scope": "Concepts, fitted stock modules, turnaround views and appearance of the shared authored game geometry.",
+    "ownerGameplayAcceptance": null,
+    "direction": "The asymmetric survey head, mineral armor, plum guard and exposed long legs were selected from the generated A direction. The permanent open mast carries a wide glazed receiver, two canted interference panels or a compact designator with two flush optics."
+  },
+  "construction": "A narrow pale chest curves forward of the plum pilot canopy. A cranked mast with a transverse bearing and separate diagonal stay supports the instrument. Low lateral weapon pins and the sensor use different attachments. Each long lower leg has a fixed rear idler, a bright piston, two toes and a hooked heel.",
+  "source": {
+    "method": "Hand-authored rigid plates and vertex paint in one shared source coordinate system.",
+    "recipe": {
+      "path": "scripts/mech-design/pixel_mechs/specter.py",
+      "sha256": "a872e5c7facccb8fbaca6cd0932c7c9e25ffd5e522c0ea964d90a362910a2f02"
+    },
+    "build": "scripts/mech-design/build-roster-kits.py",
+    "retainedConcept": {
+      "path": "design/mechs/chassis/specter/concept/a/image.png",
+      "sha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4"
+    }
+  },
+  "packages": {
+    "pixel.glb": {
+      "path": "public/assets/mechs/specter/pixel.glb",
+      "sha256": "dd60961884473ae9e0cbbfc3abde4480f0083a2f3be9b36afd6e0fef999e828b",
+      "bytes": 209564
+    },
+    "variants.glb": {
+      "path": "public/assets/mechs/specter/variants.glb",
+      "sha256": "6830406a6a79afab6fb31e639c31ad8b07e1ab018ea457a8caf04cf3b55d4e92",
+      "bytes": 75244
+    }
+  },
+  "structure": {
+    "coordinates": "Source millimetres, X positive toward own-left, Y up, Z forward. Soles at Y=0.",
+    "pivots": {
+      "torso": [
+        0,
+        515,
+        -9
+      ],
+      "pelvis": [
+        0,
+        432,
+        -8
+      ],
+      "hip": [
+        97,
+        427,
+        -12
+      ],
+      "knee": [
+        128,
+        292,
+        60
+      ],
+      "ankle": [
+        146,
+        55,
+        17
+      ]
+    },
+    "ownRightLeg": "Mirror the own-left hip, knee and ankle about X=0.",
+    "emptyInterfaces": "The two torso-owned brackets remain with the shell when the cartridges are empty. The passive instrument and mast stay attached to the torso independently of both weapon slots.",
+    "paint": {
+      "mineral": {
+        "zone": "primary",
+        "brightness": 1
+      },
+      "stone": {
+        "zone": "primary",
+        "brightness": 0.7
+      },
+      "plum": {
+        "zone": "secondary",
+        "brightness": 1
+      },
+      "wine": {
+        "zone": "secondary",
+        "brightness": 0.65
+      }
+    },
+    "textureImages": 0,
+    "materialNames": [
+      "Specter plate colors",
+      "Specter visor"
+    ],
+    "clips": [
+      "walk",
+      "run",
+      "backward"
+    ],
+    "sharedBodyTriangles": 2314,
+    "sharedRigidGeometrySha256": "bc1e0625e531348a5903c51b7119533689259615f901b83450c98e59cffa1baa",
+    "sharedRigidLeaves": {
+      "plates_rig_torso": "c045abff58c6e9847156b6e6becf0bc59665f780b89b5bada3c3db02b67ce317",
+      "plates_rig_leg_left_foot": "998c562f260e4d1c2507060d584bee5e6f30cc79e09761401f5803c52be6f4f0",
+      "plates_rig_leg_left_shin": "5907879a0e4978b88145052dfeacdc76c16a8d8bae09a0ba7ac545e490885bdb",
+      "plates_rig_leg_left_thigh": "eba2df65149762715f71e72527c4e7c595043844aabb85aabb12651cc9a8d2da",
+      "plates_rig_leg_right_foot": "9aeb4ad121dab0712caae1929615db9aca7ca14e3928a7b338a22040810c5629",
+      "plates_rig_leg_right_shin": "ebb86129ae5904c8d33165796e22d72db64d40ca78fbd6bdfd7625bd312b597d",
+      "plates_rig_leg_right_thigh": "f1241b5a9e3fdb5a28f68e73f7798a0c75860b4ab5d517ec2251aaeb4deb6308",
+      "plates_rig_pelvis": "5b6308f162330ee2d3a868aec2ddc40186d8ede2e1c868182efae352704eec10"
+    }
+  },
+  "verification": {
+    "meshInventory": "Each shared leaf hash covers the packed POSITION, NORMAL, COLOR_0, available paint attributes, triangle indices and neutral origin. All three variants reuse these eight rigid leaves and the same joint tree.",
+    "firingOpenings": "On the fitted exported triangles, each primary single muzzle or indexed multi-exit had a clear outward ray. The first face inward along that same axis is recorded for each aperture. Distances are in source millimetres.",
+    "neutralViews": "Front, back and both profiles are original-finish PNGs from the Three.js game asset loader. Each uses the same family-wide orthographic framing, a 512-square viewport and the stock equipment fixed by the live hardpoints.",
+    "studioViews": {
+      "method": "Blender Cycles orthographic render of the exported stock assemblies in the neutral bind pose. The facing, colors and indices come from the packaged triangles. Each frame is downsampled from 680 to 512 pixels with a transparent background.",
+      "cameraFromTargetSourceXYZ": [
+        -0.82,
+        0.31,
+        1
+      ],
+      "fitMargin": 1.1,
+      "fittedTo": "union of the three variants in this projection",
+      "samples": 12,
+      "lights": "Broad key, side fill and rear area light; Standard color transform.",
+      "renderedPackageHashes": {
+        "pixel.glb": "d65df27cdc834b221a6598c268ba5f7fd816054bc4b6c622222cfe9c35794fce",
+        "variants.glb": "f642d05a2fba771eb58366728ff9944fd2a4de867a43fb30d22c5ea41f7f53bc"
+      },
+      "shippingEquivalence": "Every drawn leaf, packed attribute, index and bind-space origin matched the final packages. The machine-gun origin on Harrow and Specter was aligned to the upper aperture after the render."
+    },
+    "practiceScale": {
+      "path": "design/mechs/chassis/specter/practice-scale.png",
+      "sha256": "eaea023eaa97e949a4686494bda719ef7a8818671afd4080fa444289b36469a0",
+      "sourceViewport": [
+        1060,
+        720
+      ],
+      "cropXYWH": [
+        373,
+        265,
+        182,
+        168
+      ],
+      "scale": 1,
+      "capture": "Each column is an unscaled crop of the integrated Practice range at the same starting position for the corresponding stock fit.",
+      "sourceScreenshotSha256": {
+        "specter": "a50f29993e6d3f8b92ffa6b71860a49b37423355ca15d7146005f60408870cc9",
+        "specter-b": "3ce37d679a5cf83e5552f0cbbf707624fdd3e01e645709dc31ebcd6df068e227",
+        "specter-c": "96f998aead2ba52bff12e17391ec53dd44d4ed05a39f455ad15592efdbceede9"
+      },
+      "observation": "The narrow waist, dogleg shin and raised instrument clear the dark body silhouette. The B array flares farther outward than the guarded A and C heads. The individual designator optics and weapon openings resolve in the frontal reference."
+    }
+  },
+  "variants": {
+    "a": {
+      "triangles": 2956,
+      "drawSections": 13,
+      "dimensionsMm": [
+        419.0,
+        907.492,
+        317.0
+      ],
+      "sockets": [
+        {
+          "slot": 0,
+          "socket": "rig_mount_left-utility",
+          "cartridge": "kit_a_0",
+          "muzzleWorldMm": [
+            160.0,
+            590.0,
+            114.5
+          ],
+          "indexedExitsWorldMm": [],
+          "openingCheck": [
+            {
+              "insetMm": 0.0,
+              "visibleSurface": "glass"
+            }
+          ],
+          "hardpointId": "left-survey emitter",
+          "category": "energy",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "slot": 1,
+          "socket": "rig_mount_right-utility",
+          "cartridge": "kit_a_1",
+          "muzzleWorldMm": [
+            -160.0,
+            602.0,
+            153.0
+          ],
+          "indexedExitsWorldMm": [],
+          "openingCheck": [
+            {
+              "insetMm": 14.5,
+              "visibleSurface": "bore"
+            }
+          ],
+          "hardpointId": "right-gun",
+          "category": "ballistic",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "torsoFitting": "fitting_a",
+      "packedMeshCount": 11,
+      "name": "Pathfinder",
+      "variantId": "specter",
+      "tracker": 107,
+      "fittedView": {
+        "path": "design/mechs/chassis/specter/concept/a/assembled.png",
+        "sha256": "4b73e6eaf51284240d5e71929c629e6ecbc3ec9cfe0d0daef61875b2c9dca949"
+      },
+      "mountReview": "A small closed lens on the own-left and a grouped machine gun on the own-right sit below the closed panoramic window.",
+      "turnaround": "design/mechs/chassis/specter/turnaround/a/manifest.json",
+      "visibleWeaponSocketsWhenEmpty": []
+    },
+    "b": {
+      "triangles": 3070,
+      "drawSections": 12,
+      "dimensionsMm": [
+        419.0,
+        902.0,
+        317.0
+      ],
+      "sockets": [
+        {
+          "slot": 0,
+          "socket": "rig_mount_left-utility",
+          "cartridge": "kit_b_0",
+          "muzzleWorldMm": [
+            160.0,
+            602.0,
+            153.0
+          ],
+          "indexedExitsWorldMm": [],
+          "openingCheck": [
+            {
+              "insetMm": 14.5,
+              "visibleSurface": "bore"
+            }
+          ],
+          "hardpointId": "left-gun",
+          "category": "ballistic",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        },
+        {
+          "slot": 1,
+          "socket": "rig_mount_right-utility",
+          "cartridge": "kit_a_1",
+          "muzzleWorldMm": [
+            -160.0,
+            602.0,
+            153.0
+          ],
+          "indexedExitsWorldMm": [],
+          "openingCheck": [
+            {
+              "insetMm": 14.5,
+              "visibleSurface": "bore"
+            }
+          ],
+          "hardpointId": "right-gun",
+          "category": "ballistic",
+          "weapon": "machine-gun",
+          "reserve": 1200
+        }
+      ],
+      "torsoFitting": "fitting_b",
+      "packedMeshCount": 11,
+      "name": "Disruptor",
+      "variantId": "specter-b",
+      "tracker": 108,
+      "fittedView": {
+        "path": "design/mechs/chassis/specter/concept/b/image.png",
+        "sha256": "fa58ed92b35ee7b43854ff94d4e3a8932d70395a1ac3966256308aa49e585a85"
+      },
+      "mountReview": "Two grouped machine guns remain below the two solid, canted interference panels. The own-right gun reuses the A cartridge.",
+      "turnaround": "design/mechs/chassis/specter/turnaround/b/manifest.json",
+      "visibleWeaponSocketsWhenEmpty": []
+    },
+    "c": {
+      "triangles": 2974,
+      "drawSections": 13,
+      "dimensionsMm": [
+        424.0,
+        907.48,
+        332.5
+      ],
+      "sockets": [
+        {
+          "slot": 0,
+          "socket": "rig_mount_left-utility",
+          "cartridge": "kit_c_0",
+          "muzzleWorldMm": [
+            160.0,
+            590.0,
+            168.5
+          ],
+          "indexedExitsWorldMm": [],
+          "openingCheck": [
+            {
+              "insetMm": 0.0,
+              "visibleSurface": "glass"
+            }
+          ],
+          "hardpointId": "left-precision emitter",
+          "category": "energy",
+          "weapon": "laser",
+          "reserve": 0
+        },
+        {
+          "slot": 1,
+          "socket": "rig_mount_right-utility",
+          "cartridge": "kit_c_1",
+          "muzzleWorldMm": [
+            -160.0,
+            590.0,
+            147.0
+          ],
+          "indexedExitsWorldMm": [
+            [
+              -184.0,
+              590.0,
+              147.0
+            ],
+            [
+              -136.0,
+              590.0,
+              147.0
+            ]
+          ],
+          "openingCheck": [
+            {
+              "insetMm": 29.0,
+              "visibleSurface": "bore"
+            },
+            {
+              "insetMm": 29.0,
+              "visibleSurface": "bore"
+            }
+          ],
+          "hardpointId": "right-compact pod",
+          "category": "launcher",
+          "weapon": "stream-missiles",
+          "reserve": 360
+        }
+      ],
+      "torsoFitting": "fitting_c",
+      "packedMeshCount": 11,
+      "name": "Designator",
+      "variantId": "specter-c",
+      "tracker": 109,
+      "fittedView": {
+        "path": "design/mechs/chassis/specter/concept/c/image.png",
+        "sha256": "1c5a3f66ece4c997984fc519970e62c7d4ef3cfe26f0c8f33058c74228522e34"
+      },
+      "mountReview": "The longer own-left emitter has a small bright optical core. Two physical wells on the own-right guided pod sit below the hooded designator mask.",
+      "turnaround": "design/mechs/chassis/specter/turnaround/c/manifest.json",
+      "visibleWeaponSocketsWhenEmpty": []
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "specter-c-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "specter",
+  "variantId": "specter-c",
+  "baselineId": "specter-a-survey-mast",
+  "baselineImageSha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4",
+  "source": "design/mechs/chassis/specter/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/specter/concept/c/image.png",
+    "sha256": "1c5a3f66ece4c997984fc519970e62c7d4ef3cfe26f0c8f33058c74228522e34"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/specter/turnaround/c/front.png",
+      "sha256": "8af4b05c44c00bcfe7b0e2be61ffab9677899059701dd51e795dc4a3ff89ebed"
+    },
+    "back": {
+      "path": "design/mechs/chassis/specter/turnaround/c/back.png",
+      "sha256": "b171d7f616d1aa33d50dfcabae98ed50dd54e60bdf752b38e7f7cad49a288082"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/specter/turnaround/c/own-left.png",
+      "sha256": "3bfa6372b65e14327fac00e5cc50b727d2cf0a09129e2159c9bc10265cce5d8c"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/specter/turnaround/c/own-right.png",
+      "sha256": "638a46df50776294c3eb277886bea5bfef08b2256674bfdf9ea07e7dbd71f59e"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "The longer own-left emitter has a small bright optical core. Two physical wells on the own-right guided pod sit below the hooded designator mask. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}

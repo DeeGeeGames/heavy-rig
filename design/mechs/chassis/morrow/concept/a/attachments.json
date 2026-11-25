@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "scope": "Ordered images supplied to the built-in image generator.",
+  "attachments": [
+    {
+      "role": "edit-target",
+      "image": "design/mechs/chassis/morrow/concept/a/exploration.png",
+      "imageSha256": "7bde01dbcb0ecb03b1e520991a99d9c742eb81d2d2f07ca6bf9313a6ec775c26",
+      "source": "Original exploratory ImageGen output, November 22, 2026. The hock-corrected Bulwark from the November 22 exploration was selected for the low bridge, blunt side-loading receiver saddles and short, broad feet. The selected edit changes the old six-well cassette to the four-cell guided A cartridge."
+    },
+    {
+      "role": "finish-reference",
+      "image": "design/mechs/assets/playable-a-lineup.png",
+      "imageSha256": "d1594b6a860989d5757897caa311ef81837bc5a0b9162c589818985d0a42c1b6"
+    },
+    {
+      "role": "style-reference",
+      "chassisId": "warden",
+      "baselineId": "warden-v1-candidate-01",
+      "image": "design/mechs/chassis/warden/concept/a/image.png",
+      "imageSha256": "ab40ced7dad57b56db416246b80bcbbbc76bf0b95251d78b48edd73816f526b3"
+    },
+    {
+      "role": "style-reference",
+      "chassisId": "kestrel",
+      "baselineId": "kestrel-a-baseline-v4",
+      "image": "design/mechs/chassis/kestrel/concept/a/kestrel-a.png",
+      "imageSha256": "4620b2dbfbaa5e1490782b652ee1090ae469681738dbdc1e777830fa659510e4"
+    },
+    {
+      "role": "style-reference",
+      "chassisId": "maul",
+      "baselineId": "maul-four-mount-baseline",
+      "image": "design/mechs/chassis/maul/concept/four-mount-baseline/breacher.png",
+      "imageSha256": "40fd841fe852a2fab44dd6a17f583f3fab182dd0a1d8c5b39f0d10f7d72328e0"
+    }
+  ]
+}

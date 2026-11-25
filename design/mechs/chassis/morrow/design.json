@@ -1,0 +1,63 @@
+{
+  "chassisId": "morrow",
+  "activeBaseline": "morrow-a-bulwark",
+  "baselines": [
+    {
+      "id": "morrow-a-bulwark",
+      "status": "approved",
+      "image": "design/mechs/chassis/morrow/concept/a/image.png",
+      "imageSha256": "341ca182c494aa08d69227c8d28d856b3be20c19f22013173742345d8cb671e6",
+      "request": "design/mechs/chassis/morrow/concept/a/request.json",
+      "requestSha256": "432297f609151d2d4465c66b0e7d50bce7cb1a902b55dd5cc4b1fd4daf1856e8",
+      "prompt": "design/mechs/chassis/morrow/concept/a/imagegen-prompt.txt",
+      "contractSignature": "50a973d4467bfed2d8283a2b8eacc2d8e6893cffec4e704f9d9c6122ff22d558",
+      "familyReview": "design/mechs/chassis/morrow/concept/a/family-review.json",
+      "decisionAuthority": "Owner-delegated design selection",
+      "ownerApproval": null,
+      "approval": "On 2026-11-24 the assigned design agent selected this exact image under the owner’s delegated creative authority. The hock-corrected Bulwark from the November 22 exploration was selected for the low bridge, blunt side-loading receiver saddles and short, broad feet. The selected edit changes the old six-well cassette to the four-cell guided A cartridge."
+    }
+  ],
+  "variants": [
+    {
+      "variantId": "morrow-saturation",
+      "variant": "B",
+      "variantName": "Saturation",
+      "revision": "assembled-2026-11-24",
+      "status": "approved",
+      "approval": "The assigned design agent selected the exact stock assembly image on 2026-11-24 under delegated creative authority.",
+      "decisionAuthority": "Owner-delegated design selection",
+      "ownerApproval": null,
+      "image": "design/mechs/chassis/morrow/concept/b/image.png",
+      "imageSha256": "3eb94ac159668e8353fd0d204748883b170d1a77f1f7b9d51a89791872f2e204",
+      "parentBaselineId": "morrow-a-bulwark",
+      "parentImageSha256": "341ca182c494aa08d69227c8d28d856b3be20c19f22013173742345d8cb671e6",
+      "request": "design/mechs/chassis/morrow/concept/b/request.json",
+      "requestSha256": "086a9098669112d7a60be6b53b20407d49d72710e22de6f7d8dd1bb09458c69f",
+      "prompt": "design/mechs/chassis/morrow/concept/b/equipment-brief.txt",
+      "promptRole": "The composer checked the equipment brief. The image was rendered directly from the fitted GLBs.",
+      "contract": "design/mechs/chassis/morrow/concept/b/contract.json",
+      "contractSignature": "50a973d4467bfed2d8283a2b8eacc2d8e6893cffec4e704f9d9c6122ff22d558"
+    },
+    {
+      "variantId": "morrow-pursuer",
+      "variant": "C",
+      "variantName": "Pursuer",
+      "revision": "assembled-2026-11-24",
+      "status": "approved",
+      "approval": "The assigned design agent selected the exact stock assembly image on 2026-11-24 under delegated creative authority.",
+      "decisionAuthority": "Owner-delegated design selection",
+      "ownerApproval": null,
+      "image": "design/mechs/chassis/morrow/concept/c/image.png",
+      "imageSha256": "001c158f8099448f52e3846ec135c5e6cf009d1c32c0f0d030e0ffdf6a0c62e2",
+      "parentBaselineId": "morrow-a-bulwark",
+      "parentImageSha256": "341ca182c494aa08d69227c8d28d856b3be20c19f22013173742345d8cb671e6",
+      "request": "design/mechs/chassis/morrow/concept/c/request.json",
+      "requestSha256": "347e931d27fdea2b2e528bc93182ed5b7eb1b963f8ddfd87ce1bfec13f1c59bd",
+      "prompt": "design/mechs/chassis/morrow/concept/c/equipment-brief.txt",
+      "promptRole": "The composer checked the equipment brief. The image was rendered directly from the fitted GLBs.",
+      "contract": "design/mechs/chassis/morrow/concept/c/contract.json",
+      "contractSignature": "50a973d4467bfed2d8283a2b8eacc2d8e6893cffec4e704f9d9c6122ff22d558"
+    }
+  ],
+  "assembledTurnaround": "design/mechs/chassis/morrow/assembled-turnaround/selection.json"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "specter-fitted-turnaround",
+  "status": "selected-by-delegated-art-direction",
+  "chassisId": "specter",
+  "variantId": "specter",
+  "baselineId": "specter-a-survey-mast",
+  "baselineImageSha256": "2c7d6b58d32865a94ae3db866411dbf5ca9b9a39c5d775b926859ffee736e5f4",
+  "source": "design/mechs/chassis/specter/assembly.json",
+  "fittedView": {
+    "path": "design/mechs/chassis/specter/concept/a/assembled.png",
+    "sha256": "4b73e6eaf51284240d5e71929c629e6ecbc3ec9cfe0d0daef61875b2c9dca949"
+  },
+  "views": {
+    "front": {
+      "path": "design/mechs/chassis/specter/turnaround/a/front.png",
+      "sha256": "18d02ab32f02ec1d69a9d490e3b08d2532a16be14b4a941f6fe101313bfb95c5"
+    },
+    "back": {
+      "path": "design/mechs/chassis/specter/turnaround/a/back.png",
+      "sha256": "2e09d5fd0b30ed59be9fe13dafcb6682129ca57a2b241b7d6ceac80f2d1ffa03"
+    },
+    "own-left": {
+      "path": "design/mechs/chassis/specter/turnaround/a/own-left.png",
+      "sha256": "ffb3cd240357aff3521efa88370d0f3639b5e41538540b3c466b52650a155ff6"
+    },
+    "own-right": {
+      "path": "design/mechs/chassis/specter/turnaround/a/own-right.png",
+      "sha256": "f3bfaa5e2c17d2ae35158fa4ccc685360ec1f9179d0d8d0aa869f3cee279bff8"
+    }
+  },
+  "decision": "Selected the matching front, back, own-left and own-right projections of the fitted, shared geometry under delegated creative authority on 2026-11-24.",
+  "review": "A small closed lens on the own-left and a grouped machine gun on the own-right sit below the closed panoramic window. The side projections show their respective near-side fittings. The far-side module can be occluded."
+}
