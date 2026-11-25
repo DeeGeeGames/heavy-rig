@@ -1,5 +1,6 @@
 import type { TerrainObstacle } from './field-terrain';
 
+export const PERIMETER_RIDGE_HEIGHT = 340;
 export const turbineHubHeight = function (o: TerrainObstacle) { return o.height + (o.width + o.depth) * .80; };
 export const rotorRadius = function (hubHeight: number) { return hubHeight * .46; };
 

@@ -5,6 +5,7 @@ import { createCutGround, createFieldStructures, paintFieldRoads } from './field
 import { hasBiomeGround, paintBiomeGround } from './biome-ground';
 import { groundHeight } from './terrain-elevation';
 import type { TerrainBakeSource } from './terrain-bake';
+import { PERIMETER_RIDGE_HEIGHT } from './scenery-flight';
 
 interface SurfacePalette { ground: string; dust: string; rock: string; road: string; sky: string; haze: string; light: string }
 export const SURFACE_PALETTES: Readonly<Record<Biome, SurfacePalette>> = {
@@ -139,7 +140,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	const hills = new InstancedMesh(rockShape, material(new MeshStandardMaterial({ color: palette.rock, roughness: 1 })), 36);
 	hills.name = 'distant-ridges'; hills.receiveShadow = true; staticArt.add(hills); batches.push(hills);
 	for (let i = 0; i < 36; i++) {
-		const side = i % 4; const radius = 100 + random() * 180; const height = 80 + random() * 260; const offset = radius + 90;
+		const side = i % 4; const radius = 100 + random() * 180; const height = 80 + random() * (PERIMETER_RIDGE_HEIGHT - 80); const offset = radius + 90;
 		const x = side < 2 ? random() * map.width : side === 2 ? -offset : map.width + offset;
 		const y = side >= 2 ? random() * map.height : side === 0 ? -offset : map.height + offset;
 		scratch.position.set(x, height / 2 - 3, y); scratch.rotation.set(0, random() * Math.PI, 0); scratch.scale.set(radius, height, radius); scratch.updateMatrix(); hills.setMatrixAt(i, scratch.matrix);

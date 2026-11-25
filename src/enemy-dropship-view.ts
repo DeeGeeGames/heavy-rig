@@ -1,4 +1,4 @@
-import type { Group } from 'three';
+import type { Group, Plane } from 'three';
 import type { AuthoredPoseContext } from './authored-pose';
 import { createDropshipShadow } from './dropship-shadow';
 import { dropRigPose, dropShipPose, dropSurfaceHeight, type DropFlight, type DropPassenger } from './enemy-deployment';
@@ -21,16 +21,18 @@ const shipColors = function (finish: MechFinish) {
 	return { steel: palette.primary[1], accent: palette.secondary[1] };
 };
 
-const createFlightView = function (parent: Group, flight: DropFlight, finish: MechFinish) {
+const createFlightView = function (parent: Group, flight: DropFlight, finish: MechFinish, boundary: Plane[], viewWidth: number) {
 	const ship = createDropship(shipColors(finish));
-	ship.root.rotation.y = Math.PI / 2 - flight.heading;
-	const shadow = createDropshipShadow(ship.root.rotation.y);
+	const shadow = createDropshipShadow(Math.PI / 2 - flight.heading);
+	shadow.root.material.clippingPlanes = boundary;
 	parent.add(ship.root, shadow.root);
 	return {
 		update: function (time: number, terrain: FieldTerrain | undefined) {
-			const pose = dropShipPose(flight, time);
+			const pose = dropShipPose(flight, time, viewWidth);
 			if (pose.done) return false;
 			ship.root.position.set(pose.x, pose.elevation, pose.y);
+			ship.root.rotation.set(0, Math.PI / 2 - pose.heading, pose.bank, 'YXZ');
+			shadow.root.rotation.y = ship.root.rotation.y;
 			ship.setRamp(pose.ramp, pose.ramp); ship.setThrust(pose.thrust);
 			shadow.update(terrain, pose, Math.max(0, pose.elevation - groundHeight(terrain, pose)));
 			return true;
@@ -79,7 +81,7 @@ const createPassengerView = function (parent: Group, warning: Warning, drop: Dro
 	};
 };
 
-export const createEnemyDropshipViews = function (parent: Group) {
+export const createEnemyDropshipViews = function (parent: Group, wideViewWidth: () => number) {
 	const flights = new Map<DropFlight, ReturnType<typeof createFlightView>>();
 	const passengers = new Map<Warning, ReturnType<typeof createPassengerView>>();
 	let owner: CombatStateView | undefined;
@@ -90,14 +92,14 @@ export const createEnemyDropshipViews = function (parent: Group) {
 		passengers.clear(); flights.clear();
 	};
 	return {
-		update: function (state: CombatStateView, warnings: readonly Warning[]) {
+		update: function (state: CombatStateView, warnings: readonly Warning[], boundary: Plane[]) {
 			if (owner !== state || state.time < previousTime) clear();
 			owner = state; previousTime = state.time;
 			for (const warning of warnings) {
 				const drop = warning.drop;
 				if (!drop) continue;
 				const finish = missionMechFinish(state.mission?.contract);
-				if (!flights.has(drop.flight)) flights.set(drop.flight, createFlightView(parent, drop.flight, finish));
+				if (!flights.has(drop.flight)) flights.set(drop.flight, createFlightView(parent, drop.flight, finish, boundary, wideViewWidth()));
 				const pose = dropRigPose(drop, state.time);
 				if (!pose.visible) continue;
 				let view = passengers.get(warning);
