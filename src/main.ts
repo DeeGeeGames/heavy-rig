@@ -13,7 +13,7 @@ import { refreshNavigationGlyphs } from './menu-prompts';
 import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
 import { createCombatRuntime } from './combat-runtime';
 import { mountSquadOrders } from './squad-orders-ui';
-import { createRuntimeNavigation, type RuntimeAuxiliary } from './runtime-navigation';
+import { createRuntimeNavigation, type RuntimeAuxiliary, type RuntimeBaseScreen } from './runtime-navigation';
 import { createRuntimeInput } from './runtime-input';
 import { createTouchFacing, createTouchTargeting, isContactVisible, mountTouchDrive, touchAimPoint, visibleTouchContacts } from './touch-controls';
 import { inFiringArc } from './torso-arc';
@@ -68,6 +68,10 @@ const inputElement = function (id: string): HTMLInputElement {
 	return value;
 };
 const formatTime = function (time: number) { return `${Math.floor(time / 60)}:${Math.floor(time % 60).toString().padStart(2, '0')}`; };
+const usesMenuScore = function (screen: RuntimeBaseScreen) {
+	return screen === 'title' || screen === 'jump' || isShipScreen(screen)
+		|| screen === 'training-setup' || screen === 'training-result' || screen === 'situation-setup';
+};
 const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const viewportAbort = new AbortController();
 	onCleanup(function () { viewportAbort.abort(); });
@@ -93,6 +97,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	await world.initialize(); await navigation.initialize();
 	const audio = createAudio();
 	onCleanup(audio.dispose);
+	const resetAudioForMenuEntry = function () {
+		// Clear old scene audio when entering menus, not when moving within them.
+		if (!usesMenuScore(navigation.screen)) audio.reset();
+	};
 	const padInput = createGamepadInput();
 	onCleanup(padInput.reset);
 	const feedback = createControllerFeedback();
@@ -464,7 +472,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			trainingOrigin = screen;
 			if (screen !== 'title') rememberWorkspaceFocus(element(screen));
 		}
-		audio.reset(); transition(navigation.setScreen('training-setup'));
+		resetAudioForMenuEntry(); transition(navigation.setScreen('training-setup'));
 	};
 	const startTraining = function (setup?: TrainingSetup) {
 		if (contextLost) return;
@@ -481,7 +489,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			profile.settings = structuredClone(profile.settings);
 			element('storage-status').textContent = 'Preference changes apply only while Situation Sim is open.';
 		}
-		audio.reset(); transition(navigation.setScreen('situation-setup'));
+		resetAudioForMenuEntry(); transition(navigation.setScreen('situation-setup'));
 	};
 	const startSituation = function (replay = false) {
 		if (!situationSim || contextLost) return;
@@ -812,7 +820,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (isShipScreen(navigation.screen)) rememberWorkspaceFocus(element(navigation.screen));
 		training = undefined; escape = false; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state);
 		editor = { ...editor, slot: null };
-		pointer = undefined; presentation.resetZoom(); audio.reset();
+		pointer = undefined; presentation.resetZoom(); resetAudioForMenuEntry();
 		transition(navigation.setScreen(target), function () {
 			if (target === 'bridge' || target === 'starmap') refreshCampaign();
 			else refreshCompany();
@@ -836,7 +844,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const toTitle = function (focusId?: 'title-training' | 'title-situation' | 'title-intro') {
 		guidedCourse = undefined;
 		replayingEscape = false;
-		training = undefined; escape = false; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state); audio.reset();
+		training = undefined; escape = false; state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); gaits = createGaits(state); resetAudioForMenuEntry();
 		transition(navigation.setScreen('title'), function () {
 			setTitleGroup(focusId ? 'simulator' : undefined);
 			syncScreen(!focusId);
@@ -1544,11 +1552,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (element('audio-status').textContent !== audioStatus) element('audio-status').textContent = audioStatus;
 	};
 	const audioFrame = function (now: number) {
-		const combat = playing(); const inTrainingMenu = navigation.screen === 'training-setup' || navigation.screen === 'training-result' || navigation.screen === 'situation-setup';
+		const combat = playing();
 		const result = navigation.screen === 'result' || navigation.screen === 'situation-result';
 		const launching = navigation.screen === 'launch';
-		const briefing = navigation.screen === 'title' || navigation.screen === 'jump' || isShipScreen(navigation.screen);
-		const audibleMenu = (launching && !navigation.transitioning && !navigation.auxiliary) || briefing || inTrainingMenu || (result && now < terminalUntil + 30000);
+		const briefing = usesMenuScore(navigation.screen);
+		const audibleMenu = (launching && !navigation.transitioning && !navigation.auxiliary) || briefing || (result && now < terminalUntil + 30000);
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			theme: escape ? 'pursuit' as const : 'standard' as const,
 			alarm: combat && escape,
@@ -1559,7 +1567,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			hatchTime: navigation.screen === 'intro' && narrativePart === 'after' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary
 				? narrativeElapsed : undefined,
 			active: !contextLost && focused && !document.hidden && !campaignConflict && (combat || audibleMenu), uiActive: !contextLost && focused && !document.hidden,
-			phase: launching ? 'launch' as const : briefing ? 'briefing' as const : inTrainingMenu ? 'refit' as const : result ? 'result' as const : 'combat' as const,
+			phase: launching ? 'launch' as const : briefing ? 'briefing' as const : result ? 'result' as const : 'combat' as const,
 			intensity: Math.min(1, state.enemies.length / 5 + (state.wave - 1) * 0.08), danger: Math.max(0, 1 - Math.min(state.player.hp, state.relay) / 50), victory: state.outcome === 'won' };
 	};
 	let frameTime = 0;
