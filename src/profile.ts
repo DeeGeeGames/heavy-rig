@@ -1,6 +1,6 @@
 import { defaultKeyboard, defaultController, parseKeyboard, parseController, type KeyboardBindings, type ControllerBindings } from './bindings';
 import type { Difficulty } from './operation';
-import { isMechSkinId, type MechSkinId } from './mech-skin';
+import { isLiveryPresetId, type LiveryPresetId } from './mech-skin';
 export type ControlMode = 'simulation' | 'arcade';
 export interface Settings {
 	controlMode: ControlMode;
@@ -13,7 +13,7 @@ export interface Settings {
 	couchUI: boolean;
 	vibration: boolean;
 	difficulty: Difficulty;
-	mechSkin: MechSkinId;
+	mechSkin: LiveryPresetId;
 }
 export interface OperationRecord {
 	difficulty: Difficulty;
@@ -61,7 +61,7 @@ export const parseProfile = function (raw: string | null): Profile {
 			touchControls: settings['touchControls'] === true,
 			couchUI: settings['couchUI'] === true, vibration: settings['vibration'] !== false,
 			difficulty: isDifficulty(settings['difficulty']) ? settings['difficulty'] : 'standard',
-			mechSkin: isMechSkinId(settings['mechSkin']) ? settings['mechSkin'] : defaults.settings.mechSkin,
+			mechSkin: isLiveryPresetId(settings['mechSkin']) ? settings['mechSkin'] : defaults.settings.mechSkin,
 		};
 		const records = parsed['records'];
 		if (Array.isArray(records)) defaults.records = records.filter(isRecord).slice(0, 8);

@@ -5,13 +5,14 @@ import { html } from 'lit-html';
 import { renderWorkspace, revealWorkspaceElement, selectWorkspacePane, textItems, type WorkspacePane } from './workspace';
 import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_FAMILY_LABELS, WEAPON_SIZE_LABELS, type WeaponId, type WeaponModelId } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
-import { getPlanet, type Campaign, type PlannedOperation } from './campaign';
+import { FACTIONS, getFaction, getPlanet, type Campaign, type PlannedOperation } from './campaign';
+import type { FactionId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
 import { availableWeapons, canRefit, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
 import { PLAYABLE_FRAMES, getFrame, type FrameDefinition, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary, weaponClassLabel } from './loadout-ui';
 import { frameWeight, loadedMounts, usableMount } from './combat-resources';
-import { MECH_SKINS, supportsMechSkin, type MechSkinId } from './mech-skin';
+import { factionLiveryPreset, getLiveryPreset, liveryPresetsForFaction, SKIN_PALETTES, supportsMechSkin, type LiveryPresetId } from './mech-skin';
 import { getPilot, type PilotId } from './pilots';
 import { deploymentPanes, pilotPanes, type AssignmentPicker } from './pilot-ui';
 
@@ -24,11 +25,11 @@ export interface CompanyEditor {
 	notice: string;
 }
 export interface CompanyActions {
-	skin: MechSkinId;
+	skin: LiveryPresetId;
 	operation?: PlannedOperation | undefined;
 	openOperations: () => void;
 	removeOperation: () => void;
-	selectSkin: (skin: MechSkinId) => void;
+	selectSkin: (skin: LiveryPresetId, focusFaction?: FactionId) => void;
 	navigate: (screen: ShipScreen) => void;
 	selectFrame: (frameId: RigId) => void;
 	editSlot: (slot: number) => void;
@@ -116,6 +117,34 @@ const assignedPilot = function (campaign: Campaign, frame: RigId) {
 	return pilotId ? getPilot(pilotId).callsign : undefined;
 };
 
+const liveryItems = function (actions: CompanyActions, deployed: boolean) {
+	const selected = getLiveryPreset(actions.skin);
+	const faction = selected.faction;
+	const factionChoices = html`<div class="mech-livery">
+		<header><span class="eyebrow">FACTION</span><small>FREE REPAINT · NO WORKSHOP TIME</small></header>
+		<div role="group" aria-label="Livery faction">
+			<button data-mech-skin="original" aria-label="Original finish" aria-pressed=${actions.skin === 'original'} ?disabled=${deployed} @click=${function () { actions.selectSkin('original'); }}>Original</button>
+			${FACTIONS.map(function (definition) {
+				const id = definition.id;
+				return html`<button data-livery-faction=${id} aria-label=${definition.name} aria-pressed=${faction === id} ?disabled=${deployed}
+					@click=${function () { actions.selectSkin(factionLiveryPreset(id, selected.layout).id, id); }}>${definition.shortName}</button>`;
+			})}
+		</div>
+	</div>`;
+	if (!faction) return [factionChoices];
+	return [factionChoices, html`<div class="mech-livery">
+		<span class="eyebrow">${getFaction(faction).shortName} PAINT LAYOUT</span>
+		<div class="livery-layouts" role="group" aria-label="Paint layout">${liveryPresetsForFaction(faction).map(function (preset) {
+			const paint = preset.finish;
+			const swatches = typeof paint === 'object' ? paint : paint === 'original' ? undefined
+				: { primary: SKIN_PALETTES[paint].primary[1], secondary: SKIN_PALETTES[paint].secondary[1] };
+			return html`<button data-mech-skin=${preset.id} aria-pressed=${actions.skin === preset.id} ?disabled=${deployed} @click=${function () { actions.selectSkin(preset.id); }}>
+				${swatches ? html`<i class="livery-swatch" data-pattern=${preset.layout} style="--paint-main:${swatches.primary};--paint-accent:${swatches.secondary}"></i>` : ''}${preset.label}
+			</button>`;
+		})}</div>
+	</div>`];
+};
+
 const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, actions: CompanyActions): WorkspacePane[] {
 	const mech = getOwnedMech(campaign);
 	if (!mech) return [{ id: 'fleet', label: 'Fleet', items: textItems('No frame is selected.') }];
@@ -164,11 +193,11 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 		{ id: 'condition', label: 'Condition', items: [
 			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${rigName(mech.frameId)}</h2><p class="workspace-copy">${frame.variantName} · ${assignedPilot(campaign, mech.frameId) ?? 'Unassigned'}</p></div>`,
 			renderHullIntegrity(mech.integrity),
-			...(supportsMechSkin(frame.id) ? [html`<div class="mech-livery"><span class="eyebrow">COMPANY LIVERY</span><div>${MECH_SKINS.map(function (skin) { return html`<button data-mech-skin=${skin.id} aria-label=${skin.name} aria-pressed=${actions.skin === skin.id} ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.selectSkin(skin.id); }}>${skin.label}</button>`; })}</div><small>FREE REPAINT · NO WORKSHOP TIME</small></div>`] : []),
 			html`<dl class="frame-specifications"><dt>CRUISE</dt><dd>${frame.speed} m/s</dd><dt>COOLING</dt><dd>${frame.cooling} heat/s</dd><dt>BASE MASS</dt><dd>${massLabel(frame.mass)} incl. fixed equipment</dd><dt>RECOMMENDED</dt><dd>${massLabel(frame.recommendedMass)}</dd></dl>`,
 			...textItems(`INSTALLED: ${loadSummary(frame.id, mech.loadout, mech.reserves)}`),
 			...textItems(hardpointSummary(frame.id)), ...textItems(frame.tradeoff),
 		] },
+		...(supportsMechSkin(frame.id) ? [{ id: 'livery', label: 'Company livery', items: liveryItems(actions, Boolean(campaign.deployed)), scrollable: true }] : []),
 		{ id: 'loadout', label: equipment && slot !== null ? `Mount ${slot + 1}` : 'Loadout', items: equipment ? choices : [
 			...(story ? [html`<span class="eyebrow">CAMPAIGN / ${story.contract.title}</span>`, ...textItems(story.contract.briefing), ...textItems(status)] : []),
 			...textItems(`INSTALLED: ${loadSummary(frame.id, mech.loadout, mech.reserves)}`),
@@ -273,7 +302,7 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	const installedWeight = mech && frame ? frameWeight(frame.id, loadedMounts(mech.loadout, mech.reserves)) : undefined;
 	const hero = screen === 'mechbay' && mech && frame ? html`
-		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${rigName(mech.frameId)} <small>/ ${frame.designation}</small></h2></div>${supportsMechSkin(frame.id) ? html`<button class="hangar-livery" ?disabled=${locked} @click=${function () { selectWorkspacePane(root, 'condition', true); const target = root.querySelector<HTMLElement>('[data-mech-skin][aria-pressed="true"]'); if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); } }}>LIVERY</button>` : html`<span class="eyebrow">${assignedPilot(campaign, mech.frameId) ?? 'UNASSIGNED'}</span>`}</div>
+		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${rigName(mech.frameId)} <small>/ ${frame.designation}</small></h2></div>${supportsMechSkin(frame.id) ? html`<button class="hangar-livery" ?disabled=${locked || Boolean(campaign.deployed)} @click=${function () { selectWorkspacePane(root, 'livery'); const target = root.querySelector<HTMLElement>('[data-mech-skin][aria-pressed="true"]'); if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); } }}>LIVERY</button>` : html`<span class="eyebrow">${assignedPilot(campaign, mech.frameId) ?? 'UNASSIGNED'}</span>`}</div>
 		<div class="hangar-model"><canvas data-hangar-frame=${frame.id} aria-label=${`${frame.name} frame preview`}></canvas><span class="hangar-fallback">${frame.name} / ${frame.role}</span></div>
 		<div class="hangar-service">
 			${renderHullIntegrity(mech.integrity)}
@@ -287,6 +316,7 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 		...(compact ? [{ id: 'details', label: 'Details', panes: ['details'] }] : []),
 	] : screen === 'mechbay' ? [
 		{ id: 'fleet', label: 'Fleet', panes: ['fleet'] }, { id: 'loadout', label: 'Loadout', panes: ['loadout'] }, { id: 'condition', label: 'Condition', panes: ['condition'] },
+		...(frame && supportsMechSkin(frame.id) ? [{ id: 'livery', label: 'Livery', panes: ['livery'] }] : []),
 	] : screen === 'engineering' ? [
 		{ id: 'orders', label: 'Work orders', panes: ['orders'] }, { id: 'condition', label: 'Condition', panes: ['condition'] }, { id: 'calendar', label: 'Calendar', panes: ['calendar'] },
 	] : panes.map(function (pane) { return { id: pane.id, label: pane.id === 'assignment' ? 'Assignment' : pane.label, panes: [pane.id] }; });

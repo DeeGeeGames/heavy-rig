@@ -16,7 +16,7 @@ import type { WeaponMount } from './arsenal';
 import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
-import { factionMechSkin, type MechSkinId } from './mech-skin';
+import { getLiveryPreset, missionMechFinish, type LiveryPresetId, type MechFinish } from './mech-skin';
 import { createSolidInk } from './solid-ink';
 import { minimumInkZoom, selectInkCellSize, type InkCellSize } from './solid-ink-grid';
 import { createMechCadences } from './mech-cadence';
@@ -37,11 +37,11 @@ interface MechView {
 	kind: EnemyKind | undefined;
 	commander: boolean;
 	frame: FrameId;
-	skin: MechSkinId;
+	skin: MechFinish;
 	damage: { hp: number | undefined; hitAt: number };
 }
 interface ViewBindings {
-	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechSkinId) => MechView;
+	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechFinish) => MechView;
 	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, time: number, pose: MechPose) => void;
 	scale: (id: number, scale: number) => void;
 }
@@ -114,7 +114,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			zoom = clampCombatZoom(value);
 			inkCellSize = selectInkCellSize(zoom, inkCellSize);
 		};
-		let playerSkin: MechSkinId = 'original';
+		let playerSkin: MechFinish = 'original';
 		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
 		let cameraOffset: Point = { x: 0, y: 0 };
 		let cameraSample: { state: CombatStateView; time: number; position: Point } | undefined;
@@ -182,7 +182,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				});
 				world.registerDispose('mechView', function ({ value }) { value.model.dispose(); });
 				views = {
-					ensure: function (id, kind, commander = false, frame: FrameId = 'warden', skin: MechSkinId = 'original') {
+					ensure: function (id, kind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original') {
 						const previous = world.getComponent(id, 'mechView');
 						if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame && previous.skin === skin) return previous;
 						if (previous) { world.removeComponent(id, 'group'); world.removeComponent(id, 'mechView'); }
@@ -277,7 +277,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				comparison = state?.frame === 'kestrel' ? { state, enabled, lighter, bakedYard } : undefined;
 			},
 			stepMechCadence: cadence.advance,
-			setSkin: function (skin: MechSkinId) { playerSkin = skin; },
+			setSkin: function (id: LiveryPresetId) { playerSkin = getLiveryPreset(id).finish; },
 			prepare: function (state: CombatStateView, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false) {
 				if (disposed || !views || !combat || width <= 0 || height <= 0) { overlay = undefined; return; }
 				if (launchOwner && launchOwner !== state) releaseLaunch();
@@ -359,10 +359,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					squadmateLabelHeights.set(mate.pilotId, view.model.labelHeight + 12);
 				}
 				const enemyLabelHeights = new Map<number, number>();
+				const opponentFinish = missionMechFinish(state.mission?.contract);
 				for (const enemy of state.enemies) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
-					const view = views.ensure(id, enemy.catalog ? undefined : enemy.kind, Boolean(enemy.commander), enemy.catalog?.frameId ?? 'warden', factionMechSkin(state.mission?.contract.opponent));
+					const view = views.ensure(id, enemy.catalog ? undefined : enemy.kind, Boolean(enemy.commander), enemy.catalog?.frameId ?? 'warden', opponentFinish);
 					const gait = gaits.enemies.get(enemy.id) ?? createEnemyGait(enemy);
 					views.pose(id, view, gait, enemy.angle, enemy.hp, state.time, {
 						loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, authoredPose: enemy.catalog?.authoredPose,

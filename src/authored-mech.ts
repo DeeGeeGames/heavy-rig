@@ -1,4 +1,4 @@
-import { Box3, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, SkinnedMesh, Texture, Vector3, type BufferGeometry } from 'three';
+import { Box3, Color, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Quaternion, SkinnedMesh, Texture, Vector2, Vector3, type BufferGeometry } from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { installMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
 import type { WalkerGait } from './gait';
@@ -10,7 +10,9 @@ import { snapMechHeading } from './torso-arc';
 import { prepareAuthoredLocomotion, type AuthoredLocomotionOptions } from './authored-gait';
 import { KESTREL_RUN_PROFILE } from './authored-run';
 import type { FrameId } from './frames';
-import type { MechSkinId } from './mech-skin';
+import type { MechFinish } from './mech-skin';
+import { paintColorForZone } from './mech-paint';
+import { applySolidPlatePaint, authoredPaintZone } from './authored-paint';
 import { applyMechSkinMaterial, type SkinSurface } from './mech-skin-material';
 import { getHardpoints } from './hardpoints';
 import { getWeapon } from './arsenal';
@@ -225,11 +227,12 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		if (installation?.closing) { installation.remove(); installation = undefined; }
 		if (closed) { releaseSource?.(); releaseSource = undefined; }
 	};
-	const create = function (skin: MechSkinId = 'original'): MechAssetModel {
+	const create = function (skin: MechFinish = 'original'): MechAssetModel {
 		if (closed) throw new Error(`Authored ${descriptor.chassis} factory is disposed`);
 		if (installation?.closing) throw new Error(`Authored ${descriptor.chassis} installation is closing; dispose existing models first`);
 		const { root, hull, scene } = makeGraph();
-		root.userData['mechSkin'] = skin;
+		root.userData['mechSkin'] = typeof skin === 'string' ? skin : 'solid';
+		const emptyShoulders = descriptor.chassis === 'warden' && frame !== 'warden' && typeof skin === 'object' && skin.layout === 'caps' ? new Vector2() : undefined;
 		const ownedMaterials = new Map<string, Material>();
 		const cloneMaterial = function (source: Material, node: Mesh) {
 			const key = skin === 'original' ? source.uuid : `${source.uuid}:${node.uuid}`;
@@ -238,7 +241,10 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			if (skin === 'original' || !(material instanceof MeshStandardMaterial) || source.name === 'Warden vent recess') return material;
 			const nativeScale = node.getWorldScale(new Vector3()).divideScalar(scale);
 			if (hasPixelPlates) {
-				if (isPixelPlateMaterial(material)) applyMechSkinMaterial(material, skin, { surface: 'pixel-plates', scale: nativeScale });
+				if (isPixelPlateMaterial(material)) {
+					if (typeof skin === 'string') applyMechSkinMaterial(material, skin, { surface: 'pixel-plates', scale: nativeScale });
+					else applySolidPlatePaint(material, node, descriptor.chassis, skin, emptyShoulders);
+				}
 				return material;
 			}
 			const secondary = ['_shin', '_foot', '_mount_'].some(function (part) { return node.name.includes(part); });
@@ -249,7 +255,9 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			const positions = node.geometry.getAttribute('position');
 			let min = Infinity; let max = -Infinity;
 			if (surface === 'gun') for (let index = 0; index < positions.count; index++) { const z = positions.getZ(index); min = Math.min(min, z); max = Math.max(max, z); }
-			applyMechSkinMaterial(material, skin, { surface, scale: nativeScale, ...(surface === 'gun' ? { barrelCutoff: -(max - (max - min) * 0.38) * nativeScale.z } : {}) });
+			const { zone, side } = authoredPaintZone(node);
+			const coat = typeof skin === 'string' ? skin : new Color(paintColorForZone(skin, zone, side));
+			applyMechSkinMaterial(material, coat, { surface, scale: nativeScale, ...(surface === 'gun' ? { barrelCutoff: -(max - (max - min) * 0.38) * nativeScale.z } : {}) });
 			return material;
 		};
 		scene.traverse(function (node) {
@@ -304,6 +312,9 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			// Empty authored equipment slots hide only the interchangeable assembly.
 			// Mount brackets remain torso-owned, and simulation retains slot anchors.
 			if (frame !== 'warden') for (const [slot, weapon] of weapons.entries()) weapon.mount.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
+			// B/C remove the entire shoulder cartridge. Carry its cap color on
+			// the fixed cheek on each side whose cartridge is currently absent.
+			emptyShoulders?.set(weapons[2]?.mount.visible === false ? 1 : 0, weapons[3]?.mount.visible === false ? 1 : 0);
 			// Weapons and structural necks retain their authored local transforms.
 			root.updateMatrixWorld(true); inverse.copy(root.matrixWorld).invert();
 			for (const [slot, weapon] of weapons.entries()) {

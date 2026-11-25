@@ -13,7 +13,7 @@ import { articulateWeapons } from './weapon-articulation';
 import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { getMechAssetBinding } from './mech-asset-registry';
-import { SKIN_PALETTES, supportsMechSkin, type MechSkinId } from './mech-skin';
+import { SKIN_PALETTES, supportsMechSkin, type MechFinish } from './mech-skin';
 import { applyMechSkinMaterial } from './mech-skin-material';
 import { snapMechHeading } from './torso-arc';
 import { createLegPoseSampling } from './leg-pose-sampling';
@@ -35,7 +35,7 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[]): number {
 
 // Weapon geometry shares its stable rig with combat. Suspension and leg motion
 // remain presentation data; every view uses this same production factory.
-export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechSkinId = 'original') {
+export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original') {
 	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind);
 	const authored = kind ? undefined : getMechAssetBinding(frame);
 	const finish = kind || supportsMechSkin(frame) ? skin : 'original';
@@ -46,32 +46,39 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	const anatomy = new Group(); anatomy.name = 'anatomy'; anatomy.scale.setScalar(size); root.add(anatomy);
 	const enemyColors = { scout: '#9c6f4e', striker: '#8d5350', siege: '#6b5f60' };
 	const frameColors = { warden: '#738986', kestrel: '#597a73', maul: '#896650', longbow: '#6b6b89', morrow: '#6a7961', rook: '#667a8a' };
-	const paint = finish === 'original' ? undefined : SKIN_PALETTES[finish];
-	const parts = createLowPolyParts({ steel: paint?.primary[1] ?? (commander ? '#772f2d' : kind ? enemyColors[kind] : frameColors[chassis]), accent: paint?.secondary[1] ?? (commander ? '#bdb6a0' : kind ? '#aa7454' : definition.color), trim: paint?.secondary[1] ?? (kind ? '#c3b6a0' : '#c8cec0'), glass: kind ? '#ffae7e' : '#9fe5e7' });
-	const { group, housing, cylinder, steel, dark, trim, accent, piston } = parts;
+	const camouflage = typeof finish === 'string' && finish !== 'original' ? SKIN_PALETTES[finish] : undefined;
+	const solidPaint = typeof finish === 'object' ? finish : undefined;
+	const base = solidPaint ? { steel: '#6c7376', accent: '#738086', trim: '#adb7b2' } : {
+		steel: camouflage?.primary[1] ?? (commander ? '#772f2d' : kind ? enemyColors[kind] : frameColors[chassis]),
+		accent: camouflage?.secondary[1] ?? (commander ? '#bdb6a0' : kind ? '#aa7454' : definition.color),
+		trim: camouflage?.secondary[1] ?? (kind ? '#c3b6a0' : '#c8cec0'),
+	};
+	const parts = createLowPolyParts({ ...base, glass: kind ? '#ffae7e' : '#9fe5e7' }, solidPaint);
+	const { group, housing, cylinder, steel, dark, trim, accent, piston, armor } = parts;
 	const hull = group(anatomy, 'hull'); const turret = group(anatomy, 'turret');
 	cylinder(hull, 'waist-bearing', rig.hipWidth, 8, dark, rig.hipForward, rig.hipHeight - 2, 0);
 	cylinder(hull, 'waist-race', rig.hipWidth - 1.5, 2.5, accent, rig.hipForward, rig.hipHeight + 2.8, 0);
-	housing(hull, 'hip-casting', [{ x: rig.hipForward - 11, y: rig.hipHeight - 5, height: 5, width: rig.hipWidth - 1 }, { x: rig.hipForward + 8, y: rig.hipHeight - 5, height: 7, width: rig.hipWidth + 3 }, { x: rig.hipForward + 17, y: rig.hipHeight - 4, height: 3, width: rig.hipWidth - 3 }], dark);
+	housing(hull, 'hip-casting', [{ x: rig.hipForward - 11, y: rig.hipHeight - 5, height: 5, width: rig.hipWidth - 1 }, { x: rig.hipForward + 8, y: rig.hipHeight - 5, height: 7, width: rig.hipWidth + 3 }, { x: rig.hipForward + 17, y: rig.hipHeight - 4, height: 3, width: rig.hipWidth - 3 }], armor(dark, 'pelvis'));
 	const hardware = buildLowPolyChassis(parts, turret, frame, kind, commander);
 	for (const part of turret.children) part.position.y -= rig.hipHeight - (rig.torsoRise ?? 0);
 	// Roll about the forward axis before pitching so suspension cannot rotate the displayed heading.
 	turret.rotation.order = 'YZX';
 	const slender = !kind && (chassis === 'kestrel' || chassis === 'longbow');
 	const broad = !kind && (chassis === 'maul' || chassis === 'morrow');
-	const legArmor = function (parent: Group, name: string, length: number, upper: boolean) {
+	const legArmor = function (parent: Group, name: string, length: number, upper: boolean, lateral: number) {
 		const assembly = group(parent, name); const width = slender ? 4.7 : broad ? 8.5 : 7;
 		cylinder(assembly, 'load-bearing-strut', slender ? 2.3 : 3.3, length, dark, 0, 0, 0);
 		const cross = [[-1, -0.65], [-0.65, -1], [0.65, -1], [1, -0.65], [1, 0.65], [0.65, 1], [-0.65, 1], [-1, 0.65]] as const;
 		const vertices = [{ y: length * 0.38, x: 0, depth: upper ? 5.5 : 4.5, width: width * 0.8 }, { y: length * 0.05, x: 2, depth: broad ? 9.5 : slender ? 5.5 : 8, width }, { y: -length * 0.38, x: 1, depth: 4, width: width * 0.65 }].flatMap(function (section) {
 			return cross.map(function ([x, z]) { return new Vector3(section.x + x * section.depth, section.y, z * section.width); });
 		});
-		parts.mesh(assembly, 'tapered-leg-armor', parts.own(new ConvexGeometry(vertices)), steel);
+		parts.mesh(assembly, 'tapered-leg-armor', parts.own(new ConvexGeometry(vertices)), armor(steel, 'leg', lateral));
 		return assembly;
 	};
 	const legs = ([0, 1] as const).map(function (index) {
+		const lateral = index === 0 ? -1 : 1;
 		const leg = group(anatomy, index === 0 ? 'left-leg' : 'right-leg');
-		const upper = legArmor(leg, 'upper-leg', rig.upper, true); const lower = legArmor(leg, 'lower-leg', rig.lower, false);
+		const upper = legArmor(leg, 'upper-leg', rig.upper, true, lateral); const lower = legArmor(leg, 'lower-leg', rig.lower, false, lateral);
 		const joint = function (name: string, radius: number) {
 			const value = group(leg, name); const breadth = slender ? 12 : broad ? 21 : 18;
 			cylinder(value, 'joint-hub', radius, breadth, dark, 0, 0, 0, 'z');
@@ -84,13 +91,14 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		const contact = group(leg, 'planted-foot'); const foot = group(contact, 'ankle-roll'); const width = broad ? 12 : slender ? 6 : 9;
 		const articulated = rig.kneeDirection === -1;
 		housing(foot, 'sole', [{ x: -16, y: 2.3, height: 2.3, width: width * 0.78 }, { x: -9, y: 3.3, height: 3.3, width: width + 1 }, { x: articulated ? 8 : 15, y: 2.8, height: 2.8, width }], dark);
-		housing(foot, 'instep', [{ x: -13, y: 6, height: 2.3, width: width * 0.65 }, { x: -4, y: 8.2, height: 5, width: width * 0.88 }, { x: articulated ? 6 : 14, y: 4.7, height: 2.6, width: width * 0.88 }], steel);
+		const footArmor = armor(steel, 'leg', lateral); const toeArmor = armor(trim, 'leg', lateral);
+		housing(foot, 'instep', [{ x: -13, y: 6, height: 2.3, width: width * 0.65 }, { x: -4, y: 8.2, height: 5, width: width * 0.88 }, { x: articulated ? 6 : 14, y: 4.7, height: 2.6, width: width * 0.88 }], footArmor);
 		const toes = articulated ? group(foot, 'toe-hinge') : foot;
 		if (articulated) toes.position.set(8, 3, 0);
-		if (!kind && chassis === 'maul') housing(foot, 'solid-boot-cap', [{ x: 9, y: 3.5, height: 3.4, width }, { x: 21, y: 3.1, height: 3, width }, { x: 26, y: 1.8, height: 1.7, width: width * 0.88 }], trim);
-		else for (const side of [-1, 1]) housing(toes, 'split-toe', [{ x: 9 - toes.position.x, y: 3.5 - toes.position.y, height: 3.4, width: width * 0.46 }, { x: 21 - toes.position.x, y: 3.1 - toes.position.y, height: 3, width: width * 0.46 }, { x: 26 - toes.position.x, y: 1.8 - toes.position.y, height: 1.7, width: width * 0.4 }], trim, side * width * 0.59);
+		if (!kind && chassis === 'maul') housing(foot, 'solid-boot-cap', [{ x: 9, y: 3.5, height: 3.4, width }, { x: 21, y: 3.1, height: 3, width }, { x: 26, y: 1.8, height: 1.7, width: width * 0.88 }], toeArmor);
+		else for (const side of [-1, 1]) housing(toes, 'split-toe', [{ x: 9 - toes.position.x, y: 3.5 - toes.position.y, height: 3.4, width: width * 0.46 }, { x: 21 - toes.position.x, y: 3.1 - toes.position.y, height: 3, width: width * 0.46 }, { x: 26 - toes.position.x, y: 1.8 - toes.position.y, height: 1.7, width: width * 0.4 }], toeArmor, side * width * 0.59);
 		if (articulated) cylinder(foot, 'toe-bearing', 2, width * 1.9, dark, 8, 3, 0, 'z');
-		if (!kind && chassis === 'kestrel') housing(foot, 'rear-talon', [{ x: -27, y: 1.5, height: 1.4, width: 2 }, { x: -12, y: 4, height: 3, width: 3 }], steel);
+		if (!kind && chassis === 'kestrel') housing(foot, 'rear-talon', [{ x: -27, y: 1.5, height: 1.4, width: 2 }, { x: -12, y: 4, height: 3, width: 3 }], footArmor);
 		return { index, upper, lower, hip, knee, ankle, sleeve, rod, contact, foot, toes };
 	});
 	turret.position.y = rig.hipHeight;
@@ -99,8 +107,8 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		return [leg.upper, leg.lower, leg.hip, leg.knee, leg.ankle, leg.sleeve, leg.rod, leg.contact, leg.foot, leg.toes];
 	}));
 	parts.batch(root);
-	if (finish !== 'original') applyMechSkinMaterial(parts.solid, finish, { surface: 'procedural', scale: new Vector3(0.01, 0.01, 0.01) });
-	root.userData['mechSkin'] = finish;
+	if (typeof finish === 'string' && finish !== 'original') applyMechSkinMaterial(parts.solid, finish, { surface: 'procedural', scale: new Vector3(0.01, 0.01, 0.01) });
+	root.userData['mechSkin'] = typeof finish === 'string' ? finish : 'solid';
 	const bounds: { part: Mesh; corners: Vector3[] }[] = [];
 	root.traverse(function (object) {
 		if (!(object instanceof Mesh)) return;

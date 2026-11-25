@@ -625,7 +625,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			skin: profile.settings.mechSkin,
 			operation, openOperations,
 			removeOperation: function () { if (operation) removeStagedOperation(operation.contract.id); },
-			selectSkin: function (skin) { profile.settings.mechSkin = skin; presentation.setSkin(skin); save(); refreshCompany(); focusCompany(`[data-mech-skin="${skin}"]`); },
+			selectSkin: function (skin, focusFaction) {
+				if (campaign.deployed) return;
+				profile.settings.mechSkin = skin;
+				presentation.setSkin(skin);
+				save();
+				refreshCompany();
+				focusCompany(focusFaction ? `[data-livery-faction="${focusFaction}"]` : `[data-mech-skin="${skin}"]`);
+			},
 			navigate: navigateShip,
 			selectFrame: function (id) { const select = function () { updateCompany(selectFrame(campaign, id), 'Frame selected.'); }; if (hasRefitDraft() && id !== campaign.selectedFrame) confirm(select, 'DISCARD & SELECT FRAME', 'Changing frames discards this unqueued refit. Installed equipment is unchanged.', 'DISCARD REFIT DRAFT?'); else select(); },
 			editSlot: function (slot) {
