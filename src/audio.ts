@@ -87,6 +87,7 @@ interface Noise {
 	duration: number;
 	volume: number;
 	frequency: number;
+	offset?: number;
 	attack?: number;
 	hold?: number;
 	type?: BiquadFilterType;
@@ -236,7 +237,7 @@ export const createAudio = function () {
 		pan.pan.value = sound.pan ?? 0;
 		envelope(gain, sound.at, sound.duration, sound.volume, sound.attack, sound.hold);
 		source.connect(filter).connect(gain).connect(pan).connect(bus === 'music' ? synth.musicInput : bus === 'ui' ? synth.ui : synth.effectsInput);
-		register({ source, nodes: [filter, gain, pan], bus }, sound.at, sound.duration);
+		register({ source, nodes: [filter, gain, pan], bus }, sound.at, sound.duration, sound.offset);
 	};
 	const mixLevels = function () {
 		if (!synth) return;
@@ -594,9 +595,8 @@ export const createAudio = function () {
 		const explosive = cue.family === 'missile' || cue.family === 'rocket' || cue.family === 'artillery';
 		if (cue.surface === 'armor') {
 			if (light) {
-				hitNoise({ at, duration: 0.055, frequency: 1200 + variant * 180, volume: 0.39 });
-				hitTone({ at, frequency: 360 + variant * 55, endFrequency: 285, duration: 0.066, volume: 0.2, type: 'triangle', cutoff: 840 });
-				hitTone({ at: at + 0.004, frequency: 190, endFrequency: 135, duration: 0.078, volume: 0.15 });
+				hitNoise({ at, frequency: 710 + variant * 110, duration: 0.07, volume: 0.42, attack: 0.003, hold: 0.006, offset: variant * 0.35 });
+				hitTone({ at: at + 0.003, frequency: 158 + variant * 18, duration: 0.06, volume: 0.15, attack: 0.004 });
 				return;
 			}
 			if (cue.family === 'cannon') {
@@ -679,23 +679,27 @@ export const createAudio = function () {
 					tone({ at, frequency: 880, endFrequency: 330, duration: 0.32, volume: 0.13, type: 'triangle' });
 					tone({ at: at + 0.36, frequency: 660, endFrequency: 220, duration: 0.32, volume: 0.1, type: 'triangle' });
 					break;
-				case 'machine-gun':
-					noise({ at, duration: 0.07, volume: 0.18, frequency: 3400, type: 'bandpass', pan: -0.12 });
-					tone({ at, frequency: 160, endFrequency: 75, duration: 0.055, volume: 0.12, type: 'triangle' });
-					noise({ at: at + 0.035, duration: 0.037, frequency: 1750, volume: 0.2, type: 'bandpass', pan: -0.32 });
+				case 'machine-gun': {
+					// Take a different slice of the noise buffer for each stroke of a burst.
+					const offset = at % 1;
+					noise({ at, frequency: 960, duration: 0.085, volume: 0.34, attack: 0.0025, hold: 0.006, offset, pan: -0.12 });
+					tone({ at, frequency: 106, endFrequency: 86, duration: 0.083, volume: 0.19, type: 'triangle', cutoff: 420, attack: 0.002, hold: 0.005 });
+					noise({ at: at + 0.024, frequency: 640, duration: 0.042, volume: 0.25, attack: 0.002, offset: offset + 0.29, pan: -0.2 });
 					break;
+				}
 				case 'ppc':
 					tone({ at, frequency: 720, endFrequency: 110, duration: 0.36, volume: 0.21, type: 'sawtooth', cutoff: 2600, endCutoff: 500 });
 					tone({ at, frequency: 147, endFrequency: 42, duration: 0.5, volume: 0.3, type: 'triangle' });
 					noise({ at: at + 0.015, duration: 0.18, volume: 0.17, frequency: 4200, type: 'bandpass' });
 					break;
 				case 'cannon':
-				// A fast muzzle crack over a low concussion, followed by a short reflected blast.
-				noise({ at, frequency: 4700, duration: 0.055, volume: 0.95, attack: 0.001, hold: 0.003 });
-				noise({ at, frequency: 1500, duration: 0.28, volume: 1.15, attack: 0.002, hold: 0.023 });
-				tone({ at: at + 0.003, frequency: 88, endFrequency: 58, duration: 0.29, volume: 0.66, type: 'triangle', attack: 0.003, hold: 0.025 });
-				noise({ at: at + 0.037, frequency: 730, duration: 0.39, volume: 0.78, attack: 0.009, hold: 0.018, pan: -0.14 });
-				noise({ at: at + 0.077, frequency: 1350, duration: 0.17, volume: 0.32, type: 'bandpass', pan: 0.17 });
+					// Let the short crack clear before the bass and reflections arrive.
+					noise({ at, frequency: 5600, duration: 0.032, volume: 1.4, attack: 0.0005, hold: 0.005 });
+					noise({ at: at + 0.002, frequency: 1600, duration: 0.044, volume: 1.6, attack: 0.0006, hold: 0.007, offset: 0.91 });
+					noise({ at: at + 0.016, frequency: 1150, duration: 0.25, volume: 1, attack: 0.004, hold: 0.014, offset: 0.22 });
+					tone({ at: at + 0.017, frequency: 88, endFrequency: 58, duration: 0.29, volume: 0.66, type: 'triangle', attack: 0.004, hold: 0.022 });
+					noise({ at: at + 0.05, frequency: 700, duration: 0.32, volume: 0.63, attack: 0.008, hold: 0.015, pan: -0.14 });
+					noise({ at: at + 0.082, frequency: 1150, duration: 0.13, volume: 0.23, type: 'bandpass', pan: 0.17 });
 					break;
 				case 'rocket':
 				case 'missile': {
