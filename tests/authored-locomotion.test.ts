@@ -5,6 +5,8 @@ import { authoredMuzzleError, prepareAuthoredWarden } from '../src/authored-mech
 import { createGait } from '../src/gait';
 import { createContactCadence } from '../src/mech-cadence';
 import { coolingStep, createState, movementStep, type Controls } from '../src/simulation';
+import type { FieldTerrain } from '../src/field-terrain';
+import { groundHeight } from '../src/terrain-elevation';
 
 test('Warden unsampled IK preserves world plants and independent aim through the walking cadence', async function () {
 	const loader = new GLTFLoader().register(function () { return { name: 'HEADLESS_LOCOMOTION', loadTexture: async function () { return new Texture(); } }; });
@@ -145,6 +147,34 @@ test('Warden unsampled IK preserves world plants and independent aim through the
 		for (const side of [0, 1] as const) {
 			expect(teleported.gait.feet[side].lift).toBe(0);
 			expect(teleported.gait.feet[side].x - context.gait.feet[side].x).toBeGreaterThan(280);
+		}
+		// On a cross-slope the two soles meet different heights. A planted foot
+		// stays there as the chassis continues uphill; barrel origins stay in sync.
+		const terrain: FieldTerrain = { roads: [], obstacles: [], elevation: { xs: [0, 1000], ys: [0, 1000],
+			heights: new Float32Array([0, 220, 160, 380]), minHeight: 0, maxHeight: 380 } };
+		const start = { x: 400, y: 400, angle: 0 };
+		let onSlope = factory.advancePose(undefined, start, 0, terrain);
+		for (let tick = 0; tick < 45; tick++) {
+			const at = { ...start, x: start.x + tick * .5 };
+			onSlope = factory.advancePose(onSlope, at, tick / 60, terrain);
+			const gait = onSlope.gait;
+			if (!gait) throw new Error('Missing gait on slope');
+			model.root.position.set(at.x, groundHeight(terrain, at), at.y);
+			model.pose(gait, 0, { recoil: 0, hit: 0, heat: 0, time: onSlope.time, authoredPose: onSlope, terrain });
+			const clearance = [Infinity, Infinity];
+			for (const { node, point, foot } of vertices) {
+				if (foot < 0) continue;
+				const sole = point.clone().applyMatrix4(node.matrixWorld);
+				const floor = groundHeight(terrain, { x: sole.x, y: sole.z });
+				clearance[foot] = Math.min(clearance[foot] ?? Infinity, sole.y - floor);
+			}
+			for (const side of [0, 1] as const) {
+				const gap = clearance[side];
+				if (gap === undefined) throw new Error('Missing sole clearance');
+				expect(gap).toBeGreaterThan(-.01);
+				if (gait.feet[side].lift === 0) expect(gap).toBeLessThan(.3);
+			}
+			expect(authoredMuzzleError(model, factory.weaponRigs, gait, 0, undefined, onSlope)).toBeLessThan(1e-7);
 		}
 	} finally {
 		model.dispose(); remove(); factory.dispose();

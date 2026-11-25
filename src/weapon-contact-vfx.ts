@@ -2,6 +2,8 @@ import { BoxGeometry, CircleGeometry, Color, ConeGeometry, Group, PlaneGeometry,
 import type { CombatStateView, Effect } from './simulation';
 import type { WeaponCue } from './weapon-feedback';
 import { createWeaponParticleBatch } from './weapon-particle-batch';
+import { groundHeight, groundNormal } from './terrain-elevation';
+import type { FieldTerrain } from './field-terrain';
 
 const up = new Vector3(0, 1, 0), localZ = new Vector3(0, 0, 1);
 const tint = {
@@ -24,10 +26,11 @@ interface Puff extends Particle { velocity: Vector3; size: number; growth: numbe
 interface Flame extends Particle { axis: Vector3; length: number; radius: number }
 interface Chip extends Particle { velocity: Vector3; size: number; stretch: number; spin: number; cold: Color }
 interface Mark extends Particle { normal: Vector3; roll: number; radius: number }
-interface Wave extends Particle { radius: number }
+interface Wave extends Particle { radius: number; normal: Vector3 }
 
 export const createWeaponContactVfx = function () {
 	const root = new Group(); root.name = 'weapon-contacts';
+	let terrain: FieldTerrain | undefined;
 	const flames = createWeaponParticleBatch<Flame>('flame', new ConeGeometry(1, 1, 8), 128, function (p, _age, progress, transform) {
 		const length = p.length * (1 - 0.78 * progress); const radius = p.radius * (1 - 0.5 * progress);
 		transform.position.copy(p.origin).addScaledVector(p.axis, length / 2);
@@ -36,7 +39,8 @@ export const createWeaponContactVfx = function () {
 	});
 	const chips = createWeaponParticleBatch<Chip>('solid', new BoxGeometry(1, 1, 1), 768, function (p, age, progress, transform, color) {
 		transform.position.copy(p.origin).addScaledVector(p.velocity, age);
-		transform.position.y = Math.max(0.5, transform.position.y - 135 * age * age);
+		const floor = groundHeight(terrain, { x: transform.position.x, y: transform.position.z });
+		transform.position.y = Math.max(floor + .5, transform.position.y - 135 * age * age);
 		transform.rotation.set(age * p.spin, age * p.spin * 1.6, age * p.spin * 0.8);
 		const scale = p.size * Math.min(1, (1 - progress) * 6);
 		transform.scale.set(scale * p.stretch, scale * 0.72, scale);
@@ -54,7 +58,7 @@ export const createWeaponContactVfx = function () {
 		puffPose(p, age, progress, transform); return p.opacity * (1 - progress) ** 2;
 	});
 	const waves = createWeaponParticleBatch<Wave>('wave', new RingGeometry(0.93, 1, 44), 64, function (p, _age, progress, transform) {
-		transform.position.copy(p.origin); transform.rotation.x = -Math.PI / 2;
+		transform.position.copy(p.origin); transform.quaternion.setFromUnitVectors(localZ, p.normal);
 		transform.scale.setScalar(p.radius * (0.14 + 0.86 * (1 - (1 - progress) ** 2)));
 		return 0.72 * (1 - progress) ** 2;
 	});
@@ -158,17 +162,20 @@ export const createWeaponContactVfx = function () {
 		const reach = cue.family === 'artillery' ? size * 0.65 : 67 * scale;
 		// A ground pressure front can only reach the portion of the floor
 		// within this blast. High aircraft keep their fireball in the air.
-		if (origin.y >= reach) return;
-		const radius = Math.sqrt(reach * reach - origin.y * origin.y);
-		waves.add({ born: time, origin: new Vector3(origin.x, 0.8, origin.z), color: tint.wave, life: 0.49, radius });
+		const point = { x: origin.x, y: origin.z };
+		const floor = groundHeight(terrain, point), clearance = Math.max(0, origin.y - floor);
+		if (clearance >= reach) return;
+		const radius = Math.sqrt(reach * reach - clearance * clearance), slope = groundNormal(terrain, point);
+		waves.add({ born: time, origin: new Vector3(origin.x, floor + .8, origin.z), normal: new Vector3(slope.x, slope.elevation, slope.y), color: tint.wave, life: 0.49, radius });
 		for (let i = 0; i < 6; i++) {
 			const angle = random() * Math.PI * 2;
 			const velocity = new Vector3(Math.cos(angle) * 56, 7 + random() * 10, Math.sin(angle) * 56).multiplyScalar(radius / reach);
-			cloud('smoke', time, new Vector3(origin.x + velocity.x * 0.19, 2, origin.z + velocity.z * 0.19), velocity, 0.48 + random() * 0.17, 7, 22, tint.pressureDust, 0.53);
+			const x = origin.x + velocity.x * .19, y = origin.z + velocity.z * .19;
+			cloud('smoke', time, new Vector3(x, groundHeight(terrain, { x, y }) + 2, y), velocity, 0.48 + random() * 0.17, 7, 22, tint.pressureDust, 0.53);
 		}
 	};
 	const emit = function (effect: Effect, cue: WeaponCue) {
-		const origin = new Vector3(effect.x, effect.elevation ?? 36, effect.y);
+		const origin = new Vector3(effect.x, effect.elevation ?? groundHeight(terrain, effect) + 36, effect.y);
 		const direction = new Vector3(cue.direction.x, cue.direction.elevation, cue.direction.y).normalize();
 		const side = new Vector3(-direction.z, 0, direction.x);
 		if (side.lengthSq() < 0.0001) side.set(1, 0, 0); else side.normalize();
@@ -178,6 +185,7 @@ export const createWeaponContactVfx = function () {
 	return {
 		root,
 		update: function (state: CombatStateView, effects: readonly Effect[] = state.effects) {
+			terrain = state.mission?.map.terrain;
 			let changed = previous !== state || state.time < previousTime;
 			if (changed) {
 				for (const batch of batches) batch.clear();

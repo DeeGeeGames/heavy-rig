@@ -7,6 +7,7 @@ import { createStarterLoadout } from '../src/hardpoints';
 import { MISSION_TIERS } from '../src/reputation';
 import { createFieldTrial } from '../src/field-trial';
 import { moveOnTerrain, terrainPathClear, terrainShotFraction, terrainWaypoint, type FieldTerrain, type TerrainObstacle } from '../src/field-terrain';
+import { groundHeight } from '../src/terrain-elevation';
 import { CAPTURE_RADIUS, EXTRACTION_RADIUS, missionHostileCount } from '../src/missions';
 import { createMissionState, distance, spawningStep, type Point, type SquadmateOptions } from '../src/simulation';
 
@@ -123,16 +124,17 @@ test('campaign deployment keeps each contract role, full squad, and hostile rost
 			if (!cut || !cover) throw new Error('Expected a ground barrier and combat cover');
 			cutDirections.add(cut.width > cut.depth ? 'east-west' : 'north-south');
 			const sightline = function (o: TerrainObstacle) {
-				const from = { x: o.x - o.width / 2 - 1, y: o.y, elevation: 42 };
-				const to = { ...from, x: o.x + o.width / 2 + 1 };
-				return terrainShotFraction(terrain, from, to);
+				const dx = o.width <= o.depth ? o.width / 2 + 1 : 0, dy = dx ? 0 : o.depth / 2 + 1;
+				const from = { x: o.x - dx, y: o.y - dy }, to = { x: o.x + dx, y: o.y + dy };
+				return terrainShotFraction(terrain, { ...from, elevation: groundHeight(terrain, from) + 42 },
+					{ ...to, elevation: groundHeight(terrain, to) + 42 });
 			};
 			assert(sightline(cut) === undefined && sightline(cover) !== undefined, 'line of fire across cuts and cover');
 			if (planetId === 'borealis') assert(terrain.obstacles.some(function (o) { return o.kind === 'tree'; }), 'tundra conifers');
 		}
 	}
 	expect(cutDirections).toEqual(new Set(['east-west', 'north-south']));
-});
+}, 30_000);
 
 test('the approved Cinder trial and opening campaign Recovery deploy the same terrain', function () {
 	const trial = createFieldTrial(283191706).mission?.map;

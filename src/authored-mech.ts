@@ -2,6 +2,8 @@ import { Box3, Color, FileLoader, Group, LoaderUtils, Material, Matrix4, Mesh, M
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { installMechAssetBinding, validateMechWeaponRigs, type MechAssetModel } from './mech-asset-registry';
 import type { WalkerGait } from './gait';
+import type { FieldTerrain } from './field-terrain';
+import { groundHeight } from './terrain-elevation';
 import type { MechFeedback } from './mech-3d';
 import { createMechResponseRig } from './mech-response';
 import { createLegPoseSampling } from './leg-pose-sampling';
@@ -186,7 +188,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 	const standingPelvisDrop = descriptor.chassis === 'warden'
 		? locomotion.pelvisDrop(locomotion.advance(undefined, { x: 0, y: 0, angle: 0 }, 0), sampler.pelvisMatrix(), 0)
 		: undefined;
-	const advancePose = function (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number): AuthoredPoseContext {
+	const advancePose = function (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number, terrain?: FieldTerrain): AuthoredPoseContext {
 		const valid = previous && time >= previous.time ? previous : undefined;
 		const dt = valid ? Math.min(time - valid.time, 0.1) : 0;
 		if (valid?.gait && dt === 0 && valid.body.x === body.x && valid.body.y === body.y && valid.body.angle === (body.angle ?? 0)) return valid;
@@ -197,7 +199,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		const context = { ...advanceAuthoredPose(motions, valid, body, time), gait };
 		// Measure guard clearance using the same displayed hip and foot positions as the leg solve.
 		const supportHeading = snapMechHeading(gait.body.angle);
-		return { ...context, pelvisDrop: locomotion.pelvisDrop(gait, sampler.pelvisMatrix(context), supportHeading), ...(standingPelvisDrop === undefined ? {} : { standingPelvisDrop }) };
+		return { ...context, pelvisDrop: locomotion.pelvisDrop(gait, sampler.pelvisMatrix(context), supportHeading, terrain), ...(standingPelvisDrop === undefined ? {} : { standingPelvisDrop }) };
 	};
 	const muzzle = function (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined): SpatialPoint {
 		const exit = exits[slot]; if (!exit) throw new RangeError(`Missing authored muzzle ${slot}`);
@@ -286,7 +288,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		const pose = function (gait: WalkerGait, heading: number, feedback?: MechFeedback) {
 			if (disposed) return;
 			responseRig.restore();
-			const context = feedback?.authoredPose ?? advancePose(previous, gait.body, feedback?.time ?? previous?.time ?? 0);
+			const context = feedback?.authoredPose ?? advancePose(previous, gait.body, feedback?.time ?? previous?.time ?? 0, feedback?.terrain);
 			for (const transform of sampler.sample(context)) {
 				const target = upperBody.find(function (entry) { return entry.name === transform.name; })?.node;
 				if (!target) throw new Error(`Missing authored upper-body node ${transform.name}`);
@@ -297,11 +299,11 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			const hullAngle = snapMechHeading(planted.body.angle);
 			hull.rotation.y = -hullAngle;
 			torso.quaternion.premultiply(yaw.setFromAxisAngle(y, hullAngle - snapMechHeading(heading)));
-			for (const solved of locomotion.solve(feedback?.legGait ?? planted, sampler.pelvisMatrix(context), hullAngle)) {
+			for (const solved of locomotion.solve(feedback?.legGait ?? planted, sampler.pelvisMatrix(context), hullAngle, feedback?.terrain)) {
 				const leg = legs[solved.index]; if (!leg) throw new Error('Missing authored leg');
 				leg.thigh.quaternion.copy(solved.thigh); leg.shin.quaternion.copy(solved.shin); leg.foot.quaternion.copy(solved.foot);
 			}
-			sampleLegPose(feedback?.legGait);
+			sampleLegPose(feedback?.legGait, groundHeight(feedback?.terrain, gait.body));
 			// Empty authored equipment slots hide only the interchangeable assembly.
 			// Mount brackets remain torso-owned, and simulation retains slot anchors.
 			for (const [slot, weapon] of weapons.entries()) weapon.mount.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);

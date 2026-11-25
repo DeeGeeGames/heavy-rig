@@ -1,9 +1,10 @@
-import { Box3, Color, DepthTexture, DirectionalLight, HemisphereLight, LinearFilter, LinearMipmapLinearFilter, Matrix4, MeshStandardMaterial, OrthographicCamera, Scene, UnsignedIntType, Vector3, Vector4, WebGLRenderTarget, type BufferGeometry, type Group, type Mesh, type Object3D, type WebGLRenderer } from 'three';
+import { Box3, Color, DepthTexture, DirectionalLight, HemisphereLight, LinearFilter, LinearMipmapLinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, OrthographicCamera, Scene, UnsignedIntType, Vector3, Vector4, WebGLRenderTarget, type BufferGeometry, type Group, type Object3D, type WebGLRenderer } from 'three';
 
 export interface TerrainBakeSource {
 	art: readonly Group[];
 	ground: Mesh<BufferGeometry, MeshStandardMaterial>;
 	coveredGround?: Object3D;
+	relief?: boolean;
 }
 
 export interface BakedTerrain {
@@ -11,10 +12,11 @@ export interface BakedTerrain {
 	depth: DepthTexture;
 	projection: Matrix4;
 	floorDepth: Vector4;
+	groundDepth?: Scene;
 	dispose: () => void;
 }
 
-export const bakeTerrain = function (renderer: WebGLRenderer, { art, ground, coveredGround }: TerrainBakeSource, view: OrthographicCamera, light: Color): BakedTerrain {
+export const bakeTerrain = function (renderer: WebGLRenderer, { art, ground, coveredGround, relief }: TerrainBakeSource, view: OrthographicCamera, light: Color): BakedTerrain {
 	const scene = new Scene();
 	const parents = art.map(function (group) { return { group, parent: group.parent }; });
 	const groundMaterial = ground.material, coveredGroundVisible = coveredGround?.visible;
@@ -22,11 +24,11 @@ export const bakeTerrain = function (renderer: WebGLRenderer, { art, ground, cov
 	const previousTarget = renderer.getRenderTarget(), autoClear = renderer.autoClear, updateShadows = renderer.shadowMap.autoUpdate;
 	const previousShaderError = renderer.debug.onShaderError;
 	let shaderError: string | undefined;
-	const pigment = new MeshStandardMaterial({ map: groundMaterial.map, color: groundMaterial.color, toneMapped: false });
+	const pigment = new MeshStandardMaterial({ map: groundMaterial.map, color: groundMaterial.color, vertexColors: groundMaterial.vertexColors, toneMapped: false });
 	pigment.onBeforeCompile = function (shader) {
 		shader.fragmentShader = shader.fragmentShader
 			.replace('#include <shadowmap_pars_fragment>', '#include <shadowmap_pars_fragment>\n#include <shadowmask_pars_fragment>')
-			.replace('#include <opaque_fragment>', 'outgoingLight = diffuseColor.rgb * mix(0.62, 1.0, getShadowMask());\n#include <opaque_fragment>');
+			.replace('#include <opaque_fragment>', 'outgoingLight = diffuseColor.rgb * mix(0.62, 1.0, getShadowMask());\n#include <opaque_fragment>' + (relief ? '\ngl_FragColor.a = 0.5;' : ''));
 	};
 	const sun = new DirectionalLight(light, 1.75);
 	let target: WebGLRenderTarget | undefined;
@@ -80,7 +82,16 @@ export const bakeTerrain = function (renderer: WebGLRenderer, { art, ground, cov
 		const projection = new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
 		const [, xToY, , , , yToY, , , , zToY, , , , offsetY] = projection.clone().invert().elements;
 		const floorDepth = new Vector4(-xToY / zToY, -yToY / zToY, (ground.getWorldPosition(new Vector3()).y - offsetY) / zToY, 0.2 / Math.abs(zToY));
-		const result = { color: target.texture, depth, projection, floorDepth, dispose: function () { target?.dispose(); } };
+		// The color atlas is four metres per texel. Draw the shared ground mesh
+		// depth-only so feet, shadows and overlays meet even steep slopes exactly.
+		const groundDepth = relief ? new Scene() : undefined;
+		const depthMaterial = groundDepth ? new MeshBasicMaterial({ colorWrite: false }) : undefined;
+		if (groundDepth && depthMaterial) {
+			const surface = new Mesh(ground.geometry, depthMaterial);
+			surface.matrixAutoUpdate = false; surface.matrix.copy(ground.matrixWorld);
+			surface.layers.enableAll(); groundDepth.add(surface);
+		}
+		const result = { color: target.texture, depth, projection, floorDepth, ...(groundDepth ? { groundDepth } : {}), dispose: function () { depthMaterial?.dispose(); target?.dispose(); } };
 		complete = true;
 		return result;
 	} finally {

@@ -1,8 +1,9 @@
-import { BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry, Group, InstancedMesh, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, RingGeometry, SRGBColorSpace, Texture } from 'three';
+import { BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry, Float32BufferAttribute, Group, InstancedMesh, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, RingGeometry, SRGBColorSpace, Texture } from 'three';
 import type { Biome, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { createCutGround, createFieldStructures, paintFieldRoads } from './field-terrain-3d';
 import { hasBiomeGround, paintBiomeGround } from './biome-ground';
+import { groundHeight } from './terrain-elevation';
 import type { TerrainBakeSource } from './terrain-bake';
 
 interface SurfacePalette { ground: string; dust: string; rock: string; road: string; sky: string; haze: string; light: string }
@@ -19,6 +20,7 @@ export const SURFACE_PALETTES: Readonly<Record<Biome, SurfacePalette>> = {
 // The mission owns all ground, markers, and obstacle assets for its field.
 export const createMissionEnvironment = function (map: MissionMap) {
 	const palette = SURFACE_PALETTES[map.biome];
+	const heightAt = function (x: number, y: number) { return groundHeight(map.terrain, { x, y }); };
 	const root = new Group(); root.name = 'mission-terrain';
 	const staticArt = new Group(); staticArt.name = 'mission-static-terrain'; root.add(staticArt);
 	const geometries = new Set<BufferGeometry>(); const materials = new Set<Material>(); const textures = new Set<Texture>();
@@ -91,7 +93,22 @@ export const createMissionEnvironment = function (map: MissionMap) {
 			groundSurface.color.set('#ffffff'); groundSurface.map = texture;
 		}
 	}
-	const ground = new Mesh(geometry(map.terrain ? createCutGround(map, map.terrain) : new PlaneGeometry(map.width, map.height)), groundSurface);
+	const surface = geometry(map.terrain ? createCutGround(map, map.terrain) : new PlaneGeometry(map.width, map.height));
+	if (map.terrain?.elevation) {
+		// Raking light from the northwest makes adjacent slopes readable even in
+		// the distant terrain bake. Local +Y points north after rotating the mesh.
+		const normals = surface.getAttribute('normal'), positions = surface.getAttribute('position');
+		const colors: number[] = [];
+		for (let i = 0; i < normals.count; i++) {
+			const facing = normals.getY(i) - normals.getX(i);
+			const relief = Math.min(.17, Math.max(-.17, positions.getZ(i) / 650));
+			const shade = Math.min(1.62, Math.max(.42, 1 + facing * 1.35 + relief));
+			colors.push(shade * (1 + relief * .10), shade, shade * (1 - relief * .18));
+		}
+		surface.setAttribute('color', new Float32BufferAttribute(colors, 3));
+		groundSurface.vertexColors = true;
+	}
+	const ground = new Mesh(surface, groundSurface);
 	ground.name = 'planet-surface'; ground.rotation.x = -Math.PI / 2; ground.position.set(map.width / 2, -0.03, map.height / 2); ground.receiveShadow = true; staticArt.add(ground);
 	const field = map.terrain ? createFieldStructures(map.terrain, map.seed, map.biome) : undefined;
 	if (field) staticArt.add(field.root);
@@ -103,7 +120,8 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	for (const [index, rock] of rocks.entries()) for (let piece = 0; piece < 6; piece++) {
 		const angle = random() * Math.PI * 2; const spread = random() * rock.radius * 0.7;
 		const radius = 5 + random() * 15; const height = 1 + random() * 4;
-		scratch.position.set(rock.x + Math.cos(angle) * spread, height / 2, rock.y + Math.sin(angle) * spread);
+		const x = rock.x + Math.cos(angle) * spread, y = rock.y + Math.sin(angle) * spread;
+		scratch.position.set(x, heightAt(x, y) + height / 2, y);
 		scratch.rotation.set(0, random() * Math.PI, 0); scratch.scale.set(radius, height, radius * 0.7); scratch.updateMatrix();
 		stones.setMatrixAt(index * 6 + piece, scratch.matrix); stones.setColorAt(index * 6 + piece, color.set(piece % 2 ? palette.rock : palette.dust));
 	}
@@ -111,7 +129,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	const boundary = new InstancedMesh(cube, paint, boundaryCount); boundary.name = 'mission-boundary'; staticArt.add(boundary); batches.push(boundary);
 	let boundaryIndex = 0;
 	const boundaryMark = function (x: number, y: number, angle: number) {
-		scratch.position.set(x, 0.15, y); scratch.rotation.set(0, angle, 0); scratch.scale.set(72, 0.2, 8); scratch.updateMatrix(); boundary.setMatrixAt(boundaryIndex++, scratch.matrix);
+		scratch.position.set(x, heightAt(x, y) + 0.15, y); scratch.rotation.set(0, angle, 0); scratch.scale.set(72, 0.2, 8); scratch.updateMatrix(); boundary.setMatrixAt(boundaryIndex++, scratch.matrix);
 	};
 	for (let x = 60; x < map.width; x += 180) { boundaryMark(x, 28, 0); boundaryMark(x, map.height - 28, 0); }
 	for (let y = 60; y < map.height; y += 180) { boundaryMark(28, y, Math.PI / 2); boundaryMark(map.width - 28, y, Math.PI / 2); }
@@ -127,7 +145,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		scratch.position.set(x, height / 2 - 3, y); scratch.rotation.set(0, random() * Math.PI, 0); scratch.scale.set(radius, height, radius); scratch.updateMatrix(); hills.setMatrixAt(i, scratch.matrix);
 	}
 	const pad = function (name: string, at: { x: number; y: number }, surface: Material, radius: number) {
-		const value = new Group(); value.name = name; value.position.set(at.x, 0, at.y); root.add(value);
+		const value = new Group(); value.name = name; value.position.set(at.x, groundHeight(map.terrain, at), at.y); root.add(value);
 		// Keep objective rings and progress ticks at display resolution over the terrain.
 		const markings = new Group(); markings.userData['nativeEffects'] = true; value.add(markings);
 		const outline = new Mesh(geometry(new RingGeometry(radius - 3, radius, 64)), surface); outline.rotation.x = -Math.PI / 2; outline.position.y = 0.12; markings.add(outline);
@@ -149,7 +167,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	for (let i = 0; i < 9; i++) { const piece = box(rubble, i % 2 ? steel : dark, Math.cos(i * 2.4) * 38, 7, Math.sin(i * 2.4) * 35, 18 + i * 2, 7 + i % 3 * 9, 23); piece.rotation.y = i * 1.8; }
 	const raidFacilities = map.sites.map(function (site, index) {
 		const value = facility.clone(true); value.name = `raid-site-${index + 1}`;
-		value.position.set(site.x, 0, site.y); root.add(value); return value;
+		value.position.set(site.x, groundHeight(map.terrain, site), site.y); root.add(value); return value;
 	});
 	const capturePads = map.sites.map(function (site, index) {
 		const { value, markings } = pad(`capture-site-${index + 1}`, site, orange, CAPTURE_RADIUS);
@@ -162,7 +180,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 		return { value, filled, crate, beacon };
 	});
 	let disposed = false;
-	const bakeSource: TerrainBakeSource = { art: [staticArt], ground };
+	const bakeSource: TerrainBakeSource = { art: [staticArt], ground, relief: Boolean(map.terrain?.elevation) };
 	return {
 		root, bakeSource,
 		update: function (mission: MissionRuntime, time: number) {
@@ -180,7 +198,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 			for (const [index, pad] of capturePads.entries()) {
 				const site = mission.captureSites?.[index]; pad.value.visible = Boolean(site);
 				if (!site) continue;
-				pad.value.position.set(site.x, 0, site.y);
+				pad.value.position.set(site.x, groundHeight(map.terrain, site), site.y);
 				pad.crate.visible = mission.contract.kind === 'recovery' && !site.complete;
 				pad.beacon.visible = mission.contract.kind === 'acquisition';
 				pad.filled.visible = site.holdTime > 0;
@@ -188,7 +206,7 @@ export const createMissionEnvironment = function (map: MissionMap) {
 			}
 			facility.visible = Boolean(mission.structure);
 			if (mission.structure) {
-				facility.position.set(mission.structure.x, 0, mission.structure.y);
+				facility.position.set(mission.structure.x, groundHeight(map.terrain, mission.structure), mission.structure.y);
 				intact.visible = mission.structure.hp > 0; rubble.visible = !intact.visible;
 			}
 		},

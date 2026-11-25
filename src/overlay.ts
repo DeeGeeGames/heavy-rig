@@ -4,10 +4,12 @@ import { inFiringArc } from './torso-arc';
 import { getWeapon, withinWeaponRange } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
+import { groundHeight } from './terrain-elevation';
 import { ARENA, artilleryAimStatus, missileTracking, distance, ENEMY_STATS, getEnemyDefense, isJammed, surveyed, targetMarked, type Point, type CombatStateView, type Unit } from './simulation';
 import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { FIELD_ROAD_MARKINGS } from './field-terrain-3d';
 import { terrainMapColors } from './terrain-map-colors';
+import { drawTerrainContours } from './terrain-contours';
 import { enemyVolume, playerVolume } from './combat-spatial';
 import { getFrame, type FrameId } from './frames';
 
@@ -105,7 +107,9 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	ctx.clearRect(0, 0, width, height);
 	if (width <= 0 || height <= 0) return;
 	ctx.save();
-	const at = function (point: Point, elevation = 0) { return toScreen(point, options.camera, width, height, elevation); };
+	const at = function (point: Point, heightAboveGround = 0) {
+		return toScreen(point, options.camera, width, height, groundHeight(state.mission?.map.terrain, point) + heightAboveGround);
+	};
 	const ground = at(state.player); const above = at(state.player, 1);
 	const scale = Math.hypot(above.x - ground.x, above.y - ground.y);
 	const minimumText = options.couchMode ? 16 : width > 700 ? 13 : 11;
@@ -354,6 +358,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		};
 		ctx.save(); ctx.beginPath(); ctx.rect(x + 1, y + 1, w - 2, h - 2); ctx.clip();
 		if (mission?.map.terrain) {
+			drawTerrainContours(ctx, mission.map, x, y, w, h);
 			for (const obstacle of mission.map.terrain.obstacles) {
 				const corner = point({ x: obstacle.x - obstacle.width / 2, y: obstacle.y - obstacle.depth / 2 });
 				const dw = obstacle.width * w / bounds.width, dh = obstacle.depth * h / bounds.height;
@@ -390,6 +395,9 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		for (const strike of state.strikes) dot(strike, strike.friendly ? '#94ebe4' : '#ff8154', strike.radius / bounds.width * w, true);
 		ctx.restore();
 		ctx.font = `${options.couchMode ? 14 : 11}px monospace`; ctx.textAlign = 'left'; ctx.fillStyle = '#91a9a3'; ctx.fillText(`${state.enemies.length.toString().padStart(2, '0')} CONTACTS`, x + 9, y + h + 15);
+		if (mission?.map.terrain?.elevation) {
+			ctx.textAlign = 'right'; ctx.fillText(`ALT ${Math.round(groundHeight(mission.map.terrain, state.player))} M`, x + w - 9, y + h + 15);
+		}
 	}
 	ctx.restore();
 };

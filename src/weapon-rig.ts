@@ -7,7 +7,13 @@ import type { EnemyKind, Point } from './simulation';
 import { snapMechHeading } from './torso-arc';
 
 export interface SpatialPoint extends Point { elevation: number }
-export interface WeaponBody extends Point { angle?: number; hullAngle?: number }
+export interface WeaponBody extends Point {
+	angle?: number; hullAngle?: number;
+	/** World height of the rig's feet. Model-space articulation defaults to zero. */
+	groundElevation?: number;
+	/** Rise per horizontal metre for free fire across uneven ground. */
+	aimSlope?: number;
+}
 export interface WeaponRig {
 	readonly muzzle: SpatialPoint;
 	readonly pivot: SpatialPoint;
@@ -86,8 +92,12 @@ export const getEnemyWeaponRig = function (kind: EnemyKind, commander = false): 
 	if (kind === 'siege' || commander) rigs.push(mount(commander ? 33.2 : 39.7, commander ? 102 : 101, 0));
 	return rigs.map(function (rig) { return scaleMechRig(rig, size); });
 };
+const forwardDirection = function (heading: number, slope = 0): SpatialPoint {
+	const length = Math.hypot(1, slope);
+	return { x: Math.cos(heading) / length, y: Math.sin(heading) / length, elevation: slope / length };
+};
 export const getFiringDirection = function (origin: SpatialPoint, heading: number, target?: SpatialPoint): SpatialPoint {
-	if (!target) return { x: Math.cos(heading), y: Math.sin(heading), elevation: 0 };
+	if (!target) return forwardDirection(heading);
 	const dx = target.x - origin.x; const dy = target.y - origin.y; const dz = target.elevation - origin.elevation;
 	const length = Math.hypot(dx, dy, dz);
 	return length > 0.000001 ? { x: dx / length, y: dy / length, elevation: dz / length } : { x: Math.cos(heading), y: Math.sin(heading), elevation: 0 };
@@ -97,11 +107,11 @@ const mountHeading = function (rig: WeaponRig, heading: number) {
 };
 export const weaponPivot = function (rig: WeaponRig, body: WeaponBody, heading: number): SpatialPoint {
 	const bearing = rig.hullMounted ? body.hullAngle ?? body.angle ?? heading : mountHeading(rig, heading);
-	return { x: body.x + Math.cos(bearing) * rig.pivot.x - Math.sin(bearing) * rig.pivot.y, y: body.y + Math.sin(bearing) * rig.pivot.x + Math.cos(bearing) * rig.pivot.y, elevation: rig.pivot.elevation };
+	return { x: body.x + Math.cos(bearing) * rig.pivot.x - Math.sin(bearing) * rig.pivot.y, y: body.y + Math.sin(bearing) * rig.pivot.x + Math.cos(bearing) * rig.pivot.y, elevation: (body.groundElevation ?? 0) + rig.pivot.elevation };
 };
 export const weaponDirection = function (rig: WeaponRig, body: WeaponBody, heading: number, target?: SpatialPoint): SpatialPoint {
 	const pivot = weaponPivot(rig, body, heading);
-	if (!target) return getFiringDirection(pivot, mountHeading(rig, heading));
+	if (!target) return forwardDirection(mountHeading(rig, heading), body.aimSlope);
 	// Gimbals converge toward targets ahead, without swiveling backward through the chassis.
 	const forward = (target.x - pivot.x) * Math.cos(heading) + (target.y - pivot.y) * Math.sin(heading);
 	const adjustment = Math.max(0, 1 - forward);
@@ -138,7 +148,10 @@ export const rigMuzzle = function (rig: WeaponRig, body: WeaponBody, heading: nu
 };
 export const getPlayerMuzzle = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint, context?: AuthoredPoseContext): SpatialPoint {
 	const binding = getMechAssetBinding(frame);
-	if (binding?.muzzle) return binding.muzzle(body, heading, slot, tubeIndex, context);
+	if (binding?.muzzle) {
+		const muzzle = binding.muzzle(body, heading, slot, tubeIndex, context);
+		return { ...muzzle, elevation: (body.groundElevation ?? 0) + muzzle.elevation };
+	}
 	const rig = getPlayerWeaponRig(frame)[slot]; if (!rig) throw new RangeError(`Missing weapon rig ${frame}/${slot}`);
 	return rigMuzzle(rig, body, heading, tubeIndex, target);
 };
@@ -151,7 +164,7 @@ export const getEnemyMuzzle = function (kind: EnemyKind, commander: boolean, slo
 // gameplay aim. Procedural gimbals retain their existing direction solver.
 export const getPlayerFiringDirection = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, origin: SpatialPoint, target?: SpatialPoint): SpatialPoint {
 	if (getMechAssetBinding(frame)?.muzzle) {
-		if (!target) return getFiringDirection(origin, heading);
+		if (!target) return forwardDirection(heading, body.aimSlope);
 		const forward = (target.x - origin.x) * Math.cos(heading) + (target.y - origin.y) * Math.sin(heading);
 		const adjustment = Math.max(0, 1 - forward);
 		return getFiringDirection(origin, heading, { x: target.x + Math.cos(heading) * adjustment, y: target.y + Math.sin(heading) * adjustment, elevation: target.elevation });
@@ -159,5 +172,5 @@ export const getPlayerFiringDirection = function (frame: FrameId, slot: number, 
 	const rig = getPlayerWeaponRig(frame)[slot];
 	if (!rig) throw new RangeError(`Missing weapon rig ${frame}/${slot}`);
 	// Untracked shots follow the pilot's aim between visual sectors. Tracked gimbals converge on the target.
-	return target ? weaponDirection(rig, body, heading, target) : getFiringDirection(origin, heading);
+	return target ? weaponDirection(rig, body, heading, target) : forwardDirection(heading, body.aimSlope);
 };

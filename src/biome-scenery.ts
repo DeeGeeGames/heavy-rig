@@ -1,7 +1,11 @@
 import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, DodecahedronGeometry, DoubleSide, Float32BufferAttribute, FrontSide, Group, IcosahedronGeometry, InstancedMesh, Matrix4, MeshBasicMaterial, MeshStandardMaterial, Object3D } from 'three';
 import type { SurfaceBiome } from './biome-ground';
 import type { FieldTerrain, TerrainObstacle } from './field-terrain';
+import { rotorRadius, turbineHubHeight } from './scenery-flight';
 import { randomSource } from './universe';
+import { groundHeight } from './terrain-elevation';
+
+export { sceneryFlightBounds } from './scenery-flight';
 
 type Shape = 'box' | 'drum' | 'taper' | 'boulder' | 'leaves' | 'quartz' | 'reeds';
 type Part = (shape: Shape, x: number, y: number, z: number, width: number, height: number, depth: number, color: number, yaw?: number, roll?: number, pitch?: number) => void;
@@ -163,23 +167,6 @@ const sawmill = function ({ x, y: z, width: w, depth: d, height: h }: TerrainObs
 };
 
 interface Rotor { x: number; y: number; z: number; yaw: number; radius: number; phase: number }
-const turbineHubHeight = function (o: TerrainObstacle) { return o.height + (o.width + o.depth) * .80; };
-const rotorRadius = function (hubHeight: number) { return hubHeight * .46; };
-
-// Ground units can walk under branches and blades. Aircraft need the whole crown
-// or swept rotor disk, including its offset from the concrete foundation.
-export const sceneryFlightBounds = function (o: TerrainObstacle): TerrainObstacle {
-	if (o.kind === 'tree' && o.height > 50) {
-		const crown = Math.max(o.width, o.depth) * 3.5;
-		return { ...o, width: crown, depth: crown, height: o.height * 1.06 };
-	}
-	if (o.kind === 'turbine') {
-		const hub = turbineHubHeight(o), radius = rotorRadius(hub);
-		const span = 2 * (radius + o.width * .41);
-		return { ...o, width: span, depth: span, height: hub + radius };
-	}
-	return o;
-};
 
 const windTower = function (o: TerrainObstacle, draw: Part, random: () => number): Rotor {
 	const { x, y: z, width: w, height: h, depth: d } = o;
@@ -272,19 +259,27 @@ export const createBiomeScenery = function (terrain: FieldTerrain, seed: number,
 	const random = randomSource(seed ^ 0x7eb010);
 	const instances = new Map<Shape, { matrix: Matrix4; color: number }[]>();
 	const pose = new Object3D();
+	let foundation = 0;
 	const draw: Part = function (shape, x, y, z, w, h, d, color, yaw = 0, roll = 0, pitch = 0) {
 		let list = instances.get(shape); if (!list) { list = []; instances.set(shape, list); }
-		pose.position.set(x, y, z); pose.scale.set(w, h, d);
+		// A building or turbine is rigid. Individual patches of reeds hug their bank.
+		const base = shape === 'reeds' ? groundHeight(terrain, { x, y: z }) : foundation;
+		pose.position.set(x, base + y, z); pose.scale.set(w, h, d);
 		pose.rotation.set(pitch, yaw, roll, 'YXZ'); pose.updateMatrix();
 		list.push({ matrix: pose.matrix.clone(), color });
 	};
 	const hubs: Rotor[] = [];
 	for (const o of terrain.obstacles) {
+		foundation = groundHeight(terrain, o);
 		switch (o.kind) {
 			case 'channel': wetlandPlants(o, draw, random); break;
 			case 'shed': if (biome === 'wetlands') pumpStation(o, draw); else sawmill(o, draw); break;
 			case 'tree': oldGrowth(o, draw, random); break;
-			case 'turbine': hubs.push(windTower(o, draw, random)); break;
+			case 'turbine': {
+				const hub = windTower(o, draw, random);
+				hubs.push({ ...hub, y: hub.y + foundation });
+				break;
+			}
 			case 'outcrop': outcrop(o, draw, random); break;
 			case 'crystal': crystalOutcrop(o, draw, random); break;
 		}

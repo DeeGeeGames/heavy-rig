@@ -1,11 +1,11 @@
 import type { AuthoredGait } from './authored-run';
 import type { AuthoredPoseContext } from './authored-pose';
-import { Box3, Group, Matrix4, Mesh, Vector3 } from 'three';
+import { Box3, Group, Matrix4, Mesh, Quaternion, Vector3 } from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { getFrame, type FrameId } from './frames';
 import { mountInterval } from './frame-tactics';
 import { getWeapon, type WeaponFamily, type WeaponMount } from './arsenal';
-import { footPose, legJoints, mechScale, posedLegRig, STANDARD_LEG_RIG, type WalkerGait } from './gait';
+import { ankleJoint, footPose, solveLegToAnkle, mechScale, posedLegRig, STANDARD_LEG_RIG, type WalkerGait } from './gait';
 import { FRAME_RIGS } from './frame-rig';
 import { createLowPolyParts } from './low-poly-parts';
 import { buildLowPolyChassis } from './low-poly-chassis';
@@ -19,8 +19,10 @@ import { applyMechSkinMaterial } from './mech-skin-material';
 import { snapMechHeading } from './torso-arc';
 import { createLegPoseSampling } from './leg-pose-sampling';
 import { createMechResponseRig, type MechResponse } from './mech-response';
+import type { FieldTerrain } from './field-terrain';
+import { groundHeight, groundNormal } from './terrain-elevation';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; response?: MechResponse; target?: SpatialPoint; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; response?: MechResponse; target?: SpatialPoint; aimSlope?: number; terrain?: FieldTerrain; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
@@ -146,7 +148,25 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			responseRig.restore();
 			const body = { ...gait.body, angle: snapMechHeading(gait.body.angle) };
 			const torsoHeading = snapMechHeading(heading);
-			const poseRig = posedLegRig({ ...gait, body }, size, rig); const humanoid = rig.kneeDirection === 1;
+			const legGait = feedback?.legGait ?? gait;
+			const terrain = feedback?.terrain;
+			const base = groundHeight(terrain, body);
+			const footings = legs.map(function (leg) {
+				const contact = legGait.feet[leg.index];
+				const foot = footPose(legGait, leg.index, size, rig, !kind && chassis === 'kestrel' ? -27 : -16);
+				const ankle = ankleJoint(foot, size);
+				const offset = groundHeight(terrain, contact) - base;
+				let tilt: Quaternion | undefined;
+				if (terrain?.elevation) {
+					const n = groundNormal(terrain, contact);
+					tilt = new Quaternion().setFromUnitVectors(axis, new Vector3(n.x, n.elevation, n.y));
+					const joint = new Vector3(ankle.x - contact.x, ankle.z - contact.lift, ankle.y - contact.y).applyQuaternion(tilt);
+					ankle.x = contact.x + joint.x; ankle.y = contact.y + joint.z; ankle.z = offset + contact.lift + joint.y;
+				}
+				return { leg, contact, foot, ankle, offset, tilt };
+			});
+			const poseRig = posedLegRig({ ...gait, body }, size, rig, terrain?.elevation ? footings.map(function (f) { return f.ankle; }) : undefined);
+			const humanoid = rig.kneeDirection === 1;
 			hull.rotation.y = -body.angle; hull.position.y = poseRig.hipHeight - rig.hipHeight; turret.rotation.y = -torsoHeading;
 			const roll = gait.motion.roll * (humanoid ? 0.28 : 1); const pitch = gait.motion.pitch * (humanoid ? 0.5 : 1);
 			const sway = gait.motion.roll * (humanoid ? 6 : 26) * suspension; const relativeHeading = body.angle - torsoHeading;
@@ -154,16 +174,14 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			turret.rotation.x = (Math.cos(relativeHeading) * roll - Math.sin(relativeHeading) * pitch) * suspension;
 			turret.rotation.z = (Math.sin(relativeHeading) * roll + Math.cos(relativeHeading) * pitch) * suspension;
 			const recoil = feedback?.recoil ?? 0;
-			poseWeapons(gait.body, heading, feedback?.target);
+			poseWeapons(feedback?.aimSlope ? { ...gait.body, aimSlope: feedback.aimSlope } : gait.body, heading, feedback?.target);
 			if (!kind) for (const [slot, assembly] of hardware.assemblies.entries()) assembly.part.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
 			for (const slide of hardware.slides) slide.position.x = -recoil * 5 * (kind ? 1 : definition.recoil);
 			for (const shutter of hardware.shutters) shutter.part.position.y = shutter.y + recoil * 5;
 			parts.solid.emissive.set('#ffae73'); parts.solid.emissiveIntensity = Math.max(feedback?.hit ?? 0, feedback?.response?.flash ?? 0) * 0.8;
 			parts.glass.emissiveIntensity = 0.6 + (feedback?.heat ?? 0) / 170;
-			const legGait = feedback?.legGait ?? gait;
-			for (const leg of legs) {
-				const foot = footPose(legGait, leg.index, size, rig, !kind && chassis === 'kestrel' ? -27 : -16);
-				const joints = legJoints(body, foot, leg.index, size, poseRig, foot.pitch);
+			for (const { leg, contact, foot, ankle, offset, tilt } of footings) {
+				const joints = solveLegToAnkle(body, ankle, leg.index, size, poseRig);
 				const x = body.x; const z = body.y;
 				start.set((joints.hip.x - x) / size, joints.hip.z / size, (joints.hip.y - z) / size);
 				end.set((joints.knee.x - x) / size, joints.knee.z / size, (joints.knee.y - z) / size);
@@ -171,8 +189,9 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 				start.copy(end); end.set((joints.ankle.x - x) / size, joints.ankle.z / size, (joints.ankle.y - z) / size);
 				orient(leg.lower, start, end, body.angle); leg.ankle.position.copy(end);
 				for (const joint of [leg.hip, leg.knee, leg.ankle]) joint.rotation.y = -body.angle;
-				const contact = legGait.feet[leg.index];
-				leg.contact.position.set((contact.x - x) / size, contact.lift / size, (contact.y - z) / size); leg.contact.rotation.y = -contact.angle;
+				leg.contact.position.set((contact.x - x) / size, (contact.lift + offset) / size, (contact.y - z) / size);
+				leg.contact.quaternion.setFromAxisAngle(axis, -contact.angle);
+				if (tilt) leg.contact.quaternion.premultiply(tilt);
 				leg.foot.position.set(((foot.x - contact.x) * Math.cos(contact.angle) + (foot.y - contact.y) * Math.sin(contact.angle)) / size, (foot.lift - contact.lift) / size, 0);
 				leg.foot.rotation.z = foot.pitch;
 				if (leg.toes !== leg.foot) leg.toes.rotation.z = foot.toePitch;
@@ -181,7 +200,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 				end.set((joints.knee.x - x) / size + f * 8, joints.knee.z / size + 2, (joints.knee.y - z) / size + s * 8);
 				link(leg.rod, start, end); end.lerp(start, 0.42); link(leg.sleeve, start, end);
 			}
-			sampleLegPose(feedback?.legGait);
+			sampleLegPose(feedback?.legGait, base);
 			root.updateMatrixWorld(true); inverseRoot.copy(root.matrixWorld).invert();
 			for (const [index, anchor] of hardware.muzzles.entries()) muzzles[index]?.setFromMatrixPosition(anchor.matrixWorld).applyMatrix4(inverseRoot);
 			for (const [slot, exits] of indexedExits.entries()) for (const [index, exit] of exits.entries()) rocketMuzzles[slot]?.[index]?.setFromMatrixPosition(exit.matrixWorld).applyMatrix4(inverseRoot);

@@ -3,6 +3,8 @@ import type { Biome, MissionMap } from './campaign-types';
 import type { FieldTerrain, TerrainObstacle } from './field-terrain';
 import { hasBiomeGround, type SurfaceBiome } from './biome-ground';
 import { createBiomeScenery } from './biome-scenery';
+import { fissureBand } from './mission-elevation';
+import { groundHeight, type TerrainElevation } from './terrain-elevation';
 
 export const FIELD_ROAD_MARKINGS = { haul: '#e7ac67', service: '#8dc7c9' } as const;
 
@@ -40,9 +42,34 @@ export const paintFieldRoads = function (ctx: CanvasRenderingContext2D, terrain:
 	ctx.restore();
 };
 
-// Preserve the mission texture's world coordinates while opening the actual
-// ground mesh, allowing the rock faces and lava floor to sit below elevation 0.
+// Both render meshes share vertices at the bank and the same diagonal as the
+// ballistic height sampler. Fissure walls use their own rock strata material.
+const surveyCells = function (grid: TerrainElevation, cuts: readonly TerrainObstacle[], visit: (a: number, b: number, c: number, d: number, cut: TerrainObstacle | undefined, x: number, y: number) => void) {
+	const nx = grid.xs.length;
+	for (let row = 0; row < grid.ys.length - 1; row++) for (let col = 0; col < nx - 1; col++) {
+		const x = ((grid.xs[col] ?? 0) + (grid.xs[col + 1] ?? 0)) / 2;
+		const y = ((grid.ys[row] ?? 0) + (grid.ys[row + 1] ?? 0)) / 2;
+		const cut = cuts.find(function (o) { return Math.abs(x - o.x) < o.width / 2 && Math.abs(y - o.y) < o.depth / 2; });
+		const a = row * nx + col;
+		visit(a, a + 1, a + nx, a + nx + 1, cut, x, y);
+	}
+};
+
 export const createCutGround = function (map: MissionMap, terrain: FieldTerrain) {
+	const grid = terrain.elevation;
+	if (grid) {
+		const positions: number[] = [], uv: number[] = [], indices: number[] = [];
+		for (const y of grid.ys) for (const x of grid.xs) {
+			positions.push(x - map.width / 2, map.height / 2 - y, grid.heights[positions.length / 3] ?? 0);
+			uv.push(x / map.width, 1 - y / map.height);
+		}
+		const cuts = terrain.obstacles.filter(function (o) { return o.kind === 'fissure'; });
+		surveyCells(grid, cuts, function (a, b, c, d, cut) { if (!cut) indices.push(a, c, d, a, d, b); });
+		const surface = new BufferGeometry();
+		surface.setIndex(indices); surface.setAttribute('position', new Float32BufferAttribute(positions, 3));
+		surface.setAttribute('uv', new Float32BufferAttribute(uv, 2)); surface.computeVertexNormals();
+		return surface;
+	}
 	const shape = new Shape();
 	const rectangle = function (path: Path, left: number, bottom: number, width: number, height: number) {
 		path.moveTo(left, bottom); path.lineTo(left, bottom + height); path.lineTo(left + width, bottom + height);
@@ -68,7 +95,8 @@ const CUT_BANDS: Readonly<Record<FissureBiome, readonly number[]>> = {
 	badlands: [0xc39268, 0x926346, 0x81553e, 0xb78054, 0x875741, 0x704936, 0x684b3d, 0x87684c, 0x704c37, 0x80543d, 0xae7752, 0x966443, 0xc5966d],
 	tundra: [0xaad1d9, 0x719eaf, 0x557c9e, 0x74aabd, 0x486c89, 0x417990, 0x32617e, 0x2a526e, 0x396f90, 0x4f81a4, 0x6aa5b8, 0x83b7c2, 0xc6e2df],
 };
-const createFissures = function (cuts: readonly TerrainObstacle[], seed: number, biome: FissureBiome) {
+const createFissures = function (terrain: FieldTerrain, seed: number, biome: FissureBiome) {
+	const cuts = terrain.obstacles.filter(function (o) { return o.kind === 'fissure'; });
 	const vertices: number[] = []; const pigments: number[] = [];
 	const tone = new Color();
 	const face = function (a: Vertex, b: Vertex, c: Vertex, d: Vertex, color: number) {
@@ -78,7 +106,21 @@ const createFissures = function (cuts: readonly TerrainObstacle[], seed: number,
 	const bands = CUT_BANDS[biome];
 	let sample = seed >>> 0;
 	const random = function () { sample = (Math.imul(sample, 1664525) + 1013904223) >>> 0; return sample / 4294967296; };
-	for (const cut of cuts) {
+	const grid = terrain.elevation;
+	if (grid) {
+		const vertex = function (i: number): Vertex {
+			return [grid.xs[i % grid.xs.length] ?? 0, (grid.heights[i] ?? 0) - .03, grid.ys[Math.floor(i / grid.xs.length)] ?? 0];
+		};
+		surveyCells(grid, cuts, function (a, b, c, d, cut, x, y) {
+			if (!cut) return;
+			const vertical = cut.width < cut.depth;
+			const u = .5 + (vertical ? (x - cut.x) / cut.width : (y - cut.y) / cut.depth);
+			const along = vertical ? y - cut.y : x - cut.x, end = Math.max(cut.width, cut.depth) / 2 - Math.abs(along);
+			const band = fissureBand(u);
+			const color = end < 24 ? bands[3] : biome === 'volcanic' && band === 7 && Math.sin(along / 95 + seed) > .61 ? 0xc46243 : bands[band];
+			face(vertex(a), vertex(c), vertex(d), vertex(b), color ?? bands[0] ?? 0x665449);
+		});
+	} else for (const cut of cuts) {
 		const vertical = cut.depth >= cut.width;
 		const length = Math.max(cut.width, cut.depth); const width = Math.min(cut.width, cut.depth);
 		const steps = Math.max(3, Math.ceil(length / 77));
@@ -129,11 +171,11 @@ const SHED_COLORS = {
 	badlands: { base: 0x675344, wall: 0xb59976, trim: 0x674637, roof: 0x87604d },
 	tundra: { base: 0x425764, wall: 0x879da7, trim: 0x3c5463, roof: 0xd0dedb },
 };
-const addShed = function (parts: ShedPart[], shed: TerrainObstacle, biome: FissureBiome) {
+const addShed = function (parts: ShedPart[], shed: TerrainObstacle, biome: FissureBiome, base: number) {
 	const { width: w, depth: d, height: h } = shed;
 	const colors = SHED_COLORS[biome];
 	const add = function (x: number, y: number, z: number, width: number, height: number, depth: number, color: number) {
-		parts.push({ x: shed.x + x, y: y + height / 2, z: shed.y + z, width, height, depth, color });
+		parts.push({ x: shed.x + x, y: base + y + height / 2, z: shed.y + z, width, height, depth, color });
 	};
 	// The main mass, eaves and roof equipment stay inside the combat volume.
 	add(0, 0, 0, w, h * .12, d, colors.base);
@@ -157,10 +199,10 @@ const addShed = function (parts: ShedPart[], shed: TerrainObstacle, biome: Fissu
 export const createFieldStructures = function (terrain: FieldTerrain, seed: number, biome: Biome) {
 	if (hasBiomeGround(biome)) return createBiomeScenery(terrain, seed, biome);
 	const root = new Group();
-	const fissures = createFissures(terrain.obstacles.filter(function (obstacle) { return obstacle.kind === 'fissure'; }), seed, biome);
+	const fissures = createFissures(terrain, seed, biome);
 	root.add(fissures);
 	const parts: ShedPart[] = [];
-	for (const obstacle of terrain.obstacles) if (obstacle.kind === 'shed') addShed(parts, obstacle, biome);
+	for (const obstacle of terrain.obstacles) if (obstacle.kind === 'shed') addShed(parts, obstacle, biome, groundHeight(terrain, obstacle));
 	const sheds = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial({ roughness: .84, metalness: .18 }), parts.length);
 	const pose = new Object3D(); const color = new Color();
 	for (const [i, part] of parts.entries()) {
@@ -172,10 +214,11 @@ export const createFieldStructures = function (terrain: FieldTerrain, seed: numb
 	const conifers = trees.length ? new InstancedMesh(new CylinderGeometry(.02, .5, 1, 6), new MeshStandardMaterial({ roughness: .95 }), trees.length * 4) : undefined;
 	if (conifers) {
 		for (const [i, tree] of trees.entries()) {
+			const base = groundHeight(terrain, tree);
 			for (const [j, [bottom, height, scale, pigment]] of ([
 				[0, .42, .32, 0x49524c], [.17, .46, 1, 0x324b49], [.34, .44, .82, 0x4a6660], [.55, .45, .58, 0x879e95],
 			] as const).entries()) {
-				pose.position.set(tree.x, tree.height * (bottom + height / 2), tree.y);
+				pose.position.set(tree.x, base + tree.height * (bottom + height / 2), tree.y);
 				pose.scale.set(tree.width * scale, tree.height * height, tree.depth * scale);
 				pose.updateMatrix();
 				conifers.setMatrixAt(i * 4 + j, pose.matrix); conifers.setColorAt(i * 4 + j, color.setHex(pigment));

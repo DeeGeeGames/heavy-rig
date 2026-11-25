@@ -9,6 +9,9 @@ import { createWeaponVfx } from './weapon-vfx';
 import { createCuttingLasers } from './cutting-laser';
 import { getFrame } from './frames';
 import { bakeTerrain, type BakedTerrain, type TerrainBakeSource } from './terrain-bake';
+import { groundHeight, groundNormal } from './terrain-elevation';
+import { drapeGroundGeometry } from './terrain-decals';
+import type { FieldTerrain } from './field-terrain';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
 interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
@@ -146,15 +149,29 @@ export const createWorldObjects = function (scene: Scene) {
 		const value = new Group(); value.name = 'artillery-warning';
 		const surface = new MeshBasicMaterial({ color: '#ff793b', transparent: true, opacity: 0.2, depthWrite: false });
 		const line = new MeshBasicMaterial({ color: '#f3a16c', transparent: true, opacity: .85, depthWrite: false });
-		const fill = disc(value, surface, 1); const boundary = disc(value, line, 1, true); const countdown = disc(value, line, 1, true);
+		const fill = new Mesh(new RingGeometry(0, 1, 48, 5).rotateX(-Math.PI / 2), surface);
+		const boundary = new Mesh(ring.clone().rotateX(-Math.PI / 2), line);
+		const countdown = new Mesh(ring.clone().rotateX(-Math.PI / 2), line);
+		value.add(fill, boundary, countdown);
 		fill.position.y = 0.14; boundary.position.y = 0.18; countdown.position.y = 0.2;
 		for (const axis of [0, Math.PI / 2]) { const cross = box(value, line, 0, 0.24, 0, 18, 1.5, 0.02); cross.rotation.y = axis; }
 		const shell = new Mesh(sphere, line); shell.scale.set(4, 12, 4); value.add(shell);
-		return { root: value, fill, boundary, countdown, shell, surface, line, dispose: function () { surface.dispose(); line.dispose(); } };
+		return { root: value, fill, boundary, countdown, shell, surface, line, dispose: function () {
+			for (const mark of [fill, boundary, countdown]) mark.geometry.dispose();
+			surface.dispose(); line.dispose();
+		} };
 	};
 	const warningMaterial = glow('#f3a16c');
 	const smoke = new Mesh(circle, glow('#b3c4cf', 0.27)); smoke.name = 'reactor-vent'; smoke.quaternion.setFromUnitVectors(zAxis, normal); feedback.add(smoke);
 	const from = new Vector3(); const to = new Vector3(); const delta = new Vector3(); const up = new Vector3(0, 1, 0);
+	const slope = new Vector3();
+	const placeOnGround = function (object: Object3D, terrain: FieldTerrain | undefined, point: Point, lift = 0, yaw = 0) {
+		object.position.set(point.x, groundHeight(terrain, point) + lift, point.y);
+		if (!terrain?.elevation) { object.rotation.set(0, yaw, 0); return; }
+		const normal = groundNormal(terrain, point);
+		object.quaternion.setFromUnitVectors(up, slope.set(normal.x, normal.elevation, normal.y));
+		object.rotateY(yaw);
+	};
 	const flashes = new WeakMap<Effect, Vector3>();
 	let nextFlashMuzzle = 0;
 	const segment = function (mesh: Mesh, width: number) {
@@ -193,8 +210,10 @@ export const createWorldObjects = function (scene: Scene) {
 				if (missionMap) { missionEnvironment = createMissionEnvironment(missionMap); root.add(missionEnvironment.root); }
 			}
 			yard.visible = !state.mission;
+			const terrain = state.mission?.map.terrain;
 			relay.visible = !state.mission || state.mission.contract.kind === 'defend';
-			relay.position.set(state.mission?.map.objective.x ?? ARENA.relayX, 0, state.mission?.map.objective.y ?? ARENA.relayY);
+			const relaySite = state.mission?.map.objective ?? { x: ARENA.relayX, y: ARENA.relayY };
+			relay.position.set(relaySite.x, groundHeight(terrain, relaySite), relaySite.y);
 			if (state.mission) missionEnvironment?.update(state.mission, sceneryTime);
 			const muzzles = frameEffects?.muzzles ?? [];
 			beaconSurface.color.set(state.relay < 30 ? '#ff865e' : '#b9fff0');
@@ -203,7 +222,7 @@ export const createWorldObjects = function (scene: Scene) {
 			sync(feedback, defenses, siege.length, createDefense, function (value, index) {
 				const enemy = siege[index]; if (!enemy) return;
 				const defense = getEnemyDefense(state, enemy); const radius = (enemy.commander ? 67 : 56) * mechScale(enemy.kind);
-				value.root.position.set(enemy.x, 0, enemy.y); value.root.rotation.y = -(enemy.kind === 'tank' ? enemy.hullAngle ?? enemy.angle : enemy.angle);
+				placeOnGround(value.root, terrain, enemy, .2, -(enemy.kind === 'tank' ? enemy.hullAngle ?? enemy.angle : enemy.angle));
 				value.shield.scale.setScalar(radius); value.shield.visible = !defense.exposed;
 				value.exposed.scale.setScalar(radius); value.exposed.visible = defense.exposed;
 				value.commitment.scale.setScalar(radius + 8); value.commitment.visible = enemy.attack?.phase === 'committed';
@@ -213,17 +232,20 @@ export const createWorldObjects = function (scene: Scene) {
 				box(value, dark, 0, 0, 0, 32, 29, 8); box(value, steel, -8, 8, 0, 19, 23, 7).rotation.z = -0.2;
 				box(value, dark, 24, 0, -19, 24, 7, 5).rotation.y = 0.5; box(value, dark, -21, 0, 22, 17, 10, 4).rotation.y = -0.3;
 				return { root: value };
-			}, function (value, index) { const wreck = state.wrecks[index]; if (!wreck) return; value.root.position.set(wreck.x, 0, wreck.y); value.root.rotation.y = -wreck.angle; });
+			}, function (value, index) { const wreck = state.wrecks[index]; if (wreck) placeOnGround(value.root, terrain, wreck, 0, -wreck.angle); });
 			sync(feedback, warnings, state.warnings.length, function () { const value = new Group(); value.name = 'inbound-warning'; disc(value, warningMaterial, 1, true); return { root: value }; }, function (value, index) {
-				const warning = state.warnings[index]; if (!warning) return; value.root.position.set(warning.x, 0.12, warning.y); value.root.scale.setScalar(45 + Math.sin(state.time * 8) * 5);
+				const warning = state.warnings[index]; if (!warning) return; placeOnGround(value.root, terrain, warning, .3); value.root.scale.setScalar(45 + Math.sin(state.time * 8) * 5);
 			});
 			sync(feedback, strikes, state.strikes.length, createStrike, function (value, index) {
 				const strike = state.strikes[index]; if (!strike) return;
-				value.root.position.set(strike.x, 0, strike.y);
+				value.root.position.set(strike.x, groundHeight(terrain, strike), strike.y);
 				value.surface.color.set(strike.friendly ? '#60dfc7' : '#ff793b');
 				value.line.color.set(strike.friendly ? '#94ebe4' : '#f3a16c');
-				value.fill.scale.setScalar(strike.radius); value.boundary.scale.setScalar(strike.radius);
-				value.countdown.scale.setScalar(strike.radius * Math.max(0.03, strike.life / strike.duration));
+				for (const mark of [value.fill, value.boundary, value.countdown]) {
+					const radius = mark === value.countdown ? strike.radius * Math.max(.03, strike.life / strike.duration) : strike.radius;
+					mark.scale.set(radius, 1, radius);
+					drapeGroundGeometry(mark.geometry, terrain, strike, 0, radius);
+				}
 				value.surface.opacity = 0.12 + (1 - strike.life / strike.duration) * 0.18;
 				value.shell.visible = strike.life < 0.7; value.shell.position.y = 20 + strike.life * 600;
 			});
@@ -234,7 +256,7 @@ export const createWorldObjects = function (scene: Scene) {
 				value.root.visible = unit !== undefined;
 				if (!unit) return;
 				const scale = enemy ? mechScale(enemy.kind) : mate ? getFrame(mate.frameId).size : 1;
-				value.root.position.set(unit.x, 0.05, unit.y); value.root.scale.setScalar(scale);
+				placeOnGround(value.root, terrain, unit, .15); value.root.scale.setScalar(scale);
 			});
 			const smokePositions = new Map<Shot, Vector3>();
 			sync(feedback, shots, state.shots.length, createShot, function (value, index) {
@@ -242,10 +264,10 @@ export const createWorldObjects = function (scene: Scene) {
 				// Simulation owns the complete trajectory. Clamping the tracer to
 				// flight age prevents a new round extending behind its muzzle.
 				const trailTime = Math.min(style.duration, Math.max(0, shot.age ?? style.duration));
-				const elevation = shot.elevation ?? 42; const verticalSpeed = shot.vElevation ?? 0;
+				const elevation = shot.elevation ?? groundHeight(terrain, shot) + 42; const verticalSpeed = shot.vElevation ?? 0;
 				from.set(shot.x - shot.vx * trailTime, elevation - verticalSpeed * trailTime, shot.y - shot.vy * trailTime);
 				to.set(shot.x, elevation, shot.y);
-				weaponVfx.updateShot(value, shot, state.time); segment(value.trail, style.width);
+				weaponVfx.updateShot(value, shot, state.time, elevation); segment(value.trail, style.width);
 				if (shot.kind === 'missile' || shot.kind === 'rocket') smokePositions.set(shot, to.clone());
 			});
 			projectileSmoke.update(state, smokePositions);
@@ -253,7 +275,7 @@ export const createWorldObjects = function (scene: Scene) {
 			weaponVfx.contacts.update(state, activeEffects);
 			sync(feedback, effects, activeEffects.length, createEffect, function (value, index) {
 				const effect = activeEffects[index]; if (!effect) return;
-				value.root.position.set(effect.x, effect.elevation ?? 36, effect.y);
+				value.root.position.set(effect.x, effect.elevation ?? groundHeight(terrain, effect) + 36, effect.y);
 				if (effect.source === 'muzzle' && effect.squadmateId === undefined && effect.elevation === undefined && muzzles.length > 0) {
 					let origin = flashes.get(effect);
 					if (!origin) {
@@ -267,7 +289,7 @@ export const createWorldObjects = function (scene: Scene) {
 			lasers.update(state, muzzles);
 			smoke.visible = state.player.heat > 60;
 			if (smoke.visible) {
-				smoke.position.set(state.player.x - Math.cos(state.player.angle) * 23, 70 + state.time * 25 % 24, state.player.y - Math.sin(state.player.angle) * 23);
+				smoke.position.set(state.player.x - Math.cos(state.player.angle) * 23, groundHeight(terrain, state.player) + 70 + state.time * 25 % 24, state.player.y - Math.sin(state.player.angle) * 23);
 				if (frameEffects?.exhaust) {
 					smoke.position.copy(frameEffects.exhaust); smoke.position.y += state.time * 25 % 24;
 				}

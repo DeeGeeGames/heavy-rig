@@ -2,6 +2,8 @@ import { CircleGeometry, Color, Float32BufferAttribute, Mesh, MeshBasicMaterial,
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ARENA, type CombatStateView } from './simulation';
 import { TORSO_LIMIT } from './torso-arc';
+import { drapeGroundGeometry } from './terrain-decals';
+import { groundHeight } from './terrain-elevation';
 
 const radius = 192;
 const stopStart = radius * 0.65;
@@ -72,8 +74,10 @@ export const createFiringArc = function () {
 			mesh.visible = visible;
 			if (!visible) return;
 			const { player, mission } = state;
-			mesh.position.set(player.x, 1.5, player.y);
+			const terrain = mission?.map.terrain;
+			mesh.position.set(player.x, groundHeight(terrain, player) + 1.5, player.y);
 			mesh.rotation.y = -player.angle;
+			drapeGroundGeometry(geometry, terrain, player, player.angle);
 			right.constant = mission?.map.width ?? ARENA.width;
 			far.constant = mission?.map.height ?? ARENA.height;
 		},

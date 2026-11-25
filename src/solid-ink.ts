@@ -41,7 +41,7 @@ const createPipeline = function (renderer: WebGLRenderer) {
 		paints: { value: source.texture }, surfaces: { value: surfaces }, depths: { value: source.depthTexture },
 		geometry: { value: resolved.texture }, paintPixels: { value: paintPixels },
 		lines: { value: lines.texture }, inked: { value: inked.texture }, finished: { value: finished.texture },
-		hasTerrain: { value: false },
+		hasTerrain: { value: false }, hasRelief: { value: false },
 		terrainColor, terrainDepth,
 		liveToTerrain: { value: new Matrix4() }, terrainToLive: { value: new Matrix4() },
 		terrainFloorDepth: { value: new Vector4() },
@@ -112,6 +112,7 @@ const createPipeline = function (renderer: WebGLRenderer) {
 			background.copy(originalBackground instanceof Color ? originalBackground : clear).convertLinearToSRGB();
 			uniforms.paper.value.set(background.r, background.g, background.b);
 			uniforms.hasTerrain.value = terrain !== undefined;
+			uniforms.hasRelief.value = terrain?.groundDepth !== undefined;
 			uniforms.clearAlpha.value = terrain ? 0 : originalBackground instanceof Color ? 1 : alpha;
 			uniforms.terrainColor.value = terrain?.color ?? null;
 			uniforms.terrainDepth.value = terrain?.depth ?? null;
@@ -151,6 +152,7 @@ const createPipeline = function (renderer: WebGLRenderer) {
 					uniforms.drawTerrainColor.value = false;
 					draw(terrainPass, source);
 					renderer.autoClear = false;
+					if (terrain.groundDepth) renderer.render(terrain.groundDepth, raster);
 				}
 				renderer.render(scene, raster);
 				renderer.autoClear = true;
@@ -165,6 +167,7 @@ const createPipeline = function (renderer: WebGLRenderer) {
 					uniforms.drawTerrainColor.value = true;
 					draw(terrainPass, target);
 					renderer.autoClear = false;
+					if (terrain.groundDepth) renderer.render(terrain.groundDepth, camera);
 				}
 				draw(enlarge, target);
 				if (shaderError) throw new Error(shaderError);

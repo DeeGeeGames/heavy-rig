@@ -3,6 +3,7 @@ import { MISSION_KINDS } from '../src/campaign';
 import type { Contract } from '../src/campaign-types';
 import { ENEMY_RADIUS, playerVolume, RIG_RADIUS } from '../src/combat-spatial';
 import { terrainPathClear, terrainPointClear, terrainShotFraction, terrainWaypoint } from '../src/field-terrain';
+import { groundHeight } from '../src/terrain-elevation';
 import { CAPTURE_RADIUS, EXTRACTION_RADIUS, generateMissionMap, missionDeploymentSlot, missionHostileCount, missionSpawn } from '../src/missions';
 import { SQUAD_SIZE } from '../src/pilots';
 import type { Point } from '../src/simulation';
@@ -81,7 +82,8 @@ test('water blocks rigs while allowing shots across, and local cover shelters a 
 		for (const kind of kinds) {
 			const obstacle = terrain.obstacles.find(function (o) { return o.kind === kind && (o.kind !== 'tree' || o.height > 50); });
 			if (!obstacle) throw new Error(`Missing ${kind} on ${world}`);
-			const from = { x: obstacle.x - obstacle.width / 2 - 3, y: obstacle.y, elevation: kind === 'channel' ? 0 : 32 };
+			const from = { x: obstacle.x - obstacle.width / 2 - 3, y: obstacle.y,
+				elevation: groundHeight(terrain, obstacle) + (kind === 'channel' ? 0 : 32) };
 			const to = { ...from, x: obstacle.x + obstacle.width / 2 + 3 };
 			expect(terrainPathClear(terrain, from, to, RIG_RADIUS)).toBe(false);
 			expect(terrainShotFraction(terrain, from, to) === undefined).toBe(kind === 'channel');
