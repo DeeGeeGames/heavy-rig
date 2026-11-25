@@ -47,6 +47,7 @@ interface ViewBindings {
 }
 interface MechPose {
 	loadout: readonly WeaponMount[];
+	position?: Point | undefined;
 	elevation?: number;
 	visible?: boolean;
 	heat?: number;
@@ -189,12 +190,12 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
-					pose: function (id, view, gait, heading, hp, time, { loadout, heat = 0, authoredPose, target, legGait, elevation = 0, visible = true }) {
+					pose: function (id, view, gait, heading, hp, time, { loadout, heat = 0, authoredPose, target, legGait, position = gait.body, elevation = 0, visible = true }) {
 						if (view.damage.hp !== undefined && hp < view.damage.hp) view.damage.hitAt = time;
 						view.damage.hp = hp;
 						const transform = world.getComponent(id, 'localTransform3D');
 						if (!transform) return;
-						transform.x = gait.body.x; transform.y = elevation; transform.z = gait.body.y;
+						transform.x = position.x; transform.y = elevation; transform.z = position.y;
 						world.markChanged(id, 'localTransform3D');
 						view.model.root.visible = visible;
 						view.model.pose(gait, heading, {
@@ -336,7 +337,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const gait = arrival?.gait ?? (attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player);
 					views.pose(playerId, player, gait, heading, state.player.hp, state.time, {
 						loadout: state.loadout, heat: state.player.heat, authoredPose: arrival ? arrival.authored : state.authoredPose,
-						elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
+						position: arrival?.position, elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? (attract ? undefined : sampledLegs(state.player, state.authoredPose?.gait ?? gait)),
 						target: attract || hangar || landing ? undefined : playerAimPoint(state),
 					});
@@ -351,7 +352,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const gait = arrival?.gait ?? gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
 					views.pose(id, view, gait, arrival?.gait.body.angle ?? mate.turret, mate.hp, state.time, {
 						loadout: mate.loadout, heat: mate.heat, authoredPose: arrival ? arrival.authored : mate.authoredPose,
-						elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
+						position: arrival?.position, elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? sampledLegs(mate, mate.authoredPose?.gait ?? gait),
 						target: !landing && mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
 					});
@@ -372,7 +373,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
 				objects.update(state, player ? {
 					muzzles: player.model.muzzles.map(worldAnchor), exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
-				} : undefined, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.gait.body : undefined; }));
+				} : undefined, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.position : undefined; }));
 				firingArc.update(state, Boolean(player) && !attract && !hangar && !landing);
 				reticle.visible = barrel.visible = !attract && !landing;
 				reticle.position.set(aim.x, 0.25, aim.y);

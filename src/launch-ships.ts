@@ -7,7 +7,7 @@ const podCenter = 219;
 export const DROPSHIP_WIDTH = 2 * (podCenter + 33);
 
 const sides = [-1, 1] as const;
-const held = function (value: number, poses: number) { return Math.round(Math.max(0, Math.min(1, value)) * poses) / poses; };
+const clamp = function (value: number) { return Math.max(0, Math.min(1, value)); };
 
 // The open stern is +Z. The split shell leaves an actual hold between the forward
 // pressure bulkhead and the hinged aft ramp, visible from both camera positions.
@@ -126,18 +126,19 @@ export const createDropship = function () {
 	for (const side of sides) for (const z of [-77, 85]) {
 		const plume = new Mesh(flame, exhaust); plume.position.set(side * podCenter, -18.5, z); jets.add(plume);
 	}
-	const setRamp = function (open01: number) {
-		const step = held(open01, 12);
+	const setRamp = function (open: number, poseOpen: number) {
+		const step = Math.round(clamp(poseOpen) * 12) / 12;
+		const sealTravel = clamp(open);
 		ramp.rotation.x = -Math.PI / 2 + (Math.PI / 2 + down) * step;
-		upperSeal.scale.y = 1 - step;
-		upperSeal.position.y = 207 * step; upperSeal.visible = step < 1;
+		upperSeal.scale.y = 1 - sealTravel;
+		upperSeal.position.y = 207 * sealTravel; upperSeal.visible = sealTravel < 1;
 		lamps.color.setHex(step > 0.5 ? 0xe8f3ce : 0xff794e);
 	};
 	const setThrust = function (level01: number) {
-		const step = held(level01, 5);
-		jets.visible = step > 0; jets.scale.y = step;
+		const level = clamp(level01);
+		jets.visible = level > 0; jets.scale.y = level;
 	};
-	setRamp(0); setThrust(0);
+	setRamp(0, 0); setThrust(0);
 	return { root: craft, setRamp, setThrust, dispose: function () { craft.clear(); lamps.dispose(); exhaust.dispose(); parts.dispose(); } };
 };
 

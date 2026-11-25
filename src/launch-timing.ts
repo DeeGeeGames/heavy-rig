@@ -7,8 +7,8 @@ export const LAUNCH_TIMING = {
 	end: 14,
 } as const;
 
-// Eight held poses per second, independent of display refresh and the combat tick.
-export const sampleLaunchTime = function (elapsed: number) {
+// Eight held model poses per second. Travel and camera motion use elapsed time.
+export const sampleLaunchPoseTime = function (elapsed: number) {
 	return Math.floor(Math.min(elapsed, LAUNCH_TIMING.end) * 8) / 8;
 };
 
