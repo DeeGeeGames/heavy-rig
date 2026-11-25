@@ -1,7 +1,7 @@
 import { rigName } from './rigs';
 import { html } from 'lit-html';
 import { getWeapon } from './arsenal';
-import { reviewOperations, type Campaign } from './campaign';
+import { fieldLeadFee, reviewOperations, type Campaign } from './campaign';
 import { canDeploySquad, deploymentIssue, getOwnedMech, type OwnedMech } from './company';
 import type { CompanyActions } from './company-ui';
 import { getPilot, getPilotStats, getRecruitOffers, type Pilot } from './pilots';
@@ -21,8 +21,8 @@ const slotName = function (slot: number, planned: boolean) { return planned ? `S
 
 const skillText = function (campaign: Campaign, pilot: Pilot, roster: boolean) {
 	if (pilot.id === 'player') return '';
-	const { gunnery, maneuver, wins, bonus, nextMilestone } = getPilotStats(campaign, pilot.id);
-	return html`<p class="pilot-dispatch-stats">Gunnery ${gunnery}/5 · Maneuver ${maneuver}/5${roster ? html`<br>${wins} successful ${wins === 1 ? 'sortie' : 'sorties'}${bonus ? ` · +${bonus} dispatch bonus` : ''}${nextMilestone ? ` · Next bonus at ${nextMilestone}` : ''}` : ''}</p>`;
+	const { gunnery, maneuver, leadership, wins, bonus, nextMilestone } = getPilotStats(campaign, pilot.id);
+	return html`<p class="pilot-dispatch-stats">Gunnery ${gunnery}/5 · Maneuver ${maneuver}/5 · Leadership ${leadership}/5${roster ? html`<br>${wins} successful ${wins === 1 ? 'sortie' : 'sorties'}${bonus ? ` · +${bonus} dispatch bonus` : ''}${nextMilestone ? ` · Next bonus at ${nextMilestone}` : ''}` : ''}</p>`;
 };
 
 export const pilotPanes = function (campaign: Campaign, actions: CompanyActions): WorkspacePane[] {
@@ -56,28 +56,37 @@ const squadPane = function (campaign: Campaign, actions: CompanyActions, pick: (
 	const planned = !campaign.active;
 	const lineup = operation?.lineup ?? (planned ? campaign.preferredLineup : undefined) ?? campaign.lineup;
 	const review = operation && reviewOperations(campaign).entries.find(function (entry) { return entry.operation === operation; });
+	const contract = operation?.contract ?? campaign.active;
+	const leadId = review?.leaderId ?? (campaign.active ? 'player' : undefined);
+	const lead = leadId ? getPilot(leadId) : undefined;
+	const forecast = review?.forecast;
+	const extraction = forecast && (forecast.baseExtractionChance === forecast.extractionChance ? `${forecast.extractionChance}%` : `${forecast.baseExtractionChance}% → ${forecast.extractionChance}%`);
 	const ready = canDeploySquad(campaign);
 	const count = lineup.filter(function (entry) { return entry.pilotId && entry.frameId; }).length;
 	return {
 		id: 'squad', label: 'Squad lineup', scrollable: true,
 		items: [html`<div class="sortie-context">
-			<strong>${operation?.contract.title ?? campaign.active?.title ?? 'No contract staged'}</strong>
+			<strong>${contract?.title ?? 'No contract staged'}</strong>
 			<span>${count} / ${lineup.length} RIGS ASSIGNED</span>
 		</div>`, html`<div class="squad-lineup">${lineup.map(function (entry, slot) {
 			const pilot = entry.pilotId ? getPilot(entry.pilotId) : undefined;
 			const mech = entry.frameId ? getOwnedMech(campaign, entry.frameId) : undefined;
 			const issue = mech ? deploymentIssue(campaign, mech.frameId) : undefined;
-			return html`<article class="squad-seat" data-squad-slot=${slot} data-squad-ready=${String(Boolean(mech && !issue))}>
-				<span class="eyebrow">${slotName(slot, planned)}</span>
+			const isLead = Boolean(pilot && pilot.id === leadId);
+			return html`<article class="squad-seat" data-squad-slot=${slot} data-squad-ready=${String(Boolean(mech && !issue))} data-squad-lead=${String(isLead)}>
+				<span class="eyebrow">${isLead ? 'Field lead' : slotName(slot, planned)}</span>
 				${slot === 0 && !planned ? html`<strong class="squad-player">${pilot?.callsign ?? 'Player'}</strong>` : html`<button class="squad-seat-choice" data-choose-pilot=${slot} aria-label=${pilot ? `${pilot.callsign} · change pilot` : `${slotName(slot, planned)} · add pilot`} ?disabled=${Boolean(campaign.deployed)} @click=${function () { pick({ slot, kind: 'pilot' }); }}><b>${pilot?.callsign ?? 'Add pilot'}</b><small>${pilot ? pilotRole(pilot) : 'EMPTY SLOT'}</small></button>`}
 				${pilot ? html`
 						<button class="squad-seat-choice squad-rig-choice" data-choose-rig=${slot} aria-label=${mech ? `${rigName(mech.frameId)} · change rig` : `${slotName(slot, planned)} · assign rig`} ?disabled=${Boolean(campaign.deployed)} @click=${function () { pick({ slot, kind: 'rig' }); }}><b>${mech ? rigName(mech.frameId) : 'Assign rig'}</b>${mech ? html`<small>${Math.ceil(mech.integrity)}% INTEGRITY</small>` : ''}</button>
 					${mech ? html`<p>${frameKit(mech)}</p>` : ''}
 					${issue || !mech ? html`<p class="squad-readiness">${issue ?? 'Rig required or bench this pilot.'}</p>` : ''}
+					${review && !review.live && mech ? html`<button class="squad-lead-choice" data-assign-lead=${pilot.id} aria-pressed=${isLead} @click=${function () { actions.assignLead(pilot.id); }}>${isLead ? 'Leading' : 'Make lead'} · ${pilot.leadership}/5</button>` : ''}
 				` : ''}
 			</article>`;
-			})}</div>`, ...(review ? [html`<div class="sortie-context"><strong>${review.live ? 'Player-led' : 'Crew only · 1 campaign day'}</strong>${review.forecast ? html`<span>${Math.round(review.forecast.successChance)}% CHANCE OF SUCCESS</span>` : ''}</div>`,
-			...(review.forecast ? [`Objective ${review.forecast.objectiveChance}% · Extraction ${review.forecast.extractionChance}%`, ...review.forecast.factors] : review.issues).flatMap(textItems)] : [])],
+			})}</div>`, ...(contract ? [html`<div class="sortie-context"><strong>${lead ? `${lead.callsign} leads` : 'No field lead'}</strong>${forecast ? html`<span>${Math.round(forecast.successChance)}% CHANCE OF SUCCESS</span>` : html`<span>${leadId === 'player' ? 'YOU PLAY' : 'CREW ONLY'}</span>`}</div>`,
+			...(forecast ? [`Objective ${forecast.objectiveChance}% · Extraction ${extraction} · Leadership ${lead?.leadership}/5`] : review?.issues ?? []).flatMap(textItems),
+			...(lead ? textItems(`On success, ${fieldLeadFee(contract).toLocaleString()} CR lead fee ${lead.id === 'player' ? 'added to company funds' : `paid to ${lead.callsign}`}.`) : []),
+			...(forecast?.factors ?? []).flatMap(textItems)] : [])],
 		actions: html`
 			${operation ? html`<button class="primary" id="company-deploy" @click=${actions.openOperations}>DAY OPERATIONS →</button>` : campaign.active ? html`<button class="primary" id="company-deploy" ?disabled=${!ready} @click=${actions.deploy}>${count > 1 ? 'DEPLOY SQUAD' : 'DEPLOY SOLO'} ↘</button>` : html`<button class="primary" @click=${function () { actions.navigate('bridge'); }}>FIND CONTRACT →</button>`}
 			${operation ? html`<button class="text-button" data-remove-operation @click=${actions.removeOperation}>REMOVE FROM DAY</button>` : ''}
@@ -102,7 +111,7 @@ export const deploymentPanes = function (campaign: Campaign, actions: CompanyAct
 		const pilot = getPilot(id);
 		const other = assignments.findIndex(function (entry, index) { return index !== slot && entry.pilotId === id; });
 		const elsewhere = otherOperations.find(function (entry) { return entry.lineup.some(function (seat) { return seat.pilotId === id; }); });
-		return html`<button class="equipment-choice" data-assign-pilot=${id} aria-label=${`Assign ${pilot.callsign}`} aria-pressed=${selected.pilotId === id} ?disabled=${other >= 0 || Boolean(elsewhere)} @click=${function () { close(); actions.assignPilot(slot, id); }}><span><b>${pilot.callsign}</b><small>${pilotRole(pilot)}</small></span><small>${other >= 0 ? `Assigned to ${slotName(other, planned)}` : elsewhere?.contract.title ?? pilot.name}</small></button>`;
+		return html`<button class="equipment-choice" data-assign-pilot=${id} aria-label=${`Assign ${pilot.callsign}`} aria-pressed=${selected.pilotId === id} ?disabled=${other >= 0 || Boolean(elsewhere)} @click=${function () { close(); actions.assignPilot(slot, id); }}><span><b>${pilot.callsign}</b><small>${pilotRole(pilot)}${id === 'player' ? '' : ` · Leadership ${pilot.leadership}/5`}</small></span><small>${other >= 0 ? `Assigned to ${slotName(other, planned)}` : elsewhere?.contract.title ?? pilot.name}</small></button>`;
 	}) : campaign.fleet.map(function (mech) {
 		const id = mech.frameId;
 		const other = assignments.find(function (entry, index) { return index !== slot && entry.frameId === id; });

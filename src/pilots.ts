@@ -11,18 +11,19 @@ export interface Pilot {
 	readonly name: string;
 	readonly callsign: string;
 	readonly specialty: 'commander' | 'marksman' | 'skirmisher';
+	readonly leadership: number;
 	readonly price: number;
 	readonly description: string;
 }
 
 const pilots = {
-	player: { name: 'Company Commander', callsign: 'Commander', specialty: 'commander', price: 0, description: 'You play the mission assigned to the Commander.' },
-	flint: { name: 'Mara Venn', callsign: 'Flint', specialty: 'marksman', price: 500, description: 'Tracks targets carefully and takes steadier shots.' },
-	kite: { name: 'Ivo Serrat', callsign: 'Kite', specialty: 'skirmisher', price: 500, description: 'Moves more readily while engaging targets.' },
-	glass: { name: 'Nia Fen', callsign: 'Glass', specialty: 'marksman', price: 500, description: 'Tracks targets carefully and takes steadier shots.' },
-	talon: { name: 'Ro Ash', callsign: 'Talon', specialty: 'skirmisher', price: 500, description: 'Moves more readily while engaging targets.' },
-	brace: { name: 'Emil Arden', callsign: 'Brace', specialty: 'marksman', price: 500, description: 'Tracks targets carefully and takes steadier shots.' },
-	switch: { name: 'Ada Noll', callsign: 'Switch', specialty: 'skirmisher', price: 500, description: 'Moves more readily while engaging targets.' },
+	player: { name: 'Company Commander', callsign: 'Commander', specialty: 'commander', leadership: 3, price: 0, description: 'You play the mission assigned to the Commander.' },
+	flint: { name: 'Mara Venn', callsign: 'Flint', specialty: 'marksman', leadership: 4, price: 500, description: 'Tracks targets carefully and takes steadier shots.' },
+	kite: { name: 'Ivo Serrat', callsign: 'Kite', specialty: 'skirmisher', leadership: 2, price: 500, description: 'Moves more readily while engaging targets.' },
+	glass: { name: 'Nia Fen', callsign: 'Glass', specialty: 'marksman', leadership: 1, price: 500, description: 'Tracks targets carefully and takes steadier shots.' },
+	talon: { name: 'Ro Ash', callsign: 'Talon', specialty: 'skirmisher', leadership: 3, price: 500, description: 'Moves more readily while engaging targets.' },
+	brace: { name: 'Emil Arden', callsign: 'Brace', specialty: 'marksman', leadership: 3, price: 500, description: 'Tracks targets carefully and takes steadier shots.' },
+	switch: { name: 'Ada Noll', callsign: 'Switch', specialty: 'skirmisher', leadership: 5, price: 500, description: 'Moves more readily while engaging targets.' },
 } as const;
 
 export type PilotId = keyof typeof pilots;
@@ -47,6 +48,7 @@ export const getPilotStats = function (campaign: Campaign, id: PilotId) {
 	const nextMilestone = PILOT_MILESTONES.find(function (milestone) { return wins < milestone; });
 	return {
 		...SKILLS[pilots[id].specialty],
+		leadership: pilots[id].leadership,
 		wins,
 		bonus: PILOT_MILESTONES.filter(function (milestone) { return wins >= milestone; }).length,
 		...(nextMilestone === undefined ? {} : { nextMilestone }),
@@ -80,6 +82,8 @@ export const dismissPilot = function (campaign: Campaign, id: PilotId): Campaign
 		...campaign, pilots: campaign.pilots.filter(function (pilotId) { return pilotId !== id; }),
 		lineup: release(campaign.lineup),
 		...(campaign.preferredLineup ? { preferredLineup: release(campaign.preferredLineup) } : {}),
-		...(campaign.operations ? { operations: campaign.operations.map(function (operation) { return { ...operation, lineup: release(operation.lineup) }; }) } : {}),
+		...(campaign.operations ? { operations: campaign.operations.map(function (operation) {
+			return { ...operation, lineup: release(operation.lineup), leaderId: operation.leaderId === id ? undefined : operation.leaderId };
+		}) } : {}),
 	};
 };

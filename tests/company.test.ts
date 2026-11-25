@@ -364,7 +364,9 @@ test('sorties consume independent runtime supplies and replenish selected reserv
 		const state = createMissionState(contract, { frame: rigFrameId(nextMech.frameId), loadout: nextMech.loadout, reserves: nextMech.reserves });
 		expect(state.loadout[0]?.rounds).toBe(37);
 		expect(getOwnedMech(roundTrip(finished))?.reserves).toEqual([37, 0]);
-		expect(finished.credits).toBe(outcome === 'success' ? contract.reward : 0);
+		const fee = outcome === 'success' ? Math.round(contract.reward / 4) : 0;
+		expect(finished.credits).toBe(outcome === 'success' ? contract.reward + fee : 0);
+		expect(finished.lastResult?.fieldLead).toEqual({ pilotId: 'player', fee });
 		expect(recoverInterruptedDeployment(roundTrip(finished))).toEqual(finished);
 	}
 });

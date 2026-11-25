@@ -115,7 +115,7 @@ test('failure, abort and interrupted deployment all allow a wrecked starter to r
 		const repaired = roundTrip(advanceDays(queueRepair(accepted, accepted.selectedFrame), repairDays(0)));
 		expect(repaired.credits).toBe(0);
 		expect(beginDeployment(repaired).deployed?.integrity).toBe(100);
-		expect(settleContract(beginDeployment(repaired), true).credits).toBe(recovery.reward);
+		expect(settleContract(beginDeployment(repaired), true).credits).toBe(recovery.reward + Math.round(recovery.reward / 4));
 	}
 });
 

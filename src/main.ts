@@ -40,7 +40,7 @@ import { mountTrainingSetup } from './training-ui';
 import { createSituationMission } from './situation-sim';
 import { mountSituationSetup } from './situation-sim-ui';
 import { isDifficulty, readProfile, saveProfile, type Settings } from './profile';
-import { abandonContract, assignOperationSlot, commitOperations, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getPlannedOperation, getTransmission, parseCampaign, recoverInterruptedDeployment, removeOperation, reviewOperations, saveCampaign, settleContract, stageOperation, travelTo, type Campaign, type CampaignResult } from './campaign';
+import { abandonContract, assignOperationLead, assignOperationSlot, commitOperations, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getPlannedOperation, getTransmission, parseCampaign, recoverInterruptedDeployment, removeOperation, reviewOperations, saveCampaign, settleContract, stageOperation, travelTo, type Campaign, type CampaignResult } from './campaign';
 import type { Difficulty } from './operation';
 import { focusTerritoryMap } from './territory-map';
 import { renderBridge, renderStarmap, type BridgeActions, type ShipView } from './campaign-ui';
@@ -698,6 +698,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const next = campaign.active ? assignRig(campaign, slot, id) : assignOperationSlot(campaign, operation?.contract.id, slot, { pilotId: lineup[slot]?.pilotId ?? null, frameId: id });
 				updateCompany(next, id ? `${rigName(id)} assigned.` : 'Rig assignment cleared.');
 			},
+			assignLead: function (id) {
+				if (operation) updateCompany(assignOperationLead(campaign, operation.contract.id, id), `${getPilot(id).callsign} will lead this sortie.`);
+			},
 			deploy: function () {
 				if (!canDeploySquad(campaign)) return;
 				if (hasRefitDraft() && campaign.lineup.some(function (slot) { return slot.frameId === campaign.selectedFrame; })) {
@@ -1054,6 +1057,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const saveReportCopy = function () {
 		element('record-feedback').textContent = campaignSaved ? 'CAMPAIGN SAVED ON THIS DEVICE' : 'STORAGE UNAVAILABLE · CAMPAIGN CONTINUES FOR THIS SESSION';
 	};
+	const fieldLeadReport = function ({ fieldLead, won }: CampaignResult) {
+		if (!fieldLead) return '';
+		const name = getPilot(fieldLead.pilotId).callsign;
+		const fee = `${fieldLead.fee.toLocaleString()} CR`;
+		const payment = !won ? 'no fee earned' : fieldLead.pilotId === 'player' ? `${fee} fee included in company pay` : `${fee} personal fee paid`;
+		return html`<p class="day-report-checks" data-field-lead-report data-dialog-text>Field lead ${name} · ${payment}</p>`;
+	};
 	const showDayDebrief = function (results: readonly CampaignResult[], now: number, fieldReport?: ReturnType<typeof getOperationReport>) {
 		const first = results[0];
 		if (!first) return;
@@ -1070,7 +1080,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('result-difficulty').textContent = '';
 		element('result-score').textContent = `${payment.toLocaleString()} CR`;
 		element('result-rank').textContent = `${won}/${results.length}`;
-		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'TOTAL CONTRACT PAY';
+		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'TOTAL COMPANY PAY';
 		element('result-stats').hidden = true;
 		element('result-stats').replaceChildren();
 		reportContent(html`${results.map(function (mission) {
@@ -1081,6 +1091,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				<strong>${mission.won ? 'Complete' : mission.aborted ? 'Aborted' : 'Failed'}</strong>
 				<small>${mission.payout.toLocaleString()} CR · +${mission.favor} favor with ${getFaction(contract.employer).shortName} · +${mission.companyReputation} company reputation</small>
 			</article>
+			${fieldLeadReport(mission)}
 			${crew ? html`<p class="day-report-checks" data-dialog-text>Objective ${rollText(crew.objective)}. Extraction ${rollText(crew.extraction)}.</p>`
 				: fieldReport ? html`<p class="day-report-checks" data-dialog-text>${fieldReport.kills} eliminated · ${formatTime(fieldReport.time)} field time</p>` : ''}
 			${squad?.map(function (member) { return rigReport(member, mission.won); })}`;
@@ -1109,12 +1120,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('result-difficulty').textContent = report ? state.difficulty.toUpperCase() : '';
 		element('result-score').textContent = `${payout.toLocaleString()} CR`;
 		element('result-rank').textContent = won ? '✓' : '×';
-		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'CONTRACT PAYMENT';
+		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'COMPANY PAYMENT';
 		const stats = [...(report ? [[String(report.kills), 'ELIMINATED'], [formatTime(report.time), 'FIELD TIME']] : []), [`+${favor}`, 'EMPLOYER FAVOR']];
 		element('result-stats').hidden = false;
 		element('result-stats').replaceChildren(...stats.map(function ([value, label]) { const node = document.createElement('div'); const strong = document.createElement('b'); const small = document.createElement('small'); strong.textContent = value ?? ''; small.textContent = label ?? ''; node.append(strong, small); return node; }));
 		const upgrades = element('result-upgrades');
-		reportContent(html`${squad.map(function (member) { return rigReport(member, won); })}`);
+		reportContent(html`${fieldLeadReport(result)}${squad.map(function (member) { return rigReport(member, won); })}`);
 		const funds = step ? `COMPANY FUNDS ${campaign.credits.toLocaleString()} CR · ` : '';
 		upgrades.textContent = `${funds}DAY ${campaign.day} · +${companyReputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
 		element('restart').textContent = step ? 'BRIDGE / SIGNAL →' : 'RETURN TO SHIP →';
