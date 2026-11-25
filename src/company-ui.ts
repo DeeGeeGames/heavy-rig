@@ -147,7 +147,7 @@ const liveryItems = function (actions: CompanyActions, deployed: boolean) {
 
 const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, actions: CompanyActions): WorkspacePane[] {
 	const mech = getOwnedMech(campaign);
-	if (!mech) return [{ id: 'fleet', label: 'Fleet', items: textItems('No frame is selected.') }];
+	if (!mech) return [{ id: 'fleet', label: 'Rigs', items: textItems('No frame is selected.') }];
 	const frame = getFrame(rigFrameId(mech.frameId));
 	const order = workOrderFor(campaign, mech.frameId);
 	const changed = refitDays(mech.loadout, editor.loadout);
@@ -185,7 +185,7 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 		...textItems('Only compatible owned copies are listed. Every tier fits the same hardpoint; each tier is separate inventory.'),
 	];
 	return [
-		{ id: 'fleet', label: 'Fleet', items: [
+		{ id: 'fleet', label: 'Rigs', items: [
 			html`<span class="eyebrow">${campaign.fleet.length} RIGS OWNED</span>`,
 			...campaign.fleet.map(function (owned) { const definition = getFrame(rigFrameId(owned.frameId)); const job = workOrderFor(campaign, owned.frameId); const pilot = assignedPilot(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${rigName(owned.frameId)}</b><small>${definition.variantName}${pilot ? ` · ${pilot}` : ''}</small>${renderHullIntegrity(owned.integrity)}<small>${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
 			...textItems('Each rig has its own equipment, condition, ammunition settings, and workshop crew. Market frames arrive with complete compatible weapon packages scaled to company reputation and standard ammunition.'),
@@ -315,7 +315,7 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 		{ id: 'frames', label: 'Frames', panes: compact ? ['catalogue'] : ['catalogue', 'details'], select: function () { view.kind = 'frames'; refresh(); } },
 		...(compact ? [{ id: 'details', label: 'Details', panes: ['details'] }] : []),
 	] : screen === 'mechbay' ? [
-		{ id: 'fleet', label: 'Fleet', panes: ['fleet'] }, { id: 'loadout', label: 'Loadout', panes: ['loadout'] }, { id: 'condition', label: 'Condition', panes: ['condition'] },
+		{ id: 'fleet', label: 'Rigs', panes: ['fleet'] }, { id: 'loadout', label: 'Loadout', panes: ['loadout'] }, { id: 'condition', label: 'Condition', panes: ['condition'] },
 		...(frame && supportsMechSkin(frame.id) ? [{ id: 'livery', label: 'Livery', panes: ['livery'] }] : []),
 	] : screen === 'engineering' ? [
 		{ id: 'orders', label: 'Work orders', panes: ['orders'] }, { id: 'condition', label: 'Condition', panes: ['condition'] }, { id: 'calendar', label: 'Calendar', panes: ['calendar'] },

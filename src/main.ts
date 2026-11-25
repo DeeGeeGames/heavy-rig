@@ -893,7 +893,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		};
 		if (!returningCompany) { start(); return; }
 		const mode = career ? 'CAREER' : 'CAMPAIGN';
-		confirm(start, `START NEW ${mode}`, 'This replaces your current company on this device, including its contracts, fleet, credits, reputation, and progress. This cannot be undone. Your settings are kept.', `START A NEW ${mode}?`);
+		confirm(start, `START NEW ${mode}`, 'This replaces your current company on this device, including its contracts, rigs, credits, reputation, and progress. This cannot be undone. Your settings are kept.', `START A NEW ${mode}?`);
 	};
 	listen('title-new-campaign', function () { startCompany(false); });
 	listen('title-new-career', function () { startCompany(true); });

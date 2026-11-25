@@ -109,7 +109,7 @@ You can buy multiple copies of a variant and manage each rig separately. Every
 market frame arrives with a complete weapon loadout and standard ammunition.
 The starting Kestrel has both Rattlers fitted. Purchases arrive
 immediately; replacing or moving fitted weapons requires a refit. Weapons are
-physical inventory copies shared across the fleet: a fitted or reserved copy cannot also be installed on another
+physical inventory copies shared across your rigs: a fitted or reserved copy cannot also be installed on another
 frame. Model and tier identify each copy: a tier 0 Rattler cannot satisfy a
 tier 3 Rattler refit. Buying a second copy permits fitting that equipment twice.
 Weapons and their mount positions persist between sorties. Empty mounts do not
@@ -274,7 +274,7 @@ extraction pays once.
 
 ## Frames and variants
 
-The playable fleet contains three chassis with three separately purchasable variants each.
+There are three playable chassis with three separately purchasable variants each.
 All nine use SNES-style models. Each family shares its body and gait, with fitted weapons that identify the variant. [In-game roster](design/mechs/assets/playable-variants.png) · [Model records](design/mechs/assets/README.md)
 Longbow, Morrow and Rook are out of the playable roster. A save containing one
 of those rigs loads as a fresh company.
