@@ -1,5 +1,5 @@
 import {
-	Box3, Color, DataTexture, DirectionalLight, Fog, Group, HemisphereLight, Mesh, MeshBasicMaterial,
+	Box3, Color, DataTexture, DirectionalLight, Fog, Group, HemisphereLight, MathUtils, Mesh, MeshBasicMaterial,
 	NearestFilter, PerspectiveCamera, PlaneGeometry, Scene, SRGBColorSpace, Vector3, type WebGLRenderer,
 } from 'three';
 import type { Biome } from './campaign-types';
@@ -18,7 +18,8 @@ const clamp = function (value: number) { return Math.max(0, Math.min(1, value));
 const ease = function (value: number) { const t = clamp(value); return t * t * (3 - 2 * t); };
 const bankPose = function (degrees: number) { return Math.round(degrees / 5) * Math.PI / 36; };
 const rampAt = function (time: number) { return 1 - ease((time - .875) / 1.125); };
-const flightAt = function (time: number) { return clamp((time - LAUNCH_TIMING.release) / (LAUNCH_TIMING.approach - LAUNCH_TIMING.release)); };
+const flightAt = function (time: number) { return clamp((time - LAUNCH_TIMING.release) / (LAUNCH_TIMING.descent - LAUNCH_TIMING.release)); };
+const descentAt = function (time: number) { return clamp((time - LAUNCH_TIMING.descent) / (LAUNCH_TIMING.approach - LAUNCH_TIMING.descent)); };
 const bankAt = function (flight: number) { return ease((flight - .60) / .40); };
 
 // One indexed-color orbital plate. The faint daylight bands describe the curved
@@ -29,7 +30,9 @@ const planetColors = {
 	tundra: [0x293747, 0x385266, 0x507785, 0x78979d, 0xa6bebc, 0xd2dcd0],
 } as const;
 const createOrbitPlate = function (biome: Biome, seed: number) {
-	const width = 448, height = 256;
+	// The carrier shots see the upper half. The descent follows the horizon
+	// down the plate until the planet covers the frame.
+	const width = 448, height = 512;
 	const pixels = new Uint8Array(width * height * 4);
 	const surface = planetColors[biome];
 	const phase = (seed >>> 0) % 127 / 17;
@@ -59,6 +62,7 @@ const createOrbitPlate = function (biome: Biome, seed: number) {
 		}
 	}
 	const texture = new DataTexture(pixels, width, height);
+	texture.repeat.y = .5; texture.offset.y = .5;
 	texture.colorSpace = SRGBColorSpace; texture.minFilter = texture.magFilter = NearestFilter; texture.needsUpdate = true;
 	return texture;
 };
@@ -113,6 +117,7 @@ export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
 	};
 
 	const aim = new Vector3(), inkAnchor = new Vector3();
+	const eyeOffset = new Vector3(), chaseOffset = new Vector3();
 	const cameraFrom = function (group: Group, ex: number, ey: number, ez: number, ax: number, ay: number, az: number) {
 		group.localToWorld(camera.position.set(ex, ey, ez));
 		group.localToWorld(aim.set(ax, ay, az)); camera.lookAt(aim);
@@ -123,11 +128,14 @@ export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
 		const poseTime = sampleLaunchPoseTime(seconds);
 		const ramp = rampAt(seconds); ship.setRamp(ramp, rampAt(poseTime));
 		const flight = flightAt(seconds), bankTravel = bankAt(flight), heldBank = bankAt(flightAt(poseTime));
+		const descent = descentAt(seconds), turn = ease(descent), heldTurn = ease(descentAt(poseTime));
 		ship.setThrust(exterior ? .16 + .84 * ease(flight * 3) : 0);
 		// Outboard of the maintenance gallery, the crew sees past their own ramp
 		// into the long side of the bay. The prow is still behind the carrier lip.
-		ship.root.position.set(-132 + 410 * bankTravel, 26 * ease(flight * 3) - 320 * bankTravel, 126 + 1580 * flight * flight);
-		ship.root.rotation.set(bankPose(-19 * heldBank), Math.PI + bankPose(25 * heldBank), bankPose(-26 * heldBank), 'YXZ');
+		const bayX = -132 + 410 * bankTravel, bayY = 26 * ease(flight * 3) - 320 * bankTravel, bayZ = 126 + 1580 * flight * flight;
+		const dive = descent * descent;
+		ship.root.position.set(bayX + 1250 * dive, bayY - 3200 * dive, bayZ + 4200 * descent - 750 * dive);
+		ship.root.rotation.set(bankPose(-19 * heldBank - 36 * heldTurn), Math.PI + bankPose(25 * heldBank + 15 * heldTurn), bankPose(-26 * heldBank * (1 - heldTurn)), 'YXZ');
 
 		if (!exterior) {
 			// The hatch seals off the bright gantry. Switch to the practicals'
@@ -146,6 +154,11 @@ export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
 		}
 
 		scene.fog = null; key.color.set('#ffe0b3'); key.intensity = 3.1; overhead.intensity = 1.5;
+		const map = plateMaterial.map;
+		if (map) {
+			map.repeat.set(1 - .32 * turn, .5 - .16 * turn);
+			map.offset.set(.10 * turn, .5 - .41 * turn);
+		}
 		camera.fov = 37;
 		if (seconds < LAUNCH_TIMING.release) {
 			const portrait = clamp((1.2 - aspect) / .65);
@@ -156,8 +169,14 @@ export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
 			const distance = Math.max(1150, Math.min(2250, 1820 / aspect));
 			const { x, y, z } = ship.root.position;
 			const track = ease(flight);
-			cameraFrom(carrier.bay, -.46 * distance + .63 * x, 100 + .21 * distance + .76 * y, .90 * distance + .86 * z,
-				x - 25, 84 + y * .9, z * (.82 + .15 * track));
+			// Swing over the falling ship's shoulder on a widening arc. Interpolate
+			// the range independently so the camera stays clear of the lift pods.
+			eyeOffset.set(-.46 * distance - .37 * bayX, 100 + .21 * distance - .24 * bayY, .90 * distance - .14 * bayZ);
+			chaseOffset.set(-.67 * distance, 1.22 * distance, -.74 * distance);
+			const range = MathUtils.lerp(eyeOffset.length(), chaseOffset.length(), turn);
+			eyeOffset.normalize().lerp(chaseOffset.normalize(), turn).setLength(range);
+			cameraFrom(carrier.bay, x + eyeOffset.x, y + eyeOffset.y, z + eyeOffset.z,
+				x + MathUtils.lerp(-25, 75, turn), y + MathUtils.lerp(84 - .1 * bayY, 40, turn), z + MathUtils.lerp(bayZ * (-.18 + .15 * track), 90, turn));
 		}
 		ship.root.localToWorld(inkAnchor.set(0, 85, 0));
 	};

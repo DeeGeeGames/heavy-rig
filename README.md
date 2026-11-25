@@ -88,7 +88,8 @@ debrief reports every result and links damaged rigs to Engineering.
 
 Playable contracts, Situation Sim and the Cinder field trial open aboard the
 dropship in the Wayfarer’s hangar. The Wayfarer stays in orbit while the
-dropship carries the assigned rigs to the mission’s landing site. The rigs board
+dropship banks toward the planet, passes through cloud and flies over the
+mission’s landing site. The rigs board
 in the left-to-right order of their ground formation. Wingmates unload in an
 order that leaves room for the rigs behind them. The commander steps off last,
 and the ramp stays down until the squad clears it. The camera
@@ -606,7 +607,7 @@ remain tracked in [performance issue #10](https://github.com/DeeGeeGames/heavy-r
 
 An original locally synthesized 96-BPM score changes its layers with combat
 intensity and uses quieter ship arrangements. Mission launches play “Break the
-Clamps,” a 14-second industrial rock cue timed to the dropship sequence.
+Clamps,” a 17-second industrial rock cue timed to the dropship sequence.
 The playable intro escape selects the
 144-BPM Pursuit theme with a running bass pulse, tense brass-like phrases, and
 industrial percussion, alongside the facility alarms. Set `AudioFrame.theme` to

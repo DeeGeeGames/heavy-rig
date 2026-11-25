@@ -4,7 +4,7 @@
 
 “Break the Clamps” is an original 120 BPM industrial rock cue composed for Heavy Rig. Its guitars, bass and drums use MuseScore General (MS Basic), based on FluidR3 by Frank Wen, the mono conversion by Michael Cowgill and the adaptation by S. Christian Collins. The [instrument credits and MIT license](./public/licenses/MS-Basic.txt) accompany the recording.
 
-The 14-second stereo recording ships as `public/audio/break-the-clamps.flac`. Its master includes the approved 25% gain reduction and four brief dips under the dropship effects. The game plays those effects separately.
+The 17-second stereo recording ships as `public/audio/break-the-clamps.flac`. An extra bar accompanies the atmospheric descent, with two more beats as the ship crosses the clouds. Its master includes the approved 25% gain reduction and four brief dips under the dropship effects. The game plays those effects separately.
 
 ## Intro: boots running on concrete
 

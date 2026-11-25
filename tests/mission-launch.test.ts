@@ -1,10 +1,28 @@
 import { expect, test } from 'bun:test';
 import { Scene, Vector3 } from 'three';
 import { createSurfaceLanding, planLaunchLanding } from '../src/launch-surface';
-import { LAUNCH_TIMING } from '../src/launch-timing';
+import { cloudEntry, cloudExit, LAUNCH_DURATION, LAUNCH_TIMING, launchCues, launchSceneTime } from '../src/launch-timing';
 import { DROPSHIP_DECK, DROPSHIP_WIDTH } from '../src/launch-ships';
 import { combatTargets, type Point } from '../src/simulation';
 import { createSituationMission } from '../src/situation-sim';
+
+const { touchdown, lift } = LAUNCH_TIMING;
+
+test('the ship keeps moving through the extra beats and meets the landing and liftoff cues', function () {
+	const extra = 2 * 60 / 120;
+	expect(LAUNCH_DURATION).toBe(LAUNCH_TIMING.end + extra);
+	expect(launchSceneTime(cloudEntry)).toBe(cloudEntry);
+	let previous = cloudEntry;
+	for (let frame = 1; cloudEntry + frame / 60 < cloudExit + extra; frame++) {
+		const scene = launchSceneTime(cloudEntry + frame / 60);
+		expect(scene).toBeGreaterThan(previous);
+		previous = scene;
+	}
+	expect(launchSceneTime(cloudExit + extra)).toBeCloseTo(cloudExit);
+	const effects = Object.fromEntries(launchCues.map(function (cue) { return [cue.kind, launchSceneTime(cue.at)] as const; }));
+	expect(effects).toMatchObject({ release: LAUNCH_TIMING.release, land: touchdown + .5, lift });
+	expect(launchSceneTime(LAUNCH_DURATION)).toBe(LAUNCH_TIMING.end);
+});
 
 test('skipping mid-ramp and completing the landing both hand off the original deployed formation', function () {
 	const state = createSituationMission({
@@ -19,7 +37,7 @@ test('skipping mid-ramp and completing the landing both hand off the original de
 	for (const skip of [true, false]) {
 		const landing = createSurfaceLanding(scene, state, map);
 		try {
-			const unloading = landing.update(9, 900, 600);
+			const unloading = landing.update(touchdown + 2, 900, 600);
 			expect(unloading.poses.some(function (pose) { return pose.elevation > 0; })).toBe(true);
 			if (!skip) {
 				const handoff = landing.update(LAUNCH_TIMING.end, 900, 600);
@@ -39,22 +57,37 @@ test('skipping mid-ramp and completing the landing both hand off the original de
 	}
 });
 
-test('touchdown and unloading travel between held pose exposures', function () {
+test('the visible dropship flies into touchdown and unloading travels between held pose exposures', function () {
 	const state = createSituationMission({ kind: 'recovery', planetId: 'cinder', tier: 1, frame: 'warden', wing: [] }, 283191706, 'story');
 	const map = state.mission?.map;
 	if (!map) throw new Error('Missing deployment map');
 	const scene = new Scene(), plan = planLaunchLanding(state, map), landing = createSurfaceLanding(scene, state, map, plan);
 	try {
-		landing.update(7.25, 900, 600);
 		const ship = scene.getObjectByName('company-dropship-vehicle');
 		if (!ship) throw new Error('Missing landing ship');
+		landing.update(LAUNCH_TIMING.approach, 900, 600);
+		expect(ship.visible).toBe(true);
+		const initialHeight = ship.position.y;
+		const landingSite = plan.site.at(0, 0);
+		const distanceToSite = function () { return Math.hypot(ship.position.x - landingSite.x, ship.position.z - landingSite.y); };
+		const initialDistance = distanceToSite();
+		landing.update(LAUNCH_TIMING.approach + 1 / 60, 900, 600);
+		expect(distanceToSite()).toBeLessThan(initialDistance);
+		landing.update(touchdown - 1 / 60, 900, 600);
+		const arriving = ship.position.clone();
+		landing.update(touchdown, 900, 600);
+		expect(distanceToSite()).toBeCloseTo(0);
+		expect(ship.position.distanceTo(arriving)).toBeLessThan(1);
+		expect(ship.position.y).toBeLessThan(initialHeight);
+
+		landing.update(touchdown + .25, 900, 600);
 		const height = ship.position.y;
-		landing.update(7.25 + 1 / 60, 900, 600);
+		landing.update(touchdown + .25 + 1 / 60, 900, 600);
 		expect(ship.position.y).toBeLessThan(height);
 
-		const first = landing.update(9.25, 900, 600);
-		const next = landing.update(9.25 + 1 / 60, 900, 600);
-		const exposed = landing.update(9.375, 900, 600);
+		const first = landing.update(touchdown + 2.25, 900, 600);
+		const next = landing.update(touchdown + 2.25 + 1 / 60, 900, 600);
+		const exposed = landing.update(touchdown + 2.375, 900, 600);
 		const [a] = first.poses, [b] = next.poses, [c] = exposed.poses;
 		if (!a || !b || !c) throw new Error('Missing disembarking rig');
 		expect(plan.site.aftAt(b.position)).toBeGreaterThan(plan.site.aftAt(a.position));
@@ -80,11 +113,11 @@ test('wingmates board on their formation side and walk directly off the ramp on 
 		const at = site.at(0, DROPSHIP_DECK.toe);
 		const side = function (p: Point) { return (p.x - at.x) * Math.sin(site.heading) - (p.y - at.y) * Math.cos(site.heading); };
 		const actors = [state.player, ...state.squadmates];
-		const times = Array.from({ length: 57 }, function (_, i) { return LAUNCH_TIMING.touchdown + i / 8; });
+		const times = Array.from({ length: 57 }, function (_, i) { return touchdown + i / 8; });
 		const exits = paths.map(function (path, index) {
 			const actor = actors[index];
 			if (!actor) throw new Error('Unexpected passenger');
-			const start = path(LAUNCH_TIMING.touchdown);
+			const start = path(touchdown);
 			if (index > 0) expect(Math.sign(side(start))).toBe(Math.sign(side(actor)));
 			let previous = side(start), travel = 0;
 			for (const time of times) {
@@ -115,7 +148,7 @@ test('two rigs with port-side stations can share a lane and unload in order', fu
 	expect(wingmate.z).toBeGreaterThan(commander.z);
 	expect(wingmate.exitOrder).toBeLessThan(commander.exitOrder);
 	const clear = paths.map(function (path) {
-		for (let t = 9; t < 13; t += .125) if (site.aftAt(path(t)) >= DROPSHIP_DECK.toe) return t;
+		for (let t = touchdown + 2; t < LAUNCH_TIMING.end - 1; t += .125) if (site.aftAt(path(t)) >= DROPSHIP_DECK.toe) return t;
 		throw new Error('Rig stayed aboard');
 	});
 	const [last, first] = clear;
@@ -132,12 +165,12 @@ test('the ship keeps the ramp down while the last rig still has a foot on it', f
 	if (!map) throw new Error('Missing deployment map');
 	const scene = new Scene(), plan = planLaunchLanding(state, map), landing = createSurfaceLanding(scene, state, map, plan);
 	try {
-		landing.update(8.5, 900, 600);
+		landing.update(touchdown + 1.5, 900, 600);
 		const ship = scene.getObjectByName('company-dropship-vehicle'), ramp = scene.getObjectByName('aft-ramp');
 		if (!ship || !ramp) throw new Error('Missing landing ship');
 		const down = ramp.rotation.x;
 		let lastFoot = 0;
-		for (let t = 11; t < LAUNCH_TIMING.end; t += .125) {
+		for (let t = lift - .5; t < LAUNCH_TIMING.end; t += .125) {
 			const { poses } = landing.update(t, 900, 600);
 			if (poses.some(function (rig) { return rig.gait.feet.some(function (foot) { return plan.site.aftAt(foot) < DROPSHIP_DECK.toe + 8; }); })) {
 				expect(ramp.rotation.x).toBeCloseTo(down);
@@ -145,7 +178,7 @@ test('the ship keeps the ramp down while the last rig still has a foot on it', f
 				lastFoot = t;
 			}
 		}
-		expect(lastFoot).toBeGreaterThanOrEqual(11.375);
+		expect(lastFoot).toBeGreaterThanOrEqual(lift - .125);
 		expect(ramp.rotation.x).toBeLessThan(down);
 		expect(ship.position.y).toBeGreaterThan(0);
 	} finally { landing.dispose(); }
@@ -161,7 +194,7 @@ test('a loaded dropship lands clear of the guards and facilities already on the 
 		if (!map) throw new Error('Missing deployment map');
 		const scene = new Scene(), landing = createSurfaceLanding(scene, state, map);
 		try {
-			landing.update(8.125, 900, 600);
+			landing.update(touchdown + 1.125, 900, 600);
 			const ship = scene.getObjectByName('company-dropship-vehicle');
 			if (!ship) throw new Error('Missing landed dropship');
 			for (const { body, radius } of combatTargets(state)) {
