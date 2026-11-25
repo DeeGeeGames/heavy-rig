@@ -29,14 +29,41 @@ test('skipping mid-ramp and completing the landing both hand off the original de
 					const actor = actors[index];
 					if (!actor) throw new Error('Unexpected rig on the landing field');
 					expect(pose.elevation).toBeCloseTo(0);
-					expect(pose.gait.body.x).toBeCloseTo(actor.x);
-					expect(pose.gait.body.y).toBeCloseTo(actor.y);
+					expect(pose.position.x).toBeCloseTo(actor.x);
+					expect(pose.position.y).toBeCloseTo(actor.y);
 				});
 			}
 		} finally { landing.dispose(); }
 		expect(state).toEqual(original);
 		expect(scene.children).toHaveLength(0);
 	}
+});
+
+test('touchdown and unloading travel between held pose exposures', function () {
+	const state = createSituationMission({ kind: 'recovery', planetId: 'cinder', tier: 1, frame: 'warden', wing: [] }, 283191706, 'story');
+	const map = state.mission?.map;
+	if (!map) throw new Error('Missing deployment map');
+	const scene = new Scene(), plan = planLaunchLanding(state, map), landing = createSurfaceLanding(scene, state, map, plan);
+	try {
+		landing.update(7.25, 900, 600);
+		const ship = scene.getObjectByName('company-dropship-vehicle');
+		if (!ship) throw new Error('Missing landing ship');
+		const height = ship.position.y;
+		landing.update(7.25 + 1 / 60, 900, 600);
+		expect(ship.position.y).toBeLessThan(height);
+
+		const first = landing.update(9.25, 900, 600);
+		const next = landing.update(9.25 + 1 / 60, 900, 600);
+		const exposed = landing.update(9.375, 900, 600);
+		const [a] = first.poses, [b] = next.poses, [c] = exposed.poses;
+		if (!a || !b || !c) throw new Error('Missing disembarking rig');
+		expect(plan.site.aftAt(b.position)).toBeGreaterThan(plan.site.aftAt(a.position));
+		expect(b.elevation).toBeLessThan(a.elevation);
+		expect(next.focus).not.toEqual(first.focus);
+		expect(next.zoom).toBeLessThan(first.zoom);
+		expect(b.gait).toEqual(a.gait);
+		expect(c.gait.feet).not.toEqual(b.gait.feet);
+	} finally { landing.dispose(); }
 });
 
 test('wingmates board on their formation side and walk directly off the ramp on clear approaches', function () {

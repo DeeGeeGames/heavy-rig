@@ -8,7 +8,7 @@ import { getFrame } from './frames';
 import { createGait } from './gait';
 import type { LaunchBerth } from './launch-berths';
 import { DROPSHIP_DECK, createDropship, createWayfarer } from './launch-ships';
-import { LAUNCH_TIMING } from './launch-timing';
+import { LAUNCH_TIMING, sampleLaunchPoseTime } from './launch-timing';
 import { createMech } from './mech-3d';
 import type { MechFinish } from './mech-skin';
 import type { CombatStateView } from './simulation';
@@ -17,6 +17,9 @@ import type { createSolidInk } from './solid-ink';
 const clamp = function (value: number) { return Math.max(0, Math.min(1, value)); };
 const ease = function (value: number) { const t = clamp(value); return t * t * (3 - 2 * t); };
 const bankPose = function (degrees: number) { return Math.round(degrees / 5) * Math.PI / 36; };
+const rampAt = function (time: number) { return 1 - ease((time - .875) / 1.125); };
+const flightAt = function (time: number) { return clamp((time - LAUNCH_TIMING.release) / (LAUNCH_TIMING.approach - LAUNCH_TIMING.release)); };
+const bankAt = function (flight: number) { return ease((flight - .60) / .40); };
 
 // One indexed-color orbital plate. The faint daylight bands describe the curved
 // limb even when a narrow viewport crops most of the planet.
@@ -117,14 +120,14 @@ export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
 	const shots = function (seconds: number, aspect: number) {
 		const exterior = seconds >= LAUNCH_TIMING.carrier;
 		crew.visible = !exterior; plate.visible = exterior;
-		const ramp = 1 - ease((seconds - .875) / 1.125); ship.setRamp(ramp);
-		const flight = clamp((seconds - LAUNCH_TIMING.release) / (LAUNCH_TIMING.approach - LAUNCH_TIMING.release));
-		const bank = ease((flight - .60) / .40);
+		const poseTime = sampleLaunchPoseTime(seconds);
+		const ramp = rampAt(seconds); ship.setRamp(ramp, rampAt(poseTime));
+		const flight = flightAt(seconds), bankTravel = bankAt(flight), heldBank = bankAt(flightAt(poseTime));
 		ship.setThrust(exterior ? .16 + .84 * ease(flight * 3) : 0);
 		// Outboard of the maintenance gallery, the crew sees past their own ramp
 		// into the long side of the bay. The prow is still behind the carrier lip.
-		ship.root.position.set(-132 + 410 * bank, 26 * ease(flight * 3) - 320 * bank, 126 + 1580 * flight * flight);
-		ship.root.rotation.set(bankPose(-19 * bank), Math.PI + bankPose(25 * bank), bankPose(-26 * bank), 'YXZ');
+		ship.root.position.set(-132 + 410 * bankTravel, 26 * ease(flight * 3) - 320 * bankTravel, 126 + 1580 * flight * flight);
+		ship.root.rotation.set(bankPose(-19 * heldBank), Math.PI + bankPose(25 * heldBank), bankPose(-26 * heldBank), 'YXZ');
 
 		if (!exterior) {
 			// The hatch seals off the bright gantry. Switch to the practicals'
