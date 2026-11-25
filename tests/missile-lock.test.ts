@@ -46,10 +46,10 @@ test('visibility and range interrupt acquisition, reload stays independent, and 
 	expect(missile.target).toBe(first.id); expect(missile.vy).toBeGreaterThan(before); expect(state.player.missileLock).toBeUndefined();
 });
 
-test('a standard missile pod can acquire and land a volley at 2,000 m while its rocket counterpart falls short', function () {
+test.each([15, 30])('standard missiles lock and hit at 2,000 m on a %i° bearing while rockets fall short', function (degrees) {
+	const bearing = degrees * Math.PI / 180;
 	for (const [missile, rocket] of [['stream-missiles', 'stream-rockets'], ['cluster-missiles', 'cluster-rockets']] as const) {
 		const state = createState({ frame: 'warden' });
-		const bearing = Math.PI / 6;
 		Object.assign(state.player, { x: 32, y: 80, angle: bearing, turret: bearing });
 		state.loadout = [{ ...createMount(missile), slot: 2 }, { ...createMount(rocket), slot: 3 }];
 		const contact = target(101, state.player.x + 2001 * Math.cos(bearing), state.player.y + 2001 * Math.sin(bearing));
@@ -58,6 +58,7 @@ test('a standard missile pod can acquire and land a volley at 2,000 m while its 
 		expect(missileTracking(state, contact.id)).toBe('OUT OF RANGE');
 		contact.x = state.player.x + 2000 * Math.cos(bearing);
 		contact.y = state.player.y + 2000 * Math.sin(bearing);
+		expect(missileTracking(state, contact.id)).toBe('TRACKING');
 		weaponsStep(state, { ...controls, fire: [false, false, true, true] }, dt);
 		expect(state.shots.map(function (shot) { return shot.kind; })).toEqual(['rocket']);
 		const advance = function (ticks: number) {
@@ -65,6 +66,7 @@ test('a standard missile pod can acquire and land a volley at 2,000 m while its 
 		};
 		advance(90);
 		expect(state.shots).toHaveLength(0); expect(contact.hp).toBe(contact.maxHp);
+		expect(missileLockLabel(state, contact.id)).toContain('LOCKED');
 		weaponsStep(state, { ...controls, fire: [false, false, true, false] }, dt);
 		advance(120);
 		expect(state.stats.shotsHit).toBe(2); expect(contact.hp).toBeLessThan(contact.maxHp);

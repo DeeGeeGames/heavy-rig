@@ -19,7 +19,7 @@ import { mountTouchZoom } from './touch-zoom';
 import { mountMobileFullscreen } from './mobile-fullscreen';
 import { mountFullscreenViewport } from './fullscreen-viewport';
 import { ACTIONS, LABELS, defaultKeyboard, defaultController, keyLabel, validKey, type Action } from './bindings';
-import { getWeapon, isReserve, WEAPON_FAMILY_LABELS } from './arsenal';
+import { getWeapon, isReserve, WEAPON_FAMILY_LABELS, withinWeaponRange } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getFrame } from './frames';
 import { MOUNTS, loadSummary, massLabel } from './loadout-ui';
@@ -1536,7 +1536,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const missileRange = pad.connected ? missileLockRange(state.frame, state.loadout) : 0;
 			const inStickRange = function (point: Point, assistDistance: number) {
 				if (assistDistance < 850) return true;
-				if (distance(point, state.player) > missileRange) return false;
+				if (!withinWeaponRange(distance(point, state.player), missileRange)) return false;
 				return isContactVisible(presentation.toScreen(point, targetElevation(point)), width, height, hudObstructions);
 			};
 			if (!aimTargets.some(function (target) { return target.id === acquiredTargetId; })) acquiredTargetId = undefined;

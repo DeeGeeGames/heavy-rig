@@ -121,6 +121,10 @@ export const getWeapon = function (id: WeaponId): WeaponDefinition {
 	if (!weapon) throw new RangeError(`Unknown Heavy Rig weapon: ${id}`);
 	return weapon;
 };
+export const withinWeaponRange = function (distance: number, range: number): boolean {
+	// Diagonal distances can round just beyond the inclusive range limit.
+	return distance <= range + 1e-9;
+};
 export const isReserve = function (weapon: WeaponId, rounds: unknown): rounds is number {
 	return typeof rounds === 'number' && Number.isInteger(rounds) && rounds >= 0 && rounds <= (getWeapon(weapon).ammunition?.capacity ?? 0);
 };
