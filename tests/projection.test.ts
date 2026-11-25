@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { OrthographicCamera } from 'three';
+import { OrthographicCamera, Vector3 } from 'three';
 import { createState } from '../src/simulation';
 import { alignCamera, toGround, toScreen } from '../src/projection-3d';
 
@@ -36,4 +36,18 @@ test('picking follows the active shaken projection and ignores empty viewports',
 	const actual = toGround(screen, camera, 1440, 900); if (!actual) throw new Error('Missing ground intersection');
 	expect(actual.x).toBeCloseTo(point.x, 8); expect(actual.y).toBeCloseTo(point.y, 8);
 	expect(toGround(screen, camera, 0, 900)).toBeUndefined(); expect(toGround(screen, camera, 1440, 0)).toBeUndefined();
+});
+
+test('wide portrait views render and pick ground at both screen edges', function () {
+	const state = createState();
+	const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
+	const width = 1024, height = 1366;
+	alignCamera(camera, width, height, state, 0.35);
+	for (const y of [1, height - 1]) {
+		const ground = toGround({ x: width / 2, y }, camera, width, height);
+		if (!ground) throw new Error('Visible ground fell behind the camera');
+		const clip = new Vector3(ground.x, 0, ground.y).project(camera);
+		expect(clip.z).toBeGreaterThan(-1); expect(clip.z).toBeLessThan(1);
+		expect(toScreen(ground, camera, width, height).y).toBeCloseTo(y, 8);
+	}
 });

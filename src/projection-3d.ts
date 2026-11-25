@@ -9,9 +9,15 @@ export const alignCamera = function (camera: OrthographicCamera, width: number, 
 	const scale = viewScale(width, height) * Math.sqrt(3 / 2) * zoom;
 	camera.left = -width / (2 * scale); camera.right = width / (2 * scale);
 	camera.top = height * 0.52 / scale; camera.bottom = -height * 0.48 / scale;
-	camera.position.set(focus.x + 1000, 1000, focus.y + 1000);
+	// Pull back along the view axis when the foreground would cross the eye.
+	// The lower screen edge must leave room above the ground for aircraft.
+	const eyeHeight = Math.max(1000, 220 - camera.bottom * Math.sqrt(2 / 3));
+	const focusDepth = eyeHeight * Math.sqrt(3);
+	camera.far = Math.max(6000, focusDepth + camera.top * Math.SQRT2 + 220);
+	camera.position.set(focus.x + eyeHeight, eyeHeight, focus.y + eyeHeight);
 	camera.lookAt(focus.x, 0, focus.y);
 	camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
+	return (eyeHeight - 1000) * Math.sqrt(3);
 };
 
 export const toScreen = function (point: Point, camera: OrthographicCamera, width: number, height: number, elevation = 0): Point {

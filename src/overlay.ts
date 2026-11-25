@@ -1,6 +1,6 @@
 import type { OrthographicCamera } from 'three';
 import { inFiringArc } from './torso-arc';
-import { getWeapon } from './arsenal';
+import { getWeapon, withinWeaponRange } from './arsenal';
 import { mechScale, type Gaits } from './gait';
 import { toScreen } from './projection-3d';
 import { ARENA, missileTracking, distance, ENEMY_STATS, getEnemyDefense, type Point, type CombatStateView, type Unit } from './simulation';
@@ -63,9 +63,9 @@ export const targetSolution = function (state: CombatStateView, target: Unit, _a
 };
 const solutionFor = function (state: CombatStateView, target: Point, id: number): { guided: boolean; inRange: boolean } {
 	const weapons = state.loadout.map(function (mount) { return getWeapon(mount.weapon); });
-	const range = distance(target, state.player);
+	const separation = distance(target, state.player);
 	const guided = missileTracking(state, id) === 'TRACKING' && state.player.targetId === id && state.player.missileLock?.targetId === id && state.player.missileLock.progress >= 1 - 1e-9;
-	return { guided, inRange: weapons.some(function (weapon) { return range <= weapon.range; }) };
+	return { guided, inRange: weapons.some(function (weapon) { return withinWeaponRange(separation, weapon.range); }) };
 };
 
 const getWeaponFeedback = function (state: CombatStateView, target: Point, id: number): string {

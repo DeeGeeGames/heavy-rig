@@ -2,7 +2,7 @@ import { getMissionTier } from './reputation';
 import type { AuthoredPoseContext } from './authored-pose';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { consumeFire, coolReactor, frameWeight, loadedMounts, usableMount, weightMetrics, type ReactorState } from './combat-resources';
-import { createMount, getWeapon, getWeaponTier, weaponIdForTier, type WeaponTier, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
+import { createMount, getWeapon, getWeaponTier, weaponIdForTier, withinWeaponRange, type WeaponTier, type FireInputs, type WeaponDefinition, type WeaponId, type WeaponMount } from './arsenal';
 import { FRAMES, getFrame, type FrameId } from './frames';
 import { canEquipWeapon, createStarterLoadout, getEnemyHardpoints, getHardpoints, isFrameLoadout } from './hardpoints';
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
@@ -301,11 +301,17 @@ const contactObstructs = function (origin: SpatialPoint, at: SpatialPoint, id: n
 		return other.id !== id && other.body.hp > 0 && hitVolumeFraction(origin, at, targetVolume(other)) !== undefined;
 	});
 };
+export const missileLockRange = function (frame: FrameId, loadout: readonly WeaponMount[]): number {
+	return loadout.reduce(function (range, mount, index) {
+		const weapon = getWeapon(mount.weapon);
+		return weapon.kind === 'missile' && canEquipWeapon(frame, mount.slot ?? index, mount.weapon) ? Math.max(range, weapon.range) : range;
+	}, 0);
+};
 const rigMissileTracking = function (rig: RigBody, frame: FrameId, loadout: readonly WeaponMount[], targets: readonly CombatTarget[], id: number, terrain: FieldTerrain | undefined): 'NO GUIDANCE' | 'OUT OF RANGE' | 'OUT OF ARC' | 'BLOCKED' | 'TRACKING' {
 	const target = targets.find(function (candidate) { return candidate.id === id; });
-	const weapons = loadout.filter(function (mount, index) { return canEquipWeapon(frame, mount.slot ?? index, mount.weapon); }).map(function (mount) { return getWeapon(mount.weapon); }).filter(function (weapon) { return weapon.kind === 'missile'; });
-	if (!target || weapons.length === 0) return 'NO GUIDANCE';
-	if (!weapons.some(function (weapon) { return distance(rig, target.body) <= weapon.range; })) return 'OUT OF RANGE';
+	const range = missileLockRange(frame, loadout);
+	if (!target || range === 0) return 'NO GUIDANCE';
+	if (!withinWeaponRange(distance(rig, target.body), range)) return 'OUT OF RANGE';
 	if (!inFiringArc(rig, rig.angle, target.body)) return 'OUT OF ARC';
 	const origin = playerVolume(rig, frame);
 	const at = targetVolume(target);
@@ -563,7 +569,7 @@ const fireRigWeapons = function (state: CombatStateView, input: Pick<Controls, '
 		if (!canEquipWeapon(frame, slot, mount.weapon) || firingSlots.has(slot)) return;
 		firingSlots.add(slot);
 		const weapon = getWeapon(mount.weapon);
-		const withinRange = targetRange <= weapon.range;
+		const withinRange = withinWeaponRange(targetRange, weapon.range);
 		if (!canFire || weapon.kind === 'missile' && (!locked || !withinRange) || mate && (!withinRange || !input.fire[slot])) { delete mount.rocketVolley; return; }
 		if (mate && selected && terrain) {
 			const muzzle = getPlayerMuzzle(frame, slot, mate, mate.turret, tubeIndex(getPlayerWeaponRig(frame)[slot]?.tubes.length ?? 0, mate.shotsFired + 1), rigAimPoint(mate, selected), mate.authoredPose);
@@ -626,7 +632,7 @@ const squadmateTarget = function (state: CombatStateView, mate: Squadmate, targe
 	const terrain = state.mission?.map.terrain;
 	const origin = terrain && !checkFiringLane ? playerVolume(mate, mate.frameId) : undefined;
 	const reachable = function (target: CombatTarget) {
-		if (target.body.hp <= 0 || distance(mate, target.body) > range) return false;
+		if (target.body.hp <= 0 || !withinWeaponRange(distance(mate, target.body), range)) return false;
 		if (checkFiringLane) return squadmateShotClear(mate, mate, target, targets, terrain);
 		return !terrain || !origin || terrainShotFraction(terrain, origin, targetVolume(target)) === undefined;
 	};
@@ -644,7 +650,7 @@ const squadmateShotClear = function (mate: Squadmate, point: Point, target: Comb
 	return mate.loadout.some(function (mount, index) {
 		const weapon = getWeapon(mount.weapon);
 		const slot = mount.slot ?? index;
-		if (separation > weapon.range || !usableMount(mount) || !canEquipWeapon(mate.frameId, slot, mount.weapon)) return false;
+		if (!withinWeaponRange(separation, weapon.range) || !usableMount(mount) || !canEquipWeapon(mate.frameId, slot, mount.weapon)) return false;
 		if (weapon.kind === 'missile' && (contactObstructs(origin, at, target.id, contacts)
 			|| terrain && terrainShotFraction(terrain, origin, at) !== undefined)) return false;
 		if (!terrain) return true;
@@ -656,7 +662,7 @@ const squadmateShotClear = function (mate: Squadmate, point: Point, target: Comb
 const squadmateAttackDestination = function (state: CombatStateView, mate: Squadmate, target: CombatTarget, contacts: readonly CombatTarget[], range: number): Point {
 	if (range === 0) return mate;
 	const separation = distance(mate, target.body);
-	if (separation > range) return target.body;
+	if (!withinWeaponRange(separation, range)) return target.body;
 	const bearing = Math.atan2(mate.y - target.body.y, mate.x - target.body.x);
 	const radius = Math.min(separation, range * 0.8);
 	const terrain = state.mission?.map.terrain;
@@ -670,7 +676,7 @@ const squadmateAttackDestination = function (state: CombatStateView, mate: Squad
 const squadmateMoveDestination = function (state: CombatStateView, mate: Squadmate, anchor: Point, active: readonly Squadmate[], targets: readonly CombatTarget[], range: number, target: CombatTarget | undefined, progress: SquadMoveProgress): Point {
 	const terrain = state.mission?.map.terrain;
 	const nearby = mate.fireDiscipline === 'hold' || range === 0 ? [] : targets.filter(function (contact) {
-		return contact.body.hp > 0 && distance(anchor, contact.body) <= range;
+		return contact.body.hp > 0 && withinWeaponRange(distance(anchor, contact.body), range);
 	});
 	const hasShot = function (at: Point) {
 		return nearby.some(function (contact) { return squadmateShotClear(mate, at, contact, targets, terrain); });

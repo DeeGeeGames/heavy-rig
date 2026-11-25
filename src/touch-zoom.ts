@@ -1,4 +1,7 @@
+import { MIN_COMBAT_ZOOM, MAX_COMBAT_ZOOM } from './shared/camera-zoom';
+
 type ZoomCamera = { getZoom: () => number; setZoom: (value: number) => void };
+const zoomSpan = MAX_COMBAT_ZOOM - MIN_COMBAT_ZOOM;
 
 export const mountTouchZoom = function (button: HTMLElement, panel: HTMLElement, readout: HTMLElement, knob: HTMLElement, signal: AbortSignal, enabled: () => boolean, camera: ZoomCamera) {
 	let gesture: { pointerId: number; y: number; zoom: number } | undefined;
@@ -22,9 +25,9 @@ export const mountTouchZoom = function (button: HTMLElement, panel: HTMLElement,
 		if (!enabled()) { reset(); return; }
 		// Relative movement keeps pressing from jumping to an absolute slider value.
 		// A 48px drag spans the camera range, including near the screen's lower edge.
-		camera.setZoom(gesture.zoom + (gesture.y - event.clientY) / 48 * 2);
+		camera.setZoom(gesture.zoom + (gesture.y - event.clientY) / 48 * zoomSpan);
 		readout.textContent = `${camera.getZoom().toFixed(2).replace(/0$/, '')}×`;
-		knob.style.transform = `translateY(${-(camera.getZoom() - gesture.zoom) / 2 * 30}px)`;
+		knob.style.transform = `translateY(${-(camera.getZoom() - gesture.zoom) / zoomSpan * 30}px)`;
 	}, { signal });
 	for (const name of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) {
 		button.addEventListener(name, function (event) { if (event.pointerId === gesture?.pointerId) reset(); }, { signal });
