@@ -84,23 +84,24 @@
 	<section id="title" class="title-screen menu-surface" aria-labelledby="title-name" hidden>
 		<div class="title-landscape">
 			<img class="title-plate" src="./public/brand/meridian-dusk.webp" width="416" height="234" alt="">
-			<header class="title-topline"><span class="title-studio">DeeGee Games</span><span class="title-location">Meridian <i>/</i> Badlands</span></header>
-			<div class="title-brand">
-				<h1 id="title-name"><img class="title-logo" src="./public/brand/heavy-rig.png" width="1254" height="1254" alt="Heavy Rig"></h1>
-				<p>Your steel. Your crew.<br> Your next contract.</p>
-			</div>
 		</div>
+		<header class="title-brand">
+			<span class="title-studio"><img src="./public/brand/deegee-mark-small.svg" width="24" height="24" alt="">DeeGee Games</span>
+			<h1 id="title-name"><img class="title-logo" src="./public/brand/heavy-rig.png" width="1254" height="1254" alt="Heavy Rig"></h1>
+			<p>Your steel. Your crew.<br> Your next contract.</p>
+			<span class="title-location">Meridian <i>/</i> Badlands</span>
+		</header>
 		<nav id="title-deck" class="title-deck" aria-label="Main menu">
-			<div>
-				<p id="title-save-status" class="title-save"></p>
-				<button id="title-continue" class="title-primary"><span id="title-company-label">New campaign</span><span class="title-arrow" aria-hidden="true"></span></button>
-			</div>
+			<p id="title-save-status" class="title-save"></p>
+			<button id="title-continue" class="title-primary"><span id="title-company-label">New campaign</span></button>
 			<div class="title-links">
 				<button id="title-company" aria-haspopup="dialog" aria-controls="title-picker" hidden>New company<span class="title-plus" aria-hidden="true"></span></button>
 				<button id="title-direct-career">New career</button>
 				<button id="title-simulator" aria-haspopup="dialog" aria-controls="title-picker">Simulator<span class="title-plus" aria-hidden="true"></span></button>
-				<button id="title-settings">Settings</button>
-				<button id="title-handbook">Pilot handbook</button>
+			</div>
+			<div class="title-tools">
+				<button id="title-settings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4h16M2 10h16M2 16h16M6 1v6m8 0v6m-6 0v6"/></svg>Settings</button>
+				<button id="title-handbook"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5C8 3 5 3 2 3v12c3 0 6 0 8 2 2-2 5-2 8-2V3c-3 0-6 0-8 2Zm0 0v12"/></svg>Pilot handbook</button>
 			</div>
 		</nav>
 		<div id="title-picker" class="title-picker" role="dialog" aria-labelledby="title-picker-heading" hidden>
