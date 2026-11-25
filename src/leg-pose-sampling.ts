@@ -8,10 +8,11 @@ export const createLegPoseSampling = function (nodes: readonly Object3D[]) {
 		return { node, position: node.position.clone(), quaternion: node.quaternion.clone(), scale: node.scale.clone() };
 	});
 	let previous: WalkerGait | undefined;
-	return function (gait: WalkerGait | undefined) {
+	let previousGround = 0;
+	return function (gait: WalkerGait | undefined, ground = 0) {
 		if (!gait) { previous = undefined; return; }
 		const prior = previous;
-		const changed = !prior || gait.feet.some(function (foot, index) {
+		const changed = !prior || ground !== previousGround || gait.feet.some(function (foot, index) {
 			const old = prior.feet[index];
 			return !old || foot.x !== old.x || foot.y !== old.y || foot.lift !== old.lift || foot.angle !== old.angle;
 		});
@@ -23,6 +24,6 @@ export const createLegPoseSampling = function (nodes: readonly Object3D[]) {
 				node.position.copy(position); node.quaternion.copy(quaternion); node.scale.copy(scale);
 			}
 		}
-		previous = gait;
+		previous = gait; previousGround = ground;
 	};
 };

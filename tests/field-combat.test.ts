@@ -1,9 +1,11 @@
 import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
+import { createMount } from '../src/arsenal';
 import type { Contract } from '../src/campaign-types';
 import { createCombatRuntime } from '../src/combat-runtime';
 import { generateMissionMap } from '../src/missions';
 import { createMissionState, enemiesStep, missileTracking, projectilesStep, weaponsStep, type Controls, type Unit } from '../src/simulation';
+import { groundHeight } from '../src/terrain-elevation';
 import type { WeaponCue } from '../src/weapon-feedback';
 
 const contract: Contract = {
@@ -107,6 +109,62 @@ test('laser endpoint, damage and missile acquisition switch together when the li
 		} else {
 			expect(missileTracking(state, target.id)).toBe('TRACKING'); expect(beam.x).toBeGreaterThan(800); expect(target.hp).toBeLessThan(1000);
 		}
+	}
+});
+
+test('a ridge shelters a target from direct fire and missile locks until the firing mech reaches the crest', function () {
+	const state = scenario();
+	const map = state.mission?.map;
+	if (!map) throw new Error('Expected a mission');
+	const profile = [-120, -120, 80, 80, -65, -65];
+	map.terrain = { obstacles: [], roads: [], elevation: {
+		xs: [0, 450, 675, 735, 860, map.width], ys: [0, map.height],
+		heights: Float32Array.from([...profile, ...profile]), minHeight: -120, maxHeight: 80,
+	} };
+	const target = scout(31, 945); state.enemies = [target];
+	state.loadout.push({ ...createMount('autocannon'), slot: 0 });
+	const controls: Controls = { drive: 0, turn: 0, stop: false, aim: target, targetId: target.id, fire: [true, false, true, false], coolant: false };
+	weaponsStep(state, controls, 1 / 60);
+	const beam = state.beams[0]; const round = state.shots[0];
+	if (!beam?.origin || !round?.origin) throw new Error('Expected laser and cannon fire');
+	expect(beam.origin.elevation).toBeLessThan(0);
+	expect(missileTracking(state, target.id)).toBe('BLOCKED');
+	expect(beam.x).toBeGreaterThan(450); expect(beam.x).toBeLessThan(675);
+	expect(beam.elevation).toBeCloseTo(groundHeight(map.terrain, beam), 6);
+	projectilesStep(state, .4);
+	expect(state.shots).toHaveLength(0); expect(target.hp).toBe(1000);
+	expect(round.x).toBeGreaterThan(450); expect(round.x).toBeLessThan(675);
+	expect(round.elevation).toBeCloseTo(groundHeight(map.terrain, round), 6);
+	expect(round.age).toBeCloseTo((round.x - round.origin.x) / round.vx, 6);
+	const impact = state.effects.find(function (effect) { return effect.feedback?.type === 'impact'; })?.feedback;
+	if (impact?.type !== 'impact') throw new Error('Expected the round to hit terrain');
+	expect(impact.surface).toBe('ground'); expect(impact.normal?.x).toBeLessThan(0);
+
+	state.player.x = 700;
+	expect(missileTracking(state, target.id)).toBe('TRACKING');
+	weaponsStep(state, controls, 1 / 60);
+	expect(state.beams[0]?.origin?.elevation).toBeGreaterThan(80);
+	expect(state.beams[0]?.x).toBeGreaterThan(900);
+	expect(target.hp).toBeLessThan(1000);
+});
+
+test('without a selected target the cannon and laser follow the grade to the reticle', function () {
+	for (const grade of [-.22, .22]) {
+		const state = scenario();
+		const map = state.mission?.map;
+		if (!map) throw new Error('Expected a mission');
+		const farHeight = map.width * grade;
+		map.terrain = { obstacles: [], roads: [], elevation: {
+			xs: [0, map.width], ys: [0, map.height], heights: Float32Array.of(0, farHeight, 0, farHeight),
+			minHeight: Math.min(0, farHeight), maxHeight: Math.max(0, farHeight),
+		} };
+		state.loadout.push({ ...createMount('autocannon'), slot: 0 });
+		weaponsStep(state, { drive: 0, turn: 0, stop: false, aim: { x: 900, y: 900 }, fire: [true, false, true, false], coolant: false }, 1 / 60);
+		const shot = state.shots[0], beam = state.beams[0];
+		if (!shot || shot.vElevation === undefined || !beam?.origin || beam.elevation === undefined) throw new Error('Expected cannon and laser fire');
+		expect(shot.vElevation / Math.hypot(shot.vx, shot.vy)).toBeCloseTo(grade, 5);
+		expect((beam.elevation - beam.origin.elevation) / Math.hypot(beam.x - beam.origin.x, beam.y - beam.origin.y)).toBeCloseTo(grade, 5);
+		expect(beam.contact).toBe(false);
 	}
 });
 

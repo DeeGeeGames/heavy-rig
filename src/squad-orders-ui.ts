@@ -1,6 +1,7 @@
 import { html, nothing, render } from 'lit-html';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { terrainMapColors } from './terrain-map-colors';
+import { drawTerrainContours } from './terrain-contours';
 import type { SquadOrderChange } from './combat-runtime';
 import { directionalControl, focusMenuControl, type MenuDirection } from './menu-focus';
 import { EXTRACTION_RADIUS, CAPTURE_RADIUS, isPriorityTarget } from './missions';
@@ -63,6 +64,7 @@ const paintGround = function (ctx: CanvasRenderingContext2D, state: CombatStateV
 	const h = bounds.height * projection.scale;
 	ctx.fillStyle = '#182923';
 	ctx.fillRect(from.x, from.y, w, h);
+	if (map) drawTerrainContours(ctx, map, from.x, from.y, w, h);
 	ctx.strokeStyle = '#344940';
 	ctx.lineWidth = 1;
 	ctx.strokeRect(from.x, from.y, w, h);

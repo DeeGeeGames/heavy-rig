@@ -6,6 +6,9 @@ import { SQUAD_SIZE } from './pilots';
 import { isAuthoredContract } from './contract-chains';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import { createBiomeLayout, type TerrainMap } from './biome-layout';
+import { generateElevation } from './mission-elevation';
+import { landingFootprint } from './landing-site';
+import type { TerrainElevation } from './terrain-elevation';
 import type { Contract, Landmark, MissionMap, MissionRuntime, MissionStructure } from './campaign-types';
 import type { EnemyKind, Point, CombatStateView } from './simulation';
 
@@ -136,7 +139,19 @@ const missionCover = function (contract: Contract, map: TerrainMap, lanes = map.
 	return { obstacles, addCover };
 };
 
-const addLandmarks = function (map: TerrainMap, obstacles: readonly TerrainObstacle[], random: () => number): MissionMap {
+const surveyElevation = function (contract: Contract, map: TerrainMap) {
+	const slots = Array.from({ length: SQUAD_SIZE - 1 }, function (_, i) { return missionDeploymentSlot(map, i); });
+	const guards = contract.kind === 'defend' ? [] : Array.from({ length: missionHostileCount(contract) }, function (_, i) {
+		const spawn = missionSpawn(contract, map, i);
+		return landingFootprint(spawn, spawn.frameId ? RIG_RADIUS : ENEMY_RADIUS);
+	});
+	const siteRadius = contract.kind === 'defend' ? 68 : contract.kind === 'demolition' || contract.kind === 'raid' ? FACILITY_RADIUS
+		: contract.kind === 'acquisition' || contract.kind === 'recovery' ? 24 : 0;
+	const sites = siteRadius ? map.sites.map(function (p) { return landingFootprint(p, siteRadius); }) : [];
+	return generateElevation(map, map.terrain.obstacles, [map.drop, ...slots], [...guards, ...sites]);
+};
+
+const addLandmarks = function (contract: Contract, map: TerrainMap, obstacles: readonly TerrainObstacle[], random: () => number): MissionMap {
 	const terrain = { obstacles, roads: map.terrain.roads };
 	const landmarks: Landmark[] = [];
 	const reserved = [map.drop, map.extraction, ...map.sites];
@@ -148,7 +163,11 @@ const addLandmarks = function (map: TerrainMap, obstacles: readonly TerrainObsta
 			|| !terrainPointClear(terrain, at, radius)) continue;
 		landmarks.push({ ...at, radius, rotation: random() * Math.PI * 2, kind: i % 7 === 0 ? 'depot' : i % 3 === 0 ? 'crater' : 'rocks' });
 	}
-	return { ...map, landmarks, terrain };
+	// Board and survey callers can inspect the same map without constructing a
+	// height mesh. Every consumer of a deployed field shares the first survey.
+	const field = { ...map, landmarks, terrain };
+	let elevation: TerrainElevation | undefined;
+	return { ...field, terrain: { ...terrain, get elevation() { return elevation ??= surveyElevation(contract, field); } } };
 };
 
 export const generateMissionMap = function (contract: Contract): MissionMap {
@@ -162,7 +181,7 @@ export const generateMissionMap = function (contract: Contract): MissionMap {
 		const { map, cover } = createBiomeLayout(biome, contract, width, height, hasMultipleSites(contract.kind), between);
 		const { obstacles, addCover } = missionCover(contract, map);
 		for (const feature of cover) addCover(feature);
-		return addLandmarks(map, obstacles, random);
+		return addLandmarks(contract, map, obstacles, random);
 	}
 	// Shared Cinder Recovery seeds retain the survey orientation from the trial.
 	const eastWestCut = (contract.planetId !== 'cinder' || contract.kind !== 'recovery') && dimensions() < .5;
@@ -245,7 +264,7 @@ export const generateMissionMap = function (contract: Contract): MissionMap {
 			addCover({ ...point(x + between(-30, 30), y + between(-30, 30)), kind: 'tree', width: 36, depth: 36, height: between(58, 74) });
 		}
 	}
-	return addLandmarks(map, obstacles, random);
+	return addLandmarks(contract, map, obstacles, random);
 };
 
 export const missionObjective = function (state: CombatStateView): string {

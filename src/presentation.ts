@@ -28,6 +28,9 @@ import { createLaunchFlight } from './launch-flight';
 import { createLaunchClouds } from './launch-clouds';
 import { createSurfaceLanding, planLaunchLanding } from './launch-surface';
 import { LAUNCH_TIMING } from './launch-timing';
+import type { FieldTerrain } from './field-terrain';
+import { groundAimSlope, groundHeight } from './terrain-elevation';
+import { drapeGroundGeometry } from './terrain-decals';
 
 interface CombatEntities {
 	entityForPlayer: () => number | undefined;
@@ -51,10 +54,12 @@ interface MechPose {
 	loadout: readonly WeaponMount[];
 	response?: MechResponse | undefined;
 	position?: Point | undefined;
-	elevation?: number;
+	heightAboveGround?: number;
+	terrain?: FieldTerrain | undefined;
 	visible?: boolean;
 	heat?: number;
 	target?: SpatialPoint | undefined;
+	manualAim?: Point | undefined;
 	authoredPose?: AuthoredPoseContext | undefined;
 	legGait?: AuthoredGait | undefined;
 }
@@ -100,10 +105,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		const fill = new DirectionalLight('#a3d1d8', 1.05); scene.add(fill, fill.target);
 		const objects = createWorldObjects(scene); allocated.push(function () { objects.dispose(); });
 		const firingArc = createFiringArc(); allocated.push(firingArc.dispose); scene.add(firingArc.mesh);
-		const reticleGeometry = new RingGeometry(17, 18.5, 48); allocated.push(function () { reticleGeometry.dispose(); });
+		const reticleGeometry = new RingGeometry(17, 18.5, 48).rotateX(-Math.PI / 2); allocated.push(function () { reticleGeometry.dispose(); });
 		const reticleMaterial = new MeshBasicMaterial({ color: '#d8f2de', transparent: true, opacity: 0.85, depthWrite: false }); allocated.push(function () { reticleMaterial.dispose(); });
-		const reticle = new Mesh(reticleGeometry, reticleMaterial); reticle.rotation.x = -Math.PI / 2; scene.add(reticle);
-		const barrelGeometry = new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]); allocated.push(function () { barrelGeometry.dispose(); });
+		const reticle = new Mesh(reticleGeometry, reticleMaterial); scene.add(reticle);
+		const barrelGeometry = new BufferGeometry().setFromPoints(Array.from({ length: 12 }, function (_, i) { return new Vector3(i * 10, 0, 0); })); allocated.push(function () { barrelGeometry.dispose(); });
 		const barrelMaterial = new LineBasicMaterial({ color: '#b5e4e0', transparent: true, opacity: 0.25, depthWrite: false }); allocated.push(function () { barrelMaterial.dispose(); });
 		const barrel = new Line(barrelGeometry, barrelMaterial); barrel.frustumCulled = false; scene.add(barrel);
 		let views: ViewBindings | undefined;
@@ -120,6 +125,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let playerSkin: MechFinish = 'original';
 		const centeredCamera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 6000);
 		let cameraOffset: Point = { x: 0, y: 0 };
+		let cameraTerrain: FieldTerrain | undefined;
 		let weaponKick: { state: CombatStateView; time: number; offset: Point } | undefined;
 		let cameraSample: { state: CombatStateView; time: number; position: Point } | undefined;
 		let biome: Biome | undefined;
@@ -174,7 +180,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const player = overlay.state.player;
 					// Match the Warden study's standing reference height. Keep the
 					// anchor independent of chassis pose, look-ahead and camera shake.
-					inkAnchor.set(player.x, 50.875, player.y);
+					inkAnchor.set(player.x, groundHeight(overlay.state.mission?.map.terrain, player) + 50.875, player.y);
 					const frame = {
 						anchor: inkAnchor,
 						cell: cellSize * responsiveScale * displayZoom,
@@ -196,7 +202,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 						return view;
 					},
-					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, legGait, position = gait.body, elevation = 0, visible = true }) {
+					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain }) {
 						if (view.damage.hp !== undefined && hp < view.damage.hp) {
 							view.damage.hitAt = time;
 							if (!response || response.lastImpact <= (view.damage.sampledAt ?? -Infinity)) view.damage.genericHitAt = time;
@@ -205,6 +211,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						view.damage.sampledAt = time;
 						const transform = world.getComponent(id, 'localTransform3D');
 						if (!transform) return;
+						const elevation = groundHeight(terrain, position) + heightAboveGround;
 						transform.x = position.x; transform.y = elevation; transform.z = position.y;
 						world.markChanged(id, 'localTransform3D');
 						view.model.root.visible = visible;
@@ -212,7 +219,9 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 							hit: Math.max(0, 1 - (time - (view.damage.genericHitAt ?? -Infinity)) / 0.16),
 							recoil: weaponRecoil(loadout, 'energy'), heat, time, ...(response ? { response } : {}),
 							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
-							...(legGait ? { legGait } : {}), ...(authoredPose ? { authoredPose } : {}), ...(target ? { target } : {}),
+							...(legGait ? { legGait } : {}), ...(authoredPose ? { authoredPose } : {}),
+							...(terrain?.elevation ? { terrain } : {}), ...(target ? { target: { ...target, elevation: target.elevation - elevation } } : {}),
+							...(terrain?.elevation && manualAim && !target ? { aimSlope: groundAimSlope(terrain, position, manualAim, elevation) } : {}),
 						});
 					},
 					scale: function (id, scale) {
@@ -237,6 +246,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		};
 		const resize = function (state: CombatStateView, nextWidth: number, nextHeight: number) {
 			width = nextWidth; height = nextHeight;
+			cameraTerrain = state.mission?.map.terrain;
 			if (disposed || width <= 0 || height <= 0) return;
 			const dpr = Math.min(devicePixelRatio, 2);
 			if (renderer.getPixelRatio() !== dpr || canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
@@ -244,7 +254,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			}
 			if (labels.width !== canvas.width || labels.height !== canvas.height) { labels.width = canvas.width; labels.height = canvas.height; }
 			camera.clearViewOffset(); camera.zoom = 1; alignCamera(centeredCamera, width, height, state, zoom);
-			const focus = toGround({ x: width * (0.5 + cameraOffset.x), y: height * (0.52 + cameraOffset.y) }, centeredCamera, width, height) ?? state.player;
+			const focus = cameraOffset.x === 0 && cameraOffset.y === 0 ? state.player
+				: toGround({ x: width * (0.5 + cameraOffset.x), y: height * (0.52 + cameraOffset.y) }, centeredCamera, width, height, cameraTerrain) ?? state.player;
 			alignView(state, height, focus);
 			if (weaponKick?.state !== state || weaponKick.time !== state.time) weaponKick = { state, time: state.time, offset: weaponCameraKick(state.effects, state.player, state.time) };
 			const gain = Math.min(1.6, width / 700);
@@ -283,8 +294,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				launchTime = seconds;
 				launchDockHeight = dockHeight;
 			},
-			toGround: function (point: Point) { return toGround(point, camera, width, height); },
-			toScreen: function (point: Point, elevation = 0) { return toScreen(point, camera, width, height, elevation); },
+			toGround: function (point: Point) { return toGround(point, camera, width, height, cameraTerrain); },
+			toScreen: function (point: Point, heightAboveGround = 0) { return toScreen(point, camera, width, height, groundHeight(cameraTerrain, point) + heightAboveGround); },
 			canCompareKestrel: function () { return ink.available && !!getMechAssetBinding('kestrel'); },
 			canBakeYard: objects.canBakeTerrain,
 			resetTerrainBake: objects.resetTerrainBake,
@@ -330,8 +341,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				previousState = state; previousStateTime = state.time;
 				if (attract || hangar || landing) cameraOffset = { x: 0, y: 0 };
 				resize(state, width, height);
-				sun.position.set(state.player.x - 420, 900, state.player.y - 500); sun.target.position.set(state.player.x, 0, state.player.y);
-				fill.position.set(state.player.x + 700, 450, state.player.y + 600); fill.target.position.set(state.player.x, 50, state.player.y);
+				const terrain = state.mission?.map.terrain;
+				const playerGround = groundHeight(terrain, state.player);
+				sun.position.set(state.player.x - 420, playerGround + 900, state.player.y - 500); sun.target.position.set(state.player.x, playerGround, state.player.y);
+				fill.position.set(state.player.x + 700, playerGround + 450, state.player.y + 600); fill.target.position.set(state.player.x, playerGround + 50, state.player.y);
 				if (landing) {
 					const viewHeight = Math.max(1, height - launchDockHeight * landing.dockBlend);
 					alignView(state, viewHeight, landing.focus);
@@ -354,9 +367,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const gait = arrival?.gait ?? (attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player);
 					views.pose(playerId, player, gait, heading, state.player.hp, state.time, {
 						loadout: state.loadout, heat: state.player.heat, response: responses.get(0), authoredPose: arrival ? arrival.authored : state.authoredPose,
-						position: arrival?.position, elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
+						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? (attract ? undefined : sampledLegs(state.player, state.authoredPose?.gait ?? gait)),
 						target: attract || hangar || landing ? undefined : playerAimPoint(state),
+						manualAim: attract || hangar || landing ? undefined : aim,
 					});
 					views.scale(playerId, hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1);
 				}
@@ -369,7 +383,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const gait = arrival?.gait ?? gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
 					views.pose(id, view, gait, arrival?.gait.body.angle ?? mate.turret, mate.hp, state.time, {
 						loadout: mate.loadout, heat: mate.heat, response: responses.get(mate.pilotId), authoredPose: arrival ? arrival.authored : mate.authoredPose,
-						position: arrival?.position, elevation: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
+						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? sampledLegs(mate, mate.authoredPose?.gait ?? gait),
 						target: !landing && mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
 					});
@@ -383,12 +397,12 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const view = views.ensure(id, enemy.catalog ? undefined : enemy.kind, Boolean(enemy.commander), enemy.catalog?.frameId ?? 'warden', opponentFinish);
 					const gait = gaits.enemies.get(enemy.id) ?? createEnemyGait(enemy);
 					views.pose(id, view, gait, enemy.angle, enemy.hp, state.time, {
-						loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, response: responses.get(enemy.id), authoredPose: enemy.catalog?.authoredPose,
+						terrain, loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, response: responses.get(enemy.id), authoredPose: enemy.catalog?.authoredPose,
 						target: enemyAimPoint(state, enemy), legGait: sampledLegs(enemy, enemy.catalog?.authoredPose?.gait ?? gait),
 					});
 					if (enemy.catalog || enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank') enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
-				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y, anchor.z + state.player.y); };
+				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y + playerGround, anchor.z + state.player.y); };
 				// The simulation clock starts at touchdown handoff. Run surface scenery
 				// up to that phase during the approach while gameplay is still frozen.
 				const sceneryTime = launchTime === undefined ? state.time : launchTime - LAUNCH_TIMING.end;
@@ -397,9 +411,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				} : undefined, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.position : undefined; }), sceneryTime);
 				firingArc.update(state, Boolean(player) && !attract && !hangar && !landing);
 				reticle.visible = barrel.visible = !attract && !landing;
-				reticle.position.set(aim.x, 0.25, aim.y);
-				const positions = barrelGeometry.getAttribute('position'); const p = state.player;
-				positions.setXYZ(0, p.x, 0.25, p.y); positions.setXYZ(1, p.x + Math.cos(p.turret) * 110, 0.25, p.y + Math.sin(p.turret) * 110); positions.needsUpdate = true;
+				reticle.position.set(aim.x, groundHeight(terrain, aim) + .25, aim.y);
+				barrel.position.set(state.player.x, playerGround + .25, state.player.y);
+				barrel.rotation.y = -state.player.turret;
+				drapeGroundGeometry(reticleGeometry, terrain, aim);
+				drapeGroundGeometry(barrelGeometry, terrain, state.player, state.player.turret);
 				overlay = { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights };
 			},
 			drawOverlay: function () {

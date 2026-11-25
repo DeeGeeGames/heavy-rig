@@ -1,6 +1,7 @@
 import { AdditiveBlending, BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Group, InstancedMesh, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, RingGeometry, ShaderMaterial, SphereGeometry, UniformsLib, UniformsUtils, Vector3, Object3D } from 'three';
 import type { CombatStateView, Effect, Shot } from './simulation';
 import { createWeaponContactVfx } from './weapon-contact-vfx';
+import { groundHeight } from './terrain-elevation';
 
 // Presentation only: every animation is sampled from simulation time. These
 // materials supply local glow without bloom passes, lights, or external textures.
@@ -116,13 +117,11 @@ export const createWeaponVfx = function () {
 		const live = new Set(state.shots.filter(function (shot) { return shot.kind === 'ppc'; }));
 		for (const shot of particleTracks) {
 			if (live.has(shot)) continue;
-			// The domain object retains its final swept position after ECS removal.
-			// Clamp a ground crossing before freezing the remaining energy in place.
-			const elevation = shot.elevation ?? 42; const verticalSpeed = shot.vElevation ?? 0;
-			const overshoot = elevation < 0 && verticalSpeed < 0 ? elevation / verticalSpeed : 0;
-			const length = Math.min(styles.ppc.duration, Math.max(0, (shot.age ?? styles.ppc.duration) - overshoot));
+			// The fixed-step collision leaves the bolt at its final world-space contact.
+			const elevation = shot.elevation ?? groundHeight(state.mission?.map.terrain, shot) + 42;
+			const length = Math.min(styles.ppc.duration, Math.max(0, shot.age ?? styles.ppc.duration));
 			if (length === 0) continue;
-			const end = new Vector3(shot.x - shot.vx * overshoot, Math.max(0, elevation), shot.y - shot.vy * overshoot);
+			const end = new Vector3(shot.x, elevation, shot.y);
 			direction.set(shot.vx, shot.vElevation ?? 0, shot.vy);
 			const fade = { value: 1 }; const surface = particleWake.clone();
 			surface.uniforms = { ...surface.uniforms, clock, afterglow: fade };
@@ -153,11 +152,11 @@ export const createWeaponVfx = function () {
 		const corona = new InstancedMesh(cylinder, violet, 9); corona.frustumCulled = false; root.add(corona);
 		return { root, trail, head, halo, hardware, body, exhaust, exhaustCore, corona, dispose: function () { corona.dispose(); } };
 	};
-	const updateShot = function (value: ReturnType<typeof createShot>, shot: Shot, time: number) {
+	const updateShot = function (value: ReturnType<typeof createShot>, shot: Shot, time: number, elevation = shot.elevation ?? 42) {
 		const style = styles[shot.kind];
 		value.head.material = style.surface; value.trail.material = style.trail;
 		value.head.geometry = shot.kind === 'missile' || shot.kind === 'rocket' ? nose : sphere;
-		value.head.position.set(shot.x, shot.elevation ?? 42, shot.y);
+		value.head.position.set(shot.x, elevation, shot.y);
 		direction.set(shot.vx, shot.vElevation ?? 0, shot.vy);
 		if (direction.lengthSq() > 0) value.head.quaternion.setFromUnitVectors(forward, direction.normalize());
 		value.head.scale.set(style.length, style.radius, style.radius);

@@ -1,10 +1,11 @@
-import { Box3, Group, Matrix4, Mesh, Object3D, TorusGeometry, Vector3 } from 'three';
+import { Box3, Group, Matrix4, Mesh, Object3D, Quaternion, TorusGeometry, Vector3 } from 'three';
 import type { WalkerGait } from './gait';
 import { createLowPolyParts } from './low-poly-parts';
 import type { MechFeedback } from './mech-3d';
 import { createMechResponseRig } from './mech-response';
 import { articulateWeapons } from './weapon-articulation';
 import { getEnemyWeaponRig } from './weapon-rig';
+import { groundNormal } from './terrain-elevation';
 
 export type VehicleKind = 'helicopter' | 'vtol' | 'tank';
 export const isVehicleKind = function (kind: string): kind is VehicleKind {
@@ -138,6 +139,7 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 	const rocketTubes = muzzles.map(function (muzzle) { return muzzle.children.filter(function (child) { return child.name === 'rocket-tube'; }); });
 	const rocketPositions = rocketTubes.map(function (tubes) { return tubes.map(function () { return new Vector3(); }); });
 	const exhaust = new Vector3(); const vertex = new Vector3(); const up = new Vector3(0, 1, 0);
+	const suspension = new Quaternion();
 	const inverseRoot = new Matrix4(); const relative = new Matrix4();
 	const turretPosition = turret.position.clone(); let labelHeight = 0; let disposed = false;
 	let previousPose: { time: number; x: number; y: number } | undefined; let wheelPhase = 0;
@@ -152,9 +154,11 @@ export const createEnemyVehicle = function (kind: VehicleKind) {
 			const time = feedback?.time ?? 0;
 			const flying = kind !== 'tank'; const altitude = kind === 'helicopter' ? 100 : kind === 'vtol' ? 135 : 0;
 			anatomy.position.y = altitude + (flying ? Math.sin(time * 2.4) * 2.8 : 0);
-			hull.rotation.y = -gait.body.angle;
-			hull.rotation.z = flying ? gait.motion.pitch * 0.7 : 0;
-			hull.rotation.x = flying ? gait.motion.roll * 0.7 : 0;
+			hull.rotation.set(flying ? gait.motion.roll * .7 : 0, -gait.body.angle, flying ? gait.motion.pitch * .7 : 0);
+			if (!flying) {
+				const normal = groundNormal(feedback?.terrain, gait.body);
+				hull.quaternion.premultiply(suspension.setFromUnitVectors(up, vertex.set(normal.x, normal.elevation, normal.y)));
+			}
 			turret.rotation.y = -heading;
 			turret.position.copy(turretPosition);
 			if (kind === 'helicopter') turret.position.applyAxisAngle(up, -gait.body.angle);

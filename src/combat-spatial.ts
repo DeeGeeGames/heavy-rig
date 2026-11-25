@@ -1,4 +1,6 @@
 import { getFrame, type FrameId } from './frames';
+import type { FieldTerrain } from './field-terrain';
+import { groundHeight } from './terrain-elevation';
 import type { EnemyKind, Point, Unit } from './simulation';
 import type { SpatialPoint } from './weapon-rig';
 
@@ -9,15 +11,21 @@ const ENEMY_VOLUMES: Readonly<Record<EnemyKind, { elevation: number; halfHeight:
 	scout: { elevation: 36, halfHeight: 36 }, striker: { elevation: 45, halfHeight: 45 }, siege: { elevation: 65, halfHeight: 65 },
 	tank: { elevation: 30, halfHeight: 30 }, helicopter: { elevation: 112, halfHeight: 20 }, vtol: { elevation: 147, halfHeight: 22 },
 };
-export const enemyVolume = function (enemy: Unit): HitVolume {
+export const enemyVolume = function (enemy: Unit, terrain?: FieldTerrain): HitVolume {
 	const point = { x: enemy.x, y: enemy.y };
-	return enemy.catalog ? playerVolume(point, enemy.catalog.frameId) : { ...point, radius: ENEMY_RADIUS, ...ENEMY_VOLUMES[enemy.kind] };
+	if (enemy.catalog) return playerVolume(point, enemy.catalog.frameId, terrain);
+	const volume = ENEMY_VOLUMES[enemy.kind];
+	return { ...point, radius: ENEMY_RADIUS, halfHeight: volume.halfHeight, elevation: groundHeight(terrain, point) + volume.elevation };
 };
-export const playerVolume = function (point: Point, frame: FrameId): HitVolume {
-	const height = getFrame(frame).chassisId === 'longbow' ? 145 : getFrame(frame).chassisId === 'maul' || getFrame(frame).chassisId === 'rook' ? 125 : 90;
-	return { ...point, elevation: height * getFrame(frame).size / 2, halfHeight: height * getFrame(frame).size / 2, radius: RIG_RADIUS };
+export const playerVolume = function (point: Point, frame: FrameId, terrain?: FieldTerrain): HitVolume {
+	const { chassisId, size } = getFrame(frame);
+	const height = chassisId === 'longbow' ? 145 : chassisId === 'maul' || chassisId === 'rook' ? 125 : 90;
+	const halfHeight = height * size / 2;
+	return { x: point.x, y: point.y, elevation: groundHeight(terrain, point) + halfHeight, halfHeight, radius: RIG_RADIUS };
 };
-export const facilityVolume = function (point: Point, radius: number): HitVolume { return { ...point, elevation: 75, halfHeight: 75, radius }; };
+export const facilityVolume = function (point: Point, radius: number, terrain?: FieldTerrain): HitVolume {
+	return { x: point.x, y: point.y, elevation: groundHeight(terrain, point) + 75, halfHeight: 75, radius };
+};
 export const spatialDistance = function (a: SpatialPoint, b: SpatialPoint): number { return Math.hypot(a.x - b.x, a.y - b.y, a.elevation - b.elevation); };
 // Swept ellipsoid intersection prevents fast rounds skipping thin targets.
 export const hitVolumeFraction = function (from: SpatialPoint, to: SpatialPoint, target: HitVolume): number | undefined {

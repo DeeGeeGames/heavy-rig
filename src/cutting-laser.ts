@@ -1,5 +1,6 @@
 import { Group, InstancedMesh, Mesh, PlaneGeometry, Sphere, Vector3, Vector4 } from 'three';
 import { getWeapon } from './arsenal';
+import { groundHeight } from './terrain-elevation';
 import type { Beam, CombatStateView } from './simulation';
 import { cuttingBeamMaterial, cuttingImpactMaterial, CUTTER_SPARK_COUNT, CUTTER_SPARK_LIFETIME } from './cutting-laser-materials';
 
@@ -99,14 +100,14 @@ export const createCuttingLasers = function () {
 					// Older endpoints may only carry their mount slot.
 					const rig = player ? state.player : state.squadmates.find(function (mate) { return mate.pilotId === beam.squadmateId; });
 					if (!rig) continue;
-					from.set(rig.x, 42, rig.y);
+					from.set(rig.x, groundHeight(state.mission?.map.terrain, rig) + 42, rig.y);
 				}
 				let view = views.get(name);
 				if (!view) {
 					if (player) continue;
 					view = makeBeam(name, enemy, false); views.set(name, view);
 				}
-				to.set(beam.x, beam.elevation ?? 42, beam.y);
+				to.set(beam.x, beam.elevation ?? groundHeight(state.mission?.map.terrain, beam) + 42, beam.y);
 				const length = direction.subVectors(to, from).length();
 				view.shaft.visible = length > 0.0001;
 				view.shaft.position.lerpVectors(from, to, 0.5);

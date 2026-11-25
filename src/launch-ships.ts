@@ -1,11 +1,7 @@
 import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
 import { createShipParts } from './launch-ship-parts';
-
-const cabinBeam = 1.47;
-const rampFrameHalfWidth = 106;
-export const DROPSHIP_DECK = { height: 30, hinge: 205, toe: 350, halfWidth: rampFrameHalfWidth * cabinBeam } as const;
-const podCenter = 219;
-export const DROPSHIP_WIDTH = 2 * (podCenter + 33);
+import { cabinBeam, DROPSHIP_DECK, podCenter, rampFrameHalfWidth } from './launch-berths';
+export { DROPSHIP_DECK, DROPSHIP_WIDTH } from './launch-berths';
 
 const sides = [-1, 1] as const;
 const clamp = function (value: number) { return Math.max(0, Math.min(1, value)); };

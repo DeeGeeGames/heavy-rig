@@ -165,34 +165,33 @@ export const footPose = function (gait: WalkerGait, index: FootIndex, size = 1, 
 
 // Retain a 30-degree knee bend, with extra compression on touchdown. Solve the
 // shared pelvis above the rolled ankles so neither fixed-length leg locks out.
-export const posedLegRig = function (gait: WalkerGait, size: number, rig: LegRig): LegRig {
+export const posedLegRig = function (gait: WalkerGait, size: number, rig: LegRig, ankles?: readonly Joint[]): LegRig {
 	if (rig.kneeDirection !== 1) return rig;
 	const bend = (30 + gait.motion.impact * 7) * Math.PI / 180;
 	const reach = Math.sqrt(rig.upper ** 2 + rig.lower ** 2 + 2 * rig.upper * rig.lower * Math.cos(bend)) * size;
 	const hipHeight = ([0, 1] as const).reduce(function (height, index) {
-		const foot = footPose(gait, index, size, rig);
 		const side = index === 0 ? -1 : 1;
 		const hipX = gait.body.x + Math.cos(gait.body.angle) * rig.hipForward * size - Math.sin(gait.body.angle) * side * rig.hipWidth * size;
 		const hipY = gait.body.y + Math.sin(gait.body.angle) * rig.hipForward * size + Math.cos(gait.body.angle) * side * rig.hipWidth * size;
-		const ankleForward = (-5 * Math.cos(foot.pitch) - 10 * Math.sin(foot.pitch)) * size;
-		const dx = foot.x + Math.cos(foot.angle) * ankleForward - hipX;
-		const dy = foot.y + Math.sin(foot.angle) * ankleForward - hipY;
-		const ankleHeight = (10 * Math.cos(foot.pitch) - 5 * Math.sin(foot.pitch)) * size + foot.lift;
-		return Math.min(height, (ankleHeight + Math.sqrt(Math.max(0, reach ** 2 - dx ** 2 - dy ** 2))) / size);
+		const ankle = ankles?.[index] ?? ankleJoint(footPose(gait, index, size, rig), size);
+		const dx = ankle.x - hipX, dy = ankle.y - hipY;
+		return Math.min(height, (ankle.z + Math.sqrt(Math.max(0, reach ** 2 - dx ** 2 - dy ** 2))) / size);
 	}, rig.hipHeight - Math.max(0, gait.motion.lift) * 0.15);
 	return { ...rig, hipHeight };
 };
 
 // Solve fixed-length limbs above the planted or swinging foot. Existing
 // callers keep the original Warden anatomy unless they supply a frame rig.
-export const legJoints = function (body: Body, foot: Foot, index: FootIndex, size = 1, rig: LegRig = STANDARD_LEG_RIG, pitch = 0) {
+export const ankleJoint = function (foot: Foot & { pitch?: number }, size: number, pitch = foot.pitch ?? 0): Joint {
+	const ahead = (-5 * Math.cos(pitch) - 10 * Math.sin(pitch)) * size;
+	return { x: foot.x + Math.cos(foot.angle) * ahead, y: foot.y + Math.sin(foot.angle) * ahead, z: (10 * Math.cos(pitch) - 5 * Math.sin(pitch)) * size + foot.lift };
+};
+export const solveLegToAnkle = function (body: Body, ankle: Joint, index: FootIndex, size: number, rig: LegRig) {
 	const side = index === 0 ? -1 : 1;
 	const hip: Joint = {
 		x: body.x + Math.cos(body.angle) * rig.hipForward * size - Math.sin(body.angle) * side * rig.hipWidth * size,
 		y: body.y + Math.sin(body.angle) * rig.hipForward * size + Math.cos(body.angle) * side * rig.hipWidth * size, z: rig.hipHeight * size,
 	};
-	const ankleForward = (-5 * Math.cos(pitch) - 10 * Math.sin(pitch)) * size;
-	const ankle: Joint = { x: foot.x + Math.cos(foot.angle) * ankleForward, y: foot.y + Math.sin(foot.angle) * ankleForward, z: (10 * Math.cos(pitch) - 5 * Math.sin(pitch)) * size + foot.lift };
 	const dx = ankle.x - hip.x; const dy = ankle.y - hip.y; const dz = ankle.z - hip.z;
 	const length = Math.hypot(dx, dy, dz);
 	const ux = dx / length; const uy = dy / length; const uz = dz / length;
@@ -204,6 +203,9 @@ export const legJoints = function (body: Body, foot: Foot, index: FootIndex, siz
 	const bend = Math.sqrt(Math.max(0, upper ** 2 - along ** 2));
 	const knee: Joint = { x: hip.x + ux * along + px / poleLength * bend, y: hip.y + uy * along + py / poleLength * bend, z: hip.z + uz * along + pz / poleLength * bend };
 	return { hip, knee, ankle };
+};
+export const legJoints = function (body: Body, foot: Foot, index: FootIndex, size = 1, rig: LegRig = STANDARD_LEG_RIG, pitch = 0) {
+	return solveLegToAnkle(body, ankleJoint(foot, size, pitch), index, size, rig);
 };
 
 export const createEnemyGait = function (enemy: Unit): WalkerGait {

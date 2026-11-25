@@ -1,9 +1,10 @@
 import { DoubleSide, Group, IcosahedronGeometry, InstancedMesh, Mesh, MeshBasicMaterial, Object3D, Shape, ShapeGeometry, type Scene } from 'three';
 import type { WeaponMount } from './arsenal';
 import type { MissionMap } from './campaign-types';
-import { hasBiomeGround } from './biome-ground';
-import { sceneryFlightBounds } from './biome-scenery';
-import { terrainPathClear, terrainPointClear, type ObstacleField } from './field-terrain';
+import { terrainPointClear, type FieldTerrain, type ObstacleField } from './field-terrain';
+import { altitude, approachDescent, approachRun, flightClearanceFor, flightPosition, landingFootprint, landingSites, supportRange, type LandingSite } from './landing-site';
+import { groundHeight } from './terrain-elevation';
+import { drapeGroundGeometry } from './terrain-decals';
 import { FRAME_RIGS } from './frame-rig';
 import { getFrame, type FrameId } from './frames';
 import { advanceGait, advanceGaitHeading, createGait, type Foot, type WalkerGait } from './gait';
@@ -19,134 +20,20 @@ import { angleDelta, combatTargets, type CombatStateView, type Point } from './s
 
 const { touchdown, lift, end: handoff } = LAUNCH_TIMING;
 const lastPose = handoff - .125;
-const approachRun = 550, approachDescent = 150;
-// The transport banks ten degrees on departure. Allow for the outside pod
-// dipping and the roof swinging beyond the level hull.
-const bankClearance = Math.ceil(DROPSHIP_WIDTH / 2 * Math.sin(Math.PI / 18));
-
 const unit = function (x: number) { return Math.max(0, Math.min(1, x)); };
 const between = function (time: number, start: number, end: number) { return unit((time - start) / (end - start)); };
 const ease = function (x: number) { return x * x * (3 - 2 * x); };
 const mix = function (a: number, b: number, t: number) { return a + (b - a) * t; };
 const mixPoint = function (a: Point, b: Point, t: number): Point { return { x: mix(a.x, b.x, t), y: mix(a.y, b.y, t) }; };
 
-const altitude = function (time: number) {
-	return 54 * (1 - ease(between(time, touchdown, touchdown + .5)))
-		+ 95 * ease(between(time, lift, lift + 1)) + 400 * between(time, lift + 1, handoff) ** 1.5;
-};
-const flightPosition = function (time: number) {
-	const inbound = (1 - between(time, LAUNCH_TIMING.approach, touchdown)) ** 2;
-	const departure = 45 * ease(between(time, lift, lift + 1)) + 980 * between(time, lift + .95, handoff) ** 1.6;
-	return { aft: approachRun * inbound - departure, height: altitude(time) + approachDescent * inbound };
-};
-
-const landingAirspace = function (map: MissionMap) {
-	if (!map.terrain || !hasBiomeGround(map.biome)) return [];
-	const flight = Array.from({ length: Math.round((handoff - LAUNCH_TIMING.approach) * 8) + 1 }, function (_, i) {
-		return flightPosition(LAUNCH_TIMING.approach + i / 8);
-	});
-	return map.terrain.obstacles.filter(function (o) { return o.height > 0; }).map(function (obstacle) {
-		const o = sceneryFlightBounds(obstacle);
-		let departure = 0, arrival = 0;
-		for (const [i, end] of flight.entries()) {
-			const start = flight[i - 1];
-			if (!start || Math.min(start.height, end.height) > o.height + bankClearance) continue;
-			departure = Math.max(departure, -start.aft, -end.aft);
-			arrival = Math.max(arrival, start.aft, end.aft);
-		}
-		return { ...o, departure, arrival };
-	});
-};
-
-// Tall scenery beside a pad may allow a steeper approach even when there is
-// no full-length flight corridor. Keep the ship inside the clearing until
-// it climbs above the highest obstruction, then let it leave at full speed.
-const flightClearance = function (origin: Point, heading: number, airspace: ReturnType<typeof landingAirspace>) {
-	const cos = Math.cos(heading), sin = Math.sin(heading);
-	let arrival = 1, departure = 1, clearHeight = 0, padContacts = 0;
-	for (const o of airspace) {
-		const x = o.x - origin.x, y = o.y - origin.y;
-		const side = Math.abs(x * sin - y * cos) - (Math.abs(sin) * o.width + Math.abs(cos) * o.depth) / 2;
-		if (side >= DROPSHIP_WIDTH / 2 + bankClearance) continue;
-		const along = x * cos + y * sin, span = (Math.abs(cos) * o.width + Math.abs(sin) * o.depth) / 2;
-		const near = along - span, far = along + span;
-		if (near > 215) {
-			if (o.arrival > 0) arrival = Math.min(arrival, (near - 215) / o.arrival);
-			if (side < DROPSHIP_DECK.halfWidth + 5 && near < DROPSHIP_DECK.toe + 5) padContacts++;
-		} else if (far < -233) {
-			if (o.departure > 0 && -233 - far < o.departure) {
-				departure = Math.min(departure, (-233 - far) / o.departure);
-				clearHeight = Math.max(clearHeight, o.height + bankClearance);
-			}
-		} else padContacts++;
-	}
-	return { arrival, departure, clearHeight, padContacts };
-};
-
 const landingField = function (map: MissionMap, state: CombatStateView): ObstacleField {
-	const footprint = function (point: Point, radius: number) { return { x: point.x, y: point.y, width: 2 * radius, depth: 2 * radius }; };
 	const mission = state.mission;
 	return { obstacles: [
 		...(map.terrain?.obstacles ?? []),
-		...combatTargets(state).map(function (target) { return footprint(target.body, target.radius); }),
-		...(mission?.captureSites ?? []).map(function (site) { return footprint(site, 24); }),
-		...(mission?.contract.kind === 'defend' ? [footprint(map.objective, 68)] : []),
+		...combatTargets(state).map(function (target) { return landingFootprint(target.body, target.radius); }),
+		...(mission?.captureSites ?? []).map(function (site) { return landingFootprint(site, 24); }),
+		...(mission?.contract.kind === 'defend' ? [landingFootprint(map.objective, 68)] : []),
 	] };
-};
-
-const landingSites = function* (map: MissionMap, state: CombatStateView, terrain: ObstacleField): Generator<LandingSite> {
-	const formation = [state.player, ...state.squadmates];
-	const airspace = landingAirspace(map);
-	// Keep the ramp facing the camera. Where terrain permits, point it toward
-	// the trailing formation so early arrivals can walk straight to their stations.
-	const away = state.player.angle + Math.PI;
-	const preferred = [0, 90, 30, 60, -22.5, 112.5].map(function (degrees) { return degrees * Math.PI / 180; })
-		.sort(function (a, b) { return Math.abs(angleDelta(a, away)) - Math.abs(angleDelta(b, away)); });
-	const candidates = [...preferred, ...[15, 45, 75].map(function (degrees) { return degrees * Math.PI / 180; })];
-	const placement = function (heading: number, shift: number, runout: number) {
-		const dx = Math.cos(heading), dz = Math.sin(heading);
-		const back = Math.min(...formation.map(function (actor) { return (actor.x - map.drop.x) * dx + (actor.y - map.drop.y) * dz; }));
-		const offset = back - DROPSHIP_DECK.toe - runout;
-		const at = function (side: number, aft: number): Point {
-			return { x: map.drop.x + dx * (offset + aft) + dz * (side + shift), y: map.drop.y + dz * (offset + aft) - dx * (side + shift) };
-		};
-		const aftAt = function (p: Point) { return (p.x - map.drop.x) * dx + (p.y - map.drop.y) * dz - offset; };
-		return { heading, at, aftAt, flight: flightClearance(at(0, 0), heading, airspace) };
-	};
-	let fallback = placement(0, 0, 106), best = Infinity;
-	const inField = function (p: Point) { return p.x >= 0 && p.x <= map.width && p.y >= 0 && p.y <= map.height; };
-	const offsets = [0, -120, 120, -240, 240, -350, 350, -490, 490, -630, 630];
-	const score = function (site: ReturnType<typeof placement>) {
-		const fits = [-1, 1].every(function (side) {
-			return inField(site.at(side * DROPSHIP_WIDTH / 2, -233)) && inField(site.at(side * DROPSHIP_WIDTH / 2, DROPSHIP_DECK.hinge))
-				&& inField(site.at(side * 160, DROPSHIP_DECK.toe));
-		});
-		// Overlapping strips cover the whole hull and its wide nacelles.
-		const occupied = [-.4, -.2, 0, .2, .4].filter(function (fraction) {
-			const side = DROPSHIP_WIDTH * fraction;
-			return !terrainPathClear(terrain, site.at(side, -190), site.at(side, DROPSHIP_DECK.hinge), DROPSHIP_WIDTH * .105);
-		}).length;
-		const blocked = formation.filter(function (actor) { return !terrainPathClear(terrain, site.at(0, DROPSHIP_DECK.toe), actor, 30); }).length;
-		const ramp = terrainPathClear(terrain, site.at(0, DROPSHIP_DECK.hinge), site.at(0, DROPSHIP_DECK.toe), DROPSHIP_DECK.halfWidth);
-		const shortenedFlight = (2 - site.flight.arrival - site.flight.departure) * .25;
-		// Once the hull and ramp are clear, curved disembarkation paths can
-		// route individual rigs around obstructions between the ramp and formation.
-		return (occupied + site.flight.padContacts + (fits ? 0 : 1) + (ramp ? 0 : 1)) * (formation.length + 1) + blocked + shortenedFlight;
-	};
-	// Try a longer straight walk or a broadside before making everyone walk
-	// several rig widths sideways from a distant landing site.
-	const angles = function (degrees: number[]) { return degrees.map(function (angle) { return angle * Math.PI / 180; }); };
-	const views = [candidates, angles([-45, 135, -60, 150]), angles([-75, 165, -90, 180])];
-	for (const shifts of [offsets.slice(0, 3), offsets.slice(3)]) {
-		for (const headings of views) {
-			for (const runout of [106, 180, 250]) for (const shift of shifts) for (const heading of headings) {
-				const site = placement(heading, shift, runout), cost = score(site);
-				if (cost === 0) yield site;
-				if (cost < best) { fallback = site; best = cost; }
-			}
-		}
-	}
-	if (best > 0) yield fallback;
 };
 
 interface LandingPose {
@@ -161,12 +48,6 @@ interface LandingRig extends LandingPose {
 
 const deckHeight = function (aft: number) { return DROPSHIP_DECK.height * unit((DROPSHIP_DECK.toe - aft) / (DROPSHIP_DECK.toe - DROPSHIP_DECK.hinge)); };
 
-interface LandingSite {
-	heading: number;
-	at: (side: number, aft: number) => Point;
-	aftAt: (p: Point) => number;
-	flight: ReturnType<typeof flightClearance>;
-}
 type Body = WalkerGait['body'];
 type GroundPath = (time: number) => Body;
 
@@ -347,7 +228,8 @@ export const planLaunchLanding = function (state: CombatStateView, map: MissionM
 		}, 0);
 		return { ...best, site, backtrack, score: best.cost + 2 * backtrack };
 	};
-	const sites = landingSites(map, state, terrain);
+	const sites = landingSites(map, terrain, [state.player, ...state.squadmates], state.player.angle,
+		flightClearanceFor(map.biome, map.terrain?.obstacles ?? []), map.terrain);
 	const first = sites.next();
 	if (first.done) throw new Error('Missing landing site');
 	let best = chooseLayout(first.value, Infinity);
@@ -373,15 +255,19 @@ export const planLaunchLanding = function (state: CombatStateView, map: MissionM
 
 // Keep the gait in the sampled body's reference frame so the whole pose can
 // travel between exposures. Each sole still takes the grade of the ramp.
-const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPath) {
+const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPath, terrain: FieldTerrain | undefined, padHeight: number) {
 	const frame = getFrame(frameId), rig = FRAME_RIGS[frameId];
 	const advancePose = getMechAssetBinding(frameId)?.advancePose;
+	const deckAboveGround = function (at: Point) {
+		const aft = site.aftAt(at);
+		return aft < DROPSHIP_DECK.toe ? padHeight + deckHeight(aft) - groundHeight(terrain, at) : 0;
+	};
 	let tick = 0;
 	let gait = createGait(bodyAt(touchdown), frame.size, rig);
-	let authored = advancePose?.(undefined, gait.body, 0);
+	let authored = advancePose?.(undefined, gait.body, 0, terrain);
 	const capturePose = function (): LandingPose {
-		const base = deckHeight(site.aftAt(gait.body));
-		const sole = function (foot: Foot) { return { ...foot, lift: foot.lift + deckHeight(site.aftAt(foot)) - base }; };
+		const base = deckAboveGround(gait.body);
+		const sole = function (foot: Foot) { return { ...foot, lift: foot.lift + deckAboveGround(foot) - base }; };
 		return { gait: { ...gait, feet: [sole(gait.feet[0]), sole(gait.feet[1])] }, authored };
 	};
 	let pose = capturePose();
@@ -391,13 +277,13 @@ const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPa
 			while (tick < until) {
 				tick++;
 				const body = bodyAt(touchdown + tick / 60);
-				authored = advancePose?.(authored, body, tick / 60);
+				authored = advancePose?.(authored, body, tick / 60, terrain);
 				gait = authored?.gait ?? advanceGait(gait, body, 1 / 60, frame.size, frame.stride, rig);
 			}
 			pose = capturePose();
 		}
 		const position = bodyAt(Math.max(time, touchdown));
-		const elevation = deckHeight(site.aftAt(position)) + altitude(Math.min(time, touchdown + .5));
+		const elevation = deckAboveGround(position) + altitude(Math.min(time, touchdown + .5));
 		return { ...pose, position, elevation };
 	};
 };
@@ -412,17 +298,18 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 	const shape = new Shape();
 	for (const [index, [x, z]] of silhouette.entries()) { if (index === 0) shape.moveTo(x * DROPSHIP_WIDTH / 360, -z); else shape.lineTo(x * DROPSHIP_WIDTH / 360, -z); }
 	shape.closePath();
-	const shadowGeometry = new ShapeGeometry(shape);
+	const shadowGeometry = new ShapeGeometry(shape).rotateX(-Math.PI / 2);
 	const shadowPaint = new MeshBasicMaterial({ color: '#141a20', side: DoubleSide, transparent: true, opacity: .45, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-	const shadow = new Mesh(shadowGeometry, shadowPaint); shadow.name = 'transport-ground-shadow'; shadow.rotation.order = 'YXZ'; shadow.rotation.set(-Math.PI / 2, ship.root.rotation.y, 0); root.add(shadow);
+	const shadow = new Mesh(shadowGeometry, shadowPaint); shadow.name = 'transport-ground-shadow'; shadow.rotation.y = ship.root.rotation.y; root.add(shadow);
 	const dustShape = new IcosahedronGeometry(1, 0);
 	const dustPaint = new MeshBasicMaterial({ color: SURFACE_PALETTES[map.biome].dust, transparent: true, opacity: .38, depthWrite: false });
 	const dust = new InstancedMesh(dustShape, dustPaint, 16); dust.frustumCulled = false; root.add(dust);
 	const puff = new Object3D();
+	const padHeight = supportRange(map.terrain, site).high;
 	const tracks = [state.frame, ...state.squadmates.map(function (mate) { return mate.frameId; })].map(function (frame, index) {
 		const path = paths[index];
 		if (!path) throw new Error('Missing deployment berth');
-		return rigTrack(site, frame, path);
+		return rigTrack(site, frame, path, map.terrain, padHeight);
 	});
 	const origin = site.at(0, 0), rear = site.at(0, 170);
 	const arrivalRun = approachRun * site.flight.arrival;
@@ -449,12 +336,15 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		const clearHeight = site.flight.clearHeight;
 		const climb = ease(between(airborne, clearHeight, Math.max(clearHeight + 1, altitude(handoff))));
 		const travelScale = approach ? site.flight.arrival : mix(site.flight.departure, 1, climb);
-		const travel = site.at(0, flight.aft * travelScale);
-		ship.root.position.set(travel.x, airborne, travel.y);
+		const aft = flight.aft * travelScale, travel = site.at(0, aft);
+		const flightGround = aft === 0 ? padHeight : Math.max(padHeight, supportRange(map.terrain, site, aft).high);
+		ship.root.position.set(travel.x, flightGround + airborne, travel.y);
 		ship.root.rotation.z = Math.round(-liftPose * 5) * Math.PI / 90;
 		ship.setRamp(rampAt(shipTime), rampAt(shipPoseTime));
 		ship.setThrust(.14 + .86 * Math.max(1 - ease(between(time, touchdown + .25, touchdown + 1)), ease(between(time, lift - .5, lift + 1))));
-		shadow.position.set(travel.x + 15 + airborne * .37, 1.05, travel.y + 8 + airborne * .32);
+		const shadowAt = { x: travel.x + 15 + airborne * .37, y: travel.y + 8 + airborne * .32 };
+		shadow.position.set(shadowAt.x, groundHeight(map.terrain, shadowAt) + 1.05, shadowAt.y);
+		drapeGroundGeometry(shadowGeometry, map.terrain, shadowAt, -shadow.rotation.y);
 		shadowPaint.opacity = Math.max(.15, .45 - airborne * .0005);
 		const wash = shipTime < touchdown + 3 ? between(shipTime, touchdown + .125, touchdown + 1.5) : between(shipTime, normalClose, handoff - 1);
 		dust.visible = wash > 0 && wash < 1;
@@ -463,7 +353,7 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 			for (let i = 0; i < dust.count; i++) {
 				const a = i * 2.4, radius = 82 + wash * (124 + i % 4 * 19);
 				const p = site.at(Math.cos(a) * radius, Math.sin(a) * radius + (i % 2 ? -35 : 55));
-				puff.position.set(p.x, 5 + Math.sin(wash * Math.PI) * (6 + i % 5 * 3), p.y);
+				puff.position.set(p.x, groundHeight(map.terrain, p) + 5 + Math.sin(wash * Math.PI) * (6 + i % 5 * 3), p.y);
 				puff.scale.set(19 + wash * 30, 5 + wash * 9, 12 + wash * 22); puff.rotation.y = a; puff.updateMatrix(); dust.setMatrixAt(i, puff.matrix);
 			}
 			dust.instanceMatrix.needsUpdate = true;
@@ -473,8 +363,10 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		const approachZoom = Math.min(.70, w / (scale * (arrivalRun + Math.SQRT2 * DROPSHIP_WIDTH)));
 		const tight = Math.max(1, Math.min(2.5, w / (scale * (DROPSHIP_WIDTH - 75)), h / (scale * 235)));
 		const wide = mixPoint(rampFocus, liftoffFocus, ease(between(time, touchdown, lift)));
+		const blend = ease(between(time, lift + .625, lastPose));
+		const focus = approach ? approachFocus : mixPoint(wide, state.player, blend);
 		return { poses, visible: !approach, zoom: approach ? approachZoom : mix(tight, 1, pullback), dockBlend: ease(between(time, lift, lastPose)),
-			focus: approach ? approachFocus : mixPoint(wide, state.player, ease(between(time, lift + .625, lastPose))) };
+			focus: { ...focus, elevation: approach ? flightGround : mix(padHeight, groundHeight(map.terrain, state.player), blend) } };
 	};
 	return { update, dispose: function () {
 		root.removeFromParent(); ship.dispose(); dust.dispose(); dustShape.dispose(); dustPaint.dispose(); shadowGeometry.dispose(); shadowPaint.dispose(); root.clear();

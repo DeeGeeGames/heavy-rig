@@ -3,7 +3,7 @@ export const terrainShader = `
 	uniform sampler2D terrainColor, terrainDepth;
 	uniform mat4 liveToTerrain, terrainToLive;
 	uniform vec4 terrainFloorDepth;
-	uniform bool drawTerrainColor;
+	uniform bool drawTerrainColor, hasRelief;
 	void main() {
 		vec2 baked = (liveToTerrain * vec4(at * 2. - 1., 0., 1.)).xy;
 		vec2 uv = baked * .5 + .5;
@@ -26,6 +26,13 @@ export const terrainShader = `
 		vec2 cell = floor(texel);
 		float depth = texelFetch(terrainDepth, ivec2(cell), 0).r;
 		if (depth >= 1.) discard;
+		if (hasRelief && texelFetch(terrainColor, ivec2(cell), 0).a < .75) {
+			// Relief ground is tagged during the bake. Its mesh supplies the
+			// subtexel depth in the next draw; props retain their baked depth.
+			gl_FragDepth = 1.;
+			gl_FragColor = sRGBTransferOETF(vec4(color, 1.));
+			return;
+		}
 		float clipDepth = depth * 2. - 1.;
 		vec2 cellCenter = (cell + .5) * 2. / size - 1.;
 		// Ground decals and shadows sit just above the plane. Use the plane's

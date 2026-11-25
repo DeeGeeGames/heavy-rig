@@ -1,9 +1,11 @@
-import { Box3, Matrix4, Mesh, Quaternion, Vector3, type Object3D } from 'three';
+import { Box3, Matrix4, Mesh, Plane, Quaternion, Vector3, type Object3D } from 'three';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 import { advanceGait, createGait, footPose, type LegRig, type WalkerGait } from './gait';
 import type { WeaponBody } from './weapon-rig';
 import { advanceAuthoredRun, authoredRunFootPitch, WARDEN_RUN_PROFILE, type AuthoredGait, type AuthoredRunProfile } from './authored-run';
 import { angleDelta } from './simulation';
+import type { FieldTerrain } from './field-terrain';
+import { groundHeight, groundNormal } from './terrain-elevation';
 
 export interface AuthoredLegNodes {
 	readonly index: 0 | 1;
@@ -77,18 +79,33 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 		footForward: average(function (leg) { return leg.ankle.x; }), footWidth: average(function (leg) { return Math.abs(leg.ankle.z); }), kneeDirection: 1,
 	};
 	const neutral = createGait({ x: 0, y: 0, angle: 0 }, 1, rig);
-	const target = function (gait: AuthoredGait, leg: typeof legs[number], hullAngle: number) {
+	const up = new Vector3(0, 1, 0);
+	const target = function (gait: AuthoredGait, leg: typeof legs[number], hullAngle: number, terrain?: FieldTerrain) {
 		const contact = gait.feet[leg.index]; const rest = neutral.feet[leg.index];
 		const relative = contact.angle - hullAngle;
 		const pitch = gait.running ? authoredRunFootPitch(gait, leg.index, options.run.footPitch) : gait.swing?.index === leg.index ? Math.max(-0.2, Math.min(0.2, footPose(gait, leg.index, 1, rig).pitch * 0.5)) : 0;
 		const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -relative).multiply(leg.footRotation).multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -pitch));
-		const support = Math.min(...leg.corners.map(function (corner) { return corner.clone().applyQuaternion(rotation).y; }));
 		const dx = contact.x - gait.body.x; const dz = contact.y - gait.body.y;
 		// Preserve source asymmetry without moving a supporting contact with the hull.
 		const offset = new Vector3(leg.ankle.x - rest.x, 0, leg.ankle.z - rest.y).applyAxisAngle(new Vector3(0, 1, 0), -relative);
 		const lift = gait.running ? contact.lift : contact.lift * (options.walkLiftScale ?? 1);
-		const position = new Vector3(dx * Math.cos(hullAngle) + dz * Math.sin(hullAngle) + offset.x, lift - support, -dx * Math.sin(hullAngle) + dz * Math.cos(hullAngle) + offset.z);
-		return { position, rotation };
+		const cos = Math.cos(hullAngle), sin = Math.sin(hullAngle);
+		const position = new Vector3(dx * cos + dz * sin + offset.x, 0, -dx * sin + dz * cos + offset.z);
+		let floor: Plane | undefined;
+		if (terrain?.elevation) {
+			const sole = { x: contact.x + cos * offset.x - sin * offset.z, y: contact.y + sin * offset.x + cos * offset.z };
+			const normal = groundNormal(terrain, sole);
+			const localNormal = new Vector3(normal.x * cos + normal.y * sin, normal.elevation, -normal.x * sin + normal.y * cos);
+			position.y = groundHeight(terrain, sole) - groundHeight(terrain, gait.body);
+			floor = new Plane().setFromNormalAndCoplanarPoint(localNormal, position);
+			rotation.premultiply(new Quaternion().setFromUnitVectors(up, localNormal));
+		}
+		const support = Math.min(...leg.corners.map(function (corner) {
+			const rotated = corner.clone().applyQuaternion(rotation);
+			return floor ? floor.normal.dot(rotated) / floor.normal.y : rotated.y;
+		}));
+		position.y += lift - support;
+		return { leg, position, rotation, floor };
 	};
 	const advance = function (previous: AuthoredGait | undefined, body: WeaponBody, dt: number): AuthoredGait {
 		const actual = { x: body.x, y: body.y, angle: body.angle ?? 0 };
@@ -102,10 +119,14 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 		const stride = options.walkStride + options.walkExtension * Math.min(1, Math.max(0, speed / 30)) * Math.max(0, 1 - turn / 0.6);
 		return advanceGait(previous, actual, dt, 1, stride, rig);
 	};
-	const solve = function (gait: WalkerGait, pelvisMatrix: Matrix4, hullAngle: number) {
+	const footTargets = function (gait: WalkerGait, hullAngle: number, terrain?: FieldTerrain) {
+		return legs.map(function (leg) { return target(gait, leg, hullAngle, terrain); });
+	};
+	const solveTargets = function (feet: ReturnType<typeof footTargets>, pelvisMatrix: Matrix4) {
 		const pelvisRotation = new Quaternion().setFromRotationMatrix(pelvisMatrix.clone().extractRotation(pelvisMatrix));
-		return legs.map(function (leg) {
-			const hip = leg.hipPosition.clone().applyMatrix4(pelvisMatrix); const foot = target(gait, leg, hullAngle);
+		return feet.map(function (foot) {
+			const { leg } = foot;
+			const hip = leg.hipPosition.clone().applyMatrix4(pelvisMatrix);
 			const delta = foot.position.clone().sub(hip); const distance = delta.length();
 			const axis = delta.clone().normalize(); const pole = leg.pole.clone().addScaledVector(axis, -leg.pole.dot(axis));
 			if (pole.lengthSq() < 1e-10) pole.set(1, 0, 0).addScaledVector(axis, -axis.x);
@@ -119,18 +140,25 @@ export const prepareAuthoredLocomotion = function (pelvis: Object3D, nodes: read
 			return { index: leg.index, knee, lower, thigh: pelvisRotation.clone().invert().multiply(upper), shin: upper.clone().invert().multiply(lower), foot: lower.clone().invert().multiply(foot.rotation) };
 		});
 	};
-	const pelvisDrop = function (gait: WalkerGait, pelvisMatrix: Matrix4, hullAngle: number): number {
-		const reachDrop = legs.reduce(function (drop, leg) {
-			const hip = leg.hipPosition.clone().applyMatrix4(pelvisMatrix); const ankle = target(gait, leg, hullAngle).position;
+	const solve = function (gait: WalkerGait, pelvisMatrix: Matrix4, hullAngle: number, terrain?: FieldTerrain) {
+		return solveTargets(footTargets(gait, hullAngle, terrain), pelvisMatrix);
+	};
+	const pelvisDrop = function (gait: WalkerGait, pelvisMatrix: Matrix4, hullAngle: number, terrain?: FieldTerrain): number {
+		const feet = footTargets(gait, hullAngle, terrain);
+		const reachDrop = feet.reduce(function (drop, { leg, position: ankle }) {
+			const hip = leg.hipPosition.clone().applyMatrix4(pelvisMatrix);
 			const reach = Math.sqrt(leg.upper ** 2 + leg.lower ** 2 + 2 * leg.upper * leg.lower * Math.cos(Math.PI / 6));
 			const horizontal = (ankle.x - hip.x) ** 2 + (ankle.z - hip.z) ** 2;
 			return Math.min(drop, ankle.y + Math.sqrt(Math.max(0, reach ** 2 - horizontal)) - hip.y);
 		}, 0);
 		const clearsGuards = function (drop: number) {
 			const matrix = pelvisMatrix.clone(); matrix.elements[13] = (matrix.elements[13] ?? 0) + drop;
-			return solve(gait, matrix, hullAngle).every(function (pose) {
-				const leg = legs[pose.index]; if (!leg) throw new Error('Missing guard geometry');
-				return leg.guard.every(function (point) { return point.clone().applyQuaternion(pose.lower).y + pose.knee.y >= -1e-6; });
+			return solveTargets(feet, matrix).every(function (pose) {
+				const foot = feet[pose.index]; if (!foot) throw new Error('Missing guard geometry');
+				return foot.leg.guard.every(function (point) {
+					const vertex = point.clone().applyQuaternion(pose.lower).add(pose.knee);
+					return (foot.floor?.distanceToPoint(vertex) ?? vertex.y) >= -1e-6;
+				});
 			});
 		};
 		if (clearsGuards(reachDrop)) return reachDrop / scale;

@@ -1,3 +1,9 @@
+export const cabinBeam = 1.47;
+export const rampFrameHalfWidth = 106;
+export const DROPSHIP_DECK = { height: 30, hinge: 205, toe: 350, halfWidth: rampFrameHalfWidth * cabinBeam } as const;
+export const podCenter = 219;
+export const DROPSHIP_WIDTH = 2 * (podCenter + 33);
+
 export interface LaunchBerth {
 	readonly x: number;
 	readonly z: number;

@@ -1,5 +1,6 @@
 import type { Point } from './simulation';
 import type { SpatialPoint } from './weapon-rig';
+import { groundContact, groundHeight, type TerrainElevation } from './terrain-elevation';
 
 /** Centred, axis-aligned footprints in mission metres. */
 interface GroundFootprint extends Readonly<Point> {
@@ -17,6 +18,7 @@ export interface TerrainObstacle extends GroundFootprint {
 export interface FieldTerrain {
 	readonly obstacles: readonly TerrainObstacle[];
 	readonly roads: readonly (readonly Point[])[];
+	readonly elevation?: TerrainElevation;
 }
 
 interface Bounds { left: number; right: number; top: number; bottom: number }
@@ -168,8 +170,10 @@ export const terrainShotContact = function (terrain: FieldTerrain, from: Spatial
 		const box = bounds(obstacle, 0);
 		const x = axisInterval(from.x, to.x - from.x, box.left, box.right);
 		const y = axisInterval(from.y, to.y - from.y, box.top, box.bottom);
-		const z = axisInterval(from.elevation, to.elevation - from.elevation, 0, obstacle.height);
-		if (!x || !y || !z) continue;
+		if (!x || !y || Math.max(0, x[0], y[0]) > Math.min(1, x[1], y[1])) continue;
+		const base = groundHeight(terrain, obstacle);
+		const z = axisInterval(from.elevation, to.elevation - from.elevation, base, base + obstacle.height);
+		if (!z) continue;
 		const entry = Math.max(0, x[0], y[0], z[0]);
 		if (entry > Math.min(1, x[1], y[1], z[1]) || first && entry >= first.fraction) continue;
 		const normal = { x: 0, y: 0, elevation: 0 };
@@ -182,5 +186,7 @@ export const terrainShotContact = function (terrain: FieldTerrain, from: Spatial
 	return first;
 };
 export const terrainShotFraction = function (terrain: FieldTerrain, from: SpatialPoint, to: SpatialPoint): number | undefined {
-	return terrainShotContact(terrain, from, to)?.fraction;
+	const ground = groundContact(terrain, from, to)?.fraction;
+	const cover = terrainShotContact(terrain, from, to)?.fraction;
+	return ground === undefined ? cover : cover === undefined ? ground : Math.min(ground, cover);
 };

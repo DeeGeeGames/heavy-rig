@@ -265,14 +265,21 @@ contacts. Frontal armor still rewards flanking and siege cooling windows.
 
 Campaign and Career contracts generate fields 4,200–4,800 by 3,450–4,140 meters.
 Each system has a fixed biome. The contract seed places the drop, objectives,
-pickup and terrain. Badlands canyons, volcanic fissures and tundra crevasses
+pickup and terrain. Walkers can climb hills, descend valley slopes and cross
+open gullies where the terrain permits. Free-aim weapons pitch toward the
+elevation under the reticle, so you can lead a target on another slope. A ridge
+between two rigs can stop direct fire and break missile tracking. Moving up
+to its crest can open a shot across the valley. Drop and extraction zones
+have level ground. Badlands canyons, volcanic fissures and tundra crevasses
 have two marked crossings. Brackwater's tidal wetlands have deep channels and
 levees. Elderholt's old-growth forest has logging roads through stands of giant
 trees. Galeward's wind steppe has open grassland and scattered turbine bases.
 Iolith's crystal barrens have branching pockets of quartz, with short ridges
 and isolated spires along the survey tracks.
 Shots can cross open cuts and water. Solid cover can interrupt missile tracking.
-Radar shows obstacles and routes. Situation Sim offers all seven mission types
+The radar and squad orders map show terrain contours at 40-metre intervals
+alongside obstacles and routes. The radar also shows the elevation under your rig.
+Situation Sim offers all seven mission types
 in each biome.
 Defense drops the squad near the relay and brings in waves. Clearance, Raid,
 and Acquisition spread their sites across the field.
