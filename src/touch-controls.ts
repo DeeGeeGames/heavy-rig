@@ -3,6 +3,7 @@ import { distance } from './simulation';
 import { missionStructures, isPriorityTarget } from './missions';
 import { getFrame } from './frames';
 import { targetElevation, type ScreenRect } from './overlay';
+import { inFiringArc } from './torso-arc';
 
 export interface TouchContact { id: number; point: Point; screen: Point; label: string }
 export const isContactVisible = function ({ x, y }: Point, width: number, height: number, obstructions: readonly ScreenRect[]): boolean {
@@ -32,7 +33,9 @@ export const createTouchTargeting = function () {
 		clear,
 		select: function (point: Point, contacts: readonly TouchContact[]) {
 			const nearest = contacts.reduce<TouchContact | undefined>(function (best, contact) { return !best || distance(contact.screen, point) < distance(best.screen, point) ? contact : best; }, undefined);
-			id = nearest && distance(nearest.screen, point) <= 44 ? nearest.id : undefined;
+			const selected = nearest && distance(nearest.screen, point) <= 44 ? nearest : undefined;
+			id = selected?.id;
+			return selected;
 		},
 		nearest: function (contacts: readonly TouchContact[], origin: Point) { id = ordered(contacts, origin)[0]?.id; },
 		cycle: function (contacts: readonly TouchContact[], origin: Point) {
@@ -40,29 +43,38 @@ export const createTouchTargeting = function () {
 			const index = sorted.findIndex(function (contact) { return contact.id === id; });
 			id = sorted[(index + 1) % sorted.length]?.id;
 		},
-		resolve: function (contacts: readonly TouchContact[]) {
-			const contact = contacts.find(function (candidate) { return candidate.id === id; });
+		resolve: function <T extends { id: number; point: Point & { hp?: number } }>(contacts: readonly T[], rig?: Point & { angle: number }) {
+			if (id === undefined) return undefined;
+			const contact = contacts.find(function (candidate) {
+				return candidate.id === id && (!rig || (candidate.point.hp ?? 1) > 0 && inFiringArc(rig, rig.angle, candidate.point));
+			});
 			if (!contact) clear();
 			return contact;
 		},
 	};
 };
 
-// A free aim is a world heading, reprojected from the moving player each step.
+export const touchAimPoint = function (origin: Point, heading: number): Point {
+	return { x: origin.x + Math.cos(heading) * 600, y: origin.y + Math.sin(heading) * 600 };
+};
+
+// An explicit ground aim holds a world heading until the legs turn it out of arc.
 export const createTouchFacing = function () {
 	let heading: number | undefined;
-	let tracking = false;
+	const clear = function () { heading = undefined; };
 	return {
-		clear: function () { heading = undefined; tracking = false; },
+		clear,
+		active: function () { return heading !== undefined; },
 		select: function (point: Point, origin: Point) {
-			heading = Math.atan2(point.y - origin.y, point.x - origin.x);
-			tracking = false;
+			if (point.x === origin.x && point.y === origin.y) clear();
+			else heading = Math.atan2(point.y - origin.y, point.x - origin.x);
 		},
-		resolve: function (origin: Point, facing: number, target: Point | undefined): Point {
-			if (target) { tracking = true; return { ...target }; }
-			if (tracking || heading === undefined) heading = facing;
-			tracking = false;
-			return { x: origin.x + Math.cos(heading) * 600, y: origin.y + Math.sin(heading) * 600 };
+		resolve: function (origin: Point & { angle: number }): Point | undefined {
+			if (heading === undefined) return undefined;
+			const aim = touchAimPoint(origin, heading);
+			if (inFiringArc(origin, origin.angle, aim)) return aim;
+			clear();
+			return undefined;
 		},
 	};
 };
