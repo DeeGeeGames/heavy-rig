@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createState, step, type Controls } from '../src/simulation';
+import { createState, movementStep, step, type Controls } from '../src/simulation';
 import { getFrame } from '../src/frames';
 import { parseProfile } from '../src/profile';
 
@@ -33,6 +33,63 @@ describe('control modes', function () {
 			step(state, { ...idle, heading, throttleTarget: 1 }, 1 / 60);
 			expect(state.player.angle).toBeCloseTo(heading);
 		}
+	});
+	test('Arcade starts sideways on the first tick and coasts on that line when released mid-turn', function () {
+		const state = createState(); const p = state.player;
+		const start = { x: p.x, y: p.y };
+		const right = { ...idle, heading: 0, throttleTarget: 0.5 };
+		movementStep(state, right, 1 / 60);
+		expect(p.x).toBeGreaterThan(start.x);
+		expect(p.y).toBe(start.y);
+		expect(p.angle).toBeLessThan(-Math.PI / 3);
+		for (let tick = 0; tick < 20; tick++) movementStep(state, right, 1 / 60);
+		const released = p.x; const speed = p.speed;
+		for (let tick = 0; tick < 180; tick++) movementStep(state, { ...idle, throttleTarget: 0 }, 1 / 60);
+		expect(p.x).toBeGreaterThan(released);
+		expect(p.y).toBe(start.y);
+		expect(p.speed).toBeLessThan(speed * 0.05);
+	});
+	test('reversing Arcade input brakes through zero on the same line before the legs finish turning', function () {
+		const state = createState(); const p = state.player;
+		p.angle = 0;
+		const y = p.y;
+		for (let tick = 0; tick < 240; tick++) movementStep(state, { ...idle, heading: 0, throttleTarget: 1 }, 1 / 60);
+		const atFullSpeed = p.x; const fullSpeed = p.speed;
+		const left = { ...idle, heading: Math.PI, throttleTarget: 1 };
+		movementStep(state, left, 1 / 60);
+		expect(p.x).toBeGreaterThan(atFullSpeed);
+		expect(p.speed).toBeLessThan(fullSpeed);
+		for (let tick = 0; tick < 40; tick++) movementStep(state, left, 1 / 60);
+		const turning = p.x; const buildingSpeed = p.speed;
+		movementStep(state, left, 1 / 60);
+		expect(p.x).toBeLessThan(turning);
+		expect(p.speed).toBeGreaterThan(buildingSpeed);
+		expect(p.y).toBeCloseTo(y, 8);
+		expect(Math.abs(p.angle)).toBeLessThan(Math.PI / 2);
+	});
+	test('switching from Simulation reverse into Arcade and back preserves the signed hull motion', function () {
+		const state = createState(); const p = state.player;
+		p.angle = 0; p.throttle = -1; p.speed = -40;
+		const start = { x: p.x, y: p.y };
+		movementStep(state, { ...idle, heading: Math.PI / 2, throttleTarget: 1 }, 1 / 60);
+		expect(p.x).toBeLessThan(start.x);
+		expect(p.y).toBeGreaterThan(start.y);
+		const changed = { x: p.x, y: p.y };
+		movementStep(state, { ...idle, stop: true }, 1 / 60);
+		expect(p.speed).toBeLessThan(0);
+		expect(p.x).toBeLessThan(changed.x);
+		expect((p.y - changed.y) / (p.x - changed.x)).toBeCloseTo(Math.tan(p.angle), 8);
+	});
+	test('a neutral Arcade input during Simulation reverse cruise keeps the latched throttle in reverse', function () {
+		const state = createState(); const p = state.player;
+		p.angle = 0; p.throttle = -1; p.speed = -40;
+		movementStep(state, { ...idle, throttleTarget: 0 }, 1 / 60);
+		const x = p.x; const throttle = p.throttle;
+		for (let tick = 0; tick < 90; tick++) movementStep(state, idle, 1 / 60);
+		expect(p.throttle).toBe(throttle);
+		expect(throttle).toBeLessThan(0);
+		expect(p.speed).toBeLessThan(0);
+		expect(p.x).toBeLessThan(x);
 	});
 	test('Arcade throttle ramps to demand, decays on release, and stop takes priority', function () {
 		const state = createState();
