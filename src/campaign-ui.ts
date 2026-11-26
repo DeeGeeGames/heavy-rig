@@ -15,7 +15,7 @@ import { live } from 'lit-html/directives/live.js';
 import type { ChoicePicker } from './choice-picker';
 import { operationPanes, type OperationsActions } from './operations-ui';
 
-export type ShipView = 'board' | 'transmission' | 'operations' | 'route' | 'system' | 'loadout' | 'condition' | 'calendar' | 'squad';
+export type ShipView = 'rigs' | 'weapons' | 'board' | 'transmission' | 'operations' | 'route' | 'system' | 'loadout' | 'condition' | 'calendar' | 'squad';
 const OBJECTIVES: Readonly<Record<MissionKind, string>> = {
 	defend: 'Hold the relay against the assault. Keep its integrity above zero, then return to extraction.',
 	demolition: 'Find and destroy the marked installation. Its garrison is optional; extraction is required.',
