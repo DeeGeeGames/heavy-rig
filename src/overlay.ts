@@ -43,8 +43,21 @@ export const edgeMarker = function (point: Point, width: number, height: number,
 	const preferred = { x: width / 2, y: Math.max(top, Math.min(bottom, height * 0.52)) };
 	const blocked = function (candidate: Point) { return padded.some(function (rect) { return candidate.x >= rect.left && candidate.x <= rect.right && candidate.y >= rect.top && candidate.y <= rect.bottom; }); };
 	const origins = [preferred, ...padded.map(function (rect) { return { x: preferred.x, y: Math.max(top, Math.min(bottom, rect.top - 1)) }; }), { x: preferred.x, y: top }];
-	const origin = origins.find(function (candidate) { return !blocked(candidate); });
-	if (!origin) return undefined;
+	let origin = origins.find(function (candidate) { return !blocked(candidate); });
+	if (!origin) {
+		// A short cockpit can cover the full center line. Find the nearest open
+		// interval to either side, then project the same ray through that opening.
+		const columns = [left, right, ...padded.flatMap(function (rect) { return [rect.left - 1, rect.right + 1]; })]
+			.filter(function (x) { return x >= left && x <= right; })
+			.sort(function (a, b) { return Math.abs(a - preferred.x) - Math.abs(b - preferred.x); });
+		const rows = [preferred.y, top, bottom, ...padded.flatMap(function (rect) { return [rect.top - 1, rect.bottom + 1]; })];
+		for (const y of rows) {
+			if (y < top || y > bottom) continue;
+			const x = columns.find(function (column) { return !blocked({ x: column, y }); });
+			if (x !== undefined) { origin = { x, y }; break; }
+		}
+		if (!origin) return undefined;
+	}
 	const dx = point.x - origin.x; const dy = point.y - origin.y;
 	if (dx === 0 && dy === 0) return undefined;
 	const horizontal = dx > 0 ? (right - origin.x) / dx : dx < 0 ? (left - origin.x) / dx : Infinity;
