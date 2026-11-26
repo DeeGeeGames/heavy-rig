@@ -141,11 +141,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		coolant: element('coolant-value'), message: element('message'),
 		sound: element('sound'), inputMode: element('input-mode'),
 	};
-	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.mission-bar, .left-instruments, .weapon-console, .touch-drive-cluster, .touch-fire-cluster, #training-guide, #escape-guide')];
+	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.mission-bar, .left-instruments, .weapon-console, #training-guide, #escape-guide')];
+	const touchClusters = [...container.querySelectorAll<HTMLElement>('.touch-drive-cluster, .touch-fire-cluster')];
+	const touchControls = [...element('touch').querySelectorAll<HTMLElement>('button, .touch-control-label, .zoom-panel')];
 	let hudObstructions: ScreenRect[] = [];
 	const refreshHudObstructions = function () {
 		const field = canvas.getBoundingClientRect();
-		hudObstructions = cockpitElements.filter(function (node) { return node.offsetWidth > 0; }).map(function (node) { const rect = node.getBoundingClientRect(); return { left: rect.left - field.left, right: rect.right - field.left, top: rect.top - field.top, bottom: rect.bottom - field.top }; });
+		// The compact touch grid lays out the individual controls with display: contents on their clusters.
+		const touchObstructions = touchClusters.some(function (node) { return node.offsetWidth > 0; }) ? touchClusters : touchControls;
+		hudObstructions = [...cockpitElements, ...touchObstructions].filter(function (node) { return node.offsetWidth > 0; }).map(function (node) { const rect = node.getBoundingClientRect(); return { left: rect.left - field.left, right: rect.right - field.left, top: rect.top - field.top, bottom: rect.bottom - field.top }; });
 	};
 	const weaponButtons = MOUNTS.map(function (binding) {
 		const button = document.createElement('button'); button.className = 'weapon'; button.dataset['control'] = binding.action;
