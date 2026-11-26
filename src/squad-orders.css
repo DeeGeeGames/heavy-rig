@@ -7,9 +7,9 @@
 	display: grid;
 	grid-template-rows: auto minmax(0, 1fr) auto;
 	isolation: isolate;
-	color: var(--paper);
-	background: #111c20;
-	border: 1px solid #425650;
+	color: var(--rig-ivory);
+	background: var(--rig-ink);
+	border: 1px solid var(--rig-edge);
 	box-shadow: 0 18px 72px #050c10cc;
 }
 .squad-orders-head,
@@ -18,14 +18,23 @@
 	align-items: center;
 	gap: 8px;
 	padding: 10px 16px;
-	background: #10191d;
+	background: var(--rig-steel);
 }
 .squad-orders-head {
 	justify-content: space-between;
-	border-bottom: 1px solid var(--border);
+	border-bottom: 1px solid var(--rig-edge);
 }
+.squad-orders-head>div { min-width: 0; }
 .has-mobile-fullscreen .squad-orders-head { padding-inline-end: 68px; }
-.squad-orders-head p { margin: 0; }
+.squad-orders-head p {
+	overflow: hidden;
+	margin: 0;
+	padding-inline-start: 20px;
+	color: var(--rig-amber);
+	background: var(--rig-hazard) left center / 13px 7px no-repeat;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 .squad-orders-head h2 {
 	margin: 2px 0 0;
 	font: 32px/.95 var(--display);
@@ -34,7 +43,10 @@
 }
 .squad-orders-paused {
 	flex: none;
-	color: var(--amber);
+	padding: 5px 8px;
+	border-inline-end: 2px solid var(--rig-amber);
+	color: var(--rig-amber);
+	background: var(--rig-ink);
 	font: 11px/1.2 var(--mono);
 	letter-spacing: .09em;
 }
@@ -53,8 +65,8 @@
 	overflow: auto;
 	overscroll-behavior: contain;
 	padding: 12px;
-	border-right: 1px solid var(--border);
-	background: #182428;
+	border-right: 1px solid var(--rig-edge);
+	background: var(--rig-panel);
 }
 .squad-console[inert] { opacity: .6; }
 .squad-selection, .squad-fire-label {
@@ -62,28 +74,37 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 4px 8px;
-	color: var(--muted);
+	color: var(--rig-label);
 	font: 11px/1.3 var(--mono);
 }
+.squad-selection>div { display: grid; gap: 3px; }
+.squad-section-label, .squad-fire-label {
+	color: var(--rig-label);
+	font: 10px/1.3 var(--mono);
+	letter-spacing: .09em;
+	text-transform: uppercase;
+}
+.squad-selection .squad-section-label { color: var(--rig-ivory); }
 #squad-orders button {
 	min-width: 0;
 	min-height: 34px;
 	padding: 6px 9px;
-	border-color: #a9c3b442;
-	border-radius: 3px;
-	color: var(--paper);
-	background-color: #202e31;
-	font-size: 13px;
+	border-color: var(--rig-edge);
+	color: var(--rig-ivory);
+	background-color: #2b302c;
+	font: 16px/1.05 var(--display);
+	letter-spacing: .025em;
 }
-#squad-orders button:hover:not(:disabled) { border-color: var(--cyan); }
+#squad-orders button:hover:not(:disabled) { border-color: var(--rig-amber); }
 #squad-orders button:focus-visible,
 #game.using-gamepad #squad-orders button:focus {
-	outline: 2px solid var(--amber);
+	outline: 2px solid var(--rig-amber);
 	outline-offset: 1px;
 }
 #squad-orders :is(.squad-pilot, .squad-commands button, .squad-fire-options button)[aria-pressed="true"] {
-	background: #29423e;
-	border-color: #92d6c5b0;
+	background: var(--rig-notch) right bottom / 8px 8px no-repeat, var(--rig-amber);
+	border-color: var(--rig-amber);
+	color: var(--rig-ink);
 }
 .squad-roster, .squad-commands {
 	display: grid;
@@ -91,48 +112,56 @@
 }
 #squad-orders .squad-pilot {
 	display: grid;
-	gap: 3px;
+	grid-template-columns: 23px minmax(0, 1fr);
+	gap: 3px 7px;
 	justify-items: start;
 	text-align: left;
 }
 .squad-pilot strong {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	grid-column: 1 / -1;
+	gap: 7px;
 	max-width: 100%;
 	overflow-wrap: anywhere;
+	font: 20px/1 var(--display);
+	text-transform: uppercase;
 }
 .squad-pilot strong span {
 	display: grid;
 	place-items: center;
 	flex: none;
-	width: 17px;
-	height: 17px;
-	background: #0e1a20;
-	color: var(--muted);
-	font: 11px var(--mono);
+	width: 23px;
+	height: 20px;
+	background: var(--rig-ink);
+	color: var(--rig-label);
+	font: 15px/1 var(--display);
 }
-.squad-pilot[aria-pressed="true"] strong span { background: var(--cyan); color: #10191d; }
+.squad-pilot[aria-pressed="true"] strong span { color: var(--rig-amber); }
 .squad-pilot small {
-	padding-left: 23px;
-	color: var(--muted);
-	font-size: 11px;
+	grid-column: 2;
+	color: var(--rig-label);
+	font: 10px/1.3 var(--mono);
 }
 .squad-pilot small[data-staged] { color: var(--cyan); }
 .squad-pilot small[data-staged]::before { content: '↳ '; }
 .squad-pilot small[data-fire-state="hold"],
 .squad-fire-label span { color: #f9cd8f; }
+.squad-pilot[aria-pressed="true"] small { color: #432b16; }
+.squad-pilot[aria-pressed="true"] small[data-staged] { font-weight: 700; }
+.squad-commands .squad-section-label { grid-column: 1 / -1; }
 #squad-orders .squad-commands button { display: flex; align-items: center; gap: 7px; text-align: left; }
 .squad-commands button span {
 	width: 1em;
-	color: var(--cyan);
+	color: var(--rig-amber);
 	font: 16px/1 var(--mono);
 }
+.squad-commands button[aria-pressed="true"] span { color: var(--rig-ink); }
 .squad-fire {
 	display: grid;
 	gap: 6px;
 	padding-top: 9px;
-	border-top: 1px solid var(--border);
+	border-top: 1px solid var(--rig-rule);
 }
 .squad-fire-options {
 	display: grid;
@@ -141,7 +170,7 @@
 }
 #squad-orders .squad-fire-options button { padding-inline: 4px; }
 #squad-orders .squad-fire-options [data-squad-fire="hold"][aria-pressed="true"] {
-	background: #483926;
+	background: var(--rig-notch) right bottom / 8px 8px no-repeat, #4a3623;
 	border-color: #e6bc7d;
 	color: #f9cd8f;
 }
@@ -151,12 +180,31 @@
 	grid-template-rows: minmax(0, 1fr) auto;
 	min-height: 0;
 	overflow: clip;
-	background: radial-gradient(ellipse at 58% 34%, #253a32 0%, #121f22 72%);
+	background: radial-gradient(ellipse at 58% 34%, #272c34 0%, #191c21 82%);
 }
 .squad-map {
 	position: relative;
 	min-height: 0;
 	overflow: clip;
+	background:
+		linear-gradient(#a5add50d 1px, transparent 1px) center / 24px 24px,
+		linear-gradient(90deg, #a5add50d 1px, transparent 1px) center / 24px 24px;
+}
+.squad-map::after {
+	/* Corner registration belongs to the map instrument, not the battlefield. */
+	--corner: #a7afd291;
+	content: '';
+	position: absolute;
+	inset: 7px;
+	background:
+		linear-gradient(var(--corner), var(--corner)) left top / 14px 2px,
+		linear-gradient(var(--corner), var(--corner)) left top / 2px 14px,
+		linear-gradient(var(--corner), var(--corner)) left bottom / 14px 2px,
+		linear-gradient(var(--corner), var(--corner)) left bottom / 2px 14px,
+		linear-gradient(var(--corner), var(--corner)) right bottom / 14px 2px,
+		linear-gradient(var(--corner), var(--corner)) right bottom / 2px 14px;
+	background-repeat: no-repeat;
+	pointer-events: none;
 }
 .squad-map canvas, .squad-map-compass {
 	position: absolute;
@@ -166,9 +214,9 @@
 .squad-map-compass {
 	inset: 8px 10px auto auto;
 	padding: 5px 7px;
-	border: 1px solid #91ada23e;
-	background: #152420;
-	color: var(--muted);
+	border: 1px solid #a7afd24f;
+	background: #1c2027;
+	color: #c9cfe4;
 	font: 11px/1 var(--mono);
 }
 #squad-orders .squad-map-confirm {
@@ -276,9 +324,9 @@
 	gap: 4px 12px;
 	min-height: 36px;
 	padding: 5px 10px;
-	background: #101b1ef0;
-	color: var(--muted);
-	border-top: 1px solid var(--border);
+	background: var(--rig-steel);
+	color: var(--rig-label);
+	border-top: 1px solid var(--rig-edge);
 	font: 11px/1.2 var(--mono);
 }
 .squad-map-caption>span { display: inline-flex; align-items: center; gap: 5px; }
@@ -293,20 +341,19 @@
 .squad-contact-picker small { color: var(--muted); }
 .squad-orders-footer {
 	justify-content: flex-end;
-	border-top: 1px solid var(--border);
+	border-top: 1px solid var(--rig-edge);
 }
 .squad-orders-status {
 	margin-right: auto;
-	color: var(--muted);
+	color: var(--rig-label);
 	font: 11px/1.2 var(--mono);
 }
 #squad-orders .squad-apply {
-	background: var(--cyan);
-	border-color: var(--cyan);
-	color: #101a1d;
-	font-weight: bold;
+	background: var(--rig-notch) right bottom / 8px 8px no-repeat, var(--rig-amber);
+	border-color: var(--rig-amber);
+	color: var(--rig-ink);
 }
-#squad-orders .squad-apply:hover:not(:disabled) { background: #b5e8d9; }
+#squad-orders .squad-apply:hover:not(:disabled) { background-color: #ffd28e; }
 @media (max-width: 580px) and (orientation: portrait), (max-width: 479px) {
 	#squad-orders { inset: max(6px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right)) max(40px, var(--dialog-bottom-gap, 40px)) max(7px, env(safe-area-inset-left)); }
 	.squad-orders-head, .squad-orders-footer { padding: 7px 9px; }
@@ -324,10 +371,11 @@
 	.squad-console { overflow: visible; padding: 8px; border-right: none; gap: 7px; }
 	.squad-roster { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
 	.squad-commands { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-	.squad-pilot small { padding-left: 0; }
+	#squad-orders .squad-pilot { grid-template-columns: minmax(0, 1fr); }
+	.squad-pilot small { grid-column: 1; }
 	.squad-orders-footer { flex-wrap: wrap; }
 	.squad-orders-status { order: -1; flex-basis: 100%; }
-	#squad-orders .squad-orders-footer button { padding-inline: 7px; font-size: 12px; }
+	#squad-orders .squad-orders-footer button { padding-inline: 7px; font-size: 14px; }
 }
 @media (min-width: 480px) and (max-height: 520px) and (orientation: landscape) {
 	#squad-orders { inset-block-start: max(5px, env(safe-area-inset-top)); inset-block-end: max(37px, var(--dialog-bottom-gap, 37px)); }
@@ -337,7 +385,8 @@
 	.squad-console { padding: 7px; gap: 5px; }
 	.squad-roster { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
 	.squad-commands { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-	.squad-pilot small { padding-left: 0; }
+	#squad-orders .squad-pilot { grid-template-columns: minmax(0, 1fr); }
+	.squad-pilot small { grid-column: 1; }
 	.squad-fire { gap: 3px; padding-top: 4px; }
 	#squad-orders button { min-height: 26px; padding-block: 4px; }
 	.squad-map-caption { min-height: 30px; }

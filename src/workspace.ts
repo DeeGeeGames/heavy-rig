@@ -64,7 +64,7 @@ export const focusWorkspace = function (root: HTMLElement) {
 		?? controls.find(function (item) { return item.matches('.system-marker[aria-pressed="true"], .equipment-choice[aria-pressed="true"]'); })
 		?? controls.find(function (item) { return item.closest('.workspace-pane'); })
 		?? controls.find(function (item) { return item.matches('[data-pane-target][aria-pressed="true"]'); })
-		?? controls.find(function (item) { return item.matches('[data-ship-screen][aria-current="page"]'); })
+		?? controls.find(function (item) { return item.matches('.ship-navigation .choice-field'); })
 		?? controls[0];
 	focusMenuControl(target ?? root);
 };
@@ -108,13 +108,24 @@ export const refreshWorkspace = function (root: HTMLElement, preserveFocus = tru
 		const items = [...content.children].filter(function (item): item is HTMLElement { return item instanceof HTMLElement; });
 		for (const item of items) { item.hidden = false; item.inert = false; }
 		const gap = Number.parseFloat(getComputedStyle(content).rowGap) || 0;
-		const available = content.clientHeight;
-		content.style.setProperty('--page-height', `${available}px`);
-		const groups: HTMLElement[][] = []; let used = 0;
-		for (const item of items) {
-			const height = item.getBoundingClientRect().height;
-			if (!groups.length || used + gap + height > available + .5) { groups.push([]); used = 0; }
-			groups.at(-1)?.push(item); used += height + (used ? gap : 0);
+		const pager = pane.querySelector<HTMLElement>('.page-controls');
+		if (pager) pager.hidden = true;
+		const splitPages = function () {
+			const available = content.clientHeight;
+			content.style.setProperty('--page-height', `${available}px`);
+			const groups: HTMLElement[][] = [];
+			let used = 0;
+			for (const item of items) {
+				const height = item.getBoundingClientRect().height;
+				if (!groups.length || used + gap + height > available + .5) { groups.push([]); used = 0; }
+				groups.at(-1)?.push(item); used += height + (used ? gap : 0);
+			}
+			return groups;
+		};
+		let groups = splitPages();
+		if (pager && groups.length > 1) {
+			pager.hidden = false;
+			groups = splitPages();
 		}
 		const id = pane.dataset['pane'] ?? ''; state.groups.set(id, groups);
 		const focused = document.activeElement;
@@ -218,7 +229,6 @@ export const renderWorkspace = function (root: HTMLElement, header: TemplateResu
 			${views.map(function (view) { return html`<button data-pane-target=${view.id} aria-pressed=${state.active === view.id} ?disabled=${locked} @click=${function () { selectWorkspacePane(root, view.id); }}>${view.label}</button>`; })}
 			<button class="nav-step" data-view-step="1" ?disabled=${locked} aria-label="Next department page" @click=${function () { cycleWorkspaceView(root, 1); }}><span data-menu-glyph="nextPage"></span></button>
 		</nav>` : ''}
-		${root.id === 'starmap' ? '' : html`<div class="command-heading"><div><span class="eyebrow">WAYFARER / COMPANY OPERATIONS</span><h2>${root.id === 'mechbay' ? 'Ready your rig.' : root.id === 'bridge' ? 'Your next sortie.' : root.id === 'market' ? 'Stock the company.' : root.id === 'pilots' ? 'Pilots' : root.id === 'deploy' ? 'Deploy' : 'Keep the company running.'}</h2></div><span class="command-location" data-view-label></span></div>`}
 		<div class="workspace-body">${hero ? html`<aside class="hangar-inspection">${hero}</aside>` : ''}${panes.map(function (pane) { return html`
 			<section class="workspace-pane" data-pane=${pane.id} data-scrollable=${String(Boolean(pane.scrollable))} aria-label=${pane.label}>
 				<h2 class="pane-heading">${pane.label}</h2>
@@ -242,6 +252,19 @@ export const mountWorkspaceLayout = function (container: HTMLElement, signal: Ab
 		revealWorkspaceElement(event.target);
 		rememberWorkspaceFocus(root);
 	};
+	const inspectMount = function (event: Event) {
+		const row = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-loadout-slot], [data-ammunition-slot]') : null;
+		const bay = row?.closest<HTMLElement>('#mechbay');
+		const slot = row?.dataset['loadoutSlot'] ?? row?.dataset['ammunitionSlot'];
+		if (!bay || slot === undefined) return;
+		if (event instanceof PointerEvent) {
+			if (event.pointerType !== 'mouse') return;
+			if (row instanceof HTMLButtonElement && !row.disabled && row !== document.activeElement) row.focus({ preventScroll: true });
+		}
+		bay.dataset['inspectionSlot'] = slot;
+	};
+	container.addEventListener('focusin', inspectMount, { signal });
+	container.addEventListener('pointermove', inspectMount, { signal });
 	container.addEventListener('focusin', focus, { signal });
 	signal.addEventListener('abort', function () { observer.disconnect(); states.clear(); }, { once: true });
 	void document.fonts.ready.then(function () { if (!signal.aborted) update(); });

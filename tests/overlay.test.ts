@@ -16,6 +16,20 @@ test('edge markers remain clear of the HUD across desktop, phone and short lands
 	}
 });
 
+test('objective directions survive a compact instrument panel covering the entire center line', function () {
+	for (const width of [480, 620]) {
+		const instruments = { left: 6, right: Math.min(width * .58, 300) + 6, top: 49, bottom: 117 };
+		const dock = { left: 0, right: width, top: 166, bottom: 260 };
+		for (const objective of [{ x: -800, y: 100 }, { x: 1100, y: 100 }, { x: width / 2, y: -600 }, { x: width / 2, y: 900 }]) {
+			const marker = edgeMarker(objective, width, 260, [instruments, dock]);
+			if (!marker) throw new Error('Missing compact objective marker');
+			expect(marker.point.x).toBeGreaterThanOrEqual(instruments.right + 18);
+			expect(marker.point.y).toBeGreaterThanOrEqual(80);
+			expect(marker.point.y).toBeLessThanOrEqual(130);
+		}
+	}
+});
+
 // The projected southwest contact used to disappear beneath the frame instruments.
 test('offscreen threat markers stop before actual cockpit rectangles, including touch controls', function () {
 	const cockpit = [{ left: 28, right: 260, top: 644, bottom: 875 }, { left: 1032, right: 1412, top: 700, bottom: 875 }];

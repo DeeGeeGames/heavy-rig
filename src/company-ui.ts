@@ -14,6 +14,7 @@ import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary,
 import { frameWeight, loadedMounts, usableMount } from './combat-resources';
 import { factionLiveryPreset, getLiveryPreset, liveryPresetsForFaction, SKIN_PALETTES, supportsMechSkin, type LiveryPresetId } from './mech-skin';
 import { getPilot, type PilotId } from './pilots';
+import type { ChoicePicker } from './choice-picker';
 import { deploymentPanes, pilotPanes, type AssignmentPicker } from './pilot-ui';
 
 export type CompanyScreen = 'mechbay' | 'market' | 'engineering' | 'pilots' | 'deploy';
@@ -25,6 +26,7 @@ export interface CompanyEditor {
 	notice: string;
 }
 export interface CompanyActions {
+	picker: ChoicePicker;
 	skin: LiveryPresetId;
 	operation?: PlannedOperation | undefined;
 	openOperations: () => void;
@@ -53,14 +55,14 @@ export interface CompanyActions {
 	handbook: () => void;
 }
 
-export const SHIP_SECTIONS: readonly { id: ShipScreen; label: string; number: string }[] = [
-	{ id: 'starmap', label: 'Starmap', number: '01' },
-	{ id: 'bridge', label: 'Contracts', number: '02' },
-	{ id: 'mechbay', label: 'Mech Bay', number: '03' },
-	{ id: 'market', label: 'Market', number: '04' },
-	{ id: 'engineering', label: 'Engineering', number: '05' },
-	{ id: 'pilots', label: 'Pilots', number: '06' },
-	{ id: 'deploy', label: 'Deploy', number: '07' },
+export const SHIP_SECTIONS: readonly { id: ShipScreen; label: string }[] = [
+	{ id: 'starmap', label: 'Starmap' },
+	{ id: 'bridge', label: 'Contracts' },
+	{ id: 'mechbay', label: 'Mech Bay' },
+	{ id: 'market', label: 'Market' },
+	{ id: 'engineering', label: 'Engineering' },
+	{ id: 'pilots', label: 'Pilots' },
+	{ id: 'deploy', label: 'Deploy' },
 ];
 const daysLabel = function (days: number) { return `${days} ${days === 1 ? 'DAY' : 'DAYS'}`; };
 const creditsLabel = function (credits: number) { return `${credits.toLocaleString()} CR`; };
@@ -79,17 +81,20 @@ export const adjacentShipScreen = function (screen: ShipScreen, delta: number): 
 	const index = SHIP_SECTIONS.findIndex(function (section) { return section.id === screen; });
 	return SHIP_SECTIONS[(index + delta + SHIP_SECTIONS.length) % SHIP_SECTIONS.length]?.id ?? screen;
 };
-export const renderShipHeader = function (campaign: Campaign, screen: ShipScreen, navigate: (screen: ShipScreen) => void, locked = false) {
+export const renderShipHeader = function (campaign: Campaign, screen: ShipScreen, actions: Pick<CompanyActions, 'navigate' | 'picker'>, locked = false) {
+	const departments = SHIP_SECTIONS.map(function ({ id, label }) {
+		return { value: id, label, ...(id === 'engineering' && campaign.workOrders.length ? { detail: `${campaign.workOrders.length} active work orders` } : {}) };
+	});
 	return html`
 		<header class="bridge-header">
-			<div class="bridge-brand"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow" title=${reputationProgress(campaign)}>HEAVY RIG / RANK ${companyRank(campaign)} · ${campaign.companyReputation.toLocaleString()} REP</span><h1>WAYFARER<small class="company-rank">R${companyRank(campaign)}</small><span>COMPANY OPERATIONS</span></h1></div></div>
+			<div class="bridge-brand"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow" title=${reputationProgress(campaign)}>RANK ${companyRank(campaign)} · ${campaign.companyReputation.toLocaleString()} REP</span><h1>HRV WAYFARER<small class="company-rank">R${companyRank(campaign)}</small></h1></div></div>
+			<nav class="ship-navigation" aria-label="Company departments">
+				<button class="nav-step" ?disabled=${locked} aria-label="Previous department" @click=${function () { actions.navigate(adjacentShipScreen(screen, -1)); }}><span data-menu-glyph="previousDepartment"></span></button>
+				${actions.picker.field(`department-${screen}`, 'Department', screen, departments, actions.navigate, 'Wayfarer departments', locked)}
+				<button class="nav-step" ?disabled=${locked} aria-label="Next department" @click=${function () { actions.navigate(adjacentShipScreen(screen, 1)); }}><span data-menu-glyph="nextDepartment"></span></button>
+			</nav>
 			<div class="career-stats"><div><small>IN ORBIT</small><b>${getPlanet(campaign.planetId).name}</b></div><div><small>COMPANY FUNDS</small><b>${campaign.credits.toLocaleString()} <em>CR</em></b></div><div><small>SHIP CALENDAR</small><b>DAY ${String(campaign.day).padStart(2, '0')}</b></div></div>
 		</header>
-		<nav class="ship-navigation" aria-label="Company departments">
-			<button class="nav-step" ?disabled=${locked} aria-label="Previous department" @click=${function () { navigate(adjacentShipScreen(screen, -1)); }}><span data-menu-glyph="previousDepartment"></span></button>
-			${SHIP_SECTIONS.map(function (section) { return html`<button ?disabled=${locked} data-ship-screen=${section.id} aria-current=${screen === section.id ? 'page' : 'false'} @click=${function () { navigate(section.id); }}><small>${section.number}</small><span>${section.label}</span>${section.id === 'engineering' && campaign.workOrders.length > 0 ? html`<b aria-label=${`${campaign.workOrders.length} active work orders`}>${campaign.workOrders.length}</b>` : ''}</button>`; })}
-			<button class="nav-step" ?disabled=${locked} aria-label="Next department" @click=${function () { navigate(adjacentShipScreen(screen, 1)); }}><span data-menu-glyph="nextDepartment"></span></button>
-		</nav>
 	`;
 };
 
@@ -200,16 +205,17 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 		] },
 		...(supportsMechSkin(frame.id) ? [{ id: 'livery', label: 'Company livery', items: liveryItems(actions, Boolean(campaign.deployed)), scrollable: true }] : []),
 		{ id: 'loadout', label: equipment && slot !== null ? `Mount ${slot + 1}` : 'Loadout', items: equipment ? choices : [
+			...mounts,
 			...(story ? [html`<span class="eyebrow">CAMPAIGN / ${story.contract.title}</span>`, ...textItems(story.contract.briefing), ...textItems(status)] : []),
 			...textItems(`INSTALLED: ${loadSummary(frame.id, mech.loadout, mech.reserves)}`),
 			...(draft ? textItems(`DRAFT: ${loadSummary(frame.id, editor.loadout, editor.reserves)}`) : []),
 			...(order?.kind === 'refit' ? textItems(`PENDING DAY ${order.readyDay}: ${loadSummary(frame.id, order.loadout, order.reserves)}`) : []),
-			...mounts, ...reserves,
+			...reserves,
 			...textItems('Ammunition refills free before each sortie. Reserve changes alone cost 0 CR and no workshop time. Extra rounds add weight; firing sheds it.'),
 			...textItems(order ? `${order.kind === 'repair' ? 'Repairs' : 'Refit'} underway. Ready day ${order.readyDay} · ${daysLabel(order.readyDay - campaign.day)} remaining.` : changed > 0 ? `Fitting estimate: ${daysLabel(changed)}. Ready day ${campaign.day + changed}. Parts are reserved when queued. Installed weapons stay in place until work finishes.` : `${hardpointSummary(frame.id)} Select a mount to fit a compatible owned weapon. Each changed mount takes one calendar day.`),
 			...(changed > 0 && !editor.loadout.some(function (weapon) { return weapon !== null; }) ? textItems('An unarmed frame cannot deploy. Removed equipment returns to stores when the refit finishes.') : []),
 			...(story ? [] : [html`<span class="eyebrow">${campaign.active ? `ACCEPTED / ${campaign.active.title}` : 'NO CONTRACT ACCEPTED'}</span>`, ...textItems(status)]),
-		], actions: equipment ? html`<button class="secondary" @click=${actions.closePicker}>BACK TO MOUNTS</button><button class="text-button" @click=${function () { actions.closePicker(); actions.navigate('market'); }}>MARKET →</button>` : draft ? html`<button id="queue-refit" class="primary" ?disabled=${!canRefit(campaign, mech.frameId, editor.loadout, editor.reserves)} @click=${actions.queueRefit}>${changed > 0 ? `QUEUE ${daysLabel(changed)} REFIT →` : 'APPLY AMMUNITION · FREE'}</button><button class="text-button" data-discard-refit @click=${actions.discardRefit}>DISCARD DRAFT</button>` : order ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW ENGINEERING →</button>` : html`<button class="primary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
+		], actions: equipment ? html`<button class="secondary" @click=${actions.closePicker}>BACK TO MOUNTS</button><button class="text-button" @click=${function () { actions.closePicker(); actions.navigate('market'); }}>MARKET →</button>` : draft ? html`<button id="queue-refit" class="primary" ?disabled=${!canRefit(campaign, mech.frameId, editor.loadout, editor.reserves)} @click=${actions.queueRefit}>${changed > 0 ? `QUEUE ${daysLabel(changed)} REFIT →` : 'APPLY AMMUNITION · FREE'}</button><button class="text-button" data-discard-refit @click=${actions.discardRefit}>DISCARD DRAFT</button>` : order ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW ENGINEERING →</button>` : html`<button class="secondary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
 	];
 };
 
@@ -313,7 +319,7 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 	const installedWeight = mech && frame ? frameWeight(frame.id, loadedMounts(mech.loadout, mech.reserves)) : undefined;
 	const hero = screen === 'mechbay' && mech && frame ? html`
 		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${rigName(mech.frameId)} <small>/ ${frame.designation}</small></h2></div>${supportsMechSkin(frame.id) ? html`<button class="hangar-livery" ?disabled=${locked || Boolean(campaign.deployed)} @click=${function () { selectWorkspacePane(root, 'livery'); const target = root.querySelector<HTMLElement>('[data-mech-skin][aria-pressed="true"]'); if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); } }}>LIVERY</button>` : html`<span class="eyebrow">${assignedPilot(campaign, mech.frameId) ?? 'UNASSIGNED'}</span>`}</div>
-		<div class="hangar-model"><canvas data-hangar-frame=${frame.id} aria-label=${`${frame.name} frame preview`}></canvas><span class="hangar-fallback">${frame.name} / ${frame.role}</span></div>
+		<div class="hangar-model"><canvas data-hangar-frame=${frame.id} aria-label=${`${frame.name} frame preview`}></canvas><span class="hangar-fallback">${frame.name} / ${frame.role}</span><span class="mount-pin" aria-hidden="true" hidden></span></div>
 		<div class="hangar-service">
 			${renderHullIntegrity(mech.integrity)}
 			${order ? html`<button class="secondary hull-repair" ?disabled=${locked} @click=${function () { actions.navigate('engineering'); }}>VIEW ${order.kind === 'repair' ? 'REPAIRS' : 'REFIT'}<small>READY DAY ${order.readyDay}</small></button>` : mech.integrity < 100 ? html`<button class="secondary hull-repair" data-quick-repair=${mech.frameId} ?disabled=${locked || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>REPAIR · ${daysLabel(repairDays(mech.integrity))}<small>0 CR</small></button>` : html``}
@@ -330,6 +336,6 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 	] : screen === 'engineering' ? [
 		{ id: 'orders', label: 'Work orders', panes: ['orders'] }, { id: 'condition', label: 'Condition', panes: ['condition'] }, { id: 'calendar', label: 'Calendar', panes: ['calendar'] },
 	] : panes.map(function (pane) { return { id: pane.id, label: pane.id === 'assignment' ? 'Assignment' : pane.label, panes: [pane.id] }; });
-	renderWorkspace(root, renderShipHeader(campaign, screen, actions.navigate, locked), panes, footer, screen === 'mechbay' ? 'loadout' : screen === 'market' ? view.kind : departmentViews[0]?.id ?? '', departmentViews, hero);
+	renderWorkspace(root, renderShipHeader(campaign, screen, actions, locked), panes, footer, screen === 'mechbay' ? 'loadout' : screen === 'market' ? view.kind : departmentViews[0]?.id ?? '', departmentViews, hero);
 	if (screen === 'mechbay' && (editor.slot !== previousSlot || editor.slot !== null)) selectWorkspacePane(root, 'loadout');
 };

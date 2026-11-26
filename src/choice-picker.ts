@@ -36,7 +36,7 @@ export const mountChoicePicker = function (container: HTMLElement, signal: Abort
 	overlay.addEventListener('click', function (event) { if (event.target === overlay) close(); }, { signal });
 	signal.addEventListener('abort', function () { close(false); overlay.remove(); }, { once: true });
 
-	const field = function <T extends string | number | null>(id: string, label: string, value: T, choices: readonly Choice<T>[], choose: (value: T) => void, title = label) {
+	const field = function <T extends string | number | null>(id: string, label: string, value: T, choices: readonly Choice<T>[], choose: (value: T) => void, title = label, disabled = false) {
 		const draw = function () {
 			render(html`<section class="choice-panel" role="dialog" aria-modal="true" aria-labelledby="choice-heading">
 				<h2 id="choice-heading">${title}</h2>
@@ -70,7 +70,7 @@ export const mountChoicePicker = function (container: HTMLElement, signal: Abort
 			if (current) focusMenuControl(current);
 			changed();
 		};
-		return html`<button type="button" class="choice-field" id=${id} value=${value ?? ''}
+		return html`<button type="button" class="choice-field" ?disabled=${disabled} id=${id} value=${value ?? ''}
 			aria-haspopup="dialog" aria-expanded=${expanded} aria-controls="choice-picker" @click=${open}>
 			<span class="choice-caption">${label}</span><span class="choice-value">${choices.find(function (option) { return option.value === value; })?.label}</span>
 		</button>`;

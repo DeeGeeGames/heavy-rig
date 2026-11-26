@@ -1,0 +1,183 @@
+/* The hangar floor and survey table share a sightline across ship departments. */
+#mechbay.workspace.has-hangar > .workspace-body,
+#bridge.workspace.paired-workspace:is([data-view='board'], [data-view='briefing']) > .workspace-body {
+	grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr);
+	column-gap: clamp(12px, 2.3vw, 38px);
+}
+#mechbay.workspace.has-hangar > .workspace-body {
+	grid-template-rows: auto auto minmax(0, 1fr) auto;
+	row-gap: 0;
+}
+#mechbay .hangar-inspection { display: contents; }
+#mechbay .hangar-heading { grid-area: 1 / 1; padding: 6px 0 12px; }
+#mechbay .hangar-heading .eyebrow { color: var(--amber); font: 12px/1.3 var(--mono); text-transform: uppercase; }
+#mechbay .hangar-heading h2 { font: clamp(36px, 4.7vw, 80px)/.95 var(--display); text-transform: uppercase; letter-spacing: -.02em; }
+#mechbay .hangar-heading h2 small { display: inline-block; font: 15px/1 var(--mono); color: var(--muted); letter-spacing: .02em; vertical-align: baseline; }
+#mechbay .hangar-service { grid-area: 2 / 1; margin: 0 0 12px; padding: 0; border: 0; gap: 8px; }
+#mechbay .hangar-service .hull-integrity { background: transparent; border: 0; border-block: 1px solid var(--border); padding: 5px 0; }
+#mechbay .hangar-service .hull-integrity-track { height: 6px; }
+#mechbay .workspace-pane { grid-area: 3 / 1 / 5 / 2; }
+#mechbay .hangar-model {
+	display: block; grid-area: 1 / 2 / 4 / 3; min-width: 0; min-height: 0; isolation: isolate;
+	border: 1px solid #666963; background: #1a1b1b url('../public/brand/wayfarer-service-lift.webp') center / 100% 100% no-repeat;
+	image-rendering: pixelated;
+}
+#mechbay .hangar-model::before {
+	content: ''; pointer-events: none; position: absolute; left: 28%; right: 28%; top: 71%; height: 12%;
+	background: radial-gradient(ellipse at center, #0c0c17ad 10%, transparent 68%);
+}
+#game #mechbay .hangar-model canvas { image-rendering: pixelated; }
+.rig-preview { background: #181b1b url('../public/brand/wayfarer-service-lift.webp') center / 100% 100% no-repeat; image-rendering: pixelated; }
+.rig-preview canvas { image-rendering: pixelated; }
+.mount-pin {
+	position: absolute; pointer-events: none; transform: translate(10px, -100%); z-index: 1;
+	padding: 3px 5px; font: bold clamp(10px, 1.2vw, 16px)/1 var(--mono); color: #201910; background: var(--amber);
+	box-shadow: 2px 2px #1c1711;
+}
+.mount-pin::before { position: absolute; content: ''; width: 14px; height: 2px; background: var(--amber); right: 100%; bottom: 0; transform-origin: right; transform: rotate(-33deg); }
+#mechbay .hangar-specs { display: flex; grid-area: 4 / 2; padding: 8px 12px; gap: 26px; background: #242926; border: 1px solid var(--border); border-top: 0; }
+#mechbay .hangar-specs > div { display: flex; align-items: baseline; gap: 7px; }
+#mechbay .hangar-specs b { font-size: 20px; margin: 0; }
+#mechbay .pane-heading, #bridge [data-pane='board'] .pane-heading { letter-spacing: .055em; }
+#mechbay .company-mount { transition: none; border: 0; border-inline-start: 4px solid #62685f; background: #272c28; padding: 9px 12px; }
+#mechbay .company-mount .mount-number { color: var(--paper); font: 23px/1 var(--display); }
+#mechbay .company-mount:is(:focus, :hover, [aria-pressed='true']) { border-inline-start-color: #fff2c4; background: var(--amber); color: #211a10; outline-offset: -2px; }
+#mechbay .company-mount:is(:focus, :hover, [aria-pressed='true']) :is(.mount-number,.hardpoint-location,em,.mount-change) { color: #423321; }
+#mechbay .company-mount.changed { border-inline-start-color: var(--amber); }
+#mechbay[data-picker='true'] .hangar-model { border-color: var(--amber); }
+
+#bridge.workspace.paired-workspace:is([data-view='board'], [data-view='briefing']) > .workspace-body { grid-template-rows: minmax(0, 1fr); }
+#bridge :is([data-pane='board'], [data-pane='briefing']) { grid-area: 1 / 1; }
+#bridge [data-pane='survey'] { grid-area: 1 / 2; padding: 0; }
+#bridge [data-pane='survey'] > .pane-heading { display: none; }
+#bridge [data-pane='survey'] > .paged-content { overflow: clip; }
+#bridge [data-pane='survey'] .page-item, mission-survey { height: 100%; max-height: none; }
+mission-survey { display: flex; flex-direction: column; min-height: 0; }
+.survey-scene {
+	flex: 1; min-height: 0; position: relative; isolation: isolate; overflow: hidden; image-rendering: pixelated;
+	background: #111314 url('../public/brand/wayfarer-survey-bay.webp') center / 100% 100% no-repeat; border: 1px solid #676962;
+}
+#game #bridge .survey-scene canvas { width: 100%; height: 100%; position: absolute; inset: 0; opacity: 1; image-rendering: pixelated; pointer-events: none; }
+.survey-scene header { position: absolute; inset: clamp(10px, 2.2vw, 34px) auto auto clamp(10px, 2.2vw, 34px); }
+.survey-scene header span { display: block; color: #f5b55d; font: 11px/1 var(--mono); letter-spacing: .13em; }
+.survey-scene header strong { display: block; color: #f4eddd; font: clamp(33px, 5vw, 86px)/.99 var(--display); text-transform: uppercase; }
+.survey-legend { position: absolute; inset: auto auto 3% 3%; display: flex; flex-wrap: wrap; gap: 12px; padding: 5px 7px; background: #191c1bed; color: var(--paper); font: 10px/1.2 var(--mono); }
+.survey-legend span { display: flex; align-items: center; gap: 5px; }
+.survey-legend i { width: 6px; height: 6px; background: #b5ead6; }
+.survey-legend span:last-child i { background: #ffd27c; }
+.survey-scale { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: #242926; padding: 7px 12px; border: 1px solid var(--border); border-top: 0; }
+.survey-scale b { font: 20px/1 var(--display); text-transform: uppercase; }
+.survey-scale span { color: var(--muted); font: 11px/1 var(--mono); }
+#bridge .contract-card { transition: none; border: 0; border-inline-start: 4px solid #676e63; background: #272c28; padding: 9px 14px; gap: 4px; }
+#bridge .contract-card[aria-pressed='true'] { border-inline-start-color: #ffedc1; background: var(--amber); color: #211a10; }
+#bridge .contract-card[aria-pressed='true'] :is(.contract-type,.contract-employer,.contract-bottom,.contract-bottom strong,.contract-bottom small) { color: #413222; }
+#bridge .contract-card .contract-employer { color: var(--muted); }
+#bridge .contract-card .contract-bottom { margin-top: 2px; padding-top: 3px; }
+
+@media (max-width: 620px) and (orientation: portrait) {
+	#mechbay.workspace.has-hangar > .workspace-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(100px, 29%) auto minmax(0, 1fr); }
+	#mechbay .hangar-heading { grid-area: 1 / 1; padding: 0 0 6px; }
+	#mechbay .hangar-model { grid-area: 2 / 1; background-size: cover; background-position: center 70%; }
+	#mechbay .hangar-service { grid-area: 3 / 1; margin: 4px 0; }
+	#mechbay .workspace-pane { grid-area: 4 / 1; }
+	#mechbay .hangar-specs { display: none; }
+	#mechbay[data-view='livery'] .hangar-model { grid-row: 2 / 4; }
+	#bridge.workspace.paired-workspace:is([data-view='board'], [data-view='briefing']) > .workspace-body { grid-template-columns: 1fr; grid-template-rows: minmax(105px, 32%) minmax(0, 1fr); gap: 7px; }
+	#bridge [data-pane='survey'] { grid-area: 1 / 1; }
+	#bridge.paired-workspace :is([data-pane='board'], [data-pane='briefing']) { grid-area: 2 / 1; }
+	.survey-scene header { inset: 8px auto auto 9px; }
+	.survey-scene header strong { font-size: 31px; }
+	.survey-scale { padding: 3px 8px; }
+	.survey-scale b { font-size: 15px; }
+	#bridge .survey-scene { background-color: #151718; background-position: right 74%; background-size: auto 150%; }
+	#game #bridge .survey-scene canvas { inset: -20% 0 auto auto; height: 140%; width: 83%; object-fit: contain; object-position: right center; }
+	.survey-scene header { padding: 2px 3px; background: #151718d9; }
+	#mechbay .company-mount { padding: 5px 9px; }
+	#mechbay .company-mount > span:nth-child(2) { gap: 1px; }
+}
+@media (max-height: 545px) and (orientation: landscape) {
+	#mechbay .hangar-heading { padding: 0 0 3px; }
+	#mechbay .hangar-heading h2 { font-size: 27px; margin: 0; }
+	#mechbay .hangar-service { margin: 0 0 3px; }
+	#mechbay .hangar-specs { display: none; }
+	#mechbay .hangar-model { grid-row: 1 / 5; }
+	#mechbay .hangar-service .hull-integrity { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 5px; padding: 3px 0; }
+	#mechbay .hangar-service .hull-condition { display: none; }
+	#mechbay .company-mount, #bridge .contract-card { padding: 4px 8px; }
+	.survey-scene header strong { font-size: 33px; }
+	.survey-scale { padding: 3px 8px; }
+}
+@media (max-height: 545px) and (orientation: landscape), (max-width: 400px) and (max-height: 620px) {
+	#mechbay .company-mount { grid-template-columns: 21px minmax(0,1fr) auto; gap: 5px; }
+	#mechbay .company-mount > span:nth-child(2) { gap: 0; }
+	#mechbay .company-mount em { font-size: 9px; }
+	#mechbay .workspace-pane .pane-actions { margin-top: 2px; }
+	#mechbay .workspace-pane .pane-actions > button { min-height: 26px; padding: 3px 7px; font-size: 16px; }
+}
+@media (max-height: 440px) and (orientation: landscape) {
+	#mechbay.workspace.has-hangar > .workspace-body { grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+	#mechbay .workspace-pane { grid-area: 1 / 1 / 4 / 2; }
+	#mechbay .hangar-heading { grid-area: 1 / 2; flex-wrap: nowrap; padding: 0 0 3px; gap: 5px; }
+	#mechbay .hangar-heading .eyebrow { display: none; }
+	#mechbay .hangar-heading h2 { font-size: 24px; white-space: nowrap; }
+	#mechbay .hangar-heading h2 small { font-size: 10px; }
+	#mechbay .hangar-livery { padding: 3px 6px; }
+	#mechbay .hangar-model { grid-area: 2 / 2; }
+	#mechbay .hangar-service { grid-area: 3 / 2; margin: 3px 0 0; }
+	#mechbay .hangar-service .hull-integrity-heading { gap: 3px; }
+	#mechbay .hangar-service .hull-integrity-heading > strong { font-size: 17px; }
+	#mechbay .hull-repair { font-size: 12px; padding: 3px 5px; }
+	#mechbay .hull-repair small { margin: 1px 0 0; }
+	#bridge.workspace.paired-workspace:is([data-view='board'], [data-view='briefing']) > .workspace-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1.07fr); }
+	#bridge .survey-scene header { inset: 5px auto auto 7px; }
+	#bridge .survey-scene header span { font-size: 8px; }
+	#bridge .survey-scene header strong { font-size: 25px; }
+	#bridge .survey-scale b { font-size: 15px; }
+	#bridge .survey-legend { font-size: 7px; padding: 2px 4px; }
+}
+@media (max-width: 400px) and (max-height: 620px) and (orientation: portrait) {
+	#mechbay.workspace.has-hangar > .workspace-body { grid-template-columns: 1fr 43%; grid-template-rows: auto auto minmax(0, 1fr); column-gap: 6px; }
+	#mechbay .hangar-model, #mechbay[data-view='livery'] .hangar-model { grid-area: 1 / 2 / 3 / 3; min-height: 80px; }
+	#mechbay .hangar-service { grid-area: 2 / 1; }
+	#mechbay .workspace-pane { grid-area: 3 / 1 / 4 / 3; }
+	#mechbay .hangar-heading { flex-wrap: wrap; gap: 1px 5px; }
+	#mechbay .hangar-heading h2 { font-size: 26px; }
+	#mechbay .hangar-heading h2 small { font-size: 10px; }
+	#mechbay .hangar-livery { padding: 2px 5px; }
+	.survey-legend { font-size: 7px; gap: 5px; padding: 2px 4px; }
+	#mechbay .hangar-service { margin: 0 0 3px; }
+	#mechbay .hangar-service .hull-integrity { padding: 2px 0; }
+	#mechbay .hangar-service .hull-condition { display: none; }
+	#mechbay .hangar-service .hull-integrity-track { height: 4px; margin: 2px 0; }
+	#mechbay .hangar-heading { padding: 0 0 3px; }
+	#mechbay .hangar-heading .eyebrow { font-size: 9px; }
+	#mechbay .hangar-heading h2 { margin: 1px 0; }
+	#mechbay .hangar-service .hull-integrity-heading > strong { font-size: 19px; }
+	#bridge .contract-card { padding: 3px 7px; grid-template-columns: minmax(0,1fr) auto; gap: 1px 5px; }
+	#bridge .contract-card > b { grid-row: 2; grid-column: 1 / -1; }
+	#bridge .contract-employer { grid-area: 1 / 2; text-align: end; font-size: 8px; }
+	#bridge .contract-bottom { grid-column: 1 / -1; margin: 0; padding: 0; }
+	#bridge .survey-scene header strong { font-size: 23px; }
+	#bridge .survey-scale { padding: 2px 5px; }
+	#bridge.workspace.paired-workspace[data-view='briefing'] > .workspace-body { grid-template-rows: minmax(62px, 25%) minmax(0,1fr); gap: 4px; }
+	#bridge[data-view='briefing'] [data-pane='briefing'] > .pane-heading { display: none; }
+	#bridge[data-view='briefing'] .pane-actions { margin-top: 3px; }
+	#bridge[data-view='briefing'] .pane-actions > button { min-height: 28px; padding: 3px 5px; font-size: 15px; }
+	#bridge[data-view='briefing'] .survey-scene header { inset: 3px auto auto 7px; padding: 0; }
+	#bridge[data-view='briefing'] .survey-scene header span { display: none; }
+	#bridge[data-view='briefing'] .survey-scene header strong { font-size: 18px; }
+}
+
+@media (max-height: 280px) and (orientation: landscape) {
+	#game .workspace .bridge-header { height: 29px; padding: 0; align-items: center; }
+	#game .workspace .ship-navigation :is(.choice-field, .nav-step) { height: 26px; min-height: 26px; padding-block: 0; }
+	#game .workspace .bridge-footer { display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; }
+	#game .workspace .ship-controller-status { margin: 0; max-width: 45%; font-size: 7px; }
+	#bridge[data-view='briefing'] [data-pane='briefing'] .page-item:first-child { display: flex; flex-direction: column-reverse; gap: 1px; }
+	#bridge[data-view='briefing'] [data-pane='briefing'] .page-item h2 { margin: 0; font: 19px/1 var(--display); }
+	#bridge[data-view='briefing'] [data-pane='briefing'] .page-item .eyebrow { font-size: 8px; letter-spacing: .02em; line-height: 1.1; }
+	#mechbay .company-mount { padding-block: 2px; grid-template-columns: 19px minmax(0,1fr) 12px; }
+	#mechbay .company-mount > span:nth-child(2) { display: flex; flex-direction: column; }
+	#mechbay .company-mount b { order: -1; font: 17px/1.1 var(--display); }
+	#mechbay .company-mount .hardpoint-location, #mechbay .company-mount em { font-size: 8px; line-height: 1.1; }
+}

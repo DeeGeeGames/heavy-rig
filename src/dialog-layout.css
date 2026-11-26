@@ -1,17 +1,99 @@
+/* Hangar Floor materials for the title, prologue, and operation console. */
+#game {
+	--hangar-ui-floor: #171918;
+	--hangar-ui-panel: #23221e;
+	--hangar-ui-raised: #302d26;
+	--hangar-ui-paper: #f4eddd;
+	--hangar-ui-muted: #c7bdae;
+	--hangar-ui-edge: #d7cbb345;
+	--hangar-ui-rail: #8e8270;
+	--hangar-ui-amber: #ffb451;
+	--hangar-ui-ink: #211a12;
+}
+#game.menu-open:is([data-screen='title'], [data-screen='rig-bay'], :has(> .modal:not([hidden]))) > .menu-controls {
+	inset: auto 0 0;
+	gap: 3px 16px;
+	min-height: 33px;
+	padding: 5px max(4.5vw, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(4.5vw, env(safe-area-inset-left));
+	border-top: 1px solid var(--hangar-ui-edge);
+	background: #171918f7;
+	color: var(--hangar-ui-paper);
+}
+#game.menu-open:is([data-screen='title'], [data-screen='rig-bay']) > .menu-controls { z-index: 5; }
+#game.menu-open:is([data-screen='title'], [data-screen='rig-bay'], :has(> .modal:not([hidden]))) .menu-key {
+	color: var(--hangar-ui-paper);
+	font-family: var(--display);
+	font-weight: 700;
+	font-size: clamp(13px, 2vw, 16px);
+}
+#game:is([data-screen='title'], [data-screen='rig-bay'], :has(> .modal:not([hidden]))) :is(#controller-status, #audio-status) { color: var(--hangar-ui-muted); }
+#game :is(.modal, #launch) .input-keycap,
+#game:is([data-screen='title'], [data-screen='rig-bay'], :has(> .modal:not([hidden]))) .menu-controls .input-keycap {
+	border-radius: 2px;
+	box-shadow: 0 2px #8e827055;
+}
+#game :is(.modal, #launch) .input-control:not([data-shape='dpad'], [data-shape^='mouse']),
+#game:is([data-screen='title'], [data-screen='rig-bay'], :has(> .modal:not([hidden]))) .menu-controls .input-control:not([data-shape='dpad'], [data-shape^='mouse']) {
+	color: var(--hangar-ui-paper);
+	background: var(--hangar-ui-floor);
+	border-color: var(--hangar-ui-rail);
+}
+#game:is([data-screen='title'], [data-screen='intro'], [data-screen='rig-bay'], [data-screen='launch'], :has(> .modal:not([hidden]))) #mobile-fullscreen {
+	color: var(--hangar-ui-paper);
+	background: var(--hangar-ui-floor);
+	border-color: var(--hangar-ui-edge);
+}
+
 /* Dialog content uses measured pages. The action row never leaves the window. */
 #game .modal {
 	left: 50%; top: calc((100% - var(--dialog-bottom-gap, 70px)) / 2); bottom: auto;
 	transform: translate(-50%, -50%); width: min(760px, calc(100% - 32px));
 	height: min(680px, calc(100% - var(--dialog-bottom-gap, 70px) - 24px)); max-height: none;
-	padding: 22px 26px 16px; display: flex; flex-direction: column; gap: 14px; overflow: clip;
+	padding: 20px 26px 16px; display: flex; flex-direction: column; gap: 14px; overflow: clip;
+	color: var(--hangar-ui-paper);
+	--muted: var(--hangar-ui-muted);
+	--paper: var(--hangar-ui-paper);
+	--amber: var(--hangar-ui-amber);
+	--border: var(--hangar-ui-edge);
+	border: 1px solid var(--hangar-ui-rail);
+	border-block-start: 3px solid var(--hangar-ui-amber);
+	background: linear-gradient(130deg, #312b24, var(--hangar-ui-panel) 44%);
+	box-shadow: 0 0 0 100vmax #100e0db8, 0 24px 88px #0009;
 }
 #game .modal.compact { width: min(580px, calc(100% - 32px)); }
+#game :is(#confirm, #save-conflict, #escape-result, #training-result) { height: min(270px, calc(100% - var(--dialog-bottom-gap, 70px) - 24px)); }
+#game #pause-panel { height: min(480px, calc(100% - var(--dialog-bottom-gap, 70px) - 24px)); }
 #game .handbook-modal { width: min(900px, calc(100% - 32px)); }
 #game #training-setup { height: auto; max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 24px); }
-.training-fit { min-height: 0; overflow-y: auto; padding: 2px; display: grid; gap: 12px; }
+.training-fit { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px; display: grid; gap: 12px; }
 .training-mounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
 .training-mount { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 7px; }
-.training-fit-summary { color: var(--cyan); font: 11px/1.5 var(--mono); margin: 0; }
+.training-fit-summary { color: var(--amber); font: 11px/1.5 var(--mono); margin: 0; padding: 5px 8px; border-inline-start: 2px solid var(--amber); background: var(--hangar-ui-floor); }
+#game .modal .choice-field { background: var(--hangar-ui-floor); border-inline-start: 3px solid var(--hangar-ui-rail); }
+#game .modal .choice-field::after { border-color: var(--amber); }
+#game .modal .choice-field:not(:disabled):is(:hover, :focus) {
+	background: var(--hangar-ui-raised); border-inline-start-color: var(--amber);
+}
+#game:is([data-screen='training-setup'], [data-screen='situation-setup'], [data-screen='settings']) #choice-picker { background: #141310e0; }
+#game:is([data-screen='training-setup'], [data-screen='situation-setup'], [data-screen='settings']) #choice-picker .choice-panel {
+	--paper: var(--hangar-ui-paper);
+	--muted: var(--hangar-ui-muted);
+	--border: var(--hangar-ui-edge);
+	--amber: var(--hangar-ui-amber);
+	color: var(--paper);
+	border-block-start-color: var(--amber);
+	background: var(--hangar-ui-panel);
+}
+#game:is([data-screen='training-setup'], [data-screen='situation-setup'], [data-screen='settings']) #choice-picker button {
+	color: var(--hangar-ui-paper);
+	background: var(--hangar-ui-floor);
+	border-inline-start: 3px solid var(--hangar-ui-rail);
+}
+#game:is([data-screen='training-setup'], [data-screen='situation-setup'], [data-screen='settings']) #choice-picker button:is([aria-pressed='true'], :focus) {
+	color: var(--hangar-ui-amber);
+	background: var(--hangar-ui-raised);
+	border-color: var(--hangar-ui-amber);
+}
 #game :is(#situation-setup, #situation-result) { height: auto; max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 24px); }
 .situation-plan, .situation-conditions, .situation-lineup, .situation-seat { display: grid; gap: 10px; }
 .situation-plan { align-content: start; min-width: 0; }
@@ -20,7 +102,7 @@
 .situation-seat { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; }
 .situation-seat > :only-child { grid-column: 1 / -1; }
 .situation-briefing, .situation-report p { color: var(--muted); font: 14px/1.45 Arial, sans-serif; margin: 0; }
-.situation-report { display: grid; gap: 12px; min-height: 0; overflow-y: auto; }
+.situation-report { display: grid; gap: 12px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .situation-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 0; }
 @media (max-width: 600px), (max-height: 420px) {
 	.situation-conditions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -28,14 +110,27 @@
 	.situation-lineup { grid-template-columns: minmax(0, 1fr); }
 }
 .dialog-heading { flex: none; }
+.dialog-heading .eyebrow { color: var(--amber); }
+.dialog-heading .eyebrow::before {
+	content: '';
+	display: inline-block;
+	width: 6px;
+	height: 4px;
+	margin: 0 15px 2px 0;
+	background: var(--amber);
+	box-shadow: 8px 0 var(--amber);
+}
 .dialog-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dialog-topic-shortcut { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font: 11px var(--mono); }
 #game[data-input='touch'] .dialog-topic-shortcut { display: none; }
-#game .dialog-heading h2 { font-size: clamp(25px, 3.7vw, 38px); margin: 8px 0 0; line-height: 1.04; }
+#game .dialog-heading h2 { font-size: clamp(28px, 4vw, 46px); margin: 6px 0 0; line-height: .98; text-transform: uppercase; }
 .dialog-tabs { display: flex; flex: none; gap: 5px; }
-.dialog-tabs button { flex: 1; min-width: 0; min-height: 38px; padding: 8px 7px; font: 10px var(--mono); background: transparent; border-bottom: 2px solid var(--border); }
-.dialog-tabs button[aria-pressed='true'] { color: var(--amber); border-bottom-color: var(--amber); background: #f3b35b0b; }
-.dialog-body { flex: 1; min-height: 0; overflow: clip; }
+.dialog-tabs button { flex: 1; min-width: 0; min-height: 40px; padding: 8px 4px; font: 700 12px/1 var(--display); letter-spacing: .035em; background: var(--hangar-ui-floor); border-bottom: 3px solid var(--hangar-ui-rail); }
+.dialog-tabs button:hover { background: var(--hangar-ui-raised); border-color: var(--amber); }
+.dialog-tabs button:focus-visible, #game.using-gamepad .dialog-tabs button:focus { outline-offset: -3px; }
+.dialog-tabs button[aria-pressed='true']:focus-visible, #game.using-gamepad .dialog-tabs button[aria-pressed='true']:focus { outline-color: var(--hangar-ui-ink); }
+.dialog-tabs button[aria-pressed='true'] { color: var(--hangar-ui-ink); border-color: var(--amber); background: var(--amber); border-bottom-color: #ffdaa0; }
+.dialog-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 [data-dialog-topic] { height: 100%; display: flex; flex-direction: column; gap: 14px; }
 [data-dialog-topic] > * { flex: none; margin: 0; }
 [data-dialog-items] { display: contents; }
@@ -47,46 +142,68 @@
 #game .dialog-body .toggle-setting:has(input:focus-visible),
 #game.using-gamepad .dialog-body .toggle-setting:has(input:focus) { outline: 2px solid var(--amber); outline-offset: -2px; }
 [data-dialog-topic] > p { font: 14px/1.6 Arial, sans-serif; color: var(--muted); }
-[data-dialog-topic] > .result-story { color: var(--paper); border-inline-start: 2px solid var(--cyan); padding-inline-start: 10px; }
+[data-dialog-topic] > .result-story { color: var(--paper); border-inline-start: 2px solid var(--amber); padding-inline-start: 10px; }
 [data-dialog-topic] > h3 { font-size: 11px; }
 .dialog-item-offpage, .dialog-source-split { display: none !important; }
 .dialog-pager { flex: none; min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.dialog-pager button { min-height: 32px; padding: 4px 10px; font: 10px var(--mono); display: inline-flex; align-items: center; gap: 7px; }
-.dialog-pager > span { font: 10px var(--mono); color: var(--muted); }
+.dialog-pager button { min-height: 36px; padding: 4px 10px; font: 700 12px/1 var(--display); background: var(--hangar-ui-floor); display: inline-flex; align-items: center; gap: 7px; }
+.dialog-pager > span { font: 700 11px var(--mono); color: var(--amber); }
 .dialog-single-page { visibility: hidden; }
 .dialog-actions { flex: none; display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
-#game .dialog-actions > button { flex: 1; min-height: 42px; padding: 10px 12px; font: 10px/1.4 var(--mono); letter-spacing: .4px; }
+#game .dialog-actions > button { flex: 1; min-height: 42px; padding: 8px 12px; font: 700 14px/1.1 var(--display); letter-spacing: .04em; }
 #game .dialog-actions .text-button { border: 1px solid var(--border); }
+#game .modal :is(.secondary, .text-button, .manual-binding, .dialog-pager button) { background: var(--hangar-ui-floor); }
+#game .modal :is(.secondary, .text-button, .dialog-pager button):not(:disabled):is(:hover, :focus) {
+	background: var(--hangar-ui-raised);
+	border-color: var(--amber);
+}
+#game .modal .primary {
+	color: var(--hangar-ui-ink);
+	border-inline-start: 3px solid #ffe0a6;
+	clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
+}
+#game .modal .primary:not(:disabled):focus-visible,
+#game.using-gamepad .modal .primary:focus { outline: 2px solid var(--hangar-ui-ink); outline-offset: -5px; }
+#game #pause-panel [data-dialog-topic] > button {
+	min-height: 44px;
+	font: 700 16px/1.1 var(--display);
+	letter-spacing: .045em;
+	border-inline-start: 3px solid var(--hangar-ui-rail);
+}
+#game #pause-panel [data-dialog-topic] > button:is(:hover, :focus) { border-inline-start-color: var(--amber); }
 #game .dialog-body .slider-setting { margin: 0; gap: 10px; padding: 9px 0; }
 #game .dialog-body .toggle-setting { margin: 0; padding: 6px; align-items: center; }
 #game .dialog-body .toggle-setting small { font-size: 12px; }
-#game .dialog-body .difficulty-picker span { padding: 12px 7px; }
+#game .dialog-body .difficulty-picker span { padding: 12px 5px; background: var(--hangar-ui-floor); }
+#game .dialog-body .difficulty-picker input:checked + span { color: var(--hangar-ui-ink); background: var(--amber); }
+#game .dialog-body .difficulty-picker input:focus + span { outline-color: var(--hangar-ui-ink); }
+#game .dialog-body .difficulty-picker input:not(:checked):focus + span { outline-color: var(--amber); }
 #game .dialog-body .muted { font: 11px/1.6 var(--mono); }
-.manual-binding { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 18px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.manual-binding { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; padding: 7px 8px; border-inline-start: 2px solid var(--hangar-ui-rail); }
 .manual-binding b { font: 12px/1.5 var(--mono); color: var(--paper); }
-.manual-binding span { font: 14px/1.5 Arial, sans-serif; color: var(--muted); }
+.manual-binding > span { font: 14px/1.5 Arial, sans-serif; color: var(--muted); }
 #game .dialog-body .report-score { margin: 0; gap: 20px; }
-#game .dialog-body #result-rank { min-width: 68px; height: 68px; font-size: 44px; }
+#game .dialog-body #result-rank { min-width: 68px; height: 68px; font-size: 44px; background: var(--hangar-ui-floor); box-shadow: inset 3px 0 var(--amber); }
 #game .dialog-body .report-score b { font-size: 35px; }
 #game .dialog-body .result-stats { padding: 15px 0; }
 #game .dialog-body .result-stats small { font-size: 8px; }
 #game .dialog-body .report-upgrades { font: 11px/1.6 var(--mono); }
-.sortie-rig { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 12px; align-items: center; border-inline-start: 2px solid var(--cyan); background: #0b2023; padding: 6px 9px; }
+.sortie-rig { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 12px; align-items: center; border-inline-start: 2px solid var(--hangar-ui-rail); background: var(--hangar-ui-floor); padding: 6px 9px; }
 .sortie-rig strong, .sortie-rig small { display: block; }
 .sortie-rig strong { font: 16px/1.1 var(--display); letter-spacing: .04em; text-transform: uppercase; }
 .sortie-rig small, .sortie-rig output, .sortie-rig button { font: 10px/1.35 var(--mono); }
 .sortie-rig small { color: var(--muted); }
 .sortie-rig[data-condition='disabled'] { border-color: var(--danger); }
 .sortie-rig[data-condition='damaged'] { border-color: var(--amber); }
-.sortie-rig button { padding: 7px 8px; }
-.day-report-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; border-inline-start: 2px solid var(--cyan); background: #11232a; padding: 8px 10px; }
+.sortie-rig button { min-height: 36px; padding: 7px 8px; background: var(--hangar-ui-raised); }
+.day-report-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; border-inline-start: 2px solid var(--hangar-ui-rail); background: var(--hangar-ui-floor); padding: 8px 10px; }
 .day-report-line[data-outcome='lost'] { border-color: var(--danger); }
 .day-report-line h3 { margin: 3px 0 0; font: 21px/1.05 var(--display); }
 .day-report-line > strong { color: var(--cyan); font: 11px/1.3 var(--mono); text-transform: uppercase; }
 .day-report-line[data-outcome='lost'] > strong { color: var(--danger); }
 .day-report-line > small { grid-column: 1 / -1; color: var(--muted); font: 10px/1.5 var(--mono); }
 #game .dialog-body .day-report-checks { margin: 0; color: var(--muted); font: 11px/1.4 var(--mono); }
-#game.couch-ui .dialog-body p, #game.couch-ui .manual-binding span { font-size: 17px; }
+#game.couch-ui .dialog-body p, #game.couch-ui .manual-binding > span { font-size: 17px; }
 #game.couch-ui .manual-binding b, #game.couch-ui .dialog-tabs button, #game.couch-ui .dialog-pager button { font-size: 13px; }
 #game.couch-ui .dialog-body .toggle-setting, #game.couch-ui .dialog-body .slider-setting { font-size: 13px; }
 #game.couch-ui .dialog-body .toggle-setting small { font-size: 15px; }
@@ -94,14 +211,14 @@
 	#game .modal { width: calc(100% - 24px); padding: 16px 16px 12px; gap: 11px; }
 	#game .modal.compact, #game .handbook-modal { width: calc(100% - 24px); }
 	.handbook-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-	.dialog-tabs button { min-height: 34px; font-size: 9px; }
-	.manual-binding { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 5px 0; }
+	.dialog-tabs button { min-height: 36px; font-size: 11px; }
+	.manual-binding { grid-template-columns: 92px minmax(0, 1fr); gap: 10px; padding: 5px 6px; }
 	.manual-binding b { font-size: 10px; }
-	.manual-binding span { font-size: 13px; }
-	#game .dialog-actions > button { font-size: 9px; padding: 9px; }
+	.manual-binding > span { font-size: 13px; }
+	#game .dialog-actions > button { min-height: 44px; font-size: 12px; padding: 7px; gap: 5px; }
 	#game .dialog-body .result-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 0; gap: 12px; }
 	#game .dialog-body .result-stats b { font-size: 22px; }
-	#game.couch-ui .dialog-body p, #game.couch-ui .manual-binding span { font-size: 15px; }
+	#game.couch-ui .dialog-body p, #game.couch-ui .manual-binding > span { font-size: 15px; }
 	#game.couch-ui .manual-binding b, #game.couch-ui .dialog-tabs button { font-size: 10px; }
 }
 @media (max-width: 530px) {
@@ -110,7 +227,7 @@
 @media (max-height: 520px) {
 	#game .modal { padding: 12px 18px 10px; gap: 8px; }
 	#game .dialog-heading h2 { font-size: 25px; margin-top: 4px; }
-	.dialog-heading > .eyebrow, .dialog-heading .eyebrow { font-size: 8px; }
+	.dialog-heading .eyebrow { font-size: 9px; }
 	.dialog-tabs button { min-height: 30px; padding: 5px; }
 	[data-dialog-topic] { gap: 9px; }
 	[data-dialog-topic] > p { font-size: 13px; line-height: 1.5; }
@@ -128,7 +245,7 @@
 	.training-mounts { row-gap: 7px; }
 }
 @media (max-height: 420px) {
-	.dialog-heading > .eyebrow, .dialog-heading .eyebrow { display: none; }
+	.dialog-heading .eyebrow { letter-spacing: .08em; }
 	#game .dialog-heading h2 { margin-top: 0; font-size: 23px; }
 	.manual-binding { padding-block: 3px; }
 }
@@ -139,24 +256,37 @@
 		gap: 5px;
 	}
 	.handbook-tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-	#game .dialog-tabs button { min-height: 30px; padding: 4px 2px; font: 10px/1.2 var(--mono); }
+	#game .dialog-tabs button { min-height: 32px; padding: 4px 2px; }
 	#game .dialog-body .difficulty-picker span { padding-block: 8px; }
 	#game #training-setup { max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 12px); }
 	.training-fit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.training-mounts { grid-column: 1 / -1; grid-row: 2; }
 	.training-fit-summary { grid-column: 2; grid-row: 1; align-self: end; padding-bottom: 3px; }
+	#situation-fit .training-fit-summary { grid-column: 1 / -1; grid-row: 2; }
+	#situation-fit .situation-conditions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 #game #field-trial { height: auto; max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 24px); }
-.field-brief { display: grid; min-height: 0; overflow-y: auto; gap: 14px; }
+.field-brief { display: grid; min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: 14px; }
 .field-orders { display: grid; gap: 8px; align-content: center; }
 .field-orders p { margin: 0; color: var(--paper); font: 15px/1.4 Arial, sans-serif; }
 .field-orders b { color: var(--amber); }
 .field-orders b:last-child { color: var(--cyan); }
-.field-survey { margin: 0; background-color: #162527; background-image: linear-gradient(#829b9220 1px, transparent 1px), linear-gradient(90deg,#829b9220 1px,transparent 1px); background-size: 32px 32px; border: 1px solid var(--border); }
+.field-survey { margin: 0; background-color: #252534; background-image: linear-gradient(#aba8e925 1px, transparent 1px), linear-gradient(90deg, #aba8e925 1px, transparent 1px); background-size: 24px 24px; border: 1px solid var(--border); }
 .field-survey svg { display: block; width: 100%; height: clamp(130px, 29dvh, 225px); }
-.field-survey figcaption { display: flex; flex-wrap: wrap; gap: 3px 14px; padding: 5px 9px; background: #162527; color: var(--muted); font: 11px var(--mono); }
+.field-survey figcaption { display: flex; flex-wrap: wrap; gap: 3px 14px; padding: 5px 9px; background: #272633; color: var(--muted); font: 11px var(--mono); }
 @media (max-height: 520px) and (min-width: 550px) {
 	.field-brief { grid-template-columns: 1fr 1fr; align-items: center; }
 	.field-survey svg { height: 105px; }
 	.field-orders p { font-size: 13px; }
+}
+
+@media (max-width: 520px) {
+	#game.has-mobile-fullscreen:is([data-screen='training-setup'], [data-screen='situation-setup'], [data-screen='settings']) #choice-picker { padding-top: calc(max(14px, env(safe-area-inset-top)) + 48px); }
+	#game.has-mobile-fullscreen .modal { margin-top: 20px; height: min(680px, calc(100% - var(--dialog-bottom-gap, 70px) - 64px)); }
+	#game.has-mobile-fullscreen :is(#confirm, #save-conflict, #escape-result, #training-result) { height: min(270px, calc(100% - var(--dialog-bottom-gap, 70px) - 64px)); }
+	#game.has-mobile-fullscreen :is(#training-setup, #situation-setup, #situation-result, #field-trial) { height: auto; max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 64px); }
+}
+@media (max-height: 520px) and (min-height: 340px) {
+	#game[data-input='touch'] .dialog-actions > button { min-height: 44px; }
+	#game[data-input='touch'] .dialog-pager button { min-height: 40px; }
 }

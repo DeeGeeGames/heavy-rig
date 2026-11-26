@@ -1,13 +1,76 @@
 /* Direct-fire cockpit. Input changes its prompts and scale, never its geometry.
    Keep this separate from the touch dock and the company/menu surfaces. */
+#game {
+	--rig-ink: #171a19;
+	--rig-steel: #242926;
+	--rig-panel: linear-gradient(125deg, #282c29f5, #151918f5);
+	--rig-edge: #8c928662;
+	--rig-rule: #9d9e8a38;
+	--rig-ivory: var(--paper);
+	--rig-label: #cccabb;
+	--rig-amber: var(--amber);
+	--rig-grid: #a5add522;
+	--rig-notch: linear-gradient(135deg, transparent 47%, var(--rig-ink) 48%);
+	--rig-hazard: repeating-linear-gradient(125deg, var(--rig-amber) 0 3px, transparent 3px 6px);
+}
+#hud { color: var(--rig-ivory); }
+#hud .mission-bar { background: linear-gradient(#151817e8, #15181779 55%, transparent); }
+.mission-heading .insignia {
+	color: var(--rig-ivory);
+	border-color: var(--rig-edge);
+	box-shadow: inset 0 -2px var(--rig-amber);
+	background: var(--rig-panel);
+}
+.mission-heading .eyebrow { color: var(--rig-amber); }
+#hud :is(#status, #input-mode) { color: var(--rig-label); }
+#hud :is(.system-buttons button, .target-controls button, .coolant-button) {
+	border-color: var(--rig-edge);
+	background: var(--rig-panel);
+}
+#hud :is(.system-buttons button, .target-controls button, .coolant-button):hover:not(:disabled) { border-color: var(--rig-amber); }
+#hud #open-squad-orders { border-inline-start: 2px solid var(--rig-amber); }
+#hud .weapon-console-heading .eyebrow {
+	color: var(--rig-ivory);
+	background: var(--rig-hazard) left center / 12px 7px no-repeat;
+	padding-inline-start: 18px;
+}
+#hud #weapon-hint { color: var(--rig-label); }
+#hud :is(.frame-readout, .relay-readout) {
+	border-color: var(--rig-edge);
+	background: var(--rig-panel);
+}
+#hud .relay-readout {
+	border-inline-start-color: var(--cyan);
+	background: linear-gradient(90deg, #92d6c515, transparent 40%), var(--rig-panel);
+}
+#hud .frame-readout {
+	border-block-start: 2px solid var(--rig-amber);
+	background:
+		linear-gradient(var(--rig-grid) 1px, transparent 1px) top right / 8px 8px,
+		linear-gradient(90deg, var(--rig-grid) 1px, transparent 1px) top right / 8px 8px,
+		var(--rig-panel);
+	background-size: 64px 32px, 64px 32px, auto;
+	background-repeat: no-repeat;
+}
+#hud .frame-readout :is(.eyebrow, .heat-heading, .drive-heading, .load-heading) { color: var(--rig-label); }
+#hud .frame-readout :is(.armor-track, .heat-track), #hud .relay-readout .track {
+	background: #d5dbc828;
+	mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+}
+#hud .throttle-track { background: repeating-linear-gradient(90deg, #9ca5c039 0 1px, #9ca5c01a 1px calc(100% / 20)); }
+#hud .throttle-track i { z-index: 1; background: var(--rig-amber); }
+#hud .throttle-track>span { z-index: 2; background: var(--rig-ivory); }
+#hud :is(.field-message, #escape-guide) { background: var(--rig-panel); }
+#hud .field-message { color: var(--rig-amber); }
+#game.hull-critical #hud .frame-readout { border-block-start-color: var(--danger); }
+#game.hull-critical #armor-value, #game.reactor-locked #heat-value { color: var(--danger); }
+
 .cockpit-frame, .drive-assist, #drive-prompts { display: none; }
 .weapon-ammo { display: none; }
 .load-heading { margin-top: 6px; font: 8px/1.4 var(--mono); color: var(--muted); }
-.weapon[data-resource-state='dry'] em { color: var(--amber); }
 #game:not(.touch-enabled) {
 	--cockpit-edge: clamp(14px, 2vw, 32px);
 	--cockpit-label: 10px;
-	--cockpit-panel: linear-gradient(120deg, #14272bf5, #0c191ef2);
 }
 #game:where(.couch-ui):not(.touch-enabled) { --cockpit-label: clamp(12px, 1vw, 16px); }
 #game:not(.touch-enabled) .mission-bar { padding: var(--cockpit-edge); gap: 24px; }
@@ -19,17 +82,17 @@
 #game:not(.touch-enabled) .system-buttons { flex-shrink: 0; }
 #game:not(.touch-enabled) .system-buttons button { min-height: 36px; font-size: var(--cockpit-label); }
 #game:not(.touch-enabled) .left-instruments { left: var(--cockpit-edge); bottom: var(--cockpit-edge); top: auto; right: auto; width: 240px; display: block; }
-#game:not(.touch-enabled) .relay-readout { display: flex; margin: 0 0 8px; padding: 9px 12px; gap: 10px; background: var(--cockpit-panel); }
+#game:not(.touch-enabled) .relay-readout { display: flex; margin: 0 0 8px; padding: 9px 12px; gap: 10px; }
 #game:not(.touch-enabled) .relay-readout .eyebrow { font-size: var(--cockpit-label); letter-spacing: .5px; }
 #game:not(.touch-enabled) .relay-readout b { font-size: 16px; }
 #game:not(.touch-enabled) .signal-icon { font-size: 22px; }
-#game:not(.touch-enabled) .frame-readout { display: block; padding: 12px 14px; background: var(--cockpit-panel); border: 1px solid var(--border); border-top: 2px solid var(--cyan); }
-#game:not(.touch-enabled) .cockpit-frame { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+#game:not(.touch-enabled) .frame-readout { display: block; padding: 12px 14px; }
+#game:not(.touch-enabled) .cockpit-frame { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--rig-rule); }
 .cockpit-frame b { font: 20px var(--display); letter-spacing: 1px; }
-.cockpit-frame span { font: 9px var(--mono); color: var(--muted); }
+.cockpit-frame span { font: 9px var(--mono); color: var(--rig-amber); }
 #game:not(.touch-enabled) .readout-heading { display: flex; gap: 10px; }
 #game:not(.touch-enabled) .readout-heading .eyebrow { font-size: var(--cockpit-label); letter-spacing: .5px; max-width: none; }
-#game:not(.touch-enabled) .readout-heading strong { font: 28px/1 var(--display); }
+#game:not(.touch-enabled) .readout-heading strong { font: 32px/1 var(--display); }
 #game:not(.touch-enabled) .armor-track { display: block; height: 4px; margin: 7px 0 12px; }
 #game:not(.touch-enabled) .heat-heading, #game:not(.touch-enabled) .drive-heading { font: var(--cockpit-label)/1.4 var(--mono); display: flex; flex-wrap: wrap; width: auto; }
 #game:not(.touch-enabled) .heat-track { width: auto; margin: 5px 0 0; }
@@ -45,20 +108,18 @@
 .touch-enabled .squad-contact { font-size: 8px; }
 #game:not(.touch-enabled) #drive-prompts {
 	display: flex; flex-wrap: wrap; gap: 6px 12px; padding-top: 9px; margin-top: 9px;
-	border-top: 1px solid var(--border); font: var(--cockpit-label)/1.3 var(--mono); color: var(--muted);
+	border-top: 1px solid var(--rig-rule); font: var(--cockpit-label)/1.3 var(--mono); color: var(--rig-label);
 }
 .drive-prompt { display: inline-flex; align-items: center; gap: 6px; }
 .drive-prompt:first-child { flex-basis: 100%; }
 #game:not(.touch-enabled) .combat-prompt, #game:not(.touch-enabled) .weapon-prompt { --input-icon-size: 22px; color: var(--paper); }
 #game:not(.touch-enabled) :is(.combat-prompt, .weapon-prompt) .input-keycap {
 	display: inline-flex; min-width: 20px; height: 20px; padding: 0 4px; font: var(--cockpit-label)/1 var(--mono); letter-spacing: 0;
-	color: var(--paper); background: #101e24; border-color: #687f84;
+	color: var(--rig-ivory); background: var(--rig-ink); border-color: var(--rig-edge);
 }
 .input-unbound { color: var(--muted); font: 8px var(--mono); }
 #pause .combat-prompt, #coolant .combat-prompt { margin-left: 4px; }
 .touch-enabled #pause-prompt { display: none; }
-#game:not(.touch-enabled).hull-critical .frame-readout { border-top-color: var(--danger); }
-#game:not(.touch-enabled).hull-critical #armor-value, #game:not(.touch-enabled).reactor-locked #heat-value { color: var(--danger); }
 #game:not(.touch-enabled) .weapon-console { right: var(--cockpit-edge); bottom: var(--cockpit-edge); width: clamp(290px, 27vw, 370px); }
 #game:not(.touch-enabled) .weapon-console-heading { margin-bottom: 8px; gap: 10px; }
 #game:not(.touch-enabled) .weapon-console-heading .eyebrow { font-size: var(--cockpit-label); letter-spacing: 1px; }
@@ -68,20 +129,33 @@
 	display: grid; grid-template-columns: 35px minmax(0, 1fr) auto; grid-template-rows: auto auto;
 	align-content: center; align-items: center; justify-items: start; gap: 3px 9px;
 	width: 100%; height: 54px; min-height: 0; padding: 8px 12px 9px 9px;
-	background: var(--cockpit-panel); border-left: 2px solid var(--weapon-color); box-shadow: none;
+	background: var(--rig-panel); border-color: var(--rig-edge); border-left: 2px solid var(--weapon-color); box-shadow: none;
 }
-#game:not(.touch-enabled) .weapon .weapon-icon { position: static; grid-column: 1; grid-row: 1 / 3; padding: 0; font: 11px var(--mono); color: var(--weapon-color); }
-#game:not(.touch-enabled) .weapon .weapon-mount { position: static; grid-column: 2; grid-row: 1; max-width: 100%; font: 9px/1.2 var(--mono); color: var(--muted); }
+#game:not(.touch-enabled) .weapon .weapon-icon { position: static; grid-column: 1; grid-row: 1 / 3; width: 100%; padding: 0 6px 1px 0; border-inline-end: 1px solid var(--rig-rule); font: 23px/1 var(--display); color: var(--weapon-color); }
+#game:not(.touch-enabled) .weapon .weapon-mount { position: static; grid-column: 2; grid-row: 1; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 9px/1.2 var(--mono); color: var(--rig-label); }
 #game:not(.touch-enabled) .weapon b { grid-column: 2; grid-row: 2; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0; font: 20px/1 var(--display); letter-spacing: .4px; }
 #game:not(.touch-enabled) .weapon small { display: block; grid-column: 3; grid-row: 1; justify-self: end; }
-#game:not(.touch-enabled) .weapon em { display: block; grid-column: 3; grid-row: 2; justify-self: end; margin: 0; font: 9px/1.2 var(--mono); color: var(--cyan); }
-#game:not(.touch-enabled) .weapon>i { height: 2px; }
-#game:not(.touch-enabled) .weapon.firing { background: #2c433bf5; border-color: var(--cyan); }
-#game:not(.touch-enabled) .weapon.firing em { color: var(--paper); }
+#game:not(.touch-enabled) .weapon em { display: block; grid-column: 3; grid-row: 2; justify-self: end; margin: 0; font: 9px/1.2 var(--mono); color: var(--rig-amber); }
+#game:not(.touch-enabled) .weapon>i { height: 2px; background: var(--rig-amber); mask-image: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); }
+#game:not(.touch-enabled) .weapon:is(:hover:not(:disabled), :focus-visible) { border-color: var(--rig-amber); }
+#game:not(.touch-enabled) .weapon.firing {
+	background: var(--rig-notch) right bottom / 9px 9px no-repeat, var(--rig-amber);
+	color: var(--rig-ink);
+	border-color: var(--rig-amber);
+	box-shadow: inset 0 0 0 1px #3f2a1466;
+}
+#game:not(.touch-enabled) .weapon.firing :is(.weapon-icon, .weapon-mount, em) { color: var(--rig-ink); }
+#game:not(.touch-enabled) .weapon.firing .weapon-icon { border-inline-end-color: #3f2a1466; }
+#game:not(.touch-enabled) .weapon.firing>i { background: #584228; }
+#game:not(.touch-enabled) .weapon[data-resource-state='cooldown']:not(.firing) em { color: var(--rig-label); }
+#game:not(.touch-enabled) .weapon[data-resource-state='cooldown']:not(.firing)>i { background: var(--rig-label); }
 #game:not(.touch-enabled) .weapon.locked { border-left-color: var(--danger); }
 #game:not(.touch-enabled) .weapon.locked em { color: var(--danger); }
+#game:not(.touch-enabled) .weapon.locked>i { background: var(--danger); }
 #game:not(.touch-enabled) .weapon.empty { border-left-color: var(--muted); }
-#game:not(.touch-enabled) .coolant-button { min-height: 36px; padding: 7px 11px; margin-top: 6px; align-items: center; font: var(--cockpit-label)/1.4 var(--mono); background: var(--cockpit-panel); }
+#game:not(.touch-enabled) .weapon.empty:not(.locked) em { color: var(--rig-label); }
+#game:not(.touch-enabled) .coolant-button { min-height: 36px; padding: 7px 11px; margin-top: 6px; align-items: center; font: var(--cockpit-label)/1.4 var(--mono); }
+#game:not(.touch-enabled) .training-guide { background: var(--rig-panel); }
 #game:not(.touch-enabled) .training-guide, #game:not(.touch-enabled) #escape-guide { top: 108px; left: var(--cockpit-edge); right: auto; width: min(390px, calc(100% - 28px)); max-width: none; transform: none; padding: 12px 15px; }
 #game:not(.touch-enabled) .training-guide b { font-size: 23px; }
 #game:not(.touch-enabled) .training-guide p { font-size: 13px; margin: 7px 0; }
@@ -92,7 +166,8 @@
 #game:where(.couch-ui):not(.touch-enabled) .weapon-console { width: clamp(320px, 29vw, 440px); }
 #game:where(.couch-ui):not(.touch-enabled) .weapon { height: 62px; grid-template-columns: 42px minmax(0, 1fr) auto; }
 #game:where(.couch-ui):not(.touch-enabled) .weapon b { font-size: 24px; }
-#game:where(.couch-ui):not(.touch-enabled) .weapon :is(.weapon-mount, .weapon-icon, em) { font-size: var(--cockpit-label); }
+#game:where(.couch-ui):not(.touch-enabled) .weapon :is(.weapon-mount, em) { font-size: var(--cockpit-label); }
+#game:where(.couch-ui):not(.touch-enabled) .weapon .weapon-icon { font-size: 27px; }
 #game:where(.couch-ui):not(.touch-enabled) .cockpit-frame b { font-size: 24px; }
 #game:where(.couch-ui):not(.touch-enabled) .cockpit-frame span, #game:where(.couch-ui):not(.touch-enabled) .drive-assist { font-size: 10px; }
 #game:where(.couch-ui):not(.touch-enabled) .training-guide { width: min(460px, calc(100% - 28px)); }
@@ -145,7 +220,8 @@
 	#game:not(.touch-enabled) .weapon-console { width: 280px; }
 	#game:not(.touch-enabled) .weapon { height: 48px; padding: 5px 8px; gap: 2px 7px; }
 	#game:not(.touch-enabled) .weapon b { font-size: 18px; }
-	#game:not(.touch-enabled) .weapon :is(.weapon-mount, .weapon-icon, em) { font-size: 8px; }
+	#game:not(.touch-enabled) .weapon :is(.weapon-mount, em) { font-size: 8px; }
+	#game:not(.touch-enabled) .weapon .weapon-icon { font-size: 20px; }
 	#game:not(.touch-enabled) .coolant-button { min-height: 30px; padding-block: 5px; }
 	#game:not(.touch-enabled) .training-guide, #game:not(.touch-enabled) #escape-guide { top: 76px; width: 300px; padding: 8px 11px; }
 	#game:not(.touch-enabled) .training-guide b { font-size: 18px; margin-top: 3px; }
@@ -157,3 +233,39 @@
 .target-controls button { flex: 1; min-height: 32px; padding: 5px; font: 10px var(--mono); }
 .target-controls .combat-prompt { margin-left: 4px; }
 .touch-enabled .target-controls { display: none; }
+
+/* Keep the short portrait instruments attached to the header, even when mission copy wraps. */
+@media (orientation: portrait) and (max-height: 560px) {
+	.touch-enabled:not(.training-active) #hud { position: absolute; inset: 0; pointer-events: none; }
+	.touch-enabled:not(.training-active) #hud .mission-bar {
+		position: relative; inset: auto; gap: 6px;
+		padding: max(6px, env(safe-area-inset-top)) var(--short-touch-right) 5px var(--short-touch-left);
+	}
+	.touch-enabled .mission-heading>div { gap: 2px; }
+	.touch-enabled #phase { letter-spacing: .4px; }
+	.touch-enabled .system-buttons button { min-width: 44px; min-height: 44px; padding: 4px 6px; }
+	.touch-enabled #mobile-fullscreen {
+		top: max(6px, env(safe-area-inset-top)); right: var(--short-touch-right); width: 54px; padding-inline: 0;
+	}
+	.touch-enabled.has-mobile-fullscreen .system-buttons { margin-right: 60px; }
+	.touch-enabled:not(.training-active) .left-instruments {
+		position: relative; inset: auto; gap: 4px;
+		margin-inline: var(--short-touch-left) var(--short-touch-right);
+	}
+	.touch-enabled:not(.training-active) .frame-readout {
+		min-width: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.1fr);
+		gap: 2px 6px; padding: 4px 6px;
+	}
+	.touch-enabled:not(.training-active) .readout-heading strong { font-size: 15px; }
+	.touch-enabled:not(.training-active) .readout-heading { gap: 2px; }
+	.touch-enabled:not(.training-active) .heat-heading { gap: 2px; font-size: 8px; }
+	.touch-enabled:not(.training-active) .drive-heading {
+		grid-column: 3; grid-row: 1 / 3; display: grid; gap: 2px; margin: 0; font-size: 8px;
+	}
+	.touch-enabled:not(.training-active) .load-heading { grid-column: 1 / -1; margin: 0; }
+	.touch-enabled:not(.training-active) .squad-readout { padding-top: 3px; }
+	.touch-enabled:not(.training-active) .relay-readout { flex-basis: 52px; padding: 4px; margin: 0; }
+	.touch-enabled:not(.training-active) .relay-readout .track { margin-top: 2px; }
+	.touch-enabled:not(.training-active) #hud .weapon { pointer-events: auto; }
+	.touch-enabled:not(.training-active) .field-message { top: auto; bottom: calc(var(--touch-dock) + 6px); }
+}
