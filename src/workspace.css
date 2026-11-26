@@ -63,6 +63,34 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace .ship-navigation .choice-field::after { border-color: currentColor; align-self: center; }
 .workspace .ship-navigation .choice-field:disabled { opacity: .65; }
 .workspace .ship-navigation .nav-step, .workspace-tabs .nav-step { flex: 0 0 auto; padding: 0 4px; border: 0; min-width: 28px; }
+.ship-department-picker { display: flex; gap: inherit; }
+.ship-department-tabs { display: none; }
+@media (min-width: 1024px) and (min-height: 546px) {
+	.workspace .bridge-header { grid-template-columns: max-content minmax(max-content, 1fr) minmax(min-content, max-content); column-gap: clamp(12px, 1.25vw, 24px); }
+	.workspace .career-stats { flex-wrap: wrap; }
+	.ship-department-picker { display: none; }
+	.ship-department-tabs { display: flex; gap: 2px; }
+	.workspace .ship-navigation .ship-department-tab {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		min-height: 40px;
+		padding: 4px clamp(7px, .7vw, 14px);
+		border-bottom: 2px solid transparent;
+		background: var(--console-steel);
+		color: var(--muted);
+		font: clamp(17px, 1.35vw, 22px)/1 var(--display);
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+	.workspace .ship-navigation .ship-department-tab[aria-current='page'] {
+		border-bottom-color: var(--amber);
+		background: #483722;
+		color: var(--amber);
+	}
+	.workspace .ship-navigation .ship-department-tab:hover:not(:disabled),
+	.workspace .ship-navigation .ship-department-tab:focus:not(:disabled) { background: var(--console-row); color: var(--paper); box-shadow: none; }
+}
 .workspace-tabs { display: flex; flex: none; align-items: stretch; flex-wrap: wrap; gap: 2px; min-width: 0; }
 .workspace-tabs button { padding: 4px clamp(10px, 1.35vw, 20px); min-height: 32px; border: 0; border-bottom: 2px solid transparent; font: 19px/1 var(--display); text-transform: uppercase; background: transparent; color: var(--muted); }
 .workspace-tabs button[aria-pressed='true'] { color: var(--paper); background: var(--console-steel); border-bottom-color: var(--amber); }

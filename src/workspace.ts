@@ -64,7 +64,7 @@ export const focusWorkspace = function (root: HTMLElement) {
 		?? controls.find(function (item) { return item.matches('.system-marker[aria-pressed="true"], .equipment-choice[aria-pressed="true"]'); })
 		?? controls.find(function (item) { return item.closest('.workspace-pane'); })
 		?? controls.find(function (item) { return item.matches('[data-pane-target][aria-pressed="true"]'); })
-		?? controls.find(function (item) { return item.matches('.ship-navigation .choice-field'); })
+		?? controls.find(function (item) { return item.matches('.ship-navigation .choice-field, .ship-department-tab[aria-current="page"]'); })
 		?? controls[0];
 	focusMenuControl(target ?? root);
 };
