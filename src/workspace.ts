@@ -10,6 +10,7 @@ export interface WorkspacePane {
 	scrollable?: boolean;
 }
 export interface WorkspaceView {
+	parentTab?: string;
 	id: string;
 	label: string;
 	panes: readonly string[];
@@ -99,7 +100,7 @@ export const refreshWorkspace = function (root: HTMLElement, preserveFocus = tru
 	if (!view) return;
 	root.dataset['view'] = view.id;
 	root.classList.toggle('paired-workspace', view.panes.length > 1);
-	for (const tab of root.querySelectorAll<HTMLButtonElement>('[data-pane-target]')) tab.setAttribute('aria-pressed', String(tab.dataset['paneTarget'] === view.id));
+	for (const tab of root.querySelectorAll<HTMLButtonElement>('[data-pane-target]')) tab.setAttribute('aria-pressed', String(tab.dataset['paneTarget'] === (view.parentTab ?? view.id)));
 	const panes = [...root.querySelectorAll<HTMLElement>('.workspace-pane')];
 	for (const pane of panes) { pane.hidden = !view.panes.includes(pane.dataset['pane'] ?? ''); pane.inert = pane.hidden; }
 	for (const pane of panes) {
@@ -173,8 +174,11 @@ export const workspaceBackTarget = function (root: HTMLElement) {
 };
 export const cycleWorkspaceView = function (root: HTMLElement, delta: number) {
 	if (workspaceNavigationLocked(root)) return;
-	const state = stateFor(root); const index = state.views.findIndex(function (view) { return view.id === state.active; });
-	const view = state.views[(index + delta + state.views.length) % state.views.length];
+	const state = stateFor(root);
+	const active = state.views.find(function (view) { return view.id === state.active; });
+	const tabs = state.views.filter(function (view) { return !view.parentTab; });
+	const index = tabs.findIndex(function (tab) { return tab.id === (active?.parentTab ?? state.active); });
+	const view = tabs[(index + delta + tabs.length) % tabs.length];
 	if (view) { selectWorkspacePane(root, view.id); focusWorkspace(root); }
 };
 export const revealWorkspaceElement = function (target: HTMLElement) {
@@ -219,14 +223,21 @@ export const moveWorkspaceFocus = function (root: HTMLElement, direction: MenuDi
 	moveMenuFocus(root, direction, chart ? items.filter(function (item) { return !chart.contains(item) || centerInViewport(item, chart); }) : items);
 };
 export const renderWorkspace = function (root: HTMLElement, header: TemplateResult, panes: readonly WorkspacePane[], footer: TemplateResult, initial: string, views: readonly WorkspaceView[] = panes.map(function (pane) { return { id: pane.id, label: pane.label, panes: [pane.id] }; }), hero?: TemplateResult) {
-	const state = stateFor(root); rememberWorkspaceFocus(root); state.views = views;
+	const state = stateFor(root); rememberWorkspaceFocus(root);
+	// Keep the inspected pane when a paired layout becomes a single-column drill-down.
+	const focusedPane = document.activeElement?.closest<HTMLElement>('.workspace-pane')?.dataset['pane'];
+	const nested = root.classList.contains('paired-workspace') && root.contains(document.activeElement) && views.find(function (view) {
+		return view.parentTab === state.active && view.panes.includes(focusedPane ?? '');
+	});
+	if (nested) state.active = nested.id;
+	state.views = views;
 	if (!views.some(function (view) { return view.id === state.active; })) state.active = initial;
 	root.classList.add('workspace'); root.classList.toggle('has-hangar', Boolean(hero));
 	const locked = root.dataset['picker'] === 'true';
 	render(html`${header}
 		${views.length > 1 ? html`<nav class="workspace-tabs" aria-label="Department pages">
 			<button class="nav-step" data-view-step="-1" ?disabled=${locked} aria-label="Previous department page" @click=${function () { cycleWorkspaceView(root, -1); }}><span data-menu-glyph="previousPage"></span></button>
-			${views.map(function (view) { return html`<button data-pane-target=${view.id} aria-pressed=${state.active === view.id} ?disabled=${locked} @click=${function () { selectWorkspacePane(root, view.id); }}>${view.label}</button>`; })}
+			${views.filter(function (view) { return !view.parentTab; }).map(function (view) { return html`<button data-pane-target=${view.id} aria-pressed=${state.active === view.id} ?disabled=${locked} @click=${function () { selectWorkspacePane(root, view.id); }}>${view.label}</button>`; })}
 			<button class="nav-step" data-view-step="1" ?disabled=${locked} aria-label="Next department page" @click=${function () { cycleWorkspaceView(root, 1); }}><span data-menu-glyph="nextPage"></span></button>
 		</nav>` : ''}
 		<div class="workspace-body">${hero ? html`<aside class="hangar-inspection">${hero}</aside>` : ''}${panes.map(function (pane) { return html`

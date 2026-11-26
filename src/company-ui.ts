@@ -32,7 +32,7 @@ export interface CompanyActions {
 	openOperations: () => void;
 	removeOperation: () => void;
 	selectSkin: (skin: LiveryPresetId, focusFaction?: FactionId) => void;
-	navigate: (screen: ShipScreen) => void;
+	navigate: (screen: ShipScreen, marketTab?: CompanyView['kind']) => void;
 	selectFrame: (frameId: RigId) => void;
 	editSlot: (slot: number) => void;
 	setWeapon: (weapon: WeaponId | null) => void;
@@ -108,7 +108,7 @@ export const renderShipHeader = function (campaign: Campaign, screen: ShipScreen
 
 const frameSchematic = function (frame: FrameDefinition) {
 	const width = frame.mass >= 80 ? 42 : frame.mass <= 40 ? 29 : 35;
-	return html`<svg class="company-frame-art" viewBox="0 0 240 260" role="img" aria-label=${`${frame.name} frame schematic`} style="--frame-color:${frame.color}">
+	return html`<svg class="company-frame-art" viewBox="0 0 240 260" role="img" aria-label=${`${frame.name} rig schematic`} style="--frame-color:${frame.color}">
 		<path d="M20 0V260M60 0V260M100 0V260M140 0V260M180 0V260M220 0V260M0 20H240M0 60H240M0 100H240M0 140H240M0 180H240M0 220H240M0 260H240" fill="none" stroke="currentColor" stroke-width=".4" opacity=".2"/>
 		<g fill="none" stroke="currentColor" stroke-width="1"><path d="M20 55H220M20 208H220M120 15V243" opacity=".3" stroke-dasharray="3 5"/><circle cx="120" cy="126" r="91" opacity=".25"/></g>
 		<g stroke="currentColor" stroke-width="2" stroke-linejoin="bevel">
@@ -123,7 +123,7 @@ const frameSchematic = function (frame: FrameDefinition) {
 	</svg>`;
 };
 
-interface CompanyView { kind: 'weapons' | 'frames'; weapon: WeaponModelId; frame: FrameId; slot: number | null; assignment?: AssignmentPicker }
+interface CompanyView { kind: 'weapons' | 'rigs'; weapon: WeaponModelId; frame: FrameId; slot: number | null; assignment?: AssignmentPicker }
 const views = new WeakMap<HTMLElement, CompanyView>();
 const assignedPilot = function (campaign: Campaign, frame: RigId) {
 	const lineup = campaign.operations?.length ? campaign.operations.flatMap(function (operation) { return operation.lineup; }) : campaign.preferredLineup ?? campaign.lineup;
@@ -202,8 +202,8 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 		{ id: 'fleet', label: 'Rigs', items: [
 			html`<span class="eyebrow">${campaign.fleet.length} RIGS OWNED</span>`,
 			...campaign.fleet.map(function (owned) { const definition = getFrame(rigFrameId(owned.frameId)); const job = workOrderFor(campaign, owned.frameId); const pilot = assignedPilot(campaign, owned.frameId); return html`<button class="fleet-frame" data-owned-frame=${owned.frameId} aria-pressed=${owned.frameId === campaign.selectedFrame} @click=${function () { actions.selectFrame(owned.frameId); }} style="--frame-color:${definition.color}"><span>${definition.mass}T / ${definition.role}</span><b>${rigName(owned.frameId)}</b><small>${definition.variantName}${pilot ? ` · ${pilot}` : ''}</small>${renderHullIntegrity(owned.integrity)}<small>${job ? `READY DAY ${job.readyDay}` : owned.integrity <= 0 ? 'REPAIR REQUIRED' : 'AVAILABLE'}</small></button>`; }),
-			...textItems('Each rig has its own equipment, condition, ammunition settings, and workshop crew. Market frames arrive with complete compatible weapon packages scaled to company reputation and standard ammunition.'),
-		], actions: html`<button class="secondary" @click=${function () { actions.navigate('market'); }}>ACQUIRE FRAME →</button><button class="secondary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
+			...textItems('Each rig has its own equipment, condition, ammunition settings, and workshop crew. Market rigs arrive with complete compatible weapon packages scaled to company reputation and standard ammunition.'),
+		], actions: html`<button class="secondary" @click=${function () { actions.navigate('market', 'rigs'); }}>ACQUIRE RIG →</button><button class="secondary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
 		{ id: 'condition', label: 'Condition', items: [
 			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.role.toUpperCase()} / FRAME ${frame.designation}</span><h2>${rigName(mech.frameId)}</h2><p class="workspace-copy">${frame.variantName} · ${assignedPilot(campaign, mech.frameId) ?? 'Unassigned'}</p></div>`,
 			renderHullIntegrity(mech.integrity),
@@ -223,7 +223,7 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 			...textItems(order ? `${order.kind === 'repair' ? 'Repairs' : 'Refit'} underway. Ready day ${order.readyDay} · ${daysLabel(order.readyDay - campaign.day)} remaining.` : changed > 0 ? `Fitting estimate: ${daysLabel(changed)}. Ready day ${campaign.day + changed}. Parts are reserved when queued. Installed weapons stay in place until work finishes.` : `${hardpointSummary(frame.id)} Select a mount to fit a compatible owned weapon. Each changed mount takes one calendar day.`),
 			...(changed > 0 && !editor.loadout.some(function (weapon) { return weapon !== null; }) ? textItems('An unarmed frame cannot deploy. Removed equipment returns to stores when the refit finishes.') : []),
 			...(story ? [] : [html`<span class="eyebrow">${campaign.active ? `ACCEPTED / ${campaign.active.title}` : 'NO CONTRACT ACCEPTED'}</span>`, ...textItems(status)]),
-		], actions: equipment ? html`<button class="secondary" @click=${actions.closePicker}>BACK TO MOUNTS</button><button class="text-button" @click=${function () { actions.closePicker(); actions.navigate('market'); }}>MARKET →</button>` : draft ? html`<button id="queue-refit" class="primary" ?disabled=${!canRefit(campaign, mech.frameId, editor.loadout, editor.reserves)} @click=${actions.queueRefit}>${changed > 0 ? `QUEUE ${daysLabel(changed)} REFIT →` : 'APPLY AMMUNITION · FREE'}</button><button class="text-button" data-discard-refit @click=${actions.discardRefit}>DISCARD DRAFT</button>` : order ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW ENGINEERING →</button>` : html`<button class="secondary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
+		], actions: equipment ? html`<button class="secondary" @click=${actions.closePicker}>BACK TO MOUNTS</button><button class="text-button" @click=${function () { actions.closePicker(); actions.navigate('market', 'weapons'); }}>MARKET →</button>` : draft ? html`<button id="queue-refit" class="primary" ?disabled=${!canRefit(campaign, mech.frameId, editor.loadout, editor.reserves)} @click=${actions.queueRefit}>${changed > 0 ? `QUEUE ${daysLabel(changed)} REFIT →` : 'APPLY AMMUNITION · FREE'}</button><button class="text-button" data-discard-refit @click=${actions.discardRefit}>DISCARD DRAFT</button>` : order ? html`<button class="secondary" @click=${function () { actions.navigate('engineering'); }}>VIEW ENGINEERING →</button>` : html`<button class="secondary" @click=${function () { actions.navigate('deploy'); }}>SQUAD LINEUP →</button>` },
 	];
 };
 
@@ -246,9 +246,9 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 		if (selected) { revealWorkspaceElement(selected); selected.focus({ preventScroll: true }); }
 	};
 	return [
-		{ id: 'catalogue', label: 'Catalogue', items: [
+		{ id: 'catalogue', label: weaponMarket ? 'Weapon catalogue' : 'Rig catalogue', scrollable: true, items: [
 			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function (event: Event) { view.weapon = item.modelId; select(event); }}><span><b>${item.name}</b><small>${weaponClassLabel(item.family, item.size)} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : PLAYABLE_FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function (event: Event) { view.frame = item.id; select(event); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${creditsLabel(getFrameOffer(campaign, item.id).price)}</span></button>`; })),
-			...textItems(weaponMarket ? 'Weapon purchases arrive in stores. Install them through a Mech Bay refit.' : 'Frames include the displayed weapons and standard ammunition. Packages refresh after a jump or contract. You can buy multiple copies of any variant.'),
+			...textItems(weaponMarket ? 'Weapon purchases arrive in stores. Install them through a Mech Bay refit.' : 'Rigs include the displayed weapons and standard ammunition. Packages refresh after a jump or contract. You can buy multiple copies of any variant.'),
 		] },
 		{ id: 'details', label: 'Item details', items: weaponMarket ? [
 			html`<span class="eyebrow">${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
@@ -261,15 +261,17 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 				return compatible.length ? textItems(`Compatible: ${chassis.chassisName} ${compatible.map(function (definition) { return definition.variant; }).join(' / ')}.`) : [];
 			}),
 			html`<dl class="frame-specifications"><dt>OWNED</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
-			...(!affordable ? textItems(`Need ${creditsLabel(price - campaign.credits)} more.`) : []),
 		] : [
-			html`<div style="--frame-color:${frame.color}"><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName}</p></div>`, frameSchematic(frame),
-			...textItems(frame.description), ...textItems(`BASE MASS: ${massLabel(frame.mass)} including fixed equipment. RECOMMENDED OPERATING WEIGHT: ${massLabel(frame.recommendedMass)}. Weapons and ammunition add to base mass.`), ...textItems(hardpointSummary(frame.id)), ...textItems(frame.tradeoff),
-			html`<span class="eyebrow">INCLUDED LOADOUT</span>`,
-			...getHardpoints(frame.id).flatMap(function (hardpoint, index) { const id = stock[index]; const item = id ? getWeapon(id) : undefined; return textItems(`${index + 1}. ${hardpoint.name}: ${item?.name ?? 'Empty'}${item?.ammunition ? ` / ${stockReserves[index] ?? 0} rounds` : ' / energy'}.`); }),
+			html`<div class="market-rig-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName} · ${owned} owned</p></div>${frameSchematic(frame)}</div>`,
+			...textItems(frame.description), ...textItems(frame.tradeoff),
+			html`<dl class="frame-specifications"><dt>BASE MASS</dt><dd>${massLabel(frame.mass)}</dd><dt>RECOMMENDED WEIGHT</dt><dd>${massLabel(frame.recommendedMass)}</dd></dl>`,
+			...textItems(hardpointSummary(frame.id)),
+			html`<div><span class="eyebrow">INCLUDED LOADOUT</span><dl class="frame-specifications market-loadout">${getHardpoints(frame.id).map(function (hardpoint, index) {
+				const id = stock[index]; const item = id ? getWeapon(id) : undefined;
+				return html`<dt>${hardpoint.name}</dt><dd>${item?.name ?? 'Empty'}${item?.ammunition ? ` · ${stockReserves[index] ?? 0} rounds` : item ? ' · energy' : ''}</dd>`;
+			})}</dl></div>`,
 			...textItems(`STOCK: ${loadSummary(frame.id, stock, stockReserves)}`),
-			html`<p class="workspace-copy">All stock weapons and ammunition are included. ${creditsLabel(price)}${owned ? ` · ${owned} owned` : ''}</p>`,
-		], actions: html`<button class="secondary" @click=${returnToCatalogue}>CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${!affordable || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>BUY · ${creditsLabel(price)}</button>` },
+		], actions: html`${!affordable ? html`<small class="market-shortfall">Need ${creditsLabel(price - campaign.credits)} more</small>` : ''}<button class="secondary" @click=${returnToCatalogue}>← CATALOGUE</button><button class="primary purchase-button" data-buy-weapon=${weaponMarket ? weapon.id : ''} data-buy-frame=${weaponMarket ? '' : frame.id} ?disabled=${!affordable || Boolean(campaign.deployed)} @click=${function () { if (weaponMarket) actions.buyWeapon(weapon.id); else actions.buyFrame(frame.id); }}>BUY · ${creditsLabel(price)}</button>` },
 	];
 };
 
@@ -298,7 +300,7 @@ const engineeringPanes = function (campaign: Campaign, actions: CompanyActions):
 };
 
 export const renderCompany = function (root: HTMLElement, campaign: Campaign, screen: CompanyScreen, editor: CompanyEditor, saved: boolean, actions: CompanyActions) {
-	const compact = window.matchMedia('(max-width: 560px) and (max-height: 700px)').matches;
+	const compact = window.matchMedia('(max-width: 760px), (max-width: 950px) and (max-height: 520px)').matches;
 	let view = views.get(root);
 	if (!view) { view = { kind: 'weapons', weapon: 'autocannon', frame: 'warden', slot: null }; views.set(root, view); }
 	const previousSlot = view.slot;
@@ -334,10 +336,16 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 		</div>
 		<div class="hangar-specs"><div><small>LOADED CRUISE</small><b>${installedWeight?.speed.toFixed(1)}<em>m/s</em></b></div><div><small>COOLING</small><b>${frame.cooling}<em>heat/s</em></b></div></div>
 	` : undefined;
+	const selectMarketTab = function (kind: CompanyView['kind']) {
+		const changed = view.kind !== kind;
+		view.kind = kind;
+		refresh();
+		if (changed && !compact) selectWorkspacePane(root, 'details', true);
+	};
 	const departmentViews = screen === 'market' ? [
-		{ id: 'weapons', label: 'Weapons', panes: compact ? ['catalogue'] : ['catalogue', 'details'], select: function () { view.kind = 'weapons'; refresh(); } },
-		{ id: 'frames', label: 'Frames', panes: compact ? ['catalogue'] : ['catalogue', 'details'], select: function () { view.kind = 'frames'; refresh(); } },
-		...(compact ? [{ id: 'details', label: 'Details', panes: ['details'] }] : []),
+		{ id: 'weapons', label: 'Weapons', panes: compact ? ['catalogue'] : ['catalogue', 'details'], select: function () { selectMarketTab('weapons'); } },
+		{ id: 'rigs', label: 'Rigs', panes: compact ? ['catalogue'] : ['catalogue', 'details'], select: function () { selectMarketTab('rigs'); } },
+		...(compact ? [{ id: 'details', label: 'Details', parentTab: view.kind, panes: ['details'] }] : []),
 	] : screen === 'mechbay' ? [
 		{ id: 'fleet', label: 'Rigs', panes: ['fleet'] }, { id: 'loadout', label: 'Loadout', panes: ['loadout'] }, { id: 'condition', label: 'Condition', panes: ['condition'] },
 		...(frame && supportsMechSkin(frame.id) ? [{ id: 'livery', label: 'Livery', panes: ['livery'] }] : []),

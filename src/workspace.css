@@ -210,6 +210,10 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace :is(.catalogue-item, .equipment-choice)[aria-pressed='true']:not(:disabled):not(.paged-content:has(button:focus) button) :is(small, b, span) { color: inherit; }
 #market.paired-workspace .workspace-body { grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); }
 #market.paired-workspace [data-pane='details'] { padding-inline-start: clamp(14px, 3vw, 48px); border-inline-start: 1px solid var(--border); }
+.market-rig-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.workspace .market-rig-heading .company-frame-art { width: clamp(70px, 12vw, 140px); height: auto; }
+.workspace .market-loadout dd { margin: 0; text-align: right; }
+#market .market-shortfall { flex-basis: 100%; color: var(--amber); font: 12px var(--mono); }
 .workspace [data-pane='details'] .frame-specifications { padding-block: 8px; border-block: 1px solid var(--border); }
 .workspace [data-pane='details'] .frame-specifications dt { font-size: 11px; }
 .workspace [data-pane='details'] .frame-specifications dd { font: 18px/1 var(--display); }
@@ -563,8 +567,6 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	#deploy [data-pane='squad'] .pane-actions:not(:has([data-remove-operation]))>.primary { grid-column: 1 / -1; }
 	#deploy [data-pane='squad'] .pane-actions>button { min-height: 32px; text-align: left; }
 	.maintenance-entry { grid-template-columns: minmax(0, 1fr); gap: 4px; }
-	#market.paired-workspace .workspace-body { grid-template-columns: minmax(0, 1fr); }
-	#market.paired-workspace [data-pane='details'] { padding-inline-start: 0; border-inline-start: 0; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
 	.pilot-record { padding: 7px 9px; gap: 6px 12px; }
