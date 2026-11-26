@@ -216,7 +216,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const promptDevice = function (): PromptDevice { return inputMode === 'gamepad' ? controllerFamily : inputMode; };
 	const hasRefitDraft = function () { const mech = getOwnedMech(campaign); return Boolean(mech && (editor.loadout.some(function (weapon, index) { return weapon !== mech.loadout[index]; }) || editor.reserves.some(function (rounds, index) { return rounds !== mech.reserves[index]; }))); };
 	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
-	const companyNavigationReady = function () { return companyOpen() && !navigation.transitioning && !workspaceNavigationLocked(element(navigation.screen)) && !campaignConflict && !contextLost; };
+	const companyNavigationReady = function () { return companyOpen() && !choicePicker.root && !navigation.transitioning && !workspaceNavigationLocked(element(navigation.screen)) && !campaignConflict && !contextLost; };
 	let lastSoundState = '';
 	const clearTouchFacing = function () { touchFacing.clear(); touchAimPointer = undefined; };
 	const resetInput = function () { touchZoom.reset(); acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); clearTouchFacing(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
@@ -305,7 +305,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const toggling = target?.matches('input[type="checkbox"], input[type="radio"]');
 		const canSelect = target && (target.matches('button, a') || toggling);
 		const popoverId = root?.matches('.planet-popover:popover-open') ? root.id : nothing;
-		const companyShortcuts = onCompany && !workspaceNavigationLocked(element(navigation.screen));
+		const companyShortcuts = companyNavigationReady();
 		const canGoBack = choicePicker.root || (navigation.auxiliary ? navigation.auxiliary !== 'save-conflict'
 			: root === titlePicker || onCompany || ['intro', 'rig-bay', 'escape-result', 'pause-panel', 'training-setup', 'training-result', 'situation-setup', 'situation-result'].includes(navigation.screen));
 		const backLabel = choicePicker.root || capture || pickingOrder ? 'Cancel' : navigation.auxiliary ? 'Back' : navigation.screen === 'pause-panel' ? 'Resume'
@@ -656,6 +656,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const operation = getPlannedOperation(campaign, editedOperation) ?? campaign.operations?.[0];
 		const lineup = operation?.lineup ?? campaign.preferredLineup ?? campaign.lineup;
 		renderCompany(root, campaign, navigation.screen, editor, campaignSaved, {
+			picker: choicePicker,
 			skin: profile.settings.mechSkin,
 			operation, openOperations,
 			removeOperation: function () { if (operation) removeStagedOperation(operation.contract.id); },
@@ -740,6 +741,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const refreshCampaign = function () {
 		const actions: BridgeActions = {
+			picker: choicePicker,
 			navigate: navigateShip,
 			openBoard: function () { destination = campaign.planetId; navigateShip('bridge', 'board'); },
 			editOperation: function (id) { editedOperation = id; navigateShip('deploy', 'squad'); },
@@ -769,6 +771,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				destination = id; selectedContract = undefined;
 				refreshCampaign();
 			},
+			previewContract: function (id) { selectedContract = id; },
 			selectContract: function (id, opener) {
 				if (getTransmission(campaign)?.offers.some(function (step) { return step.contract.id === id; })) destination = campaign.planetId;
 				selectedContract = id;
@@ -1859,7 +1862,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 						catch (error: unknown) { modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Hangar preview unavailable', error); }
 					}
 				}
-				hangar?.view.setFrame(rigFrameId(campaign.selectedFrame), editor.loadout.flatMap(function (weapon, slot) { return weapon === null ? [] : [slot]; }), profile.settings.mechSkin); hangar?.view.render();
+				const bay = element('mechbay');
+				const slot = editor.slot ?? Number(bay.dataset['inspectionSlot'] ?? 0);
+				hangar?.view.setFrame(rigFrameId(campaign.selectedFrame), editor.loadout.flatMap(function (weapon, index) { return weapon === null ? [] : [index]; }), profile.settings.mechSkin);
+				hangar?.view.render(bay.dataset['view'] === 'loadout' && slot < editor.loadout.length ? slot : null);
 			}
 		}
 		if (battlefieldVisible()) presentation.drawOverlay();

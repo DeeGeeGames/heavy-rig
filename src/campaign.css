@@ -69,8 +69,8 @@
 .faction-standing>div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .faction-standing b { font: 12px var(--display); letter-spacing: .5px; color: var(--faction-color); }
 .faction-standing strong { font: 17px var(--mono); }
-.faction-standing>span { display: block; font: 8px var(--mono); color: var(--muted); margin: 7px 0 9px; }
-.reputation-track { position: relative; height: 4px; background: #9eb6b419; }
+.faction-standing>span { display: block; font: 10px var(--mono); color: var(--muted); margin: 7px 0 9px; }
+.reputation-track { position: relative; height: 6px; background: #b7b8a21d; }
 .reputation-track:after { content: ''; position: absolute; height: 8px; width: 1px; top: -2px; left: 50%; background: #b4c2bd55; }
 .reputation-track i { position: absolute; height: 100%; background: var(--faction-color); }
 .campaign-log { font: 10px/1.6 var(--mono); color: var(--muted); padding: 8px 0; }
@@ -205,11 +205,11 @@
 .calendar-console p { color: var(--muted); font: 12px/1.6 Arial, sans-serif; margin-bottom: 0; }
 .calendar-actions { display: grid; gap: 10px; min-width: 180px; }
 .work-order-list { display: grid; gap: 14px; margin: 18px 0; }
-.company-empty { padding: 34px 22px; text-align: center; background: #92d6c505; border: 1px dashed var(--border); color: var(--muted); }
+.company-empty { padding: 34px 22px; text-align: center; background: var(--console-steel, #202523); border-inline-start: 2px solid var(--border); color: var(--muted); }
 .company-empty>span { display: block; font-size: 35px; color: var(--cyan); margin-bottom: 16px; }
 .company-empty>b { font: 22px var(--display); color: var(--paper); }
 .company-empty>p { font: 12px/1.6 Arial, sans-serif; }
-.work-order { border: 1px solid var(--border); border-left: 3px solid var(--amber); padding: 20px; background: #12232b; }
+.work-order { border: 0; border-bottom: 1px solid var(--border); border-left: 3px solid var(--amber); padding: 20px; background: var(--console-steel, #202523); }
 .work-order-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
 .work-order-heading h3 { font: 30px var(--display); margin: 6px 0 0; color: var(--paper); }
 .work-order-heading>strong { font: 25px var(--display); color: var(--amber); text-align: right; }
@@ -221,7 +221,7 @@
 .work-order>small { display: block; }
 .maintenance-roster>h3 { margin-bottom: 14px; }
 .maintenance-roster>.company-note { margin: 0 0 18px; }
-.maintenance-frame { padding: 20px; background: #12232b; border: 1px solid var(--border); margin-bottom: 14px; }
+.maintenance-frame { padding: 12px 0; background: transparent; margin-bottom: 14px; }
 .maintenance-frame>div:first-child { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px; }
 .maintenance-frame b { font: 26px var(--display); }
 .maintenance-frame strong { font: 23px var(--display); }

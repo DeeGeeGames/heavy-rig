@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, Box3, BoxGeometry, Color, CylinderGeometry, DirectionalLight, Fog, Group, HemisphereLight, Mesh, MeshStandardMaterial, PCFShadowMap, PerspectiveCamera, PlaneGeometry, Scene, Vector3, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, Box3, DirectionalLight, HemisphereLight, PCFShadowMap, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import { FRAME_RIGS } from './frame-rig';
 import { getFrame, type FrameId } from './frames';
 import { createGait } from './gait';
@@ -9,31 +9,26 @@ import { getLiveryPreset, supportsMechSkin, type LiveryPresetId } from './mech-s
 // This view owns no campaign state, input listeners, or animation loop. Its
 // caller renders only while the Mech Bay is visible and disposes it on teardown.
 export const createHangarPreview = function (canvas: HTMLCanvasElement) {
-	const renderer = new WebGLRenderer({ canvas, antialias: true });
+	const renderer = new WebGLRenderer({ canvas, antialias: false, alpha: true });
 	const ink = createSolidInk(renderer);
 	const scene = new Scene();
 	const camera = new PerspectiveCamera(33, 1, 1, 2200);
-	const geometries = [new PlaneGeometry(1800, 1800), new CylinderGeometry(100, 104, 3, 48), new BoxGeometry(8, 0.3, 2)] as const;
-	const materials = [
-		new MeshStandardMaterial({ color: '#1b2a2e', roughness: 0.94, metalness: 0.1 }),
-		new MeshStandardMaterial({ color: '#293d40', roughness: 0.83, metalness: 0.2 }),
-		new MeshStandardMaterial({ color: '#bd9250', roughness: 0.86, metalness: 0.1 }),
-	] as const;
 	const key = new DirectionalLight('#ffe2b8', 3.2);
-	const rim = new DirectionalLight('#91c6d0', 1.4);
+	const rim = new DirectionalLight('#a2acda', 1.6);
+	const marker = canvas.parentElement?.querySelector<HTMLElement>('.mount-pin');
+	let shownSlot: number | null = null;
 	let model: ReturnType<typeof createMech> | undefined;
 	let selectedFrame: FrameId | undefined;
 	let selectedSlots = 'all';
 	let width = 0;
 	let height = 0;
-	let pixelRatio = 0;
 	let invalidated = true;
 	let lost = false;
 	let failed = false;
 	let disposed = false;
 	const bounds = new Box3();
 	const center = new Vector3();
-	const direction = new Vector3(1, 0.48, 1.2).normalize();
+	const direction = new Vector3(1.2, 0.36, 1).normalize();
 	const right = new Vector3().crossVectors(new Vector3(0, 1, 0), direction).normalize();
 	const up = new Vector3().crossVectors(direction, right).normalize();
 	const point = new Vector3();
@@ -41,6 +36,7 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 	const contextLost = function (event: Event) {
 		event.preventDefault();
 		lost = true;
+		if (marker) marker.hidden = true;
 		canvas.dataset['hangarState'] = 'context-lost';
 	};
 	const contextRestored = function () {
@@ -58,8 +54,6 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 		ink.dispose();
 		model?.dispose();
 		model = undefined;
-		for (const geometry of geometries) geometry.dispose();
-		for (const material of materials) material.dispose();
 		key.shadow.dispose();
 		scene.clear();
 		renderer.dispose();
@@ -94,7 +88,7 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 		bounds.getCenter(center);
 		const verticalTangent = Math.tan(camera.fov * Math.PI / 360);
 		const horizontalTangent = verticalTangent * camera.aspect;
-		let distance = 80;
+		let distance = 1;
 		// Fit every corner in camera space, including the nearest gun barrels and
 		// toes. Horizontal FOV changes with the actual canvas aspect ratio.
 		for (const x of [bounds.min.x, bounds.max.x]) {
@@ -103,7 +97,7 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 					point.set(x, y, z).sub(center);
 					const horizontal = Math.abs(point.dot(right)) / horizontalTangent;
 					const vertical = Math.abs(point.dot(up)) / verticalTangent;
-					distance = Math.max(distance, point.dot(direction) + Math.max(horizontal, vertical) * 1.16);
+					distance = Math.max(distance, point.dot(direction) + Math.max(horizontal * 1.1, vertical * 1.03));
 				}
 			}
 		}
@@ -111,6 +105,7 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 		camera.lookAt(center);
 		camera.far = Math.max(2200, distance * 2);
 		camera.updateProjectionMatrix();
+		camera.updateMatrixWorld();
 	};
 
 	try {
@@ -119,28 +114,8 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 		renderer.shadowMap.enabled = true;
 		renderer.shadowMap.type = PCFShadowMap;
 		renderer.shadowMap.autoUpdate = false;
-		scene.background = new Color('#102027');
-		scene.fog = new Fog('#102027', 450, 1500);
-		const [floorGeometry, platformGeometry, markingGeometry] = geometries;
-		const [floorMaterial, platformMaterial, markingMaterial] = materials;
-		const floor = new Mesh(floorGeometry, floorMaterial);
-		floor.rotation.x = -Math.PI / 2;
-		floor.position.y = -3.15;
-		floor.receiveShadow = true;
-		scene.add(floor);
-		const platform = new Mesh(platformGeometry, platformMaterial);
-		platform.position.y = -1.5;
-		platform.receiveShadow = true;
-		scene.add(platform);
-		const markings = new Group();
-		for (let index = 0; index < 24; index++) {
-			const angle = index / 24 * Math.PI * 2;
-			const marking = new Mesh(markingGeometry, markingMaterial);
-			marking.position.set(Math.cos(angle) * 91, 0.16, Math.sin(angle) * 91);
-			marking.rotation.y = -angle;
-			markings.add(marking);
-		}
-		scene.add(markings, new HemisphereLight('#d6e6e0', '#152329', 2));
+		renderer.setClearColor(0x000000, 0);
+		scene.add(new HemisphereLight('#ede9da', '#383644', 2));
 		key.position.set(140, 300, 100);
 		key.target.position.set(0, 55, 0);
 		key.castShadow = true;
@@ -164,27 +139,41 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 
 	return {
 		setFrame,
-		render: function () {
+		render: function (slot: number | null = null) {
 			if (disposed || lost || failed || !canvas.isConnected) return;
 			const w = canvas.clientWidth;
 			const h = canvas.clientHeight;
 			if (w <= 0 || h <= 0) return;
-			const ratio = Math.min(window.devicePixelRatio || 1, 1.75);
-			if (!invalidated && w === width && h === height && ratio === pixelRatio) return;
+			const redraw = invalidated || w !== width || h !== height;
+			if (!redraw && slot === shownSlot) return;
 			try {
-				if (ratio !== pixelRatio) { pixelRatio = ratio; renderer.setPixelRatio(ratio); }
-				if (w !== width || h !== height) {
+				if (redraw) {
 					width = w; height = h;
-					renderer.setSize(w, h, false);
+					const scale = Math.min(1, 290 / h, 520 / w);
+					const rasterWidth = Math.max(1, Math.round(w * scale));
+					const rasterHeight = Math.max(1, Math.round(h * scale));
+					renderer.setSize(rasterWidth, rasterHeight, false);
 					camera.aspect = w / h;
+					frameCamera();
+					ink.render(scene, camera, rasterWidth, rasterHeight, { anchor: center, cell: 1.15 });
+					invalidated = false;
+					canvas.dataset['hangarState'] = 'rendered';
 				}
-				frameCamera();
-				ink.render(scene, camera, w, h, { anchor: center });
-				invalidated = false;
-				canvas.dataset['hangarState'] = 'rendered';
+				shownSlot = slot;
+				if (marker) {
+					const muzzle = slot === null ? undefined : model?.muzzles[slot];
+					marker.hidden = !muzzle;
+					if (muzzle && model && slot !== null) {
+						model.root.localToWorld(point.copy(muzzle)).project(camera);
+						marker.style.left = `${(point.x + 1) * 50}%`;
+						marker.style.top = `${(1 - point.y) * 50}%`;
+						marker.textContent = String(slot + 1).padStart(2, '0');
+					}
+				}
 			}
 			catch (error: unknown) {
 				failed = true;
+				if (marker) marker.hidden = true;
 				canvas.dataset['hangarState'] = 'unavailable';
 				console.warn('Hangar preview unavailable', error);
 			}

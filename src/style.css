@@ -1,15 +1,15 @@
 @font-face { font-family: 'Barlow Condensed'; src: url('../assets/fonts/BarlowCondensed-Bold.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
 :root {
 	font-family: 'Arial', sans-serif;
-	color: #e9e7db;
-	background: #0c1417;
+	color: #f3eddf;
+	background: #141817;
 	color-scheme: dark;
-	--paper: #e9e7db;
-	--panel: #101b20f2;
-	--border: #bac4bf30;
-	--muted: #9eafaf;
+	--paper: #f3eddf;
+	--panel: #1c2220f2;
+	--border: #bac1ad40;
+	--muted: #b8c0b3;
 	--cyan: #92d6c5;
-	--amber: #f3b35b;
+	--amber: #ffb34f;
 	--danger: #ff896e;
 	--mono: 'Consolas', 'Liberation Mono', monospace;
 	--display: 'Barlow Condensed', 'Arial Narrow', sans-serif;

@@ -10,6 +10,9 @@ import { BIOME_NAMES, MISSION_NAMES, type Contract, type MissionKind, type Plane
 import { getAuthoredStep } from './contract-chains';
 import { getOwnedMech, workOrderFor } from './company';
 import { renderShipHeader, type ShipScreen } from './company-ui';
+import { MissionSurvey } from './mission-survey';
+import { live } from 'lit-html/directives/live.js';
+import type { ChoicePicker } from './choice-picker';
 import { operationPanes, type OperationsActions } from './operations-ui';
 
 export type ShipView = 'board' | 'transmission' | 'operations' | 'route' | 'system' | 'loadout' | 'condition' | 'calendar' | 'squad';
@@ -25,6 +28,8 @@ const OBJECTIVES: Readonly<Record<MissionKind, string>> = {
 const signed = function (value: number) { return `${value > 0 ? '+' : ''}${value}`; };
 
 export interface BridgeActions extends OperationsActions {
+	picker: ChoicePicker;
+	previewContract: (id: string) => void;
 	selectPlanet: (planetId: PlanetId) => void;
 	selectContract: (id: string, opener: EventTarget | null) => void;
 	travel: () => void;
@@ -80,7 +85,7 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 			...textItems(order ? `Player rig in Engineering until day ${order.readyDay}.` : mech ? `${rigName(mech.frameId)} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Assign a rig to the player pilot before deploying.'),
 		], actions: html`${local && storyHere ? html`<button class="primary" @click=${openTransmission}>OPEN SIGNAL →</button>` : html`<button id="bridge-travel" class="primary" ?disabled=${local || Boolean(travelLock)} @click=${actions.travel}>${local ? 'ORBIT ESTABLISHED' : travelLock || `JUMP TO ${planet.name.toUpperCase()} →`}</button>`}<button @click=${function () { actions.navigate('bridge', 'board'); }}>CONTRACTS →</button>` },
 	];
-	renderWorkspace(root, renderShipHeader(campaign, 'starmap', actions.navigate), panes, renderCampaignFooter(saved, actions), 'route', [
+	renderWorkspace(root, renderShipHeader(campaign, 'starmap', actions), panes, renderCampaignFooter(saved, actions), 'route', [
 		{ id: 'route', label: 'Map', panes: ['route'] },
 		{ id: 'system', label: 'Intel', panes: ['system'] },
 	]);
@@ -118,7 +123,6 @@ const transmissionPane = function (root: HTMLElement, campaign: Campaign, transm
 };
 
 export const renderBridge = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, selection: string | undefined, saved: boolean, actions: BridgeActions) {
-	const compact = window.matchMedia('(max-width: 560px) and (max-height: 700px)').matches;
 	const planet = getPlanet(destination);
 	const forecast = destination === campaign.planetId ? campaign : travelTo(campaign, destination);
 	const unlocked = unlockedMissionTier(campaign);
@@ -132,6 +136,15 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 	const transmission = getTransmission(campaign);
 	const storyOffer = transmission?.offers.find(function ({ contract }) { return contract.id === selection && contract.planetId === destination; });
 	const selected = active ?? storyOffer?.contract ?? contracts.find(function (contract) { return contract.id === selection; }) ?? contracts[0];
+	let inspected = selected;
+	const previewPosting = function (contract: Contract) {
+		if (inspected?.id === contract.id) return;
+		inspected = contract;
+		actions.previewContract(contract.id);
+		for (const row of root.querySelectorAll<HTMLButtonElement>('.contract-card')) row.setAttribute('aria-pressed', String(row.value === contract.id));
+		const survey = root.querySelector('mission-survey');
+		if (survey instanceof MissionSurvey) survey.contract = contract;
+	};
 	const planned = getPlannedOperation(campaign, selected?.id);
 	const local = destination === campaign.planetId;
 	const storyStep = selected ? getAuthoredStep(campaign.story, selected) : undefined;
@@ -145,7 +158,11 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			...(emptyBoard ? textItems(localSignal ? `No ordinary postings at ${planet.name}. ${signalCopy}` : `No contracts at ${planet.name}. Use the Starmap to find a conflict zone and travel there for work.`) : []),
 			...contracts.map(function (contract) {
 				const employer = getFaction(contract.employer);
-				return html`<button class="contract-card" aria-pressed=${contract.id === selected?.id} @click=${function (event: Event) { actions.selectContract(contract.id, event.currentTarget); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]}</span><b>${contract.title}</b><span class="contract-employer" style="color:${employer.color}">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED' : getPlannedOperation(campaign, contract.id) ? 'STAGED' : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
+				return html`<button class="contract-card" value=${contract.id} aria-pressed=${live(String(contract.id === selected?.id))}
+					@focus=${function () { previewPosting(contract); }}
+					@pointermove=${function (event: PointerEvent) {
+						if (event.pointerType === 'mouse' && event.currentTarget instanceof HTMLButtonElement && event.currentTarget !== document.activeElement) event.currentTarget.focus({ preventScroll: true });
+					}} @click=${function (event: Event) { actions.selectContract(contract.id, event.currentTarget); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]}</span><b>${contract.title}</b><span class="contract-employer">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED' : getPlannedOperation(campaign, contract.id) ? 'STAGED' : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
 			}),
 			...(!emptyBoard ? textItems(active ? `${getFaction(active.opponent).name}: −${active.hostility} reputation applied on acceptance. Assign pilots and rigs before deployment.` : `Current postings on ${planet.name}. ${local ? 'Local uplink.' : `Arrival-day ${forecast.day} forecast; travel here to accept work.`}`) : []),
 		], ...(emptyBoard ? { actions: signalAction ?? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` } : {}) },
@@ -165,6 +182,7 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 		] : textItems(localSignal ? signalCopy : 'Select a contract to review its briefing, or find an active conflict zone on the Starmap.'), actions: selected ? active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE SQUAD ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>`
 			: planned ? html`<button class="primary" @click=${function () { actions.editOperation(selected.id); }}>EDIT LINEUP ↗</button>`
 				: html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canStageOperation(campaign, selected)} @click=${function () { actions.stage(selected); }}>${!local ? 'TRAVEL HERE TO STAGE' : 'STAGE CONTRACT'} →</button>${!local ? html`<button @click=${function () { actions.navigate('starmap', 'system'); }}>STARMAP / JUMP →</button>` : ''}` : signalAction ?? html`` },
+		...(selected ? [{ id: 'survey', label: 'Field survey', scrollable: true, items: [html`<mission-survey .contract=${live(selected)}></mission-survey>`] }] : []),
 		...operationPanes(campaign, actions),
 		{ id: 'factions', label: 'Reputation', secondary: true, items: [
 			html`<span class="eyebrow">COMPANY REPUTATION</span><h2>RANK ${companyRank(campaign)} / 15</h2>`,
@@ -174,10 +192,14 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			...(campaign.lastResult ? textItems(`${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}: ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor · +${campaign.lastResult.companyReputation} company reputation`) : []),
 		], ...(campaign.lastOperationDay ? { actions: html`<button class="secondary" @click=${actions.openLastReport}>OPEN LATEST DEBRIEF →</button>` } : {}) },
 	];
-	renderWorkspace(root, renderShipHeader(campaign, 'bridge', actions.navigate), panes, renderCampaignFooter(saved, actions), 'board', [
+	renderWorkspace(root, renderShipHeader(campaign, 'bridge', actions), panes, renderCampaignFooter(saved, actions), 'board', [
 		...(transmission ? [{ id: 'transmission', label: 'Signal', panes: ['transmission'] }] : []),
-		{ id: 'board', label: 'Board', panes: compact ? ['board'] : ['board', 'briefing'] },
-		...(compact ? [{ id: 'briefing', label: 'Briefing', panes: ['briefing'] }] : []),
+		{ id: 'board', label: 'Board', panes: emptyBoard ? ['board'] : ['board', 'survey'], select: function () {
+			if (contracts[0] && storyOffer && !active) previewPosting(contracts[0]);
+		} },
+		...(selected ? [{ id: 'briefing', label: 'Briefing', panes: ['briefing', 'survey'], select: function () {
+			if (inspected && inspected.id !== selected.id) renderBridge(root, campaign, destination, inspected.id, saved, actions);
+		} }] : []),
 		{ id: 'operations', label: 'Operations', panes: ['operations-heading', 'operations', 'day-orders'] },
 		{ id: 'factions', label: 'Reputation', panes: ['factions'] },
 	]);

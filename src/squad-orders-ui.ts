@@ -79,7 +79,7 @@ const paintGround = function (ctx: CanvasRenderingContext2D, state: CombatStateV
 		const at = project(projection, { x: 0, y });
 		ctx.moveTo(at.x, at.y); ctx.lineTo(at.x + w, at.y);
 	}
-	ctx.strokeStyle = '#90b4a021'; ctx.stroke();
+	ctx.strokeStyle = '#a8b1db2e'; ctx.stroke();
 	for (const [index, road] of (map?.terrain?.roads ?? []).entries()) {
 		ctx.beginPath();
 		road.forEach(function (point, i) {
@@ -203,7 +203,7 @@ export const mountSquadOrders = function (
 			<div class="squad-orders-body">
 				<div class="squad-console" ?inert=${Boolean(pick)}>
 					<div class="squad-selection">
-						<span>${selected.size} of ${living.length} selected</span>
+						<div><span class="squad-section-label">Roster</span><span>${selected.size} of ${living.length} selected</span></div>
 						<button type="button" data-squad-select-all @click=${selectAll} ?disabled=${living.length === 0}>${selected.size === living.length && living.length > 0 ? 'Clear selection' : 'Select all'}</button>
 					</div>
 					<div class="squad-roster">
@@ -221,6 +221,7 @@ export const mountSquadOrders = function (
 						})}
 					</div>
 					<div class="squad-commands">
+						<span class="squad-section-label">Tactical commands</span>
 						${commands.map(function (command) { return html`<button type="button" data-squad-command=${command.kind} aria-label=${command.label} aria-pressed=${command.kind === pick}
 							?disabled=${selected.size === 0 || command.kind === 'attack' && contacts.length === 0}
 							@click=${function () { commandSelected(command.kind); }}><span aria-hidden="true">${command.icon}</span>${command.label}</button>`; })}

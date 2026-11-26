@@ -1,61 +1,123 @@
 html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: none; }
 #game { height: 100dvh; min-height: 0; width: 100%; overflow: clip; }
-#game .workspace { position: absolute; inset: 0 0 max(48px, var(--dialog-bottom-gap, 48px)); padding: max(20px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 0 max(24px, env(safe-area-inset-left)); display: flex; flex-direction: column; overflow: clip; background: radial-gradient(ellipse at 20% 15%, #23404444, transparent 60%), #0b151b; gap: 12px; }
-.workspace .bridge-header { display: flex; flex: none; padding: 0; gap: 14px; border: 0; }
-.workspace .bridge-brand { gap: 12px; }
-.workspace .bridge-brand h1 { font-size: 28px; margin: 2px 0 0; letter-spacing: 1px; }
+/* Wayfarer console material and typography. State colors keep their shared meaning. */
+#game:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) {
+	--console-floor: #151918;
+	--console-steel: #202523;
+	--console-row: #282e2a;
+	--console-rule: #b7b8a244;
+	--console-grid: #9ca5da29;
+	--console-ink: #211a12;
+	--paper: #f3eee2;
+	--muted: #bdbfb0;
+	--amber: #ffb34f;
+	--panel: var(--console-steel);
+	--border: var(--console-rule);
+	--console-gutter: clamp(18px, 3.8vw, 64px);
+	color: var(--paper);
+}
+#game .workspace {
+	position: absolute;
+	inset: 0 0 max(40px, var(--dialog-bottom-gap, 40px));
+	padding: max(16px, env(safe-area-inset-top)) max(var(--console-gutter), env(safe-area-inset-right)) 0 max(var(--console-gutter), env(safe-area-inset-left));
+	display: flex;
+	flex-direction: column;
+	overflow: clip;
+	background: radial-gradient(ellipse at 82% 4%, #353a3229, transparent 55%), var(--console-floor);
+	gap: 10px;
+}
+.workspace .bridge-header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	flex: none;
+	padding: 0 0 9px;
+	gap: 10px clamp(12px, 2.5vw, 38px);
+	border-bottom: 1px solid var(--border);
+}
+.workspace .bridge-brand { min-width: 0; gap: 9px; }
+.workspace .bridge-brand h1 { font: 21px/1 var(--display); margin: 0; letter-spacing: .09em; white-space: nowrap; }
 .workspace .bridge-brand h1 span { display: none; }
-.workspace .bridge-brand .insignia { font-size: 28px; padding: 6px 7px; color: var(--amber); }
-.workspace .bridge-brand .eyebrow { font-size: 9px; letter-spacing: 1.5px; }
-.workspace .career-stats { gap: 28px; margin: 0; }
-.workspace .career-stats small { font-size: 9px; margin-bottom: 4px; }
-.workspace .career-stats b { font-size: 23px; }
-.workspace .ship-navigation { display: flex; flex: none; padding: 7px 0; gap: 7px; border-block: 1px solid var(--border); }
-.workspace .ship-navigation button { flex: 1; display: flex; align-items: center; gap: 12px; padding: 10px 14px; min-height: 46px; background: transparent; border: 0; }
-.workspace .ship-navigation [data-ship-screen] > span { font: 23px var(--display); white-space: nowrap; }
-.workspace .ship-navigation button[aria-current='page'] { color: #0d1a20; background: var(--paper); box-shadow: 0 5px 0 var(--amber); }
-.workspace .ship-navigation button[aria-current='page'] small { color: #324341; }
-.workspace .ship-navigation button b { margin-left: auto; font: 11px var(--mono); }
-.workspace .ship-navigation .nav-step, .workspace-tabs .nav-step { flex: 0 0 auto; padding: 2px; border: 0; background: none; min-height: 30px; }
-.workspace-tabs { display: flex; flex: none; align-items: center; gap: 8px; }
-.workspace-tabs button { padding: 7px 16px; min-height: 36px; border: 0; border-bottom: 2px solid transparent; font: 18px var(--display); text-transform: uppercase; background: none; }
-.workspace-tabs button[aria-pressed='true'] { color: var(--amber); border-bottom-color: var(--amber); }
-.command-heading { display: flex; flex: none; align-items: end; justify-content: space-between; gap: 16px; }
-.workspace .command-heading h2 { margin: 4px 0 0; font: 36px/1 var(--display); text-transform: uppercase; }
-.command-heading .eyebrow { font-size: 9px; }
-.command-location { font: 10px var(--mono); color: var(--cyan); }
-.workspace-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 22px; }
+.workspace .bridge-brand .insignia { width: 28px; height: 15px; flex: none; font-size: 0; padding: 0; border: 0; transform: skew(-17deg); background: repeating-linear-gradient(115deg, var(--amber) 0 4px, transparent 4px 7px); }
+.workspace .bridge-brand .eyebrow { font-size: 9px; letter-spacing: .08em; }
+.workspace .career-stats { justify-content: end; align-items: baseline; gap: 7px clamp(8px, 1.2vw, 18px); margin: 0; text-align: right; }
+.workspace .career-stats div { min-width: 0; }
+.workspace .career-stats small { display: none; }
+.workspace .career-stats b { font: 700 clamp(10px, 1.1vw, 15px)/1.15 var(--mono); letter-spacing: 0; white-space: nowrap; text-transform: uppercase; }
+.workspace .career-stats em { font: inherit; color: inherit; }
+.workspace .ship-navigation { display: flex; align-items: stretch; justify-content: center; min-width: 0; padding: 0; gap: 4px; border: 0; }
+.workspace .ship-navigation button { display: grid; place-content: center; background: var(--console-steel); border: 0; }
+.workspace .ship-navigation .choice-field {
+	transition: none;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	min-width: min(16vw, 156px);
+	min-height: 40px;
+	padding: 3px 12px;
+	text-align: left;
+	background: var(--amber);
+	color: var(--console-ink);
+	clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
+}
+.workspace .ship-navigation .choice-caption { color: inherit; font-size: 8px; letter-spacing: .08em; }
+.workspace .ship-navigation .choice-value { font: 22px/.95 var(--display); text-transform: uppercase; white-space: nowrap; }
+.workspace .ship-navigation .choice-field::after { border-color: currentColor; align-self: center; }
+.workspace .ship-navigation .choice-field:disabled { opacity: .65; }
+.workspace .ship-navigation .nav-step, .workspace-tabs .nav-step { flex: 0 0 auto; padding: 0 4px; border: 0; min-width: 28px; }
+.workspace-tabs { display: flex; flex: none; align-items: stretch; flex-wrap: wrap; gap: 2px; min-width: 0; }
+.workspace-tabs button { padding: 4px clamp(10px, 1.35vw, 20px); min-height: 32px; border: 0; border-bottom: 2px solid transparent; font: 19px/1 var(--display); text-transform: uppercase; background: transparent; color: var(--muted); }
+.workspace-tabs button[aria-pressed='true'] { color: var(--paper); background: var(--console-steel); border-bottom-color: var(--amber); }
+.workspace-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: clamp(14px, 2.4vw, 36px); }
 .workspace.paired-workspace .workspace-body { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
-.workspace.has-hangar .workspace-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
-.workspace-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 16px; border: 1px solid var(--border); background: #102027a8; overflow: clip; }
-.workspace .pane-heading { flex: none; font: 12px var(--mono); text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-.paged-content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow: clip; outline: none; }
-.workspace-pane[data-scrollable='true'] .paged-content { overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.workspace-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 0 0 4px; overflow: clip; }
+.workspace .pane-heading { flex: none; font: clamp(21px, 2.4vw, 34px)/1 var(--display); text-transform: uppercase; letter-spacing: .035em; color: var(--paper); margin: 0 0 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
+/* Pagination remains primary. Only a single item taller than its page needs scrolling. */
+.paged-content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; outline: none; }
 .page-item { flex: none; min-width: 0; }
-.page-item>p, .workspace-copy { margin: 0; font: 14px/1.6 Arial, sans-serif; color: var(--muted); }
+.page-item>p, .workspace-copy { margin: 0; font: 15px/1.5 Arial, sans-serif; color: var(--muted); }
 .signal-heading .workspace-copy { color: var(--paper); }
 .signal-contact { border-inline-start: 2px solid var(--cyan); padding: 4px 12px; }
 .signal-contact .workspace-copy { color: var(--paper); margin: 3px 0; }
 .signal-contact small { display: block; font: 11px var(--mono); color: var(--amber); }
-.workspace .page-item h2 { margin: 3px 0 8px; font-size: 32px; }
-.workspace .page-item h3 { margin: 0 0 6px; font: 25px var(--display); }
-.workspace .page-item .eyebrow { font-size: 10px; letter-spacing: 1px; }
-.page-controls { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); font: 10px var(--mono); color: var(--muted); }
-.page-controls button { padding: 6px 10px; min-height: 30px; background: transparent; font: 10px var(--mono); }
+.workspace .page-item h2 { margin: 2px 0 6px; font: clamp(32px, 4vw, 56px)/.97 var(--display); text-transform: uppercase; }
+.workspace .page-item h3 { margin: 0 0 6px; font: 26px/1.03 var(--display); }
+.workspace .page-item .eyebrow { font-size: 11px; letter-spacing: .08em; }
+.page-controls { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--border); font: 11px var(--mono); color: var(--muted); }
+.page-controls button { padding: 4px 10px; min-height: 30px; background: transparent; font: 16px/1 var(--display); text-transform: uppercase; }
 .page-controls button:disabled { opacity: .25; }
 .pane-actions { display: flex; flex: none; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
-.pane-actions>button { flex: 1; min-width: 0; min-height: 44px; padding: 10px 14px; font: 18px/1.15 var(--display); letter-spacing: .3px; }
+.pane-actions>button { flex: 1; min-width: 0; min-height: 44px; padding: 10px 14px; font: 20px/1.08 var(--display); letter-spacing: .035em; }
 .pane-actions .text-button { border: 1px solid var(--border); padding: 10px; }
-.workspace .bridge-footer { flex: none; border: 0; margin: 0; padding: 0; min-height: 25px; gap: 10px; }
+.workspace .bridge-footer { flex: none; border: 0; border-top: 1px solid var(--border); margin: 0; padding: 3px 0; min-height: 27px; gap: 5px 10px; }
 .workspace .bridge-footer>div { gap: 16px; flex-wrap: nowrap; }
-.workspace .bridge-footer button { font-size: 10px; padding: 4px 0; }
+.workspace .bridge-footer button { font: 15px/1 var(--display); letter-spacing: .055em; padding: 3px 4px; }
 .workspace .bridge-footer a { display: none; }
 .workspace .save-notice { font-size: 9px; }
-.workspace .company-notice { font: 11px/1.4 Arial, sans-serif; color: var(--cyan); max-width: 50%; }
-.workspace .company-notice:empty { display: none; }
+.workspace .bridge-footer .company-notice { margin: 0; padding: 3px 6px; font: 11px/1.35 Arial, sans-serif; color: var(--cyan); max-width: 50%; }
+.workspace .bridge-footer .company-notice:empty { display: none; }
 .workspace button:focus-visible, .workspace button:focus { outline: 2px solid var(--amber); outline-offset: -2px; background-color: #3a3d2e; box-shadow: inset 4px 0 var(--amber); }
 .workspace button.primary:focus-visible, .workspace button.primary:focus { color: #101b20; background: var(--amber); outline-color: var(--paper); }
-.workspace .ship-navigation [aria-current='page']:focus { color: #101b20; background: var(--amber); outline-color: var(--paper); }
+.workspace .secondary { background: var(--console-steel); }
+.workspace .secondary:hover:not(:disabled) { background: var(--console-row); }
+.workspace .secondary:focus:not(:disabled), .workspace .text-button:focus:not(:disabled) { background: #493a26; }
+.workspace .workspace-tabs button:focus { color: var(--paper); background: var(--console-steel); box-shadow: none; }
+.workspace :is(.workspace-tabs, .ship-navigation) .nav-step:focus { box-shadow: none; }
+/* Reserve room for the actual fullscreen control instead of dropping ship status. */
+#game.has-mobile-fullscreen .workspace .career-stats { margin-inline-end: 58px; }
+#game.has-mobile-fullscreen:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) #mobile-fullscreen {
+	top: max(5px, env(safe-area-inset-top));
+	right: max(var(--console-gutter), env(safe-area-inset-right));
+	min-height: 28px;
+	padding: 4px 5px;
+	background: var(--console-steel);
+	border-color: var(--border);
+}
+@media (max-width: 560px) {
+	#game.has-mobile-fullscreen .workspace .career-stats { margin-inline-end: 0; }
+	#game.has-mobile-fullscreen:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) #mobile-fullscreen {
+		top: max(26px, calc(env(safe-area-inset-top) + 21px));
+		min-height: 34px;
+	}
+}
 .workspace .company-mount, .workspace .fleet-frame, .workspace .catalogue-item, .workspace .equipment-choice, .workspace .contract-card { border-radius: 0; }
 .workspace .star-map { height: min(clamp(100px, 24dvh, 230px), var(--page-height, 230px)); margin: 0; }
 .workspace .planet-node { min-width: 68px; gap: 4px; padding: 4px; }
@@ -66,7 +128,7 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace .contract-card>b { font-size: 26px; }
 .workspace .contract-bottom { margin: 0; }
 .workspace .contract-bottom small { font-size: 9px; }
-.workspace .faction-standing { padding: 14px; border: 1px solid var(--border); }
+.workspace .faction-standing { padding: 9px 4px 9px 12px; border: 0; border-bottom: 1px solid var(--border); border-inline-start: 2px solid var(--faction-color); }
 .workspace .fleet-frame { padding: 14px; margin: 0; gap: 5px; }
 .workspace .fleet-frame>b { font-size: 27px; }
 .workspace .company-frame-art { height: min(clamp(90px, 22dvh, 180px), var(--page-height, 180px)); width: 100%; }
@@ -90,20 +152,49 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace .equipment-choice b { font: 24px var(--display); }
 .workspace .equipment-choice small { color: var(--muted); font: 11px var(--mono); }
 .workspace .equipment-choice>span { display: grid; gap: 4px; }
-.workspace .equipment-choice[aria-pressed='true'] { border-color: var(--cyan); }
-.catalogue-item { width: 100%; padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; border-left: 2px solid var(--item-color); }
-.catalogue-item b { display: block; font: 26px var(--display); }
+
+.catalogue-item { width: 100%; padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; --row-edge: var(--item-color); }
+.catalogue-item b { display: block; font: clamp(24px, 2.5vw, 37px)/1 var(--display); text-transform: uppercase; }
 .catalogue-item small { display: block; font: 10px/1.5 var(--mono); color: var(--muted); }
-.catalogue-item>span:last-child { color: var(--amber); font: 12px var(--mono); white-space: nowrap; }
-.catalogue-item[aria-pressed='true'] { border-color: var(--cyan); }
+.catalogue-item>span:last-child { color: var(--amber); font: 20px/1 var(--display); white-space: nowrap; }
+.workspace :is(.catalogue-item, .equipment-choice, .squad-seat-choice) {
+	border: 0;
+	border-block-end: 1px solid var(--border);
+	border-inline-start: 3px solid var(--row-edge, #697269);
+	background: var(--console-steel);
+	transition: none;
+}
+.workspace :is(.catalogue-item, .equipment-choice, .squad-seat-choice):not(:disabled):hover { background: var(--console-row); }
+.workspace :is(.catalogue-item, .equipment-choice)[aria-pressed='true'] {
+	border-inline-start-color: var(--amber);
+	background: #483722;
+}
+.workspace :is(.catalogue-item, .equipment-choice, .squad-seat-choice):not(:disabled):focus,
+.workspace :is(.catalogue-item, .equipment-choice)[aria-pressed='true']:not(:disabled):not(.paged-content:has(button:focus) button) {
+	border-color: var(--amber);
+	background: var(--amber);
+	color: var(--console-ink);
+	outline-color: var(--console-ink);
+	box-shadow: none;
+	clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+.workspace :is(.catalogue-item, .equipment-choice, .squad-seat-choice):not(:disabled):focus :is(small, b, span),
+.workspace :is(.catalogue-item, .equipment-choice)[aria-pressed='true']:not(:disabled):not(.paged-content:has(button:focus) button) :is(small, b, span) { color: inherit; }
+#market.paired-workspace .workspace-body { grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); }
+#market.paired-workspace [data-pane='details'] { padding-inline-start: clamp(14px, 3vw, 48px); border-inline-start: 1px solid var(--border); }
+.workspace [data-pane='details'] .frame-specifications { padding-block: 8px; border-block: 1px solid var(--border); }
+.workspace [data-pane='details'] .frame-specifications dt { font-size: 11px; }
+.workspace [data-pane='details'] .frame-specifications dd { font: 18px/1 var(--display); }
+.workspace [data-pane='calendar'] h2 { color: var(--paper); }
+.workspace [data-pane='factions'] .eyebrow { color: var(--amber); }
 .workspace .work-order, .workspace .maintenance-frame { padding: 12px; margin: 0; }
-.maintenance-entry { display: grid; gap: 6px; }
+.maintenance-entry { display: grid; grid-template-columns: minmax(0, 1fr) minmax(146px, .34fr); align-items: center; gap: 10px; padding-block: 6px; border-bottom: 1px solid var(--border); }
 .workspace .work-order-heading h3 { font-size: 26px; margin: 3px 0 0; }
 .workspace .work-order-heading>strong { font-size: 24px; }
 .workspace .work-order-dates { margin: 10px 0; }
 .workspace .maintenance-frame b { font-size: 25px; }
 .workspace .maintenance-frame>p { margin: 8px 0; }
-.workspace .company-empty { padding: 16px; }
+.workspace .company-empty { padding: 12px 14px; text-align: start; }
 .workspace .stake-line { font: 13px/1.5 var(--mono); margin: 0; }
 .workspace .stake-line small { display: block; color: var(--muted); font-size: 10px; }
 .hangar-inspection { min-height: 0; min-width: 0; display: flex; flex-direction: column; border: 1px solid var(--border); background: #102027; overflow: clip; }
@@ -165,25 +256,28 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 #game.menu-open .menu-controls { bottom: max(6px, env(safe-area-inset-bottom)); left: 24px; right: 24px; display: flex; justify-content: flex-start; gap: 5px 14px; font: 11px/1.4 var(--mono); z-index: 3; }
 #game.menu-open .menu-controls>span { padding: 0; }
 #menu-input-hint { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
-.menu-key { display: inline-flex; align-items: center; gap: 6px; color: var(--paper); font: 12px Arial, sans-serif; }
+.menu-key { display: inline-flex; align-items: center; gap: 6px; color: var(--paper); font: 12px var(--menu-rail-font, Arial, sans-serif); }
 button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none; }
 .menu-key .key-label { max-width: 230px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #controller-status { color: var(--muted); font-size: 9px; }
 #game[data-controller-state='connected'] #controller-status { display: none; }
-#game:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) .menu-controls { border-top: 1px solid var(--border); padding-top: 8px; background: #0b151b; }
+#game.menu-open:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) .menu-controls {
+	--menu-rail-font: var(--display);
+	inset-inline: 0;
+	bottom: 0;
+	padding: 5px max(var(--console-gutter, 16px), env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(var(--console-gutter, 16px), env(safe-area-inset-left));
+	border-top: 1px solid var(--border);
+	background: var(--console-floor);
+}
 #game #audio-status { font-size: 9px; color: var(--muted); }
 .couch-ui .workspace .workspace-copy, .couch-ui .workspace .page-item>p { font-size: 16px; }
 .couch-ui .workspace .company-mount .hardpoint-location, .couch-ui .workspace .catalogue-item small { font-size: 12px; }
 .couch-ui .menu-key { font-size: 14px; }
 @media (max-width: 900px) {
-	#game .workspace { padding: 14px 16px 0; gap: 10px; }
-	.workspace .ship-navigation button { padding: 8px; gap: 5px; min-height: 40px; }
-	.workspace .ship-navigation [data-ship-screen] > span { font-size: 19px; }
-	.workspace .ship-navigation button small { display: none; }
+	#game .workspace { padding-top: max(10px, env(safe-area-inset-top)); gap: 8px; }
 	.workspace .career-stats { gap: 16px; }
-	.workspace .command-heading h2 { font-size: 30px; }
 	.workspace-body { gap: 14px; }
-	.workspace-pane { padding: 12px; }
+	.workspace-pane { padding-inline: 0; }
 	.hangar-heading { padding: 12px; }
 	.workspace .hangar-heading h2 { font-size: 28px; }
 	.hangar-heading>span { display: none; }
@@ -194,40 +288,37 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	#game.menu-open .menu-controls { left: 16px; right: 16px; }
 }
 @media (max-width: 560px) {
-	#game .workspace { padding: max(10px, env(safe-area-inset-top)) 10px 0; gap: 8px; }
-	.workspace .bridge-brand .eyebrow, .workspace .bridge-brand .insignia, .workspace .career-stats>div:first-child, .workspace .career-stats small { display: none; }
-	.workspace .bridge-brand h1 { font-size: 23px; margin: 0; }
-	.workspace .career-stats { gap: 12px; }
-	.workspace .career-stats b { font-size: 19px; }
-	.workspace .career-stats em { font-size: 9px; }
-	.workspace .ship-navigation { gap: 3px; padding: 5px 0; }
-	.workspace .ship-navigation button { justify-content: center; padding: 6px 2px; min-height: 38px; }
-	.workspace .ship-navigation [data-ship-screen] > span { font-size: 16px; }
-	.workspace .ship-navigation button b { display: none; }
-	.workspace-tabs { gap: 4px; justify-content: space-between; }
-	.workspace-tabs button { padding: 5px 8px; min-height: 30px; font-size: 17px; }
-	.workspace .command-heading h2 { font-size: 27px; }
-	.command-heading .eyebrow, .command-location { display: none; }
+	#game .workspace { padding-top: max(8px, env(safe-area-inset-top)); gap: 6px; }
+	#game .workspace { --console-gutter: 10px; }
+	.workspace .bridge-header { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; padding-bottom: 4px; }
+	.workspace .bridge-brand { gap: 5px; }
+	.workspace .bridge-brand .insignia { width: 16px; height: 10px; }
+	.workspace .bridge-brand h1 { font-size: 15px; }
+	.workspace .bridge-brand .eyebrow { display: none; }
+	.workspace .career-stats { grid-row: 1; grid-column: 2; gap: 6px; }
+	.workspace .career-stats b { font-size: clamp(9px, 2.5vw, 12px); }
+	.workspace .ship-navigation { grid-column: 1 / -1; justify-content: flex-start; }
+	.workspace .ship-navigation .choice-field { min-width: min(145px, 60%); min-height: 34px; padding-block: 3px; }
+	.workspace .ship-navigation .choice-caption { display: none; }
+	.workspace .ship-navigation .choice-value { font-size: 19px; }
+	.workspace-tabs { gap: 2px; }
+	.workspace-tabs button { padding: 4px 8px; min-height: 28px; font-size: 17px; }
 	.workspace-body { gap: 9px; }
 	.workspace.paired-workspace .workspace-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(145px, .65fr) minmax(0, 1fr); }
-	.workspace.has-hangar .workspace-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: 144px minmax(0, 1fr); }
-	#mechbay[data-view='livery'] .workspace-body { grid-template-rows: clamp(85px, 16dvh, 145px) minmax(0, 1fr); }
 	#mechbay[data-view='livery'] .hangar-inspection { grid-template-columns: minmax(0, 1fr) 44%; grid-template-rows: 1fr; }
 	#mechbay[data-view='livery'] .hangar-heading { flex-wrap: wrap; align-content: center; }
 	#mechbay[data-view='livery'] .hangar-model { display: block; }
-	.hangar-inspection { display: grid; grid-template-columns: minmax(0, 1fr) 110px; grid-template-rows: 64px minmax(0, 1fr); }
 	.hangar-heading { padding: 12px; }
 	.workspace .hangar-heading h2 { font-size: 26px; }
 	.hangar-heading .eyebrow { font-size: 9px; }
-	.hangar-model { grid-column: 2; grid-row: 1; }
 	.hangar-service { grid-column: 1 / -1; grid-row: 2; padding: 6px 10px; gap: 8px; }
 	.hangar-service .hull-integrity { padding: 4px 8px; }
 	.hangar-service .hull-integrity-heading>strong { font-size: 26px; }
 	.hangar-service .hull-integrity-track { margin: 4px 0; }
 	.hull-repair { padding: 8px; font-size: 17px; }
 	.hangar-specs { display: none; }
-	.workspace-pane { padding: 9px; }
-	.workspace .pane-heading { font-size: 10px; margin-bottom: 7px; padding-bottom: 6px; }
+	.workspace-pane { padding-inline: 0; }
+	.workspace .pane-heading { font-size: 22px; margin-bottom: 5px; padding-bottom: 4px; }
 	.workspace .workspace-copy, .workspace .page-item>p, .couch-ui .workspace .workspace-copy, .couch-ui .workspace .page-item>p { font-size: 13px; line-height: 1.45; }
 	.workspace .company-mount { padding: 8px 10px; gap: 10px; }
 	.workspace .company-mount b { font-size: 23px; }
@@ -236,11 +327,11 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.page-controls button { min-height: 28px; padding: 5px 9px; }
 	.pane-actions { margin-top: 7px; gap: 5px; }
 	.pane-actions>button { min-height: 36px; padding: 8px; font-size: 16px; }
-	.workspace .bridge-footer { min-height: 24px; gap: 6px; }
+	.workspace .bridge-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; min-height: 24px; gap: 3px 5px; }
 	.workspace .bridge-footer>div { gap: 12px; }
-	.workspace .bridge-footer button { font-size: 9px; }
-	.workspace .save-notice { font-size: 8px; }
-	.workspace .company-notice { font-size: 10px; max-width: 52%; }
+	.workspace .bridge-footer button { font-size: 13px; }
+	.workspace .save-notice { grid-row: 1; grid-column: 2; font-size: 8px; text-align: right; }
+	.workspace .bridge-footer :is(.company-notice, .ship-controller-status) { grid-column: 1 / -1; max-width: 100%; font-size: 10px; }
 	#game.menu-open .menu-controls { left: 10px; right: 10px; gap: 3px; }
 	#menu-input-hint { gap: 5px 12px; }
 	.menu-key, .couch-ui .menu-key { font-size: 11px; gap: 4px; }
@@ -256,8 +347,6 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.workspace .stake-line { font-size: 11px; }
 }
 @media (max-width: 560px) and (max-height: 700px) {
-	.workspace.has-hangar .command-heading, .hangar-heading .eyebrow, .hangar-heading h2 small, .hangar-model { display: none; }
-	.workspace.has-hangar .workspace-body { grid-template-rows: 90px minmax(0, 1fr); }
 	.hangar-inspection { grid-template-columns: minmax(0, 1fr); grid-template-rows: 26px minmax(0, 1fr); }
 	.hangar-heading { padding: 4px 10px; }
 	.workspace .hangar-heading h2 { margin: 0; font-size: 21px; }
@@ -274,22 +363,21 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	#game[data-screen='mechbay'] .menu-key .key-label { max-width: 100px; }
 	#game[data-screen='mechbay'] #menu-input-hint { gap: 5px 8px; }
 }
-@media (max-height: 520px) and (min-width: 561px) {
+@media (max-height: 520px) and (orientation: landscape) {
 	.workspace .signal-heading h2 { margin: 2px 0 4px; font-size: 25px; }
-	#game .workspace { padding: max(5px, env(safe-area-inset-top)) 12px 0; gap: 5px; }
-	.workspace .bridge-header { padding: 0; }
-	.workspace .bridge-brand .eyebrow, .workspace .bridge-brand .insignia, .workspace .career-stats small, .command-heading { display: none; }
-	.workspace .bridge-brand h1 { font-size: 20px; margin: 0; }
-	.workspace .career-stats b { font-size: 17px; }
-	.workspace .ship-navigation { padding: 3px 0; }
-	.workspace .ship-navigation button { padding: 4px 8px; min-height: 28px; }
-	.workspace .ship-navigation [data-ship-screen] > span { font-size: 18px; }
+	#game .workspace { --console-gutter: 14px; padding-top: max(5px, env(safe-area-inset-top)); gap: 5px; }
+	.workspace .bridge-header { grid-template-columns: minmax(0, 1fr) auto max-content; padding-bottom: 4px; gap: 8px; }
+	.workspace .bridge-brand h1 { font-size: 18px; }
+	.workspace .career-stats { gap: 9px; }
+	.workspace .ship-navigation .choice-field { min-height: 27px; padding-block: 3px; gap: 0 8px; }
+	.workspace .ship-navigation .choice-caption { display: none; }
+	.workspace .ship-navigation .choice-value { font-size: 20px; }
 	.workspace-tabs button { min-height: 26px; padding: 3px 12px; font-size: 16px; }
 	.workspace-tabs .nav-step { min-height: 24px; }
 	.workspace .input-glyph { height: 24px; width: 24px; }
 	.workspace .input-keycap { height: 20px; min-width: 23px; font-size: 10px; }
 	.workspace-body { gap: 12px; }
-	.workspace-pane { padding: 8px; }
+	.workspace-pane { padding-bottom: 0; }
 	.workspace .pane-heading { display: none; }
 	.paged-content { gap: 7px; }
 	.page-controls { margin-top: 5px; padding-top: 4px; }
@@ -297,7 +385,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.pane-actions { margin-top: 5px; gap: 5px; }
 	.pane-actions>button { min-height: 30px; padding: 5px 8px; font-size: 15px; }
 	.workspace .bridge-footer { min-height: 20px; }
-	.workspace .bridge-footer button { padding: 2px 0; font-size: 9px; }
+	.workspace .bridge-footer button { padding: 2px 3px; font-size: 12px; }
 	.workspace .company-notice { font-size: 10px; }
 	.workspace .workspace-copy, .workspace .page-item>p, .couch-ui .workspace .workspace-copy, .couch-ui .workspace .page-item>p { font-size: 12px; line-height: 1.4; }
 	.workspace .company-mount { padding: 6px 10px; }
@@ -334,20 +422,15 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.menu-key .input-keycap { min-width: 22px; height: 20px; font-size: 10px; }
 }
 
-@media (max-height: 360px) and (min-width: 561px) {
+@media (max-height: 360px) and (orientation: landscape) {
 	.hangar-model, .hangar-specs { display: none; }
 	#mechbay[data-view='livery'] .hangar-model { display: block; }
 	.hangar-service { margin-top: auto; }
 	#game .workspace { padding-top: 3px; gap: 3px; }
 	.workspace .bridge-brand h1 { font-size: 16px; }
-	.workspace .career-stats b { font-size: 15px; }
-	.workspace .ship-navigation { padding: 2px 0; }
-	.workspace .ship-navigation button { min-height: 24px; padding: 2px 6px; }
-	.workspace .ship-navigation [data-ship-screen] > span { font-size: 16px; }
-	.workspace .ship-navigation .nav-step { min-height: 24px; }
 	.workspace-tabs button { min-height: 22px; padding: 2px 10px; font-size: 15px; }
 	.workspace-tabs .nav-step { min-height: 22px; }
-	.workspace-pane { padding: 6px; }
+	.workspace-pane { padding-bottom: 0; }
 	.workspace .bridge-footer { min-height: 16px; }
 	.workspace .bridge-footer button { padding: 0; }
 	.workspace .page-item h2 { margin: 2px 0 4px; font-size: 25px; }
@@ -389,18 +472,11 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 }
 @media (max-width: 560px) {
 	.workspace .nav-step .input-keycap { max-width: 44px; height: auto; min-height: 22px; padding: 3px; font-size: 9px; line-height: 1.1; white-space: normal; text-align: center; }
-	.workspace .ship-navigation { display: grid; grid-template-columns: 26px repeat(12, minmax(0, 1fr)) 26px; }
-	.workspace .ship-navigation [data-ship-screen] { grid-column: span 3; min-width: 0; min-height: 32px; padding-block: 4px; }
-	.workspace .ship-navigation :is([data-ship-screen='engineering'], [data-ship-screen='pilots'], [data-ship-screen='deploy']) { grid-column: span 4; }
-	.workspace .ship-navigation .nav-step:first-child { grid-column: 1; grid-row: 1 / 3; }
-	.workspace .ship-navigation .nav-step:last-child { grid-column: 14; grid-row: 1 / 3; }
 }
 @media (max-width: 380px) {
-	.workspace .command-heading { display: none; }
-	.workspace .ship-navigation [data-ship-screen] > span { font-size: 14px; }
-	.workspace-tabs button { padding-inline: 6px; font-size: 15px; white-space: nowrap; }
+	.workspace-tabs button { padding-inline: 4px; font-size: 15px; white-space: nowrap; }
 }
-@media (max-width: 560px) and (max-height: 700px), (max-height: 520px) and (min-width: 561px) {
+@media (max-width: 560px) and (max-height: 700px), (max-height: 520px) and (orientation: landscape) {
 	.workspace .fleet-frame { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 3px 8px; padding: 3px 8px; }
 	.fleet-frame>span, .fleet-frame>b, .fleet-frame>small { grid-column: 1; }
 	.fleet-frame .hull-integrity { grid-column: 2; grid-row: 1 / span 3; padding: 4px 6px; }
@@ -409,29 +485,31 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.fleet-frame .hull-integrity-track { height: 5px; margin: 3px 0; }
 }
 
-.workspace .company-rank { margin-left: 8px; color: var(--amber); font: 12px var(--mono); white-space: nowrap; }
+.workspace .company-rank { display: none; margin-left: 8px; color: var(--amber); font: 12px var(--mono); white-space: nowrap; }
 @media (max-width: 560px) {
+	.workspace .company-rank { display: inline; }
 	#bridge.workspace.paired-workspace .workspace-body { grid-template-rows: minmax(215px, .85fr) minmax(0, 1fr); }
 }
 
-.pilot-record { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(0, 1.4fr) auto; align-items: center; gap: 12px 20px; padding: 14px; border: 1px solid var(--border); border-inline-start: 3px solid var(--cyan); background: #14262c; }
+.pilot-record { display: grid; grid-template-columns: minmax(115px, .55fr) minmax(0, 1.45fr) auto; align-items: center; gap: 12px 20px; padding: 12px 14px; border-block-end: 1px solid var(--border); border-inline-start: 3px solid var(--cyan); background: var(--console-steel); }
 .pilot-record[data-recruit-pilot] { border-inline-start-color: var(--amber); }
 .workspace .pilot-record h3 { margin: 1px 0 0; color: var(--paper); text-transform: uppercase; }
 .pilot-record p { margin: 0; font: 13px/1.4 Arial, sans-serif; color: var(--muted); }
 .pilot-record small { display: block; margin-top: 5px; font: 10px/1.3 var(--mono); color: var(--cyan); }
-.pilot-record button { min-height: 38px; padding: 7px 10px; font: 11px/1.2 var(--mono); }
+.pilot-record button { min-height: 38px; padding: 7px 10px; font: 16px/1 var(--display); }
+.pilot-record:focus-within { border-inline-start-color: var(--amber); background: var(--console-row); }
 
 .sortie-context { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .sortie-context strong { font: 26px/1 var(--display); color: var(--paper); }
 .sortie-context span { text-align: right; font: 10px/1.2 var(--mono); color: var(--cyan); }
-.squad-lineup { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.squad-seat { display: flex; flex-direction: column; align-items: start; gap: 7px; min-width: 0; padding: 12px; border: 1px solid var(--border); background: #102027; }
-.squad-seat[data-squad-ready='true'] { border-top-color: var(--cyan); background: #14282e; }
+.squad-lineup { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px clamp(9px, 1.6vw, 24px); }
+.squad-seat { display: flex; flex-direction: column; align-items: start; gap: 7px; min-width: 0; padding: 7px 0; border-block-start: 2px solid var(--border); }
+.squad-seat[data-squad-ready='true'] { border-top-color: var(--cyan); }
 .squad-seat[data-squad-lead='true'] { border-top: 2px solid var(--amber); }
 .squad-seat>.eyebrow { text-transform: uppercase; }
 .squad-seat[data-squad-lead='true']>.eyebrow { color: var(--amber); }
 .squad-player { display: block; min-height: 42px; font: 25px/1.1 var(--display); text-transform: uppercase; color: var(--paper); }
-.squad-seat-choice { width: 100%; min-height: 42px; padding: 6px 9px; text-align: left; background: #0e1c22; overflow-wrap: anywhere; }
+.squad-seat-choice { width: 100%; min-height: 42px; padding: 6px 9px; text-align: left; background: var(--console-steel); overflow-wrap: anywhere; }
 .squad-seat-choice>b { display: block; font: 22px/1 var(--display); }
 .squad-seat-choice>small { display: block; margin-top: 3px; color: var(--muted); font: 9px/1.2 var(--mono); text-transform: uppercase; }
 .squad-rig-choice>b { color: var(--cyan); }
@@ -453,9 +531,14 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.squad-seat-choice>b, .squad-player { font-size: 20px; }
 	.sortie-context strong { font-size: 21px; }
 	.sortie-context span { font-size: 9px; }
-	#deploy [data-pane='squad'] .pane-actions>.primary { flex: 1.45; }
+	#deploy [data-pane='squad'] .pane-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	#deploy [data-pane='squad'] .pane-actions:not(:has([data-remove-operation]))>.primary { grid-column: 1 / -1; }
+	#deploy [data-pane='squad'] .pane-actions>button { min-height: 32px; text-align: left; }
+	.maintenance-entry { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+	#market.paired-workspace .workspace-body { grid-template-columns: minmax(0, 1fr); }
+	#market.paired-workspace [data-pane='details'] { padding-inline-start: 0; border-inline-start: 0; }
 }
-@media (max-height: 520px) and (min-width: 561px) {
+@media (max-height: 520px) and (orientation: landscape) {
 	.pilot-record { padding: 7px 9px; gap: 6px 12px; }
 	.pilot-record button { min-height: 30px; }
 	.maintenance-entry { grid-template-columns: minmax(0, 1fr) minmax(0, .45fr); align-items: center; }
@@ -467,7 +550,51 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.squad-player { min-height: 30px; }
 	.sortie-context strong { font-size: 20px; }
 }
-@media (561px <= width <= 740px) {
-	.workspace .ship-navigation button { padding-inline: 4px; }
-	.workspace .ship-navigation [data-ship-screen] > span { font-size: 16px; }
+
+@media (max-width: 560px), (max-height: 520px) {
+	#game:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) {
+		--console-gutter: 12px;
+	}
+}
+
+@media (min-width: 761px) and (min-height: 521px) {
+	.squad-lineup { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+	.squad-seat {
+		display: grid;
+		grid-template-columns: minmax(84px, .45fr) minmax(105px, .9fr) minmax(110px, .9fr) minmax(110px, 1.3fr) minmax(96px, .65fr);
+		gap: 5px 12px;
+		align-content: center;
+		align-items: center;
+		min-height: 58px;
+		padding: 5px 9px;
+		border: 0;
+		border-inline-start: 3px solid var(--border);
+		border-block-end: 1px solid var(--border);
+	}
+	.squad-seat[data-squad-ready='true'] { border-inline-start-color: var(--cyan); }
+	.squad-seat[data-squad-lead='true'] { border-block-start: 0; border-inline-start-color: var(--amber); }
+	#deploy .squad-seat>.eyebrow { font: 17px/1 var(--display); letter-spacing: .045em; }
+	.squad-seat>:is(.squad-player, [data-choose-pilot]) { grid-column: 2; }
+	.squad-rig-choice { grid-column: 3; }
+	.squad-seat p { grid-column: 4; }
+	.squad-lead-choice { grid-column: 5; grid-row: 1; margin: 0; }
+}
+
+@media (max-height: 440px) and (orientation: landscape) {
+	#game .workspace .page-controls { margin-top: 2px; padding-top: 2px; }
+	#game .workspace .page-controls button { min-height: 24px; padding: 2px 5px; }
+}
+@media (max-width: 560px) and (orientation: landscape) and (max-height: 440px) {
+	#game .workspace .bridge-header { grid-template: auto / minmax(0,1fr) auto minmax(0,1fr); gap: 5px; padding-bottom: 2px; align-items: center; }
+	#game .workspace .ship-navigation { grid-area: 1 / 2; justify-content: center; gap: 2px; }
+	#game .workspace .ship-navigation .choice-field { min-width: 0; min-height: 26px; padding: 1px 6px; }
+	#game .workspace .ship-navigation .choice-value { font-size: 16px; }
+	#game .workspace .ship-navigation .nav-step { min-width: 18px; padding: 0; }
+	#game .workspace .career-stats { grid-area: 1 / 3; gap: 3px; flex-wrap: wrap; align-content: center; }
+	#game .workspace .career-stats b { font-size: 9px; }
+	#game .workspace .bridge-brand h1 { font-size: 14px; }
+	#game .workspace .bridge-brand .eyebrow, #game .workspace .bridge-brand .company-rank { display: none; }
+	#game.has-mobile-fullscreen .workspace .career-stats { margin-inline-end: 40px; }
+	#game.has-mobile-fullscreen:has(.workspace:not([hidden])) #mobile-fullscreen { top: max(4px, env(safe-area-inset-top)); right: 6px; min-height: 22px; width: 35px; padding: 0; font-size: 9px; }
+	#game .workspace .bridge-footer { flex-wrap: nowrap; gap: 2px 5px; }
 }

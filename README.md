@@ -64,7 +64,9 @@ Company funds and the calendar are visible across the ship:
 | Market | Spend contract earnings on weapon copies or additional frames with complete reputation-scaled weapon packages included. |
 | Engineering | Schedule repairs, inspect or cancel work orders, and advance calendar days. |
 
-**LB/RB** switches departments; **LT/RT** switches pages within a department.
+Select the department name on the Wayfarer header to jump directly to any of
+the seven departments. **LB/RB** switches departments and **LT/RT** switches
+pages within a department.
 Keyboard equivalents are **Q/E** and **Z/C**. The button key along the bottom
 shows the focused action, Back, button guide (**Y / triangle / H**), and Discard
 Draft (**X / square / X**) when a refit is staged. D-pad, left stick, or arrow
@@ -119,8 +121,9 @@ tier 3 Rattler refit. Buying a second copy permits fitting that equipment twice.
 Weapons and their mount positions persist between sorties. Empty mounts do not
 shift another weapon's keyboard, mouse, touch, or controller binding.
 
-Choose a mount in the Mech Bay, select an owned weapon or empty slot, then queue
-the refit. Staged changes show their duration and completion date before they
+The service lift shows the selected rig with its current livery and the weapons
+in the refit draft. Focus a mount to locate it on the rig by number. Choose an
+owned weapon or empty slot, then queue the refit. Staged changes show their duration and completion date before they
 are scheduled. Each changed mount takes **one calendar day**: moving a gun from
 mount 1 to empty mount 2 changes two mounts and takes two days. The installed
 loadout stays unchanged until the work finishes. Both outgoing and incoming
@@ -160,6 +163,10 @@ are runtime state and never replace the ship's desired load. No ordinary sortie
 replenishes ammunition in combat.
 
 ## Contracts and surface missions
+
+Focus a posting to see its battlefield on the survey table. The pixel grid shows
+the generated terrain, roads, drop point, and objective sites for that contract.
+Select it to open the briefing and stage the operation.
 
 The Starmap charts **79 systems** across the Wayfarer Reach. The Frontier
 Freeholds, Ferric Combine, and Signal Accord hold contiguous territories with

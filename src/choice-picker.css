@@ -90,3 +90,44 @@
 	.choice-panel h2 { font-size: 22px; }
 	.choice-options button { min-height: 34px; padding-block: 5px; }
 }
+
+/* The same chooser is used outside the ship. Keep its console treatment local. */
+#game[data-screen] .choice-panel { min-height: 0; }
+#game[data-screen] .choice-options { min-height: 0; }
+#game:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) .choice-overlay {
+	background: #0d100fd9;
+}
+#game:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) .choice-panel {
+	background: var(--console-floor);
+	width: min(100%, 520px);
+}
+#game:has(.workspace:not([hidden])) .choice-panel h2 { text-transform: uppercase; }
+#game[data-screen] .workspace .ship-navigation .choice-field:focus {
+	background: var(--amber);
+	color: var(--console-ink);
+	outline: 2px solid var(--paper);
+	outline-offset: -2px;
+	box-shadow: none;
+}
+#game[data-screen] .workspace .ship-navigation .choice-field:hover:not(:disabled) { background: #ffc978; }
+#game:has(.workspace:not([hidden])) .choice-panel .choice-option {
+	background: var(--console-steel, var(--panel));
+	border: 0;
+	border-block-end: 1px solid var(--border);
+	border-inline-start: 3px solid #697269;
+	transition: none;
+	font: clamp(18px, 2.6vw, 25px)/1 var(--display);
+	text-transform: uppercase;
+}
+#game:has(.workspace:not([hidden])) .choice-panel .choice-option[aria-pressed='true'] {
+	border-inline-start-color: var(--amber);
+	color: var(--amber);
+}
+#game:has(.workspace:not([hidden])) #choice-picker .choice-panel .choice-option:focus {
+	background: var(--amber);
+	color: var(--console-ink, #211a12);
+	outline-color: currentColor;
+	box-shadow: none;
+	clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
+}
+#game:has(.workspace:not([hidden])) .choice-panel .choice-option small { color: inherit; font-family: var(--mono); }

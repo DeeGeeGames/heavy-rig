@@ -20,3 +20,9 @@ The title screen scales this transparent source without altering its artwork.
 The original Meridian relay-yard painting and its pixel-art treatment were created
 with built-in ImageGen. The lossless WebP combines the 416 × 234 plate with the
 prototype's hand-animated tracers, flashes, and smoke in a 16-second loop.
+
+## Wayfarer hangar
+
+The service lift and field survey bay are original Blender sets rendered as
+248 × 200 limited-palette plates. The game draws the fitted rig, mount marker,
+and each contract’s terrain, roads and objectives over the empty rooms.
