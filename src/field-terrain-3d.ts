@@ -4,6 +4,7 @@ import type { FieldTerrain, TerrainObstacle } from './field-terrain';
 import { hasBiomeGround, type SurfaceBiome } from './biome-ground';
 import { createBiomeScenery } from './biome-scenery';
 import { fissureBand } from './mission-elevation';
+import { addSiteBuilding, hangarRoofGeometry, type BuildingPart, type BuildingParts } from './site-scenery';
 import { groundHeight, type TerrainElevation } from './terrain-elevation';
 
 export const FIELD_ROAD_MARKINGS = { haul: '#e7ac67', service: '#8dc7c9' } as const;
@@ -165,13 +166,12 @@ const createFissures = function (terrain: FieldTerrain, seed: number, biome: Fis
 	mesh.name = { volcanic: 'basalt-fissures', badlands: 'sandstone-canyons', tundra: 'ice-crevasses' }[biome]; return mesh;
 };
 
-interface ShedPart { x: number; y: number; z: number; width: number; height: number; depth: number; color: number }
 const SHED_COLORS = {
 	volcanic: { base: 0x585459, wall: 0x858f91, trim: 0x414b50, roof: 0xa7b0ad },
 	badlands: { base: 0x675344, wall: 0xb59976, trim: 0x674637, roof: 0x87604d },
 	tundra: { base: 0x425764, wall: 0x879da7, trim: 0x3c5463, roof: 0xd0dedb },
 };
-const addShed = function (parts: ShedPart[], shed: TerrainObstacle, biome: FissureBiome, base: number) {
+const addShed = function (parts: BuildingPart[], shed: TerrainObstacle, biome: FissureBiome, base: number) {
 	const { width: w, depth: d, height: h } = shed;
 	const colors = SHED_COLORS[biome];
 	const add = function (x: number, y: number, z: number, width: number, height: number, depth: number, color: number) {
@@ -201,18 +201,29 @@ export const createFieldStructures = function (terrain: FieldTerrain, seed: numb
 	const root = new Group();
 	const fissures = createFissures(terrain, seed, biome);
 	root.add(fissures);
-	const parts: ShedPart[] = [];
-	for (const obstacle of terrain.obstacles) if (obstacle.kind === 'shed') addShed(parts, obstacle, biome, groundHeight(terrain, obstacle));
-	const sheds = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial({ roughness: .84, metalness: .18 }), parts.length);
-	const pose = new Object3D(); const color = new Color();
-	for (const [i, part] of parts.entries()) {
-		pose.position.set(part.x, part.y, part.z); pose.scale.set(part.width, part.height, part.depth); pose.updateMatrix();
-		sheds.setMatrixAt(i, pose.matrix); sheds.setColorAt(i, color.setHex(part.color));
+	const parts: BuildingParts = { box: [], drum: [], vault: [] };
+	for (const o of terrain.obstacles) {
+		if (o.kind === 'shed') addShed(parts.box, o, biome, groundHeight(terrain, o));
+		else if (o.kind === 'housing' || o.kind === 'hangar' || o.kind === 'tank-bank' || o.kind === 'wall') addSiteBuilding(parts, o, groundHeight(terrain, o));
 	}
-	sheds.name = { volcanic: 'ore-sheds', badlands: 'frontier-outbuildings', tundra: 'winter-shelters' }[biome]; sheds.castShadow = true; sheds.receiveShadow = true; root.add(sheds);
+	const pose = new Object3D(); const color = new Color();
+	const buildingSurface = new MeshStandardMaterial({ roughness: .84, metalness: .18 });
+	const batch = function (name: string, geometry: BufferGeometry, list: readonly BuildingPart[]) {
+		const mesh = new InstancedMesh(geometry, buildingSurface, list.length);
+		for (const [i, part] of list.entries()) {
+			pose.position.set(part.x, part.y, part.z); pose.scale.set(part.width, part.height, part.depth);
+			pose.rotation.set(0, part.yaw ?? 0, 0); pose.updateMatrix();
+			mesh.setMatrixAt(i, pose.matrix); mesh.setColorAt(i, color.setHex(part.color));
+		}
+		mesh.name = name; mesh.castShadow = true; mesh.receiveShadow = true; root.add(mesh); return mesh;
+	};
+	const buildingBatches = [batch({ volcanic: 'ore-sheds', badlands: 'frontier-outbuildings', tundra: 'winter-shelters' }[biome], new BoxGeometry(1, 1, 1), parts.box)];
+	if (parts.drum.length) buildingBatches.push(batch('storage-tanks', new CylinderGeometry(.5, .5, 1, 16), parts.drum));
+	if (parts.vault.length) buildingBatches.push(batch('hangar-roofs', hangarRoofGeometry(), parts.vault));
 	const trees = terrain.obstacles.filter(function (obstacle) { return obstacle.kind === 'tree'; });
 	const conifers = trees.length ? new InstancedMesh(new CylinderGeometry(.02, .5, 1, 6), new MeshStandardMaterial({ roughness: .95 }), trees.length * 4) : undefined;
 	if (conifers) {
+		pose.rotation.set(0, 0, 0);
 		for (const [i, tree] of trees.entries()) {
 			const base = groundHeight(terrain, tree);
 			for (const [j, [bottom, height, scale, pigment]] of ([
@@ -228,7 +239,8 @@ export const createFieldStructures = function (terrain: FieldTerrain, seed: numb
 	}
 	return { root, rotors: undefined, dispose: function () {
 		fissures.geometry.dispose(); fissures.material.dispose();
-		sheds.geometry.dispose(); sheds.material.dispose(); sheds.dispose();
+		for (const mesh of buildingBatches) { mesh.geometry.dispose(); mesh.dispose(); }
+		buildingSurface.dispose();
 		conifers?.geometry.dispose(); conifers?.material.dispose(); conifers?.dispose(); root.removeFromParent();
 	} };
 };

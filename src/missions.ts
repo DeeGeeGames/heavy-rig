@@ -1,11 +1,12 @@
 import { getMissionTier } from './reputation';
 import { getPlanet, mixSeed, randomSource } from './universe';
-import { terrainPathClear, terrainPointClear, type ObstacleField, type TerrainObstacle } from './field-terrain';
+import { terrainPathClear, terrainPointClear, terrainWaypoint, type ObstacleField, type TerrainObstacle } from './field-terrain';
 import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS } from './combat-spatial';
 import { SQUAD_SIZE } from './pilots';
 import { isAuthoredContract } from './contract-chains';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import { createBiomeLayout, type TerrainMap } from './biome-layout';
+import { objectiveSitePlan, placeObjectiveSite } from './objective-sites';
 import { generateElevation } from './mission-elevation';
 import { landingFootprint } from './landing-site';
 import { hasLevelFoundation, type TerrainElevation } from './terrain-elevation';
@@ -90,7 +91,11 @@ const catalogFrame = function (contract: Contract, role: EnemyKind, random: () =
 	const pool = preferred.length ? preferred : eligible;
 	return pool[Math.floor(random() * pool.length)]?.id;
 };
-const mobileSpawn = function (contract: Contract, map: MissionMap, index: number): MissionSpawn {
+const hasRigRoute = function (field: ObstacleField, from: Point, site: Point) {
+	const next = terrainWaypoint(field, from, site, RIG_RADIUS);
+	return next.x !== from.x || next.y !== from.y || (from.x === site.x && from.y === site.y);
+};
+const mobileSpawn = function (contract: Contract, map: MissionMap, index: number, navigation: ObstacleField | undefined = map.terrain): MissionSpawn {
 	const random = randomSource((contract.seed + Math.imul(index + 1, 104729)) >>> 0);
 	const commander = contract.kind === 'assassination' && index === 0;
 	const legacy = isAuthoredContract(contract);
@@ -108,14 +113,18 @@ const mobileSpawn = function (contract: Contract, map: MissionMap, index: number
 			y: Math.max(100, Math.min(map.height - 100, site.y + Math.sin(bearing) * radius)) };
 	};
 	let at = atBearing(angle);
-	const terrain = map.terrain;
-	const clearance = frameId ? RIG_RADIUS : ENEMY_RADIUS;
-	if (terrain && !commander && !terrainPointClear(terrain, at, clearance)) {
+	// Everyone posted in a built-up site needs room to reach the rig lanes.
+	const clearance = frameId || map.terrain?.site ? RIG_RADIUS : ENEMY_RADIUS;
+	const clear = function (candidate: Point) {
+		return !navigation || terrainPointClear(navigation, candidate, clearance)
+			&& (map.terrain?.site?.kind !== 'garrison' || hasRigRoute(navigation, candidate, site));
+	};
+	if (!commander && !clear(at)) {
 		// Try nearby points on the spawn ring, then both axes. Every site
 		// has an open bearing leading away from the cut on its own bank.
 		for (const bearing of [angle + .5, angle - .5, angle + 1, angle - 1, angle + 1.5, angle - 1.5, 0, Math.PI, Math.PI / 2, -Math.PI / 2]) {
 			const candidate = atBearing(bearing);
-			if (terrainPointClear(terrain, candidate, clearance)) { at = candidate; break; }
+			if (clear(candidate)) { at = candidate; break; }
 		}
 	}
 	return { ...at, kind, ...(commander ? { commander: true } : {}), ...(frameId ? { frameId } : {}), ...(!legacy ? { formation } : {}) };
@@ -151,8 +160,8 @@ const roadsClear = function (footprint: ObstacleField, roads: readonly (readonly
 		return road.every(function (point, i) { const prev = road[i - 1]; return !prev || terrainPathClear(footprint, prev, point, 45); });
 	});
 };
-const mobileSpawns = function (contract: Contract, map: MissionMap) {
-	return Array.from({ length: mobileHostileCount(contract) }, function (_, i) { return mobileSpawn(contract, map, i); });
+const mobileSpawns = function (contract: Contract, map: MissionMap, navigation: ObstacleField | undefined = map.terrain) {
+	return Array.from({ length: mobileHostileCount(contract) }, function (_, i) { return mobileSpawn(contract, map, i, navigation); });
 };
 const placeArtillery = function (contract: Contract, map: MissionMap, guards: readonly MissionSpawn[], count: number): Point[] {
 	if (!count) return [];
@@ -177,9 +186,12 @@ const placeArtillery = function (contract: Contract, map: MissionMap, guards: re
 		if (terrainPathClear(terrain, site, at, RIG_RADIUS)) return true;
 		// A local service route can bend around cover. Both legs stay inside
 		// the field, including on supplied maps with a barrier spanning an edge.
-		return allowDetour && [{ x: site.x, y: at.y }, { x: at.x, y: site.y }].some(function (bend) {
+		if (!allowDetour) return false;
+		if ([{ x: site.x, y: at.y }, { x: at.x, y: site.y }].some(function (bend) {
 			return terrainPathClear(terrain, site, bend, RIG_RADIUS) && terrainPathClear(terrain, bend, at, RIG_RADIUS);
-		});
+		})) return true;
+		// The service gate may take several turns behind the hangar.
+		return terrain.site?.kind === 'garrison' && hasRigRoute(terrain, at, site);
 	};
 	const findPost = function (site: Point, bearing: number, radius: number) {
 		// Try the assigned shoulder first. Search nearby bearings on both sides
@@ -216,10 +228,13 @@ const missionGarrison = function (contract: Contract, map: MissionMap): MissionS
 	if (contract.kind === 'defend') return [];
 	const guards = mobileSpawns(contract, map);
 	const guns = placeArtillery(contract, map, guards, missionArtilleryCount(contract));
-	return [...guards, ...guns.map(function (at): MissionSpawn { return { ...at, kind: 'artillery' }; })];
+	// A gun foundation can close a passage between otherwise reachable buildings.
+	const posted = guns.length && map.terrain?.site?.kind === 'garrison' ? mobileSpawns(contract, map,
+		{ obstacles: [...map.terrain.obstacles, ...guns.map(function (p) { return landingFootprint(p, EMPLACEMENT_RADIUS); })] }) : guards;
+	return [...posted, ...guns.map(function (at): MissionSpawn { return { ...at, kind: 'artillery' }; })];
 };
 export const missionSpawn = function (contract: Contract, map: MissionMap, index: number): MissionSpawn {
-	if (Number.isInteger(index) && index >= 0 && index < mobileHostileCount(contract)) return mobileSpawn(contract, map, index);
+	if (map.terrain?.site?.kind !== 'garrison' && Number.isInteger(index) && index >= 0 && index < mobileHostileCount(contract)) return mobileSpawn(contract, map, index);
 	const spawn = missionGarrison(contract, map)[index];
 	if (spawn) return spawn;
 	throw new RangeError(`No hostile at deployment slot ${index} on this field`);
@@ -264,7 +279,8 @@ const surveyElevation = function (contract: Contract, map: TerrainMap, garrison:
 };
 
 const finishMissionField = function (contract: Contract, map: TerrainMap, obstacles: readonly TerrainObstacle[], random: () => number) {
-	const terrain = { obstacles, roads: map.terrain.roads };
+	const terrain = { ...map.terrain, obstacles };
+	const landmarkField = terrain.site ? { obstacles: [...obstacles, terrain.site] } : terrain;
 	const landmarks: Landmark[] = [];
 	const garrison = missionGarrison(contract, { ...map, terrain });
 	const guns = garrison.filter(function (spawn) { return spawn.kind === 'artillery'; });
@@ -275,7 +291,7 @@ const finishMissionField = function (contract: Contract, map: TerrainMap, obstac
 		const radius = between(35, 135);
 		if (reserved.some(function (site) { return separation(at, site) < radius + 155; })
 			|| guns.some(function (gun) { return separation(at, gun) < radius + EMPLACEMENT_RADIUS; })
-			|| !terrainPointClear(terrain, at, radius)) continue;
+			|| !terrainPointClear(landmarkField, at, radius)) continue;
 		landmarks.push({ ...at, radius, rotation: random() * Math.PI * 2, kind: i % 7 === 0 ? 'depot' : i % 3 === 0 ? 'crater' : 'rocks' });
 	}
 	// Board and survey callers can inspect the same map without constructing a
@@ -305,9 +321,21 @@ export const generateMissionField = function (contract: Contract, suppliedMap?: 
 	const alongSpan = eastWestCut ? width : height;
 	const across = random() < .5 ? -1 : 1;
 	const along = random() < .5 ? -1 : 1;
-	const acrossOrigin = acrossSpan / 2 + between(-220, 220);
+	const surveyOrigin = acrossSpan / 2 + between(-220, 220);
 	const back = between(alongSpan * .34, alongSpan * .40);
 	const alongOrigin = along === 1 ? back : alongSpan - back;
+	const approach = between(335, 410); const departure = between(940, 1190);
+	const flank = between(455, 610);
+	const approachOffset = between(-32, 24), siteOffset = between(-55, 45);
+	const defense = contract.kind === 'defend';
+	const plan = objectiveSitePlan(contract);
+	// Start the district beyond the crossing, then reserve its full depth on
+	// that bank even when the seed turns the cut across the shorter map axis.
+	const frontage = 250 + (defense ? 0 : departure - 940);
+	const bankDepth = plan ? frontage + plan.bounds.width + 160 : 0;
+	const acrossOrigin = across === 1 ? Math.min(surveyOrigin, acrossSpan - bankDepth) : Math.max(surveyOrigin, bankDepth);
+	const siteX = plan ? frontage - plan.bounds.west : defense ? 760 : departure;
+	const siteY = defense ? 20 : siteOffset + (contract.kind === 'assassination' ? -245 : contract.kind === 'demolition' ? 195 : 0);
 	const point = function (acrossCut: number, alongCut: number): Point {
 		const acrossPosition = acrossOrigin + across * acrossCut;
 		const alongPosition = alongOrigin + along * alongCut;
@@ -319,20 +347,16 @@ export const generateMissionField = function (contract: Contract, suppliedMap?: 
 
 	// Build both approaches in coordinates relative to their main crossing.
 	// The flared entries and level crossings remain open as the cut moves.
-	const approach = between(335, 410); const departure = between(940, 1190);
-	const flank = between(455, 610);
-	const approachStart = point(-approach, between(-32, 24));
-	const siteOffset = between(-55, 45);
-	const mainSite = point(departure, siteOffset + (contract.kind === 'assassination' ? -245 : contract.kind === 'demolition' ? 195 : 0));
+	const approachStart = point(-approach, approachOffset);
+	const sitePoint = function (east: number, south: number) { return point(siteX + east, siteY + south); };
+	const objective = sitePoint(0, 0);
+	const layout = plan && placeObjectiveSite(plan, sitePoint, footprintSize);
 	const serviceEntry = point(-approach - 85, 285);
 	const serviceFork = point(-approach - 30, flank);
 	const cutWidth = biome === 'badlands' ? 230 : 204;
 	const pickupClearance = cutWidth / 2 + 28 + EXTRACTION_RADIUS + RIG_RADIUS;
 	const servicePickup = point(Math.min(-approach + 50, -pickupClearance), flank + between(215, 290));
-	const crossingRoads = [
-		[approachStart, point(0, 0), mainSite],
-		[approachStart, serviceEntry, serviceFork, point(0, flank), point(departure - 310, flank + between(35, 65)), mainSite],
-	];
+	const serviceBend = point(departure - 310, flank + between(35, 65));
 	const mainHalf = between(115, 150); const flankHalf = between(115, 145);
 	const fissure = function (start: number, end: number): TerrainObstacle {
 		return { ...point(between(-28, 28), (start + end) / 2), kind: 'fissure',
@@ -350,29 +374,30 @@ export const generateMissionField = function (contract: Contract, suppliedMap?: 
 		...(random() < .45 ? [shed(between(445, 555), -between(390, 490), between(120, 155))] : []),
 	];
 
-	const defense = contract.kind === 'defend';
-	const drop = defense ? point(525, -410) : approachStart;
-	const objective = defense ? point(760, 20) : mainSite;
-	const extraction = defense ? point(670, flank + 315) : servicePickup;
+	const drop = defense ? sitePoint(-235, -430) : approachStart;
+	const extraction = defense ? sitePoint(-90, flank + 295) : servicePickup;
 	const multiSite = hasMultipleSites(contract.kind);
 	const nearSite = point(-approach - 245, flank + 155);
 	const farSite = point(departure - 385, -480);
 	const sites = multiSite ? [nearSite, farSite, objective] : [objective];
-	const roads = defense ? [
-		[point(-approach, 0), point(0, 0), objective],
-		[point(-approach, 0), serviceFork, point(0, flank), point(430, flank), objective],
-		[drop, objective, extraction],
-	] : crossingRoads;
+	const roadStart = defense ? point(-approach, 0) : approachStart;
+	const roads = [
+		[roadStart, point(0, 0), ...(layout ? [point(230, 0), ...layout.avenue] : [objective])],
+		[roadStart, ...(defense ? [] : [serviceEntry]), serviceFork, point(0, flank),
+			...(layout ? [point(230, flank), ...layout.service] : [defense ? point(430, flank) : serviceBend, objective])],
+	];
+	if (defense) roads.push([drop, ...(layout?.defenseStreet ?? [objective]), extraction]);
+	if (layout) roads.push(...layout.streets);
 	if (multiSite) roads.push([serviceFork, nearSite], [objective, farSite]);
 	const lanes = defense ? roads : [...roads, [serviceFork, extraction]];
 	const map: TerrainMap = { seed: contract.seed, biome, width, height, drop, objective, extraction, sites,
-		landmarks: [], terrain: { obstacles: cuts, roads } };
+		landmarks: [], terrain: layout ? { obstacles: [...cuts, ...layout.buildings], roads, site: layout.site } : { obstacles: cuts, roads } };
 	const { obstacles, addCover } = missionCover(contract, map, lanes);
 	for (const building of buildings) addCover(building);
 	// Keep cover on the approaches even when objective and spawn reservations
 	// displace the original shed candidates.
 	for (const [x, y] of [[-450, -255], [470, -265], [450, flank + 270], [-625, 205], [800, -255]] as const) {
-		if (obstacles.length - cuts.length >= 3) break;
+		if (obstacles.length - map.terrain.obstacles.length >= 3) break;
 		addCover(shed(x, y, 135));
 	}
 	if (biome === 'tundra') {

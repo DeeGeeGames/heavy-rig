@@ -13,7 +13,7 @@ import type { Contract, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionField, missionHostileCount, missionSpawn, missionDeploymentSlot, squadDestination, type MissionSpawn } from './missions';
 import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint, type WeaponBody } from './weapon-rig';
 import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS, enemyRadius, enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
-import { moveOnTerrain, terrainPathClear, terrainPointClear, terrainShotContact, terrainShotFraction, terrainWaypoint, type FieldTerrain, type ObstacleField } from './field-terrain';
+import { fieldStructureKinds, moveOnTerrain, terrainPathClear, terrainPointClear, terrainShotContact, terrainShotFraction, terrainWaypoint, type FieldTerrain, type ObstacleField } from './field-terrain';
 import { groundAimSlope, groundContact, groundHeight, groundNormal } from './terrain-elevation';
 import type { FeedbackActor, FeedbackFamily, ImpactSurface, WeaponCue } from './weapon-feedback';
 import { inFiringArc, turnTorso } from './torso-arc';
@@ -1622,7 +1622,7 @@ export const projectilesStep = function (state: CombatStateView, dt: number) {
 			const affected = shot.splash && shot.kind !== 'enemy' ? (catalog ? splashFriendly(state, friendlies, impact, shot) : splashDamage(state, impact, shot)) : undefined;
 			const obstacle = cover?.fraction === surfaceHit ? cover : undefined;
 			const kind = obstacle?.obstacle.kind;
-			const surface = kind === 'shed' || kind === 'turbine' ? 'concrete' : kind === 'tree' ? 'wood' : 'ground';
+			const surface = kind && fieldStructureKinds.has(kind) ? 'concrete' : kind === 'tree' ? 'wood' : 'ground';
 			projectileImpact(state, shot, family, impact, shot.splash ?? 18, '#ffb477', { surface,
 				normal: obstacle?.normal ?? ground?.normal ?? { x: 0, y: 0, elevation: 1 }, affected, scuff: surface !== 'wood' });
 		}

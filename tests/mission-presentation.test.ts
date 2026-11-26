@@ -56,8 +56,13 @@ test('mission navigation follows the remaining objective and missile feedback ac
 	const state = createMissionState(contract, { frame: 'morrow' }); const mission = state.mission;
 	if (!mission?.structure) throw new Error('Missing demolition mission');
 	const facility = mission.structure;
-	state.player.x = facility.x; state.player.y = facility.y + 300; state.loadout = [createMount('stream-missiles')];
-	const enemy = { id: 999, x: facility.x + 80, y: facility.y, hp: 100, maxHp: 100, angle: 0, cooldown: 1, heavy: false, kind: 'scout' as const };
+	const gate = mission.map.terrain?.roads[0]?.at(-2);
+	if (!gate) throw new Error('Missing facility approach');
+	state.player.x = (facility.x + gate.x) / 2; state.player.y = (facility.y + gate.y) / 2;
+	const facing = Math.atan2(facility.y - gate.y, facility.x - gate.x);
+	state.player.angle = facing; state.player.turret = facing; state.loadout = [createMount('stream-missiles')];
+	const enemy = { id: 999, x: facility.x - Math.sin(facing) * 80, y: facility.y + Math.cos(facing) * 80,
+		hp: 100, maxHp: 100, angle: 0, cooldown: 1, heavy: false, kind: 'scout' as const };
 	state.enemies = [enemy];
 	const waypoint = missionNavigation(state);
 	if (!waypoint) throw new Error('Missing waypoint');

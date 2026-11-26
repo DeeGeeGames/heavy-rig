@@ -1,5 +1,5 @@
 import type { Biome, MissionMap } from './campaign-types';
-import { terrainPathClear, type ObstacleField, type TerrainObstacle } from './field-terrain';
+import { fieldStructureKinds, terrainPathClear, type ObstacleField, type TerrainObstacle } from './field-terrain';
 import { surveyLandingPads } from './landing-site';
 import type { Point } from './simulation';
 import type { TerrainElevation } from './terrain-elevation';
@@ -139,6 +139,7 @@ export const generateElevation = function (map: MissionMap, obstacles: readonly 
 	const water = obstacles.filter(function (o) { return o.kind === 'channel'; });
 	const strips = surveyLandingPads(map, obstacles, formation, reserves);
 	const pads = [{ ...map.drop, radius: 215 }, { ...map.extraction, radius: 166 }, ...map.sites.map(function (p) { return { ...p, radius: 125 }; })];
+	const site = map.terrain?.site;
 	const clearingDistance = function (x: number, y: number) {
 		let distance = Math.min(420, Math.min(x, y, map.width - x, map.height - y) + surveySpacing);
 		for (const p of pads) {
@@ -147,6 +148,7 @@ export const generateElevation = function (map: MissionMap, obstacles: readonly 
 		}
 		if (distance <= 0) return distance;
 		let squared = distance * distance;
+		if (site) squared = Math.min(squared, boxDistanceSquared(x - site.x, y - site.y, site.width / 2, site.depth / 2));
 		for (const p of strips) {
 			const dx = x - p.x, dy = y - p.y;
 			squared = Math.min(squared, boxDistanceSquared(dx * p.c + dy * p.s, dx * p.s - dy * p.c, p.halfLength, p.halfWidth));
@@ -190,7 +192,7 @@ export const generateElevation = function (map: MissionMap, obstacles: readonly 
 		}
 		heights[i++] = height;
 	}
-	const buildings = obstacles.filter(function (o) { return o.kind === 'shed' || o.kind === 'turbine'; });
+	const buildings = obstacles.filter(function (o) { return fieldStructureKinds.has(o.kind); });
 	levelFoundations(heights, xs, ys, [...buildings, ...emplacements]);
 	let minHeight = 0, maxHeight = 0;
 	for (const [index, surface] of heights.entries()) {

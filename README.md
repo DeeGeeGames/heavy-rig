@@ -294,8 +294,11 @@ in each biome.
 Defense drops the squad near the relay. Hostile transports land during the
 assault, unload their rigs by ramp, and lift away. Tanks drive in from the map
 edge, while helicopters and VTOLs fly in. On offensive contracts the garrisons
-already hold their positions when you land. Clearance, Raid, and Acquisition
-spread their sites across the field.
+already hold their positions when you land. On Meridian, Garrison Defense puts
+the relay in a city square with several streets leading into it. On Cinder,
+Facility Demolition puts the processor inside a walled garrison. The main gate
+opens onto the motor pool, and a service road runs behind the hangars.
+Clearance, Raid, and Acquisition spread their sites across the field.
 
 A sortie uses each assigned frame's saved integrity and installed weapons. There
 are **no random weapon drafts, combat repair/coolant pickups, or field-service
