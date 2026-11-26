@@ -7,6 +7,7 @@ import { groundHeight } from './terrain-elevation';
 import type { MechFeedback } from './mech-3d';
 import { createMechResponseRig } from './mech-response';
 import { createLegPoseSampling } from './leg-pose-sampling';
+import { startRigCollapse } from './rig-collapse';
 import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
 import { snapMechHeading } from './torso-arc';
@@ -341,6 +342,11 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			get exhaust() { return undefined; },
 			get labelHeight() { return labelHeight; },
 			pose,
+			beginCollapse: function (site) {
+				return startRigCollapse(root, site, { pivot: torso, parts: [torso] }, legs.map(function (leg) {
+					return { hip: { pivot: leg.thigh, parts: [leg.thigh] }, knee: { pivot: leg.shin, parts: [leg.shin] }, foot: leg.foot };
+				}));
+			},
 			dispose: function () {
 				if (disposed) return; disposed = true;
 				for (const material of ownedMaterials.values()) material.dispose();
