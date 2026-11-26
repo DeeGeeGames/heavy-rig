@@ -523,10 +523,10 @@ to those indices.
 
 | Action | Keyboard / mouse | Standard gamepad | Touch |
 | --- | --- | --- | --- |
-| Drive up/down in Arcade or adjust throttle in Simulation | W/S or up/down | D-pad or left stick up/down | Drag left stick up/down |
+| Drive up/down in Arcade or adjust throttle in Tank | W/S or up/down | D-pad or left stick up/down | Drag left stick up/down |
 | Neutral; momentum decays | X | X / square | STOP |
-| Move sideways in Arcade or turn in Simulation | A/D or left/right | D-pad or left stick left/right | Drag left stick left/right |
-| Aim independent turret | Mouse | Right stick left/right rotates torso | Tap a hostile or NEXT to track; empty ground aims manually |
+| Move sideways in Arcade or turn in Tank | A/D or left/right | D-pad or left stick left/right | Drag left stick left/right |
+| Aim independent turret | Mouse | Right stick rotates or points, depending on torso aim setting | Tap a hostile or NEXT to track; empty ground aims manually |
 | Camera zoom | Mouse wheel | Bottom face button cycles zoom | Hold ZOOM and drag up or down |
 | Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Arm mount 1; hold FIRE |
 | Fire mount 2 | Right mouse / hold 2 or E | LT / L2 | Arm mount 2; hold FIRE |
@@ -560,21 +560,24 @@ confirm to apply, or go back to keep the current value. Touch controls
 activate on touch-first devices or through Settings. Optional recoil/damage
 vibration depends on browser and controller support.
 
-**Settings → Controls → Control Mode** selects **Simulation** or
-**Arcade** (default), saved on this device. In Arcade, the D-pad, left stick, or
+**Settings → Controls** saves leg controls and controller torso aim independently.
+**Leg Controls** selects **Tank** or **Arcade** (default). Tank uses left/right
+to steer and up/down to adjust persistent throttle. In Arcade, the D-pad, left stick, or
 mapped movement keys accelerate the rig in the chosen screen direction while its
 legs turn to follow. Push the stick farther for more speed. Reversing input
 bleeds off momentum before the rig gains speed the other way. Release to slow.
-In Arcade, hold the right stick to aim. The legs turn if needed to bring that
-aim into the firing arc, and the rig backs up at reverse speed when you drive
-away from where you are aiming. Release the right stick to return to forward
-aim and movement-led facing. Both modes retain each chassis’s leg and torso
-rotation speeds. Mouse aiming works in both modes, including while
-moving or firing with a controller. The touch stick always uses Arcade movement.
+**Controller Torso Aim** selects **Rotate** or **Point** (default). In Rotate,
+push the right stick left or right to turn the torso. Release it to hold the
+current heading within the firing arc. In Point, hold the stick in the screen
+direction you want to aim and release it to return to forward aim. With Arcade
+legs and Point aim, the legs turn to keep that aim in the firing arc and the rig
+backs up at reverse speed when you drive away from where you are aiming.
+Each chassis keeps its leg and torso rotation speeds. Mouse aiming works
+in either mode, including while moving or firing with a controller. The touch
+stick always uses Arcade movement, with its own aiming controls.
 Enabling CRUISE holds the touch stick’s last direction and speed setting on release.
 
-In Simulation, releasing throttle keeps the engine setting and releasing the
-right stick holds the torso heading. Pause preserves throttle and
+Pause preserves throttle and
 clears held inputs; deployment starts in neutral. Focus loss, hidden pages,
 controller disconnection, and WebGL context loss pause and silence combat.
 Recovery requires explicit resume.
@@ -805,8 +808,8 @@ Run `bun run test:rigs` to build and serve a dedicated playground on port 3003,
 bound to all network interfaces. Open `http://localhost:3003/` or use the host's
 LAN address from another device. The script stays running until Ctrl+C.
 
-Choose any of the 27 playable frame variants, Simulation or Arcade controls, and starter,
-fully loaded, or empty mounts. Switching a choice or pressing Reset starts a
+Choose any of the 27 playable frame variants, set leg controls and controller torso aim
+independently, and pick starter, fully loaded, or empty mounts. Switching a choice or pressing Reset starts a
 fresh run. Collapse the test panel for more battlefield space. Compare acceleration,
 coasting, braking, reversing, hull turning, independent aim, and firing while moving.
 Live readings show mass, speed, throttle, headings, and heat. This uses the mission

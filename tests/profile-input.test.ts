@@ -58,7 +58,7 @@ describe('Heavy Rig player preferences and input boundaries', function () {
 	});
 	test('skin choices survive reload while historical preferences and invalid skin values stay usable', function () {
 		const old = parseProfile(JSON.stringify({ settings: { master: 0.35, controlMode: 'simulation' } }));
-		expect(old.settings.mechSkin).toBe('freeholds'); expect(old.settings.master).toBe(0.35); expect(old.settings.controlMode).toBe('simulation');
+		expect(old.settings).toMatchObject({ mechSkin: 'freeholds', master: 0.35, legControls: 'tank', torsoAim: 'rotate' });
 		for (const mechSkin of ['original', 'freeholds', 'accord', 'freeholds-caps', 'combine-field', 'accord-flank'] as const) {
 			const profile = { ...old, settings: { ...old.settings, mechSkin } };
 			expect(parseProfile(JSON.stringify(profile)).settings).toEqual(profile.settings);

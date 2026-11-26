@@ -8,11 +8,16 @@ import { inFiringArc } from '../src/torso-arc';
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 900, y: 0 }, fire: [false, false, false, false], coolant: false };
 
 describe('control modes', function () {
-	test('new, old and invalid profiles default to Arcade while saved choices survive reload', function () {
-		expect(parseProfile(null).settings.controlMode).toBe('arcade');
-		for (const controlMode of [undefined, 'invalid', null]) expect(parseProfile(JSON.stringify({ settings: { controlMode } })).settings.controlMode).toBe('arcade');
-		expect(parseProfile(JSON.stringify({ settings: { controlMode: 'simulation' } })).settings.controlMode).toBe('simulation');
-		expect(parseProfile(JSON.stringify({ settings: { controlMode: 'arcade' } })).settings.controlMode).toBe('arcade');
+	test('legacy Arcade and invalid settings keep default controls while valid split choices survive reload', function () {
+		expect(parseProfile(null).settings).toMatchObject({ legControls: 'arcade', torsoAim: 'point' });
+		for (const controlMode of [undefined, 'arcade', 'invalid', null]) {
+			expect(parseProfile(JSON.stringify({ settings: { controlMode, legControls: 'invalid', torsoAim: [] } })).settings)
+				.toMatchObject({ legControls: 'arcade', torsoAim: 'point' });
+		}
+		for (const settings of [{ legControls: 'tank', torsoAim: 'point' }, { legControls: 'arcade', torsoAim: 'rotate' }]) {
+			const profile = parseProfile(JSON.stringify({ settings: { controlMode: 'simulation', ...settings } }));
+			expect(parseProfile(JSON.stringify(profile)).settings).toMatchObject(settings);
+		}
 	});
 	test('rate aiming holds on release and uses each chassis turret speed', function () {
 		for (const frame of ['warden', 'kestrel', 'maul', 'longbow', 'morrow'] as const) {

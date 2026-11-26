@@ -2,7 +2,7 @@ import { keyLabel, padLabel, type ControllerBindings, type KeyboardBindings } fr
 import { loadedMounts } from './combat-resources';
 import type { FrameId } from './frames';
 import { stockPackage } from './hardpoints';
-import type { ControlMode } from './profile';
+import type { LegControls, TorsoAim } from './profile';
 import { createEnemyLoadout, createState, type State } from './simulation';
 
 export const INTRO_LINES = [
@@ -82,13 +82,14 @@ export interface EscapePrompts {
 	device: 'keyboard' | 'gamepad' | 'touch';
 	keyboard: KeyboardBindings;
 	controller: ControllerBindings;
-	controlMode: ControlMode;
+	legControls: LegControls;
+	torsoAim: TorsoAim;
 	buttonLabel?: (index: number) => string;
 }
 export const escapeMessage = function (time: number, prompts: EscapePrompts): string {
 	const key = function (action: keyof KeyboardBindings) { return prompts.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
 	const button = prompts.buttonLabel ?? padLabel;
-	const arcade = prompts.controlMode === 'arcade' && prompts.device !== 'touch';
+	const arcade = prompts.legControls === 'arcade';
 	const drive = prompts.device === 'touch' ? 'Point the left stick to move. Release to slow.'
 		: prompts.device === 'gamepad' ? arcade ? 'Point the left stick to move; release to slow.' : 'Left stick up/down sets throttle; release to cruise.'
 			: arcade ? `${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} move; release to slow.` : `${key('forward')} raises throttle; ${key('back')} lowers it. Release to cruise.`;
@@ -96,7 +97,7 @@ export const escapeMessage = function (time: number, prompts: EscapePrompts): st
 		: prompts.device === 'gamepad' ? `${arcade ? 'Left stick chooses your direction.' : 'Left stick left/right turns your legs.'} ${button(prompts.controller.stop)} stops.`
 			: `${arcade ? 'Movement keys choose your direction.' : `${key('left')} / ${key('right')} turn your legs.`} ${key('stop')} stops.`;
 	const aim = prompts.device === 'touch' ? 'Tap a guard to track it, or use NEXT. Arm mount chips, then hold FIRE.'
-		: prompts.device === 'gamepad' ? `${arcade ? 'Right stick aims.' : 'Right stick left/right turns your torso.'} Hold ${button(prompts.controller['mount-0'])} to fire.`
+		: prompts.device === 'gamepad' ? `${prompts.torsoAim === 'point' ? 'Point the right stick to aim.' : 'Right stick left/right turns your torso.'} Hold ${button(prompts.controller['mount-0'])} to fire.`
 			: `Mouse aims independently of your legs. Hold ${key('mount-0')} to fire.`;
 	const coolant = prompts.device === 'touch' ? 'VENT' : prompts.device === 'gamepad' ? button(prompts.controller.coolant) : key('coolant');
 	if (time < 7) return `ALARMS ARE UP. Head southeast to the green evacuation point. ${drive}`;

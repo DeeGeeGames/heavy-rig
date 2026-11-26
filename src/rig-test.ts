@@ -24,14 +24,16 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 	const rig = document.createElement('select'); rig.id = 'test-rig'; rig.title = 'Rig';
 	for (const frame of PLAYABLE_FRAMES) rig.add(new Option(frame.name, frame.id));
 	if (drill === 'kestrel') rig.value = 'kestrel';
-	const mode = document.createElement('select'); mode.id = 'test-mode'; mode.title = 'Control mode';
-	mode.add(new Option('Simulation', 'simulation')); mode.add(new Option('Arcade', 'arcade')); mode.value = backup ? 'arcade' : settings.controlMode;
+	const legs = document.createElement('select'); legs.id = 'test-leg-controls'; legs.title = 'Leg controls';
+	legs.add(new Option('Legs: Tank', 'tank')); legs.add(new Option('Legs: Arcade', 'arcade')); legs.value = backup ? 'arcade' : settings.legControls;
+	const torso = document.createElement('select'); torso.id = 'test-torso-aim'; torso.title = 'Controller torso aim';
+	torso.add(new Option('Torso: Rotate', 'rotate')); torso.add(new Option('Torso: Point', 'point')); torso.value = backup ? 'point' : settings.torsoAim;
 	const equipment = document.createElement('select'); equipment.id = 'test-equipment'; equipment.title = 'Equipment';
 	equipment.add(new Option('Starter weapon', 'starter'));
 	equipment.add(new Option('All mounts loaded', 'loaded'));
 	equipment.add(new Option('Empty mounts', 'empty'));
 	const reset = document.createElement('button'); reset.textContent = 'RESET RUN';
-	const controls = document.createElement('div'); controls.className = 'rig-test-options'; controls.append(rig, mode, equipment, reset);
+	const controls = document.createElement('div'); controls.className = 'rig-test-options'; controls.append(rig, legs, torso, equipment, reset);
 	const finishes = document.createElement('div'); finishes.className = 'rig-test-finishes';
 	const checkbox = function (id: string, text: string, checked: boolean) {
 		const label = document.createElement('label');
@@ -73,7 +75,8 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 	const restart = function () {
 		const frame = PLAYABLE_FRAMES.find(function (candidate) { return candidate.id === rig.value; });
 		if (!frame) return;
-		settings.controlMode = mode.value === 'arcade' ? 'arcade' : 'simulation';
+		settings.legControls = legs.value === 'tank' ? 'tank' : 'arcade';
+		settings.torsoAim = torso.value === 'rotate' ? 'rotate' : 'point';
 		const state = createState({ frame: frame.id });
 		if (equipment.value === 'empty') state.loadout = [];
 		if (equipment.value === 'loaded') {
@@ -88,7 +91,7 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 		}
 		start(state); scenario = current(); applyFinish();
 	};
-	for (const select of [rig, mode, equipment]) select.addEventListener('change', restart, { signal: abort.signal });
+	for (const select of [rig, legs, torso, equipment]) select.addEventListener('change', restart, { signal: abort.signal });
 	reset.addEventListener('click', restart, { signal: abort.signal });
 	const interval = window.setInterval(function () {
 		// Render-target allocation can fail on the first draw or after a resize.
