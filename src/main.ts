@@ -1472,7 +1472,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				: arcade ? row(directions(['forward', 'left', 'back', 'right']), 'Move')
 					: html`${row(directions(['forward', 'back']), 'Throttle')}${row(directions(['left', 'right']), 'Steer')}`}
 			${row(renderAimGlyph(device), controller && !arcade ? 'Rotate turret' : 'Aim')}
-			${row(controller ? renderControllerButton(controllerFamily, 0) : renderZoomGlyph(), 'Zoom')}
+			${row(controller ? renderControllerButton(controllerFamily, 0) : renderZoomGlyph(), controller ? 'Cycle zoom' : 'Zoom')}
 		`;
 	};
 	const updateHud = function () {
@@ -1717,7 +1717,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			} else if (pad.scroll) scrollMenu(root, pad.scroll, dt);
 		}
 		const combatInput = playing() && screenRevision === revisionAtFrame;
-		if (combatInput && pad.ready && pad.confirm) presentation.toggleWideView();
+		if (combatInput && pad.ready && pad.confirm) presentation.cycleZoom();
 		// Apply zoom and drift before all mouse, touch and controller ground picking.
 		presentation.updateCamera(state, aimMode === 'pointer' ? pointer : undefined, hudObstructions);
 		if (combatInput) {
