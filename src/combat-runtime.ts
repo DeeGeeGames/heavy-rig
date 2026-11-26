@@ -16,7 +16,7 @@ export interface CombatComponents {
 	squadmate: Squadmate;
 	position: Point;
 	heading: { angle: number };
-	drive: Pick<Player, 'throttle' | 'speed' | 'motorSpeed' | 'travelAngle'>;
+	drive: Pick<Player, 'throttle' | 'speed' | 'motorSpeed' | 'travelAngle' | 'arcadeBacking'>;
 	aim: { brace: Player['brace']; designation: Player['designation']; missileLock: Player['missileLock']; turret: number; targetId: number | undefined };
 	health: { hp: number; maxHp: number };
 	reactor: Reactor;
@@ -191,7 +191,8 @@ export const createCombatRuntime = function () {
 				world.addResource('combatConfig', config); world.addResource('combatProgress', progress); world.addResource('combatFeedback', feedback); world.addResource('combatStats', snapshot.stats);
 				bindMission(snapshot.mission);
 				const position = { x: snapshot.player.x, y: snapshot.player.y }; const heading = { angle: snapshot.player.angle };
-				const drive = { throttle: snapshot.player.throttle, speed: snapshot.player.speed, motorSpeed: snapshot.player.motorSpeed, travelAngle: snapshot.player.travelAngle }; const aim = { brace: snapshot.player.brace, designation: snapshot.player.designation, missileLock: snapshot.player.missileLock, turret: snapshot.player.turret, targetId: snapshot.player.targetId };
+				const { throttle, speed, motorSpeed, travelAngle, arcadeBacking } = snapshot.player;
+				const drive = { throttle, speed, motorSpeed, travelAngle, arcadeBacking }; const aim = { brace: snapshot.player.brace, designation: snapshot.player.designation, missileLock: snapshot.player.missileLock, turret: snapshot.player.turret, targetId: snapshot.player.targetId };
 				const health = { hp: snapshot.player.hp, maxHp: 100 }; const reactor = { heat: snapshot.player.heat, overheated: snapshot.player.overheated, coolantCharges: snapshot.coolantCharges, coolantHeld: snapshot.coolantHeld };
 				const weaponBank = { mounts: snapshot.loadout };
 				const playerEntity = world.spawn({ combatOwned: true, player: true, position, heading, drive, aim, health, reactor, weaponBank });
@@ -204,6 +205,7 @@ export const createCombatRuntime = function () {
 					get speed() { return component(playerEntity.id, 'drive').speed; }, set speed(value) { writeField(playerEntity.id, 'drive', 'speed', value); },
 					get motorSpeed() { return component(playerEntity.id, 'drive').motorSpeed; }, set motorSpeed(value) { writeField(playerEntity.id, 'drive', 'motorSpeed', value); },
 					get travelAngle() { return component(playerEntity.id, 'drive').travelAngle; }, set travelAngle(value) { writeField(playerEntity.id, 'drive', 'travelAngle', value); },
+					get arcadeBacking() { return component(playerEntity.id, 'drive').arcadeBacking; }, set arcadeBacking(value) { writeField(playerEntity.id, 'drive', 'arcadeBacking', value); },
 					get turret() { return component(playerEntity.id, 'aim').turret; }, set turret(value) { writeField(playerEntity.id, 'aim', 'turret', value); },
 					get brace() { return component(playerEntity.id, 'aim').brace; }, set brace(value) { writeField(playerEntity.id, 'aim', 'brace', value); },
 					get designation() { return component(playerEntity.id, 'aim').designation; }, set designation(value) { writeField(playerEntity.id, 'aim', 'designation', value); },

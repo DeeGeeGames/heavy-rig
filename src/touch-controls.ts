@@ -4,7 +4,6 @@ import { missionFacilityName } from './mission-site-labels';
 import { isPriorityTarget } from './missions';
 import { getFrame } from './frames';
 import { targetElevation, type ScreenRect } from './overlay';
-import { inFiringArc } from './torso-arc';
 
 export interface TouchContact { id: number; point: Point; screen: Point; label: string }
 export const isContactVisible = function ({ x, y }: Point, width: number, height: number, obstructions: readonly ScreenRect[]): boolean {
@@ -40,8 +39,9 @@ export const createTouchTargeting = function () {
 		select: function (point: Point, contacts: readonly TouchContact[]) {
 			const nearest = contacts.reduce<TouchContact | undefined>(function (best, contact) { return !best || distance(contact.screen, point) < distance(best.screen, point) ? contact : best; }, undefined);
 			const selected = nearest && distance(nearest.screen, point) <= 44 ? nearest : undefined;
-			id = selected?.id;
-			return selected;
+			const repeated = selected !== undefined && selected.id === id;
+			id = repeated ? undefined : selected?.id;
+			return selected === undefined ? 'ground' : repeated ? 'released' : 'tracked';
 		},
 		nearest: function (contacts: readonly TouchContact[], origin: Point) { id = ordered(contacts, origin)[0]?.id; },
 		cycle: function (contacts: readonly TouchContact[], origin: Point) {
@@ -49,10 +49,10 @@ export const createTouchTargeting = function () {
 			const index = sorted.findIndex(function (contact) { return contact.id === id; });
 			id = sorted[(index + 1) % sorted.length]?.id;
 		},
-		resolve: function <T extends { id: number; point: Point & { hp?: number } }>(contacts: readonly T[], rig?: Point & { angle: number }) {
+		resolve: function <T extends { id: number; point: Point & { hp?: number } }>(contacts: readonly T[]) {
 			if (id === undefined) return undefined;
 			const contact = contacts.find(function (candidate) {
-				return candidate.id === id && (!rig || (candidate.point.hp ?? 1) > 0 && inFiringArc(rig, rig.angle, candidate.point));
+				return candidate.id === id && (candidate.point.hp ?? 1) > 0;
 			});
 			if (!contact) clear();
 			return contact;
@@ -67,22 +67,23 @@ export const touchAimPoint = function (origin: Point, heading: number): Point {
 // Direct fire holds a heading. Artillery can keep an exact ground coordinate.
 export const createTouchFacing = function () {
 	let heading: number | undefined;
-	let ground: Point | undefined;
-	const clear = function () { heading = undefined; ground = undefined; };
+	let anchor: Point | undefined;
+	let fixed = false;
+	const clear = function () { heading = undefined; anchor = undefined; };
 	return {
 		clear,
 		active: function () { return heading !== undefined; },
+		anchor: function () { return anchor; },
 		select: function (point: Point, origin: Point, fixedGround = false) {
-			ground = fixedGround ? { ...point } : undefined;
 			if (point.x === origin.x && point.y === origin.y) clear();
-			else heading = Math.atan2(point.y - origin.y, point.x - origin.x);
+			else {
+				anchor = { ...point }; fixed = fixedGround;
+				heading = Math.atan2(point.y - origin.y, point.x - origin.x);
+			}
 		},
-		resolve: function (origin: Point & { angle: number }): Point | undefined {
+		resolve: function (origin: Point): Point | undefined {
 			if (heading === undefined) return undefined;
-			const aim = ground ?? touchAimPoint(origin, heading);
-			if (ground || inFiringArc(origin, origin.angle, aim)) return aim;
-			clear();
-			return undefined;
+			return fixed ? anchor : touchAimPoint(origin, heading);
 		},
 	};
 };

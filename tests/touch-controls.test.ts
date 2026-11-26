@@ -2,7 +2,6 @@ import { expect, test } from 'bun:test';
 import { createTouchFacing, createTouchDrive, createTouchTargeting, visibleTouchContacts, type TouchContact } from '../src/touch-controls';
 import { createMissionState, type Point } from '../src/simulation';
 import { FACILITY_TARGET_ID } from '../src/missions';
-import { TORSO_LIMIT } from '../src/torso-arc';
 
 const contact = function (id: number, x: number): TouchContact { return { id, point: { x, y: 100 }, screen: { x, y: 100 }, label: 'SCOUT' }; };
 
@@ -102,29 +101,30 @@ test('only the owning pointer can cancel Cruise while driving', function () {
 	stick.cancel(1); expect(stick.isCruising()).toBe(false); expect(stick.read()).toEqual({ drive: 0, turn: 0 });
 });
 
-test('touch free aim holds through translation but clears once the legs turn it out of arc', function () {
+test('touch free aim holds a heading through translation until explicitly cleared', function () {
 	const facing = createTouchFacing();
 	facing.select({ x: 100, y: 100 }, { x: 0, y: 100 });
-	expect(facing.resolve({ x: 200, y: 300, angle: TORSO_LIMIT })).toEqual({ x: 800, y: 300 });
-	expect(facing.resolve({ x: 200, y: 300, angle: TORSO_LIMIT + 0.001 })).toBeUndefined();
-	expect(facing.resolve({ x: 200, y: 300, angle: 0 })).toBeUndefined();
+	const rig = { x: 200, y: 300, angle: Math.PI };
+	expect(facing.resolve(rig)).toEqual({ x: 800, y: 300 });
+	expect(facing.anchor()).toEqual({ x: 100, y: 100 });
+	facing.clear();
+	expect(facing.resolve(rig)).toBeUndefined();
 });
 
-test('touch tracking follows a live world contact until arc exit or destruction and never reacquires silently', function () {
+test('touch tracking follows a live world contact and clears on retap or destruction without switching targets', function () {
 	const targeting = createTouchTargeting();
 	const tapped = contact(1, 100);
-	const rig = { x: 0, y: 100, angle: TORSO_LIMIT };
 	const live = { id: 1, point: { x: 300, y: 100, hp: 20 } };
 	const other = { id: 2, point: { x: 70, y: 100, hp: 20 } };
 	const worldContacts = [live, other];
 	targeting.select(tapped.screen, [tapped]);
-	expect(targeting.resolve(worldContacts, rig)).toBe(live);
-	expect(targeting.resolve(worldContacts, { ...rig, angle: TORSO_LIMIT + 0.001 })).toBeUndefined();
-	expect(targeting.resolve(worldContacts, rig)).toBeUndefined();
+	expect(targeting.resolve(worldContacts)).toBe(live);
+	expect(targeting.select(tapped.screen, [tapped])).toBe('released');
+	expect(targeting.resolve(worldContacts)).toBeUndefined();
 
 	targeting.select(tapped.screen, [tapped]);
 	live.point.hp = 0;
-	expect(targeting.resolve(worldContacts, rig)).toBeUndefined();
+	expect(targeting.resolve(worldContacts)).toBeUndefined();
 	live.point.hp = 20;
-	expect(targeting.resolve(worldContacts, rig)).toBeUndefined();
+	expect(targeting.resolve(worldContacts)).toBeUndefined();
 });

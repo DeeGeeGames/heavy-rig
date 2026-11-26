@@ -16,7 +16,7 @@ import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS, enemyRadius, enemyVolume,
 import { fieldStructureKinds, moveOnTerrain, terrainPathClear, terrainPointClear, terrainShotContact, terrainShotFraction, terrainWaypoint, type FieldTerrain, type ObstacleField } from './field-terrain';
 import { groundAimSlope, groundContact, groundHeight, groundNormal } from './terrain-elevation';
 import type { FeedbackActor, FeedbackFamily, ImpactSurface, WeaponCue } from './weapon-feedback';
-import { inFiringArc, turnTorso } from './torso-arc';
+import { inFiringArc, TORSO_LIMIT, turnTorso } from './torso-arc';
 import { planSquads, type SquadOrder as EnemySquadOrder } from './enemy-squads';
 import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './enemy-tactics';
 import { dropRigPose, planRigDrop, rigReleaseTime, type DropPassenger } from './enemy-deployment';
@@ -45,7 +45,7 @@ export interface Wreck extends Point {
 	angle: number;
 	rig?: { defeatedAt: number; hullAngle: number; frame?: FrameId; commander: boolean; equippedSlots: readonly number[] };
 }
-export interface Controls { heading?: number; throttleTarget?: number; turretTurn?: number; centerTorso?: boolean; drive: number; stop: boolean; turn: number; aim: Point; targetId?: number; fire: FireInputs; coolant: boolean }
+export interface Controls { heading?: number; throttleTarget?: number; faceAim?: boolean; turretTurn?: number; centerTorso?: boolean; drive: number; stop: boolean; turn: number; aim: Point; targetId?: number; fire: FireInputs; coolant: boolean }
 export interface CombatCollection<T> extends ReadonlyArray<T> {
 	push(...items: T[]): number;
 }
@@ -89,7 +89,7 @@ export interface CombatStateView {
 	authoredPose?: AuthoredPoseContext | undefined;
 	mission?: MissionRuntime;
 	frame: FrameId; difficulty: Difficulty; phase: 'combat'; loadout: WeaponMount[]; seed: number; stats: CombatStats; strikes: CombatCollection<ArtilleryStrike>;
-	player: RigBody & { travelAngle?: number | undefined };
+	player: RigBody & { travelAngle?: number | undefined; arcadeBacking?: boolean | undefined };
 	squadmates: readonly Squadmate[];
 	relay: number; enemies: CombatCollection<Unit>; shots: CombatCollection<Shot>; effects: CombatCollection<Effect>; wave: number; spawned: number; spawnIn: number;
 	intermission: number; cannonIn: number; time: number; kills: number; shake: number;
@@ -767,6 +767,7 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 	const weight = frameWeight(state.frame, state.loadout);
 	const terrain = groundNavigation(state);
 	if (input.throttleTarget === undefined) {
+		p.arcadeBacking = undefined;
 		if (p.travelAngle !== undefined) {
 			// Returning to Simulation keeps the signed component of momentum along the hull.
 			p.speed *= Math.cos(p.travelAngle - p.angle);
@@ -781,11 +782,26 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 		// A neutral touch input during a Simulation reverse cruise lets the signed setting decay.
 		const throttle = demand > 0 ? Math.abs(p.throttle) : p.throttle;
 		p.throttle = input.stop ? 0 : throttle + clamp(demand - throttle, -throttleChange, throttleChange);
-		const heading = demand > 0 ? input.heading ?? p.angle + turn : undefined;
-		const maxSpeed = p.throttle < 0 ? frame.reverseSpeed * weight.modifier : weight.speed;
+		const heading = demand > 0 && !input.stop ? input.heading ?? p.angle + turn : undefined;
+		const aimBearing = input.faceAim && (input.aim.x !== p.x || input.aim.y !== p.y) ? Math.atan2(input.aim.y - p.y, input.aim.x - p.x) : undefined;
+		// A little hysteresis keeps the feet from flipping at the edge of traverse.
+		const recoverArc = TORSO_LIMIT - Math.PI / 18;
+		if (aimBearing === undefined) p.arcadeBacking = undefined;
+		else if (heading !== undefined) p.arcadeBacking = Math.abs(angleDelta(heading, aimBearing)) > (p.arcadeBacking ? recoverArc : TORSO_LIMIT);
+		else if (Math.abs(p.speed) < 0.5) p.arcadeBacking = false;
+		const maxSpeed = p.arcadeBacking || p.throttle < 0 ? frame.reverseSpeed * weight.modifier : weight.speed;
 		advanceArcadeDrive(p, heading, Math.abs(p.throttle) * maxSpeed, frame.acceleration, dt, bounds, terrain);
 		p.motorSpeed = undefined;
-		p.angle += turn;
+		if (aimBearing === undefined) p.angle += turn;
+		else {
+			const current = angleDelta(aimBearing, p.angle);
+			const destination = heading === undefined ? clamp(current, -recoverArc, recoverArc)
+				: angleDelta(aimBearing, heading + (p.arcadeBacking ? Math.PI : 0));
+			// Enter on the near side of the blind sector. Once inside, never
+			// take a shortcut through the rear to reach the other side.
+			const legDelta = Math.abs(current) > TORSO_LIMIT ? clamp(current, -recoverArc, recoverArc) - current : destination - current;
+			p.angle += clamp(legDelta, -dt * frame.turnRate, dt * frame.turnRate);
+		}
 	}
 	const aimAngle = input.centerTorso ? p.angle : Math.atan2(input.aim.y - p.y, input.aim.x - p.x);
 	const turretRate = input.centerTorso ? frame.turretRate * 0.5 : frame.turretRate;

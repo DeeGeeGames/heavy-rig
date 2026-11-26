@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { createState, movementStep, step, type Controls } from '../src/simulation';
 import { getFrame } from '../src/frames';
+import { frameWeight } from '../src/combat-resources';
 import { parseProfile } from '../src/profile';
+import { inFiringArc } from '../src/torso-arc';
 
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 900, y: 0 }, fire: [false, false, false, false], coolant: false };
 
@@ -66,6 +68,38 @@ describe('control modes', function () {
 		expect(p.speed).toBeGreaterThan(buildingSpeed);
 		expect(p.y).toBeCloseTo(y, 8);
 		expect(Math.abs(p.angle)).toBeLessThan(Math.PI / 2);
+	});
+	test('aim behind the feet recovers firing while keeping Arcade retreat on the commanded ground line', function () {
+		const state = createState();
+		const p = state.player;
+		p.y = 420; p.angle = Math.PI / 2; p.turret = p.angle;
+		const input: Controls = { ...idle, heading: Math.PI / 2, throttleTarget: 1, faceAim: true, aim: { x: p.x, y: 250 }, fire: [true, false, false, false] };
+		const x = p.x;
+		step(state, input, 1 / 60);
+		expect(p.y).toBeGreaterThan(420);
+		expect(Math.abs(p.angle - Math.PI / 2)).toBeLessThanOrEqual(getFrame(state.frame).turnRate / 60 + 1e-9);
+		expect(state.stats.shotsFired).toBe(0);
+		for (let tick = 0; tick < 235; tick++) step(state, input, 1 / 60);
+		expect(p.y).toBeGreaterThan(520);
+		expect(p.x).toBeCloseTo(x);
+		expect(p.arcadeBacking).toBe(true);
+		expect(p.speed).toBeCloseTo(getFrame(state.frame).reverseSpeed * frameWeight(state.frame, state.loadout).modifier, 0);
+		expect(inFiringArc(p, p.angle, input.aim)).toBe(true);
+		expect(state.stats.shotsFired).toBeGreaterThan(0);
+		movementStep(state, { ...input, heading: -Math.PI / 2 }, 1 / 60);
+		expect(p.arcadeBacking).toBe(false);
+		expect(p.speed).toBeGreaterThan(0);
+	});
+	test('a stationary Arcade aim can bring the feet around without commanding movement', function () {
+		const state = createState();
+		const p = state.player;
+		const start = { x: p.x, y: p.y };
+		const input = { ...idle, faceAim: true, throttleTarget: 0, aim: { x: p.x, y: p.y + 100 } };
+		expect(inFiringArc(p, p.angle, input.aim)).toBe(false);
+		for (let tick = 0; tick < 120; tick++) movementStep(state, input, 1 / 60);
+		expect(inFiringArc(p, p.angle, input.aim)).toBe(true);
+		expect(p.x).toBe(start.x);
+		expect(p.y).toBe(start.y);
 	});
 	test('switching from Simulation reverse into Arcade and back preserves the signed hull motion', function () {
 		const state = createState(); const p = state.player;
