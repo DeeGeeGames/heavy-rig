@@ -314,8 +314,19 @@ export const createCombatRuntime = function () {
 				});
 			world.addSystem('combat:projectiles').withRef(refs.projectiles).inPhase('fixedUpdate').inGroup('combat').after(refs.artillery).withResources(['combatSession', 'combatOrdering', 'combatConfig', 'combatMission', 'combatStats', 'combatFeedback', 'combatProgress'])
 				.addQuery('structures', { with: ['structure'] }).addQuery('targets', { with: ['enemy', 'health'] }).addQuery('projectiles', { with: ['projectile'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; const current = state; trackDamageTargets(function () { projectilesStep(current, dt); }, true); markAll('projectile'); });
-			world.addSystem('combat:deaths').withRef(refs.deaths).inPhase('fixedUpdate').inGroup('combat').after(refs.projectiles).withResources(['combatSession', 'combatOrdering', 'combatStats', 'combatProgress', 'combatFeedback'])
-				.addQuery('damaged', { with: ['enemy', 'health'], mutates: [] }).runWhenEmpty().setProcess(function ({ resources }) { if (resources.combatSession.active && state) deathsStep(state); });
+			world.addSystem('combat:deaths').withRef(refs.deaths).inPhase('fixedUpdate').inGroup('combat').after(refs.projectiles).withResources(['combatSession', 'combatOrdering', 'combatStats', 'combatProgress', 'combatFeedback', 'combatMission'])
+				.addQuery('damaged', { with: ['enemy', 'health'], mutates: [] }).runWhenEmpty().setProcess(function ({ queries, resources }) {
+					if (!resources.combatSession.active || !state) return;
+					const current = state;
+					deathsStep(current, function (wreck, enemy) {
+						const source = wreck.rig && queries.damaged.find(function (entity) { return entity.components.enemy === enemy; });
+						if (!source) { current.wrecks.push(wreck); return; }
+						// Keep the posed model on the same entity through its fall. Later
+						// fixed-step systems see only a wreck, and normal sortie cleanup owns it.
+						for (const name of ['enemy', 'position', 'heading', 'health', 'enemyWeapons', 'enemyReactor'] as const) world.removeComponent(source.id, name);
+						world.addComponents(source.id, { wreck, combatOrder: nextOrder() });
+					});
+				});
 			world.addSystem('combat:effects').withRef(refs.effects).inPhase('fixedUpdate').inGroup('combat').after(refs.deaths).withResources(['combatSession'])
 				.addQuery('effects', { with: ['effect'] }).runWhenEmpty().setProcess(function ({ resources, dt }) { if (!resources.combatSession.active || !state) return; effectsStep(state, dt); markAll('effect'); });
 			world.addSystem('combat:outcome').withRef(refs.outcome).inPhase('fixedUpdate').inGroup('combat').after(refs.effects).withResources(['combatSession', 'combatOrdering', 'combatProgress', 'combatMission', 'combatFeedback'])

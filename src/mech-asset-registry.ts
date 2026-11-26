@@ -7,6 +7,7 @@ import type { AuthoredPoseContext } from './authored-pose';
 import type { SpatialPoint, WeaponBody, WeaponRig } from './weapon-rig';
 import type { MechFinish } from './mech-skin';
 import type { FieldTerrain } from './field-terrain';
+import type { CollapseSite, FallenRigPose } from './rig-collapse';
 
 export interface MechAssetModel {
 	readonly root: Group;
@@ -15,6 +16,7 @@ export interface MechAssetModel {
 	readonly exhaust: Vector3 | undefined;
 	readonly labelHeight: number;
 	pose: (gait: WalkerGait, heading: number, feedback?: MechFeedback) => void;
+	beginCollapse?: (site: CollapseSite) => (elapsed: number) => FallenRigPose;
 	dispose: () => void;
 }
 

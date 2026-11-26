@@ -1,5 +1,5 @@
 import { BoxGeometry, BufferGeometry, CircleGeometry, Color, CubicBezierCurve3, CylinderGeometry, Float32BufferAttribute, Group, InstancedMesh, LatheGeometry, LineBasicMaterial, LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, RingGeometry, Scene, SphereGeometry, Vector2, Vector3, type OrthographicCamera, type WebGLRenderer } from 'three';
-import { ARENA, getEnemyDefense, type ArtilleryStrike, type Effect, type Point, type Shot, type CombatStateView } from './simulation';
+import { ARENA, getEnemyDefense, type ArtilleryStrike, type Effect, type Point, type Shot, type CombatStateView, type Wreck } from './simulation';
 import { mechScale } from './gait';
 import { createEnvironment } from './environment-3d';
 import { createEnemyDropshipViews } from './enemy-dropship-view';
@@ -13,11 +13,12 @@ import { bakeTerrain, type BakedTerrain, type TerrainBakeSource } from './terrai
 import { groundHeight, groundNormal } from './terrain-elevation';
 import { drapeGroundGeometry } from './terrain-decals';
 import type { FieldTerrain } from './field-terrain';
+import type { FallenRigPose } from './rig-collapse';
 import { fieldClippingPlanes } from './field-clipping';
 import { createArtilleryWreckAssets } from './artillery-emplacement';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
-interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined }
+interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined; rigWrecks?: ReadonlySet<Wreck>; fallenShadows?: readonly FallenRigPose['shadow'][]; defeatElapsed?: number }
 
 // World presentation owns its meshes and GPU assets. Simulation objects never
 // retain Three.js objects; pools shrink with live state, including on restart.
@@ -138,6 +139,12 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 	const strikePools: { emplacement: boolean; views: ReturnType<typeof createStrike>[] }[] = [{ emplacement: false, views: [] }, { emplacement: true, views: [] }];
 	const defenses: ReturnType<typeof createDefense>[] = [];
 	const shadows: PooledObject[] = [];
+	const createFallenShadow = function () {
+		const geometry = new RingGeometry(0, 1, 32, 5).rotateX(-Math.PI / 2);
+		const root = new Mesh(geometry, shadow); root.name = 'fallen-rig-shadow';
+		return { root, dispose: function () { geometry.dispose(); } };
+	};
+	const fallenShadows: ReturnType<typeof createFallenShadow>[] = [];
 	const sync = function <T extends PooledObject>(parent: Group, pool: T[], count: number, create: () => T, update: (value: T, index: number) => void) {
 		while (pool.length > count) { const value = pool.pop(); value?.root.removeFromParent(); value?.dispose?.(); }
 		while (pool.length < count) { const value = create(); parent.add(value.root); pool.push(value); }
@@ -260,6 +267,9 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 		},
 		update: function (state: CombatStateView, frameEffects?: FrameEffects, landingShadows?: readonly (Point | undefined)[], sceneryTime = state.time) {
 			if (disposed) return;
+			// The combat clock stops on player loss. Clear its frozen flashes and
+			// tracers after the hit so the shoulder landing remains visible.
+			feedback.visible = (frameEffects?.defeatElapsed ?? 0) < 0.12;
 			weaponVfx.updateTime(state.time);
 			weaponVfx.updateAfterglows(state);
 			if (missionMap !== state.mission?.map) {
@@ -289,7 +299,15 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 				value.commitment.scale.setScalar(radius + 8); value.commitment.visible = enemy.attack?.phase === 'committed';
 			});
 			const fallen = state.wrecks;
-			const vehicleWrecks = fallen.filter(function (wreck) { return wreck.kind !== 'artillery'; });
+			const footprints = frameEffects?.fallenShadows ?? [];
+			sync(root, fallenShadows, footprints.length, createFallenShadow, function (view, index) {
+				const shape = footprints[index]; if (!shape) return;
+				view.root.position.set(shape.x, groundHeight(terrain, shape) + .25, shape.y);
+				view.root.rotation.y = -shape.heading;
+				view.root.scale.set(shape.length, 1, shape.width);
+				drapeGroundGeometry(view.root.geometry, terrain, shape, shape.heading, shape.length, shape.width);
+			});
+			const vehicleWrecks = fallen.filter(function (wreck) { return wreck.kind !== 'artillery' && !frameEffects?.rigWrecks?.has(wreck); });
 			const gunWrecks = fallen.filter(function (wreck) { return wreck.kind === 'artillery'; });
 			sync(root, emplacementWrecks, gunWrecks.length, createEmplacementWreck, function (view, index) {
 				const wreck = gunWrecks[index]; if (wreck) view.place(terrain, wreck);
@@ -332,7 +350,7 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 				const enemy = state.enemies[index - 1];
 				const mate = state.squadmates[index - state.enemies.length - 1];
 				const unit = enemy ?? (landingShadows ? landingShadows[index === 0 ? 0 : index - state.enemies.length] : index === 0 ? state.player : mate);
-				value.root.visible = unit !== undefined;
+				value.root.visible = unit !== undefined && (enemy !== undefined || (mate ?? state.player).hp > 0);
 				if (!unit) return;
 				const scale = enemy ? mechScale(enemy.kind) : mate ? getFrame(mate.frameId).size : 1;
 				placeOnGround(value.root, terrain, unit, .15); value.root.scale.setScalar(scale);
@@ -379,6 +397,7 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 			if (disposed) return; disposed = true;
 			for (const effect of effects) effect.dispose();
 			for (const shot of shots) shot.dispose();
+			for (const view of fallenShadows) view.dispose();
 			dropships.dispose();
 			lasers.dispose();
 			weaponVfx.dispose();

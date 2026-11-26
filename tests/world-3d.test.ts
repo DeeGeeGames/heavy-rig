@@ -37,6 +37,28 @@ test('world pools track live combat state and restart removes transient objects'
 	expect(scene.children).toHaveLength(0);
 });
 
+test('a fallen rig casts its widening shadow onto both sides of a ridge', function () {
+	const state = createSituationMission({ kind: 'clearance', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, 123, 'story');
+	const terrain = state.mission?.map.terrain;
+	const scene = new Scene(), world = createWorldObjects(scene);
+	try {
+		for (const width of [18, 34]) {
+			const shape = { x: 2000, y: 1490, heading: 0.7, length: 64, width };
+			world.update(state, { muzzles: [], exhaust: undefined, fallenShadows: [shape] });
+			const shadow = scene.getObjectByName('fallen-rig-shadow');
+			if (!(shadow instanceof Mesh)) throw new Error('Missing rig shadow');
+			shadow.updateWorldMatrix(true, false);
+			const vertices = shadow.geometry.getAttribute('position'), point = new Vector3();
+			for (let i = 0; i < vertices.count; i++) {
+				point.fromBufferAttribute(vertices, i).applyMatrix4(shadow.matrixWorld);
+				const clearance = point.y - groundHeight(terrain, { x: point.x, y: point.z });
+				expect(clearance).toBeGreaterThan(0);
+				expect(clearance).toBeLessThan(1);
+			}
+		}
+	} finally { world.dispose(); }
+});
+
 test('one transport unloads two rigs, stays for departure, and clears on mission replacement', function () {
 	const state = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, 123, 'story');
 	const scene = new Scene(); const world = createWorldObjects(scene);

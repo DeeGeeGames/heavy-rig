@@ -115,6 +115,33 @@ test('ECS combat preserves same-tick spawn, firing, piercing, committed artiller
 	} finally { await world.dispose(); }
 });
 
+test('a defeated rig keeps its entity for the fall and immediately leaves combat', async function () {
+	const initial = createState(); initial.spawnIn = 3600;
+	const body = { x: 300, y: 400, hp: 0, maxHp: 100, heavy: true, angle: .5, cooldown: 2 };
+	initial.enemies = [
+		{ ...body, id: 1, kind: 'siege', hullAngle: -.3, commander: true, catalog: { frameId: 'maul-c', speed: 0, throttle: 0, shotsFired: 0 }, loadout: [{ ...createMount('ppc'), slot: 1 }] },
+		{ ...body, id: 2, kind: 'tank' },
+	];
+	const { world, combat, state } = await harness(initial);
+	try {
+		const rig = combat.entityForEnemy(1), tank = combat.entityForEnemy(2);
+		if (rig === undefined || tank === undefined) throw new Error('Missing combat identities');
+		world.update(1 / 60);
+		expect(state.enemies).toHaveLength(0);
+		expect(state.kills).toBe(2);
+		expect(state.wrecks).toHaveLength(2);
+		expect(world.getComponent(rig, 'wreck')).toBe(state.wrecks[0]);
+		expect(state.wrecks[0]?.rig).toEqual({ defeatedAt: state.time, hullAngle: -.3, frame: 'maul-c', commander: true, equippedSlots: [1] });
+		expect(state.wrecks[1]?.rig).toBeUndefined();
+		expect(world.getEntity(tank)).toBeUndefined();
+		for (const name of ['enemy', 'position', 'heading', 'health', 'enemyWeapons', 'enemyReactor'] as const) expect(world.getComponent(rig, name)).toBeUndefined();
+		world.update(1 / 60);
+		expect(state.kills).toBe(2);
+		state.wrecks = [];
+		expect(world.getEntity(rig)).toBeUndefined();
+	} finally { await world.dispose(); }
+});
+
 test('a live defense section survives pause and releases its two rigs and perimeter escort once each', async function () {
 	const initial = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, 25, 'standard');
 	initial.spawnIn = 0;
@@ -202,6 +229,10 @@ test('the practice range fires the selected hardpoint, replaces targets, and ref
 		combat.setControls(function () { return { ...idle, aim, coolant: true }; });
 		world.update(1 / 60);
 		expect(state.coolantCharges).toBe(1);
+		expect(state.enemies).toHaveLength(0);
+		expect(state.wrecks).toHaveLength(targets.length);
+		for (let tick = 0; tick < 80; tick++) world.update(1 / 60);
+		expect(state.wrecks).toHaveLength(0);
 		expect(state.enemies).toHaveLength(targets.length);
 		expect(state.enemies.every(function (enemy) { return enemy.stationary && !targets.includes(enemy.id); })).toBe(true);
 		expect(training.stage).toBe('range');

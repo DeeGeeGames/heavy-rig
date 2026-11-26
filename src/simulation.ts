@@ -39,7 +39,12 @@ export type Warning = MissionSpawn & { life: number } & (
 );
 export interface ArtilleryStrike extends Point { id: number; life: number; duration: number; radius: number; damage: number; emplacement?: EmplacementShot; weapon?: WeaponId; slot?: number; owner?: number; squadmateId?: string; facilityMultiplier?: number; friendly?: true }
 export interface CombatStats { damageDealt: number; damageTaken: number; relayDamage: number; shotsFired: number; shotsHit: number; overheats: number; killScore: number; commanderDestroyed: boolean }
-export interface Wreck extends Point { kind: EnemyKind; angle: number }
+export const RIG_COLLAPSE_SECONDS = 1.25;
+export interface Wreck extends Point {
+	kind: EnemyKind;
+	angle: number;
+	rig?: { defeatedAt: number; hullAngle: number; frame?: FrameId; commander: boolean; equippedSlots: readonly number[] };
+}
 export interface Controls { heading?: number; throttleTarget?: number; turretTurn?: number; centerTorso?: boolean; drive: number; stop: boolean; turn: number; aim: Point; targetId?: number; fire: FireInputs; coolant: boolean }
 export interface CombatCollection<T> extends ReadonlyArray<T> {
 	push(...items: T[]): number;
@@ -1651,17 +1656,22 @@ const splashDamage = function (state: CombatStateView, impact: SpatialPoint, sho
 	return affected;
 };
 
-export const deathsStep = function (state: CombatStateView) {
+export const deathsStep = function (state: CombatStateView, leaveWreck: (wreck: Wreck, enemy: Unit) => void = function (wreck) { state.wrecks.push(wreck); }) {
 	for (const enemy of state.enemies) if (enemy.hp <= 0) {
 		state.kills++; state.stats.killScore += enemy.commander ? 1800 : ENEMY_STATS[enemy.kind].score;
 		if (enemy.commander) state.stats.commanderDestroyed = true;
 		const height = ENEMY_STATS[enemy.kind].elevation;
 		burst(state, { ...enemy, elevation: groundHeight(state.mission?.map.terrain, enemy) + (height === 42 ? 36 : height) }, 65, '#ffab62');
 		state.events.push('explosion');
-		state.wrecks.push({ x: enemy.x, y: enemy.y, angle: enemy.angle, kind: enemy.kind });
+		const wreck: Wreck = { x: enemy.x, y: enemy.y, angle: enemy.angle, kind: enemy.kind };
+		if (isEnemyMech(enemy)) wreck.rig = {
+			defeatedAt: state.time, hullAngle: enemy.hullAngle ?? enemy.angle, commander: Boolean(enemy.commander),
+			...(enemy.catalog ? { frame: enemy.catalog.frameId } : {}),
+			equippedSlots: (enemy.loadout ?? []).map(function (mount, index) { return mount.slot ?? index; }),
+		};
+		leaveWreck(wreck, enemy);
 	}
 	state.enemies = state.enemies.filter(function (enemy) { return enemy.hp > 0; });
-
 };
 
 export const effectsStep = function (state: CombatStateView, dt: number) {

@@ -14,7 +14,8 @@ import { articulateWeapons } from './weapon-articulation';
 import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { createArtilleryEmplacement } from './artillery-emplacement';
-import { getMechAssetBinding } from './mech-asset-registry';
+import { getMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
+import { startRigCollapse } from './rig-collapse';
 import { SKIN_PALETTES, supportsMechSkin, type MechFinish } from './mech-skin';
 import { applyMechSkinMaterial } from './mech-skin-material';
 import { snapMechHeading } from './torso-arc';
@@ -42,7 +43,7 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[], family?: 
 
 // Weapon geometry shares its stable rig with combat. Suspension and leg motion
 // remain presentation data; every view uses this same production factory.
-export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original', entryPlanes?: Plane[]) {
+export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original', entryPlanes?: Plane[]): MechAssetModel {
 	if (kind === 'artillery') return createArtilleryEmplacement(entryPlanes);
 	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind, entryPlanes);
 	const authored = kind ? undefined : getMechAssetBinding(frame);
@@ -107,7 +108,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 		else for (const side of [-1, 1]) housing(toes, 'split-toe', [{ x: 9 - toes.position.x, y: 3.5 - toes.position.y, height: 3.4, width: width * 0.46 }, { x: 21 - toes.position.x, y: 3.1 - toes.position.y, height: 3, width: width * 0.46 }, { x: 26 - toes.position.x, y: 1.8 - toes.position.y, height: 1.7, width: width * 0.4 }], toeArmor, side * width * 0.59);
 		if (articulated) cylinder(foot, 'toe-bearing', 2, width * 1.9, dark, 8, 3, 0, 'z');
 		if (!kind && chassis === 'kestrel') housing(foot, 'rear-talon', [{ x: -27, y: 1.5, height: 1.4, width: 2 }, { x: -12, y: 4, height: 3, width: 3 }], footArmor);
-		return { index, upper, lower, hip, knee, ankle, sleeve, rod, contact, foot, toes };
+		return { index, leg, upper, lower, hip, knee, ankle, sleeve, rod, contact, foot, toes };
 	});
 	turret.position.y = rig.hipHeight;
 	const poseWeapons = articulateWeapons(root, hardware.assemblies, kind ? getEnemyWeaponRig(kind, commander) : getPlayerWeaponRig(frame));
@@ -214,6 +215,14 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 				relative.multiplyMatrices(inverseRoot, bound.part.matrixWorld);
 				for (const corner of bound.corners) { vertex.copy(corner).applyMatrix4(relative); labelHeight = Math.max(labelHeight, vertex.y - (vertex.x + vertex.z) * 0.5); }
 			}
+		},
+		beginCollapse: function (site) {
+			// Stabilized gimbals live beside the anatomy during combat. Bring
+			// them with the torso when the bearing loses power.
+			const parts = [turret, ...root.children.filter(function (part) { return part !== anatomy; })];
+			return startRigCollapse(root, site, { pivot: turret, parts }, legs.map(function (leg) {
+				return { hip: { pivot: leg.hip, parts: [leg.leg] }, knee: { pivot: leg.knee, parts: [leg.lower, leg.ankle, leg.contact] }, foot: leg.ankle };
+			}));
 		},
 		dispose: function () { if (disposed) return; disposed = true; parts.dispose(); root.removeFromParent(); root.clear(); },
 	};

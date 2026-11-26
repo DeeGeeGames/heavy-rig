@@ -3,7 +3,7 @@ import { definePlugin } from 'ecspresso';
 import { createGroupComponents, createRenderer3DPlugin, type Renderer3DComponentTypes, type Renderer3DEventTypes, type Renderer3DResourceTypes } from 'ecspresso/plugins/rendering/renderer3D';
 import { clampCombatZoom, MIN_COMBAT_ZOOM, zoomForWheel } from './shared/camera-zoom';
 import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Fog, HemisphereLight, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, RingGeometry, Scene, Vector3, WebGLRenderer, type Plane } from 'three';
-import { createGait, createEnemyGait, type Gaits } from './gait';
+import { createGait, createEnemyGait, mechScale, type Gaits } from './gait';
 import { getFrame, type FrameId } from './frames';
 import { FRAME_RIGS } from './frame-rig';
 import { createMech, weaponRecoil } from './mech-3d';
@@ -11,7 +11,7 @@ import { sampleMechResponses, type MechResponse } from './mech-response';
 import { drawOverlay, type ScreenRect } from './overlay';
 import { alignCamera, toGround, toScreen, viewScale } from './projection-3d';
 import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset, weaponCameraKick } from './camera-follow';
-import { ARENA, playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView } from './simulation';
+import { ARENA, RIG_COLLAPSE_SECONDS, playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView, type Wreck } from './simulation';
 import type { SpatialPoint } from './weapon-rig';
 import type { AuthoredPoseContext } from './authored-pose';
 import type { WeaponMount } from './arsenal';
@@ -30,6 +30,7 @@ import { createLaunchClouds } from './launch-clouds';
 import { createSurfaceLanding, planLaunchLanding } from './launch-surface';
 import { LAUNCH_TIMING } from './launch-timing';
 import type { FieldTerrain } from './field-terrain';
+import type { FallenRigPose } from './rig-collapse';
 import { groundAimSlope, groundHeight } from './terrain-elevation';
 import { drapeGroundGeometry } from './terrain-decals';
 import { fieldClippingPlanes } from './field-clipping';
@@ -46,11 +47,13 @@ interface MechView {
 	frame: FrameId;
 	skin: MechFinish;
 	damage: { hp?: number; hitAt?: number; genericHitAt?: number; sampledAt?: number };
+	fall?: { since: number; sample: (elapsed: number) => FallenRigPose; pose: FallenRigPose };
 }
 interface ViewBindings {
 	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechFinish, entryPlanes?: Plane[]) => MechView;
 	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, time: number, pose: MechPose) => void;
 	scale: (id: number, scale: number) => void;
+	poseWrecks: (time: number, terrain: FieldTerrain | undefined, finish: MechFinish) => { rigWrecks: ReadonlySet<Wreck>; fallenShadows: readonly FallenRigPose['shadow'][] };
 }
 interface MechPose {
 	loadout: readonly WeaponMount[];
@@ -64,6 +67,7 @@ interface MechPose {
 	manualAim?: Point | undefined;
 	authoredPose?: AuthoredPoseContext | undefined;
 	legGait?: AuthoredGait | undefined;
+	defeatElapsed?: number;
 }
 interface OverlayFrame {
 	state: CombatStateView; aim: Point; gaits: Gaits; obstructions: readonly ScreenRect[]; couchMode: boolean;
@@ -71,6 +75,15 @@ interface OverlayFrame {
 	enemyLabelHeights: ReadonlyMap<number, number>;
 	squadmateLabelHeights: ReadonlyMap<string, number>;
 }
+
+const poseFallen = function (view: MechView, position: Point, heading: number, terrain: FieldTerrain | undefined, since: number, now: number) {
+	if (view.fall) view.fall.pose = view.fall.sample(now - view.fall.since);
+	else if (view.model.beginCollapse) {
+		const side = (Math.round(position.x) + Math.round(position.y)) % 2 === 0 ? 1 : -1;
+		const sample = view.model.beginCollapse({ x: position.x, y: position.y, heading, side, terrain });
+		view.fall = { since, sample, pose: sample(now - since) };
+	}
+};
 
 // This adapter contributes renderer/view components to the application world.
 // Model disposal follows the combat entity: there is no parallel render world
@@ -153,7 +166,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		const inkEnabled = function (state: CombatStateView) { return comparison?.state !== state || comparison.enabled; };
 		const cadence = createMechCadences();
 		const plugin = definePlugin('heavy-rig-presentation')
-			.withComponentTypes<Renderer3DComponentTypes & { mechView: MechView }>()
+			.withComponentTypes<Renderer3DComponentTypes & { mechView: MechView; wreck: Wreck; combatOrder: number }>()
 			.withEventTypes<Renderer3DEventTypes>()
 			.withResourceTypes<Renderer3DResourceTypes>()
 			.withGroups<'renderer3d'>()
@@ -188,29 +201,35 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					}
 				});
 				world.registerDispose('mechView', function ({ value }) { value.model.dispose(); });
+				const releaseView = function (id: number) { world.removeComponent(id, 'group'); world.removeComponent(id, 'mechView'); };
+				const ensure: ViewBindings['ensure'] = function (id, kind, commander = false, frame = 'warden', skin = 'original', entryPlanes) {
+					const previous = world.getComponent(id, 'mechView');
+					if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame && previous.skin === skin) return previous;
+					if (previous) releaseView(id);
+					const view: MechView = { model: createMech(kind, commander, frame, skin, entryPlanes), kind, commander, frame, skin, damage: {} };
+					world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
+					return view;
+				};
+				const place = function (id: number, at: Point, elevation: number) {
+					const transform = world.getComponent(id, 'localTransform3D');
+					if (!transform) return;
+					transform.x = at.x; transform.y = elevation; transform.z = at.y;
+					world.markChanged(id, 'localTransform3D');
+				};
 				views = {
-					ensure: function (id, kind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original', entryPlanes) {
-						const previous = world.getComponent(id, 'mechView');
-						if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame && previous.skin === skin) return previous;
-						if (previous) { world.removeComponent(id, 'group'); world.removeComponent(id, 'mechView'); }
-						const view: MechView = { model: createMech(kind, commander, frame, skin, entryPlanes), kind, commander, frame, skin, damage: {} };
-						world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
-						return view;
-					},
-					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain }) {
+					ensure,
+					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain, defeatElapsed = 0 }) {
+						const wasPosed = view.damage.hp !== undefined;
 						if (view.damage.hp !== undefined && hp < view.damage.hp) {
 							view.damage.hitAt = time;
 							if (!response || response.lastImpact <= (view.damage.sampledAt ?? -Infinity)) view.damage.genericHitAt = time;
 						}
 						view.damage.hp = hp;
 						view.damage.sampledAt = time;
-						const transform = world.getComponent(id, 'localTransform3D');
-						if (!transform) return;
 						const elevation = groundHeight(terrain, position) + heightAboveGround;
-						transform.x = position.x; transform.y = elevation; transform.z = position.y;
-						world.markChanged(id, 'localTransform3D');
+						place(id, position, elevation);
 						view.model.root.visible = visible;
-						view.model.pose(gait, heading, {
+						if (hp > 0 || !wasPosed) view.model.pose(gait, heading, {
 							hit: Math.max(0, 1 - (time - (view.damage.genericHitAt ?? -Infinity)) / 0.16),
 							recoil: weaponRecoil(loadout, 'energy'), heat, time, ...(response ? { response } : {}),
 							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
@@ -218,6 +237,35 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 							...(terrain?.elevation ? { terrain } : {}), ...(target ? { target: { ...target, elevation: target.elevation - elevation } } : {}),
 							...(terrain?.elevation && manualAim && !target ? { aimSlope: groundAimSlope(terrain, position, manualAim, elevation) } : {}),
 						});
+						if (hp <= 0) poseFallen(view, position, gait.body.angle, terrain, time, time + defeatElapsed);
+					},
+					poseWrecks: function (time, terrain, finish) {
+						const detailed = new Set<Wreck>();
+						const rigs = world.getEntitiesWithQuery(['wreck', 'combatOrder']).filter(function (entity) { return entity.components.wreck.rig; })
+							.sort(function (a, b) { return b.components.combatOrder - a.components.combatOrder; });
+						for (const [index, { id, components: { wreck } }] of rigs.entries()) {
+							const rig = wreck.rig;
+							if (!rig) continue;
+							const existing = world.getComponent(id, 'mechView');
+							// Keep recent bodies recognizable without retaining a full articulated
+							// model for every kill in a long sortie. Always finish a fall.
+							if (index >= 6 && time - rig.defeatedAt >= RIG_COLLAPSE_SECONDS) {
+								if (existing) releaseView(id);
+								continue;
+							}
+							const view = existing ?? ensure(id, rig.frame ? undefined : wreck.kind, rig.commander, rig.frame, finish);
+							if (!view.fall) {
+								place(id, wreck, groundHeight(terrain, wreck));
+								if (!existing) {
+									const gait = createGait({ ...wreck, angle: rig.hullAngle }, rig.frame ? getFrame(rig.frame).size : mechScale(wreck.kind), rig.frame ? FRAME_RIGS[rig.frame] : undefined);
+									view.model.pose(gait, wreck.angle, { recoil: 0, hit: 0, heat: 0, time: rig.defeatedAt, equippedSlots: rig.equippedSlots, ...(terrain ? { terrain } : {}) });
+								}
+							}
+							poseFallen(view, wreck, rig.hullAngle, terrain, rig.defeatedAt, time);
+							if (view.fall) detailed.add(wreck);
+						}
+						const fallenShadows = world.getEntitiesWithQuery(['mechView']).flatMap(function ({ components: { mechView } }) { return mechView.fall ? [mechView.fall.pose.shadow] : []; });
+						return { rigWrecks: detailed, fallenShadows };
 					},
 					scale: function (id, scale) {
 						const transform = world.getComponent(id, 'localTransform3D');
@@ -299,7 +347,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			},
 			stepMechCadence: cadence.advance,
 			setSkin: function (id: LiveryPresetId) { playerSkin = getLiveryPreset(id).finish; },
-			prepare: function (state: CombatStateView, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false) {
+			prepare: function (state: CombatStateView, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false, defeatElapsed = 0) {
 				if (disposed || !views || !combat || width <= 0 || height <= 0) { overlay = undefined; return; }
 				if (launchOwner && launchOwner !== state) releaseLaunch();
 				if (launchTime !== undefined && state.mission) {
@@ -361,7 +409,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const heading = arrival?.gait.body.angle ?? (attract ? Math.PI / 4 - 0.22 : state.player.turret);
 					const gait = arrival?.gait ?? (attract ? createGait({ ...state.player, angle: Math.PI / 4 + 0.15 }, getFrame(state.frame).size, FRAME_RIGS[state.frame]) : gaits.player);
 					views.pose(playerId, player, gait, heading, state.player.hp, state.time, {
-						loadout: state.loadout, heat: state.player.heat, response: responses.get(0), authoredPose: arrival ? arrival.authored : state.authoredPose,
+						loadout: state.loadout, heat: state.player.heat, response: responses.get(0), authoredPose: arrival ? arrival.authored : state.authoredPose, defeatElapsed,
 						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? (attract ? undefined : sampledLegs(state.player, state.authoredPose?.gait ?? gait)),
 						target: attract || hangar || landing ? undefined : playerAimPoint(state),
@@ -377,12 +425,12 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const arrival = landing?.poses[index + 1];
 					const gait = arrival?.gait ?? gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
 					views.pose(id, view, gait, arrival?.gait.body.angle ?? mate.turret, mate.hp, state.time, {
-						loadout: mate.loadout, heat: mate.heat, response: responses.get(mate.pilotId), authoredPose: arrival ? arrival.authored : mate.authoredPose,
+						loadout: mate.loadout, heat: mate.heat, response: responses.get(mate.pilotId), authoredPose: arrival ? arrival.authored : mate.authoredPose, defeatElapsed,
 						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? sampledLegs(mate, mate.authoredPose?.gait ?? gait),
 						target: !landing && mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
 					});
-					squadmateLabelHeights.set(mate.pilotId, view.model.labelHeight + 12);
+					squadmateLabelHeights.set(mate.pilotId, (view.fall?.pose.labelHeight ?? view.model.labelHeight) + 12);
 				}
 				const enemyLabelHeights = new Map<number, number>();
 				const opponentFinish = missionMechFinish(state.mission?.contract);
@@ -402,11 +450,12 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				// The simulation clock starts at touchdown handoff. Run surface scenery
 				// up to that phase during the approach while gameplay is still frozen.
 				const sceneryTime = launchTime === undefined ? state.time : launchTime - LAUNCH_TIMING.end;
-				objects.update(state, player ? {
-					muzzles: player.model.muzzles.map(worldAnchor), exhaust: player.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
-				} : undefined, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.position : undefined; }), sceneryTime);
-				firingArc.update(state, Boolean(player) && !attract && !hangar && !landing);
-				reticle.visible = barrel.visible = !attract && !landing;
+				objects.update(state, {
+					muzzles: player?.model.muzzles.map(worldAnchor) ?? [], exhaust: player?.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
+					...views.poseWrecks(state.time + defeatElapsed, terrain, opponentFinish), defeatElapsed,
+				}, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.position : undefined; }), sceneryTime);
+				firingArc.update(state, Boolean(player) && state.player.hp > 0 && !attract && !hangar && !landing);
+				reticle.visible = barrel.visible = state.player.hp > 0 && !attract && !landing;
 				reticle.position.set(aim.x, groundHeight(terrain, aim) + .25, aim.y);
 				barrel.position.set(state.player.x, playerGround + .25, state.player.y);
 				barrel.rotation.y = -state.player.turret;
@@ -422,6 +471,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				}
 				if (disposed || !overlay || width <= 0 || height <= 0) return;
 				const { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights } = overlay;
+				if (state.player.hp <= 0) { ctx.clearRect(0, 0, width, height); return; }
 				drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode, enemyLabelHeights, squadmateLabelHeights,
 					armorHit: Math.max(0, 1 - (state.time - (player?.damage.hitAt ?? -10)) / 0.9),
 					...(player && getFrame(state.frame).chassisId !== 'warden' ? { armorHitHeight: player.model.labelHeight + 20 } : {}),
