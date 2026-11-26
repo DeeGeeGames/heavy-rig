@@ -527,7 +527,7 @@ to those indices.
 | Neutral; momentum decays | X | X / square | STOP |
 | Move sideways in Arcade or turn in Simulation | A/D or left/right | D-pad or left stick left/right | Drag left stick left/right |
 | Aim independent turret | Mouse | Right stick left/right rotates torso | Tap a hostile or NEXT to track; empty ground aims manually |
-| Camera zoom | Mouse wheel | — | — |
+| Camera zoom | Mouse wheel | Bottom face button cycles zoom | Hold ZOOM and drag up or down |
 | Fire mount 1 | Left mouse / hold 1 or Space | RT / R2 | Arm mount 1; hold FIRE |
 | Fire mount 2 | Right mouse / hold 2 or E | LT / L2 | Arm mount 2; hold FIRE |
 | Fire mount 3 | Middle mouse / hold 3 or Q | RB / R1 | Arm mount 3; hold FIRE |
@@ -541,8 +541,9 @@ nothing. The mouse thumb binding uses browser button 3; keys provide all four
 slots on mice without extra buttons. Browser context menus, middle-click, and
 back-button actions are suppressed over the battlefield.
 
-Wheel zoom ranges from 0.5× to 2.5× and keeps the frame centered. It survives
-pause and resizing; a new mission or training session restores the default.
+Wheel zoom ranges from 0.35× to 2.5×. The controller cycles from 1× to 0.60×
+to 0.35×, then returns to 1×. Zoom survives pause and resizing. A new mission
+or training session restores the default.
 Company screens and dialogs fit the available window. Tabs select content panes.
 Longer panels use Previous/Next buttons or scroll within the panel.
 Ctrl/Command + wheel retains browser zoom.
