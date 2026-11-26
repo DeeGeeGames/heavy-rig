@@ -1,5 +1,5 @@
-import { defaultKeyboard, defaultController, keyLabel, padLabel, type KeyboardBindings, type ControllerBindings } from './bindings';
-import type { ControlMode } from './profile';
+import { keyLabel, padLabel, type KeyboardBindings } from './bindings';
+import { defaultSettings, type Settings } from './profile';
 import { createMount, getWeapon, type WeaponId } from './arsenal';
 import { loadedMounts } from './combat-resources';
 import { RIG_RADIUS } from './combat-spatial';
@@ -159,14 +159,14 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 	finishTraining(training, controls, dt, before);
 };
 
-export const trainingCopy = function (stage: TrainingStage, controller: boolean, mappings: { keyboard: KeyboardBindings; controller: ControllerBindings; controlMode?: ControlMode; touch?: boolean; buttonLabel?: (index: number) => string } = { keyboard: defaultKeyboard(), controller: defaultController() }): { title: string; instruction: string; progress: string } {
+export const trainingCopy = function (stage: TrainingStage, controller: boolean, mappings: Pick<Settings, 'keyboard' | 'controller' | 'legControls' | 'torsoAim'> & { touch?: boolean; buttonLabel?: (index: number) => string } = defaultSettings()): { title: string; instruction: string; progress: string } {
 	const key = function (action: keyof KeyboardBindings) { return mappings.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
-	const arcade = mappings.touch || mappings.controlMode === 'arcade';
+	const arcade = mappings.touch || mappings.legControls === 'arcade';
 	const buttonLabel = mappings.buttonLabel ?? padLabel;
 	const controls = mappings.touch
 		? { drive: 'Point the left stick toward your heading; push farther for more speed', stop: 'Hold STOP', steer: 'Point the left stick toward a new direction', aim: 'Tap the target to track it, or use NEXT', cannon: 'FIRE with mount 1 armed', mountThree: 'FIRE with mount 3 armed', coolant: 'VENT' }
 		: controller
-		? { drive: 'Press D-pad up or push the left stick up', stop: `Hold ${buttonLabel(mappings.controller.stop)}`, steer: arcade ? 'Choose a new direction with the D-pad or left stick' : 'Press D-pad left/right or move the left stick left/right', aim: arcade ? 'Point the right stick at the target' : 'Hold the right stick left or right to rotate the torso', cannon: buttonLabel(mappings.controller['mount-0']), mountThree: buttonLabel(mappings.controller['mount-2']), coolant: buttonLabel(mappings.controller.coolant) }
+		? { drive: 'Press D-pad up or push the left stick up', stop: `Hold ${buttonLabel(mappings.controller.stop)}`, steer: arcade ? 'Choose a new direction with the D-pad or left stick' : 'Press D-pad left/right or move the left stick left/right', aim: mappings.torsoAim === 'point' ? 'Point the right stick at the target' : 'Hold the right stick left or right to rotate the torso', cannon: buttonLabel(mappings.controller['mount-0']), mountThree: buttonLabel(mappings.controller['mount-2']), coolant: buttonLabel(mappings.controller.coolant) }
 		: { drive: `Hold ${key('forward')}`, stop: `Hold ${key('stop')}`, steer: arcade ? `Use ${key('forward')} / ${key('back')} / ${key('left')} / ${key('right')} to choose a direction` : `Hold ${key('left')} / ${key('right')}`, aim: 'Point at the target', cannon: key('mount-0'), mountThree: key('mount-2'), coolant: key('coolant') };
 	const copy: Record<TrainingStage, [string, string]> = {
 		drive: ['SET THE FRAME IN MOTION', `${controls.drive} to move. ${arcade ? 'Keep holding to travel; release to slow.' : 'Release it to cruise.'} Travel 100 meters.`],

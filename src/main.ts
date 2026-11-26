@@ -376,7 +376,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		inputElement('show-touch').checked = profile.settings.touchControls;
 		inputElement('large-interface').checked = profile.settings.couchUI;
 		inputElement('controller-vibration').checked = profile.settings.vibration;
-		element('control-mode').textContent = `CONTROL MODE: ${profile.settings.controlMode.toUpperCase()}`;
+		element('leg-controls').textContent = `LEG CONTROLS: ${profile.settings.legControls.toUpperCase()}`;
+		element('torso-aim').textContent = `CONTROLLER TORSO AIM: ${profile.settings.torsoAim.toUpperCase()}`;
 		setInputMode(inputMode);
 	};
 	const menu = function () {
@@ -1034,7 +1035,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const button = document.createElement('button'); button.className = 'secondary'; button.type = 'button';
 			button.dataset['action'] = action;
 			const arcadeLabels: Partial<Record<Action, string>> = { forward: 'Move up', back: 'Move down', left: 'Move left', right: 'Move right' };
-			button.textContent = `${profile.settings.controlMode === 'arcade' ? arcadeLabels[action] ?? LABELS[action] : LABELS[action]}: ${capture === action ? 'PRESS KEY / MOUSE · ESC CANCEL' : profile.settings.keyboard[action].map(keyLabel).join(' / ') || 'Unbound'}`;
+			button.textContent = `${profile.settings.legControls === 'arcade' ? arcadeLabels[action] ?? LABELS[action] : LABELS[action]}: ${capture === action ? 'PRESS KEY / MOUSE · ESC CANCEL' : profile.settings.keyboard[action].map(keyLabel).join(' / ') || 'Unbound'}`;
 			button.addEventListener('click', function () { capture = action; renderMappings(); }); root.append(button); if (capture === action || focusedAction === action) button.focus();
 		}
 	};
@@ -1074,9 +1075,17 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		}), element('controller-mappings'));
 	};
 	const syncControllerMappings = function () { renderControllerMappings(); updateMenuHint(); };
-	element('control-mode').addEventListener('click', function () {
-		profile.settings.controlMode = profile.settings.controlMode === 'arcade' ? 'simulation' : 'arcade'; capture = undefined; resetInput(); aimMode = defaultAimMode(); save(); renderMappings(); updateSettings();
-	}, listenerOptions);
+	const applyControlSettings = function () {
+		capture = undefined; resetInput(); aimMode = defaultAimMode(); save(); renderMappings(); updateSettings();
+	};
+	listen('leg-controls', function () {
+		profile.settings.legControls = profile.settings.legControls === 'arcade' ? 'tank' : 'arcade';
+		applyControlSettings();
+	});
+	listen('torso-aim', function () {
+		profile.settings.torsoAim = profile.settings.torsoAim === 'point' ? 'rotate' : 'point';
+		applyControlSettings();
+	});
 	listen('reset-keyboard', function () { capture = undefined; profile.settings.keyboard = defaultKeyboard(); resetInput(); save(); renderMappings(); });
 	listen('reset-controller', function () { profile.settings.controller = defaultController(); resetInput(); save(); syncControllerMappings(); });
 	renderMappings();
@@ -1473,7 +1482,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			${controller ? row(renderGlyph(device, 'move'), arcade ? 'Move' : '↑↓ Throttle · ←→ Steer')
 				: arcade ? row(directions(['forward', 'left', 'back', 'right']), 'Move')
 					: html`${row(directions(['forward', 'back']), 'Throttle')}${row(directions(['left', 'right']), 'Steer')}`}
-			${row(renderAimGlyph(device), controller && !arcade ? 'Rotate turret' : 'Aim')}
+			${row(renderAimGlyph(device), controller && profile.settings.torsoAim === 'rotate' ? 'Rotate turret' : 'Aim')}
 			${row(controller ? renderControllerButton(controllerFamily, 0) : renderZoomGlyph(), controller ? 'Cycle zoom' : 'Zoom')}
 		`;
 	};
@@ -1528,8 +1537,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const definition = getFrame(state.frame);
 		const weight = frameWeight(state.frame, state.loadout);
 		element('combat-frame-name').textContent = `${definition.chassisName} ${definition.variant}`;
-		const arcadeMovement = inputMode === 'touch' || profile.settings.controlMode === 'arcade';
-		element('combat-control-mode').textContent = arcadeMovement ? 'ARCADE' : 'SIMULATION';
+		const arcadeMovement = inputMode === 'touch' || profile.settings.legControls === 'arcade';
+		element('combat-control-mode').textContent = arcadeMovement ? 'ARCADE' : 'TANK';
 		element('drive-behavior').textContent = arcadeMovement ? 'RELEASE TO SLOW' : 'RELEASE TO CRUISE';
 		render(touchLayout ? '' : combatPrompt('stop'), element('stop-prompt'));
 		render(touchLayout ? '' : drivePrompts(arcadeMovement), element('drive-prompts'));
@@ -1677,6 +1686,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		try { pads = navigator.getGamepads?.() ?? []; } catch { /* Gamepad access can be restricted by an embedding policy. */ }
 		if (!focused || document.hidden || contextLost) padInput.suspend();
 		const pad = padInput.read(pads, now, profile.settings.controller);
+		const rotateAim = profile.settings.torsoAim === 'rotate';
 		currentPad = pad;
 		mobileFullscreen.update(container.classList.contains('touch-enabled') && hasTouch(), pads.some(function (candidate) { return Boolean(candidate?.connected); }));
 		if (pad.lost) { controllerLost = true; setInputMode(primaryPointer.matches ? 'touch' : 'keyboard'); setPaused(true); }
@@ -1684,7 +1694,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (pad.claimed) { controllerLost = false; audio.cue('confirm'); }
 		if (pad.promptActivity && focused && !document.hidden) {
 			controllerFamily = detectControllerFamily(pad.id ?? '');
-			if (profile.settings.controlMode === 'simulation' && pad.claimed) aimMode = 'gamepad';
+			if (rotateAim && pad.claimed) aimMode = 'gamepad';
 			setInputMode('gamepad');
 		}
 		container.dataset['controllerState'] = pad.connected ? 'connected' : controllerLost ? 'disconnected' : pad.available ? 'available' : 'none';
@@ -1727,8 +1737,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (pad.targetNext) selectTarget('cycle');
 			const aimTargets = combatTargets(state).map(function ({ id, body }) { return { id, point: body }; });
 			const mortar = mortarProfile(state.frame);
-			const arcadeMode = profile.settings.controlMode === 'arcade';
-			const stickAim = arcadeMode && Math.hypot(pad.aimX, pad.aimY) > 0.2;
+			const stickAim = !rotateAim && Math.hypot(pad.aimX, pad.aimY) > 0.2;
 			const reticleAcquisition = Boolean(mortar) || state.frame === 'specter-c';
 			const assistRange = pad.connected ? Math.max(missileLockRange(state.frame, state.loadout), mortar ? HARROW_MAX_RANGE : 0) : 0;
 			const inStickRange = function (point: Point, assistDistance: number) {
@@ -1741,7 +1750,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const locked = touchTargeting.resolve(touchContacts()); acquiredTargetId = locked?.id;
 				if (locked) aim = { ...locked.point };
 			}
-			if (profile.settings.controlMode === 'simulation' && pad.aimX !== 0) {
+			if (rotateAim && pad.aimX !== 0) {
 				aimMode = 'gamepad';
 			} else if (stickAim) {
 				aimMode = 'gamepad';
@@ -1767,7 +1776,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				else acquiredTargetId ??= target?.id;
 				if (target) aim = { x: target.point.x, y: target.point.y };
 			}
-			if (profile.settings.controlMode === 'simulation' && aimMode === 'gamepad') {
+			if (rotateAim && aimMode === 'gamepad') {
 				const forwardX = Math.cos(state.player.turret); const forwardY = Math.sin(state.player.turret);
 				aim = { x: state.player.x + forwardX * 600, y: state.player.y + forwardY * 600 };
 				const target = aimTargets.map(function (candidate) {
@@ -1779,7 +1788,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				else acquiredTargetId ??= target?.id;
 			}
 			makeInput = function (): Controls {
-				let centerTorso = arcadeMode && !stickAim
+				let centerTorso = !rotateAim && !stickAim
 					&& (aimMode === 'gamepad' || inputMode === 'gamepad' && aimMode === 'pointer' && !pointer);
 				if (aimMode === 'touch') {
 					// Visibility gates picking, not retention. Feet follow the live lock.
@@ -1793,7 +1802,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					acquiredTargetId = undefined;
 					aim = touchAimPoint(state.player, state.player.angle);
 				}
-				const arcade = arcadeMode || inputMode === 'touch';
+				const arcade = profile.settings.legControls === 'arcade' || inputMode === 'touch';
 				if (active('stop') || pad.stop) touchDrive.stop();
 				const touch = touchDrive.read();
 				const touchFire = container.classList.contains('touch-enabled') && active('touch-fire');
@@ -1805,7 +1814,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				return {
 					...(arcade ? { throttleTarget: Math.min(1, length), ...(destination ? { heading: Math.atan2(destination.y - state.player.y, destination.x - state.player.x) } : {}) } : {}),
 					...(aimMode === 'touch' && !centerTorso || aimMode === 'gamepad' && stickAim ? { faceAim: true } : {}),
-					...(profile.settings.controlMode === 'simulation' && aimMode === 'gamepad' ? { turretTurn: pad.aimX } : {}),
+					...(rotateAim && aimMode === 'gamepad' ? { turretTurn: pad.aimX } : {}),
 					...(centerTorso ? { centerTorso } : {}),
 					drive: -y, stop: active('stop') || pad.stop, turn: x, aim, ...(acquiredTargetId !== undefined ? { targetId: acquiredTargetId } : {}),
 					fire: [active('mount-0') || pad.fire[0] || touchFire && armedTouchMounts.has(0), active('mount-1') || pad.fire[1] || touchFire && armedTouchMounts.has(1), active('mount-2') || pad.fire[2] || touchFire && armedTouchMounts.has(2), active('mount-3') || pad.fire[3] || touchFire && armedTouchMounts.has(3)], coolant: active('coolant') || pad.coolant,
