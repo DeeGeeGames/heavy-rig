@@ -10,12 +10,13 @@ import { FRAME_RIGS } from './frame-rig';
 import { createLowPolyParts } from './low-poly-parts';
 import { buildLowPolyChassis } from './low-poly-chassis';
 import type { EnemyKind } from './simulation';
-import { articulateWeapons } from './weapon-articulation';
+import { articulateWeapons, defeatWeaponJoints } from './weapon-articulation';
 import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { createArtilleryEmplacement } from './artillery-emplacement';
 import { getMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
-import { startRigCollapse } from './rig-collapse';
+import { beginRigDefeat } from './rig-defeat-bursts';
+import { registerProceduralRigGeometry } from './rig-collapse-geometry';
 import { SKIN_PALETTES, supportsMechSkin, type MechFinish } from './mech-skin';
 import { applyMechSkinMaterial } from './mech-skin-material';
 import { snapMechHeading } from './torso-arc';
@@ -122,6 +123,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 	const bounds: { part: Mesh; corners: Vector3[] }[] = [];
 	root.traverse(function (object) {
 		if (!(object instanceof Mesh)) return;
+		registerProceduralRigGeometry(object.geometry);
 		object.geometry.computeBoundingBox(); const box: Box3 | null = object.geometry.boundingBox;
 		if (!box) return;
 		bounds.push({ part: object, corners: [box.min.x, box.max.x].flatMap(function (x) { return [box.min.y, box.max.y].flatMap(function (y) { return [box.min.z, box.max.z].map(function (z) { return new Vector3(x, y, z); }); }); }) });
@@ -217,12 +219,27 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			}
 		},
 		beginCollapse: function (site) {
-			// Stabilized gimbals live beside the anatomy during combat. Bring
-			// them with the torso when the bearing loses power.
-			const parts = [turret, ...root.children.filter(function (part) { return part !== anatomy; })];
-			return startRigCollapse(root, site, { pivot: turret, parts }, legs.map(function (leg) {
-				return { hip: { pivot: leg.hip, parts: [leg.leg] }, knee: { pivot: leg.knee, parts: [leg.lower, leg.ankle, leg.contact] }, foot: leg.ankle };
-			}));
+			// Combat poses these parts independently. Keep their last world
+			// transforms while connecting them to the same joints as authored rigs.
+			const pelvis = new Group();
+			pelvis.name = 'defeated-pelvis';
+			anatomy.add(pelvis);
+			for (const leg of legs) pelvis.position.add(anatomy.worldToLocal(leg.hip.getWorldPosition(vertex)));
+			pelvis.position.divideScalar(legs.length);
+			pelvis.attach(hull); pelvis.attach(turret);
+			const mounts = hardware.assemblies.map(function ({ part, muzzle }) {
+				const pivot = part.parent;
+				if (!pivot) throw new Error('Missing weapon gimbal');
+				turret.attach(pivot);
+				return { pivot, muzzle };
+			});
+			const joints = legs.map(function ({ hip, upper, knee, lower, ankle, rod, sleeve, contact }) {
+				pelvis.attach(hip);
+				for (const part of [upper, rod, sleeve, knee]) hip.attach(part);
+				knee.attach(lower); knee.attach(ankle); ankle.attach(contact);
+				return { thigh: hip, shin: knee, foot: ankle };
+			});
+			return beginRigDefeat(root, site, { pelvis, torso: turret, legs: joints, ...defeatWeaponJoints(kind ? 'warden' : chassis, mounts) });
 		},
 		dispose: function () { if (disposed) return; disposed = true; parts.dispose(); root.removeFromParent(); root.clear(); },
 	};

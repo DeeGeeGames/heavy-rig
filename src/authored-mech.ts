@@ -7,7 +7,8 @@ import { groundHeight } from './terrain-elevation';
 import type { MechFeedback } from './mech-3d';
 import { createMechResponseRig } from './mech-response';
 import { createLegPoseSampling } from './leg-pose-sampling';
-import { startRigCollapse } from './rig-collapse';
+import { beginRigDefeat } from './rig-defeat-bursts';
+import { defeatWeaponJoints } from './weapon-articulation';
 import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
 import { snapMechHeading } from './torso-arc';
@@ -343,9 +344,10 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			get labelHeight() { return labelHeight; },
 			pose,
 			beginCollapse: function (site) {
-				return startRigCollapse(root, site, { pivot: torso, parts: [torso] }, legs.map(function (leg) {
-					return { hip: { pivot: leg.thigh, parts: [leg.thigh] }, knee: { pivot: leg.shin, parts: [leg.shin] }, foot: leg.foot };
-				}));
+				const mounts = weapons.map(function ({ mount, muzzle }) { return { pivot: mount, muzzle }; });
+				return beginRigDefeat(root, site, {
+					pelvis: named(scene, 'rig_pelvis'), torso, legs, ...defeatWeaponJoints(descriptor.chassis, mounts),
+				});
 			},
 			dispose: function () {
 				if (disposed) return; disposed = true;

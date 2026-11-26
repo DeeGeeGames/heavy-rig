@@ -27,7 +27,9 @@ import { getFrame } from './frames';
 import { MOUNTS, loadSummary, massLabel } from './loadout-ui';
 import { frameWeight, usableMount } from './combat-resources';
 import { mountGame } from './shared/lifecycle';
-import { RIG_COLLAPSE_SECONDS, artilleryAimStatus, combatTargets, createMissionState, createState, distance, getOperationReport, missileLockRange, type Controls, type Point, type SquadmateOptions } from './simulation';
+import { artilleryAimStatus, combatTargets, createMissionState, createState, distance, getOperationReport, missileLockRange, type Controls, type Point, type SquadmateOptions } from './simulation';
+import { RIG_DEFEAT_SECONDS } from './rig-defeat-timing';
+import { createRigDefeatAudio } from './rig-defeat-audio';
 import { createPresentation } from './presentation';
 import { LAUNCH_DURATION, launchSceneTime } from './launch-timing';
 import { advanceGaits, createGaits } from './gait';
@@ -96,6 +98,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	presentation.bind(combatRuntime);
 	await world.initialize(); await navigation.initialize();
 	const audio = createAudio();
+	const armorBursts = createRigDefeatAudio();
 	onCleanup(audio.dispose);
 	const resetAudioForMenuEntry = function () {
 		// Clear old scene audio when entering menus, not when moving within them.
@@ -184,7 +187,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
 	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
-	let playerFall: { owner: typeof state; elapsed: number; reveal?: (now: number) => void } | undefined;
+	let playerFall: { owner: typeof state; startedAt: number; elapsed: number; reveal?: (now: number) => void } | undefined;
 	const squadOrdersRoot = element('squad-orders');
 	const canIssueSquadOrders = function () {
 		return state.outcome === 'playing' && state.squadmates.some(function (mate) { return mate.hp > 0; });
@@ -1817,8 +1820,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			for (const index of [0, 1] as const) if (previousGaits.player.feet[index].lift > 0 && gaits.player.feet[index].lift === 0) audio.footstep(index === 0 ? -1 : 1);
 			if (state.mission?.stage === 'extract' && previousMissionStage !== 'extract') { message = 'OBJECTIVE COMPLETE · REACH EXTRACTION AND HOLD FOR 3 SECONDS'; messageUntil = state.time + 7; }
 			if (state.events.includes('coolant')) { message = 'COOLANT PURGE / REACTOR STABILIZING'; messageUntil = state.time + 2; }
-			if (state.outcome === 'lost' && state.player.hp <= 0) {
-				playerFall = { owner: state, elapsed: 0 };
+			const playerDown = state.outcome === 'lost' && state.player.hp <= 0;
+			if (playerDown || state.events.includes('rig-defeat')) armorBursts.start(state, state.time);
+			if (playerDown) {
+				playerFall = { owner: state, startedAt: frameTime, elapsed: 0 };
 				resetInput();
 			}
 			if (escape && state.outcome === 'won') {
@@ -1847,9 +1852,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const advancePlayerFall = function (dt: number) {
 		if (playerFall?.owner !== state) playerFall = undefined;
 		if (!playerFall) return 0;
-		if (battlefieldActive()) {
-			playerFall.elapsed = Math.min(RIG_COLLAPSE_SECONDS, playerFall.elapsed + dt);
-			if (playerFall.elapsed === RIG_COLLAPSE_SECONDS && playerFall.reveal) {
+		if (battlefieldActive() && frameTime > playerFall.startedAt) {
+			playerFall.elapsed = Math.min(RIG_DEFEAT_SECONDS, playerFall.elapsed + dt);
+			if (playerFall.elapsed === RIG_DEFEAT_SECONDS && playerFall.reveal) {
 				const reveal = playerFall.reveal;
 				delete playerFall.reveal;
 				reveal(frameTime);
@@ -1880,6 +1885,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	world.addSystem('browser-feedback').inPhase('render').setPriority(-100).setProcess(function () {
 		const now = frameTime;
 		audio.update(audioFrame(now));
+		if (battlefieldActive()) {
+			const elapsed = playerFall?.owner === state ? playerFall.elapsed : 0;
+			const cue = armorBursts.advance(state, state.time + elapsed);
+			if (cue) audio.armorBurst(cue);
+		}
 		if (navigation.screen === 'rig-bay' && !navigation.auxiliary && focused && !document.hidden) {
 			for (const id of INTRO_FRAMES) {
 				const modelCanvas = element(`intro-${id}`).querySelector('canvas');

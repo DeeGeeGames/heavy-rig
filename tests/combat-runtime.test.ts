@@ -6,6 +6,7 @@ import type { Contract } from '../src/campaign-types';
 import { defaultReserves } from '../src/combat-resources';
 import { createStarterLoadout } from '../src/hardpoints';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS } from '../src/missions';
+import { RIG_DEFEAT_SECONDS } from '../src/rig-defeat-timing';
 import { createMissionState, createState, distance, step, type CombatStateView, type Controls, type SquadmateOptions } from '../src/simulation';
 import { createTraining, stepTraining } from '../src/training';
 import { createSituationMission } from '../src/situation-sim';
@@ -130,6 +131,8 @@ test('a defeated rig keeps its entity for the fall and immediately leaves combat
 		expect(state.enemies).toHaveLength(0);
 		expect(state.kills).toBe(2);
 		expect(state.wrecks).toHaveLength(2);
+		expect(state.events.filter(function (event) { return event === 'explosion'; })).toHaveLength(2);
+		expect(state.events.filter(function (event) { return event === 'rig-defeat'; })).toHaveLength(1);
 		expect(world.getComponent(rig, 'wreck')).toBe(state.wrecks[0]);
 		expect(state.wrecks[0]?.rig).toEqual({ defeatedAt: state.time, hullAngle: -.3, frame: 'maul-c', commander: true, equippedSlots: [1] });
 		expect(state.wrecks[1]?.rig).toBeUndefined();
@@ -137,6 +140,7 @@ test('a defeated rig keeps its entity for the fall and immediately leaves combat
 		for (const name of ['enemy', 'position', 'heading', 'health', 'enemyWeapons', 'enemyReactor'] as const) expect(world.getComponent(rig, name)).toBeUndefined();
 		world.update(1 / 60);
 		expect(state.kills).toBe(2);
+		expect(state.events).not.toContain('rig-defeat');
 		state.wrecks = [];
 		expect(world.getEntity(rig)).toBeUndefined();
 	} finally { await world.dispose(); }
@@ -231,7 +235,11 @@ test('the practice range fires the selected hardpoint, replaces targets, and ref
 		expect(state.coolantCharges).toBe(1);
 		expect(state.enemies).toHaveLength(0);
 		expect(state.wrecks).toHaveLength(targets.length);
-		for (let tick = 0; tick < 80; tick++) world.update(1 / 60);
+		for (let tick = 0; tick < Math.ceil(RIG_DEFEAT_SECONDS * 60) - 1; tick++) world.update(1 / 60);
+		expect(state.enemies).toHaveLength(0);
+		expect(state.wrecks).toHaveLength(targets.length);
+		world.update(1 / 60);
+		world.update(1 / 60);
 		expect(state.wrecks).toHaveLength(0);
 		expect(state.enemies).toHaveLength(targets.length);
 		expect(state.enemies.every(function (enemy) { return enemy.stationary && !targets.includes(enemy.id); })).toBe(true);

@@ -11,7 +11,8 @@ import { sampleMechResponses, type MechResponse } from './mech-response';
 import { drawOverlay, type ScreenRect } from './overlay';
 import { alignCamera, toGround, toScreen, viewScale } from './projection-3d';
 import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset, weaponCameraKick } from './camera-follow';
-import { ARENA, RIG_COLLAPSE_SECONDS, playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView, type Wreck } from './simulation';
+import { ARENA, playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView, type Wreck } from './simulation';
+import { RIG_DEFEAT_SECONDS } from './rig-defeat-timing';
 import type { SpatialPoint } from './weapon-rig';
 import type { AuthoredPoseContext } from './authored-pose';
 import type { WeaponMount } from './arsenal';
@@ -67,6 +68,7 @@ interface MechPose {
 	manualAim?: Point | undefined;
 	authoredPose?: AuthoredPoseContext | undefined;
 	legGait?: AuthoredGait | undefined;
+	defeatedAt?: number;
 	defeatElapsed?: number;
 }
 interface OverlayFrame {
@@ -218,8 +220,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				};
 				views = {
 					ensure,
-					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain, defeatElapsed = 0 }) {
-						const wasPosed = view.damage.hp !== undefined;
+					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain, defeatedAt = time, defeatElapsed = 0 }) {
+						const wasPosed = view.damage.hp !== undefined && view.model.root.visible;
 						if (view.damage.hp !== undefined && hp < view.damage.hp) {
 							view.damage.hitAt = time;
 							if (!response || response.lastImpact <= (view.damage.sampledAt ?? -Infinity)) view.damage.genericHitAt = time;
@@ -229,7 +231,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						const elevation = groundHeight(terrain, position) + heightAboveGround;
 						place(id, position, elevation);
 						view.model.root.visible = visible;
-						if (hp > 0 || !wasPosed) view.model.pose(gait, heading, {
+						if (hp > 0 || (!wasPosed && !view.fall)) view.model.pose(gait, heading, {
 							hit: Math.max(0, 1 - (time - (view.damage.genericHitAt ?? -Infinity)) / 0.16),
 							recoil: weaponRecoil(loadout, 'energy'), heat, time, ...(response ? { response } : {}),
 							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
@@ -237,7 +239,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 							...(terrain?.elevation ? { terrain } : {}), ...(target ? { target: { ...target, elevation: target.elevation - elevation } } : {}),
 							...(terrain?.elevation && manualAim && !target ? { aimSlope: groundAimSlope(terrain, position, manualAim, elevation) } : {}),
 						});
-						if (hp <= 0) poseFallen(view, position, gait.body.angle, terrain, time, time + defeatElapsed);
+						if (hp <= 0 && visible) poseFallen(view, position, gait.body.angle, terrain, defeatedAt, time + defeatElapsed);
 					},
 					poseWrecks: function (time, terrain, finish) {
 						const detailed = new Set<Wreck>();
@@ -249,7 +251,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 							const existing = world.getComponent(id, 'mechView');
 							// Keep recent bodies recognizable without retaining a full articulated
 							// model for every kill in a long sortie. Always finish a fall.
-							if (index >= 6 && time - rig.defeatedAt >= RIG_COLLAPSE_SECONDS) {
+							if (index >= 6 && time - rig.defeatedAt >= RIG_DEFEAT_SECONDS) {
 								if (existing) releaseView(id);
 								continue;
 							}
@@ -426,6 +428,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const gait = arrival?.gait ?? gaits.squadmates.get(mate.pilotId) ?? createGait(mate, getFrame(mate.frameId).size, FRAME_RIGS[mate.frameId]);
 					views.pose(id, view, gait, arrival?.gait.body.angle ?? mate.turret, mate.hp, state.time, {
 						loadout: mate.loadout, heat: mate.heat, response: responses.get(mate.pilotId), authoredPose: arrival ? arrival.authored : mate.authoredPose, defeatElapsed,
+						defeatedAt: mate.defeatedAt ?? state.time - RIG_DEFEAT_SECONDS,
 						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? sampledLegs(mate, mate.authoredPose?.gait ?? gait),
 						target: !landing && mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
