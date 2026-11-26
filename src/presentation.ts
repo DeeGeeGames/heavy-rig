@@ -1,7 +1,7 @@
 import { isVehicleKind } from './enemy-vehicles';
 import { definePlugin } from 'ecspresso';
 import { createGroupComponents, createRenderer3DPlugin, type Renderer3DComponentTypes, type Renderer3DEventTypes, type Renderer3DResourceTypes } from 'ecspresso/plugins/rendering/renderer3D';
-import { clampCombatZoom, MIN_COMBAT_ZOOM, zoomForWheel } from './shared/camera-zoom';
+import { clampCombatZoom, DEFAULT_COMBAT_ZOOM, MIN_COMBAT_ZOOM, zoomForController, zoomForWheel } from './shared/camera-zoom';
 import { ACESFilmicToneMapping, BufferGeometry, Color, DirectionalLight, Fog, HemisphereLight, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, RingGeometry, Scene, Vector3, WebGLRenderer, type Plane } from 'three';
 import { createGait, createEnemyGait, mechScale, type Gaits } from './gait';
 import { getFrame, type FrameId } from './frames';
@@ -131,7 +131,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		let combat: CombatEntities | undefined;
 		let overlay: OverlayFrame | undefined;
 		let width = 1; let height = 1; let disposed = false; let previousState: CombatStateView | undefined; let previousStateTime = 0;
-		let zoom = 1;
+		let zoom = DEFAULT_COMBAT_ZOOM;
 		const setZoom = function (value: number) {
 			if (!Number.isFinite(value)) return;
 			zoom = clampCombatZoom(value);
@@ -333,10 +333,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			bind: function (entities: CombatEntities) { combat = entities; },
 			resize,
 			zoomWithWheel: function (event: Pick<WheelEvent, 'deltaY' | 'deltaMode'>) { setZoom(zoomForWheel(zoom, event, height)); },
-			toggleWideView: function () { setZoom(zoom === MIN_COMBAT_ZOOM ? 1 : MIN_COMBAT_ZOOM); },
+			cycleZoom: function () { setZoom(zoomForController(zoom)); },
 			getZoom: function () { return zoom; },
 			setZoom,
-			resetZoom: function () { setZoom(1); },
+			resetZoom: function () { setZoom(DEFAULT_COMBAT_ZOOM); },
 			setLaunchTime: function (seconds: number | undefined, dockHeight = 0) {
 				if (launchTime !== undefined && (seconds === undefined || seconds < launchTime)) releaseLaunch();
 				launchTime = seconds;
