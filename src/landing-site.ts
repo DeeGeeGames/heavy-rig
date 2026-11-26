@@ -130,7 +130,7 @@ const touchdownVariation = function (terrain: FieldTerrain | undefined, site: La
 };
 
 export const landingSites = function* (map: MissionMap, terrain: ObstacleField, formation: readonly Point[], facing: number,
-	clearance: (origin: Point, heading: number) => FlightClearance, ground?: FieldTerrain): Generator<LandingSite> {
+	clearance: (origin: Point, heading: number) => FlightClearance, ground?: FieldTerrain, pickup = false): Generator<LandingSite> {
 	// Keep the ramp facing the camera. Where terrain permits, point it toward
 	// the trailing formation so early arrivals can walk straight to their stations.
 	const away = facing + Math.PI;
@@ -139,7 +139,7 @@ export const landingSites = function* (map: MissionMap, terrain: ObstacleField, 
 	const candidates = [...preferred, ...[15, 45, 75].map(function (degrees) { return degrees * Math.PI / 180; })];
 	const placement = function (heading: number, shift: number, runout: number) {
 		const dx = Math.cos(heading), dz = Math.sin(heading);
-		const back = Math.min(...formation.map(function (actor) { return (actor.x - map.drop.x) * dx + (actor.y - map.drop.y) * dz; }));
+		const back = pickup ? -120 : Math.min(...formation.map(function (actor) { return (actor.x - map.drop.x) * dx + (actor.y - map.drop.y) * dz; }));
 		const offset = back - DROPSHIP_DECK.toe - runout;
 		const at = function (side: number, aft: number): Point {
 			return { x: map.drop.x + dx * (offset + aft) + dz * (side + shift), y: map.drop.y + dz * (offset + aft) - dx * (side + shift) };
@@ -163,16 +163,35 @@ export const landingSites = function* (map: MissionMap, terrain: ObstacleField, 
 		const blocked = formation.filter(function (actor) { return !terrainPathClear(terrain, site.at(0, DROPSHIP_DECK.toe), actor, 30); }).length;
 		const ramp = terrainPathClear(terrain, site.at(0, DROPSHIP_DECK.hinge), site.at(0, DROPSHIP_DECK.toe), DROPSHIP_DECK.halfWidth);
 		const shortenedFlight = (2 - site.flight.arrival - site.flight.departure) * .25;
-		const variation = touchdownVariation(ground, site);
+		const obstructions = occupied + site.flight.padContacts + (fits ? 0 : 1) + (ramp ? 0 : 1);
+		const variation = pickup && obstructions > 0 ? 0 : touchdownVariation(ground, site);
 		const uneven = variation > .01 ? 1 + variation / 20 : 0;
 		// Once the hull and ramp are clear, curved disembarkation paths can
 		// route individual rigs around obstructions between the ramp and formation.
-		return (occupied + site.flight.padContacts + (fits ? 0 : 1) + (ramp ? 0 : 1) + uneven) * (formation.length + 1) + blocked + shortenedFlight;
+		if (pickup) return obstructions * 1000 + 10 * uneven + blocked * 8 + shortenedFlight;
+		return (obstructions + uneven) * (formation.length + 1) + blocked + shortenedFlight;
 	};
 	// Try a longer straight walk or a broadside before making everyone walk
 	// several rig widths sideways from a distant landing site.
 	const angles = function (degrees: number[]) { return degrees.map(function (angle) { return angle * Math.PI / 180; }); };
 	const views = [candidates, angles([-45, 135, -60, 150]), angles([-75, 165, -90, 180])];
+	if (pickup) {
+		const headings = Array.from({ length: 24 }, function (_, i) { return i * Math.PI / 12; })
+			.sort(function (a, b) {
+				// Rear three-quarter view keeps the open hatch and boarding lane visible.
+				return Math.cos(b - Math.PI / 4) - Math.cos(a - Math.PI / 4);
+			});
+		const choices: { site: LandingSite; cost: number }[] = [];
+		for (const runout of [36, 128, 240, 380]) for (const shift of [0, -120, 120, -260, 260, -450, 450, -650, 650]) for (const heading of headings) {
+			const site = placement(heading, shift, runout);
+			const merit = score(site);
+			const cost = merit + Math.hypot(runout, shift) / 140;
+			choices.push({ site, cost });
+		}
+		choices.sort(function (a, b) { return a.cost - b.cost; });
+		for (const choice of choices) yield choice.site;
+		return;
+	}
 	for (const shifts of [offsets.slice(0, 3), offsets.slice(3)]) {
 		for (const headings of views) {
 			for (const runout of [106, 180, 250]) for (const shift of shifts) for (const heading of headings) {
@@ -205,6 +224,15 @@ export const surveyLandingPads = function (map: MissionMap, obstacles: readonly 
 			}
 			if (++surveyed >= 3) break;
 		}
+	}
+	const pickups = landingSites({ ...map, drop: map.extraction }, field, [map.extraction], facing, clearance, undefined, true);
+	let pickupCount = 0;
+	for (const site of pickups) {
+		const center = site.at(0, (DROPSHIP_DECK.toe - 233) / 2);
+		const c = Math.cos(site.heading), s = Math.sin(site.heading);
+		if (pads.some(function (pad) { return Math.hypot(pad.x - center.x, pad.y - center.y) < 110 && c * pad.c + s * pad.s > .85; })) continue;
+		pads.push({ ...center, c, s, halfLength: (233 + DROPSHIP_DECK.toe) / 2 + 32, halfWidth: DROPSHIP_WIDTH / 2 + 32 });
+		if (++pickupCount >= 3) break;
 	}
 	return pads;
 };

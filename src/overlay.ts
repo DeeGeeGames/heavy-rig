@@ -262,7 +262,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const outside = distance(state.player, mission.map.extraction) > EXTRACTION_RADIUS;
 		const label = mission.extractTime === 0 ? 'EXTRACTION / ENTER THE GREEN ZONE'
 			: outside ? remaining === 0 ? 'PICKUP READY / ENTER THE ZONE' : `SQUAD HOLDING ${remaining.toFixed(1)}s / ENTER THE ZONE`
-				: `LIFT IN ${remaining.toFixed(1)}s · HOLD POSITION`;
+				: `SECURING PICKUP ${remaining.toFixed(1)}s · HOLD POSITION`;
 		text(label, mission.map.extraction, 40, '#b9f5ca', 12);
 	}
 	const inbound = state.warnings;
