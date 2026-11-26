@@ -298,7 +298,12 @@ already hold their positions when you land. On Meridian, Garrison Defense puts
 the relay in a city square with several streets leading into it. On Cinder,
 Facility Demolition puts the processor inside a walled garrison. The main gate
 opens onto the motor pool, and a service road runs behind the hangars.
-Clearance, Raid, and Acquisition spread their sites across the field.
+The other Defense and Demolition sites use local buildings, including Cinder’s
+evacuation dispatch, Borealis listening posts, Brackwater pump stations, and
+Elderholt timber yards. A Raid sends the squad to three distinct installations:
+a tank farm, a freight depot, and a smaller transfer station. Their buildings
+fit around the approach roads, leaving room for the squad and extraction.
+Clearance and Acquisition also spread their objectives across the field.
 
 A sortie uses each assigned frame's saved integrity and installed weapons. There
 are **no random weapon drafts, combat repair/coolant pickups, or field-service

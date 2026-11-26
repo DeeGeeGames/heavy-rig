@@ -1,4 +1,5 @@
 import { ExtrudeGeometry, Shape } from 'three';
+import type { MissionMap } from './campaign-types';
 import type { ObjectiveSite, TerrainObstacle } from './field-terrain';
 import type { Point } from './simulation';
 
@@ -176,6 +177,52 @@ export const paintRelaySquare = function (ctx: CanvasRenderingContext2D, relay: 
 	for (let street = 0; street < 4; street++) {
 		for (let stripe = -3; stripe <= 3; stripe++) ctx.fillRect(103, stripe * 10 - 2, 16, 5);
 		ctx.rotate(Math.PI / 2);
+	}
+	ctx.restore();
+};
+
+export const paintCompoundPavement = function (ctx: CanvasRenderingContext2D, map: MissionMap) {
+	ctx.save();
+	for (const compound of map.terrain?.compounds ?? []) {
+		const site = map.sites[compound.siteIndex];
+		if (!site) continue;
+		// Separate apron slabs from building footings. Roads still surface the
+		// open space between them and the biome shows through each yard.
+		ctx.fillStyle = '#666966'; ctx.globalAlpha = .68;
+		ctx.fillRect(site.x - 106, site.y - 85, 212, 170);
+		ctx.strokeStyle = '#939389'; ctx.lineWidth = 4;
+		ctx.strokeRect(site.x - 104, site.y - 83, 208, 166);
+		for (const building of compound.buildings) {
+			if (building.kind === 'wall') continue;
+			const x = building.x - building.width / 2, y = building.y - building.depth / 2;
+			ctx.fillRect(x - 12, y - 12, building.width + 24, building.depth + 24);
+			ctx.strokeRect(x - 10, y - 10, building.width + 20, building.depth + 20);
+		}
+	}
+	ctx.restore();
+};
+
+export const paintCompoundLabels = function (ctx: CanvasRenderingContext2D, map: MissionMap) {
+	const terrain = map.terrain;
+	if (!terrain?.compounds?.length) return;
+	ctx.save();
+	ctx.font = 'bold 26px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+	for (const compound of terrain.compounds) {
+		const site = map.sites[compound.siteIndex];
+		if (!site) continue;
+		const title = compound.name.toUpperCase();
+		const textWidth = Math.min(ctx.measureText(title).width, 356);
+		const halfWidth = textWidth / 2 + 13, halfDepth = 20;
+		const xOffset = 104 + halfWidth, yOffset = 85 + halfDepth;
+		const offsets = [[0, yOffset], [0, -yOffset], [xOffset, 0], [-xOffset, 0]] as const;
+		const at = offsets.map(function ([x, y]) { return { x: site.x + x, y: site.y + y }; }).find(function (p) {
+			return p.x >= halfWidth && p.x <= map.width - halfWidth && p.y >= halfDepth && p.y <= map.height - halfDepth
+				&& terrain.obstacles.every(function (o) { return Math.abs(o.x - p.x) >= o.width / 2 + halfWidth || Math.abs(o.y - p.y) >= o.depth / 2 + halfDepth; });
+		});
+		if (!at) continue;
+		ctx.fillStyle = '#252e2bd9'; ctx.fillRect(at.x - halfWidth, at.y - halfDepth, halfWidth * 2, halfDepth * 2);
+		ctx.fillStyle = '#eed19a'; ctx.fillText(title, at.x, at.y + 2, textWidth);
+		for (const side of [-1, 1]) ctx.fillRect(at.x + side * (halfWidth - 5) - 1, at.y - 11, 2, 22);
 	}
 	ctx.restore();
 };

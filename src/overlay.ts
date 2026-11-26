@@ -8,6 +8,7 @@ import { toScreen } from './projection-3d';
 import { groundHeight } from './terrain-elevation';
 import { ARENA, artilleryAimStatus, missileTracking, distance, ENEMY_STATS, getEnemyDefense, isJammed, surveyed, targetMarked, type Point, type CombatStateView, type Unit } from './simulation';
 import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
+import { missionFacilityName, missionSiteName } from './mission-site-labels';
 import { FIELD_ROAD_MARKINGS } from './field-terrain-3d';
 import { terrainMapColors } from './terrain-map-colors';
 import { drawTerrainContours } from './terrain-contours';
@@ -189,7 +190,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const mission = state.mission; const navigation = missionNavigation(state);
 	const relay = mission?.map.objective ?? { x: ARENA.relayX, y: ARENA.relayY };
 	const showRelay = !mission || mission.contract.kind === 'defend';
-	if (showRelay) text((options.relayHit ?? 0) > 0 ? 'UPLINK UNDER FIRE' : mission ? 'DEFEND UPLINK' : 'UPLINK / 09', relay, 206, (options.relayHit ?? 0) > 0 || state.relay < 30 ? '#ffac83' : '#aee2d5', 10);
+	if (showRelay) text((options.relayHit ?? 0) > 0 ? 'UPLINK UNDER FIRE' : mission ? missionSiteName(mission.map, 0)?.toUpperCase() ?? 'DEFEND UPLINK' : 'UPLINK / 09', relay, 206, (options.relayHit ?? 0) > 0 || state.relay < 30 ? '#ffac83' : '#aee2d5', 10);
 	if ((options.armorHit ?? 0) > 0) {
 		const elevation = options.armorHitHeight ?? 124;
 		// Taller frames can fill the view when zoomed in. Keep the entire
@@ -246,8 +247,12 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const selectedReticle = selected ? drawTargetReticle(selected, selected.id, selected.catalog ? enemyVolume(selected).elevation : ENEMY_STATS[selected.kind].elevation, selectedSize, selectedSize) : undefined;
 	const facilityReticle = selectedFacility && selectedStructure ? drawTargetReticle(selectedFacility, selectedStructure.id, 45, 130 * scale, 110 * scale) : undefined;
 	for (const [index, { id, body: facility }] of structures.entries()) {
-		const labelHeight = id === selectedStructure?.id && facilityReticle?.guided ? Math.max(124, 45 + facilityReticle.labelOffset / scale) : 124;
-		text(facility.hp > 0 ? `${mission?.contract.kind === 'raid' ? `RAID SITE ${index + 1}` : 'TARGET FACILITY'} / ${Math.ceil(facility.hp / facility.maxHp * 100)}%` : 'FACILITY DESTROYED', facility, labelHeight, facility.hp > 0 ? '#ffd199' : '#a5b6ac', 11);
+		const siteName = missionFacilityName(mission?.map, id)?.toUpperCase();
+		const silhouetteHeight = siteName && mission?.contract.kind === 'raid' && id === -4 ? 144 : 124;
+		const labelHeight = id === selectedStructure?.id && facilityReticle?.guided ? Math.max(silhouetteHeight, 45 + facilityReticle.labelOffset / scale) : silhouetteHeight;
+		const standing = siteName ?? (mission?.contract.kind === 'raid' ? `RAID SITE ${index + 1}` : 'TARGET FACILITY');
+		const destroyed = siteName ? `${siteName} / DESTROYED` : 'FACILITY DESTROYED';
+		text(facility.hp > 0 ? `${standing} / ${Math.ceil(facility.hp / facility.maxHp * 100)}%` : destroyed, facility, labelHeight, facility.hp > 0 ? '#ffd199' : '#a5b6ac', 11);
 		const label = at(facility, labelHeight - 10);
 		ctx.fillStyle = '#112329dd'; ctx.fillRect(label.x - 42, label.y, 84, 4);
 		ctx.fillStyle = '#e5a778'; ctx.fillRect(label.x - 42, label.y, 84 * Math.max(0, facility.hp / facility.maxHp), 4);

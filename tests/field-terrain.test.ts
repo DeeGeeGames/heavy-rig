@@ -117,6 +117,39 @@ test('the built-up objectives keep distinct combat approaches through both surve
 	}
 });
 
+test('Raid develops all three objectives across the seven biomes while the opening courier crash stays in open terrain', function () {
+	for (const planetId of ['meridian', 'cinder', 'borealis', 'brackwater', 'elderholt', 'galeward', 'iolith'] as const) {
+		const contract: Contract = { planetId, kind: 'raid', seed: 473602713, tier: 6, id: 'raid-survey', title: '', briefing: '',
+			employer: 'freeholds', opponent: 'combine', requiredReputation: 0, reward: 0, favor: 0, hostility: 0 };
+		const { map } = generateMissionField(contract);
+		const compounds = map.terrain?.compounds ?? [];
+		expect(compounds.map(function (compound) { return compound.siteIndex; })).toEqual([0, 1, 2]);
+		expect(new Set(compounds.map(function (compound) { return compound.name; })).size).toBe(3);
+		for (const compound of compounds) {
+			expect(compound.buildings.length).toBeGreaterThanOrEqual(2);
+			expect(compound.buildings.every(function (building) { return map.terrain?.obstacles.includes(building); })).toBe(true);
+		}
+	}
+	expect(createFieldTrial(283191706).mission?.map.terrain?.compounds).toBeUndefined();
+});
+
+test('gun foundations leave the demolition patrol a route out of a compound', function () {
+	const contract: Contract = { planetId: 'meridian', kind: 'demolition', seed: 2654435761, tier: 2,
+		id: 'compound-garrison', title: '', briefing: '', employer: 'freeholds', opponent: 'combine',
+		requiredReputation: 0, reward: 0, favor: 0, hostility: 0 };
+	const { map, garrison } = generateMissionField(contract);
+	const terrain = map.terrain;
+	if (!terrain) throw new Error('Missing compound terrain');
+	const pads = garrison.filter(function (guard) { return guard.kind === 'artillery'; })
+		.map(function (guard) { return landingFootprint(guard, EMPLACEMENT_RADIUS); });
+	expect(pads.length).toBe(missionArtilleryCount(contract));
+	const field = { obstacles: [...terrain.obstacles, ...pads] };
+	for (const guard of garrison) if (guard.kind !== 'artillery') {
+		expect(terrainPathClear(field, guard, guard, RIG_RADIUS)).toBe(true);
+		expect(terrainWaypoint(field, guard, map.objective, RIG_RADIUS)).not.toEqual(guard);
+	}
+});
+
 test('campaign deployment keeps each contract role, full squad, and hostile roster on connected ground', function () {
 	const loadout = createStarterLoadout('kestrel');
 	const squadmates: SquadmateOptions[] = ['one', 'two', 'three'].map(function (id) {

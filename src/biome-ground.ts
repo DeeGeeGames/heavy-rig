@@ -1,6 +1,7 @@
 import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
 import type { Biome, MissionMap } from './campaign-types';
 import type { TerrainObstacle } from './field-terrain';
+import { paintCompoundPavement } from './site-scenery';
 import { randomSource } from './universe';
 
 const surfaces = {
@@ -204,5 +205,6 @@ export const paintBiomeGround = function (ctx: CanvasRenderingContext2D, map: Mi
 	if (water.length) paintFloodplain(ctx, water, random);
 	paintGroundCover(ctx, map, biome, random);
 	for (const pool of water) paintChannel(ctx, pool, random);
+	paintCompoundPavement(ctx, map);
 	paintRoads(ctx, map, biome, random);
 };

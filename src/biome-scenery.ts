@@ -254,7 +254,7 @@ const crystalOutcrop = function ({ x, y: z, width: w, depth: d, height: h }: Ter
 	}
 };
 
-export const createBiomeScenery = function (terrain: FieldTerrain, seed: number, biome: SurfaceBiome) {
+export const createBiomeScenery = function (terrain: FieldTerrain, seed: number, biome: SurfaceBiome, compoundBuildings?: ReadonlySet<TerrainObstacle>) {
 	const root = new Group(); root.name = `${biome}-scenery`;
 	const random = randomSource(seed ^ 0x7eb010);
 	const instances = new Map<Shape, { matrix: Matrix4; color: number }[]>();
@@ -273,7 +273,12 @@ export const createBiomeScenery = function (terrain: FieldTerrain, seed: number,
 		foundation = groundHeight(terrain, o);
 		switch (o.kind) {
 			case 'channel': wetlandPlants(o, draw, random); break;
-			case 'shed': if (biome === 'wetlands') pumpStation(o, draw); else sawmill(o, draw); break;
+			case 'shed':
+				if (!compoundBuildings?.has(o)) {
+					if (biome === 'wetlands') pumpStation(o, draw);
+					else sawmill(o, draw);
+				}
+				break;
 			case 'tree': oldGrowth(o, draw, random); break;
 			case 'turbine': {
 				const hub = windTower(o, draw, random);

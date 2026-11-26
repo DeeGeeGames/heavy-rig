@@ -21,17 +21,24 @@ export interface ObjectiveSite extends GroundFootprint {
 	readonly kind: 'city' | 'garrison';
 }
 
+export interface MissionCompound {
+	readonly name: string;
+	readonly siteIndex: number;
+	readonly buildings: readonly TerrainObstacle[];
+}
+
 export interface FieldTerrain {
 	readonly obstacles: readonly TerrainObstacle[];
 	readonly roads: readonly (readonly Point[])[];
 	readonly elevation?: TerrainElevation;
 	readonly site?: ObjectiveSite;
+	readonly compounds?: readonly MissionCompound[];
 }
 
 interface Bounds { left: number; right: number; top: number; bottom: number }
 interface Contact { fraction: number; axis: 'x' | 'y' }
 interface Corner { point: Point; index: number; distances: Float64Array }
-interface Clearance { boxes: Bounds[]; corners?: Corner[] }
+interface Clearance { boxes: Bounds[]; points?: Point[]; corners?: Corner[] }
 const clearanceCache = new WeakMap<ObstacleField, Map<number, Clearance>>();
 
 const bounds = function (obstacle: GroundFootprint, radius: number): Bounds {
@@ -118,15 +125,18 @@ export const moveOnTerrain = function (terrain: ObstacleField, from: Point, to: 
 	return at;
 };
 
-const navigationCorners = function (boxes: readonly Bounds[]): Corner[] {
+const freeCorners = function (boxes: readonly Bounds[]) {
 	// Extra stand-off gives a turning rig room to round a corner before steering
 	// to its next waypoint. Geometry is static throughout a sortie.
 	const margin = 24;
-	const points = boxes.flatMap(function (box) {
+	return boxes.flatMap(function (box) {
 		return [box.left - margin, box.right + margin].flatMap(function (x) {
 			return [box.top - margin, box.bottom + margin].map(function (y) { return { x, y }; });
 		});
 	}).filter(function (point) { return !boxes.some(function (box) { return inside(point, box); }); });
+};
+
+const navigationCorners = function (boxes: readonly Bounds[], points: readonly Point[]): Corner[] {
 	const corners: Corner[] = points.map(function (point, index) {
 		return { point, index, distances: new Float64Array(points.length).fill(Infinity) };
 	});
@@ -146,11 +156,30 @@ const navigationCorners = function (boxes: readonly Bounds[]): Corner[] {
 	}
 	return corners;
 };
+// Posting a guard only needs connectivity. Search the same visible corners
+// as the steering graph, stopping as soon as a route reaches the objective.
+export const hasTerrainRoute = function (terrain: ObstacleField, from: Point, to: Point, radius: number): boolean {
+	const clearance = clearanceFor(terrain, radius), boxes = clearance.boxes;
+	const goal = nearestFree(to, boxes);
+	if (clear(from, goal, boxes)) return true;
+	const points = clearance.points ??= freeCorners(boxes);
+	const visited = new Set<Point>();
+	const frontier = [from];
+	for (const at of frontier) {
+		for (const point of points) {
+			if (visited.has(point) || !clear(at, point, boxes)) continue;
+			if (clear(point, goal, boxes)) return true;
+			visited.add(point);
+			frontier.push(point);
+		}
+	}
+	return false;
+};
 export const terrainWaypoint = function (terrain: ObstacleField, from: Point, to: Point, radius: number): Point {
 	const clearance = clearanceFor(terrain, radius);
 	const goal = nearestFree(to, clearance.boxes);
 	if (clear(from, goal, clearance.boxes)) return goal;
-	const corners = clearance.corners ??= navigationCorners(clearance.boxes);
+	const corners = clearance.corners ??= navigationCorners(clearance.boxes, clearance.points ??= freeCorners(clearance.boxes));
 	const exits = corners.filter(function (corner) { return clear(corner.point, goal, clearance.boxes); })
 		.map(function (corner) { return { corner, remaining: distance(corner.point, goal) }; });
 	let best: Corner | undefined; let bestTotal = Infinity; let bestFirstLeg = 0;

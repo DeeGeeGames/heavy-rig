@@ -68,6 +68,9 @@ mission-survey { display: flex; flex-direction: column; min-height: 0; }
 .survey-scale { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: #242926; padding: 7px 12px; border: 1px solid var(--border); border-top: 0; }
 .survey-scale b { font: 20px/1 var(--display); text-transform: uppercase; }
 .survey-scale span { color: var(--muted); font: 11px/1 var(--mono); }
+.survey-sites { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 4px 7px; border: 1px solid var(--border); border-top: 0; background: #1c211d; color: var(--paper); font: 10px/1.2 var(--mono); }
+.survey-sites span { display: flex; align-items: center; gap: 4px; }
+.survey-sites b { color: #211a18; background: #ffd27c; min-width: 12px; text-align: center; }
 #bridge .contract-card { transition: none; border: 0; border-inline-start: 4px solid #676e63; background: #272c28; padding: 9px 14px; gap: 4px; }
 #bridge .contract-card[aria-pressed='true'] { border-inline-start-color: #ffedc1; background: var(--amber); color: #211a10; }
 #bridge .contract-card[aria-pressed='true'] :is(.contract-type,.contract-employer,.contract-bottom,.contract-bottom strong,.contract-bottom small) { color: #413222; }

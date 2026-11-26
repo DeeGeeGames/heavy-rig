@@ -3,7 +3,8 @@ import type { Biome, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { createCutGround, createFieldStructures, paintFieldRoads } from './field-terrain-3d';
 import { hasBiomeGround, paintBiomeGround } from './biome-ground';
-import { paintRelaySquare, paintSitePavement } from './site-scenery';
+import { hangarRoofGeometry, paintCompoundLabels, paintCompoundPavement, paintRelaySquare, paintSitePavement } from './site-scenery';
+import { missionSiteName } from './mission-site-labels';
 import { groundHeight } from './terrain-elevation';
 import type { TerrainBakeSource } from './terrain-bake';
 import { PERIMETER_RIDGE_HEIGHT } from './scenery-flight';
@@ -84,12 +85,15 @@ export const createMissionEnvironment = function (map: MissionMap) {
 				}
 			}
 			if (map.terrain?.site) paintSitePavement(ctx, map.terrain.site, map.terrain.obstacles);
+			if (!hasBiomeGround(map.biome)) paintCompoundPavement(ctx, map);
 			for (const [index, site] of map.sites.entries()) {
+				if (missionSiteName(map, index)) continue;
 				ctx.strokeStyle = palette.dust; ctx.globalAlpha = 0.35; ctx.lineWidth = 3; ctx.strokeRect(site.x - 110, site.y - 90, 220, 180);
 				ctx.font = 'bold 25px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = palette.dust; ctx.fillText(`SECTOR ${String(index + 1).padStart(2, '0')}`, site.x, site.y + 118);
 			}
 			if (map.terrain && !hasBiomeGround(map.biome)) paintFieldRoads(ctx, map.terrain);
 			if (map.terrain?.site?.kind === 'city') paintRelaySquare(ctx, map.objective);
+			paintCompoundLabels(ctx, map);
 			ctx.globalAlpha = 0.28;
 			for (let i = 0; i < 24000; i++) { ctx.fillStyle = i % 3 ? palette.rock : palette.dust; ctx.fillRect(random() * map.width, random() * map.height, 1 + random() * 4, 1 + random() * 3); }
 			ctx.globalAlpha = 1;
@@ -178,7 +182,48 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	for (let i = 0; i < 9; i++) { const piece = box(rubble, i % 2 ? steel : dark, Math.cos(i * 2.4) * 38, 7, Math.sin(i * 2.4) * 35, 18 + i * 2, 7 + i % 3 * 9, 23); piece.rotation.y = i * 1.8; }
 	const raidFacilities = map.sites.map(function (site, index) {
 		const value = facility.clone(true); value.name = `raid-site-${index + 1}`;
-		value.position.set(site.x, groundHeight(map.terrain, site), site.y); root.add(value); return value;
+		const standing = value.getObjectByName('facility-intact');
+		const debris = value.getObjectByName('facility-rubble');
+		if (standing instanceof Group && map.sites.length === 3 && missionSiteName(map, index)) {
+			standing.clear();
+			// Visually distinct targets share the same location and combat volume.
+			box(standing, dark, 0, 0, 0, 82, 11, 65);
+			if (index === 0) {
+				const drum = geometry(new CylinderGeometry(.5, .5, 1, 16));
+				const tank = function (surface: Material, x: number, y: number, height: number, diameter: number) {
+					const mesh = new Mesh(drum, surface);
+					mesh.position.set(x, y + height / 2, 0); mesh.scale.set(diameter, height, diameter);
+					mesh.castShadow = true; mesh.receiveShadow = true; standing.add(mesh);
+				};
+				for (const [x, height] of [[-23, 64], [23, 83]] as const) {
+					tank(steel, x, 11, height, 36);
+					tank(dark, x, 24, 5, 38);
+					tank(orange, x, height, 5, 38);
+					tank(dark, x, 10 + height, 6, 16);
+				}
+				box(standing, dark, 0, 42, 0, 20, 12, 14);
+			} else if (index === 1) {
+				box(standing, steel, 0, 11, 0, 96, 49, 58);
+				const roof = new Mesh(geometry(hangarRoofGeometry()), dark);
+				roof.scale.set(98, 26, 62); roof.position.y = 72;
+				roof.castShadow = true; roof.receiveShadow = true; standing.add(roof);
+				for (const z of [-29, 29]) for (const x of [-28, 0, 28]) {
+					box(standing, dark, x, 12, z, 21, 29, 2);
+					box(standing, orange, x, 42, z, 21, 3, 2.5);
+				}
+			} else {
+				box(standing, steel, 0, 11, 0, 48, 65, 48);
+				box(standing, dark, 0, 76, 0, 51, 18, 51);
+				box(standing, orange, 0, 91, 0, 50, 4, 50);
+				box(standing, steel, 0, 95, 0, 25, 28, 25);
+				box(standing, dark, 0, 123, 0, 31, 7, 31);
+				for (const x of [-32, 32]) {
+					box(standing, dark, x, 11, 0, 19, 43, 30);
+					for (const y of [25, 34, 43]) box(standing, steel, x, y, 0, 21, 4, 32);
+				}
+			}
+		}
+		value.position.set(site.x, groundHeight(map.terrain, site), site.y); root.add(value); return { value, standing, debris };
 	});
 	const capturePads = map.sites.map(function (site, index) {
 		const { value, markings } = pad(`capture-site-${index + 1}`, site, orange, CAPTURE_RADIUS);
@@ -202,9 +247,9 @@ export const createMissionEnvironment = function (map: MissionMap) {
 			extraction.value.scale.setScalar(1 + Math.sin(time * 2) * 0.015);
 			progress.visible = mission.extractTime > 0;
 			progress.scale.setScalar(Math.max(0.03, Math.min(1, mission.extractTime / EXTRACTION_SECONDS)));
-			for (const [index, value] of raidFacilities.entries()) {
+			for (const [index, { value, standing, debris }] of raidFacilities.entries()) {
 				const target = mission.raidTargets?.[index]; value.visible = Boolean(target);
-				if (target) { const standing = value.getObjectByName('facility-intact'); const debris = value.getObjectByName('facility-rubble'); if (standing) standing.visible = target.hp > 0; if (debris) debris.visible = target.hp <= 0; }
+				if (target) { if (standing) standing.visible = target.hp > 0; if (debris) debris.visible = target.hp <= 0; }
 			}
 			for (const [index, pad] of capturePads.entries()) {
 				const site = mission.captureSites?.[index]; pad.value.visible = Boolean(site);

@@ -2,6 +2,7 @@ import { html, render } from 'lit-html';
 import { BIOME_NAMES, type Contract, type MissionMap } from './campaign-types';
 import { getPlanet } from './campaign';
 import { generateMissionMap } from './missions';
+import { missionSiteName } from './mission-site-labels';
 import type { Point } from './simulation';
 import { groundHeight } from './terrain-elevation';
 
@@ -62,12 +63,18 @@ const paintSurvey = function (canvas: HTMLCanvasElement, map: MissionMap) {
 	const drop = project(map.drop);
 	ctx.fillStyle = '#b5ead6';
 	ctx.fillRect(drop.x - 2, drop.y - 2, 5, 5);
-	for (const site of map.sites.length ? map.sites : [map.objective]) {
+	for (const [index, site] of (map.sites.length ? map.sites : [map.objective]).entries()) {
 		const p = project(site);
 		ctx.fillStyle = '#211a18'; ctx.fillRect(p.x - 1, p.y - 15, 3, 16);
 		ctx.fillStyle = '#ffd27c'; ctx.fillRect(p.x, p.y - 14, 1, 15);
-		ctx.fillRect(p.x - 2, p.y - 17, 5, 5);
-		ctx.fillStyle = '#fff3ca'; ctx.fillRect(p.x - 1, p.y - 16, 3, 3);
+		if (missionSiteName(map, index)) {
+			ctx.fillRect(p.x - 5, p.y - 20, 11, 11);
+			ctx.fillStyle = '#211a18'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+			ctx.fillText(String(index + 1), p.x, p.y - 11);
+		} else {
+			ctx.fillRect(p.x - 2, p.y - 17, 5, 5);
+			ctx.fillStyle = '#fff3ca'; ctx.fillRect(p.x - 1, p.y - 16, 3, 3);
+		}
 	}
 };
 
@@ -79,7 +86,8 @@ const surveyChart = function (contract: Contract) {
 	canvas.setAttribute('role', 'img');
 	canvas.setAttribute('aria-label', `${planet} terrain and objective locations for ${contract.title}`);
 	paintSurvey(canvas, map);
-	return { canvas, planet, biome: BIOME_NAMES[map.biome], dimensions: `${(map.width / 1000).toFixed(2)} × ${(map.height / 1000).toFixed(2)} km` };
+	return { canvas, planet, biome: BIOME_NAMES[map.biome], sites: map.terrain?.compounds ?? [],
+		dimensions: `${(map.width / 1000).toFixed(2)} × ${(map.height / 1000).toFixed(2)} km` };
 };
 
 export class MissionSurvey extends HTMLElement {
@@ -122,7 +130,10 @@ export class MissionSurvey extends HTMLElement {
 				${chart.canvas}
 				<header><span>FIELD SURVEY</span><strong>${chart.planet}</strong></header>
 				<div class="survey-legend"><span><i></i> DROP</span><span><i></i> OBJECTIVE</span></div>
-			</div><div class="survey-scale"><b>${chart.biome}</b><span>${chart.dimensions}</span></div>`, this);
+			</div><div class="survey-scale"><b>${chart.biome}</b><span>${chart.dimensions}</span></div>
+			${chart.sites.length ? html`<div class="survey-sites">${chart.sites.map(function (site) {
+				return html`<span><b>${site.siteIndex + 1}</b> ${site.name}</span>`;
+			})}</div>` : ''}`, this);
 			this.drawn = key;
 			this.dataset['contract'] = contract.id;
 		});
