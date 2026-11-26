@@ -89,9 +89,17 @@ export const renderShipHeader = function (campaign: Campaign, screen: ShipScreen
 		<header class="bridge-header">
 			<div class="bridge-brand"><span class="insignia" aria-hidden="true">HR</span><div><span class="eyebrow" title=${reputationProgress(campaign)}>RANK ${companyRank(campaign)} · ${campaign.companyReputation.toLocaleString()} REP</span><h1>HRV WAYFARER<small class="company-rank">R${companyRank(campaign)}</small></h1></div></div>
 			<nav class="ship-navigation" aria-label="Company departments">
-				<button class="nav-step" ?disabled=${locked} aria-label="Previous department" @click=${function () { actions.navigate(adjacentShipScreen(screen, -1)); }}><span data-menu-glyph="previousDepartment"></span></button>
-				${actions.picker.field(`department-${screen}`, 'Department', screen, departments, actions.navigate, 'Wayfarer departments', locked)}
-				<button class="nav-step" ?disabled=${locked} aria-label="Next department" @click=${function () { actions.navigate(adjacentShipScreen(screen, 1)); }}><span data-menu-glyph="nextDepartment"></span></button>
+				<div class="ship-department-picker">
+					<button class="nav-step" ?disabled=${locked} aria-label="Previous department" @click=${function () { actions.navigate(adjacentShipScreen(screen, -1)); }}><span data-menu-glyph="previousDepartment"></span></button>
+					${actions.picker.field(`department-${screen}`, 'Department', screen, departments, actions.navigate, 'Wayfarer departments', locked)}
+					<button class="nav-step" ?disabled=${locked} aria-label="Next department" @click=${function () { actions.navigate(adjacentShipScreen(screen, 1)); }}><span data-menu-glyph="nextDepartment"></span></button>
+				</div>
+				<div class="ship-department-tabs" data-menu-row>
+					${departments.map(function ({ value, label, detail }) {
+						return html`<button type="button" class="ship-department-tab" aria-current=${screen === value ? 'page' : 'false'}
+							?disabled=${locked} @click=${function () { if (value !== screen) actions.navigate(value); }}>${label}${detail ? html`<b title=${detail} aria-label=${detail}>${campaign.workOrders.length}</b>` : ''}</button>`;
+					})}
+				</div>
 			</nav>
 			<div class="career-stats"><div><small>IN ORBIT</small><b>${getPlanet(campaign.planetId).name}</b></div><div><small>COMPANY FUNDS</small><b>${campaign.credits.toLocaleString()} <em>CR</em></b></div><div><small>SHIP CALENDAR</small><b>DAY ${String(campaign.day).padStart(2, '0')}</b></div></div>
 		</header>
