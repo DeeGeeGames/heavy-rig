@@ -1,3 +1,4 @@
+import { PICKUP_BOARD_AT, PICKUP_DURATION, PICKUP_LAND_AT, PICKUP_LIFT_AT } from './launch-surface';
 import { HARROW_MAX_RANGE, mortarProfile, mountInterval } from './frame-tactics';
 import { rigFrameId, rigName } from './rigs';
 import { getFrameOffer } from './market';
@@ -187,7 +188,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
 	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
-	let playerFall: { owner: typeof state; startedAt: number; elapsed: number; reveal?: (now: number) => void } | undefined;
+	let sortieEnding: { owner: typeof state; kind: 'fall' | 'pickup'; startedAt: number; elapsed: number; reveal?: (now: number) => void } | undefined;
 	const squadOrdersRoot = element('squad-orders');
 	const canIssueSquadOrders = function () {
 		return state.outcome === 'playing' && state.squadmates.some(function (mate) { return mate.hp > 0; });
@@ -229,7 +230,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const clearTouchFacing = function () { touchFacing.clear(); touchAimPointer = undefined; };
 	const resetInput = function () { touchZoom.reset(); acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); clearTouchFacing(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const battlefieldActive = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
-	const playing = function () { return battlefieldActive() && playerFall?.owner !== state; };
+	const playing = function () { return battlefieldActive() && sortieEnding?.owner !== state; };
 	const touchZoom = mountTouchZoom(element('zoom-hold'), element('zoom-panel'), element('zoom-value'), element('zoom-knob'), abort.signal, playing, presentation);
 	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing, element('touch-cruise'), element('touch-drive-hint'));
 	const touchContacts = function () {
@@ -384,7 +385,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (capture && navigation.auxiliary !== 'settings') { capture = undefined; renderMappings(); }
 		const ordersWasOpen = !squadOrdersRoot.hidden;
 		const practice = training?.stage === 'range';
-		const finishingSortie = playerFall?.owner === state && playerFall.reveal !== undefined;
+		const finishingSortie = sortieEnding?.owner === state && sortieEnding.reveal !== undefined;
 		element('reset').hidden = finishingSortie || !training && !escape && !situationSim;
 		element('reset').textContent = situationSim ? 'RESTART SIMULATION' : escape ? 'RESTART ESCAPE' : practice ? 'RESET RANGE' : 'RESTART DRILLS';
 		element('pause-training-loadout').hidden = !training;
@@ -393,7 +394,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('leave').textContent = situationSim ? 'RETURN TO SIM SETUP' : trialSeed !== undefined ? 'FIELD BRIEFING' : escape ? 'RETURN TO TITLE' : state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('training-deploy').hidden = !campaign.active && !campaign.operations?.length;
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
-		element('pause-copy').textContent = finishingSortie ? 'Your rig was disabled. Resume to finish the sortie.'
+		element('pause-copy').textContent = finishingSortie ? sortieEnding?.kind === 'pickup' ? 'Extraction in progress. Resume to finish the pickup.' : 'Your rig was disabled. Resume to finish the sortie.'
 			: trialSeed !== undefined ? 'Resume this run, or return to the briefing to start the field again or generate another layout.'
 			: situationSim ? 'Restart to replay this situation with fresh rigs, or return to setup to change the mission and squad.'
 			: escape ? 'The escape is paused. Resume when ready. This borrowed rig does not affect your company.'
@@ -1186,8 +1187,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		saveReportCopy();
 		transition(navigation.setScreen('result'));
 	};
-	const afterPlayerFall = function (now: number, reveal: (now: number) => void) {
-		if (playerFall?.owner === state) playerFall.reveal = reveal;
+	const afterSortieEnding = function (now: number, reveal: (now: number) => void) {
+		if (sortieEnding?.owner === state) sortieEnding.reveal = reveal;
 		else reveal(now);
 	};
 	const showResult = function (now: number) {
@@ -1197,7 +1198,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (next === campaign || !next.lastResult || !replaceCampaign(next)) return;
 		const report = getOperationReport(state);
 		const result = next.lastResult;
-		afterPlayerFall(now, function (at) {
+		afterSortieEnding(now, function (at) {
 			if (next.lastOperationDay) showDayDebrief(next.lastOperationDay, at, report);
 			else showDebrief(result, at, report);
 		});
@@ -1475,6 +1476,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('relay-readout').hidden = Boolean(training || state.mission && state.mission.contract.kind !== 'defend');
 		element('relay-name').textContent = state.mission ? 'CONTRACT RELAY' : 'RELAY 09';
 		if (state.mission) { ui.phase.textContent = state.mission.stage === 'extract' ? 'OBJECTIVE COMPLETE / EXTRACT' : MISSION_NAMES[state.mission.contract.kind].toUpperCase(); ui.status.textContent = missionObjective(state); }
+		const pickup = sortieEnding?.owner === state && sortieEnding.kind === 'pickup' ? sortieEnding : undefined;
+		container.classList.toggle('pickup-active', pickup !== undefined);
+		if (pickup) {
+			ui.phase.textContent = 'EXTRACTION';
+			ui.status.textContent = pickup.elapsed < PICKUP_BOARD_AT ? 'Dropship inbound'
+				: pickup.elapsed < PICKUP_LIFT_AT ? 'Squad boarding' : 'Dropship departing';
+		}
 		if (escape) {
 			element('mission-name').textContent = 'RIG BAY / SECURITY ALERT'; ui.phase.textContent = 'STOLEN FREEDOM';
 			ui.status.textContent = state.mission && state.mission.extractTime > 0 ? `Evacuation in ${Math.ceil(3 - state.mission.extractTime)}s · hold position` : `REACH EVACUATION · ${Math.round(distance(state.player, state.mission?.map.extraction ?? state.player))} m`;
@@ -1575,11 +1583,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const audioFrame = function (now: number) {
 		const combat = playing();
-		const falling = playerFall?.owner === state && battlefieldActive();
-		const result = falling || navigation.screen === 'result' || navigation.screen === 'situation-result';
+		const finishing = sortieEnding?.owner === state && battlefieldActive();
+		const result = finishing || navigation.screen === 'result' || navigation.screen === 'situation-result';
 		const launching = navigation.screen === 'launch';
 		const briefing = usesMenuScore(navigation.screen);
-		const audibleMenu = (launching && !navigation.transitioning && !navigation.auxiliary) || briefing || (result && (falling || now < terminalUntil + 30000));
+		const audibleMenu = (launching && !navigation.transitioning && !navigation.auxiliary) || briefing || (result && (finishing || now < terminalUntil + 30000));
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			theme: escape ? 'pursuit' as const : 'standard' as const,
 			alarm: combat && escape,
@@ -1823,7 +1831,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const playerDown = state.outcome === 'lost' && state.player.hp <= 0;
 			if (playerDown || state.events.includes('rig-defeat')) armorBursts.start(state, state.time);
 			if (playerDown) {
-				playerFall = { owner: state, startedAt: frameTime, elapsed: 0 };
+				sortieEnding = { owner: state, kind: 'fall', startedAt: frameTime, elapsed: 0 };
+				resetInput();
+			}
+			if (!escape && !training && state.mission && state.outcome === 'won') {
+				sortieEnding = { owner: state, kind: 'pickup', startedAt: frameTime, elapsed: 0 };
 				resetInput();
 			}
 			if (escape && state.outcome === 'won') {
@@ -1833,13 +1845,13 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (opening) toTransmission();
 				else toShip();
 			}
-			else if (escape && state.outcome === 'lost') afterPlayerFall(now, function () { audio.reset(); transition(navigation.setScreen('escape-result')); });
+			else if (escape && state.outcome === 'lost') afterSortieEnding(now, function () { audio.reset(); transition(navigation.setScreen('escape-result')); });
 			else if (training?.stage === 'complete') transition(navigation.setScreen('training-result'));
 			else if (trialSeed !== undefined && state.outcome !== 'playing') {
 				const seed = trialSeed, outcome = state.outcome;
-				afterPlayerFall(now, function () { showFieldTrial(seed, outcome); });
+				afterSortieEnding(now, function () { showFieldTrial(seed, outcome); });
 			}
-			else if (situationSim && state.outcome !== 'playing') afterPlayerFall(now, showSituationResult);
+			else if (situationSim && state.outcome !== 'playing') afterSortieEnding(now, showSituationResult);
 			else if (!training && state.outcome !== 'playing') showResult(now);
 			else checkpoint();
 		},
@@ -1847,26 +1859,34 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const battlefieldVisible = function () {
 		return !contextLost && (navigation.screen === 'launch' || navigation.screen === 'playing' || navigation.screen === 'pause-panel' || navigation.screen === 'escape-result' || navigation.screen === 'result' || navigation.screen === 'training-result' || navigation.screen === 'situation-result' || navigation.screen === 'field-trial');
 	};
-	// Combat and campaign settlement finish on the fatal tick. Only the fall
-	// and its result screen use foreground frame time after the simulation stops.
-	const advancePlayerFall = function (dt: number) {
-		if (playerFall?.owner !== state) playerFall = undefined;
-		if (!playerFall) return 0;
-		if (battlefieldActive() && frameTime > playerFall.startedAt) {
-			playerFall.elapsed = Math.min(RIG_DEFEAT_SECONDS, playerFall.elapsed + dt);
-			if (playerFall.elapsed === RIG_DEFEAT_SECONDS && playerFall.reveal) {
-				const reveal = playerFall.reveal;
-				delete playerFall.reveal;
+	// The terminal combat tick settles the campaign. Only the final shot and
+	// result reveal run on foreground frame time after combat has stopped.
+	const advanceSortieEnding = function (dt: number) {
+		if (sortieEnding?.owner !== state) sortieEnding = undefined;
+		if (!sortieEnding) return 0;
+		if (battlefieldActive() && frameTime > sortieEnding.startedAt) {
+			const duration = sortieEnding.kind === 'pickup' ? PICKUP_DURATION : RIG_DEFEAT_SECONDS;
+			const previous = sortieEnding.elapsed;
+			sortieEnding.elapsed = Math.min(duration, previous + dt);
+			if (sortieEnding.kind === 'pickup') {
+				if (previous < PICKUP_LAND_AT && sortieEnding.elapsed >= PICKUP_LAND_AT) audio.launchCue('land');
+				if (previous < PICKUP_LIFT_AT && sortieEnding.elapsed >= PICKUP_LIFT_AT) audio.launchCue('lift');
+			}
+			if (sortieEnding.elapsed === duration && sortieEnding.reveal) {
+				const reveal = sortieEnding.reveal;
+				delete sortieEnding.reveal;
 				reveal(frameTime);
 			}
 		}
-		return playerFall.elapsed;
+		return sortieEnding.elapsed;
 	};
 	world.addSystem('battlefield-presentation').inPhase('postUpdate').before(transform3DSystems.propagate).setProcess(function ({ dt }) {
 		if (battlefieldVisible()) {
 			world.enableSystemGroup('renderer3d');
-			const defeatElapsed = advancePlayerFall(dt);
-			presentation.prepare(state, aim, gaits, false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI, false, defeatElapsed);
+			const elapsed = advanceSortieEnding(dt);
+			const pickupElapsed = sortieEnding?.kind === 'pickup' ? elapsed : undefined;
+			const defeatElapsed = sortieEnding?.kind === 'fall' ? elapsed : 0;
+			presentation.prepare(state, aim, gaits, false, hudObstructions, inputMode === 'gamepad' || profile.settings.couchUI, false, defeatElapsed, pickupElapsed);
 			if (navigation.screen === 'launch') return;
 			const contacts = touchContacts();
 			const touchTracking = aimMode === 'touch' && acquiredTargetId !== undefined;
@@ -1886,7 +1906,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const now = frameTime;
 		audio.update(audioFrame(now));
 		if (battlefieldActive()) {
-			const elapsed = playerFall?.owner === state ? playerFall.elapsed : 0;
+			const elapsed = sortieEnding?.owner === state && sortieEnding.kind === 'fall' ? sortieEnding.elapsed : 0;
 			const cue = armorBursts.advance(state, state.time + elapsed);
 			if (cue) audio.armorBurst(cue);
 		}

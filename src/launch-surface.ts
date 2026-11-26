@@ -16,6 +16,7 @@ import { footprintOverlap, launchFootprint, posedFootprint } from './launch-foot
 import { createDropship, DROPSHIP_DECK, DROPSHIP_WIDTH } from './launch-ships';
 import { LAUNCH_TIMING, sampleLaunchPoseTime } from './launch-timing';
 import { viewScale } from './projection-3d';
+import { EXTRACTION_RADIUS } from './missions';
 import { angleDelta, combatTargets, type CombatStateView, type Point } from './simulation';
 
 const { touchdown, lift, end: handoff } = LAUNCH_TIMING;
@@ -26,10 +27,10 @@ const ease = function (x: number) { return x * x * (3 - 2 * x); };
 const mix = function (a: number, b: number, t: number) { return a + (b - a) * t; };
 const mixPoint = function (a: Point, b: Point, t: number): Point { return { x: mix(a.x, b.x, t), y: mix(a.y, b.y, t) }; };
 
-const landingField = function (map: MissionMap, state: CombatStateView): ObstacleField {
+const landingField = function (map: MissionMap, state: CombatStateView, reserves: ObstacleField['obstacles']): ObstacleField {
 	const mission = state.mission;
 	return { obstacles: [
-		...(map.terrain?.obstacles ?? []),
+		...(map.terrain?.obstacles ?? []), ...reserves,
 		...combatTargets(state).map(function (target) { return landingFootprint(target.body, target.radius); }),
 		...(mission?.captureSites ?? []).map(function (site) { return landingFootprint(site, 24); }),
 		...(mission?.contract.kind === 'defend' ? [landingFootprint(map.objective, 68)] : []),
@@ -176,12 +177,15 @@ const rigPaths = function (site: LandingSite, terrain: ObstacleField, actors: re
 	return { direct, detour };
 };
 
-export const planLaunchLanding = function (state: CombatStateView, map: MissionMap) {
-	const terrain = landingField(map, state);
+const planSurfaceLanding = function (state: CombatStateView, map: MissionMap, roster: readonly SurfaceActor[], mode: 'insertion' | 'pickup', reserves: ObstacleField['obstacles'] = []) {
+	const terrain = landingField(map, state, reserves);
+	const pickup = mode === 'pickup';
 	const goal = function (body: Body, frame: FrameId, loadout: readonly WeaponMount[]) {
 		return { x: body.x, y: body.y, angle: body.angle, shape: launchFootprint(frame, loadout) };
 	};
-	const actors = [goal(state.player, state.frame, state.loadout), ...state.squadmates.map(function (mate) { return goal(mate, mate.frameId, mate.loadout); })];
+	const actors = roster.map(function ({ body, frame, loadout }) {
+		return goal({ ...body, angle: body.angle + (pickup ? Math.PI : 0) }, frame, loadout);
+	});
 	const chooseLayout = function (site: LandingSite, limit: number) {
 		const toe = site.at(0, DROPSHIP_DECK.toe);
 		const goals = actors.map(function (actor) {
@@ -228,15 +232,15 @@ export const planLaunchLanding = function (state: CombatStateView, map: MissionM
 		}, 0);
 		return { ...best, site, backtrack, score: best.cost + 2 * backtrack };
 	};
-	const sites = landingSites(map, terrain, [state.player, ...state.squadmates], state.player.angle,
-		flightClearanceFor(map.biome, map.terrain?.obstacles ?? []), map.terrain);
+	const sites = landingSites(map, terrain, actors, state.player.angle,
+		flightClearanceFor(map.biome, map.terrain?.obstacles ?? []), map.terrain, pickup);
 	const first = sites.next();
 	if (first.done) throw new Error('Missing landing site');
 	let best = chooseLayout(first.value, Infinity);
 	if (!best) throw new Error('Missing deployment plan');
 	// Try other clear touchdown points if a rig would need to double back.
 	// Bound the extra work up front, before the first frame of the sequence.
-	for (let i = 0; i < 8 && best.backtrack > 6; i++) {
+	for (let i = 0; i < 8 && !pickup && best.backtrack > 6; i++) {
 		const next = sites.next(); if (next.done) break;
 		const candidate = chooseLayout(next.value, best.score);
 		if (candidate && candidate.score < best.score) best = candidate;
@@ -253,9 +257,24 @@ export const planLaunchLanding = function (state: CombatStateView, map: MissionM
 	return { site, berths: best.berths, paths: best.paths, closeAt };
 };
 
+interface SurfaceActor {
+	body: Body;
+	frame: FrameId;
+	loadout: readonly WeaponMount[];
+}
+const playerActor = function (state: CombatStateView): SurfaceActor {
+	return { body: state.player, frame: state.frame, loadout: state.loadout };
+};
+const wingActor = function (mate: CombatStateView['squadmates'][number]): SurfaceActor {
+	return { body: mate, frame: mate.frameId, loadout: mate.loadout };
+};
+export const planLaunchLanding = function (state: CombatStateView, map: MissionMap) {
+	return planSurfaceLanding(state, map, [playerActor(state), ...state.squadmates.map(wingActor)], 'insertion');
+};
+
 // Keep the gait in the sampled body's reference frame so the whole pose can
 // travel between exposures. Each sole still takes the grade of the ramp.
-const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPath, terrain: FieldTerrain | undefined, padHeight: number) {
+const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPath, terrain: FieldTerrain | undefined, padHeight: number, start: number = touchdown) {
 	const frame = getFrame(frameId), rig = FRAME_RIGS[frameId];
 	const advancePose = getMechAssetBinding(frameId)?.advancePose;
 	const deckAboveGround = function (at: Point) {
@@ -263,7 +282,7 @@ const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPa
 		return aft < DROPSHIP_DECK.toe ? padHeight + deckHeight(aft) - groundHeight(terrain, at) : 0;
 	};
 	let tick = 0;
-	let gait = createGait(bodyAt(touchdown), frame.size, rig);
+	let gait = createGait(bodyAt(start), frame.size, rig);
 	let authored = advancePose?.(undefined, gait.body, 0, terrain);
 	const capturePose = function (): LandingPose {
 		const base = deckAboveGround(gait.body);
@@ -272,25 +291,24 @@ const rigTrack = function (site: LandingSite, frameId: FrameId, bodyAt: GroundPa
 	};
 	let pose = capturePose();
 	return function (time: number, poseTime: number): LandingRig {
-		const until = Math.round((poseTime - touchdown) * 60);
+		const until = Math.round((poseTime - start) * 60);
 		if (tick < until) {
 			while (tick < until) {
 				tick++;
-				const body = bodyAt(touchdown + tick / 60);
+				const body = bodyAt(start + tick / 60);
 				authored = advancePose?.(authored, body, tick / 60, terrain);
 				gait = authored?.gait ?? advanceGait(gait, body, 1 / 60, frame.size, frame.stride, rig);
 			}
 			pose = capturePose();
 		}
-		const position = bodyAt(Math.max(time, touchdown));
-		const elevation = deckAboveGround(position) + altitude(Math.min(time, touchdown + .5));
-		return { ...pose, position, elevation };
+		const position = bodyAt(Math.max(time, start));
+		return { ...pose, position, elevation: deckAboveGround(position) };
 	};
 };
 
-export const createSurfaceLanding = function (scene: Scene, state: CombatStateView, map: MissionMap, { site, paths, closeAt } = planLaunchLanding(state, map)) {
+const createSurfaceShip = function (scene: Scene, map: MissionMap, site: LandingSite, name: string) {
 	const ship = createDropship();
-	const root = new Group(); root.name = 'mission-landing'; scene.add(root); root.add(ship.root);
+	const root = new Group(); root.name = name; scene.add(root); root.add(ship.root);
 	ship.root.rotation.y = Math.PI / 2 - site.heading;
 	const shadow = createDropshipShadow(ship.root.rotation.y); root.add(shadow.root);
 	const dustShape = new IcosahedronGeometry(1, 0);
@@ -298,6 +316,46 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 	const dust = new InstancedMesh(dustShape, dustPaint, 16); dust.frustumCulled = false; root.add(dust);
 	const puff = new Object3D();
 	const padHeight = supportRange(map.terrain, site).high;
+	const normalClose = lift - .125;
+	const rampAt = function (shipTime: number) {
+		return ease(between(shipTime, touchdown + .125, touchdown + 1.125)) * (1 - ease(between(shipTime, normalClose, lift + .625)));
+	};
+	const update = function (shipTime: number, shipPoseTime: number) {
+		const flight = flightPosition(shipTime), airborne = flight.height;
+		const approach = shipTime < touchdown;
+		const liftPose = between(shipPoseTime, lift, handoff);
+		const clearHeight = site.flight.clearHeight;
+		const climb = ease(between(airborne, clearHeight, Math.max(clearHeight + 1, altitude(handoff))));
+		const travelScale = approach ? site.flight.arrival : mix(site.flight.departure, 1, climb);
+		const aft = flight.aft * travelScale, travel = site.at(0, aft);
+		const flightGround = aft === 0 ? padHeight : Math.max(padHeight, supportRange(map.terrain, site, aft).high);
+		ship.root.position.set(travel.x, flightGround + airborne, travel.y);
+		ship.root.rotation.z = Math.round(-liftPose * 5) * Math.PI / 90;
+		ship.setRamp(rampAt(shipTime), rampAt(shipPoseTime));
+		ship.setThrust(.14 + .86 * Math.max(1 - ease(between(shipTime, touchdown + .25, touchdown + 1)), ease(between(shipTime, lift - .5, lift + 1))));
+		shadow.update(map.terrain, travel, airborne);
+		const wash = shipTime < touchdown + 3 ? between(shipTime, touchdown + .125, touchdown + 1.5) : between(shipTime, normalClose, handoff - 1);
+		dust.visible = wash > 0 && wash < 1;
+		if (dust.visible) {
+			dustPaint.opacity = .44 * (1 - wash);
+			for (let i = 0; i < dust.count; i++) {
+				const a = i * 2.4, radius = 82 + wash * (124 + i % 4 * 19);
+				const p = site.at(Math.cos(a) * radius, Math.sin(a) * radius + (i % 2 ? -35 : 55));
+				puff.position.set(p.x, groundHeight(map.terrain, p) + 5 + Math.sin(wash * Math.PI) * (6 + i % 5 * 3), p.y);
+				puff.scale.set(19 + wash * 30, 5 + wash * 9, 12 + wash * 22); puff.rotation.y = a; puff.updateMatrix(); dust.setMatrixAt(i, puff.matrix);
+			}
+			dust.instanceMatrix.needsUpdate = true;
+		}
+		return { flightGround, airborne, travel, bank: ship.root.rotation.z };
+	};
+	return { update, padHeight, dispose: function () {
+		root.removeFromParent(); ship.dispose(); dust.dispose(); dustShape.dispose(); dustPaint.dispose(); shadow.dispose(); root.clear();
+	} };
+};
+
+export const createSurfaceLanding = function (scene: Scene, state: CombatStateView, map: MissionMap, { site, paths, closeAt } = planLaunchLanding(state, map)) {
+	const ship = createSurfaceShip(scene, map, site, 'mission-landing');
+	const { padHeight } = ship;
 	const tracks = [state.frame, ...state.squadmates.map(function (mate) { return mate.frameId; })].map(function (frame, index) {
 		const path = paths[index];
 		if (!path) throw new Error('Missing deployment berth');
@@ -315,39 +373,16 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 	const shipTimeAt = function (time: number) {
 		return time <= closeAt ? Math.min(time, normalClose) : mix(normalClose, handoff, between(time, closeAt, handoff));
 	};
-	const rampAt = function (shipTime: number) {
-		return ease(between(shipTime, touchdown + .125, touchdown + 1.125)) * (1 - ease(between(shipTime, normalClose, lift + .625)));
-	};
 	const update = function (time: number, w: number, h: number) {
 		const poseTime = sampleLaunchPoseTime(time);
 		const shipTime = shipTimeAt(time), shipPoseTime = shipTimeAt(poseTime);
-		const flight = flightPosition(shipTime), airborne = flight.height;
+		const { flightGround } = ship.update(shipTime, shipPoseTime);
 		const approach = time < touchdown;
 		const pullback = 1 - (1 - between(time, touchdown, lastPose)) ** 1.7;
-		const liftPose = between(shipPoseTime, lift, handoff);
-		const clearHeight = site.flight.clearHeight;
-		const climb = ease(between(airborne, clearHeight, Math.max(clearHeight + 1, altitude(handoff))));
-		const travelScale = approach ? site.flight.arrival : mix(site.flight.departure, 1, climb);
-		const aft = flight.aft * travelScale, travel = site.at(0, aft);
-		const flightGround = aft === 0 ? padHeight : Math.max(padHeight, supportRange(map.terrain, site, aft).high);
-		ship.root.position.set(travel.x, flightGround + airborne, travel.y);
-		ship.root.rotation.z = Math.round(-liftPose * 5) * Math.PI / 90;
-		ship.setRamp(rampAt(shipTime), rampAt(shipPoseTime));
-		ship.setThrust(.14 + .86 * Math.max(1 - ease(between(time, touchdown + .25, touchdown + 1)), ease(between(time, lift - .5, lift + 1))));
-		shadow.update(map.terrain, travel, airborne);
-		const wash = shipTime < touchdown + 3 ? between(shipTime, touchdown + .125, touchdown + 1.5) : between(shipTime, normalClose, handoff - 1);
-		dust.visible = wash > 0 && wash < 1;
-		if (dust.visible) {
-			dustPaint.opacity = .44 * (1 - wash);
-			for (let i = 0; i < dust.count; i++) {
-				const a = i * 2.4, radius = 82 + wash * (124 + i % 4 * 19);
-				const p = site.at(Math.cos(a) * radius, Math.sin(a) * radius + (i % 2 ? -35 : 55));
-				puff.position.set(p.x, groundHeight(map.terrain, p) + 5 + Math.sin(wash * Math.PI) * (6 + i % 5 * 3), p.y);
-				puff.scale.set(19 + wash * 30, 5 + wash * 9, 12 + wash * 22); puff.rotation.y = a; puff.updateMatrix(); dust.setMatrixAt(i, puff.matrix);
-			}
-			dust.instanceMatrix.needsUpdate = true;
-		}
-		const poses = tracks.map(function (sample) { return sample(time, poseTime); });
+		const poses = tracks.map(function (sample) {
+			const rig = sample(time, poseTime);
+			return { ...rig, elevation: rig.elevation + altitude(Math.min(time, touchdown + .5)) };
+		});
 		const scale = viewScale(w, h) * Math.sqrt(3 / 2);
 		const approachZoom = Math.min(.70, w / (scale * (arrivalRun + Math.SQRT2 * DROPSHIP_WIDTH)));
 		const tight = Math.max(1, Math.min(2.5, w / (scale * (DROPSHIP_WIDTH - 75)), h / (scale * 235)));
@@ -357,7 +392,78 @@ export const createSurfaceLanding = function (scene: Scene, state: CombatStateVi
 		return { poses, visible: !approach, zoom: approach ? approachZoom : mix(tight, 1, pullback), dockBlend: ease(between(time, lift, lastPose)),
 			focus: { ...focus, elevation: approach ? flightGround : mix(padHeight, groundHeight(map.terrain, state.player), blend) } };
 	};
-	return { update, dispose: function () {
-		root.removeFromParent(); ship.dispose(); dust.dispose(); dustShape.dispose(); dustPaint.dispose(); shadow.dispose(); root.clear();
-	} };
+	return { update, dispose: ship.dispose };
+};
+
+// The return flight uses the same craft and landing envelope. Board along
+// the insertion routes in the opposite direction, but play the gait forward.
+export const PICKUP_LAND_AT = touchdown + .5 - LAUNCH_TIMING.approach;
+export const PICKUP_BOARD_AT = touchdown + 1.125 - LAUNCH_TIMING.approach;
+export const PICKUP_LIFT_AT = 7.25;
+export const PICKUP_DURATION = PICKUP_LIFT_AT + handoff - lift;
+
+export const createSurfacePickup = function (scene: Scene, state: CombatStateView, map: MissionMap) {
+	const mates = state.squadmates.flatMap(function (mate, index) {
+		return mate.hp > 0 && Math.hypot(mate.x - map.extraction.x, mate.y - map.extraction.y) <= EXTRACTION_RADIUS
+			? [{ actor: wingActor(mate), index: index + 1 }] : [];
+	});
+	const roster = [{ actor: playerActor(state), index: 0 }, ...mates];
+	const reserves = [
+		...state.squadmates.flatMap(function (mate, index) {
+			return mates.some(function (boarding) { return boarding.index === index + 1; }) ? [] : [landingFootprint(mate, 38)];
+		}),
+		...state.wrecks.filter(function (wreck) {
+			return Math.hypot(wreck.x - map.extraction.x, wreck.y - map.extraction.y) < 1450;
+		}).map(function (wreck) { return landingFootprint(wreck, wreck.rig ? 48 : 30); }),
+	];
+	const { site, paths } = planSurfaceLanding(state, { ...map, drop: map.extraction }, roster.map(function ({ actor }) { return actor; }), 'pickup', reserves);
+	const ship = createSurfaceShip(scene, map, site, 'mission-pickup');
+	const origin = site.at(0, 0), ramp = site.at(0, DROPSHIP_DECK.toe);
+	const close = PICKUP_LIFT_AT - .125;
+	const boarded = close - .5;
+	const tracks = roster.map(function ({ actor, index }, i) {
+		const route = paths[i];
+		if (!route) throw new Error('Missing pickup berth');
+		const path = function (time: number) {
+			const progress = between(time, PICKUP_BOARD_AT, boarded);
+			const pose = route(mix(handoff - .75, touchdown, progress));
+			return { ...pose, angle: actor.body.angle + angleDelta(actor.body.angle, pose.angle + Math.PI) * ease(between(time, PICKUP_BOARD_AT, PICKUP_BOARD_AT + .4)) };
+		};
+		return { index, sample: rigTrack(site, actor.frame, path, map.terrain, ship.padHeight, 0) };
+	});
+	const shipTimeAt = function (time: number) {
+		if (time < PICKUP_BOARD_AT) return LAUNCH_TIMING.approach + time;
+		return time < close ? mix(touchdown + 1.125, lift - .125, between(time, PICKUP_BOARD_AT, close)) : lift + time - PICKUP_LIFT_AT;
+	};
+	return {
+		update: function (time: number, w: number, h: number) {
+			const poseTime = Math.floor(time * 8) / 8;
+			const { travel, airborne, flightGround, bank } = ship.update(shipTimeAt(time), shipTimeAt(poseTime));
+			const poses: (LandingRig | undefined)[] = [];
+			for (const { index, sample } of tracks) {
+				const rig = sample(time, poseTime);
+				if (time < PICKUP_LIFT_AT) { poses[index] = rig; continue; }
+				const side = (rig.position.x - origin.x) * Math.sin(site.heading) - (rig.position.y - origin.y) * Math.cos(site.heading);
+				const across = side * (Math.cos(bank) - 1) - DROPSHIP_DECK.height * Math.sin(bank);
+				const position = {
+					x: rig.position.x + travel.x - origin.x + across * Math.sin(site.heading),
+					y: rig.position.y + travel.y - origin.y - across * Math.cos(site.heading),
+				};
+				const elevation = flightGround + airborne + side * Math.sin(bank) + DROPSHIP_DECK.height * Math.cos(bank) - groundHeight(map.terrain, position);
+				poses[index] = { ...rig, position, elevation };
+			}
+			const settled = { ...mixPoint(origin, ramp, .68), elevation: ship.padHeight + 38 };
+			const flying = { ...travel, elevation: flightGround + airborne + 70 };
+			const approach = time < PICKUP_BOARD_AT;
+			const travelBlend = approach ? 1 - ease(between(time, 0, 2.2)) : ease(between(time, PICKUP_LIFT_AT, PICKUP_DURATION - .6));
+			const framing = mixPoint(settled, flying, travelBlend * .8);
+			const enter = ease(between(time, 0, .7));
+			const focus = { ...mixPoint(state.player, framing, enter), elevation: mix(groundHeight(map.terrain, state.player), mix(settled.elevation, flying.elevation, travelBlend * .8), enter) };
+			const scale = viewScale(w, h) * Math.sqrt(3 / 2);
+			const span = Math.hypot(ramp.x - state.player.x, ramp.y - state.player.y);
+			const zoom = Math.min(.92, w / (scale * (640 + span)), h / (scale * (470 + span)));
+			return { poses, focus, zoom, dockBlend: 0, visible: time < PICKUP_LIFT_AT + .625 };
+		},
+		dispose: ship.dispose,
+	};
 };

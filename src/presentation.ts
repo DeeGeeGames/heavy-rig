@@ -28,7 +28,7 @@ import { getMechAssetBinding } from './mech-asset-registry';
 import { createFiringArc } from './firing-arc-3d';
 import { createLaunchFlight } from './launch-flight';
 import { createLaunchClouds } from './launch-clouds';
-import { createSurfaceLanding, planLaunchLanding } from './launch-surface';
+import { createSurfaceLanding, createSurfacePickup, planLaunchLanding } from './launch-surface';
 import { LAUNCH_TIMING } from './launch-timing';
 import type { FieldTerrain } from './field-terrain';
 import type { FallenRigPose } from './rig-collapse';
@@ -164,6 +164,9 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			launchPlan = undefined;
 		};
 		allocated.push(releaseLaunch);
+		let pickup: { owner: CombatStateView; view: ReturnType<typeof createSurfacePickup> } | undefined;
+		const releasePickup = function () { pickup?.view.dispose(); pickup = undefined; };
+		allocated.push(releasePickup);
 		let comparison: { state: CombatStateView; enabled: boolean; lighter: boolean; bakedYard: boolean } | undefined;
 		const inkEnabled = function (state: CombatStateView) { return comparison?.state !== state || comparison.enabled; };
 		const cadence = createMechCadences();
@@ -349,9 +352,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			},
 			stepMechCadence: cadence.advance,
 			setSkin: function (id: LiveryPresetId) { playerSkin = getLiveryPreset(id).finish; },
-			prepare: function (state: CombatStateView, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false, defeatElapsed = 0) {
+			prepare: function (state: CombatStateView, aim: Point, gaits: Gaits, attract = false, obstructions: readonly ScreenRect[] = [], couchMode = false, hangar = false, defeatElapsed = 0, pickupElapsed?: number) {
 				if (disposed || !views || !combat || width <= 0 || height <= 0) { overlay = undefined; return; }
 				if (launchOwner && launchOwner !== state) releaseLaunch();
+				if (pickup && (pickup.owner !== state || pickupElapsed === undefined)) releasePickup();
 				if (launchTime !== undefined && state.mission) {
 					launchOwner = state;
 					launchPlan ??= planLaunchLanding(state, state.mission.map);
@@ -364,7 +368,9 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					if (flight) { flight.dispose(); flight = undefined; }
 					surface ??= createSurfaceLanding(scene, state, state.mission.map, launchPlan);
 				}
-				const landing = launchTime !== undefined ? surface?.update(launchTime, width, height) : undefined;
+				if (pickupElapsed !== undefined && state.mission) pickup ??= { owner: state, view: createSurfacePickup(scene, state, state.mission.map) };
+				const extraction = pickupElapsed === undefined ? undefined : pickup?.view.update(pickupElapsed, width, height);
+				const landing = extraction ?? (launchTime !== undefined ? surface?.update(launchTime, width, height) : undefined);
 				if (comparison && comparison.state !== state) comparison = undefined;
 				const nativeComparison = !inkEnabled(state);
 				const sampledLegs = function (actor: Point, gait: AuthoredGait) { return nativeComparison ? undefined : cadence.visualGait(actor, gait); };
@@ -429,7 +435,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					views.pose(id, view, gait, arrival?.gait.body.angle ?? mate.turret, mate.hp, state.time, {
 						loadout: mate.loadout, heat: mate.heat, response: responses.get(mate.pilotId), authoredPose: arrival ? arrival.authored : mate.authoredPose, defeatElapsed,
 						defeatedAt: mate.defeatedAt ?? state.time - RIG_DEFEAT_SECONDS,
-						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
+						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: !arrival || (landing?.visible ?? true),
 						legGait: arrival?.gait ?? sampledLegs(mate, mate.authoredPose?.gait ?? gait),
 						target: !landing && mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
 					});
@@ -453,10 +459,15 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				// The simulation clock starts at touchdown handoff. Run surface scenery
 				// up to that phase during the approach while gameplay is still frozen.
 				const sceneryTime = launchTime === undefined ? state.time : launchTime - LAUNCH_TIMING.end;
+				const allyShadows = landing && [state.player, ...state.squadmates].map(function (actor, index) {
+					const pose = landing.poses[index];
+					if (!pose) return extraction ? actor : undefined;
+					return landing.visible && pose.elevation < 3 ? pose.position : undefined;
+				});
 				objects.update(state, {
 					muzzles: player?.model.muzzles.map(worldAnchor) ?? [], exhaust: player?.model.exhaust ? worldAnchor(player.model.exhaust) : undefined,
 					...views.poseWrecks(state.time + defeatElapsed, terrain, opponentFinish), defeatElapsed,
-				}, landing?.poses.map(function (rig) { return landing.visible && rig.elevation < 3 ? rig.position : undefined; }), sceneryTime);
+				}, allyShadows, sceneryTime);
 				firingArc.update(state, Boolean(player) && state.player.hp > 0 && !attract && !hangar && !landing);
 				reticle.visible = barrel.visible = state.player.hp > 0 && !attract && !landing;
 				reticle.position.set(aim.x, groundHeight(terrain, aim) + .25, aim.y);
@@ -467,9 +478,9 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				overlay = { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights };
 			},
 			drawOverlay: function () {
-				if (launchTime !== undefined) {
+				if (launchTime !== undefined || pickup) {
 					ctx.clearRect(0, 0, width, height);
-					clouds?.(ctx, width, height, launchTime);
+					if (launchTime !== undefined) clouds?.(ctx, width, height, launchTime);
 					return;
 				}
 				if (disposed || !overlay || width <= 0 || height <= 0) return;

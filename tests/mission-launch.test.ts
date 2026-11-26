@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 import { Box3, Matrix4, Scene, Vector3 } from 'three';
 import { createBiomeScenery } from '../src/biome-scenery';
 import { terrainPathClear } from '../src/field-terrain';
-import { createSurfaceLanding, planLaunchLanding } from '../src/launch-surface';
+import { createSurfaceLanding, createSurfacePickup, PICKUP_BOARD_AT, PICKUP_DURATION, PICKUP_LIFT_AT, planLaunchLanding } from '../src/launch-surface';
 import { cloudEntry, cloudExit, LAUNCH_DURATION, LAUNCH_TIMING, launchCues, launchSceneTime } from '../src/launch-timing';
 import { DROPSHIP_DECK, DROPSHIP_WIDTH } from '../src/launch-ships';
 import { combatTargets, type Point } from '../src/simulation';
@@ -236,4 +236,59 @@ test('rotating blades stay outside the cargo hold as the dropship leaves Galewar
 			}
 		}
 	} finally { landing.dispose(); scenery.dispose(); }
+});
+
+test('the pickup lands clear of the Meridian city, boards only the ready rigs, and carries them away', function () {
+	const state = createSituationMission({
+		planetId: 'meridian', kind: 'defend', tier: 1, frame: 'warden',
+		wing: [{ pilotId: 'flint', frame: 'maul' }, { pilotId: 'kite', frame: 'kestrel' }, { pilotId: 'glass', frame: 'warden-c' }],
+	}, 17, 'story');
+	const map = state.mission?.map;
+	if (!map?.terrain) throw new Error('Missing pickup terrain');
+	const [ready, disabled, straggler] = state.squadmates;
+	if (!ready || !disabled || !straggler) throw new Error('Missing test squad');
+	Object.assign(state.player, map.extraction);
+	Object.assign(ready, { x: map.extraction.x + 50, y: map.extraction.y + 42 });
+	Object.assign(disabled, { x: map.extraction.x - 70, y: map.extraction.y - 30, hp: 0 });
+	Object.assign(straggler, { x: map.extraction.x + 400, y: map.extraction.y });
+	state.enemies = [];
+	const original = structuredClone(state);
+	const scene = new Scene(), pickup = createSurfacePickup(scene, state, map);
+	try {
+		const ship = scene.getObjectByName('company-dropship-vehicle'), ramp = scene.getObjectByName('aft-ramp');
+		if (!ship || !ramp) throw new Error('Missing pickup craft or ramp');
+		const inbound = pickup.update(0, 1100, 720);
+		const initialY = ship.position.y;
+		expect(inbound.poses[0]?.position).toMatchObject({ x: state.player.x, y: state.player.y });
+		expect(inbound.poses[1]?.position).toMatchObject({ x: ready.x, y: ready.y });
+		expect(inbound.poses[2]).toBeUndefined();
+		expect(inbound.poses[3]).toBeUndefined();
+		pickup.update(PICKUP_BOARD_AT, 1100, 720);
+		expect(ship.position.y).toBeLessThan(initialY);
+		const lowered = ramp.rotation.x;
+		ship.updateMatrixWorld(true);
+		const at = function (side: number, aft: number) {
+			const world = ship.localToWorld(new Vector3(side, 0, aft));
+			return { x: world.x, y: world.z };
+		};
+		for (const side of [-.4, -.2, 0, .2, .4].map(function (fraction) { return fraction * DROPSHIP_WIDTH; })) {
+			expect(terrainPathClear(map.terrain, at(side, -190), at(side, DROPSHIP_DECK.hinge), DROPSHIP_WIDTH * .105)).toBe(true);
+		}
+		expect(terrainPathClear(map.terrain, at(0, DROPSHIP_DECK.hinge), at(0, DROPSHIP_DECK.toe), DROPSHIP_DECK.halfWidth)).toBe(true);
+		const boarded = pickup.update(PICKUP_LIFT_AT, 1100, 720);
+		expect(boarded.poses.filter(Boolean)).toHaveLength(2);
+		for (const rig of boarded.poses) if (rig) {
+			const local = ship.worldToLocal(new Vector3(rig.position.x, ship.position.y + DROPSHIP_DECK.height, rig.position.y));
+			expect(Math.abs(local.x)).toBeLessThan(DROPSHIP_DECK.halfWidth);
+			expect(local.z).toBeLessThan(DROPSHIP_DECK.hinge);
+		}
+		const landed = ship.position.clone();
+		const departed = pickup.update(PICKUP_DURATION, 1100, 720);
+		expect(ship.position.y).toBeGreaterThan(landed.y + 300);
+		expect(ship.position.distanceTo(landed)).toBeGreaterThan(300);
+		expect(ramp.rotation.x).not.toBeCloseTo(lowered);
+		expect(departed.visible).toBe(false);
+	} finally { pickup.dispose(); }
+	expect(state).toEqual(original);
+	expect(scene.children).toHaveLength(0);
 });
