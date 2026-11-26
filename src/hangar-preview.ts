@@ -7,7 +7,7 @@ import { createSolidInk } from './solid-ink';
 import { getLiveryPreset, supportsMechSkin, type LiveryPresetId } from './mech-skin';
 
 // This view owns no campaign state, input listeners, or animation loop. Its
-// caller renders only while the Mech Bay is visible and disposes it on teardown.
+// caller renders only while the preview is visible and disposes it on teardown.
 export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 	const renderer = new WebGLRenderer({ canvas, antialias: false, alpha: true });
 	const ink = createSolidInk(renderer);
@@ -180,4 +180,25 @@ export const createHangarPreview = function (canvas: HTMLCanvasElement) {
 		},
 		dispose,
 	};
+};
+
+// A department retains its renderer across selections while its canvas is mounted.
+export const createHangarPreviewSlot = function () {
+	let current: { canvas: HTMLCanvasElement; view: ReturnType<typeof createHangarPreview> } | undefined;
+	const clear = function () { current?.view.dispose(); current = undefined; };
+	const forCanvas = function (canvas: HTMLCanvasElement) {
+		if (current?.canvas === canvas) return current.view;
+		clear();
+		if (canvas.dataset['hangarFailed'] === 'true') return undefined;
+		try {
+			const view = createHangarPreview(canvas);
+			current = { canvas, view };
+			return view;
+		} catch (error: unknown) {
+			canvas.dataset['hangarFailed'] = 'true';
+			console.warn('Rig preview unavailable', error);
+			return undefined;
+		}
+	};
+	return { forCanvas, clear, releaseDetached: function () { if (current && !current.canvas.isConnected) clear(); } };
 };

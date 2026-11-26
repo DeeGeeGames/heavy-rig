@@ -8,7 +8,7 @@ import { mountRigTest, rigTestEnabled } from './rig-test';
 import { createFieldTrial } from './field-trial';
 import { drawFieldSurvey, fieldTrialSeed } from './field-trial-ui';
 import { html, nothing, render } from 'lit-html';
-import { createHangarPreview } from './hangar-preview';
+import { createHangarPreview, createHangarPreviewSlot } from './hangar-preview';
 import { detectControllerFamily, controllerButtonLabel, renderAimGlyph, renderControllerButton, renderGlyph, renderKeyboardBindings, renderScrollGlyph, renderZoomGlyph, type ControllerFamily, type PromptDevice } from './input-prompts';
 import { refreshNavigationGlyphs } from './menu-prompts';
 import { transform3DSystems } from 'ecspresso/plugins/spatial/transform3D';
@@ -50,7 +50,7 @@ import { renderBridge, renderStarmap, type BridgeActions, type ShipView } from '
 import { MISSION_NAMES, type PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
 import { missionStructures, missionObjective } from './missions';
-import { WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
+import { isFrameId, WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
 import { dismissPilot, getPilot, hirePilot } from './pilots';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import { availableMenuControl, focusMenuControl, menuControls, menuScrollArea, moveMenuFocus, scrollMenu, selectMenuControl, type MenuDirection } from './menu-focus';
@@ -216,8 +216,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let currentPad: PadInput | undefined;
 	let controllerFamily: ControllerFamily = 'generic';
 	let lastMenuTarget: HTMLElement | undefined;
-	let hangar: { canvas: HTMLCanvasElement; view: ReturnType<typeof createHangarPreview> } | undefined;
-	onCleanup(function () { hangar?.view.dispose(); });
+	const hangar = createHangarPreviewSlot();
+	const marketPreview = createHangarPreviewSlot();
+	onCleanup(hangar.clear);
+	onCleanup(marketPreview.clear);
 	const rigPreviews = new Map<IntroFrame, ReturnType<typeof createHangarPreview>>();
 	const clearRigPreviews = function () { for (const view of rigPreviews.values()) view.dispose(); rigPreviews.clear(); };
 	onCleanup(clearRigPreviews);
@@ -1950,17 +1952,21 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (navigation.screen === 'mechbay' && !navigation.auxiliary && focused && !document.hidden) {
 			const modelCanvas = element('mechbay').querySelector<HTMLCanvasElement>('[data-hangar-frame]');
 			if (modelCanvas && modelCanvas.clientWidth > 0 && modelCanvas.clientHeight > 0) {
-				if (hangar?.canvas !== modelCanvas) {
-					hangar?.view.dispose(); hangar = undefined;
-					if (modelCanvas.dataset['hangarFailed'] !== 'true') {
-						try { hangar = { canvas: modelCanvas, view: createHangarPreview(modelCanvas) }; }
-						catch (error: unknown) { modelCanvas.dataset['hangarFailed'] = 'true'; console.warn('Hangar preview unavailable', error); }
-					}
-				}
+				const view = hangar.forCanvas(modelCanvas);
 				const bay = element('mechbay');
 				const slot = editor.slot ?? Number(bay.dataset['inspectionSlot'] ?? 0);
-				hangar?.view.setFrame(rigFrameId(campaign.selectedFrame), editor.loadout.flatMap(function (weapon, index) { return weapon === null ? [] : [index]; }), profile.settings.mechSkin);
-				hangar?.view.render(bay.dataset['view'] === 'loadout' && slot < editor.loadout.length ? slot : null);
+				view?.setFrame(rigFrameId(campaign.selectedFrame), editor.loadout.flatMap(function (weapon, index) { return weapon === null ? [] : [index]; }), profile.settings.mechSkin);
+				view?.render(bay.dataset['view'] === 'loadout' && slot < editor.loadout.length ? slot : null);
+			}
+		}
+		if (navigation.screen === 'market' && !navigation.auxiliary && focused && !document.hidden) {
+			marketPreview.releaseDetached();
+			const canvas = element('market').querySelector<HTMLCanvasElement>('canvas[data-market-model]');
+			const model = canvas?.dataset['marketModel'];
+			if (canvas && canvas.clientWidth && canvas.clientHeight && isFrameId(model)) {
+				const view = marketPreview.forCanvas(canvas);
+				view?.setFrame(model, undefined, profile.settings.mechSkin);
+				view?.render();
 			}
 		}
 		if (battlefieldVisible()) presentation.drawOverlay();

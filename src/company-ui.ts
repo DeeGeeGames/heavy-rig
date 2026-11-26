@@ -9,7 +9,7 @@ import { FACTIONS, getFaction, getPlanet, type Campaign, type PlannedOperation }
 import type { FactionId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
 import { availableWeapons, canRefit, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
-import { PLAYABLE_FRAMES, getFrame, type FrameDefinition, type FrameId } from './frames';
+import { PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary, weaponClassLabel } from './loadout-ui';
 import { frameWeight, loadedMounts, usableMount } from './combat-resources';
 import { factionLiveryPreset, getLiveryPreset, liveryPresetsForFaction, SKIN_PALETTES, supportsMechSkin, type LiveryPresetId } from './mech-skin';
@@ -104,23 +104,6 @@ export const renderShipHeader = function (campaign: Campaign, screen: ShipScreen
 			<div class="career-stats"><div><small>IN ORBIT</small><b>${getPlanet(campaign.planetId).name}</b></div><div><small>COMPANY FUNDS</small><b>${campaign.credits.toLocaleString()} <em>CR</em></b></div><div><small>SHIP CALENDAR</small><b>DAY ${String(campaign.day).padStart(2, '0')}</b></div></div>
 		</header>
 	`;
-};
-
-const frameSchematic = function (frame: FrameDefinition) {
-	const width = frame.mass >= 80 ? 42 : frame.mass <= 40 ? 29 : 35;
-	return html`<svg class="company-frame-art" viewBox="0 0 240 260" role="img" aria-label=${`${frame.name} rig schematic`} style="--frame-color:${frame.color}">
-		<path d="M20 0V260M60 0V260M100 0V260M140 0V260M180 0V260M220 0V260M0 20H240M0 60H240M0 100H240M0 140H240M0 180H240M0 220H240M0 260H240" fill="none" stroke="currentColor" stroke-width=".4" opacity=".2"/>
-		<g fill="none" stroke="currentColor" stroke-width="1"><path d="M20 55H220M20 208H220M120 15V243" opacity=".3" stroke-dasharray="3 5"/><circle cx="120" cy="126" r="91" opacity=".25"/></g>
-		<g stroke="currentColor" stroke-width="2" stroke-linejoin="bevel">
-			<path class="schematic-solid" d=${`M${120 - width} 65L107 50H133L${120 + width} 65V112L138 133H102L${120 - width} 112Z`}/>
-			<path class="schematic-solid" d=${`M${111 - width} 73H${96 - width}L${91 - width} 105L${102 - width} 141H${116 - width}V116M${129 + width} 73H${144 + width}L${149 + width} 105L${138 + width} 141H${124 + width}V116`}/>
-			<path class="schematic-solid" d="M103 130 91 154 95 177 82 214 102 224 119 179 112 155H128L121 179 138 224 158 214 145 177 149 154 137 130Z"/>
-			<path class="schematic-solid" d="M80 213H103L107 235H67V225ZM137 213H160L173 225V235H133Z"/>
-			<path d="M108 66H132V76H108Z" fill="currentColor" opacity=".8"/>
-			<path d="M99 98H141M111 109H129M100 163 107 176M140 163 133 176" fill="none" opacity=".7"/>
-		</g>
-		<text x="16" y="24" fill="currentColor" font-size="9">HR / ${frame.designation}</text><text x="181" y="249" fill="currentColor" font-size="9">${frame.mass} TON</text>
-	</svg>`;
 };
 
 interface CompanyView { kind: 'weapons' | 'rigs'; weapon: WeaponModelId; frame: FrameId; slot: number | null; assignment?: AssignmentPicker }
@@ -262,7 +245,7 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 			}),
 			html`<dl class="frame-specifications"><dt>OWNED</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
 		] : [
-			html`<div class="market-rig-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName} · ${owned} owned</p></div>${frameSchematic(frame)}</div>`,
+			html`<div class="market-rig-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName} · ${owned} owned</p></div><canvas data-market-model=${frame.id} aria-label=${`${frame.name} rig preview`}></canvas></div>`,
 			...textItems(frame.description), ...textItems(frame.tradeoff),
 			html`<dl class="frame-specifications"><dt>BASE MASS</dt><dd>${massLabel(frame.mass)}</dd><dt>RECOMMENDED WEIGHT</dt><dd>${massLabel(frame.recommendedMass)}</dd></dl>`,
 			...textItems(hardpointSummary(frame.id)),

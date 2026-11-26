@@ -159,7 +159,6 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace .faction-standing { padding: 9px 4px 9px 12px; border: 0; border-bottom: 1px solid var(--border); border-inline-start: 2px solid var(--faction-color); }
 .workspace .fleet-frame { padding: 14px; margin: 0; gap: 5px; }
 .workspace .fleet-frame>b { font-size: 27px; }
-.workspace .company-frame-art { height: min(clamp(90px, 22dvh, 180px), var(--page-height, 180px)); width: 100%; }
 .hull-integrity { --hull-color: var(--cyan); display: block; min-width: 0; padding: 10px 12px; border-left: 3px solid var(--hull-color); background: #0b151b; text-align: left; }
 .hull-integrity[data-hull-condition='damaged'] { --hull-color: var(--amber); }
 .hull-integrity[data-hull-condition='critical'], .hull-integrity[data-hull-condition='disabled'] { --hull-color: var(--danger); }
@@ -210,8 +209,14 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .workspace :is(.catalogue-item, .equipment-choice)[aria-pressed='true']:not(:disabled):not(.paged-content:has(button:focus) button) :is(small, b, span) { color: inherit; }
 #market.paired-workspace .workspace-body { grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); }
 #market.paired-workspace [data-pane='details'] { padding-inline-start: clamp(14px, 3vw, 48px); border-inline-start: 1px solid var(--border); }
-.market-rig-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
-.workspace .market-rig-heading .company-frame-art { width: clamp(70px, 12vw, 140px); height: auto; }
+.market-rig-heading { display: grid; grid-template-columns: minmax(0, 1fr) min(42%, 260px); align-items: center; gap: 12px; }
+#game #market .market-rig-heading canvas {
+	position: static;
+	width: 100%;
+	height: min(clamp(105px, 20dvh, 210px), var(--page-height, 210px));
+	opacity: 1;
+	pointer-events: none;
+}
 .workspace .market-loadout dd { margin: 0; text-align: right; }
 #market .market-shortfall { flex-basis: 100%; color: var(--amber); font: 12px var(--mono); }
 .workspace [data-pane='details'] .frame-specifications { padding-block: 8px; border-block: 1px solid var(--border); }
@@ -435,7 +440,6 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.hull-repair { padding: 6px 8px; font-size: 16px; }
 	.hangar-specs b { font-size: 19px; margin-top: 2px; }
 	.hangar-specs small { font-size: 8px; }
-	.workspace .company-frame-art { height: min(70px, var(--page-height, 70px)); }
 	.workspace .contract-card { padding: 6px 9px; gap: 3px; }
 	.workspace .contract-card>b { font-size: 22px; }
 	.workspace .contract-type, .workspace .contract-employer { font-size: 10px; }

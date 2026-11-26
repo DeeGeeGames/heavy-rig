@@ -136,8 +136,6 @@
 .fleet-market { margin-top: 10px; }
 .frame-inspection { background: #11232b; border: 1px solid var(--border); padding: 20px; }
 .frame-inspection>h2 { font-size: 40px; margin: 9px 0 0; color: var(--frame-color); }
-.company-frame-art { display: block; width: 100%; max-height: 270px; color: var(--frame-color); font-family: var(--mono); }
-.schematic-solid { fill: #18313a; }
 .company-integrity { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; padding-top: 14px; }
 .company-integrity>span { font: 9px var(--mono); color: var(--muted); }
 .company-integrity>b { font: 29px var(--display); }
@@ -241,7 +239,6 @@
 	.weapon-market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.market-frame { grid-template-columns: 1fr; }
 	.market-frame-art { max-height: 150px; }
-	.market-frame-art .company-frame-art { height: 150px; }
 	.engineering-layout { grid-template-columns: minmax(290px, 1.2fr) minmax(250px, 1fr); gap: 22px; }
 	.calendar-console { display: block; }
 	.calendar-actions { grid-template-columns: 1fr 1fr; margin-top: 20px; }
@@ -267,7 +264,6 @@
 	.fleet-market { max-width: none; width: 100%; }
 	.frame-inspection { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; padding: 18px; }
 	.frame-inspection>.bridge-section-title, .frame-inspection>h2 { grid-column: 1 / -1; }
-	.frame-inspection>.company-frame-art { grid-row: 3 / 6; grid-column: 1; max-height: 210px; align-self: center; }
 	.frame-inspection>.company-integrity { grid-column: 2; align-self: start; gap: 7px; }
 	.frame-inspection>.company-note { grid-column: 1 / -1; }
 	.frame-inspection>.secondary { grid-column: 1 / -1; }
@@ -283,7 +279,6 @@
 	.frame-market-grid { grid-template-columns: minmax(0, 1fr); }
 	.market-frame { padding: 18px; gap: 12px; grid-template-columns: minmax(80px, .55fr) minmax(0, 1fr); }
 	.market-frame-art { max-height: none; }
-	.market-frame-art .company-frame-art { height: auto; }
 	.market-frame-body>h3 { font-size: 29px; }
 	.market-frame-body>p { font-size: 11px; }
 	.engineering-layout { grid-template-columns: minmax(0, 1fr); gap: 26px; }
