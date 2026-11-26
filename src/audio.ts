@@ -2,6 +2,7 @@ import type { CombatEvent } from './simulation';
 import { launchCues, type LaunchCue } from './launch-timing';
 import type { FeedbackFamily, WeaponCue } from './weapon-feedback';
 import { firingReportTime, reserveImpactOnsets, type FireReport } from './audio-timing';
+import type { ArmorBurst } from './rig-defeat-audio';
 
 export type AudioPhase = 'briefing' | 'launch' | 'combat' | 'result';
 export type AudioTheme = 'standard' | 'pursuit';
@@ -91,6 +92,7 @@ interface Noise {
 	volume: number;
 	frequency: number;
 	offset?: number;
+	playbackRate?: number;
 	attack?: number;
 	hold?: number;
 	type?: BiquadFilterType;
@@ -147,6 +149,7 @@ export const createAudio = function () {
 	let nextContact = 0;
 	let lastBlastContact = -10;
 	let lastBlastTail = -10;
+	let lastArmorBurst = -10;
 	let foregroundTail = false;
 	let contactSerial = 0;
 	const jog: Recording = { file: 'boots-concrete-cleaned.wav' };
@@ -187,7 +190,7 @@ export const createAudio = function () {
 		if (!bus || bus === 'music') launchScoreStarted = false;
 		if (!bus || bus === 'effects') {
 			launchEffectsScheduled = false;
-			nextContact = 0; lastBlastContact = -10; lastBlastTail = -10; foregroundTail = false; contactSerial = 0;
+			nextContact = 0; lastBlastContact = -10; lastBlastTail = -10; lastArmorBurst = -10; foregroundTail = false; contactSerial = 0;
 			lastReport.clear();
 		}
 	};
@@ -242,6 +245,7 @@ export const createAudio = function () {
 		const pan = context.createStereoPanner();
 		const bus = sound.bus ?? 'effects';
 		source.buffer = synth.noise; source.loop = true;
+		if (sound.playbackRate !== undefined) source.playbackRate.value = sound.playbackRate;
 		filter.type = sound.type ?? 'lowpass'; filter.Q.value = 0.7;
 		filter.frequency.setValueAtTime(sound.frequency, sound.at);
 		filter.frequency.exponentialRampToValueAtTime(Math.max(60, sound.frequency * 0.4), sound.at + sound.duration);
@@ -619,6 +623,33 @@ export const createAudio = function () {
 		return true;
 	};
 
+	const explosion = function (at: number, full: boolean, cue?: ArmorBurst) {
+		const rate = cue?.rate ?? 1;
+		const bus = cue ? 'contact' : 'effects';
+		const voice = function (volume: number, pan = 0) {
+			if (!cue) return { volume, pan };
+			// Apply the preview's per-channel gains to each mono layer before
+			// the shared effects compressor. StereoPannerNode uses equal power.
+			const angle = (pan + 1) * Math.PI / 4;
+			const left = Math.cos(angle) * cue.left, right = Math.sin(angle) * cue.right;
+			return { volume: volume * Math.hypot(left, right), pan: 4 * Math.atan2(right, left) / Math.PI - 1 };
+		};
+		const attack = 0.006 / rate;
+		if (full) {
+			noise({ at, duration: 0.8 / rate, frequency: 1600 * rate, ...voice(0.75), attack, playbackRate: rate, bus });
+			tone({ at, frequency: 105 * rate, endFrequency: 23 * rate, duration: 0.65 / rate, ...voice(0.55), attack, bus });
+		}
+		noise({ at: at + 0.14 / rate, duration: 0.7 / rate, frequency: 520 * rate, ...voice(0.28, 0.2), attack, playbackRate: rate, bus });
+		noise({ at: at + 0.28 / rate, duration: 0.35 / rate, frequency: 3200 * rate, type: 'bandpass', ...voice(0.12, -0.25), attack, playbackRate: rate, bus });
+	};
+	const armorBurst = function (cue: ArmorBurst) {
+		if (!synth || disposed || !active || muted || mix.effects === 0 || mix.master === 0 || synth.context.state !== 'running') return;
+		const at = synth.context.currentTime;
+		if (at - lastArmorBurst < 0.06) return;
+		lastArmorBurst = at;
+		explosion(at, true, cue);
+	};
+
 	const hitsPlayer = function (cue: ImpactCue) {
 		return cue.target === 0 || cue.affected?.includes(0) === true;
 	};
@@ -689,12 +720,15 @@ export const createAudio = function () {
 		const now = synth.context.currentTime;
 		const contacts = cues.filter(function (cue) { return cue.type === 'impact'; });
 		const reports = new Set<CombatEvent>();
-		let artillery = contacts.filter(function (contact) { return contact.family === 'artillery'; }).length;
+		const artillery = contacts.filter(function (contact) { return contact.family === 'artillery'; }).length;
 		let ordinary = contacts.length - artillery;
+		let voicedExplosions = artillery + events.filter(function (event) { return event === 'rig-defeat'; }).length;
 		for (const event of events) {
-			// The simulation also publishes a generic event for each contact. Leave unrelated PPC hits and death explosions audible.
+			// Artillery contacts and defeated rigs have their own audio. Consume
+			// one matching generic event each so other explosions still play.
+			if (event === 'rig-defeat') continue;
 			if (event === 'impact' && ordinary > 0) { ordinary--; continue; }
-			if (event === 'explosion' && artillery > 0) { artillery--; continue; }
+			if (event === 'explosion' && voicedExplosions > 0) { voicedExplosions--; continue; }
 			const family = FIRE_FAMILIES[event];
 			const launch = family && cues.find(function (cue) { return cue.type === 'fire' && cue.shooter === 0 && cue.family === family; });
 			let at = now;
@@ -763,12 +797,7 @@ export const createAudio = function () {
 					tone({ at, frequency: 105, endFrequency: 47, duration: 0.16, volume: 0.16 });
 					break;
 				case 'explosion':
-					if (claimBlastTail(at)) {
-						noise({ at, duration: 0.8, volume: 0.75, frequency: 1600 });
-						tone({ at, frequency: 105, endFrequency: 23, duration: 0.65, volume: 0.55 });
-					}
-					noise({ at: at + 0.14, duration: 0.7, volume: 0.28, frequency: 520, pan: 0.2 });
-					noise({ at: at + 0.28, duration: 0.35, volume: 0.12, frequency: 3200, type: 'bandpass', pan: -0.25 });
+					explosion(at, claimBlastTail(at));
 					break;
 				case 'coolant':
 					noise({ at, duration: 0.95, volume: 0.33, frequency: 4800, type: 'highpass', pan: -0.25 });
@@ -831,5 +860,5 @@ export const createAudio = function () {
 		for (const node of current.nodes) node.disconnect();
 		if (current.context.state !== 'closed') await current.context.close();
 	};
-	return { unlock, status, cue, launchCue, footstep, typeText, setMuted, setMix, reset, beginSortie, update, play, dispose };
+	return { unlock, status, cue, launchCue, footstep, typeText, setMuted, setMix, reset, beginSortie, update, play, armorBurst, dispose };
 };

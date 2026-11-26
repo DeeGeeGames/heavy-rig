@@ -1,7 +1,21 @@
 import { Group, Matrix4, Vector3, type Object3D } from 'three';
+import type { ChassisId } from './frames';
 import { weaponDirection, weaponPivot, type SpatialPoint, type WeaponRig, type WeaponBody } from './weapon-rig';
 
 export interface WeaponAssembly { readonly part: Group; readonly muzzle: Object3D }
+
+// A cartridge swap changes the weapon, but the chassis still determines
+// whether its socket is on a free arm, a casemate, or an upper-body cradle.
+export const defeatWeaponJoints = function (chassis: ChassisId, mounts: readonly { pivot: Object3D; muzzle: Object3D }[]) {
+	const guns: { pivot: Object3D; muzzle: Object3D }[] = [];
+	const pods: Object3D[] = [];
+	for (const [slot, mount] of mounts.entries()) {
+		const arm = slot < 2 && chassis !== 'bastion' && chassis !== 'morrow' && (chassis !== 'harrow' || slot === 1);
+		if (arm) guns.push(mount);
+		else pods.push(mount.pivot);
+	}
+	return { guns, pods };
+};
 
 // Weapon gimbals are stabilized independently of decorative torso suspension.
 // Their pivots and neutral muzzle positions come from the simulation's rig.

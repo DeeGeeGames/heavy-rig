@@ -27,7 +27,7 @@ export interface Point { x: number; y: number }
 export interface Beam extends Point { slot: number; elevation?: number; origin?: SpatialPoint; contact?: boolean; squadmateId?: string; owner?: number }
 export type MechEnemyKind = 'scout' | 'striker' | 'siege';
 export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank' | 'artillery';
-export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
+export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'rig-defeat' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
 interface CatalogPilot extends Pick<RigBody, 'throttle' | 'speed' | 'motorSpeed' | 'missileLock' | 'targetId' | 'brace' | 'designation'> { frameId: FrameId; shotsFired: number; authoredPose?: AuthoredPoseContext | undefined }
 export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; artilleryAim?: ArtilleryAim; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: EnemySquadOrder; tactics?: EnemyTactics; stationary?: true; catalog?: CatalogPilot; formation?: number; entry?: Point }
@@ -39,7 +39,7 @@ export type Warning = MissionSpawn & { life: number } & (
 );
 export interface ArtilleryStrike extends Point { id: number; life: number; duration: number; radius: number; damage: number; emplacement?: EmplacementShot; weapon?: WeaponId; slot?: number; owner?: number; squadmateId?: string; facilityMultiplier?: number; friendly?: true }
 export interface CombatStats { damageDealt: number; damageTaken: number; relayDamage: number; shotsFired: number; shotsHit: number; overheats: number; killScore: number; commanderDestroyed: boolean }
-export const RIG_COLLAPSE_SECONDS = 1.25;
+export { RIG_DEFEAT_SECONDS as RIG_COLLAPSE_SECONDS } from './rig-defeat-timing';
 export interface Wreck extends Point {
 	kind: EnemyKind;
 	angle: number;
@@ -77,6 +77,7 @@ export interface SquadmateOptions {
 	integrity: number;
 }
 export interface Squadmate extends RigBody, Pick<SquadmateOptions, 'pilotId' | 'callsign' | 'specialty' | 'frameId'> {
+	defeatedAt?: number;
 	loadout: WeaponMount[];
 	shotsFired: number;
 	coolantCharges: number;
@@ -576,9 +577,10 @@ const hurtSquadmate = function (state: CombatStateView, mate: Squadmate, damage:
 	if (armor === BASTION_PLATE_DAMAGE) plateFeedback(state, mate, mate.turret);
 	mate.hp = Math.max(0, mate.hp - damage * armor);
 	if (mate.hp > 0) return;
+	mate.defeatedAt = state.time;
 	mate.speed = 0;
 	for (const mount of mate.loadout) { mount.firing = false; delete mount.rocketVolley; }
-	burst(state, mate, 65, '#ffab62'); state.events.push('explosion');
+	burst(state, mate, 65, '#ffab62'); state.events.push('explosion', 'rig-defeat');
 };
 const hurtRelay = function (state: CombatStateView, damage: number) {
 	if (damage > 0 && state.relay > 0) state.events.push('relay-hit');
@@ -1664,11 +1666,14 @@ export const deathsStep = function (state: CombatStateView, leaveWreck: (wreck: 
 		burst(state, { ...enemy, elevation: groundHeight(state.mission?.map.terrain, enemy) + (height === 42 ? 36 : height) }, 65, '#ffab62');
 		state.events.push('explosion');
 		const wreck: Wreck = { x: enemy.x, y: enemy.y, angle: enemy.angle, kind: enemy.kind };
-		if (isEnemyMech(enemy)) wreck.rig = {
-			defeatedAt: state.time, hullAngle: enemy.hullAngle ?? enemy.angle, commander: Boolean(enemy.commander),
-			...(enemy.catalog ? { frame: enemy.catalog.frameId } : {}),
-			equippedSlots: (enemy.loadout ?? []).map(function (mount, index) { return mount.slot ?? index; }),
-		};
+		if (isEnemyMech(enemy)) {
+			state.events.push('rig-defeat');
+			wreck.rig = {
+				defeatedAt: state.time, hullAngle: enemy.hullAngle ?? enemy.angle, commander: Boolean(enemy.commander),
+				...(enemy.catalog ? { frame: enemy.catalog.frameId } : {}),
+				equippedSlots: (enemy.loadout ?? []).map(function (mount, index) { return mount.slot ?? index; }),
+			};
+		}
 		leaveWreck(wreck, enemy);
 	}
 	state.enemies = state.enemies.filter(function (enemy) { return enemy.hp > 0; });
