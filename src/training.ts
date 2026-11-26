@@ -5,7 +5,7 @@ import { loadedMounts } from './combat-resources';
 import { RIG_RADIUS } from './combat-spatial';
 import type { FrameId } from './frames';
 import { isFrameLoadout } from './hardpoints';
-import { angleDelta, createEnemyLoadout, createState, distance, step, type Controls, type CombatStateView } from './simulation';
+import { RIG_COLLAPSE_SECONDS, angleDelta, createEnemyLoadout, createState, distance, step, type Controls, type CombatStateView } from './simulation';
 
 export const TRAINING_STAGES = ['drive', 'neutral', 'steer', 'cannon', 'missiles', 'combined', 'heat', 'coolant', 'evade', 'complete'] as const;
 export type TrainingStage = typeof TRAINING_STAGES[number];
@@ -117,7 +117,9 @@ export const finishTraining = function (training: Training, controls: Controls, 
 	state.player.hp = 100; state.relay = 100;
 	state.outcome = 'playing'; state.phase = 'combat';
 	if (training.stage === 'range') {
-		if (state.enemies.length === 0) placeRangeTargets(state);
+		if (state.enemies.length === 0 && !state.wrecks.some(function (wreck) {
+			return wreck.rig && state.time - wreck.rig.defeatedAt < RIG_COLLAPSE_SECONDS;
+		})) placeRangeTargets(state);
 		return;
 	}
 	training.distance += distance(before, state.player);
