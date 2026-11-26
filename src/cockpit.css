@@ -269,3 +269,6 @@
 	.touch-enabled:not(.training-active) #hud .weapon { pointer-events: auto; }
 	.touch-enabled:not(.training-active) .field-message { top: auto; bottom: calc(var(--touch-dock) + 6px); }
 }
+
+/* Keep the mission phase and pause controls on screen during pickup. */
+#game.pickup-active #hud :is(.left-instruments, .weapon-console, #touch) { display: none; }

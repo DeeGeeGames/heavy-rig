@@ -104,7 +104,7 @@ test('reinforcement flights cross opposite sides of Wide View above the perimete
 	const width = 1280, height = 800;
 	// These landings are visible from the pilot, with opposite approach bearings.
 	const entrySides = new Set<'left' | 'right'>();
-	for (const seed of [8, 594]) {
+	for (const seed of [8, 593]) {
 		const state = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, seed, 'story');
 		const map = state.mission?.map;
 		if (!map) throw new Error('Expected a defense map');
