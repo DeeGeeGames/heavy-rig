@@ -2,9 +2,11 @@ import { html, nothing, render } from 'lit-html';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { terrainMapColors } from './terrain-map-colors';
 import { drawTerrainContours } from './terrain-contours';
+import { missionFacilityName } from './mission-site-labels';
+import type { MissionMap } from './campaign-types';
 import type { SquadOrderChange } from './combat-runtime';
 import { directionalControl, focusMenuControl, type MenuDirection } from './menu-focus';
-import { EXTRACTION_RADIUS, CAPTURE_RADIUS, isPriorityTarget } from './missions';
+import { EXTRACTION_RADIUS, CAPTURE_RADIUS, FACILITY_RADIUS, isPriorityTarget } from './missions';
 import { ARENA, combatTargets, distance, squadMoveDestinations, type CombatStateView, type FireDiscipline, type Point, type Squadmate, type SquadOrder } from './simulation';
 
 type OrderKind = SquadOrder['kind'];
@@ -32,8 +34,8 @@ const MOVE_VECTORS: Readonly<Record<MenuDirection, Point>> = {
 	up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 },
 };
 
-const targetLabel = function (contact: Contact): string {
-	if (contact.kind === 'structure') return contact.id === -1 ? 'Facility' : `Facility ${-contact.id - 1}`;
+const targetLabel = function (contact: Contact, map: MissionMap | undefined): string {
+	if (contact.kind === 'structure') return missionFacilityName(map, contact.id) ?? (contact.id === -1 ? 'Facility' : `Facility ${-contact.id - 1}`);
 	if (contact.body.commander) return 'Commander';
 	const kind = contact.body.kind;
 	return kind === 'vtol' ? 'VTOL' : kind.charAt(0).toUpperCase() + kind.slice(1);
@@ -115,6 +117,30 @@ const paintGround = function (ctx: CanvasRenderingContext2D, state: CombatStateV
 		for (const site of state.mission?.captureSites ?? []) ring(site, CAPTURE_RADIUS, site.complete ? '#90b79c' : '#e6c38b');
 	}
 	for (const strike of state.strikes) ring(strike, strike.radius, '#ff896e');
+	if (map?.terrain?.compounds?.length) {
+		const labels: { x: number; y: number; width: number }[] = [];
+		ctx.font = '600 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+		for (const compound of map.terrain.compounds) {
+			const site = map.sites[compound.siteIndex];
+			if (!site) continue;
+			const progress = state.mission?.raidTargets?.[compound.siteIndex] ?? state.mission?.structure;
+			const hue = progress && progress.hp <= 0 ? '#a5b6ac' : '#e6c38b';
+			const at = project(projection, site);
+			const labelWidth = Math.min(ctx.measureText(compound.name).width + 9, Math.max(9, w - 4));
+			const half = labelWidth / 2;
+			const x = Math.min(Math.max(at.x, from.x + half + 2), from.x + w - half - 2);
+			const y = [-16, 16, -34, 34].map(function (offset) { return at.y + offset; }).find(function (row) {
+				return row >= from.y + 8 && row <= from.y + h - 8 && labels.every(function (label) {
+					return Math.abs(label.y - row) >= 14 || Math.abs(label.x - x) >= (label.width + labelWidth) / 2 + 2;
+				});
+			});
+			ring(site, FACILITY_RADIUS, hue);
+			if (y === undefined) continue;
+			labels.push({ x, y, width: labelWidth });
+			ctx.fillStyle = '#152320ee'; ctx.fillRect(x - half, y - 7, labelWidth, 14);
+			ctx.fillStyle = hue; ctx.fillText(compound.name, x, y, labelWidth - 6);
+		}
+	}
 	ctx.restore();
 };
 
@@ -142,7 +168,7 @@ export const mountSquadOrders = function (
 		if (!order) return 'Autonomous';
 		if (order.kind === 'attack') {
 			const target = contactFor(order.targetId);
-			return target ? `Attack ${targetLabel(target)}` : 'Target gone';
+			return target ? `Attack ${targetLabel(target, state?.mission?.map)}` : 'Target gone';
 		}
 		return commands.find(function (command) { return command.kind === order.kind; })?.label ?? 'Autonomous';
 	};
@@ -247,7 +273,7 @@ export const mountSquadOrders = function (
 							${mission ? html`<span><i class="map-key-objective"></i> Objective</span><span><i class="map-key-pickup"></i> Pickup</span>` : nothing}`}
 						${pick === 'attack' && candidate ? html`<div class="squad-contact-picker">
 							<button type="button" aria-label="Previous contact" ?disabled=${contacts.length < 2} @click=${function () { stepContact(-1); }}><span data-menu-glyph="previousDepartment"></span></button>
-							<button type="button" @click=${function (event: MouseEvent) { markTarget(candidate.id, event.detail > 0); }}>${targetLabel(candidate)} <small>${contactIndex + 1}/${contacts.length}</small></button>
+							<button type="button" @click=${function (event: MouseEvent) { markTarget(candidate.id, event.detail > 0); }}>${targetLabel(candidate, mission?.map)} <small>${contactIndex + 1}/${contacts.length}</small></button>
 							<button type="button" aria-label="Next contact" ?disabled=${contacts.length < 2} @click=${function () { stepContact(1); }}><span data-menu-glyph="nextDepartment"></span></button>
 						</div>` : nothing}
 					</div>

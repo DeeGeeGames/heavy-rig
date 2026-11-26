@@ -166,12 +166,16 @@ const createFissures = function (terrain: FieldTerrain, seed: number, biome: Fis
 	mesh.name = { volcanic: 'basalt-fissures', badlands: 'sandstone-canyons', tundra: 'ice-crevasses' }[biome]; return mesh;
 };
 
-const SHED_COLORS = {
+const SHED_COLORS: Readonly<Record<Biome, { base: number; wall: number; trim: number; roof: number }>> = {
 	volcanic: { base: 0x585459, wall: 0x858f91, trim: 0x414b50, roof: 0xa7b0ad },
 	badlands: { base: 0x675344, wall: 0xb59976, trim: 0x674637, roof: 0x87604d },
 	tundra: { base: 0x425764, wall: 0x879da7, trim: 0x3c5463, roof: 0xd0dedb },
+	wetlands: { base: 0x4c6260, wall: 0x9b7663, trim: 0x495c59, roof: 0xb3a98b },
+	forest: { base: 0x52594a, wall: 0x9a8963, trim: 0x4e5a4c, roof: 0x8d9a88 },
+	steppe: { base: 0x746c58, wall: 0xb8a687, trim: 0x6a6351, roof: 0xb7b5a5 },
+	crystal: { base: 0x544e5f, wall: 0x8e899e, trim: 0x4c495c, roof: 0xb1afbe },
 };
-const addShed = function (parts: BuildingPart[], shed: TerrainObstacle, biome: FissureBiome, base: number) {
+const addShed = function (parts: BuildingPart[], shed: TerrainObstacle, biome: Biome, base: number) {
 	const { width: w, depth: d, height: h } = shed;
 	const colors = SHED_COLORS[biome];
 	const add = function (x: number, y: number, z: number, width: number, height: number, depth: number, color: number) {
@@ -197,13 +201,16 @@ const addShed = function (parts: BuildingPart[], shed: TerrainObstacle, biome: F
 };
 
 export const createFieldStructures = function (terrain: FieldTerrain, seed: number, biome: Biome) {
-	if (hasBiomeGround(biome)) return createBiomeScenery(terrain, seed, biome);
+	const compoundBuildings = biome === 'steppe' || biome === 'crystal'
+		? new Set(terrain.compounds?.flatMap(function (compound) { return compound.buildings; })) : undefined;
+	const surface = hasBiomeGround(biome) ? createBiomeScenery(terrain, seed, biome, compoundBuildings) : undefined;
+	const fissures = hasBiomeGround(biome) ? undefined : createFissures(terrain, seed, biome);
 	const root = new Group();
-	const fissures = createFissures(terrain, seed, biome);
-	root.add(fissures);
+	if (surface) root.add(surface.root);
+	if (fissures) root.add(fissures);
 	const parts: BuildingParts = { box: [], drum: [], vault: [] };
 	for (const o of terrain.obstacles) {
-		if (o.kind === 'shed') addShed(parts.box, o, biome, groundHeight(terrain, o));
+		if (o.kind === 'shed' && (!surface || compoundBuildings?.has(o))) addShed(parts.box, o, biome, groundHeight(terrain, o));
 		else if (o.kind === 'housing' || o.kind === 'hangar' || o.kind === 'tank-bank' || o.kind === 'wall') addSiteBuilding(parts, o, groundHeight(terrain, o));
 	}
 	const pose = new Object3D(); const color = new Color();
@@ -217,10 +224,11 @@ export const createFieldStructures = function (terrain: FieldTerrain, seed: numb
 		}
 		mesh.name = name; mesh.castShadow = true; mesh.receiveShadow = true; root.add(mesh); return mesh;
 	};
-	const buildingBatches = [batch({ volcanic: 'ore-sheds', badlands: 'frontier-outbuildings', tundra: 'winter-shelters' }[biome], new BoxGeometry(1, 1, 1), parts.box)];
+	const names = { volcanic: 'ore-sheds', badlands: 'frontier-outbuildings', tundra: 'winter-shelters' };
+	const buildingBatches = parts.box.length ? [batch(hasBiomeGround(biome) ? 'compound-buildings' : names[biome], new BoxGeometry(1, 1, 1), parts.box)] : [];
 	if (parts.drum.length) buildingBatches.push(batch('storage-tanks', new CylinderGeometry(.5, .5, 1, 16), parts.drum));
 	if (parts.vault.length) buildingBatches.push(batch('hangar-roofs', hangarRoofGeometry(), parts.vault));
-	const trees = terrain.obstacles.filter(function (obstacle) { return obstacle.kind === 'tree'; });
+	const trees = surface ? [] : terrain.obstacles.filter(function (obstacle) { return obstacle.kind === 'tree'; });
 	const conifers = trees.length ? new InstancedMesh(new CylinderGeometry(.02, .5, 1, 6), new MeshStandardMaterial({ roughness: .95 }), trees.length * 4) : undefined;
 	if (conifers) {
 		pose.rotation.set(0, 0, 0);
@@ -237,8 +245,8 @@ export const createFieldStructures = function (terrain: FieldTerrain, seed: numb
 		}
 		conifers.name = 'tundra-conifers'; conifers.castShadow = true; conifers.receiveShadow = true; root.add(conifers);
 	}
-	return { root, rotors: undefined, dispose: function () {
-		fissures.geometry.dispose(); fissures.material.dispose();
+	return { root, rotors: surface?.rotors, dispose: function () {
+		surface?.dispose(); fissures?.geometry.dispose(); fissures?.material.dispose();
 		for (const mesh of buildingBatches) { mesh.geometry.dispose(); mesh.dispose(); }
 		buildingSurface.dispose();
 		conifers?.geometry.dispose(); conifers?.material.dispose(); conifers?.dispose(); root.removeFromParent();

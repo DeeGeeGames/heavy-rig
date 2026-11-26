@@ -1,5 +1,6 @@
 import type { CombatStateView, Point } from './simulation';
 import { combatTargets, distance } from './simulation';
+import { missionFacilityName } from './mission-site-labels';
 import { isPriorityTarget } from './missions';
 import { getFrame } from './frames';
 import { targetElevation, type ScreenRect } from './overlay';
@@ -12,7 +13,11 @@ export const isContactVisible = function ({ x, y }: Point, width: number, height
 };
 export const visibleTouchContacts = function (state: CombatStateView, project: (point: Point, elevation: number) => Point, width: number, height: number, obstructions: readonly ScreenRect[]): TouchContact[] {
 	const contacts = combatTargets(state).map(function (target): TouchContact {
-		if (target.kind === 'structure') return { id: target.id, point: target.body, screen: project(target.body, 45), label: state.mission?.contract.kind === 'raid' ? 'RAID SITE' : 'FACILITY' };
+		if (target.kind === 'structure') {
+			const label = missionFacilityName(state.mission?.map, target.id)?.toUpperCase()
+				?? (state.mission?.contract.kind === 'raid' ? 'RAID SITE' : 'FACILITY');
+			return { id: target.id, point: target.body, screen: project(target.body, 45), label };
+		}
 		const enemy = target.body;
 		const frame = enemy.catalog ? getFrame(enemy.catalog.frameId) : undefined;
 		const label = isPriorityTarget(state, enemy) ? 'PRIORITY TARGET' : frame ? `${frame.chassisName} ${frame.variant}` : enemy.kind.toUpperCase();

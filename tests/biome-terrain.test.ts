@@ -4,7 +4,7 @@ import type { Contract } from '../src/campaign-types';
 import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, playerVolume, RIG_RADIUS } from '../src/combat-spatial';
 import { terrainPathClear, terrainPointClear, terrainShotFraction, terrainWaypoint } from '../src/field-terrain';
 import { groundHeight } from '../src/terrain-elevation';
-import { CAPTURE_RADIUS, EXTRACTION_RADIUS, generateMissionMap, missionArtilleryCount, missionDeploymentSlot, missionHostileCount, missionSpawn } from '../src/missions';
+import { CAPTURE_RADIUS, EXTRACTION_RADIUS, generateMissionField, generateMissionMap, missionArtilleryCount, missionDeploymentSlot, missionHostileCount, missionSpawn } from '../src/missions';
 import { SQUAD_SIZE } from '../src/pilots';
 import type { Point } from '../src/simulation';
 import { getPlayerMuzzle } from '../src/weapon-rig';
@@ -17,7 +17,8 @@ const contract = function (planetId: typeof worlds[number], kind: Contract['kind
 
 test('squads can deploy and reach every objective and pickup in the four new biomes', function () {
 	for (const world of worlds) for (const kind of MISSION_KINDS) for (const seed of [1740197091, 1500846699, 2563011894]) {
-		const job = contract(world, kind, seed), map = generateMissionMap(job), terrain = map.terrain;
+		const job = contract(world, kind, seed);
+		const { map, garrison } = generateMissionField(job), terrain = map.terrain;
 		if (!terrain) throw new Error('Missing mission terrain');
 		const reachable = function (from: Point, goal: Point) {
 			let at = from;
@@ -66,7 +67,11 @@ test('squads can deploy and reach every objective and pickup in the four new bio
 		for (let i = 0; i < SQUAD_SIZE - 1; i++) {
 			expect(terrainPathClear(terrain, missionDeploymentSlot(map, i), map.drop, RIG_RADIUS)).toBe(true);
 		}
-		const spawns = Array.from({ length: missionHostileCount(job) }, function (_, i) { return missionSpawn(job, map, i); });
+		// Defenders arrive in waves. Inspect the field's actual posted roster on offensive drops.
+		const spawns = kind === 'defend' ? Array.from({ length: missionHostileCount(job) }, function (_, i) {
+			return missionSpawn(job, map, i);
+		}) : garrison;
+		expect(spawns).toHaveLength(missionHostileCount(job));
 		const guns = spawns.filter(function (spawn) { return spawn.kind === 'artillery'; });
 		expect(guns).toHaveLength(missionArtilleryCount(job));
 		for (const gun of guns) {
