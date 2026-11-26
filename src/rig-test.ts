@@ -16,14 +16,16 @@ interface RigTestPresentation {
 export const mountRigTest = function (container: HTMLElement, settings: Settings, start: (state: State) => void, current: () => CombatStateView, presentation: RigTestPresentation): () => void {
 	const abort = new AbortController();
 	const panel = document.createElement('details');
-	panel.id = 'rig-test-panel'; panel.open = true;
-	const summary = document.createElement('summary'); summary.textContent = 'RIG HANDLING TEST';
+	const drill = new URLSearchParams(location.search).get('rig-test');
+	const backup = drill === 'backup';
+	panel.id = 'rig-test-panel'; panel.open = !backup;
+	panel.classList.toggle('rig-test-backup', backup);
+	const summary = document.createElement('summary'); summary.textContent = backup ? 'RETREAT & FIRE DRILL' : 'RIG HANDLING TEST';
 	const rig = document.createElement('select'); rig.id = 'test-rig'; rig.title = 'Rig';
 	for (const frame of PLAYABLE_FRAMES) rig.add(new Option(frame.name, frame.id));
-	const directKestrel = new URLSearchParams(location.search).get('rig-test') === 'kestrel';
-	if (directKestrel) rig.value = 'kestrel';
+	if (drill === 'kestrel') rig.value = 'kestrel';
 	const mode = document.createElement('select'); mode.id = 'test-mode'; mode.title = 'Control mode';
-	mode.add(new Option('Simulation', 'simulation')); mode.add(new Option('Arcade', 'arcade')); mode.value = settings.controlMode;
+	mode.add(new Option('Simulation', 'simulation')); mode.add(new Option('Arcade', 'arcade')); mode.value = backup ? 'arcade' : settings.controlMode;
 	const equipment = document.createElement('select'); equipment.id = 'test-equipment'; equipment.title = 'Equipment';
 	equipment.add(new Option('Starter weapon', 'starter'));
 	equipment.add(new Option('All mounts loaded', 'loaded'));
@@ -66,6 +68,7 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 	}, { signal: abort.signal });
 	const telemetry = document.createElement('output'); telemetry.id = 'rig-test-telemetry';
 	const guide = document.createElement('p'); guide.textContent = 'Compare: accelerate → release throttle → brake → reverse → turn a circle → aim while turning → fire. Use the normal keyboard, controller or touch controls. Pause → Controls for bindings. No enemy waves; reset restores ammo and heat. Preferences and campaign are not saved.';
+	if (backup) guide.textContent = 'Close this panel to see the scout. Hold right stick up on a controller, or tap the scout on touch. Drive down and fire while backing away. Release aim or tap the lock again, then compare. RESET RUN restores the target and ammo. Nothing is saved.';
 	panel.append(summary, controls, finishes, telemetry, guide); container.append(panel);
 	const restart = function () {
 		const frame = PLAYABLE_FRAMES.find(function (candidate) { return candidate.id === rig.value; });
@@ -78,6 +81,11 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 			state.loadout = loadedMounts(stock.loadout, stock.reserves);
 		}
 		state.spawnIn = Infinity;
+		if (backup) {
+			state.player.y = 420;
+			state.player.angle = state.player.turret = -3 * Math.PI / 4;
+			state.enemies.push({ id: state.nextId++, x: state.player.x - 95, y: state.player.y - 95, kind: 'scout', angle: Math.PI / 4, hp: 600, maxHp: 600, cooldown: 0, heavy: false, stationary: true, loadout: [] });
+		}
 		start(state); scenario = current(); applyFinish();
 	};
 	for (const select of [rig, mode, equipment]) select.addEventListener('change', restart, { signal: abort.signal });
@@ -87,7 +95,8 @@ export const mountRigTest = function (container: HTMLElement, settings: Settings
 		if ((!ink.disabled && !presentation.canCompareKestrel()) || bakeAvailable !== presentation.canBakeYard()) applyFinish();
 		const state = current();
 		const degrees = function (radians: number) { return Math.round((radians * 180 / Math.PI % 360 + 360) % 360); };
-		telemetry.textContent = `${frameWeight(state.frame, state.loadout).total.toFixed(1)}T · speed ${state.player.speed.toFixed(1)} · throttle ${Math.round(state.player.throttle * 100)}% · hull ${degrees(state.player.angle)}° · torso ${degrees(state.player.turret)}° · heat ${Math.round(state.player.heat)}%`;
+		const drive = state.player.arcadeBacking ? 'BACKUP · ' : '';
+		telemetry.textContent = `${drive}${frameWeight(state.frame, state.loadout).total.toFixed(1)}T · speed ${state.player.speed.toFixed(1)} · throttle ${Math.round(state.player.throttle * 100)}% · hull ${degrees(state.player.angle)}° · torso ${degrees(state.player.turret)}° · heat ${Math.round(state.player.heat)}%`;
 	}, 100);
 	restart();
 	return function () { abort.abort(); clearInterval(interval); panel.remove(); };

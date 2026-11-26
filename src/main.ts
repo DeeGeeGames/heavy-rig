@@ -17,7 +17,6 @@ import { mountSquadOrders } from './squad-orders-ui';
 import { createRuntimeNavigation, type RuntimeAuxiliary, type RuntimeBaseScreen } from './runtime-navigation';
 import { createRuntimeInput } from './runtime-input';
 import { createTouchFacing, createTouchTargeting, isContactVisible, mountTouchDrive, touchAimPoint, visibleTouchContacts } from './touch-controls';
-import { inFiringArc } from './torso-arc';
 import { mountTouchZoom } from './touch-zoom';
 import { mountMobileFullscreen } from './mobile-fullscreen';
 import { mountFullscreenViewport } from './fullscreen-viewport';
@@ -227,22 +226,28 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const companyOpen = function () { return isShipScreen(navigation.screen) && !navigation.auxiliary; };
 	const companyNavigationReady = function () { return companyOpen() && !choicePicker.root && !navigation.transitioning && !workspaceNavigationLocked(element(navigation.screen)) && !campaignConflict && !contextLost; };
 	let lastSoundState = '';
-	const clearTouchFacing = function () { touchFacing.clear(); touchAimPointer = undefined; };
-	const resetInput = function () { touchZoom.reset(); acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); clearTouchFacing(); element('touch-lock-marker').hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
+	const facingMarker = element('touch-facing-marker');
+	const trackingMarker = element('touch-lock-marker');
+	const clearTouchFacing = function () { touchFacing.clear(); touchAimPointer = undefined; facingMarker.hidden = true; };
+	const resetInput = function () { touchZoom.reset(); acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); clearTouchFacing(); trackingMarker.hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const battlefieldActive = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
 	const playing = function () { return battlefieldActive() && sortieEnding?.owner !== state; };
+	facingMarker.addEventListener('pointerdown', function (event) {
+		if (event.button !== 0 || !playing() || aimMode !== 'touch') return;
+		event.preventDefault();
+		clearTouchFacing();
+	}, listenerOptions);
 	const touchZoom = mountTouchZoom(element('zoom-hold'), element('zoom-panel'), element('zoom-value'), element('zoom-knob'), abort.signal, playing, presentation);
 	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing, element('touch-cruise'), element('touch-drive-hint'));
 	const touchContacts = function () {
 		const rect = canvas.getBoundingClientRect();
 		return visibleTouchContacts(state, presentation.toScreen, rect.width, rect.height, hudObstructions);
 	};
-	const withinTouchTraverse = function (contact: { point: Point }) { return inFiringArc(state.player, state.player.angle, contact.point); };
 	for (const action of ['nearest', 'cycle'] as const) {
 		element(action === 'nearest' ? 'touch-nearest' : 'touch-next').addEventListener('click', function () {
 			if (!playing()) return;
 			setInputMode('touch'); aimMode = 'touch'; pointer = undefined; clearTouchFacing();
-			touchTargeting[action](touchContacts().filter(withinTouchTraverse), state.player);
+			touchTargeting[action](touchContacts(), state.player);
 		}, listenerOptions);
 	}
 	const selectTarget = function (action: 'nearest' | 'cycle') {
@@ -1361,6 +1366,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!playing()) return;
 		const rect = canvas.getBoundingClientRect(); const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
 		if (event.pointerType === 'touch') {
+			// A browser may deliver the touch to the canvas when the marker has
+			// just moved. Still use the actual box, before picking a new aim.
+			if (event.type === 'pointerdown' && aimMode === 'touch' && !facingMarker.hidden) {
+				const box = facingMarker.getBoundingClientRect();
+				if (event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom) {
+					clearTouchFacing();
+					return;
+				}
+			}
 			// Pick the scene the player actually tapped before revealing the dock
 			// changes its viewport. Carry world position/identity across takeover.
 			const contacts = event.type === 'pointerdown' ? touchContacts() : undefined;
@@ -1370,7 +1384,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (revealingDock) { const next = canvas.getBoundingClientRect(); refreshHudObstructions(); presentation.resize(state, next.width, next.height); }
 			if (contacts) {
 				clearTouchFacing();
-				if (!touchTargeting.select(point, contacts) && ground) {
+				if (touchTargeting.select(point, contacts) === 'ground' && ground) {
 					touchAimPointer = event.pointerId;
 					touchFacing.select(ground, state.player, Boolean(mortarProfile(state.frame)));
 				}
@@ -1507,7 +1521,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		ui.armor.textContent = `${Math.max(0, Math.ceil(p.hp))}%`; ui.armorFill.style.width = `${Math.max(0, p.hp)}%`; ui.armorFill.style.background = p.hp < 30 ? 'var(--danger)' : 'var(--cyan)';
 		ui.relay.textContent = `${Math.max(0, Math.ceil(state.relay))}%`; ui.relayFill.style.width = `${Math.max(0, state.relay)}%`; ui.relayFill.style.background = state.relay < 30 ? 'var(--danger)' : 'var(--cyan)';
 		ui.heat.textContent = p.overheated ? 'LOCKOUT' : `${Math.ceil(p.heat)}%`; ui.heatFill.style.width = `${p.heat}%`; ui.heatFill.style.background = p.heat > 80 ? 'var(--danger)' : 'var(--amber)';
-		ui.drive.textContent = `${p.throttle < -0.005 ? 'REV' : p.throttle > 0.005 ? 'FWD' : 'N'} ${Math.round(Math.abs(p.throttle) * 100)}%`;
+		const backing = p.arcadeBacking || p.throttle < 0;
+		ui.drive.textContent = `${Math.abs(p.throttle) < 0.005 ? 'N' : backing ? 'REV' : 'FWD'} ${Math.round(Math.abs(p.throttle) * 100)}%`;
 		const definition = getFrame(state.frame);
 		const weight = frameWeight(state.frame, state.loadout);
 		element('combat-frame-name').textContent = `${definition.chassisName} ${definition.variant}`;
@@ -1518,7 +1533,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		render(touchLayout ? '' : drivePrompts(arcadeMovement), element('drive-prompts'));
 		container.classList.toggle('reactor-locked', p.overheated);
 		container.classList.toggle('hull-critical', p.hp < 30);
-		ui.throttleFill.style.left = `${p.throttle < 0 ? 50 + p.throttle * 50 : 50}%`; ui.throttleFill.style.width = `${Math.abs(p.throttle) * 50}%`; ui.speed.textContent = `${Math.abs(p.speed).toFixed(0)} / ${(p.speed < 0 ? definition.reverseSpeed * weight.modifier : weight.speed).toFixed(0)} m/s`;
+		ui.throttleFill.style.left = `${backing ? 50 - Math.abs(p.throttle) * 50 : 50}%`; ui.throttleFill.style.width = `${Math.abs(p.throttle) * 50}%`; ui.speed.textContent = `${Math.abs(p.speed).toFixed(0)} / ${(p.arcadeBacking || p.speed < 0 ? definition.reverseSpeed * weight.modifier : weight.speed).toFixed(0)} m/s`;
 		element('weight-value').textContent = `${massLabel(weight.total)} / ${massLabel(weight.recommended)} REC · ${weight.modifier < .9999 ? 'OVERLOAD' : weight.modifier > 1.0001 ? 'LIGHT' : 'NOMINAL'}`;
 		const hardpoints = getHardpoints(state.frame);
 		element('weapon-bank').style.setProperty('--hardpoint-columns', String(hardpoints.length));
@@ -1710,6 +1725,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (pad.targetNext) selectTarget('cycle');
 			const aimTargets = combatTargets(state).map(function ({ id, body }) { return { id, point: body }; });
 			const mortar = mortarProfile(state.frame);
+			const arcadeMode = profile.settings.controlMode === 'arcade';
+			const stickAim = arcadeMode && Math.hypot(pad.aimX, pad.aimY) > 0.2;
 			const reticleAcquisition = Boolean(mortar) || state.frame === 'specter-c';
 			const assistRange = pad.connected ? Math.max(missileLockRange(state.frame, state.loadout), mortar ? HARROW_MAX_RANGE : 0) : 0;
 			const inStickRange = function (point: Point, assistDistance: number) {
@@ -1724,7 +1741,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			}
 			if (profile.settings.controlMode === 'simulation' && pad.aimX !== 0) {
 				aimMode = 'gamepad';
-			} else if (profile.settings.controlMode === 'arcade' && Math.hypot(pad.aimX, pad.aimY) > 0.2) {
+			} else if (stickAim) {
 				aimMode = 'gamepad';
 				const origin = presentation.toScreen(state.player); const length = Math.hypot(pad.aimX, pad.aimY);
 				const projected = presentation.toGround({ x: origin.x + pad.aimX / length * 380, y: origin.y + pad.aimY / length * 380 });
@@ -1736,8 +1753,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				}).filter(function (target) { return target.alignment > 0.975 && inStickRange(target.point, distance(target.point, state.player)); })
 					.sort(function (a, b) { return b.alignment - a.alignment; });
 				const target = targets[0];
-				if (reticleAcquisition) acquiredTargetId = target?.id;
-				else acquiredTargetId ??= target?.id;
+				acquiredTargetId = target?.id;
 				if (target) aim = { x: target.point.x, y: target.point.y };
 			} else if (pointer && aimMode === 'pointer') {
 				aim = presentation.toGround(pointer) ?? aim;
@@ -1759,22 +1775,23 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					.sort(function (a, b) { return a.along - b.along; })[0];
 				if (reticleAcquisition) acquiredTargetId = target?.id;
 				else acquiredTargetId ??= target?.id;
-			} else if (aimMode === 'gamepad' && acquiredTargetId !== undefined) {
-				const target = aimTargets.find(function (candidate) { return candidate.id === acquiredTargetId; });
-				if (target) aim = { x: target.point.x, y: target.point.y };
 			}
 			makeInput = function (): Controls {
-				let centerTorso = false;
+				let centerTorso = arcadeMode && !stickAim
+					&& (aimMode === 'gamepad' || inputMode === 'gamepad' && aimMode === 'pointer' && !pointer);
 				if (aimMode === 'touch') {
-					// Visibility gates picking, not retention. Recheck live health and
-					// leg-relative traverse on fixed steps, not against screen position.
-					const locked = touchTargeting.resolve(aimTargets, state.player);
+					// Visibility gates picking, not retention. Feet follow the live lock.
+					const locked = touchTargeting.resolve(aimTargets);
 					acquiredTargetId = locked?.id;
 					const touchAim = locked?.point ?? touchFacing.resolve(state.player);
-					if (!touchAim) { centerTorso = true; touchAimPointer = undefined; }
-					aim = touchAim ? { x: touchAim.x, y: touchAim.y } : touchAimPoint(state.player, state.player.angle);
+					centerTorso = touchAim === undefined;
+					if (touchAim) aim = { x: touchAim.x, y: touchAim.y };
 				}
-				const arcade = profile.settings.controlMode === 'arcade' || inputMode === 'touch';
+				if (centerTorso) {
+					acquiredTargetId = undefined;
+					aim = touchAimPoint(state.player, state.player.angle);
+				}
+				const arcade = arcadeMode || inputMode === 'touch';
 				if (active('stop') || pad.stop) touchDrive.stop();
 				const touch = touchDrive.read();
 				const touchFire = container.classList.contains('touch-enabled') && active('touch-fire');
@@ -1785,6 +1802,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const destination = arcade && length > 0 ? presentation.toGround({ x: origin.x + x / length * 380, y: origin.y + y / length * 380 }) : undefined;
 				return {
 					...(arcade ? { throttleTarget: Math.min(1, length), ...(destination ? { heading: Math.atan2(destination.y - state.player.y, destination.x - state.player.x) } : {}) } : {}),
+					...(aimMode === 'touch' && !centerTorso || aimMode === 'gamepad' && stickAim ? { faceAim: true } : {}),
 					...(profile.settings.controlMode === 'simulation' && aimMode === 'gamepad' ? { turretTurn: pad.aimX } : {}),
 					...(centerTorso ? { centerTorso } : {}),
 					drive: -y, stop: active('stop') || pad.stop, turn: x, aim, ...(acquiredTargetId !== undefined ? { targetId: acquiredTargetId } : {}),
@@ -1892,14 +1910,21 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const touchTracking = aimMode === 'touch' && acquiredTargetId !== undefined;
 			const locked = touchTracking ? contacts.find(function (contact) { return contact.id === acquiredTargetId; })
 				: aimMode === 'target' ? touchTargeting.resolve(contacts) : undefined;
-			const marker = element('touch-lock-marker'); marker.hidden = !locked || !playing();
-			if (locked) { const rect = canvas.getBoundingClientRect(); marker.style.left = `${rect.left - container.getBoundingClientRect().left + locked.screen.x}px`; marker.style.top = `${rect.top - container.getBoundingClientRect().top + locked.screen.y}px`; }
+			const groundAnchor = aimMode === 'touch' ? touchFacing.anchor() : undefined;
+			const lockScreen = locked?.screen ?? (groundAnchor ? presentation.toScreen(groundAnchor) : undefined);
+			const rect = canvas.getBoundingClientRect();
+			const visible = playing() && lockScreen !== undefined && isContactVisible(lockScreen, rect.width, rect.height, hudObstructions);
+			trackingMarker.hidden = !visible || !locked;
+			facingMarker.hidden = !visible || Boolean(locked);
+			if (visible && lockScreen) {
+				const marker = locked ? trackingMarker : facingMarker;
+				const field = container.getBoundingClientRect();
+				marker.style.left = `${rect.left - field.left + lockScreen.x}px`;
+				marker.style.top = `${rect.top - field.top + lockScreen.y}px`;
+			}
 			element('touch-target-status').textContent = locked ? `TRACKING / ${locked.label}` : touchTracking ? 'TRACKING / OFF SCREEN'
-				: aimMode === 'touch' ? touchFacing.active() ? 'FACING LOCK / TAP TO AIM' : 'FORWARD / TAP TO AIM' : 'MANUAL / TAP A HOSTILE';
-			for (const action of ['target-nearest', 'target-next'] as const) element(action).toggleAttribute('disabled', contacts.length === 0);
-			const touchHasTargets = contacts.some(withinTouchTraverse);
-			element('touch-next').toggleAttribute('disabled', !touchHasTargets);
-			element('touch-nearest').toggleAttribute('disabled', !touchHasTargets);
+				: aimMode === 'touch' ? touchFacing.active() ? 'FACING LOCK / TAP BOX' : 'FORWARD / TAP TO AIM' : 'MANUAL / TAP A HOSTILE';
+			for (const action of ['target-nearest', 'target-next', 'touch-nearest', 'touch-next'] as const) element(action).toggleAttribute('disabled', contacts.length === 0);
 		} else world.disableSystemGroup('renderer3d');
 	});
 	world.addSystem('browser-feedback').inPhase('render').setPriority(-100).setProcess(function () {

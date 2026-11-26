@@ -564,8 +564,11 @@ vibration depends on browser and controller support.
 mapped movement keys accelerate the rig in the chosen screen direction while its
 legs turn to follow. Push the stick farther for more speed. Reversing input
 bleeds off momentum before the rig gains speed the other way. Release to slow.
-The right stick aims the torso independently. Both modes retain each chassis’s
-leg and torso rotation speeds. Mouse aiming works in both modes, including while
+In Arcade, hold the right stick to aim. The legs turn if needed to bring that
+aim into the firing arc, and the rig backs up at reverse speed when you drive
+away from where you are aiming. Release the right stick to return to forward
+aim and movement-led facing. Both modes retain each chassis’s leg and torso
+rotation speeds. Mouse aiming works in both modes, including while
 moving or firing with a controller. The touch stick always uses Arcade movement.
 Enabling CRUISE holds the touch stick’s last direction and speed setting on release.
 
@@ -596,8 +599,11 @@ and input-mode changes clear Cruise. Releasing FIRE ceases new shots.
 Tap a visible hostile (including aircraft or a facility) to track its position with the existing turret turn rate.
 NEAREST selects the closest visible, unobscured contact to the rig. NEXT cycles
 those contacts in increasing distance from the rig, wrapping to the nearest.
-Destroyed, offscreen, or obscured contacts lose their lock. There is no automatic retargeting, shot leading, or
-automatic firing. Tap empty ground to clear the lock and aim manually.
+Tracking survives loss of visibility and firing-arc exits. The rig turns its legs
+or backs up as needed to keep aiming. Tap the same hostile again to unlock it,
+or tap empty ground to lock a heading instead. Tap its FACING marker again to
+clear it. A destroyed target drops the lock. There is no automatic retargeting,
+shot leading, or automatic firing.
 Portrait reserves a control dock below the battlefield; landscape puts controls
 at the lower edges. Training and the escape use the same controls.
 
