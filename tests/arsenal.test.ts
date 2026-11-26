@@ -20,9 +20,10 @@ describe('Heavy Rig arsenal', function () {
 		state.spawnIn = 3600;
 		expect(state.player.hp).toBe(46.5); expect(state.coolantCharges).toBe(1);
 		expect(state.loadout.map(function (mount) { return [mount.weapon, mount.slot]; })).toEqual([['autocannon', 0], ['stream-rockets', 2]]);
-		step(state, { ...idle, fire: [false, true, false, true] }, 1 / 60);
+		const forward = { ...idle, turretTurn: 0 };
+		step(state, { ...forward, fire: [false, true, false, true] }, 1 / 60);
 		expect(state.shots).toHaveLength(0);
-		step(state, { ...idle, fire: [false, false, true, false] }, 1 / 60);
+		step(state, { ...forward, fire: [false, false, true, false] }, 1 / 60);
 		expect(state.shots.map(function (shot) { return shot.kind; })).toEqual(['rocket']);
 		expect(state.loadout[0]?.cooldown).toBe(0);
 		expect(loadout).toEqual(['autocannon', null, 'stream-rockets', null]);

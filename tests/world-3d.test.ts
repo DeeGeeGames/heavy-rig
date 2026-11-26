@@ -103,7 +103,8 @@ test('one transport unloads two rigs, stays for departure, and clears on mission
 test('reinforcement flights cross opposite sides of Wide View above the perimeter ridges', function () {
 	const width = 1280, height = 800;
 	// These landings are visible from the pilot, with opposite approach bearings.
-	for (const [seed, fromLeft] of [[8, true], [594, false]] as const) {
+	const entrySides = new Set<'left' | 'right'>();
+	for (const seed of [8, 594]) {
 		const state = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, seed, 'story');
 		const map = state.mission?.map;
 		if (!map) throw new Error('Expected a defense map');
@@ -125,12 +126,14 @@ test('reinforcement flights cross opposite sides of Wide View above the perimete
 			}
 			const first = onscreen[0], last = onscreen.at(-1);
 			if (first === undefined || last === undefined) throw new Error('Transport stayed outside the view');
-			expect(fromLeft ? first : last).toBeLessThan(width * .1);
-			expect(fromLeft ? last : first).toBeGreaterThan(width * .9);
+			expect(Math.min(first, last)).toBeLessThan(width * .1);
+			expect(Math.max(first, last)).toBeGreaterThan(width * .9);
+			entrySides.add(first < last ? 'left' : 'right');
 			expect(Number.isFinite(lowestOutside)).toBe(true);
 			expect(lowestOutside).toBeGreaterThan(PERIMETER_RIDGE_HEIGHT);
 		} finally { world.dispose(); }
 	}
+	expect(entrySides.size).toBe(2);
 });
 
 test('transparent world effects retain depth tests without writing depth and disposal releases each shared asset once', function () {

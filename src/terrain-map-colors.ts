@@ -5,7 +5,8 @@ type MapColors = readonly [fill: string, edge: string];
 const obstacleColors: Readonly<Record<TerrainObstacle['kind'], MapColors>> = {
 	fissure: ['#35282a', '#9c6a54'], shed: ['#899190', '#b3bfbb'], tree: ['#496b62', '#83ac96'],
 	channel: ['#194b53', '#7fc7bf'], turbine: ['#8a8461', '#e5d9ae'], outcrop: ['#595953', '#a6a294'],
-	crystal: ['#635077', '#c4a5d8'],
+	crystal: ['#635077', '#c4a5d8'], housing: ['#a58972', '#ddc3a2'], hangar: ['#697a80', '#b3c1bc'],
+	'tank-bank': ['#868f8b', '#c8d4cc'], wall: ['#777676', '#c9c3aa'],
 };
 const fissureColors: Partial<Record<Biome, MapColors>> = {
 	badlands: ['#3d2922', '#bd9164'], tundra: ['#294657', '#abd2df'],

@@ -11,14 +11,21 @@ export interface ObstacleField {
 	readonly obstacles: readonly GroundFootprint[];
 }
 export interface TerrainObstacle extends GroundFootprint {
-	readonly kind: 'fissure' | 'channel' | 'shed' | 'tree' | 'turbine' | 'outcrop' | 'crystal';
+	readonly kind: 'fissure' | 'channel' | 'shed' | 'tree' | 'turbine' | 'outcrop' | 'crystal' | 'housing' | 'hangar' | 'tank-bank' | 'wall';
 	readonly height: number;
+}
+
+export const fieldStructureKinds: ReadonlySet<TerrainObstacle['kind']> = new Set(['shed', 'turbine', 'housing', 'hangar', 'tank-bank', 'wall']);
+
+export interface ObjectiveSite extends GroundFootprint {
+	readonly kind: 'city' | 'garrison';
 }
 
 export interface FieldTerrain {
 	readonly obstacles: readonly TerrainObstacle[];
 	readonly roads: readonly (readonly Point[])[];
 	readonly elevation?: TerrainElevation;
+	readonly site?: ObjectiveSite;
 }
 
 interface Bounds { left: number; right: number; top: number; bottom: number }

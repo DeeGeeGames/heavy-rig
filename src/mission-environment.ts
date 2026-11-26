@@ -3,6 +3,7 @@ import type { Biome, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { createCutGround, createFieldStructures, paintFieldRoads } from './field-terrain-3d';
 import { hasBiomeGround, paintBiomeGround } from './biome-ground';
+import { paintRelaySquare, paintSitePavement } from './site-scenery';
 import { groundHeight } from './terrain-elevation';
 import type { TerrainBakeSource } from './terrain-bake';
 import { PERIMETER_RIDGE_HEIGHT } from './scenery-flight';
@@ -82,11 +83,13 @@ export const createMissionEnvironment = function (map: MissionMap) {
 					ctx.restore();
 				}
 			}
+			if (map.terrain?.site) paintSitePavement(ctx, map.terrain.site, map.terrain.obstacles);
 			for (const [index, site] of map.sites.entries()) {
 				ctx.strokeStyle = palette.dust; ctx.globalAlpha = 0.35; ctx.lineWidth = 3; ctx.strokeRect(site.x - 110, site.y - 90, 220, 180);
 				ctx.font = 'bold 25px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = palette.dust; ctx.fillText(`SECTOR ${String(index + 1).padStart(2, '0')}`, site.x, site.y + 118);
 			}
 			if (map.terrain && !hasBiomeGround(map.biome)) paintFieldRoads(ctx, map.terrain);
+			if (map.terrain?.site?.kind === 'city') paintRelaySquare(ctx, map.objective);
 			ctx.globalAlpha = 0.28;
 			for (let i = 0; i < 24000; i++) { ctx.fillStyle = i % 3 ? palette.rock : palette.dust; ctx.fillRect(random() * map.width, random() * map.height, 1 + random() * 4, 1 + random() * 3); }
 			ctx.globalAlpha = 1;
@@ -162,6 +165,13 @@ export const createMissionEnvironment = function (map: MissionMap) {
 	box(intact, dark, 0, 0, 0, 106, 8, 100); box(intact, steel, 0, 8, 0, 88, 64, 80);
 	box(intact, dark, 0, 72, 0, 96, 7, 88); box(intact, orange, 0, 60, 0, 91, 7, 83);
 	for (const x of [-27, 27]) { box(intact, dark, x, 79, 0, 17, 18, 55); box(intact, steel, x, 97, 0, 19, 3, 57); }
+	if (map.terrain?.site?.kind === 'garrison') {
+		for (const [x, height] of [[-27, 33], [27, 23]] as const) {
+			box(intact, dark, x, 100, 0, 15, height, 18);
+			box(intact, steel, x, 100 + height, 0, 19, 4, 22);
+			box(intact, dark, x, 104 + height, 0, 13, 1, 16);
+		}
+	}
 	for (const z of [-41, 41]) for (const x of [-30, 0, 30]) box(intact, dark, x, 12, z, 7, 46, 2);
 	const rubble = new Group(); rubble.name = 'facility-rubble'; facility.add(rubble);
 	box(rubble, dark, 0, 0, 0, 112, 7, 104);
