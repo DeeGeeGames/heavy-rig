@@ -294,6 +294,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const resetInput = function () { touchZoom.reset(); acquiredTargetId = undefined; touchDrive.reset(); touchTargeting.clear(); clearTouchFacing(); trackingMarker.hidden = true; keys.clear(); pending.clear(); held.clear(); mouseButtons.clear(); runtimeInput.clear(); combatRuntime.setEnabled(false); padInput.requireNeutral(); void feedback.stop(); };
 	const battlefieldActive = function () { return !navigation.transitioning && navigation.screen === 'playing' && !navigation.auxiliary && !campaignConflict && !contextLost && !document.hidden && focused; };
 	const playing = function () { return battlefieldActive() && sortieEnding?.owner !== state; };
+	const infoButton = element('touch-info');
+	let indicatorInfo = false;
+	const toggleIndicatorInfo = function () {
+		indicatorInfo = !indicatorInfo;
+		container.classList.toggle('show-indicator-info', indicatorInfo);
+		infoButton.setAttribute('aria-pressed', String(indicatorInfo));
+	};
+	infoButton.addEventListener('click', function () { if (playing()) toggleIndicatorInfo(); }, listenerOptions);
 	facingMarker.addEventListener('pointerdown', function (event) {
 		if (event.button !== 0 || !playing() || aimMode !== 'touch') return;
 		event.preventDefault();
@@ -1405,7 +1413,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!playing()) return;
 		if (event.target instanceof HTMLInputElement) return;
 		const action = keyboardAction(event.code); if (!action) return;
-		event.preventDefault(); if (action === 'target-nearest' || action === 'target-next') { if (!event.repeat) selectTarget(action === 'target-nearest' ? 'nearest' : 'cycle'); return; } if (event.repeat && !keys.has(event.code)) return; keys.add(event.code); if (!event.repeat) pending.add(action);
+		event.preventDefault();
+		if (action === 'indicator-info') { if (!event.repeat) toggleIndicatorInfo(); return; }
+		if (action === 'target-nearest' || action === 'target-next') { if (!event.repeat) selectTarget(action === 'target-nearest' ? 'nearest' : 'cycle'); return; }
+		if (event.repeat && !keys.has(event.code)) return;
+		keys.add(event.code); if (!event.repeat) pending.add(action);
 	}, listenerOptions);
 	window.addEventListener('keyup', function (event) { const action = keyboardAction(event.code); if (action) keys.delete(event.code); }, listenerOptions);
 	let menuPointer: { id: number; device: 'touch' | 'keyboard'; control: Element } | undefined;
@@ -1513,7 +1525,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	canvas.addEventListener('mousedown', function (event) {
 		const binding = keyboardAction(`Mouse${event.button}`);
 		if (!binding || !playing()) return;
-		event.preventDefault(); if (binding === 'target-nearest' || binding === 'target-next') { selectTarget(binding === 'target-nearest' ? 'nearest' : 'cycle'); return; } mouseButtons.add(event.button); consumedMouseButtons.add(event.button); pending.add(binding);
+		event.preventDefault();
+		if (binding === 'indicator-info') { consumedMouseButtons.add(event.button); toggleIndicatorInfo(); return; }
+		if (binding === 'target-nearest' || binding === 'target-next') { selectTarget(binding === 'target-nearest' ? 'nearest' : 'cycle'); return; }
+		mouseButtons.add(event.button); consumedMouseButtons.add(event.button); pending.add(binding);
 	}, listenerOptions);
 	window.addEventListener('mouseup', function (event) {
 		// Chromium handles side-button history on mouseup, before auxclick.
@@ -1804,6 +1819,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		}
 		const combatInput = playing() && screenRevision === revisionAtFrame;
 		if (combatInput && pad.ready && pad.confirm) presentation.cycleZoom();
+		if (combatInput && pad.indicatorInfo) toggleIndicatorInfo();
 		// Apply zoom and drift before all mouse, touch and controller ground picking.
 		presentation.updateCamera(state, aimMode === 'pointer' ? pointer : undefined, hudObstructions);
 		if (combatInput) {
@@ -2052,7 +2068,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				view?.render();
 			}
 		}
-		if (battlefieldVisible()) presentation.drawOverlay();
+		if (battlefieldVisible()) presentation.drawOverlay(indicatorInfo);
 		if (now - lastHud > 80 || lastHud === 0) { updateHud(); lastHud = now; }
 	});
 	const tick = function (now: number) {

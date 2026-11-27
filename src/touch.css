@@ -41,6 +41,16 @@
 #touch-nearest { left: 0; top: 4px; }
 #touch-next { left: -8px; top: 64px; }
 .touch-enabled #touch-coolant { left: 0; bottom: 8px; border-color: var(--cyan); color: var(--cyan); }
+.touch-enabled #touch-info {
+	position: absolute; left: 46px; top: 65px; width: 44px; height: 44px; min-height: 44px;
+	display: grid; place-items: center; padding: 0; border-radius: 50%;
+	background: var(--rig-panel); border-color: var(--rig-edge); color: var(--rig-ivory);
+}
+.touch-enabled #touch-info[aria-pressed="true"] { background: var(--rig-amber); border-color: var(--rig-amber); color: var(--rig-ink); }
+#touch-info svg { width: 24px; height: 24px; pointer-events: none; }
+/* Keep the dock geometry stable when the targeting readout is hidden. */
+#game:not(.show-indicator-info) #touch-target-status { visibility: hidden; }
+#game:not(.show-indicator-info) :is(#touch-lock-marker, #touch-facing-marker) span { display: none; }
 .touch-enabled .weapon-console { z-index: 1; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 208px); right: max(20px, env(safe-area-inset-right)); width: max-content; max-width: calc(100% - 40px); }
 .touch-enabled .weapon-console-heading { margin-bottom: 6px; }
 .touch-enabled .weapon-console-heading .eyebrow { font-size: 8px; }
@@ -96,6 +106,7 @@
 	.touch-drive-cluster>small { top: 127px; font-size: 7px; }
 	.touch-enabled #touch-stop { right: 0; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
 	.touch-enabled #touch-coolant { left: auto; right: 0; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
+	.touch-enabled #touch-info { left: 34px; top: auto; bottom: 2px; }
 	.touch-enabled #touch-cruise { left: 0; right: auto; top: auto; bottom: 0; width: 48px; height: 48px; min-height: 48px; }
 	.touch-enabled #touch-nearest { left: -28px; top: 8px; width: 48px; height: 48px; min-height: 48px; }
 	.touch-enabled #touch-next { left: -28px; top: 67px; width: 48px; height: 48px; min-height: 48px; }
@@ -194,6 +205,7 @@
 	.touch-enabled #touch-next { grid-area: 2 / 4; }
 	.touch-enabled #touch-stop { grid-area: 3 / 2; }
 	.touch-enabled #touch-coolant { grid-area: 3 / 4; }
+	.touch-enabled #touch-info { position: relative; inset: auto; grid-area: 3 / 3; width: 100%; border-radius: 5px; }
 	.touch-enabled .weapon-console {
 		bottom: calc(var(--touch-dock) - 48px); left: var(--short-touch-left); right: var(--short-touch-right);
 	}
@@ -236,6 +248,7 @@
 	.touch-enabled #touch-nearest { grid-column: 4; }
 	.touch-enabled #touch-next { grid-column: 5; }
 	.touch-enabled #touch-coolant { grid-column: 6; }
+	.touch-enabled #touch-info { position: relative; inset: auto; grid-area: 2 / 5; width: 100%; border-radius: 4px; }
 	.touch-enabled .weapon-console { left: 50%; right: auto; bottom: calc(97px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: max-content; }
 	.touch-enabled .weapon-console-heading { display: none; }
 	.touch-enabled .weapon { width: 46px; height: 44px; min-height: 44px; }

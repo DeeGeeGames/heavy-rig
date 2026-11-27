@@ -1,4 +1,4 @@
-import { defaultController, type ControllerBindings } from './bindings';
+import { defaultController, INDICATOR_INFO_BUTTON, type ControllerBindings } from './bindings';
 import type { FireInputs } from './arsenal';
 
 export type GamepadSnapshot = Pick<Gamepad, 'axes' | 'buttons' | 'connected' | 'index' | 'mapping' | 'id'>;
@@ -21,6 +21,7 @@ export interface PadInput {
 	stop: boolean;
 	targetNearest: boolean;
 	targetNext: boolean;
+	indicatorInfo: boolean;
 	pause: boolean;
 	confirm: boolean;
 	back: boolean;
@@ -123,7 +124,8 @@ export const createGamepadInput = function () {
 		if (!sample) promptAxes = undefined;
 		else if (claimed || before === undefined || axesChanged || axes.every(function (value) { return value === 0; })) promptAxes = axes;
 		const movementNeutral = x === 0 && y === 0 && aimX === 0 && aimY === 0 && !up && !down && !left && !right;
-		const neutral = movementNeutral && !Object.values(bindings).some(pressed);
+		const boundButtons = Object.values(bindings);
+		const neutral = movementNeutral && !boundButtons.some(pressed) && !pressed(INDICATOR_INFO_BUTTON);
 		if (sample && !claimed && neutral) gameplayReady = true;
 		if (sample && !claimed && movementNeutral && ![0, 1, 2, 3, 4, 5, 6, 7, 9].some(menuPressed)) menuReady = true;
 		const direction = up || down || left || right
@@ -142,6 +144,7 @@ export const createGamepadInput = function () {
 			coolant: ready && pressed(bindings.coolant), stop: ready && pressed(bindings.stop),
 			targetNearest: ready && before !== undefined && pressed(bindings['target-nearest']) && !before.has(bindings['target-nearest']),
 			targetNext: ready && before !== undefined && pressed(bindings['target-next']) && !before.has(bindings['target-next']),
+			indicatorInfo: ready && !boundButtons.includes(INDICATOR_INFO_BUTTON) && before !== undefined && pressed(INDICATOR_INFO_BUTTON) && !before.has(INDICATOR_INFO_BUTTON),
 			pause: edge(9), confirm: edge(0), back: edge(1), navigate,
 			department: edge(4) === edge(5) ? 0 : edge(4) ? -1 : 1,
 			page: edge(6) === edge(7) ? 0 : edge(6) ? -1 : 1,

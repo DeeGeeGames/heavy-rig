@@ -8,6 +8,7 @@ test('device mappings survive reload independently and invalid storage retains u
 	settings.keyboard.forward = ['KeyI']; settings.controller['mount-0'] = 3;
 	const restored = parseProfile(JSON.stringify({ settings })).settings;
 	expect(restored.keyboard.forward).toEqual(['KeyI']); expect(restored.controller['mount-0']).toBe(3);
+	expect(restored.keyboard['indicator-info']).toEqual([]);
 	expect(restored.keyboard['mount-0']).toEqual(defaultKeyboard()['mount-0']);
 	const corrupt = parseProfile(JSON.stringify({ settings: { keyboard: { forward: ['Escape'], stop: ['Mouse9'] }, controller: { 'mount-0': 9, coolant: -1 } } })).settings;
 	expect(corrupt.keyboard).toEqual(defaultKeyboard()); expect(corrupt.controller).toEqual(defaultController());
