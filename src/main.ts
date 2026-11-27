@@ -46,7 +46,7 @@ import { isDifficulty, readProfile, saveProfile, type Settings } from './profile
 import { abandonContract, assignOperationLead, assignOperationSlot, commitOperations, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getPlannedOperation, getTransmission, parseCampaign, recoverInterruptedDeployment, removeOperation, reviewOperations, saveCampaign, settleContract, stageOperation, travelTo, type Campaign, type CampaignResult } from './campaign';
 import type { Difficulty } from './operation';
 import { focusTerritoryMap } from './territory-map';
-import { renderBridge, renderStarmap, type BridgeActions, type ShipView } from './campaign-ui';
+import { renderBridge, renderStarmap, type BridgeActions, type BriefingOrigin, type ShipView } from './campaign-ui';
 import { MISSION_NAMES, type PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
 import { combatTask } from './combat-task';
@@ -126,6 +126,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let campaignConflict = false;
 	let destination: PlanetId = campaign.planetId;
 	let selectedContract: string | undefined;
+	let briefingOrigin: BriefingOrigin = 'board';
 	let editedOperation: string | undefined;
 	let guidedCourse: PlanetId | undefined;
 	let jumpArrival: { until: number; transmission: boolean } | undefined;
@@ -859,9 +860,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				refreshCampaign();
 			},
 			previewContract: function (id) { selectedContract = id; },
-			selectContract: function (id, opener) {
+			selectContract: function (id, origin, opener) {
 				if (getTransmission(campaign)?.offers.some(function (step) { return step.contract.id === id; })) destination = campaign.planetId;
 				selectedContract = id;
+				briefingOrigin = origin;
 				refreshCampaign();
 				const bridge = element('bridge');
 				inspectWorkspacePane(bridge, 'briefing', opener);
@@ -901,7 +903,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			settings: function () { showAuxiliary('settings'); },
 			handbook: function () { showAuxiliary('handbook'); },
 		};
-		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, actions);
+		renderBridge(element('bridge'), campaign, destination, selectedContract, campaignSaved, actions, briefingOrigin);
 		renderStarmap(element('starmap'), campaign, destination, campaignSaved, actions);
 	};
 	const navigateShip = function (target: ShipScreen, view?: ShipView, focusRoute = false, reveal?: string) {

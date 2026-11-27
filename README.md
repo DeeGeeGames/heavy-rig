@@ -164,9 +164,10 @@ replenishes ammunition in combat.
 
 ## Contracts and surface missions
 
-Focus a posting to see its battlefield on the survey table. The pixel grid shows
-the generated terrain, roads, drop point, and objective sites for that contract.
-Select it to open the briefing and stage the operation.
+On the Board, focus a posting to see its battlefield on the survey table. The
+pixel grid shows the generated terrain, roads, drop point, and objective sites.
+Open a posting to read its briefing and stage the operation. Back returns to
+the same posting on the Board or the same story offer on Signal.
 
 The Starmap charts **79 systems** across the Wayfarer Reach. The Frontier
 Freeholds, Ferric Combine, and Signal Accord hold contiguous territories with
