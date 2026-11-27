@@ -1,4 +1,4 @@
-import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
+import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, type Vector3 } from 'three';
 import { createShipParts } from './launch-ship-parts';
 import { cabinBeam, DROPSHIP_DECK, podCenter, rampFrameHalfWidth } from './launch-berths';
 export { DROPSHIP_DECK, DROPSHIP_WIDTH } from './launch-berths';
@@ -145,6 +145,7 @@ export const createWayfarer = function () {
 	const parts = createShipParts('#768da2');
 	const { box, hull, beam, steel, dark, trim, accent, piston, recess, glass } = parts;
 	const root = new Group(); root.name = 'wayfarer-vehicle';
+	const drivePorts: Vector3[] = [];
 	hull(root, 'engine-block', steel, 'x', -16, [[-2060, 42, 140, 315], [-1870, 60, 229, 463], [-1040, 73, 224, 474], [-332, 80, 210, 462]]);
 	hull(root, 'fore-hull', steel, 'x', 0, [[679, 78, 213, 460], [1480, 73, 214, 457], [1990, 30, 147, 308], [2150, -2, 65, 178]]);
 	hull(root, 'underslung-keel', dark, 'x', -38, [[-2070, -77, 54, 260], [-1730, -125, 91, 397], [-550, -135, 98, 402], [1260, -125, 89, 402], [2000, -75, 44, 221]]);
@@ -168,7 +169,8 @@ export const createWayfarer = function () {
 			parts.cylinder(root, 'drive-collar', 78, 116, dark, -2178, y, side * 288, 'x');
 			parts.cylinder(root, 'drive-lip', 65, 15, piston, -2241, y, side * 288, 'x');
 			parts.cylinder(root, 'drive-throat', 51, 5, recess, -2250, y, side * 288, 'x');
-			parts.cylinder(root, 'drive-core', 22, 5, glass, -2253, y, side * 288, 'x');
+			const core = parts.cylinder(root, 'drive-core', 22, 5, glass, -2253, y, side * 288, 'x');
+			drivePorts.push(core.position.clone());
 		}
 		for (const x of [-1780, -1310, -830, 998, 1330]) {
 			box(root, 'running-light', glass, x, 158, side * 469, 34, 8, 8);
@@ -248,5 +250,5 @@ export const createWayfarer = function () {
 	hull(bay, 'suspended-drive', accent, 'x', -325, [[24, 124, 15, 20], [37, 124, 25, 29], [90, 124, 25, 29], [101, 124, 15, 19]]);
 	box(bay, 'drive-band', dark, 54, 124, -325, 13, 51, 59);
 	parts.batch(root);
-	return { root, bay, dispose: function () { root.clear(); parts.dispose(); } };
+	return { root, bay, drivePorts, dispose: function () { root.clear(); parts.dispose(); } };
 };

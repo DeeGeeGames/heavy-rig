@@ -193,7 +193,9 @@ a contested front have no military work. Accepted contracts keep their factions,
 objective, and payment even as time moves the border. Unaccepted listings follow
 the current front. A jump takes one day, costs no fuel, and refreshes the board;
 remote listings preview postings after arrival. Resolve or remove staged
-contracts before traveling.
+contracts before traveling. A confirmed jump follows the Wayfarer from its
+four-drive afterburn over the departure world to orbit at the destination.
+**Skip Jump** goes straight to the arrival Starmap or the plotted story signal.
 
 The Frontier Freeholds, Ferric Combine, and Signal Accord post work against
 one another. The briefing shows both sides, payment, and reputation changes

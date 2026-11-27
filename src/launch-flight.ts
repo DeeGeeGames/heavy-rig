@@ -1,8 +1,8 @@
 import {
-	Box3, Color, DataTexture, DirectionalLight, Fog, Group, HemisphereLight, MathUtils, Mesh, MeshBasicMaterial,
-	NearestFilter, PerspectiveCamera, PlaneGeometry, Scene, SRGBColorSpace, Vector3, type WebGLRenderer,
+	Box3, Color, DirectionalLight, Fog, Group, HemisphereLight, MathUtils, Mesh, MeshBasicMaterial,
+	PerspectiveCamera, PlaneGeometry, Scene, Vector3, type WebGLRenderer,
 } from 'three';
-import type { Biome } from './campaign-types';
+import { createOrbitPlate } from './orbit-plate';
 import { FRAME_RIGS } from './frame-rig';
 import { getFrame } from './frames';
 import { createGait } from './gait';
@@ -21,55 +21,6 @@ const rampAt = function (time: number) { return 1 - ease((time - .875) / 1.125);
 const flightAt = function (time: number) { return clamp((time - LAUNCH_TIMING.release) / (LAUNCH_TIMING.descent - LAUNCH_TIMING.release)); };
 const descentAt = function (time: number) { return clamp((time - LAUNCH_TIMING.descent) / (LAUNCH_TIMING.approach - LAUNCH_TIMING.descent)); };
 const bankAt = function (flight: number) { return ease((flight - .60) / .40); };
-
-// One indexed-color orbital plate. The faint daylight bands describe the curved
-// limb even when a narrow viewport crops most of the planet.
-const planetColors = {
-	badlands: [0x353448, 0x574650, 0x795956, 0xa07863, 0xc3a17b, 0xe1c697],
-	volcanic: [0x23283b, 0x363448, 0x50404d, 0x755355, 0xa37266, 0xc69076],
-	tundra: [0x293747, 0x385266, 0x507785, 0x78979d, 0xa6bebc, 0xd2dcd0],
-	wetlands: [0x193641, 0x22545c, 0x437978, 0x739888, 0xa1b394, 0xd6d9a8],
-	forest: [0x212e35, 0x304b42, 0x456746, 0x6f8a5c, 0x9da87a, 0xcbd1a3],
-	steppe: [0x3b3440, 0x60504a, 0x8c7652, 0xb59a5d, 0xd3bd77, 0xe8d9a0],
-	crystal: [0x2c253e, 0x493852, 0x65547b, 0x8f7a9d, 0xb7a9c5, 0xdcd0e0],
-} as const;
-const createOrbitPlate = function (biome: Biome, seed: number) {
-	// The carrier shots see the upper half. The descent follows the horizon
-	// down the plate until the planet covers the frame.
-	const width = 448, height = 512;
-	const pixels = new Uint8Array(width * height * 4);
-	const surface = planetColors[biome];
-	const phase = (seed >>> 0) % 127 / 17;
-	for (let y = 0; y < height; y++) {
-		for (let x = 0; x < width; x++) {
-			const nx = (x - width * .33) / 390, ny = (y - 568) / 390;
-			const radius = Math.hypot(nx, ny);
-			let color = 0x101827;
-			if (radius < 1) {
-				const depth = Math.sqrt(1 - radius * radius);
-				const longitude = Math.atan2(nx, depth), latitude = Math.asin(ny);
-				const coast = Math.sin(8 * longitude + phase + 2 * Math.sin(13 * latitude))
-					+ Math.cos(16 * latitude - phase) + .45 * Math.sin(24 * longitude + 19 * latitude)
-					+ .17 * Math.cos(58 * longitude - 31 * latitude);
-				const sunlight = clamp(.68 - nx * .72 - depth * .2);
-				const front = 40 * latitude + 2.7 * Math.sin(4 * longitude + phase) + .5 * Math.cos(16 * longitude - 7 * latitude);
-				const cloud = Math.sin(front) > .86 && Math.sin(6 * longitude - 3 * latitude - phase) > -.14;
-				const shade = Math.min(5, Math.floor(sunlight * 4 + (coast > .4 ? 1 : 0) + (cloud || coast > 1.4 ? 1 : 0) + (cloud ? 1 : 0)));
-				color = radius > .991 ? surface[5] : radius > .977 ? surface[4] : surface[shade] ?? surface[0];
-			} else if (radius < 1.012) color = 0x667f8b;
-			else {
-				const star = Math.imul(Math.imul(x + 163, 73856093) ^ Math.imul(y + 17, 19349663) ^ seed, 1597334677) >>> 0;
-				if (star % 1049 < 2) color = star & 8 ? 0xa7b5b6 : 0x637887;
-			}
-			const offset = ((height - 1 - y) * width + x) * 4;
-			pixels[offset] = color >> 16; pixels[offset + 1] = color >> 8; pixels[offset + 2] = color; pixels[offset + 3] = 255;
-		}
-	}
-	const texture = new DataTexture(pixels, width, height);
-	texture.repeat.y = .5; texture.offset.y = .5;
-	texture.colorSpace = SRGBColorSpace; texture.minFilter = texture.magFilter = NearestFilter; texture.needsUpdate = true;
-	return texture;
-};
 
 export const createLaunchFlight = function (berths: readonly LaunchBerth[]) {
 	const commander = berths[0];

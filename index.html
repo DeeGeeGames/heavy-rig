@@ -130,7 +130,10 @@
 	<section id="engineering" class="bridge-screen company-screen menu-surface" tabindex="-1" aria-label="Engineering work orders" hidden></section>
 	<section id="pilots" class="bridge-screen company-screen menu-surface" tabindex="-1" aria-label="Pilot roster and recruitment" hidden></section>
 	<section id="deploy" class="bridge-screen company-screen menu-surface" tabindex="-1" aria-label="Squad deployment" hidden></section>
-	<section id="jump" class="jump-panel menu-surface" aria-label="Ship jump in progress" tabindex="-1" hidden><span class="eyebrow">HRV WAYFARER / JUMP TRANSIT</span><h2 id="jump-destination"></h2><div class="jump-route" aria-hidden="true"><span class="jump-ship">➤</span></div><p id="jump-copy" role="status"></p></section>
+	<section id="jump" class="jump-panel menu-surface" aria-label="Ship jump in progress" hidden>
+		<div class="jump-caption"><span id="jump-copy"></span><h2 id="jump-location"></h2></div>
+		<button type="button" id="skip-jump"><span data-menu-glyph="confirm"></span>SKIP JUMP</button>
+	</section>
 	<section id="training-setup" class="modal menu-surface" role="dialog" aria-modal="true" aria-labelledby="training-setup-title" hidden>
 		<header class="dialog-heading"><span class="eyebrow">WAYFARER SIMULATOR</span><h2 id="training-setup-title">TRAINING LOADOUT</h2></header>
 		<div id="training-fit" class="training-fit"></div>

@@ -26,6 +26,8 @@ import { createMechCadences } from './mech-cadence';
 import type { AuthoredGait } from './authored-run';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { createFiringArc } from './firing-arc-3d';
+import { createAfterburn } from './afterburn';
+import type { PlanetDefinition } from './universe';
 import { createLaunchFlight } from './launch-flight';
 import { createLaunchClouds } from './launch-clouds';
 import { createSurfaceLanding, createSurfacePickup, planLaunchLanding } from './launch-surface';
@@ -339,6 +341,10 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 			getZoom: function () { return zoom; },
 			setZoom,
 			resetZoom: function () { setZoom(DEFAULT_COMBAT_ZOOM); },
+			createJump: function (origin: PlanetDefinition, destination: PlanetDefinition) {
+				const shot = createAfterburn(origin, destination);
+				return { render: function (seconds: number) { return shot.render(ink, seconds, width, height); }, dispose: shot.dispose };
+			},
 			setLaunchTime: function (seconds: number | undefined, dockHeight = 0) {
 				if (launchTime !== undefined && (seconds === undefined || seconds < launchTime)) releaseLaunch();
 				launchTime = seconds;
