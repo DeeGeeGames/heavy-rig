@@ -1,4 +1,4 @@
-import { Box3, Color, FileLoader, Group, LoaderUtils, Material, Matrix4, Mesh, MeshStandardMaterial, Quaternion, SkinnedMesh, Texture, Vector2, Vector3, type BufferGeometry } from 'three';
+import { Box3, Color, Euler, FileLoader, Group, LoaderUtils, Material, Matrix4, Mesh, MeshStandardMaterial, Quaternion, SkinnedMesh, Texture, Vector2, Vector3, type BufferGeometry } from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { installMechAssetBinding, validateMechWeaponRigs, type MechAssetModel } from './mech-asset-registry';
 import type { WalkerGait } from './gait';
@@ -9,7 +9,7 @@ import { createMechResponseRig } from './mech-response';
 import { createLegPoseSampling } from './leg-pose-sampling';
 import { beginRigDefeat } from './rig-defeat-bursts';
 import { defeatWeaponJoints } from './weapon-articulation';
-import { getPlayerMuzzle, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
+import { getPlayerMuzzle, mountOffset, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
 import { advanceAuthoredPose, authoredClipNames, prepareAuthoredTorsoSampler, type AuthoredMotion, type AuthoredPoseContext } from './authored-pose';
 import { snapMechHeading } from './torso-arc';
 import { prepareAuthoredLocomotion, type AuthoredLocomotionOptions } from './authored-gait';
@@ -20,7 +20,7 @@ import type { MechFinish } from './mech-skin';
 import { paintColorForZone } from './mech-paint';
 import { applySolidPlatePaint, authoredPaintZone } from './authored-paint';
 import { applyMechSkinMaterial, type SkinSurface } from './mech-skin-material';
-import { getHardpoints } from './hardpoints';
+import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { getWeapon } from './arsenal';
 
 export const MAUL_LOGICAL_TUBE_MAPPING = ['1_0', '2_0', '1_1', '2_1', '1_3', '2_3'] as const;
@@ -170,10 +170,16 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 	const neutralTorso = named(probe.scene, 'rig_torso');
 	for (const spec of weaponSpecs) {
 		const mount = named(probe.scene, spec.group);
-		if (mount.parent !== neutralTorso) throw new Error(`Authored mount must be fixed directly to torso: ${spec.group}`);
+		if (mount.parent !== neutralTorso) throw new Error(`Authored socket must be parented directly to torso: ${spec.group}`);
 		if (motions.some(function (motion) { return motion.clip.tracks.some(function (track) { return track.name.startsWith(`${mount.name}.`) || track.name.startsWith(`${spec.group}.`); }); })) throw new Error(`Authored mount cannot have independent animation: ${spec.group}`);
 	}
 	const inverseTorso = neutralTorso.matrixWorld.clone().invert();
+	const laserSockets = weaponSpecs.map(function (spec, slot) {
+		const rig = weaponRigs[slot];
+		if (!rig || !canEquipWeapon(frame, slot, 'laser')) return undefined;
+		const mount = named(probe.scene, spec.group);
+		return { pivot: mount.getWorldPosition(new Vector3()).applyMatrix4(inverseTorso), offset: mountOffset(rig), rest: mount.getWorldQuaternion(new Quaternion()) };
+	});
 	const exits = weaponSpecs.map(function (spec) {
 		return { muzzle: named(probe.scene, spec.muzzle).getWorldPosition(new Vector3()).applyMatrix4(inverseTorso), tubes: launcherExits(spec).map(function (name) { return named(probe.scene, name).getWorldPosition(new Vector3()).applyMatrix4(inverseTorso); }) };
 	});
@@ -210,6 +216,16 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		const hullAngle = snapMechHeading(context?.gait?.body.angle ?? body.angle ?? heading);
 		const result = point(local.clone().applyMatrix4(sampler.matrix(context, hullAngle, snapMechHeading(heading))));
 		return { x: result.x + body.x, y: result.y + body.y, elevation: result.elevation };
+	};
+	const laserMount = function (body: WeaponBody, heading: number, slot: number, context: AuthoredPoseContext | undefined) {
+		const socket = laserSockets[slot]; if (!socket) return undefined;
+		const hullAngle = snapMechHeading(context?.gait?.body.angle ?? body.angle ?? heading);
+		const bearing = snapMechHeading(heading);
+		const pivot = point(socket.pivot.clone().applyMatrix4(sampler.matrix(context, hullAngle, bearing)));
+		// Inboard traverse clears the torso. Warden's shoulder emitters need
+		// less depression to keep the beam above the side guns.
+		const traverse = { heading: bearing, yaw: 25 * Math.PI / 180, down: (descriptor.chassis === 'warden' ? 30 : 40) * Math.PI / 180, up: Math.PI / 4 };
+		return { pivot: { x: body.x + pivot.x, y: body.y + pivot.y, elevation: (body.groundElevation ?? 0) + pivot.elevation }, offset: socket.offset, traverse };
 	};
 	probe.root.clear();
 	let instances = 0;
@@ -261,11 +277,18 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		});
 		const torso = named(scene, 'rig_torso');
 		const upperBody = sampler.sample(undefined).map(function (transform, index) { return { name: transform.name, node: index === 0 ? scene : named(scene, transform.name) }; });
-		const weapons = weaponSpecs.map(function (spec) {
+		const weapons = weaponSpecs.map(function (spec, slot) {
 			const mount = named(scene, spec.group);
 			const muzzle = named(scene, spec.muzzle);
 			const exits = launcherExits(spec).map(function (name) { return named(scene, name); });
-			return { mount, muzzle, exits };
+			const socket = laserSockets[slot];
+			if (!socket) return { mount, muzzle, exits };
+			// Move the cartridge about the measured socket origin. Fixed collars and
+			// chassis-side brackets keep their neutral transforms.
+			const gimbal = new Group(); gimbal.name = `laser-gimbal-${slot}`;
+			gimbal.add(...mount.children.filter(function (child) { return !child.name.startsWith('connection_'); }));
+			mount.add(gimbal);
+			return { mount, muzzle, exits, gimbal, rest: socket.rest };
 		});
 		const muzzles = weapons.map(function () { return new Vector3(); });
 		const responseRig = createMechResponseRig(root, torso, weapons.map(function (weapon) { return weapon.mount; }));
@@ -273,6 +296,8 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		const legs = (['left', 'right'] as const).map(function (side) { return { thigh: named(scene, `rig_leg_${side}_thigh`), shin: named(scene, `rig_leg_${side}_shin`), foot: named(scene, `rig_leg_${side}_foot`) }; });
 		const sampleLegPose = createLegPoseSampling(legs.flatMap(function (leg) { return [leg.thigh, leg.shin, leg.foot]; }));
 		const y = new Vector3(0, 1, 0); const yaw = new Quaternion(); const inverse = new Matrix4();
+		const aimRotation = new Quaternion(); const socketRotation = new Quaternion(); const rootRotation = new Quaternion();
+		const aimAngles = new Euler(0, 0, 0, 'YXZ');
 		const position = new Vector3(); const labelVertex = new Vector3(); const relative = new Matrix4();
 		const bounds: { part: Mesh; corners: Vector3[] }[] = [];
 		scene.traverse(function (node) {
@@ -314,11 +339,21 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 			emptyShoulders?.set(weapons[2]?.mount.visible === false ? 1 : 0, weapons[3]?.mount.visible === false ? 1 : 0);
 			// Sample the simulation-aligned exits before cosmetic weapon travel.
 			root.updateMatrixWorld(true); inverse.copy(root.matrixWorld).invert();
+			root.getWorldQuaternion(rootRotation);
 			for (const [slot, weapon] of weapons.entries()) {
+				if (weapon.gimbal && weapon.rest) {
+					const direction = feedback?.mountDirections?.get(slot);
+					if (direction) {
+						aimAngles.set(0, -Math.atan2(direction.y, direction.x), Math.atan2(direction.elevation, Math.hypot(direction.x, direction.y)));
+						aimRotation.setFromEuler(aimAngles);
+						weapon.gimbal.quaternion.copy(weapon.mount.getWorldQuaternion(socketRotation)).invert().multiply(rootRotation).multiply(aimRotation).multiply(weapon.rest);
+					} else weapon.gimbal.quaternion.identity();
+					weapon.gimbal.updateMatrixWorld(true);
+				}
 				muzzles[slot]?.copy(weapon.muzzle.getWorldPosition(position)).applyMatrix4(inverse);
 				for (const [index, exit] of weapon.exits.entries()) rocketMuzzles[slot]?.[index]?.copy(exit.getWorldPosition(position)).applyMatrix4(inverse);
 			}
-			responseRig.apply(feedback?.response);
+			responseRig.apply(feedback?.response, feedback?.mountDirections, Boolean(feedback?.mountDirections?.size));
 			const flash = feedback?.response?.flash ?? 0;
 			radiance.copy(flashColor).multiplyScalar(flash * 0.8);
 			for (const entry of neutralMaterials) {
@@ -361,7 +396,7 @@ const prepareAuthored = function (descriptor: AuthoredDescriptor, asset: Pick<GL
 		frame, create, weaponRigs, advancePose, muzzle, tubeMapping: launcher ? launcher.exits ?? tubeMapping : [], height, nativeHorizontalOrigin: origin,
 		install: function () {
 			if (closed) throw new Error(`Authored ${descriptor.chassis} factory is disposed`);
-			const remove = installMechAssetBinding(frame, { create, weaponRigs, advancePose, muzzle });
+			const remove = installMechAssetBinding(frame, { create, weaponRigs, advancePose, muzzle, laserMount });
 			installation = { remove, closing: false };
 			return function () { if (installation?.remove === remove) installation.closing = true; releaseIfUnused(); };
 		},
