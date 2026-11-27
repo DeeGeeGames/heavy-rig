@@ -5,6 +5,25 @@ import { dismissPilot, getPilotStats, hirePilot } from '../src/pilots';
 
 const roundTrip = function (campaign: Campaign): Campaign { return parseCampaign(JSON.stringify(campaign)); };
 
+test('a legacy staged defense retains its layout through review, mixed-day commitment, and save restoration', function () {
+	const company = hirePilot(buyFrame({ ...createCampaign(317, 'career'), credits: 25_000 }, 'kestrel-b'), 'kite');
+	const [crew, live] = getContracts(company);
+	if (!crew || crew.kind !== 'defend' || !live) throw new Error('Missing local defense and live contracts');
+	const staged = assignOperationSlot(stageOperation(stageOperation(company, live.id), crew.id), crew.id, 0, { pilotId: 'kite', frameId: 'kestrel-b' });
+	const oldDefense = { ...crew };
+	delete oldDefense.fieldLayout;
+	const saved = roundTrip({ ...staged, operations: staged.operations?.map(function (operation) {
+		return operation.contract.id === crew.id ? { ...operation, contract: oldDefense } : operation;
+	}) });
+	expect(getContracts(saved).find(function (contract) { return contract.id === crew.id; })).toEqual(oldDefense);
+	expect(reviewOperations(saved).issues).toHaveLength(0);
+	const committed = roundTrip(commitOperations(saved));
+	expect(committed.active?.id).toBe(live.id);
+	expect(committed.committedCrew?.[0]?.contract).toEqual(oldDefense);
+	const restagedOffer = getContracts(removeOperation(saved, crew.id)).find(function (contract) { return contract.id === crew.id; });
+	expect(restagedOffer?.fieldLayout).toBe('extended-defense');
+});
+
 test('a saved mixed day settles the same crew sortie after extraction or interruption and advances work once', function () {
 	const rigs = buyFrame(buyFrame(buyFrame({ ...createCampaign(318, 'career'), credits: 30_000 }, 'kestrel-b'), 'kestrel-c'), 'warden');
 	const company = hirePilot(hirePilot(rigs, 'flint'), 'kite');

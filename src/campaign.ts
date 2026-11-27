@@ -145,6 +145,12 @@ export const contractCopy = function (kind: MissionKind, tier: MissionTier, lega
 const getContractTemplates = function (campaign: Campaign, planetId: PlanetId, legacy: boolean): Contract[] {
 	const planetIndex = ['meridian', 'cinder', 'borealis'].indexOf(planetId);
 	const boardSeed = mixSeed(mixSeed(campaign.seed, campaign.boardRevision + 1), planetIndex + 1);
+	// A ten-tier posting already accepted or staged before the new layout
+	// keeps the layout the pilot agreed to when the board is regenerated.
+	const legacyDefenseIds = new Set([campaign.active, ...(campaign.operations ?? []).map(function ({ contract }) { return contract; }),
+		...(campaign.committedCrew ?? []).map(function ({ contract }) { return contract; })].flatMap(function (contract) {
+		return contract?.kind === 'defend' && contract.fieldLayout === undefined ? [contract.id] : [];
+	}));
 	return getPostingTiers(legacy).flatMap(function (level) {
 		return MISSION_KINDS.map(function (kind, index) {
 			const seed = mixSeed(mixSeed(boardSeed, level.tier), index + 1);
@@ -160,6 +166,7 @@ const getContractTemplates = function (campaign: Campaign, planetId: PlanetId, l
 			return {
 				...contract, title: copy.title, briefing: copy.briefing, reward, favor: 8 + standingChange, hostility: 6 + standingChange,
 				requiredReputation: level.standing,
+				...(kind === 'defend' && !legacy && !legacyDefenseIds.has(id) ? { fieldLayout: 'extended-defense' as const } : {}),
 			};
 		});
 	});
@@ -430,7 +437,8 @@ const isContract = function (value: unknown): value is Contract {
 		&& isPlanetId(value['planetId']) && isMissionKind(value['kind']) && isFactionId(value['employer']) && isFactionId(value['opponent']) && value['employer'] !== value['opponent']
 		&& typeof value['title'] === 'string' && value['title'].length <= 100 && typeof value['briefing'] === 'string' && value['briefing'].length <= 500
 		&& isInteger(value['reward'], 0, 100_000) && isInteger(value['favor'], 0, 100) && isInteger(value['hostility'], 0, 100)
-		&& isMissionTier(value['tier']) && isInteger(value['requiredReputation'], -100, 100);
+		&& isMissionTier(value['tier']) && isInteger(value['requiredReputation'], -100, 100)
+		&& (value['fieldLayout'] === undefined || value['fieldLayout'] === 'extended-defense' && value['kind'] === 'defend' && value['id'].startsWith(postingPrefix));
 };
 
 const isResultLead = function (value: unknown, squad: unknown, fee: number): value is FieldLeadPayment {
@@ -504,7 +512,7 @@ const sameContract = function (saved: Contract, generated: Contract): boolean {
 	return saved.id === generated.id && saved.seed === generated.seed && saved.planetId === generated.planetId && saved.kind === generated.kind
 		&& saved.employer === generated.employer && saved.opponent === generated.opponent && sameCopy
 		&& saved.reward === generated.reward && saved.favor === generated.favor && saved.hostility === generated.hostility
-		&& saved.tier === generated.tier && saved.requiredReputation === generated.requiredReputation;
+		&& saved.tier === generated.tier && saved.requiredReputation === generated.requiredReputation && saved.fieldLayout === generated.fieldLayout;
 };
 
 const parseUniverse = function (value: unknown, day: number): UniverseState | undefined {

@@ -3,9 +3,13 @@ import { describe, expect, test } from 'bun:test';
 import { createMount, WEAPONS } from '../src/arsenal';
 import type { Contract, MissionKind, MissionMap } from '../src/campaign-types';
 import { createOpeningProgress, getChainStatus } from '../src/contract-chains';
-import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, missionStructures, generateMissionMap, missionArtilleryCount, missionHostileCount, missionOpposition, missionSpawn } from '../src/missions';
+import { createFieldTrial, DEFENSE_TRIAL_SEED } from '../src/field-trial';
+import { RIG_RADIUS } from '../src/combat-spatial';
+import { hasTerrainRoute, terrainPathClear } from '../src/field-terrain';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, missionStructures, generateMissionMap, missionArtilleryCount, missionHostileCount, missionObjective, missionOpposition, missionSpawn } from '../src/missions';
 import { getMissionTier, MISSION_TIERS } from '../src/reputation';
-import { ARENA, createState, createMissionState, distance, step, type Controls, type State } from '../src/simulation';
+import { ARENA, createState, createMissionState, distance, spawningStep, step, type Controls, type State } from '../src/simulation';
+import { createSituationMission } from '../src/situation-sim';
 
 const contract = function (kind: MissionKind, seed = 123): Contract {
 	return { id: `test-${kind}-${seed}`, seed, planetId: 'meridian', kind, employer: 'freeholds', opponent: 'combine', title: 'Field test', briefing: 'Complete the objective and extract.', reward: 1000, favor: 8, hostility: 5, tier: 1, requiredReputation: 0 };
@@ -15,6 +19,84 @@ const run = function (state: State, seconds: number, controls = idle) { for (let
 const missionOf = function (state: State) { if (!state.mission) throw new Error('Expected mission state'); return state.mission; };
 
 describe('Heavy Rig surface contracts', function () {
+	test('the long approach holds enemy drops until the player reaches the relay, then counts down even if they move away', function () {
+		const state = createFieldTrial(DEFENSE_TRIAL_SEED, true);
+		const { drop, objective } = missionOf(state).map;
+		run(state, 20);
+		expect(state.warnings).toHaveLength(0);
+		expect(missionObjective(state)).toBe('Reach the relay · 2270 m');
+
+		const [wingmate] = state.squadmates;
+		if (!wingmate) throw new Error('Missing test wingmate');
+		Object.assign(wingmate, objective);
+		Object.assign(state.player, { x: objective.x - 151, y: objective.y });
+		step(state, idle, 1 / 60);
+		expect(missionObjective(state)).toBe('Reach the relay · 151 m');
+
+		state.player.x += 1;
+		step(state, idle, 1 / 60);
+		expect(missionObjective(state)).toBe('Protect the relay · first dropship in 9s');
+		Object.assign(state.player, drop);
+		run(state, 8.9);
+		expect(state.warnings).toHaveLength(0);
+		run(state, 0.2);
+		expect(state.warnings.filter(function (warning) { return warning.drop; })).toHaveLength(2);
+	});
+
+	test('extended Defense across biomes has a clear insertion road and can dispatch every section at standoff', function () {
+		const planets = ['meridian', 'cinder', 'borealis', 'brackwater', 'elderholt', 'galeward', 'iolith'] as const;
+		for (const planetId of planets) for (const { tier } of MISSION_TIERS) {
+			const state = createMissionState({ ...contract('defend', 12394 * tier), planetId, tier, fieldLayout: 'extended-defense' });
+			const mission = missionOf(state);
+			const { terrain, objective, drop } = mission.map;
+			const road = terrain?.roads[0];
+			if (!terrain || !road) throw new Error('Missing approach survey');
+			expect(distance(drop, objective)).toBeWithin(2200, 2400);
+			expect(road[0]).toEqual(drop);
+			expect(road.at(-1)).toEqual(objective);
+			for (let i = 1; i < road.length; i++) {
+				const from = road[i - 1], to = road[i];
+				if (!from || !to) throw new Error('Missing road segment');
+				expect(terrainPathClear(terrain, from, to, RIG_RADIUS)).toBe(true);
+			}
+
+			Object.assign(state.player, objective);
+			spawningStep(state, 1 / 60);
+			for (let section = 0; section < Math.ceil(mission.required / 3); section++) {
+				const previous = state.spawned;
+				state.spawnIn = 0; state.time += 29;
+				spawningStep(state, 1 / 60);
+				expect(state.spawned).toBeGreaterThan(previous);
+				if (tier === 1) expect(new Set(state.warnings.map(function (warning) { return `${warning.x},${warning.y}`; })).size).toBe(state.warnings.length);
+				for (const warning of state.warnings) if (warning.drop) {
+					expect(distance(warning, objective)).toBeGreaterThanOrEqual(1600);
+					expect(hasTerrainRoute(terrain, warning, objective, RIG_RADIUS)).toBe(true);
+				}
+				state.warnings = [];
+			}
+			expect(state.spawned).toBe(mission.required);
+		}
+	});
+
+	test('a widely spread squad cannot indefinitely stall extended Defense reinforcement placement', function () {
+		const state = createSituationMission({ kind: 'defend', planetId: 'cinder', tier: 10, frame: 'warden', wing: [
+			{ pilotId: 'kite', frame: 'kestrel' }, { pilotId: 'flint', frame: 'kestrel' }, { pilotId: 'brace', frame: 'kestrel' },
+		] }, 1341332682, 'story');
+		const { objective } = missionOf(state).map;
+		Object.assign(state.player, objective);
+		spawningStep(state, 1 / 60);
+		const positions = [{ x: 1978.4, y: 3403.1 }, { x: 5253.7, y: 1273.5 }, { x: 4520.9, y: 4289.6 }, { x: 1288.8, y: 1597.5 }];
+		const squad = [state.player, ...state.squadmates];
+		squad.forEach(function (rig, i) { Object.assign(rig, positions[i]); });
+		state.spawnIn = 0;
+		spawningStep(state, 1 / 60);
+		const transported = state.warnings.filter(function (warning) { return warning.drop; });
+		expect(transported).toHaveLength(2);
+		expect(transported.every(function (warning) {
+			return distance(warning, objective) >= 1600 && squad.every(function (rig) { return distance(warning, rig) >= 1250; });
+		})).toBe(true);
+	});
+
 	test('seeded maps vary routes and deployment while keeping all mission sites within larger bounds', function () {
 		const layouts = new Set<string>();
 		for (let seed = 0; seed < 40; seed++) {
