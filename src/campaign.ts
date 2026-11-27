@@ -1,6 +1,7 @@
-import { companyRank, getMissionTier, isMissionTier, MAX_COMPANY_REPUTATION, MISSION_TIERS } from './reputation';
+import { companyRank, FIRST_RIG_TIER, getContractTier, getPostingTiers, isMissionTier, MAX_COMPANY_REPUTATION, missionTierPressure, usesLegacyMissionTiers } from './reputation';
 import { ACQUISITION_SECONDS } from './missions';
 import type { Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
+import type { MissionTier } from './reputation';
 import { createOpeningProgress, getAuthoredStep, getChainStatus, isAuthoredContract, parseChainProgress, type ChainProgress } from './contract-chains';
 import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, mixSeed, PLANETS, type UniverseState } from './universe';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
@@ -92,6 +93,8 @@ export interface Campaign extends CompanyState {
 
 const CAMPAIGN_VERSION = 8;
 export const CAMPAIGN_STORAGE_KEY = `heavy-rig:campaign:v${CAMPAIGN_VERSION}`;
+const postingPrefix = 'mission:';
+const postingKey = function (id: string): string { return id.startsWith(postingPrefix) ? id.slice(postingPrefix.length) : id; };
 export const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'assassination', 'clearance', 'raid', 'recovery', 'acquisition'];
 const MAX_COUNT = 1_000_000;
 const MAX_OPERATIONS = MISSION_KINDS.length + 1;
@@ -131,25 +134,32 @@ export const CONTRACT_COPY: Readonly<Record<MissionKind, Readonly<{ title: strin
 	acquisition: { title: 'Mark the strike corridor', briefing: `Activate three targeting beacons within ${ACQUISITION_SECONDS / 60} minutes. Stay in each zone for three uninterrupted seconds; activated beacons remain active. Then return to extraction. Fighting defenders is optional.`, reward: 1900 },
 	clearance: { title: 'Sweep the basin', briefing: 'Clear all three occupied sites of patrols and any fixed guns, then return to the extraction zone.', reward: 1600 },
 };
+export const contractCopy = function (kind: MissionKind, tier: MissionTier, legacy = false): Readonly<{ title: string; briefing: string; reward: number }> {
+	const copy = CONTRACT_COPY[kind];
+	if (kind !== 'assassination' || legacy) return copy;
+	return { ...copy, briefing: copy.briefing.replace('command frame', tier < FIRST_RIG_TIER ? 'command vehicle' : 'command rig') };
+};
 
 // A board is a pure function of its campaign seed and revision. Acceptance keeps
 // its reputation snapshot, so posting terms cannot move after the pilot agrees.
-const getContractTemplates = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
+const getContractTemplates = function (campaign: Campaign, planetId: PlanetId, legacy: boolean): Contract[] {
 	const planetIndex = ['meridian', 'cinder', 'borealis'].indexOf(planetId);
 	const boardSeed = mixSeed(mixSeed(campaign.seed, campaign.boardRevision + 1), planetIndex + 1);
-	return MISSION_TIERS.flatMap(function (level) {
+	return getPostingTiers(legacy).flatMap(function (level) {
 		return MISSION_KINDS.map(function (kind, index) {
 			const seed = mixSeed(mixSeed(boardSeed, level.tier), index + 1);
 			const employerIndex = (boardSeed + index) % FACTION_IDS.length;
 			const employer = FACTION_IDS[employerIndex] ?? 'freeholds';
 			const opponent = FACTION_IDS[(employerIndex + 1 + seed % 2) % FACTION_IDS.length] ?? 'combine';
 			const tier = level.tier;
-			const copy = CONTRACT_COPY[kind];
+			const copy = contractCopy(kind, tier, legacy);
 			const reward = Math.round(copy.reward * level.reward * (1 + campaign.boardReputation[employer] * 0.0025));
+			const id = `${legacy ? '' : postingPrefix}${campaign.seed}-${campaign.boardRevision}-${planetId}-${kind}-${tier}`;
+			const contract = { id, seed, planetId, kind, employer, opponent, tier };
+			const standingChange = Math.round(missionTierPressure(contract) * 2);
 			return {
-				id: `${campaign.seed}-${campaign.boardRevision}-${planetId}-${kind}-${tier}`, seed, planetId, kind, employer, opponent,
-				title: copy.title, briefing: copy.briefing, reward, favor: 8 + (tier - 1) * 2, hostility: 6 + (tier - 1) * 2,
-				tier, requiredReputation: level.standing,
+				...contract, title: copy.title, briefing: copy.briefing, reward, favor: 8 + standingChange, hostility: 6 + standingChange,
+				requiredReputation: level.standing,
 			};
 		});
 	});
@@ -157,12 +167,12 @@ const getContractTemplates = function (campaign: Campaign, planetId: PlanetId = 
 
 // Accepted postings retain their front snapshot. Unaccepted work follows the
 // live front, including after Engineering advances the calendar.
-export const getContracts = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
-	if (campaign.universe.boardVersion === 1) return getContractTemplates(campaign, planetId);
+const getBoardContracts = function (campaign: Campaign, planetId: PlanetId, legacy: boolean): Contract[] {
+	if (campaign.universe.boardVersion === 1) return getContractTemplates(campaign, planetId, legacy);
 	const intel = getSystemIntel({ ...campaign, day: campaign.active ? campaign.universe.boardDay : campaign.day }, planetId);
 	const [holder, challenger] = intel.participants;
 	if (!intel.conflict || !holder || !challenger) return [];
-	return getContractTemplates(campaign, planetId).map(function (contract) {
+	return getContractTemplates(campaign, planetId, legacy).map(function (contract) {
 		// Keep the original four kinds on their historical faction parity at every tier.
 		const index = (contract.tier - 1) * 4 + MISSION_KINDS.indexOf(contract.kind);
 		const employer = contract.kind === 'defend' || index % 2 === 1 ? holder : challenger;
@@ -178,26 +188,29 @@ export const getContracts = function (campaign: Campaign, planetId: PlanetId = c
 			: `${faction.name} needs ${rival.name} patrols cleared from the contested approaches.`;
 		return { ...contract, employer, opponent,
 			seed: mixSeed(contract.seed, PLANETS.findIndex(function (world) { return world.id === planetId; }) + 1),
-			reward: Math.round(CONTRACT_COPY[contract.kind].reward * getMissionTier(contract.tier).reward * (1 + campaign.boardReputation[employer] * .0025)),
+			reward: Math.round(CONTRACT_COPY[contract.kind].reward * getContractTier(contract).reward * (1 + campaign.boardReputation[employer] * .0025)),
 			briefing: `${context} ${contract.briefing}`,
 		};
 	});
+};
+export const getContracts = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
+	return getBoardContracts(campaign, planetId, false);
 };
 
 export const getTransmission = function (campaign: Campaign) {
 	return getChainStatus(campaign.mode === 'campaign' && campaign.introComplete ? campaign.story : undefined);
 };
 
-const findPosting = function (campaign: Campaign, id: string): Contract | undefined {
+const findPosting = function (campaign: Campaign, id: string, legacy = false): Contract | undefined {
 	const story = getTransmission(campaign)?.offers.find(function (step) {
 		return step.contract.id === id && step.contract.planetId === campaign.planetId;
 	});
-	return story ? { ...story.contract } : getContracts(campaign).find(function (posted) { return posted.id === id; });
+	return story ? { ...story.contract } : getBoardContracts(campaign, campaign.planetId, legacy).find(function (posted) { return posted.id === id; });
 };
 
 export const canAcceptContract = function (campaign: Campaign, contract: Contract): boolean {
 	return !campaign.active && !campaign.deployed && campaign.boardRevision < MAX_COUNT && campaign.day < MAX_DAY
-		&& companyRank(campaign) >= getMissionTier(contract.tier).rank
+		&& companyRank(campaign) >= getContractTier(contract).rank
 		&& contract.planetId === campaign.planetId && campaign.reputation[contract.employer] >= contract.requiredReputation
 		&& Boolean(findPosting(campaign, contract.id));
 };
@@ -226,7 +239,8 @@ export const getPlannedOperation = function (campaign: Campaign, id: string | un
 };
 
 export const canStageOperation = function (campaign: Campaign, contract: Contract): boolean {
-	return (campaign.operations?.length ?? 0) < MAX_OPERATIONS && !getPlannedOperation(campaign, contract.id)
+	return (campaign.operations?.length ?? 0) < MAX_OPERATIONS
+		&& !campaign.operations?.some(function (operation) { return postingKey(operation.contract.id) === postingKey(contract.id); })
 		&& (!isAuthoredContract(contract) || !campaign.operations?.some(function (operation) { return isAuthoredContract(operation.contract); }))
 		&& canAcceptContract(campaign, contract);
 };
@@ -273,7 +287,9 @@ export const assignOperationLead = function (campaign: Campaign, contractId: str
 
 export const reviewOperations = function (campaign: Campaign): { entries: readonly OperationReview[]; issues: readonly string[] } {
 	const operations = campaign.operations ?? [];
-	const postings = operations.length ? new Map(getContracts(campaign).map(function (contract) { return [contract.id, contract]; })) : new Map<string, Contract>();
+	const board = operations.length ? getContracts(campaign) : [];
+	if (operations.some(function ({ contract }) { return usesLegacyMissionTiers(contract); })) board.push(...getBoardContracts(campaign, campaign.planetId, true));
+	const postings = new Map(board.map(function (contract) { return [contract.id, contract]; }));
 	const storyOffers = getTransmission(campaign)?.offers ?? [];
 	const entries = operations.map(function (operation): OperationReview {
 		const { contract, lineup } = operation;
@@ -283,7 +299,7 @@ export const reviewOperations = function (campaign: Campaign): { entries: readon
 		const leaderId = live ? 'player' : operation.leaderId ?? seats.find(function (seat) { return seat.frameId !== null; })?.pilotId ?? undefined;
 		const current = isAuthoredContract(contract) ? storyOffers.find(function (offer) { return offer.contract.id === contract.id; })?.contract : postings.get(contract.id);
 		if (contract.planetId !== campaign.planetId || !current || !sameContract(contract, current) || campaign.reputation[contract.employer] < contract.requiredReputation
-			|| companyRank(campaign) < getMissionTier(contract.tier).rank) issues.push('This posting changed. Remove it and review the board.');
+			|| companyRank(campaign) < getContractTier(contract).rank) issues.push('This posting changed. Remove it and review the board.');
 		if (isAuthoredContract(contract) && !live) issues.push('Commander required.');
 		if (!seats.length) issues.push('Assign at least one pilot and rig.');
 		for (const { pilotId, frameId } of seats) {
@@ -325,7 +341,7 @@ const recordContract = function (campaign: Campaign, contract: Contract, won: bo
 	const payout = basePay + companyFee;
 	const fieldLead = leaderId ? { pilotId: leaderId, fee: leaderId === 'player' ? companyFee : fee } : undefined;
 	const reputation = { ...campaign.reputation, [contract.employer]: boundedReputation(campaign.reputation[contract.employer] + favor) };
-	const companyReputation = won ? Math.min(getMissionTier(contract.tier).reputation, MAX_COMPANY_REPUTATION - campaign.companyReputation) : 0;
+	const companyReputation = won ? Math.min(getContractTier(contract).reputation, MAX_COMPANY_REPUTATION - campaign.companyReputation) : 0;
 	const day = campaign.day + 1;
 	const story = campaign.story;
 	return {
@@ -434,7 +450,7 @@ const isResult = function (value: unknown): value is CampaignResult {
 	const companyFee = fieldLead?.pilotId === 'player' ? fieldLead.fee : 0;
 	return typeof value['aborted'] === 'boolean' && !(won && value['aborted'])
 		&& isInteger(value['payout'], companyFee ? contract.reward + companyFee : 0, contract.reward + companyFee) && isInteger(value['favor'], 0, contract.favor)
-		&& isInteger(value['companyReputation'], 0, getMissionTier(contract.tier).reputation)
+		&& isInteger(value['companyReputation'], 0, getContractTier(contract).reputation)
 		&& (won || value['companyReputation'] === 0)
 		&& (fieldLead === undefined || (fieldLead.pilotId === 'player') === (crew === undefined))
 		&& (crew === undefined ? squad === undefined || isDeployedSquad(squad) : !value['aborted'] && !isAuthoredContract(contract) && isCrewChecks(crew)
@@ -523,7 +539,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		const preferredLineup = value['preferredLineup']; const pilotWins = value['pilotWins'];
 		if (preferredLineup !== undefined && !isLineup(preferredLineup) || pilotWins !== undefined && !isPilotWins(pilotWins)) return createCampaign();
 		if (operations !== undefined && (!Array.isArray(operations) || operations.length > MAX_OPERATIONS || !operations.every(isPlannedOperation)
-			|| new Set(operations.map(function (entry) { return entry.contract.id; })).size !== operations.length
+			|| new Set(operations.map(function (entry) { return postingKey(entry.contract.id); })).size !== operations.length
 			|| operations.some(function (entry) { return entry.contract.planetId !== value['planetId']; })
 			|| operations.filter(function (entry) { return isAuthoredContract(entry.contract); }).length > 1
 			|| operations.length > 0 && value['active'] !== undefined)) return createCampaign();
@@ -562,8 +578,8 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		if (active) {
 			if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT) return createCampaign();
 			if (isAuthoredContract(active) && story?.committed !== active.id) return createCampaign();
-			const generated = findPosting(campaign, active.id);
-			if (!generated || !sameContract(active, generated) || companyRank(campaign) < getMissionTier(active.tier).rank || campaign.boardReputation[active.employer] < active.requiredReputation) return createCampaign();
+			const generated = findPosting(campaign, active.id, usesLegacyMissionTiers(active));
+			if (!generated || !sameContract(active, generated) || companyRank(campaign) < getContractTier(active).rank || campaign.boardReputation[active.employer] < active.requiredReputation) return createCampaign();
 			campaign.active = generated;
 		}
 		if (committedCrew) {
@@ -571,8 +587,8 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			if (new Set(contracts.map(function (contract) { return contract.id; })).size !== contracts.length
 				|| new Set(squad.map(function (member) { return member.pilotId; })).size !== squad.length || new Set(squad.map(function (member) { return member.frameId; })).size !== squad.length
 				|| committedCrew.some(function ({ contract, resolution }) {
-					const posting = findPosting(campaign, contract.id);
-					return !posting || !sameContract(contract, posting) || companyRank(campaign) < getMissionTier(contract.tier).rank || campaign.boardReputation[contract.employer] < contract.requiredReputation
+					const posting = findPosting(campaign, contract.id, usesLegacyMissionTiers(contract));
+					return !posting || !sameContract(contract, posting) || companyRank(campaign) < getContractTier(contract).rank || campaign.boardReputation[contract.employer] < contract.requiredReputation
 						|| resolution.squad.some(function (member) {
 							return !campaign.pilots.includes(member.pilotId) || deploymentIssue(campaign, member.frameId) !== undefined
 								|| campaign.fleet.find(function (rig) { return rig.frameId === member.frameId; })?.integrity !== member.startingIntegrity;

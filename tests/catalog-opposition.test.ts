@@ -7,7 +7,7 @@ import { createStarterLoadout, stockPackage } from '../src/hardpoints';
 import { missionStructures } from '../src/missions';
 import { createMissionState, enemiesStep, enemyWeight, MISSILE_LOCK_SECONDS, projectilesStep, step, weaponsStep, type Controls, type Point, type State } from '../src/simulation';
 
-const contract: Contract = { id: 'catalog-fixture', seed: 0, planetId: 'meridian', kind: 'clearance', tier: 2,
+const contract: Contract = { id: 'catalog-fixture', seed: 0, planetId: 'meridian', kind: 'clearance', tier: 3,
 	employer: 'freeholds', opponent: 'combine', title: 'Field test', briefing: '', reward: 100, favor: 1, hostility: 1, requiredReputation: 0 };
 const map: MissionMap = { seed: 0, biome: 'badlands', width: 4000, height: 2600, drop: { x: 2200, y: 1300 },
 	objective: { x: 1800, y: 1300 }, extraction: { x: 1000, y: 1300 }, sites: [], landmarks: [] };
@@ -16,7 +16,7 @@ const idle: Controls = { drive: 0, turn: 0, stop: false, coolant: false, aim: ma
 
 const duel = function (frame: FrameId, separation: number) {
 	for (let seed = 0; seed < 128; seed++) {
-		const state = createMissionState({ ...contract, seed }, { frame, map });
+		const state = createMissionState({ ...contract, seed, tier: 5 }, { frame, map });
 		const enemy = state.enemies.find(function (candidate) { return candidate.catalog?.frameId === frame; });
 		if (!enemy || !enemy.loadout) continue;
 		enemy.x = state.player.x - separation; enemy.y = state.player.y;
@@ -121,7 +121,7 @@ test('the complete playable roster is eligible without using the deployed frame'
 		return state.enemies.map(function (enemy) { return enemy.catalog?.frameId ?? enemy.kind; });
 	};
 	for (let seed = 0; seed < 64; seed++) {
-		const legendary = { ...contract, seed, tier: 6 as const };
+		const legendary = { ...contract, seed, tier: 10 as const };
 		const state = createMissionState(legendary, { frame: 'kestrel', map });
 		expect(signature(state)).toEqual(signature(createMissionState(legendary, { frame: 'maul-c', map })));
 		for (const enemy of state.enemies) if (enemy.catalog) discovered.add(enemy.catalog.frameId);

@@ -5,7 +5,7 @@ import { frameWeight, HEAT_LOCK, loadedMounts, usableMount } from './combat-reso
 import { getOwnedMech, type DeployedPilot, type OwnedMech } from './company';
 import { getFrame } from './frames';
 import { getPilotStats, type PilotAssignment, type PilotId } from './pilots';
-import { getMissionTier } from './reputation';
+import { getContractTier, missionTierPressure } from './reputation';
 import { rigFrameId, type RigId } from './rigs';
 import { randomSource } from './universe';
 
@@ -116,7 +116,7 @@ const assessCrew = function (campaign: Campaign, contract: Contract, lineup: rea
 		return capability.firepower * profile.firepower + capability.precision * profile.precision + capability.mobility * profile.mobility + capability.armor * profile.armor;
 	}));
 	const extractionStrength = teamRating(members.map(function ({ capability }) { return .6 * capability.mobility + .4 * capability.armor; }));
-	const opposition = contract.tier - 1;
+	const opposition = missionTierPressure(contract);
 	const objectiveChance = percentage(58 + (objectiveStrength - 1) * 36 - opposition * 8);
 	const baseExtractionChance = percentage(78 + (extractionStrength - 1) * 28 - opposition * 5);
 	const extractionChance = percentage(baseExtractionChance + (getPilotStats(campaign, leaderId).leadership - 1) * 3);
@@ -134,7 +134,7 @@ export const forecastCrew = function (campaign: Campaign, contract: Contract, li
 		factors: [
 			`The objective favors ${profile.emphasis}.`,
 			'Maneuver, speed, and armor help the crew extract.',
-			`${members.length} ${members.length === 1 ? 'rig' : 'rigs'} · ${Math.ceil(integrity)}% average integrity · ${getMissionTier(contract.tier).name} opposition`,
+			`${members.length} ${members.length === 1 ? 'rig' : 'rigs'} · ${Math.ceil(integrity)}% average integrity · ${getContractTier(contract).name} opposition`,
 		],
 	};
 };
@@ -165,7 +165,7 @@ export const resolveCrew = function (campaign: Campaign, contract: Contract, lin
 	const random = randomSource(seed);
 	const objective = check(random, objectiveChance);
 	const extraction = check(random, extractionChance);
-	const pressure = pressureFrom(objective) + pressureFrom(extraction) + (contract.tier - 1) * 2;
+	const pressure = pressureFrom(objective) + pressureFrom(extraction) + missionTierPressure(contract) * 2;
 	const damage = members.map(function (member) {
 		const severity = Math.max(0, (damageRoll(seed, member.frameId) - 22) * .42 + pressure);
 		const exposure = Math.max(.75, 1.15 - .15 * member.capability.mobility);

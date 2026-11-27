@@ -209,8 +209,7 @@ test('campaign deployment keeps each contract role, full squad, and hostile rost
 				assert(clearAt(mate, RIG_RADIUS) && terrainPathClear(terrain, mate, map.drop, RIG_RADIUS), 'squad deployment slot');
 			}
 			const guns = state.enemies.filter(function (enemy) { return enemy.kind === 'artillery'; });
-			const fortified = kind === 'demolition' || kind === 'raid' || kind === 'clearance';
-			assert(fortified ? guns.length >= tier && guns.length <= 2 * tier : guns.length === 0, 'artillery garrison size');
+			assert(guns.length === missionArtilleryCount(contract), 'artillery garrison size');
 			const coverage = map.sites.map(function () { return 0; });
 			for (const gun of guns) {
 				const ranges = map.sites.map(function (site) { return distance(site, gun); });
@@ -254,7 +253,7 @@ test('campaign deployment keeps each contract role, full squad, and hostile rost
 }, 30_000);
 
 test('edge and hillside reinforcements keep the whole dropship on the field and the unloading ramp on the ground', function () {
-	for (const [planetId, seed, tier, index] of [['iolith', 3246141861, 6, 12], ['borealis', 1070406884, 1, 3], ['galeward', 831056492, 3, 3]] as const) {
+	for (const [planetId, seed, tier, index] of [['iolith', 3246141861, 10, 12], ['borealis', 1070406884, 3, 3], ['galeward', 831056492, 5, 3]] as const) {
 		const state = createSituationMission({ kind: 'defend', planetId, tier, frame: 'warden', wing: [] }, seed, 'standard');
 		state.spawnIn = 0; state.spawned = index;
 		spawningStep(state, 1 / 60);

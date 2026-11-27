@@ -147,7 +147,7 @@ test('a defeated rig keeps its entity for the fall and immediately leaves combat
 });
 
 test('a live defense section survives pause and releases its two rigs and perimeter escort once each', async function () {
-	const initial = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, 25, 'standard');
+	const initial = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 5, frame: 'warden', wing: [] }, 25, 'standard');
 	initial.spawnIn = 0;
 	const { world, combat, state } = await harness(initial);
 	const advance = function (seconds: number) { for (let tick = 0; tick < seconds * 60; tick++) world.update(1 / 60); };

@@ -1,4 +1,4 @@
-import { getMissionTier } from './reputation';
+import { FIRST_RIG_TIER, firstHeavyRigTier, getContractTier, missionTierPressure, usesLegacyMissionTiers } from './reputation';
 import { getPlanet, mixSeed, randomSource } from './universe';
 import { hasTerrainRoute, terrainPathClear, terrainPointClear, type MissionCompound, type ObstacleField, type TerrainObstacle } from './field-terrain';
 import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS } from './combat-spatial';
@@ -34,6 +34,9 @@ export const missionStructures = function (mission: MissionRuntime | undefined):
 export const isPriorityTarget = function (state: CombatStateView, enemy: { id: number; commander?: boolean }): boolean {
 	return Boolean(enemy.commander) || state.mission?.targetId === enemy.id;
 };
+export const commandTargetName = function (contract: Contract): 'command vehicle' | 'command rig' {
+	return contract.tier < FIRST_RIG_TIER && !usesLegacyMissionTiers(contract) ? 'command vehicle' : 'command rig';
+};
 
 const separation = function (a: Point, b: Point) { return Math.hypot(a.x - b.x, a.y - b.y); };
 const hasMultipleSites = function (kind: Contract['kind']) {
@@ -56,24 +59,14 @@ export type MissionSpawn = Point & (
 	| { kind: EnemyKind; commander?: never; frameId?: never; formation?: never }
 );
 const mobileHostileCount = function (contract: Contract): number {
-	const level = getMissionTier(contract.tier);
+	const level = getContractTier(contract);
 	const roster = contract.kind === 'defend' || contract.kind === 'clearance' ? level.assault : level.patrol;
 	// Fortified garrisons already reserve one slot for fixed defenses, two
 	// from Heavy tier up. The independent gun roll keeps their mobile strength.
-	const reserved = artilleryPosting(contract) ? (contract.tier >= 4 ? 2 : 1) : 0;
+	const reserved = artilleryPosting(contract) ? (contract.tier >= firstHeavyRigTier(contract) ? 2 : 1) : 0;
 	return roster - reserved;
 };
-const legacyRosters: Readonly<Record<Contract['tier'], readonly MobileEnemyKind[]>> = {
-	1: ['scout', 'helicopter', 'scout', 'scout'],
-	2: ['scout', 'helicopter', 'striker', 'scout'],
-	3: ['striker', 'tank', 'scout', 'vtol', 'striker', 'helicopter'],
-	4: ['striker', 'tank', 'siege', 'vtol', 'helicopter', 'scout'],
-	5: ['siege', 'tank', 'striker', 'vtol', 'siege'],
-	6: ['siege', 'tank', 'siege', 'vtol', 'striker', 'siege'],
-};
-// Every section starts with two rigs. The third contact supports the section
-// and is omitted if the contract quota ends before its slot.
-const formations: Readonly<Record<Contract['tier'], readonly MobileEnemyKind[]>> = {
+const legacyFormations: Readonly<Partial<Record<Contract['tier'], readonly MobileEnemyKind[]>>> = {
 	1: ['scout', 'scout', 'helicopter'],
 	2: ['scout', 'striker', 'helicopter'],
 	3: ['striker', 'scout', 'tank', 'striker', 'scout', 'helicopter'],
@@ -81,10 +74,26 @@ const formations: Readonly<Record<Contract['tier'], readonly MobileEnemyKind[]>>
 	5: ['siege', 'striker', 'tank', 'striker', 'siege', 'vtol'],
 	6: ['siege', 'striker', 'vtol', 'siege', 'scout', 'tank'],
 };
+// Sections deploy in groups of up to three. Start the roster with its new
+// threat so even the smallest fortified garrison fields it.
+const formations: Readonly<Record<Contract['tier'], readonly MobileEnemyKind[]>> = {
+	1: ['helicopter'],
+	2: ['tank', 'helicopter', 'helicopter'],
+	3: ['scout', 'scout', 'helicopter', 'scout', 'helicopter', 'helicopter'],
+	4: ['scout', 'tank', 'helicopter', 'scout', 'scout', 'tank'],
+	5: ['striker', 'scout', 'tank', 'scout', 'striker', 'helicopter'],
+	6: ['striker', 'striker', 'tank', 'striker', 'scout', 'tank'],
+	7: ['siege', 'striker', 'tank', 'scout', 'striker', 'vtol'],
+	8: ['siege', 'striker', 'vtol', 'siege', 'scout', 'tank'],
+	9: ['siege', 'striker', 'tank', 'siege', 'striker', 'vtol'],
+	10: ['siege', 'striker', 'vtol', 'siege', 'scout', 'tank'],
+};
 const catalogFrame = function (contract: Contract, role: EnemyKind, random: () => number): FrameId | undefined {
 	if (role !== 'scout' && role !== 'striker' && role !== 'siege') return undefined;
+	const firstVariant = usesLegacyMissionTiers(contract) ? 2 : 4;
+	const firstHeavy = firstHeavyRigTier(contract);
 	const eligible = PLAYABLE_FRAMES.filter(function (frame) {
-		return (contract.tier > 1 || frame.variant === 'A') && (contract.tier >= 4 || frame.mass < 95);
+		return (contract.tier >= firstVariant || frame.variant === 'A') && (contract.tier >= firstHeavy || frame.mass < 95);
 	});
 	const preferred = eligible.filter(function (frame) {
 		return role === (frame.mass < 50 ? 'scout' : frame.mass >= 95 ? 'siege' : 'striker');
@@ -98,16 +107,19 @@ const hasBuiltGarrison = function (map: MissionMap) {
 const mobileSpawn = function (contract: Contract, map: MissionMap, index: number, navigation: ObstacleField | undefined = map.terrain): MissionSpawn {
 	const random = randomSource((contract.seed + Math.imul(index + 1, 104729)) >>> 0);
 	const commander = contract.kind === 'assassination' && index === 0;
-	const legacy = isAuthoredContract(contract);
+	const authored = isAuthoredContract(contract);
+	const legacy = usesLegacyMissionTiers(contract);
 	const formation = Math.floor(index / 3);
-	const siteIndex = legacy ? index : formation + (index % 3 === 1 ? 1 : 0);
+	const siteIndex = authored ? index : formation + (index % 3 === 1 ? 1 : 0);
 	const site = hasMultipleSites(contract.kind) ? map.sites[siteIndex % map.sites.length] ?? map.objective : map.objective;
 	const wingOffsets = [0, 0.65, -0.26];
-	const angle = (legacy ? index * 2.399963 : formation * 2.399963 + (wingOffsets[index % 3] ?? 0)) + random() * (legacy ? .6 : .16);
-	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 + (!legacy && index % 3 === 2 ? 90 : 0) : 180 + random() * 250;
-	const roster = (legacy ? legacyRosters : formations)[contract.tier];
-	const kind = commander ? contract.tier === 1 ? 'scout' : contract.tier < 4 ? 'striker' : 'siege' : roster[index % roster.length] ?? 'scout';
-	const frameId = legacy ? undefined : catalogFrame(contract, kind, random);
+	const angle = (authored ? index * 2.399963 : formation * 2.399963 + (wingOffsets[index % 3] ?? 0)) + random() * (authored ? .6 : .16);
+	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 + (!authored && index % 3 === 2 ? 90 : 0) : 180 + random() * 250;
+	const roster = (legacy ? legacyFormations[contract.tier] : undefined) ?? formations[contract.tier];
+	const commandKind = commandTargetName(contract) === 'command vehicle' ? (contract.tier === 1 ? 'helicopter' : 'tank')
+		: contract.tier >= firstHeavyRigTier(contract) ? 'siege' : contract.tier <= (legacy ? 1 : 4) ? 'scout' : 'striker';
+	const kind = commander ? commandKind : roster[index % roster.length] ?? 'helicopter';
+	const frameId = authored ? undefined : catalogFrame(contract, kind, random);
 	const atBearing = function (bearing: number): Point {
 		return { x: Math.max(100, Math.min(map.width - 100, site.x + Math.cos(bearing) * radius)),
 			y: Math.max(100, Math.min(map.height - 100, site.y + Math.sin(bearing) * radius)) };
@@ -127,7 +139,7 @@ const mobileSpawn = function (contract: Contract, map: MissionMap, index: number
 			if (clear(candidate)) { at = candidate; break; }
 		}
 	}
-	return { ...at, kind, ...(commander ? { commander: true } : {}), ...(frameId ? { frameId } : {}), ...(!legacy ? { formation } : {}) };
+	return { ...at, kind, ...(commander ? { commander: true } : {}), ...(frameId ? { frameId } : {}), ...(!authored ? { formation } : {}) };
 };
 
 const artilleryPosting = function (contract: Contract) {
@@ -142,14 +154,15 @@ const artilleryPosting = function (contract: Contract) {
 export const missionArtilleryCount = function (contract: Contract, map?: MissionMap): number {
 	if (!artilleryPosting(contract)) return 0;
 	const roll = randomSource(mixSeed(contract.seed, 0x47554e53));
-	const count = contract.tier + Math.floor(roll() * (contract.tier + 1));
+	const minimum = 1 + Math.floor(missionTierPressure(contract));
+	const count = minimum + Math.floor(roll() * (minimum + 1));
 	return map ? placeArtillery(contract, map, mobileSpawns(contract, map), count).length : count;
 };
 export const missionHostileCount = function (contract: Contract, map?: MissionMap) {
 	return mobileHostileCount(contract) + missionArtilleryCount(contract, map);
 };
 export const missionOpposition = function (contract: Contract, map?: MissionMap) {
-	const mobile = isAuthoredContract(contract) ? 'Light scouts and helicopters.' : getMissionTier(contract.tier).opposition;
+	const mobile = getContractTier(contract).opposition;
 	const posting = artilleryPosting(contract);
 	const guns = missionArtilleryCount(contract, map);
 	const garrison = posting ? ` ${guns} fixed artillery ${guns === 1 ? 'gun' : 'guns'} ${posting}.` : '';
@@ -465,6 +478,6 @@ export const missionObjective = function (state: CombatStateView): string {
 	}
 	if (mission.contract.kind === 'defend') return `Protect the relay · ${mission.progress}/${mission.required} hostiles eliminated`;
 	if (mission.contract.kind === 'demolition') return `Destroy the facility · ${Math.ceil(Math.max(0, mission.structure?.hp ?? 0) / (mission.structure?.maxHp ?? 1) * 100)}% integrity`;
-	if (mission.contract.kind === 'assassination') return 'Hunt the marked command frame';
+	if (mission.contract.kind === 'assassination') return `Hunt the marked ${commandTargetName(mission.contract)}`;
 	return `Clear the three hostile sites · ${mission.progress}/${mission.required} eliminated`;
 };

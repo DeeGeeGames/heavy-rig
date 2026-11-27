@@ -34,9 +34,12 @@ describe('Heavy Rig surface contracts', function () {
 		expect(generateMissionMap({ ...contract('demolition'), planetId: 'cinder' }).biome).toBe('volcanic');
 	});
 
-	test('fortified contracts can deploy every artillery count from the mission tier through twice the tier', function () {
+	test('fortified contracts can deploy every rolled artillery count without raising the late-game cap', function () {
 		const samples = 768;
+		const minimums = [1, 1, 2, 2, 3, 3, 4, 4, 5, 6];
 		for (const { tier } of MISSION_TIERS) for (const kind of ['demolition', 'raid', 'clearance'] as const) {
+			const minimum = minimums[tier - 1];
+			if (minimum === undefined) throw new Error('Missing expected gun range');
 			const rolls = new Map<number, { frequency: number; job: Contract }>();
 			for (let i = 0; i < samples; i++) {
 				const job = { ...contract(kind, Math.imul(i + 1, 0x9e3779b1) >>> 0), tier };
@@ -45,7 +48,7 @@ describe('Heavy Rig surface contracts', function () {
 				if (roll) roll.frequency++;
 				else rolls.set(count, { frequency: 1, job });
 			}
-			const counts = Array.from({ length: tier + 1 }, function (_, i) { return tier + i; });
+			const counts = Array.from({ length: minimum + 1 }, function (_, i) { return minimum + i; });
 			expect([...rolls.keys()].sort(function (a, b) { return a - b; })).toEqual(counts);
 			const expectedFrequency = samples / counts.length;
 			for (const [count, { frequency, job }] of rolls) {
@@ -58,11 +61,11 @@ describe('Heavy Rig surface contracts', function () {
 		if (!recorder) throw new Error('Missing authored recorder mission');
 		const fuelWorks = getChainStatus({ ...opening, completed: [recorder.id] })?.offers.find(function (entry) { return entry.contract.kind === 'demolition'; })?.contract;
 		if (!fuelWorks) throw new Error('Missing authored fuel works');
-		expect(createMissionState(fuelWorks).enemies.map(function (enemy) { return enemy.kind; })).toEqual(['scout', 'helicopter', 'scout', 'scout']);
+		expect(createMissionState(fuelWorks).enemies.map(function (enemy) { return enemy.kind; })).toEqual(['helicopter', 'helicopter', 'helicopter', 'helicopter']);
 	});
 
 	test('a supplied field only briefs and deploys guns with a reachable, supported foundation', function () {
-		const job: Contract = { ...contract('clearance', 2563011894), tier: 6 };
+		const job: Contract = { ...contract('clearance', 2563011894), tier: 10 };
 		const site = { x: 200, y: 600 };
 		const wall = { kind: 'fissure' as const, x: 350, y: 600, width: 140, depth: 1200, height: 0 };
 		const map: MissionMap = { seed: job.seed, biome: 'badlands', width: 1800, height: 1200, sites: [site], objective: site,
@@ -80,13 +83,13 @@ describe('Heavy Rig surface contracts', function () {
 		const hillside = { ...map, terrain: { roads: [], obstacles: [], elevation: slope } };
 		const onSlope = createMissionState(job, { map: hillside });
 		expect(onSlope.enemies.every(function (unit) { return unit.kind !== 'artillery'; })).toBe(true);
-		expect(onSlope.mission?.required).toBe(getMissionTier(6).assault - 2);
+		expect(onSlope.mission?.required).toBe(getMissionTier(10).assault - 2);
 		expect(missionOpposition(job, hillside)).toContain('0 fixed artillery guns');
 	});
 
 	test('artillery surrounds demolition facilities, guards the far side of raid yards, and covers clearance road shoulders', function () {
 		for (const planetId of ['meridian', 'elderholt'] as const) for (const kind of ['demolition', 'raid', 'clearance'] as const) {
-			const state = createMissionState({ ...contract(kind, 2563011894), planetId, tier: 6 });
+			const state = createMissionState({ ...contract(kind, 2563011894), planetId, tier: 10 });
 			const map = missionOf(state).map, guns = state.enemies.filter(function (unit) { return unit.kind === 'artillery'; });
 			if (kind === 'demolition') {
 				const quadrants = new Set(guns.map(function (gun) { return `${gun.x >= map.objective.x}/${gun.y >= map.objective.y}`; }));
@@ -105,7 +108,7 @@ describe('Heavy Rig surface contracts', function () {
 	});
 
 	test('fixed guns can shell the drop while mobile patrols hold their sites until contacted', function () {
-		const state = createMissionState({ ...contract('demolition'), tier: 2 }); const mission = missionOf(state);
+		const state = createMissionState({ ...contract('demolition'), tier: 3 }); const mission = missionOf(state);
 		const original = state.enemies.map(function (enemy) { return { x: enemy.x, y: enemy.y }; });
 		const guns = state.enemies.filter(function (enemy) { return enemy.kind === 'artillery'; });
 		expect(guns.length).toBeGreaterThanOrEqual(2);

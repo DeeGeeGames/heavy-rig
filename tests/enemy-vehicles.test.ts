@@ -22,7 +22,7 @@ const vehicle = function (state: State, kind: typeof kinds[number], separation =
 test('campaign rosters deploy mixed forces at every difficulty and keep the assassination target a command mech', function () {
 	for (const kind of ['clearance', 'assassination', 'demolition', 'defend'] as const) {
 		for (const difficulty of ['story', 'standard', 'veteran'] as const) {
-			const contract: Contract = { id: 'vehicle-mix', seed: 123, planetId: 'meridian', kind, tier: 4, employer: 'freeholds', opponent: 'combine', title: 'Test', briefing: 'Test', reward: 1000, favor: 8, hostility: 5, requiredReputation: 0 };
+			const contract: Contract = { id: 'vehicle-mix', seed: 123, planetId: 'meridian', kind, tier: 7, employer: 'freeholds', opponent: 'combine', title: 'Test', briefing: 'Test', reward: 1000, favor: 8, hostility: 5, requiredReputation: 0 };
 			const state = createMissionState(contract, { difficulty });
 			const repeated = createMissionState(contract, { difficulty });
 			expect(state.enemies).toEqual(repeated.enemies);
@@ -54,7 +54,7 @@ test('campaign rosters deploy mixed forces at every difficulty and keep the assa
 			if (kind !== 'demolition') expect(escorts.some(function (enemy) { return enemy.kind === 'vtol'; })).toBe(true);
 			for (const escort of escorts) {
 				expect(rigs.some(function (rig) { return rig.formation === escort.formation; })).toBe(true);
-				expect(escort.hp).toBe(Math.round(ENEMY_STATS[escort.kind].hp * 1.15 * getDifficultyDefinition(difficulty).enemyArmor));
+				expect(escort.hp).toBe(Math.round(ENEMY_STATS[escort.kind].hp * 1.16 * getDifficultyDefinition(difficulty).enemyArmor));
 				expect(escort.loadout?.length).toBe(escort.kind === 'vtol' ? 2 : 1);
 			}
 			if (kind === 'assassination') {

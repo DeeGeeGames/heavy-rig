@@ -56,19 +56,19 @@ const engage = async function (frame: FrameId, kind: EnemyKind, tier: MissionTie
 	}
 };
 
-test('the starting twin-gun Kestrel needs sustained tracking on a local scout and retains sortie ammunition', async function () {
-	const scout = await engage('kestrel', 'scout', 1);
+test('the starting twin-gun Kestrel needs sustained tracking on a Frontier scout and retains sortie ammunition', async function () {
+	const scout = await engage('kestrel', 'scout', 3, { loadout: createStarterLoadout('kestrel') });
 	const aircraft = await engage('kestrel', 'helicopter', 1);
 	expect(scout.seconds).toBeGreaterThan(6);
 	expect(scout.seconds).toBeLessThan(18);
 	expect(aircraft.seconds).toBeLessThan(5);
 	expect(aircraft.seconds).toBeLessThan(scout.seconds / 2);
-	// One local scout cannot consume the supply needed for the rest of the sortie.
+	// One scout cannot consume the supply needed for the rest of the sortie.
 	expect(scout.used.every(function (rounds) { return rounds < 150; })).toBe(true);
 });
 
 test('stock line, brawler, precision and support packages sustain useful mech kill times across progression', async function () {
-	for (const tier of [3, 6] as const) for (const frame of ['warden', 'maul', 'longbow', 'morrow'] as const) {
+	for (const tier of [5, 10] as const) for (const frame of ['warden', 'maul', 'longbow', 'morrow'] as const) {
 		const result = await engage(frame, 'striker', tier);
 		expect(result.seconds).toBeGreaterThan(8);
 		expect(result.seconds).toBeLessThan(35);
@@ -79,9 +79,9 @@ test('stock line, brawler, precision and support packages sustain useful mech ki
 
 test('exceptional six-round pods cannot erase heavy armor in one opening burst and reward flanking or exposure', async function () {
 	const loadout = ['cluster-rockets-6:t5', 'cluster-rockets-6:t5', null, null] as const;
-	const front = await engage('maul', 'siege', 6, { loadout, defense: 'front' });
-	const rear = await engage('maul', 'siege', 6, { loadout, defense: 'rear' });
-	const exposed = await engage('maul', 'siege', 6, { loadout, defense: 'exposed' });
+	const front = await engage('maul', 'siege', 10, { loadout, defense: 'front' });
+	const rear = await engage('maul', 'siege', 10, { loadout, defense: 'rear' });
+	const exposed = await engage('maul', 'siege', 10, { loadout, defense: 'exposed' });
 	expect(front.seconds).toBeGreaterThan(12);
 	expect(front.seconds).toBeLessThan(90);
 	expect(front.overheats).toBeGreaterThan(0);
