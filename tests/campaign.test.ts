@@ -2,6 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, parseCampaign, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import type { Contract, MissionKind } from '../src/campaign-types';
 import { getJumpRoute } from '../src/universe';
+import { advanceDays, buyFrame } from '../src/company';
+import { dismissPilot, hirePilot } from '../src/pilots';
 
 const posted = function (campaign: Campaign, kind: MissionKind = 'defend'): Contract {
 	const contract = getContracts(campaign).find(function (entry) { return entry.kind === kind; });
@@ -11,6 +13,53 @@ const posted = function (campaign: Campaign, kind: MissionKind = 'defend'): Cont
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
 
 describe('Heavy Rig campaign transactions and recovery', function () {
+	test('monthly upkeep bills owned rigs and retained pilots only at crossed month boundaries', function () {
+		const bought = buyFrame({ ...createCampaign(7), credits: 60_000 }, 'longbow-b');
+		const staffed = hirePilot(hirePilot(bought, 'flint'), 'kite');
+		const roster = dismissPilot(staffed, 'kite');
+		expect(roster.fleet).toHaveLength(2);
+		expect(roster.pilots).toEqual(['player', 'flint']);
+		const beforeMonthEnd = advanceDays(roster, 29);
+		expect(beforeMonthEnd.day).toBe(30);
+		expect(beforeMonthEnd.credits).toBe(roster.credits);
+		const afterTwoBills = roundTrip(advanceDays(beforeMonthEnd, 31));
+		expect(afterTwoBills.day).toBe(61);
+		// 40T Kestrel + 65T Longbow, excluding the variant's extra mount. 53 CR + 25 CR per bill.
+		expect(afterTwoBills.credits).toBe(roster.credits - 2 * 78);
+		expect(advanceDays(afterTwoBills, 1).credits).toBe(afterTwoBills.credits);
+	});
+
+	test('a month-end jump can use the exact fare, with unpaid upkeep recovered from later work', function () {
+		const fare = getJumpRoute('meridian', 'cinder').fare;
+		const departure = { ...advanceDays(createCampaign(7), 29), credits: fare };
+		const failedJump = { ...departure, credits: fare - 1 };
+		expect(travelTo(failedJump, 'cinder')).toBe(failedJump);
+		const arrival = roundTrip(travelTo(departure, 'cinder'));
+		expect(arrival.planetId).toBe('cinder');
+		expect(arrival.day).toBe(31);
+		expect(arrival.credits).toBe(0);
+		expect(arrival.upkeepOwed).toBe(20);
+		const contract = posted(arrival);
+		const settled = settleContract(acceptContract(arrival, contract.id), true);
+		expect(settled.lastResult?.payout).toBe(contract.reward);
+		expect(settled.credits).toBe(contract.reward - 20);
+		expect(settled.upkeepOwed).toBe(0);
+	});
+
+	test('upkeep leaves an affordable exit fare intact when arriving somewhere with no work', function () {
+		const origin = 'meridian';
+		const destination = 'borealis';
+		const fare = getJumpRoute(origin, destination).fare;
+		const departure = { ...advanceDays(createCampaign(7), 29), credits: 2 * fare };
+		const arrival = roundTrip(travelTo(departure, destination));
+		expect(getContracts(arrival)).toHaveLength(0);
+		expect(arrival.credits).toBe(fare);
+		expect(arrival.upkeepOwed).toBe(20);
+		const home = travelTo(arrival, origin);
+		expect(home.planetId).toBe(origin);
+		expect(home.credits).toBe(0);
+	});
+
 	test('boards are reproducible, contain each mission type, and advance after travel', function () {
 		const campaign = createCampaign(317);
 		const contracts = getContracts(campaign);

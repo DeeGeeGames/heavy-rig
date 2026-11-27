@@ -9,7 +9,7 @@ import { inspectWorkspacePane, renderWorkspace, selectWorkspacePane, textItems, 
 import { canStageOperation, FACTIONS, forecastArrival, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, type Campaign } from './campaign';
 import { BIOME_NAMES, MISSION_NAMES, type Contract, type MissionKind, type PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
-import { getOwnedMech, workOrderFor } from './company';
+import { getOwnedMech, newUpkeepDue, workOrderFor } from './company';
 import { renderShipHeader, type ShipScreen } from './company-ui';
 import { MissionSurvey } from './mission-survey';
 import { live } from 'lit-html/directives/live.js';
@@ -56,7 +56,8 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 	const intel = getSystemIntel(forecast, destination);
 	const local = destination === campaign.planetId;
 	const { distanceLy, fare } = getJumpRoute(campaign.planetId, destination);
-	const transit = local ? 'Current location' : `${distanceLy} LY · 1 DAY · ${fare.toLocaleString()} CR`;
+	const upkeep = forecast === campaign ? 0 : newUpkeepDue(campaign, 1);
+	const transit = local ? 'Current location' : `${distanceLy} LY · 1 DAY · ${fare.toLocaleString()} CR${upkeep ? ` + ${upkeep.toLocaleString()} CR UPKEEP` : ''}`;
 	const travelLock = campaign.active ? 'CONTRACT ACTIVE' : campaign.operations?.length ? 'OPERATIONS STAGED'
 		: !local && forecast === campaign ? 'TRANSIT UNAVAILABLE'
 		: campaign.credits < fare ? `NEED ${(fare - campaign.credits).toLocaleString()} CR MORE` : '';

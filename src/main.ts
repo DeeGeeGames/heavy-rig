@@ -49,11 +49,12 @@ import type { Difficulty } from './operation';
 import { focusTerritoryMap, handleTerritoryZoomKey } from './territory-map';
 import { renderBridge, renderStarmap, type BridgeActions, type BriefingOrigin, type ShipView } from './campaign-ui';
 import { MISSION_NAMES, type PlanetId } from './campaign-types';
+import { getJumpRoute } from './universe';
 import { getAuthoredStep } from './contract-chains';
 import { combatTask } from './combat-task';
 import { fieldContacts } from './tactical-radar';
 import { missionStructures } from './missions';
-import { isFrameId, WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
+import { isFrameId, newUpkeepDue, PILOT_MONTHLY_UPKEEP, WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
 import { dismissPilot, getPilot, hirePilot } from './pilots';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import { availableMenuControl, focusMenuControl, menuControls, menuScrollArea, moveMenuFocus, scrollMenu, selectMenuControl, type MenuDirection } from './menu-focus';
@@ -61,6 +62,11 @@ import { mountChoicePicker } from './choice-picker';
 import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane, focusWorkspace, rememberWorkspaceFocus, moveWorkspaceFocus, cycleWorkspaceView, inspectWorkspacePane, workspaceBackTarget, workspaceControls, workspaceNavigationLocked } from './workspace';
 import { mountDialogLayout, stepDialogNavigation } from './dialog-layout';
 import { createEscape, escapeMessage, INTRO_FRAMES, INTRO_LINES, narrativeFrame, SADDLE_LINES, type IntroFrame } from './intro';
+
+const upkeepNotice = function (campaign: Campaign, days: number): string {
+	const due = newUpkeepDue(campaign, days);
+	return due ? ` ${due.toLocaleString()} CR in monthly upkeep comes due.` : '';
+};
 
 const element = function (id: string): HTMLElement {
 	const value = document.getElementById(id);
@@ -815,10 +821,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			buyWeapon: function (id) { confirm(function () { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); }, 'BUY WEAPON', `${WEAPON_PRICES[id].toLocaleString()} CR. Delivered to stores. Installation requires a separate refit.`, `BUY ${getWeapon(id).name}?`); },
 			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${rigName(id)}?`); },
 			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${rigName(id)} WORK?`); },
-			advanceDays: function (days) { confirm(function () { updateCompany(advanceDays(campaign, days), `${days} calendar ${days === 1 ? 'day' : 'days'} elapsed. Due work orders are complete.`); }, `ADVANCE ${days} ${days === 1 ? 'DAY' : 'DAYS'}`, `Move from day ${campaign.day} to day ${campaign.day + days}. All work orders progress. No credit fee; contract postings remain unchanged.`, 'ADVANCE SHIP CALENDAR?'); },
+			advanceDays: function (days) { confirm(function () { updateCompany(advanceDays(campaign, days), `${days} calendar ${days === 1 ? 'day' : 'days'} elapsed. Due work orders are complete.`); }, `ADVANCE ${days} ${days === 1 ? 'DAY' : 'DAYS'}`, `Move from day ${campaign.day} to day ${campaign.day + days}. Work orders progress and contract postings stay the same.${upkeepNotice(campaign, days)}`, 'ADVANCE SHIP CALENDAR?'); },
 			hire: function (id) {
 				const pilot = getPilot(id);
-				confirm(function () { updateCompany(hirePilot(campaign, id), `${pilot.callsign} joined the roster.`); }, 'HIRE PILOT', `${pilot.name} · ${pilot.price.toLocaleString()} CR one-time fee. Assign a rig on the Deploy screen.`, `HIRE ${pilot.callsign.toUpperCase()}?`);
+				confirm(function () { updateCompany(hirePilot(campaign, id), `${pilot.callsign} joined the roster.`); }, 'HIRE PILOT', `${pilot.name} · ${pilot.price.toLocaleString()} CR signing fee · ${PILOT_MONTHLY_UPKEEP} CR monthly salary. Assign a rig on the Deploy screen.`, `HIRE ${pilot.callsign.toUpperCase()}?`);
 			},
 			dismiss: function (id) {
 				const pilot = getPilot(id);
@@ -874,7 +880,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					editedOperation = undefined;
 					if (next.deployed) launchLive(next);
 					else if (replaceCampaign(next) && next.lastOperationDay) showDayDebrief(next.lastOperationDay, performance.now());
-				}, live ? 'COMMIT & PLAY' : 'COMMIT & ADVANCE', `${orders} Advance to day ${campaign.day + 1}. Opposition standing on commitment. ${stakes}.`, `COMMIT DAY ${campaign.day}?`);
+				}, live ? 'COMMIT & PLAY' : 'COMMIT & ADVANCE', `${orders} Advance to day ${campaign.day + 1}.${upkeepNotice(campaign, 1)} Opposition standing on commitment. ${stakes}.`, `COMMIT DAY ${campaign.day}?`);
 			},
 			openLastReport: function () { if (campaign.lastOperationDay) showDayDebrief(campaign.lastOperationDay, performance.now()); },
 			selectPlanet: function (id) {
@@ -904,7 +910,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				const departure = campaign;
 				const next = travelTo(departure, target);
 				if (next === departure) return;
-				const fare = departure.credits - next.credits;
+				const { fare } = getJumpRoute(departure.planetId, target);
 				const transmission = guidedCourse === target;
 				// The plotted course is consumed by this confirmation, even if cancelled.
 				guidedCourse = undefined;
@@ -916,7 +922,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					element('jump-location').textContent = origin.name;
 					element('jump-copy').textContent = `DEPARTURE ORBIT · DAY ${campaign.day - 1}`;
 					transition(navigation.setScreen('jump'));
-				}, 'CONFIRM JUMP', `Pay ${fare.toLocaleString()} CR to jump to ${getPlanet(target).name}. Arrive on day ${next.day} with ${next.credits.toLocaleString()} CR. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
+				}, 'CONFIRM JUMP', `Pay ${fare.toLocaleString()} CR to jump to ${getPlanet(target).name}.${upkeepNotice(departure, 1)} Arrive on day ${next.day} with ${next.credits.toLocaleString()} CR. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
 			},
 			stage: function (contract) {
 				if (navigation.screen !== 'bridge' || navigation.auxiliary || destination !== campaign.planetId) return;

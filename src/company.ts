@@ -4,11 +4,12 @@ export { WEAPON_PRICES } from './equipment-prices';
 import { getFrameOffer } from './market';
 import { unlockedMissionTier } from './reputation';
 import { WEAPONS, createWeaponRecord, getWeapon, type WeaponId } from './arsenal';
-import { MAX_CREDITS, type Campaign } from './campaign';
-import { PLAYABLE_FRAMES, type FrameId } from './frames';
+import { getTransmission, MAX_CREDITS, type Campaign } from './campaign';
+import { bareChassisMass, PLAYABLE_FRAMES, type FrameId } from './frames';
 import { stockPackage, isFrameLoadout } from './hardpoints';
 import { defaultReserves, isReserveLoadout, loadedMounts, usableMount } from './combat-resources';
 import { isPilotId, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
+import { getJumpRoute, getSystemIntel, PLANETS } from './universe';
 
 export type Loadout = readonly (WeaponId | null)[];
 export interface OwnedMech {
@@ -33,6 +34,30 @@ export interface CompanyState {
 }
 
 export const MAX_DAY = 1_000_000_000;
+export const UPKEEP_MONTH_DAYS = 30;
+export const PILOT_MONTHLY_UPKEEP = 25;
+const upkeepMonth = function (day: number): number { return Math.floor((day - 1) / UPKEEP_MONTH_DAYS); };
+export const nextUpkeepDay = function (day: number): number { return (upkeepMonth(day) + 1) * UPKEEP_MONTH_DAYS + 1; };
+export const monthlyUpkeep = function ({ fleet, pilots }: CompanyState): number {
+	const tons = fleet.reduce(function (total, mech) { return total + bareChassisMass(rigFrameId(mech.frameId)); }, 0);
+	return Math.round(tons / 2) + PILOT_MONTHLY_UPKEEP * pilots.filter(function (id) { return id !== 'player'; }).length;
+};
+export const newUpkeepDue = function (company: Campaign, days: number): number {
+	const months = upkeepMonth(company.day + days) - upkeepMonth(company.day);
+	return months > 0 ? months * monthlyUpkeep(company) : 0;
+};
+
+const spendableUpkeepFunds = function (campaign: Campaign, day: number): number {
+	const { credits, planetId } = campaign;
+	if (campaign.universe.boardVersion === 1 || getSystemIntel({ ...campaign, day }, planetId).conflict
+		|| getTransmission(campaign)?.offers.some(function ({ contract }) { return contract.planetId === planetId; })) return credits;
+	// Where there's no work, leave the company a way out if it could afford one.
+	const cheapestExit = PLANETS.reduce(function (fare, destination) {
+		return destination.id === planetId ? fare : Math.min(fare, getJumpRoute(planetId, destination.id).fare);
+	}, Infinity);
+	return credits >= cheapestExit ? credits - cheapestExit : credits;
+};
+
 const MAX_INVENTORY = 1000;
 const emptyInventory = function (): Record<WeaponId, number> { return createWeaponRecord(function () { return 0; }); };
 
@@ -202,7 +227,10 @@ export const advanceDays = function (campaign: Campaign, days: number): Campaign
 		if (!order || order.readyDay > day) return mech;
 		return order.kind === 'repair' ? { ...mech, integrity: 100 } : { ...mech, loadout: [...order.loadout], reserves: [...order.reserves] };
 	});
-	return { ...campaign, day, fleet, workOrders: campaign.workOrders.filter(function (order) { return order.readyDay > day; }) };
+	const due = newUpkeepDue(campaign, days) + (campaign.upkeepOwed ?? 0);
+	const paid = due ? Math.min(spendableUpkeepFunds(campaign, day), due) : 0;
+	return { ...campaign, day, fleet, workOrders: campaign.workOrders.filter(function (order) { return order.readyDay > day; }),
+		...(due ? { credits: campaign.credits - paid, upkeepOwed: Math.min(MAX_CREDITS, due - paid) } : {}) };
 };
 export const beginDeployment = function (campaign: Campaign): Campaign {
 	const frameId = campaign.lineup[0]?.frameId;
