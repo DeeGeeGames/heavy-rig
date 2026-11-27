@@ -148,11 +148,15 @@ test('a defeated rig keeps its entity for the fall and immediately leaves combat
 
 test('a live defense section survives pause and releases its two rigs and perimeter escort once each', async function () {
 	const initial = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 5, frame: 'warden', wing: [] }, 25, 'standard');
-	initial.spawnIn = 0;
+	const relay = initial.mission?.map.objective;
+	if (!relay) throw new Error('Expected a defense relay');
 	const { world, combat, state } = await harness(initial);
 	const advance = function (seconds: number) { for (let tick = 0; tick < seconds * 60; tick++) world.update(1 / 60); };
 	try {
-		advance(6);
+		advance(10);
+		expect(state.warnings).toHaveLength(0);
+		state.player.x = relay.x; state.player.y = relay.y;
+		advance(15);
 		const [first, second, support] = state.warnings;
 		if (!first?.drop || !first.frameId || !second?.drop || !second.frameId || !support?.perimeter) throw new Error('Missing defense section');
 		expect(first.drop.flight).toBe(second.drop.flight);

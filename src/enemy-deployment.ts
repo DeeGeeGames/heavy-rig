@@ -142,7 +142,14 @@ const surveyPad = function (goal: Point, heading: number, lanes: readonly number
 	return { origin, heading, at, padHeight: support.high, unevenness: support.high - support.low };
 };
 
-export const planRigDrop = function (preferred: Point, objective: Point, field: DropField, occupied: readonly Point[], count: number, startedAt: number): DropPassenger[] | undefined {
+interface ReleasePolicy {
+	accepts: (at: Point) => boolean;
+	separation: (at: Point) => number;
+	preferredSeparation: number;
+}
+
+export const planRigDrop = function (preferred: Point, objective: Point, field: DropField, occupied: readonly Point[], count: number, startedAt: number,
+	releasePolicy?: ReleasePolicy): DropPassenger[] | undefined {
 	const terrain = field.terrain;
 	const scenery = terrain?.obstacles.map(sceneryFlightBounds) ?? [];
 	const clear: ObstacleField = { obstacles: [...scenery, landingFootprint(objective, 72),
@@ -163,12 +170,25 @@ export const planRigDrop = function (preferred: Point, objective: Point, field: 
 		return lanes.map(function (lane, i) { return { flight, lane, delay: i * wingDelay }; });
 	};
 	let best: ReturnType<typeof surveyPad>;
+	let roomyFallback: { pad: NonNullable<ReturnType<typeof surveyPad>>; separation: number } | undefined;
 	const tryAt = function (goal: Point) {
 		const bearing = Math.atan2(objective.y - goal.y, objective.x - goal.x);
 		const facing = Math.round(bearing / (Math.PI / 12)) * Math.PI / 12;
 		for (const yaw of [0, 1, -1, 2, -2, 3, -3, 4]) {
 			const pad = surveyPad(goal, facing + yaw * Math.PI / 4, lanes, field, clear);
 			if (!pad) continue;
+			if (releasePolicy) {
+				const points = lanes.map(function (lane) { return pad.at(lane, exit); });
+				if (!points.every(releasePolicy.accepts)) continue;
+				const separation = Math.min(...points.map(releasePolicy.separation));
+				if (separation < releasePolicy.preferredSeparation) {
+					// A scattered squad can cover every suitable pad. Preserve relay
+					// standoff and pick the most distant safe release from those rigs.
+					if (!roomyFallback || separation > roomyFallback.separation
+						|| separation === roomyFallback.separation && pad.unevenness < roomyFallback.pad.unevenness) roomyFallback = { pad, separation };
+					continue;
+				}
+			}
 			if (pad.unevenness <= 16) return embark(pad);
 			if (!best || pad.unevenness < best.unevenness) best = pad;
 		}
@@ -188,5 +208,5 @@ export const planRigDrop = function (preferred: Point, objective: Point, field: 
 		const drop = tryAt(candidate);
 		if (drop) return drop;
 	}
-	return best && embark(best);
+	return best ? embark(best) : roomyFallback && embark(roomyFallback.pad);
 };

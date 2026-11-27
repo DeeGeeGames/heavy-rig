@@ -12,6 +12,7 @@ export const fieldTrialSeed = function (value: string | null): number | undefine
 export const drawFieldSurvey = function (host: HTMLElement, map: MissionMap) {
 	const terrain = map.terrain;
 	if (!terrain) return;
+	const staging = map.defenseApproach?.staging;
 	const sites = [map.drop, map.objective, map.extraction, ...terrain.roads.flat()];
 	const left = Math.min(...sites.map(function (p) { return p.x; })) - 70;
 	const top = Math.min(...sites.map(function (p) { return p.y; })) - 70;
@@ -25,7 +26,7 @@ export const drawFieldSurvey = function (host: HTMLElement, map: MissionMap) {
 		const p = project(point);
 		return svg`<g transform="translate(${p.x} ${p.y})"><circle r="9" fill="#14282a" stroke="#c8d6c8"/><text text-anchor="middle" y="4" fill="#e5ecd8" font-family="monospace" font-size="12">${letter}</text></g>`;
 	};
-	render(svg`<svg viewBox="0 0 480 180" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Field survey showing the drop, recorder, pickup and both crossings">
+	render(svg`<svg viewBox="0 0 480 180" preserveAspectRatio="xMidYMid meet" role="img" aria-label=${staging ? 'Field survey showing the drop, relay, pickup and two enemy approaches' : 'Field survey showing the drop, recorder, pickup and both crossings'}>
 		${terrain.obstacles.map(function (o) {
 			const corner = project({ x: o.x - o.width / 2, y: o.y - o.depth / 2 });
 			return svg`<rect x=${corner.x} y=${corner.y} width=${o.width * scale} height=${o.depth * scale}
@@ -33,9 +34,10 @@ export const drawFieldSurvey = function (host: HTMLElement, map: MissionMap) {
 		})}
 		${terrain.roads.map(function (road, index) {
 			const points = road.map(project).map(function (p) { return `${p.x},${p.y}`; }).join(' ');
-			return svg`<polyline points=${points} fill="none" stroke=${index === 0 ? '#ecb267' : '#79d1d4'}
+			return svg`<polyline points=${points} fill="none" stroke=${index === 0 ? '#ecb267' : staging && index > 1 ? '#df8069' : '#79d1d4'}
 				stroke-width="2.5" stroke-linejoin="round" stroke-dasharray=${index === 0 ? 'none' : '6 4'}/>`;
 		})}
 		${pin(map.drop, 'D')}${pin(map.objective, 'R')}${pin(map.extraction, 'P')}
+		${staging ? [pin(staging[0], 'A'), pin(staging[1], 'B')] : ''}
 	</svg>`, host);
 };

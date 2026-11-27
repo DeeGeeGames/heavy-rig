@@ -1,6 +1,7 @@
 import { html, render } from 'lit-html';
 import { contractCopy, MISSION_KINDS, PLANETS } from './campaign';
 import { BIOME_NAMES, MISSION_NAMES } from './campaign-types';
+import { DEFENSE_APPROACH_BRIEFING } from './defense-layout';
 import type { ChoicePicker } from './choice-picker';
 import { PLAYABLE_FRAMES } from './frames';
 import { getPilot, RECRUIT_IDS, SQUAD_SIZE } from './pilots';
@@ -34,7 +35,7 @@ export const mountSituationSetup = function (root: HTMLElement, picker: ChoicePi
 					${picker.field('situation-location', 'Location', setup.planetId, locations, function (planetId) { update({ planetId }); })}
 					${picker.field('situation-tier', 'Threat tier', setup.tier, tiers, function (tier) { update({ tier }); })}
 				</div>
-				<p class="situation-briefing">${contractCopy(setup.kind, setup.tier).briefing}</p>
+				<p class="situation-briefing">${setup.kind === 'defend' ? `${DEFENSE_APPROACH_BRIEFING} ` : ''}${contractCopy(setup.kind, setup.tier).briefing}</p>
 			</div>
 			<div class="situation-lineup">
 				${picker.field('situation-player', 'Player rig', setup.frame, frames, function (frame) { update({ frame }); })}

@@ -281,7 +281,7 @@ Seeded mission layouts mix ground and air vehicles. Longer mech engagements use
 smaller mission rosters, and defense reinforcements leave more time after heavy
 contacts. Frontal armor still rewards flanking and siege cooling windows.
 
-Campaign and Career contracts generate fields 4,200–4,800 by 3,450–4,140 meters.
+Most Campaign and Career contracts generate fields 4,200–4,800 by 3,450–4,140 meters.
 Each system has a fixed biome. The contract seed places the drop, objectives,
 pickup and terrain. Walkers can climb hills, descend valley slopes and cross
 open gullies where the terrain permits. Free-aim weapons pitch toward the
@@ -299,10 +299,13 @@ The radar and squad orders map show terrain contours at 40-metre intervals
 alongside obstacles and routes. The radar also shows the elevation under your rig.
 Situation Sim offers all seven mission types
 in each biome.
-Defense drops the squad near the relay. Hostile transports land during the
-assault, unload their rigs by ramp, and lift away. Tanks drive in from the map
-edge, while helicopters and VTOLs fly in. On offensive contracts the garrisons
-already hold their positions when you land. On Meridian, Garrison Defense puts
+New Defense postings and Situation Sim Defense use larger fields with a roughly
+2.3 km approach to the relay. The first hostile section is dispatched nine
+seconds after the player rig reaches the relay. Hostile transports land at a
+distance, unload their rigs by ramp, and lift away while those rigs advance.
+Tanks drive in from the map edge, while helicopters and VTOLs fly in. Previously
+accepted or staged Defense contracts retain their original layout. On offensive
+contracts the garrisons already hold their positions when you land. On Meridian, Garrison Defense puts
 the relay in a city square with several streets leading into it. On Cinder,
 Facility Demolition puts the processor inside a walled garrison. The main gate
 opens onto the motor pool, and a service road runs behind the hangars.

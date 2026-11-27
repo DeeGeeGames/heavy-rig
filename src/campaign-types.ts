@@ -30,6 +30,7 @@ export interface Contract {
 	hostility: number;
 	tier: MissionTier;
 	requiredReputation: number;
+	fieldLayout?: 'extended-defense';
 }
 
 export interface Landmark extends Point {
@@ -49,6 +50,7 @@ export interface MissionMap {
 	sites: Point[];
 	landmarks: Landmark[];
 	terrain?: FieldTerrain;
+	defenseApproach?: { staging: readonly [Point, Point]; arrivalRadius: number; firstWaveDelay: number; minimumStandoff: number };
 }
 
 export interface MissionStructure extends Point { hp: number; maxHp: number }
@@ -62,6 +64,7 @@ export interface MissionRuntime {
 	raidTargets?: MissionStructure[];
 	captureSites?: CaptureSite[];
 	acquisitionTime?: number;
+	defenseArrivalRadius?: number;
 	targetId: number | undefined;
 	progress: number;
 	required: number;

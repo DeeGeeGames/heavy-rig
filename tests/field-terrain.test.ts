@@ -11,7 +11,7 @@ import { groundHeight } from '../src/terrain-elevation';
 import { DROPSHIP_DECK, DROPSHIP_WIDTH } from '../src/launch-berths';
 import { landingFootprint } from '../src/landing-site';
 import { dropRigPose, rigReleaseTime } from '../src/enemy-deployment';
-import { createSituationMission } from '../src/situation-sim';
+import { archivedDefense } from './defense-fixture';
 import { CAPTURE_RADIUS, EXTRACTION_RADIUS, generateMissionField, missionArtilleryCount, missionHostileCount } from '../src/missions';
 import { createMissionState, distance, spawningStep, type Point, type SquadmateOptions } from '../src/simulation';
 
@@ -254,7 +254,7 @@ test('campaign deployment keeps each contract role, full squad, and hostile rost
 
 test('edge and hillside reinforcements keep the whole dropship on the field and the unloading ramp on the ground', function () {
 	for (const [planetId, seed, tier, index] of [['iolith', 3246141861, 10, 12], ['borealis', 1070406884, 3, 3], ['galeward', 831056492, 5, 3]] as const) {
-		const state = createSituationMission({ kind: 'defend', planetId, tier, frame: 'warden', wing: [] }, seed, 'standard');
+		const state = archivedDefense(planetId, tier, seed, 'standard');
 		state.spawnIn = 0; state.spawned = index;
 		spawningStep(state, 1 / 60);
 		const map = state.mission?.map, drop = state.warnings[0]?.drop;

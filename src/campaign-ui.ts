@@ -1,6 +1,7 @@
 import { rigName } from './rigs';
 import { companyRank, getContractTier, reputationProgress, unlockedMissionTier } from './reputation';
 import { ACQUISITION_SECONDS, commandTargetName, missionOpposition } from './missions';
+import { DEFENSE_APPROACH_BRIEFING } from './defense-layout';
 import { getSystemIntel } from './universe';
 import { closePlanetDetails, renderTerritoryMap } from './territory-map';
 import { html } from 'lit-html';
@@ -169,6 +170,7 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			html`<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span><h2>${selected.title}</h2>`,
 			...(storyStep ? [html`<span class="eyebrow">${storyStep.contact} · COMMANDER REQUIRED</span>`, ...textItems(storyStep.pitch)] : []),
 			...textItems(selected.briefing),
+			...(selected.fieldLayout === 'extended-defense' ? textItems(DEFENSE_APPROACH_BRIEFING) : []),
 			...textItems(missionOpposition(selected)),
 			...textItems(`SUCCESS: +${getContractTier(selected).reputation} company reputation. ${reputationProgress(campaign)}.`),
 			...textItems('Success expands employer influence around this system. Failure or abort strengthens the opposition. Repeated victories can move the border and end a local conflict.'),
