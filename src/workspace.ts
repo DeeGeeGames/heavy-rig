@@ -259,7 +259,11 @@ export const mountWorkspaceLayout = function (container: HTMLElement, signal: Ab
 		if (!root) return;
 		const state = stateFor(root);
 		const pane = event.target.closest('.workspace-pane');
-		if (state.detail && pane && pane !== state.detail.pane) delete state.detail;
+		if (state.detail && pane && pane !== state.detail.pane) {
+			// A nested view can pair the inspected pane with a companion pane.
+			const active = state.views.find(function (view) { return view.id === state.active; });
+			if (active?.parentTab !== state.detail.view) delete state.detail;
+		}
 		revealWorkspaceElement(event.target);
 		rememberWorkspaceFocus(root);
 	};
