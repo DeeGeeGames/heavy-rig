@@ -36,7 +36,7 @@
 #game[data-screen='launch'] .menu-controls { display: none; }
 #game[data-screen='launch'] .world-labels { opacity: 1; }
 #launch { position: absolute; z-index: 3; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
-#skip-launch {
+:is(#skip-launch, #skip-jump) {
 	display: flex;
 	align-items: center;
 	gap: 9px;
@@ -48,7 +48,7 @@
 	color: var(--hangar-ui-paper);
 	font: 700 12px/1 var(--mono);
 }
-#skip-launch:is(:hover, :focus) { color: var(--hangar-ui-ink); background: var(--hangar-ui-amber); }
+#skip-launch:is(:hover, :focus), #skip-jump:is(:hover, :focus-visible) { color: var(--hangar-ui-ink); background: var(--hangar-ui-amber); }
 
 #game[data-screen='rig-bay'] .menu-controls { z-index: 5; }
 .rig-bay {

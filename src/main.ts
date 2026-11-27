@@ -31,6 +31,7 @@ import { artilleryAimStatus, combatTargets, createMissionState, createState, dis
 import { RIG_DEFEAT_SECONDS } from './rig-defeat-timing';
 import { createRigDefeatAudio } from './rig-defeat-audio';
 import { createPresentation } from './presentation';
+import { AFTERBURN_CUT, AFTERBURN_DURATION } from './afterburn';
 import { LAUNCH_DURATION, launchSceneTime } from './launch-timing';
 import { advanceGaits, createGaits } from './gait';
 import { viewScale } from './projection-3d';
@@ -129,7 +130,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let briefingOrigin: BriefingOrigin = 'board';
 	let editedOperation: string | undefined;
 	let guidedCourse: PlanetId | undefined;
-	let jumpArrival: { until: number; transmission: boolean } | undefined;
+	let jumpArrival: { view: ReturnType<typeof presentation.createJump>; transmission: boolean; arriving: boolean; drive: number } | undefined;
+	const releaseJump = function () { jumpArrival?.view.dispose(); jumpArrival = undefined; };
+	onCleanup(releaseJump);
+	world.onScreenExit('jump', releaseJump);
 	const abort = new AbortController(); const listenerOptions = { signal: abort.signal };
 	onCleanup(function () { abort.abort(); });
 	const updateWorkspaceLayout = mountWorkspaceLayout(container, abort.signal);
@@ -203,14 +207,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	let narrativePart: 'before' | 'after' = 'before';
 	let narrativeElapsed = 0;
 	let narrativeWaiting = false;
-	let launchElapsed = 0;
-	let launchStartedAt: number | undefined;
-	const launchTimeNow = function () {
-		return launchStartedAt === undefined ? launchElapsed : (performance.now() - launchStartedAt) / 1000;
+	let cinematicElapsed = 0;
+	let cinematicStartedAt: number | undefined;
+	const cinematicTimeNow = function () {
+		return cinematicStartedAt === undefined ? cinematicElapsed : (performance.now() - cinematicStartedAt) / 1000;
 	};
-	const pauseLaunchClock = function () {
-		launchElapsed = launchTimeNow();
-		launchStartedAt = undefined;
+	const pauseCinematicClock = function () {
+		cinematicElapsed = cinematicTimeNow();
+		cinematicStartedAt = undefined;
 	};
 	let trainingOrigin: 'title' | 'bridge' | 'starmap' = 'title';
 	let editor: CompanyEditor = { loadout: [...(getOwnedMech(campaign)?.loadout ?? [])], reserves: [...(getOwnedMech(campaign)?.reserves ?? [])], slot: null, notice: '' };
@@ -328,7 +332,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const keyboardAction = function (code: string) { return ACTIONS.find(function (action) { return profile.settings.keyboard[action].includes(code); }); };
 	const active = function (action: string) { return [...mouseButtons].some(function (button) { return keyboardAction(`Mouse${button}`) === action; }) || [...keys].some(function (code) { return keyboardAction(code) === action; }) || pending.has(action) || [...held.values()].includes(action); };
 	const silenceAudio = function () {
-		pauseLaunchClock();
+		pauseCinematicClock();
 		audio.update({ speed: 0, laser: false, heat: 0, active: false, theme: escape ? 'pursuit' : 'standard' });
 	};
 	const unlockSound = function () { void audio.unlock(); };
@@ -516,7 +520,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	let stopped = false;
 	const transition = function (operation: Promise<void>, after: () => void = syncScreen) {
-		choicePicker.close(false); pauseLaunchClock();
+		choicePicker.close(false); pauseCinematicClock();
 		screenRevision++; resetInput();
 		void operation.then(function () { if (!stopped) after(); }).catch(function (error: unknown) {
 			console.error(error); const node = element('error'); node.textContent = 'Could not change screen. Reload to recover.'; node.hidden = false;
@@ -526,7 +530,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		for (const input of container.querySelectorAll<HTMLInputElement>('input[data-difficulty]')) input.checked = input.value === profile.settings.difficulty;
 	};
 	const startLaunch = function () {
-		launchElapsed = 0;
+		cinematicElapsed = 0;
 		presentation.setLaunchTime(0);
 		audio.beginSortie(); transition(navigation.setScreen('launch')); unlockSound();
 	};
@@ -903,10 +907,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				confirm(function () {
 					const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, target); if (next === campaign) return;
 					if (!replaceCampaign(next)) return;
-					element('jump-destination').textContent = getPlanet(campaign.planetId).name.toUpperCase();
-					element('jump-copy').textContent = `${origin.name} → ${getPlanet(campaign.planetId).name} · DAY ${campaign.day} · APPROACHING ORBIT`;
-					jumpArrival = { until: performance.now() + 2200, transmission };
-					transition(navigation.setScreen('jump'), function () { syncScreen(); element('jump').focus({ preventScroll: true }); });
+					cinematicElapsed = 0;
+					jumpArrival = { view: presentation.createJump(origin, getPlanet(target)), transmission, arriving: false, drive: 0 };
+					element('jump-location').textContent = origin.name;
+					element('jump-copy').textContent = `DEPARTURE ORBIT · DAY ${campaign.day - 1}`;
+					transition(navigation.setScreen('jump'));
 				}, 'CONFIRM JUMP', `One calendar day · 0 CR. Arrive at ${getPlanet(target).name} on day ${campaign.day + 1}. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
 			},
 			stage: function (contract) {
@@ -953,6 +958,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const toShip = function () { guidedCourse = undefined; destination = campaign.planetId; selectedContract = undefined; navigateShip('starmap', 'route', true); };
 	const toTransmission = function () { destination = campaign.planetId; selectedContract = undefined; navigateShip('bridge', 'transmission'); };
+	const finishJump = function () {
+		if (!jumpArrival || navigation.screen !== 'jump' || navigation.transitioning || navigation.auxiliary || campaignConflict || contextLost || !focused || document.hidden) return;
+		if (jumpArrival.transmission && getTransmission(campaign)?.offers.some(function (step) { return step.contract.planetId === campaign.planetId; })) toTransmission();
+		else toShip();
+	};
 	const toTitle = function (focusId?: 'title-training' | 'title-situation' | 'title-intro') {
 		guidedCourse = undefined;
 		replayingEscape = false;
@@ -987,6 +997,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			return;
 		}
 		if (navigation.screen === 'launch') { finishLaunch(); return; }
+		if (navigation.screen === 'jump') { finishJump(); return; }
 		const planetPopover = element('starmap').querySelector<HTMLElement>('.planet-popover:popover-open');
 		if (navigation.screen === 'starmap' && planetPopover) {
 			planetPopover.hidePopover();
@@ -1055,6 +1066,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('training-back', leaveTraining);
 	listen('field-deploy', function () { if (trialSeed !== undefined && !contextLost) startLaunch(); });
 	listen('skip-launch', finishLaunch);
+	listen('skip-jump', finishJump);
 	listen('field-generate', function () { if (!defensePacing && trialSeed !== undefined) showFieldTrial((trialSeed + 0x9e3779b9) >>> 0); });
 	listen('pause-training-loadout', showTrainingSetup);
 	listen('result-training-loadout', showTrainingSetup);
@@ -1706,7 +1718,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		return { speed: combat ? state.player.speed : 0, laser: combat && !!state.beam, heat: state.player.heat,
 			theme: escape ? 'pursuit' as const : 'standard' as const,
 			alarm: combat && escape,
-			launchTime: launching && launchStartedAt !== undefined ? launchTimeNow() : undefined,
+			jumpDrive: navigation.screen === 'jump' && !navigation.auxiliary ? jumpArrival?.drive : undefined,
+			launchTime: launching && cinematicStartedAt !== undefined ? cinematicTimeNow() : undefined,
 			jogTime: navigation.screen === 'intro' && narrativePart === 'before' && !narrativeWaiting && !navigation.transitioning && !navigation.auxiliary && [1, 2].includes(narrativeFrame(INTRO_LINES, narrativeElapsed).index)
 				? narrativeElapsed - (INTRO_LINES[0].length / 10 + 3) : undefined,
 			jogDuration: INTRO_LINES.slice(1, 3).reduce(function (sum, line) { return sum + line.length / 10 + 3; }, 0) - 0.05,
@@ -1718,14 +1731,31 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	let frameTime = 0;
 	let makeInput = function (): Controls { return { drive: 0, stop: false, turn: 0, aim, fire: [false, false, false, false], coolant: false }; };
+	world.addSystem('orbital-jump').inScreens(['jump']).inPhase('render').setProcess(function () {
+		if (!jumpArrival || navigation.transitioning || !focused || document.hidden || contextLost || campaignConflict) return;
+		const elapsed = cinematicTimeNow();
+		if (elapsed >= AFTERBURN_DURATION) {
+			// The company screen attaches its own entities. Leave this screen-scoped
+			// system before navigating so the jump's cleanup cannot remove them.
+			queueMicrotask(finishJump); return;
+		}
+		jumpArrival.drive = jumpArrival.view.render(elapsed);
+		// Give the first draw (including shader compilation) its full opening hold.
+		cinematicStartedAt ??= performance.now() - elapsed * 1000;
+		if (!jumpArrival.arriving && elapsed >= AFTERBURN_CUT) {
+			jumpArrival.arriving = true;
+			element('jump-location').textContent = getPlanet(campaign.planetId).name;
+			element('jump-copy').textContent = `ARRIVAL ORBIT · DAY ${campaign.day}`;
+		}
+	});
 	world.addSystem('mission-launch').inScreens(['launch']).inPhase('preUpdate').setProcess(function () {
 		if (navigation.transitioning || !focused || document.hidden || contextLost || campaignConflict) return;
-		if (launchStartedAt === undefined) {
+		if (cinematicStartedAt === undefined) {
 			// Start the soundtrack before drawing the first shot. Both use foreground real time.
-			launchStartedAt = performance.now() - launchElapsed * 1000;
+			cinematicStartedAt = performance.now() - cinematicElapsed * 1000;
 			audio.update(audioFrame(frameTime));
 		}
-		const elapsed = launchTimeNow();
+		const elapsed = cinematicTimeNow();
 		const dockHeight = portrait.matches && container.classList.contains('touch-enabled') ? touchDock.offsetHeight : 0;
 		presentation.setLaunchTime(launchSceneTime(elapsed), dockHeight);
 		if (elapsed >= LAUNCH_DURATION) finishLaunch();
@@ -1762,12 +1792,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	});
 	world.addSystem('browser-input').inPhase('preUpdate').setProcess(function ({ dt }) {
 		const now = frameTime;
-		if (!navigation.transitioning && navigation.screen === 'jump' && focused && !document.hidden && jumpArrival && now >= jumpArrival.until) {
-			const { transmission } = jumpArrival;
-			jumpArrival = undefined;
-			if (transmission && getTransmission(campaign)?.offers.some(function (step) { return step.contract.planetId === campaign.planetId; })) toTransmission();
-			else toShip();
-		}
 		const revisionAtFrame = screenRevision;
 		const rect = canvas.getBoundingClientRect(); const width = rect.width; const height = rect.height;
 		presentation.resize(state, width, height);

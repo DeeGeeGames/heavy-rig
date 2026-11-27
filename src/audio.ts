@@ -20,6 +20,8 @@ export interface AudioFrame {
 	victory?: boolean;
 	alarm?: boolean;
 	theme?: AudioTheme;
+	/** Current thrust of the four orbital carrier drives. */
+	jumpDrive?: number | undefined;
 	/** Seconds on the mission launch cinematic's clock. */
 	launchTime?: number | undefined;
 	/** Seconds since the Rig Bay line started; undefined stops the recorded footsteps. */
@@ -581,10 +583,11 @@ export const createAudio = function () {
 			nextAlarm = at + 2.6;
 		}
 		const speed = clamp(Math.abs(frame.speed) / 90);
-		engine.frequency.setTargetAtTime(34 + speed * 31, at, 0.1);
-		engineFilter.frequency.setTargetAtTime(95 + speed * 105, at, 0.1);
-		engineGain.gain.setTargetAtTime(driving ? 0.035 + speed * 0.055 : 0, at, 0.06);
-		mechanicalGain.gain.setTargetAtTime(driving ? speed * 0.045 : 0, at, 0.08);
+		const burn = audible ? frame.jumpDrive ?? 0 : 0;
+		engine.frequency.setTargetAtTime(34 + speed * 31 + burn * 106, at, 0.1);
+		engineFilter.frequency.setTargetAtTime(95 + speed * 105 + burn * 715, at, 0.1);
+		engineGain.gain.setTargetAtTime(driving ? 0.035 + speed * 0.055 : burn * 0.23, at, 0.06);
+		mechanicalGain.gain.setTargetAtTime(driving ? speed * 0.045 : burn * 0.17, at, 0.08);
 		laser.frequency.setTargetAtTime(160 + clamp(frame.heat, 0, 100) * 0.7, at, 0.03);
 		laserFilter.frequency.setTargetAtTime(780 + clamp(frame.heat, 0, 100) * 8, at, 0.03);
 		laserGain.gain.setTargetAtTime(driving && frame.laser ? 0.09 : 0, at, 0.015);
