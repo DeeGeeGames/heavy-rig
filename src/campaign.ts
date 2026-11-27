@@ -77,6 +77,7 @@ export interface Campaign extends CompanyState {
 	day: number;
 	boardRevision: number;
 	credits: number;
+	upkeepOwed?: number;
 	companyReputation: number;
 	completed: number;
 	failed: number;
@@ -235,15 +236,18 @@ export const acceptContract = function (campaign: Campaign, contractId: string):
 
 export const forecastArrival = function (campaign: Campaign, planetId: PlanetId): Campaign {
 	if (campaign.active || campaign.deployed || campaign.operations?.length || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
-	return { ...advanceDays(campaign, 1), planetId, universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 }, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation } };
+	return advanceDays({
+		...campaign, planetId, universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 }, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation },
+	}, 1);
 };
 
 export const travelTo = function (campaign: Campaign, planetId: PlanetId): Campaign {
-	const arrival = forecastArrival(campaign, planetId);
-	if (arrival === campaign) return campaign;
+	if (!isPlanetId(planetId)) return campaign;
 	const { fare } = getJumpRoute(campaign.planetId, planetId);
 	if (campaign.credits < fare) return campaign;
-	return { ...arrival, credits: campaign.credits - fare };
+	const departure = { ...campaign, credits: campaign.credits - fare };
+	const arrival = forecastArrival(departure, planetId);
+	return arrival === departure ? campaign : arrival;
 };
 
 const emptyLineup = function (): readonly PilotAssignment[] {
@@ -545,7 +549,8 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		if (!object(value) || value['version'] !== CAMPAIGN_VERSION || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['companyReputation'], 0, MAX_COMPANY_REPUTATION)
-			|| !isInteger(value['credits'], 0, MAX_CREDITS) || !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
+			|| !isInteger(value['credits'], 0, MAX_CREDITS) || value['upkeepOwed'] !== undefined && !isInteger(value['upkeepOwed'], 0, MAX_CREDITS)
+			|| !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > Math.min(MAX_COUNT, value['boardRevision'] * MAX_OPERATIONS) || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
 			|| value['active'] !== undefined && !isContract(value['active']) || value['lastResult'] !== undefined && !isResult(value['lastResult'])) return createCampaign();
 		const universe = parseUniverse(value['universe'], value['day']);
@@ -576,6 +581,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 		const campaign: Campaign = {
 			...company, version: CAMPAIGN_VERSION, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], companyReputation: value['companyReputation'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
+			...(value['upkeepOwed'] === undefined ? {} : { upkeepOwed: value['upkeepOwed'] }),
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 			...(operations ? { operations } : {}), ...(committedCrew ? { committedCrew } : {}), ...(lastOperationDay ? { lastOperationDay } : {}),
 			...(preferredLineup ? { preferredLineup } : {}), ...(pilotWins ? { pilotWins } : {}),

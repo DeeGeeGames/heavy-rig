@@ -24,8 +24,8 @@ test('a legacy staged defense retains its layout through review, mixed-day commi
 	expect(restagedOffer?.fieldLayout).toBe('extended-defense');
 });
 
-test('a saved mixed day settles the same crew sortie after extraction or interruption and advances work once', function () {
-	const rigs = buyFrame(buyFrame(buyFrame({ ...createCampaign(318, 'career'), credits: 60_000 }, 'kestrel-b'), 'kestrel-c'), 'warden');
+test('a saved mixed day settles the same crew sortie after extraction or interruption and advances work and upkeep once', function () {
+	const rigs = buyFrame(buyFrame(buyFrame({ ...createCampaign(318, 'career'), day: 30, credits: 60_000 }, 'kestrel-b'), 'kestrel-c'), 'warden');
 	const company = hirePilot(hirePilot(rigs, 'flint'), 'kite');
 	const ready = queueRepair({ ...company, fleet: company.fleet.map(function (rig) { return rig.frameId === 'kestrel-c' ? { ...rig, integrity: 82 } : rig; }) }, 'kestrel-c');
 	const [live, crew] = getContracts(ready);
@@ -75,7 +75,8 @@ test('a saved mixed day settles the same crew sortie after extraction or interru
 		expect(result.workOrders).toHaveLength(0);
 		const saved = roundTrip(result);
 		expect(saved.lastOperationDay).toEqual(result.lastOperationDay);
-		expect(saved.credits).toBe(ready.credits + (result.lastOperationDay?.reduce(function (total, report) { return total + report.payout; }, 0) ?? 0));
+		// Three Kestrels, a Warden, and two hired pilots share one 150 CR bill.
+		expect(saved.credits).toBe(ready.credits + (result.lastOperationDay?.reduce(function (total, report) { return total + report.payout; }, 0) ?? 0) - 150);
 		expect(abandonContract(saved)).toBe(saved);
 		expect(recoverInterruptedDeployment(saved)).toBe(saved);
 	}

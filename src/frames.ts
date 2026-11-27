@@ -114,9 +114,11 @@ export const getFrame = function (id: FrameId): FrameDefinition {
 	return frame;
 };
 
+export const bareChassisMass = function (frameId: FrameId): number { return CHASSIS[getFrame(frameId).chassisId].mass; };
+
 // Mounted weapons deal armor points. Use the bare chassis tonnage so fitting
 // equipment, including a variant's extra mounting structure, can't buy armor.
 export const rigIntegrityDamage = function (frameId: FrameId, weaponDamage: number): number {
-	const armorPoints = 25 * CHASSIS[getFrame(frameId).chassisId].mass;
+	const armorPoints = 25 * bareChassisMass(frameId);
 	return weaponDamage * 100 / armorPoints;
 };

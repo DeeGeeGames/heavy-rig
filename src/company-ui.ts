@@ -8,7 +8,7 @@ import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { FACTIONS, getFaction, getPlanet, type Campaign, type PlannedOperation } from './campaign';
 import type { FactionId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
-import { availableWeapons, canRefit, getOwnedMech, refitDays, repairDays, WEAPON_PRICES, workOrderFor } from './company';
+import { availableWeapons, canRefit, getOwnedMech, monthlyUpkeep, nextUpkeepDay, refitDays, repairDays, UPKEEP_MONTH_DAYS, WEAPON_PRICES, workOrderFor } from './company';
 import { PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary, weaponClassLabel } from './loadout-ui';
 import { frameWeight, loadedMounts, usableMount } from './combat-resources';
@@ -267,7 +267,9 @@ const engineeringPanes = function (campaign: Campaign, actions: CompanyActions):
 			...textItems(next ? `Next completion: ${rigName(next.frameId)} on day ${next.readyDay}. ${ordered.length} active work orders.` : 'No scheduled work. Your crews are standing by.'),
 			...textItems('Ammunition reserve changes take no workshop time. Selected loads replenish free at deployment; no ammunition is bought or stocked.'),
 			...textItems('Each frame has its own crew. Repairs and refits progress in parallel, completing on the ship calendar.'),
-			...textItems('Each jump or sortie also advances work by one day. Waiting does not charge credits or refresh contract postings.'),
+			html`<p class="workspace-copy"><b>Monthly upkeep · ${creditsLabel(monthlyUpkeep(campaign))} due day ${nextUpkeepDay(campaign.day)}</b><br>Every ${UPKEEP_MONTH_DAYS} days. Includes all owned rigs and hired pilots, even when idle.</p>`,
+			...((campaign.upkeepOwed ?? 0) > 0 ? textItems(`${creditsLabel(campaign.upkeepOwed ?? 0)} unpaid. Carried forward until funds allow.`) : []),
+			...textItems('Each jump or operations day advances work by one day. Waiting does not refresh contract postings.'),
 		], actions: html`<button id="advance-day" class="secondary" ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.advanceDays(1); }}>ADVANCE 1 DAY</button><button id="advance-work" class="primary" ?disabled=${!next || Boolean(campaign.deployed)} @click=${function () { if (next) actions.advanceDays(next.readyDay - campaign.day); }}>${next ? `WAIT ${daysLabel(next.readyDay - campaign.day)}` : 'NO WORK PENDING'}</button>` },
 		{ id: 'orders', label: 'Work orders', items: ordered.length === 0 ? [html`<div class="company-empty"><b>ALL BAYS CLEAR</b><p>Schedule repairs in Condition or plan a refit in the Mech Bay.</p></div>`] : ordered.flatMap(function (order) {
 			const frame = getFrame(rigFrameId(order.frameId)); const total = order.readyDay - order.startedDay;
