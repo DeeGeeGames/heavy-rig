@@ -17,6 +17,17 @@ interface Projection {
 	size: Bounds;
 	scale: number;
 }
+interface MapPointer {
+	start: Point;
+	at: Point;
+}
+
+const MAP_GUTTER = { x: 17, y: 19 };
+const MAX_MAP_ZOOM = 3;
+
+const clamp = function (value: number, min: number, max: number): number {
+	return Math.max(min, Math.min(max, value));
+};
 
 const commands = [
 	{ kind: 'form', label: 'Form on Me', icon: '⌃' },
@@ -155,6 +166,11 @@ export const mountSquadOrders = function (
 	let living: readonly Squadmate[] = [];
 	let pick: 'move' | 'attack' | undefined;
 	let projection: Projection = { origin: { x: 0, y: 0 }, size: { width: 0, height: 0 }, scale: 1 };
+	let fitScale = 1;
+	let mapZoom = 1;
+	let pan: Point = { x: 0, y: 0 };
+	let suppressMapClick = false;
+	const pointers = new Map<number, MapPointer>();
 	let cursor: Point = { x: 0, y: 0 };
 	let contactIndex = 0;
 	let message = '';
@@ -180,15 +196,109 @@ export const mountSquadOrders = function (
 		draft.set(mate.pilotId, { pilotId: mate.pilotId, ...(order && { order }), ...(fireDiscipline && { fireDiscipline }) });
 	};
 
+	const updateProjection = function (size = projection.size) {
+		const scale = fitScale * mapZoom;
+		const offset = { x: (size.width - scale * bounds.width) / 2, y: (size.height - scale * bounds.height) / 2 };
+		const limitX = Math.max(0, MAP_GUTTER.x - offset.x);
+		const limitY = Math.max(0, MAP_GUTTER.y - offset.y);
+		pan = { x: clamp(pan.x, -limitX, limitX), y: clamp(pan.y, -limitY, limitY) };
+		projection = { size, scale, origin: { x: offset.x + pan.x, y: offset.y + pan.y } };
+	};
+
+	const center = function (): Point {
+		return { x: projection.size.width / 2, y: projection.size.height / 2 };
+	};
+
+	const zoomMap = function (requested: number, anchor = center(), to = anchor) {
+		const next = clamp(requested, 1, MAX_MAP_ZOOM);
+		const ratio = next / mapZoom;
+		const mid = center();
+		pan = {
+			x: to.x - mid.x - (anchor.x - mid.x - pan.x) * ratio,
+			y: to.y - mid.y - (anchor.y - mid.y - pan.y) * ratio,
+		};
+		mapZoom = next;
+		updateProjection();
+		update();
+	};
+
+	const resetMap = function () {
+		mapZoom = 1;
+		pan = { x: 0, y: 0 };
+		updateProjection();
+		update();
+	};
+
+	const reveal = function (point: Point) {
+		const at = project(projection, point);
+		pan = {
+			x: pan.x + clamp(at.x, MAP_GUTTER.x, projection.size.width - MAP_GUTTER.x) - at.x,
+			y: pan.y + clamp(at.y, MAP_GUTTER.y, projection.size.height - MAP_GUTTER.y) - at.y,
+		};
+		updateProjection();
+	};
+
+	const pointerDown = function (event: PointerEvent) {
+		if (event.button !== 0 || pointers.size >= 2 || !(event.target instanceof Element)) return;
+		const at = { x: event.clientX, y: event.clientY };
+		if (!pointers.size) suppressMapClick = false;
+		pointers.set(event.pointerId, { start: at, at });
+		if (pointers.size === 2) suppressMapClick = true;
+		// Capture on the original control so a tap can still select a pilot or place an order.
+		event.target.setPointerCapture(event.pointerId);
+	};
+
+	const pointerMove = function (event: PointerEvent) {
+		const previous = pointers.get(event.pointerId);
+		if (!previous || !(event.currentTarget instanceof HTMLElement)) return;
+		const at = { x: event.clientX, y: event.clientY };
+		const other = [...pointers.values()].find(function (pointer) { return pointer !== previous; })?.at;
+		pointers.set(event.pointerId, { start: previous.start, at });
+		if (!suppressMapClick && distance(previous.start, at) <= 5) return;
+		if (other) {
+			const rect = event.currentTarget.getBoundingClientRect();
+			const midpoint = function (point: Point): Point {
+				return { x: (point.x + other.x) / 2 - rect.left, y: (point.y + other.y) / 2 - rect.top };
+			};
+			const separation = distance(previous.at, other);
+			zoomMap(separation > 0 ? mapZoom * distance(at, other) / separation : mapZoom, midpoint(previous.at), midpoint(at));
+		} else {
+			const from = suppressMapClick ? previous.at : previous.start;
+			pan = { x: pan.x + at.x - from.x, y: pan.y + at.y - from.y };
+			updateProjection();
+			update();
+		}
+		suppressMapClick = true;
+	};
+
+	const pointerEnd = function (event: PointerEvent) {
+		pointers.delete(event.pointerId);
+	};
+
+	const pointerCancel = function (event: PointerEvent) {
+		if (pointers.delete(event.pointerId)) suppressMapClick = true;
+	};
+
+	const wheel = function (event: WheelEvent) {
+		if (!(event.currentTarget instanceof HTMLElement) || !event.deltaY) return;
+		event.preventDefault();
+		const rect = event.currentTarget.getBoundingClientRect();
+		zoomMap(mapZoom - Math.sign(event.deltaY) * .2, { x: event.clientX - rect.left, y: event.clientY - rect.top });
+	};
+
 	const draw = function () {
 		const canvas = root.querySelector<HTMLCanvasElement>('.squad-map canvas');
 		const ctx = canvas?.getContext('2d');
 		if (!state || !canvas || !ctx || projection.size.width <= 0 || projection.size.height <= 0) return;
 		const { width, height } = projection.size;
 		const ratio = Math.min(2, window.devicePixelRatio || 1);
-		canvas.width = Math.round(width * ratio);
-		canvas.height = Math.round(height * ratio);
-		ctx.scale(ratio, ratio);
+		const pixelsWide = Math.round(width * ratio), pixelsHigh = Math.round(height * ratio);
+		if (canvas.width !== pixelsWide) canvas.width = pixelsWide;
+		if (canvas.height !== pixelsHigh) canvas.height = pixelsHigh;
+		ctx.setTransform(pixelsWide / width, 0, 0, pixelsHigh / height, 0, 0);
+		ctx.clearRect(0, 0, width, height);
+		ctx.globalAlpha = 1;
+		ctx.setLineDash([]);
 		paintGround(ctx, state, projection, bounds);
 		for (const mate of living) {
 			const order = orderFor(mate);
@@ -250,7 +360,7 @@ export const mountSquadOrders = function (
 						<span class="squad-section-label">Tactical commands</span>
 						${commands.map(function (command) { return html`<button type="button" data-squad-command=${command.kind} aria-label=${command.label} aria-pressed=${command.kind === pick}
 							?disabled=${selected.size === 0 || command.kind === 'attack' && contacts.length === 0}
-							@click=${function () { commandSelected(command.kind); }}><span aria-hidden="true">${command.icon}</span>${command.label}</button>`; })}
+							@click=${function (event: MouseEvent) { commandSelected(command.kind, event.detail > 0); }}><span aria-hidden="true">${command.icon}</span>${command.label}</button>`; })}
 					</div>
 					<div class="squad-fire">
 						<div class="squad-fire-label">Fire discipline ${selectedFire.size > 1 ? html`<span>Mixed</span>` : nothing}</div>
@@ -261,11 +371,18 @@ export const mountSquadOrders = function (
 					</div>
 				</div>
 				<div class="squad-field">
-					<div class="squad-map" data-pick=${pick ?? 'none'}>
+					<div class="squad-map" data-pick=${pick ?? 'none'} @pointerdown=${pointerDown} @pointermove=${pointerMove}
+						@pointerup=${pointerEnd} @pointercancel=${pointerCancel} @lostpointercapture=${pointerCancel} @wheel=${wheel}>
 						<canvas aria-hidden="true"></canvas>
 						<button type="button" class="squad-map-confirm" aria-label=${pickLabel} ?hidden=${!pick} @click=${choose}></button>
 						${projection.size.width ? mapMarkers(current, candidate) : nothing}
 						<span class="squad-map-compass">↑ N</span>
+					</div>
+					<div class="squad-map-tools" data-menu-row>
+						<button type="button" aria-label="Zoom out" @click=${function () { zoomMap(mapZoom - .5); }}>−</button>
+						<button type="button" data-squad-map-reset @click=${resetMap}>${Math.round(mapZoom * 100)}% · Reset</button>
+						<button type="button" aria-label="Zoom in" @click=${function () { zoomMap(mapZoom + .5); }}>+</button>
+						<span>Pinch / scroll to zoom · drag to pan</span>
 					</div>
 					<div class="squad-map-caption">
 						${pick ? html`<span class="squad-map-prompt">${message || caption}</span>` : html`
@@ -308,6 +425,7 @@ export const mountSquadOrders = function (
 			${current.squadmates.map(function (mate, index) {
 				const anchor = project(projection, mate);
 				const label = placePilotMarker(anchor, occupied, projection.size);
+				const offscreen = label.x < 0 || label.x > projection.size.width || label.y < 0 || label.y > projection.size.height;
 				occupied.push(label);
 				const at = markerStyle(label);
 				const leadLength = distance(label, anchor);
@@ -319,7 +437,9 @@ export const mountSquadOrders = function (
 				return html`${lead}${pick || mate.hp <= 0
 					? html`<span class="squad-mark map-pilot" ?data-selected=${selected.has(mate.pilotId)} ?data-disabled=${mate.hp <= 0} style=${at} aria-hidden="true"><b>${index + 1}</b><small>${mate.callsign}</small></span>`
 					: html`<button type="button" class="squad-mark map-pilot" ?data-selected=${selected.has(mate.pilotId)} style=${at} aria-label=${`Select ${mate.callsign}`}
-						aria-pressed=${selected.has(mate.pilotId)} @click=${function () { toggle(mate.pilotId); }}><b>${index + 1}</b><small>${mate.callsign}</small></button>`}`;
+						?hidden=${offscreen} aria-pressed=${selected.has(mate.pilotId)} @click=${function (event: MouseEvent) {
+							if (event.detail === 0 || !suppressMapClick) toggle(mate.pilotId);
+						}}><b>${index + 1}</b><small>${mate.callsign}</small></button>`}`;
 			})}
 			${pick === 'move' ? html`<span class="squad-mark map-cursor" style=${markerStyle(project(projection, cursor))} aria-hidden="true">＋</span>` : nothing}
 		`;
@@ -329,8 +449,10 @@ export const mountSquadOrders = function (
 		const map = root.querySelector<HTMLElement>('.squad-map');
 		if (!map || !map.clientWidth || !map.clientHeight) return;
 		const size = { width: map.clientWidth, height: map.clientHeight };
-		const scale = Math.min(Math.max(1, size.width - 34) / bounds.width, Math.max(1, size.height - 38) / bounds.height);
-		projection = { size, scale, origin: { x: (size.width - scale * bounds.width) / 2, y: (size.height - scale * bounds.height) / 2 } };
+		const scale = Math.min(Math.max(1, size.width - 2 * MAP_GUTTER.x) / bounds.width, Math.max(1, size.height - 2 * MAP_GUTTER.y) / bounds.height);
+		pan = { x: pan.x * scale / fitScale, y: pan.y * scale / fitScale };
+		fitScale = scale;
+		updateProjection(size);
 		update();
 	};
 
@@ -374,6 +496,8 @@ export const mountSquadOrders = function (
 	const stepContact = function (step: number): boolean {
 		if (pick !== 'attack' || contacts.length < 2 || !step) return false;
 		contactIndex = (contactIndex + Math.sign(step) + contacts.length) % contacts.length;
+		const candidate = contacts[contactIndex];
+		if (candidate) reveal(candidate.body);
 		message = '';
 		update();
 		return true;
@@ -389,7 +513,7 @@ export const mountSquadOrders = function (
 		return true;
 	};
 
-	const commandSelected = function (kind: OrderKind) {
+	const commandSelected = function (kind: OrderKind, fromPointer: boolean) {
 		if (!state || !selected.size) return;
 		if (kind === 'move' || kind === 'attack') {
 			pick = kind;
@@ -401,6 +525,8 @@ export const mountSquadOrders = function (
 					return previous && distance(contact.body, origin) >= distance(previous.body, origin) ? best : index;
 				}, 0);
 			}
+			const point = kind === 'attack' ? contacts[contactIndex]?.body : cursor;
+			if (!fromPointer && point) reveal(point);
 			message = '';
 			update();
 			focus('.squad-map-confirm');
@@ -423,6 +549,7 @@ export const mountSquadOrders = function (
 		if (!state || !pick) return;
 		let point = cursor;
 		const pointer = event.detail > 0;
+		if (pointer && suppressMapClick) return;
 		if (pointer && event.currentTarget instanceof HTMLElement) {
 			const rect = event.currentTarget.getBoundingClientRect();
 			point = {
@@ -471,6 +598,11 @@ export const mountSquadOrders = function (
 		draft.clear();
 		pick = undefined;
 		message = '';
+		pointers.clear();
+		suppressMapClick = false;
+		fitScale = 1;
+		mapZoom = 1;
+		pan = { x: 0, y: 0 };
 		projection = { origin: { x: 0, y: 0 }, size: { width: 0, height: 0 }, scale: 1 };
 		render(nothing, root);
 	};
@@ -501,7 +633,13 @@ export const mountSquadOrders = function (
 				const markers = [...root.querySelectorAll<HTMLElement>('[data-squad-contact]')];
 				const current = markers[contactIndex];
 				const next = current && directionalControl(markers, current, direction);
-				if (next) { contactIndex = markers.indexOf(next); message = ''; update(); }
+				if (next) {
+					contactIndex = markers.indexOf(next);
+					const candidate = contacts[contactIndex];
+					if (candidate) reveal(candidate.body);
+					message = '';
+					update();
+				}
 			}
 			else {
 				const step = Math.max(20, 4 / projection.scale);
@@ -510,6 +648,7 @@ export const mountSquadOrders = function (
 					x: Math.max(0, Math.min(bounds.width, cursor.x + vector.x * step)),
 					y: Math.max(0, Math.min(bounds.height, cursor.y + vector.y * step)),
 				};
+				reveal(cursor);
 				message = '';
 				update();
 			}
