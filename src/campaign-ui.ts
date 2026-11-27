@@ -1,6 +1,6 @@
 import { rigName } from './rigs';
-import { companyRank, getMissionTier, reputationProgress, unlockedMissionTier } from './reputation';
-import { ACQUISITION_SECONDS, missionOpposition } from './missions';
+import { companyRank, getContractTier, reputationProgress, unlockedMissionTier } from './reputation';
+import { ACQUISITION_SECONDS, commandTargetName, missionOpposition } from './missions';
 import { getSystemIntel } from './universe';
 import { closePlanetDetails, renderTerritoryMap } from './territory-map';
 import { html } from 'lit-html';
@@ -16,10 +16,9 @@ import type { ChoicePicker } from './choice-picker';
 import { operationPanes, type OperationsActions } from './operations-ui';
 
 export type ShipView = 'rigs' | 'weapons' | 'board' | 'transmission' | 'operations' | 'route' | 'system' | 'loadout' | 'condition' | 'calendar' | 'squad';
-const OBJECTIVES: Readonly<Record<MissionKind, string>> = {
+const OBJECTIVES: Readonly<Record<Exclude<MissionKind, 'assassination'>, string>> = {
 	defend: 'Hold the relay against the assault. Keep its integrity above zero, then return to extraction.',
 	demolition: 'Find and destroy the marked installation. Its garrison is optional; extraction is required.',
-	assassination: 'Track down the marked command frame. Destroy it and reach extraction alive.',
 	raid: 'Destroy all three marked installations in any order, then extract. Defenders are optional.',
 	recovery: 'Hold the cache zone for five uninterrupted seconds, then extract with the data. Guards are optional.',
 	acquisition: `Activate three beacons within ${ACQUISITION_SECONDS / 60} minutes: hold each zone for three seconds. Activated beacons stay active. Then extract.`,
@@ -171,9 +170,9 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 			...(storyStep ? [html`<span class="eyebrow">${storyStep.contact} · COMMANDER REQUIRED</span>`, ...textItems(storyStep.pitch)] : []),
 			...textItems(selected.briefing),
 			...textItems(missionOpposition(selected)),
-			...textItems(`SUCCESS: +${getMissionTier(selected.tier).reputation} company reputation. ${reputationProgress(campaign)}.`),
+			...textItems(`SUCCESS: +${getContractTier(selected).reputation} company reputation. ${reputationProgress(campaign)}.`),
 			...textItems('Success expands employer influence around this system. Failure or abort strengthens the opposition. Repeated victories can move the border and end a local conflict.'),
-			...(storyStep ? [] : [html`<span class="eyebrow">SURFACE OBJECTIVE</span>`, ...textItems(OBJECTIVES[selected.kind])]),
+			...(storyStep ? [] : [html`<span class="eyebrow">SURFACE OBJECTIVE</span>`, ...textItems(selected.kind === 'assassination' ? `Track down the marked ${commandTargetName(selected)}. Destroy it and reach extraction alive.` : OBJECTIVES[selected.kind])]),
 			...(storyOffer && transmission && transmission.offers.length > 1 ? textItems('Committing the day with this offer closes the other signal.') : []),
 			html`<p class="stake-line"><small>EMPLOYER</small>${getFaction(selected.employer).name}<br><strong class="positive">+${selected.favor} on success</strong></p>`,
 			html`<p class="stake-line"><small>OPPOSITION</small>${getFaction(selected.opponent).name}<br><strong class="negative">−${selected.hostility} ${active ? 'applied on acceptance' : 'on day commitment'}</strong></p>`,

@@ -219,18 +219,26 @@ failed work does not remove earned reputation. Rank thresholds are 0, 100, 250,
 | Company rank | Mission tier | Weapon quality | Reputation per extraction |
 | --- | --- | --- | --- |
 | 1 | 1 · Local | 0 | 50 |
-| 3 | 2 · Frontier | 1 | 90 |
-| 6 | 3 · Veteran | 2 | 150 |
-| 9 | 4 · Heavy | 3 | 230 |
-| 12 | 5 · Elite | 4 | 330 |
-| 15 | 6 · Legendary | 5 | 450 |
+| 2 | 2 · Patrolled | 0 | 65 |
+| 3 | 3 · Frontier | 1 | 90 |
+| 4 | 4 · Contested | 1 | 115 |
+| 6 | 5 · Veteran | 2 | 150 |
+| 7 | 6 · Reinforced | 2 | 185 |
+| 9 | 7 · Heavy | 3 | 230 |
+| 10 | 8 · Veteran Heavy | 3 | 280 |
+| 12 | 9 · Elite | 4 | 330 |
+| 15 | 10 · Legendary | 5 | 450 |
 
 In conflict zones, the board shows one posting per mission type. It uses the
 highest tier your company rank and employer standing allow, with local work
 available even at hostile standing. The briefing describes the opposing forces.
-Tougher contracts increase force size, armor, commander and facility durability,
-enemy weapon quality, and payment. The selected game difficulty continues to
-apply on top of the contract tier.
+Tiers 1–2 field vehicles and fixed defenses only. Priority Target contracts
+mark a command helicopter at tier 1 and a command tank at tier 2. Scout rigs
+first appear at tier 3, and heavy rigs and missile VTOLs enter at tier 7.
+Tougher contracts increase force size, vehicle and facility durability, enemy
+weapon quality, and payment. The selected game difficulty applies on top of
+contract tier. Existing generated contracts already accepted or staged under
+the six-tier curve keep their original terms and opposition.
 
 The weapon catalogue stocks each model at the highest tier unlocked by your
 company rank. The listing and item details show the tier alongside the name.
@@ -249,7 +257,7 @@ all-rigs cheat retain their existing equipment; the starter Kestrel stays fixed.
 | --- | --- |
 | Garrison defense | Keep the contracted relay alive through a finite assault. |
 | Facility demolition | Destroy the marked installation; surviving guards are optional. |
-| Priority target | Destroy the designated command frame; surviving escorts are optional. |
+| Priority target | Destroy the designated command vehicle or rig; surviving escorts are optional. |
 | Area clearance | Eliminate every hostile across three deployment sites. |
 | Raid | Destroy three supply installations in any order; surviving defenders are optional. |
 | Recovery | Hold the marked cache zone for five uninterrupted seconds, then extract with its data. |
@@ -259,7 +267,7 @@ Completing the objective opens extraction. Reach the marked landing zone and
 remain within 150 meters for three uninterrupted seconds. Combat and incoming
 ordnance continue; frame destruction or loss of a defended relay still fails the
 contract. Every weapon family can damage facilities. On Pilot difficulty a
-demolition facility absorbs 2,000–4,100 damage across the six contract tiers.
+demolition facility absorbs 2,000–4,100 damage across the ten contract tiers.
 Each of the three raid installations has 60% of its tier's demolition durability.
 
 Hostile forces combine Scout, Striker, and Siege mechs with helicopters, missile

@@ -1,7 +1,7 @@
 import { BASTION_PLATE_DAMAGE, HARROW_BRACE_SECONDS, HARROW_MAX_RANGE, HARROW_MIN_RANGE, SPECTER_JAM_RANGE, SPECTER_JAM_RATE, SPECTER_MARK_DAMAGE, SPECTER_MARK_RANGE, SPECTER_MARK_SECONDS, SPECTER_SURVEY_RANGE, hasBastionPlate, incomingArmor, mortarInRange, mortarProfile, mountInterval } from './frame-tactics';
 import { ARTILLERY_FLIGHT_SECONDS, ARTILLERY_TARGETING_SECONDS, EMPLACEMENT_BLAST_RADIUS, scatteredImpact, type ArtilleryAim, type EmplacementShot } from './artillery';
 import { emplacementLaunch } from './artillery-emplacement-rig';
-import { getMissionTier } from './reputation';
+import { firstHeavyRigTier, getContractTier, getMissionTier } from './reputation';
 import type { AuthoredPoseContext } from './authored-pose';
 import { getMechAssetBinding } from './mech-asset-registry';
 import { consumeFire, coolReactor, frameWeight, loadedMounts, usableMount, weightMetrics, type ReactorState } from './combat-resources';
@@ -152,7 +152,7 @@ export const createMissionState = function (contract: Contract, options: Mission
 	state.coolantCharges = options.coolantCharges === undefined ? 2 : Number.isFinite(options.coolantCharges) ? Math.max(0, Math.min(3, Math.floor(options.coolantCharges))) : 0;
 	const { map, garrison } = generateMissionField(contract, options.map);
 	const hostileCount = contract.kind === 'defend' ? missionHostileCount(contract) : garrison.length;
-	const structureHp = getMissionTier(contract.tier).objectiveHp * getDifficultyDefinition(state.difficulty).enemyArmor;
+	const structureHp = getContractTier(contract).objectiveHp * getDifficultyDefinition(state.difficulty).enemyArmor;
 	state.mission = {
 		contract, map, stage: 'active',
 		structure: contract.kind === 'demolition' ? { ...map.objective, hp: structureHp, maxHp: structureHp } : undefined,
@@ -187,10 +187,13 @@ const relayPosition = function (state: CombatStateView): Point | undefined {
 	return state.mission ? state.mission.contract.kind === 'defend' ? state.mission.map.objective : undefined : { x: ARENA.relayX, y: ARENA.relayY };
 };
 const createEnemy = function (state: CombatStateView, spawn: MissionSpawn): Unit {
-	const level = state.mission ? getMissionTier(state.mission.contract.tier) : undefined;
-	const commander = Boolean(spawn.commander && (!level || level.tier >= 4));
+	const contract = state.mission?.contract;
+	const level = contract ? getContractTier(contract) : undefined;
+	const commander = Boolean(spawn.commander && (!contract || contract.tier >= firstHeavyRigTier(contract)));
 	const frameId = spawn.frameId;
-	const hp = Math.round((frameId ? 100 : spawn.commander ? level?.commanderHp ?? 4200 : ENEMY_STATS[spawn.kind].hp * (level?.armor ?? 1)) * getDifficultyDefinition(state.difficulty).enemyArmor);
+	const vehicleArmor = ENEMY_STATS[spawn.kind].hp * (level?.armor ?? 1);
+	const baseHp = frameId ? 100 : !spawn.commander ? vehicleArmor : isEnemyMech(spawn) ? level?.commanderHp ?? 4200 : vehicleArmor * 1.25;
+	const hp = Math.round(baseHp * getDifficultyDefinition(state.difficulty).enemyArmor);
 	const target = relayPosition(state) ?? state.player;
 	const tier = level?.weaponTier ?? 0;
 	const stock = frameId && stockPackage(frameId);
@@ -608,7 +611,7 @@ const hurtFriendlyIntegrity = function (state: CombatStateView, target: Friendly
 };
 const hurtFriendlyWithWeapon = function (state: CombatStateView, target: FriendlyContact, damage: number, directionalFeedback = false, incoming?: SpatialPoint) {
 	const loss = target.side === 'relay'
-		? damage * 100 / getMissionTier(state.mission?.contract.tier ?? 1).objectiveHp
+		? damage * 100 / (state.mission ? getContractTier(state.mission.contract) : getMissionTier(1)).objectiveHp
 		: rigIntegrityDamage(target.side === 'squadmate' ? target.mate.frameId : state.frame, damage);
 	hurtFriendlyIntegrity(state, target, loss, directionalFeedback, incoming);
 };

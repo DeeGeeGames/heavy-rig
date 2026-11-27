@@ -1,20 +1,23 @@
 import { expect, test } from 'bun:test';
 import { getWeapon, weaponIdForTier } from '../src/arsenal';
-import { acceptContract, abandonContract, canAcceptContract, createCampaign, getContracts, parseCampaign, settleContract, travelTo, type Campaign } from '../src/campaign';
+import { acceptContract, abandonContract, canAcceptContract, canStageOperation, createCampaign, getContracts, parseCampaign, reviewOperations, settleContract, stageOperation, travelTo, type Campaign } from '../src/campaign';
+import type { Contract } from '../src/campaign-types';
 import { advanceDays, buyFrame, buyWeapon, getOwnedMech } from '../src/company';
 import { frameWeight, loadedMounts } from '../src/combat-resources';
 import { PLAYABLE_FRAMES } from '../src/frames';
 import { isFrameLoadout } from '../src/hardpoints';
 import { getFrameOffer } from '../src/market';
-import { companyRank, MISSION_TIERS, REPUTATION_RANKS, unlockedMissionTier } from '../src/reputation';
+import { companyRank, MISSION_TIERS, REPUTATION_RANKS, unlockedMissionTier, weaponUnlockRank } from '../src/reputation';
 import { createMissionState } from '../src/simulation';
 import { visibleTouchContacts } from '../src/touch-controls';
-import { generateMissionMap, isPriorityTarget, missionHostileCount, missionSpawn } from '../src/missions';
+import { generateMissionMap, isPriorityTarget, missionArtilleryCount, missionHostileCount, missionObjective, missionSpawn } from '../src/missions';
 
 const ranked = function (rank: number): Campaign {
 	return { ...createCampaign(317), companyReputation: REPUTATION_RANKS[rank - 1] ?? 0, credits: 1_000_000, reputation: { freeholds: 100, combine: 100, accord: 100 }, boardReputation: { freeholds: 100, combine: 100, accord: 100 } };
 };
 test('company milestones gate contract acceptance and both purchase paths, independently of money and faction favor', function () {
+	expect(MISSION_TIERS).toHaveLength(10);
+	expect(([0, 1, 2, 3, 4, 5] as const).map(weaponUnlockRank)).toEqual([1, 3, 6, 9, 12, 15]);
 	for (const milestone of MISSION_TIERS) {
 		for (const rank of [milestone.rank, Math.max(1, milestone.rank - 1)]) {
 			const campaign = ranked(rank); const unlocked = rank >= milestone.rank;
@@ -26,13 +29,37 @@ test('company milestones gate contract acceptance and both purchase paths, indep
 				expect(acceptContract(campaign, contract.id) === campaign).toBe(!unlocked);
 			}
 			const id = weaponIdForTier('laser', milestone.weaponTier);
-			expect(buyWeapon(campaign, id) === campaign).toBe(!unlocked);
+			expect(buyWeapon(campaign, id) === campaign).toBe(rank < weaponUnlockRank(milestone.weaponTier));
 			for (const frame of PLAYABLE_FRAMES) {
 				const offer = getFrameOffer(campaign, frame.id);
 				expect(offer.loadout.every(function (weapon) { return getWeapon(weapon).tier <= unlockedMissionTier(campaign).weaponTier; })).toBe(true);
 			}
 		}
 	}
+});
+test('six-tier v8 saves retain accepted and staged missions, payout, and opposition without duplicating postings', function () {
+	const contract: Contract = {
+		id: '317-0-meridian-assassination-2', seed: 962422262, planetId: 'meridian', kind: 'assassination', employer: 'accord', opponent: 'freeholds',
+		title: 'Cut the command link', briefing: 'Signal Accord has identified a Frontier Freeholds commander coordinating the local offensive. Find and destroy the designated command frame. Supporting forces are optional targets. Leave the surface through the extraction zone.',
+		reward: 3060, favor: 10, hostility: 8, tier: 2, requiredReputation: -15,
+	};
+	const state = { ...createCampaign(317, 'career'), companyReputation: 700, reputation: { freeholds: 50, combine: 50, accord: 50 }, boardReputation: { freeholds: 50, combine: 50, accord: 50 } };
+	const current = getContracts(state).find(function (job) { return job.kind === 'assassination' && job.tier === 2; });
+	if (!current) throw new Error('Missing new posting');
+	const operation = stageOperation(state, current.id).operations?.[0];
+	if (!operation) throw new Error('Missing staged operation');
+	const staged = parseCampaign(JSON.stringify({ ...state, operations: [{ ...operation, contract }] }));
+	expect(staged.operations?.[0]?.contract).toEqual(contract);
+	expect(reviewOperations(staged).issues).toEqual([]);
+	expect(canStageOperation(staged, current)).toBe(false);
+	const accepted = parseCampaign(JSON.stringify({ ...state, active: contract, reputation: { ...state.reputation, freeholds: 42 } }));
+	expect(accepted.active).toEqual(contract);
+	if (!accepted.active) throw new Error('Saved contract was discarded');
+	const deployed = createMissionState(accepted.active);
+	expect(deployed.enemies.find(function (unit) { return unit.id === deployed.mission?.targetId; })?.catalog).toBeDefined();
+	const won = settleContract(accepted, true);
+	expect(won.lastResult).toMatchObject({ companyReputation: 90, payout: 3060, contract });
+	expect(parseCampaign(JSON.stringify(won))).toEqual(won);
 });
 test('only a successful settlement grants company reputation, once, and the rank and active terms survive reload', function () {
 	const campaign = createCampaign(317); const contract = getContracts(campaign)[0];
@@ -78,7 +105,7 @@ test('sale packages are complete, compatible, bounded in weight, reproducible, a
 	}
 	expect(packages.size).toBeGreaterThan(40);
 });
-test('mission tiers produce larger forces and tougher structures without granting catalog commanders inflated integrity', function () {
+test('mission tiers increase pressure and replace marked vehicles with rigs at tier 3 without inflating rig integrity', function () {
 	let previousObjective = 0;
 	for (const [index, level] of MISSION_TIERS.entries()) {
 		const company = ranked(level.rank);
@@ -87,17 +114,23 @@ test('mission tiers produce larger forces and tougher structures without grantin
 		const state = createMissionState(contract); const assassination = createMissionState({ ...contract, kind: 'assassination' });
 		// Compare tiers on the same contract seed because their artillery ranges overlap.
 		const lowerTier = MISSION_TIERS[index - 1];
-		if (lowerTier) expect(state.enemies.length).toBeGreaterThan(missionHostileCount({ ...contract, tier: lowerTier.tier }));
+		if (lowerTier) expect(state.enemies.length).toBeGreaterThanOrEqual(missionHostileCount({ ...contract, tier: lowerTier.tier }));
 		expect(state.mission?.structure?.hp ?? 0).toBeGreaterThan(previousObjective);
 		const commander = assassination.enemies.find(function (enemy) { return enemy.id === assassination.mission?.targetId; });
-		expect(commander?.hp).toBe(100);
-		expect(PLAYABLE_FRAMES.some(function (frame) { return frame.id === commander?.catalog?.frameId; })).toBe(true);
 		if (!commander) throw new Error('Missing priority target');
+		if (level.tier < 3) {
+			expect(commander.kind).toBe(level.tier === 1 ? 'helicopter' : 'tank');
+			expect(assassination.enemies.every(function (unit) { return unit.kind === 'helicopter' || unit.kind === 'tank'; })).toBe(true);
+			expect(missionObjective(assassination)).toContain('command vehicle');
+		} else {
+			expect(commander.hp).toBe(100);
+			expect(PLAYABLE_FRAMES.some(function (frame) { return frame.id === commander.catalog?.frameId; })).toBe(true);
+		}
 		expect(isPriorityTarget(assassination, commander)).toBe(true);
-		expect(Boolean(commander.commander)).toBe(level.tier >= 4);
+		expect(Boolean(commander.commander)).toBe(level.tier >= 7);
 		expect(visibleTouchContacts(assassination, function () { return { x: 100, y: 100 }; }, 400, 400, []).find(function (contact) { return contact.id === commander.id; })?.label).toBe('PRIORITY TARGET');
 		expect(state.enemies.every(function (enemy) { return enemy.loadout?.every(function (mount) { return getWeapon(mount.weapon).tier === level.weaponTier; }); })).toBe(true);
-		expect(state.enemies.filter(function (enemy) { return enemy.kind !== 'artillery'; })).toHaveLength(level.patrol - (level.tier >= 4 ? 2 : 1));
+		expect(state.enemies.length - missionArtilleryCount(contract, state.mission?.map)).toBe(level.patrol - (level.tier >= 7 ? 2 : 1));
 		expect(assassination.enemies).toHaveLength(level.patrol);
 		const restored = parseCampaign(JSON.stringify(acceptContract(company, contract.id))).active;
 		if (!restored) throw new Error('Missing saved contract');
@@ -105,8 +138,8 @@ test('mission tiers produce larger forces and tougher structures without grantin
 		const surveyed = Array.from({ length: missionHostileCount(restored) }, function (_, i) { return missionSpawn(restored, map, i); });
 		expect(surveyed.map(function ({ kind, x, y }) { return { kind, x, y }; })).toEqual(
 			state.enemies.map(function ({ kind, x, y }) { return { kind, x, y }; }));
-		if (level.tier === 1) expect(state.enemies.every(function (enemy) { return enemy.kind === 'scout' || enemy.kind === 'helicopter' || enemy.kind === 'artillery'; })).toBe(true);
-		if (level.tier >= 4) expect(state.enemies.some(function (enemy) { return enemy.kind === 'siege'; })).toBe(true);
+		if (level.tier < 3) expect(state.enemies.every(function (enemy) { return enemy.kind === 'helicopter' || enemy.kind === 'tank' || enemy.kind === 'artillery'; })).toBe(true);
+		if (level.tier >= 7) expect(state.enemies.some(function (enemy) { return enemy.kind === 'siege'; })).toBe(true);
 		previousObjective = state.mission?.structure?.hp ?? 0;
 	}
 });

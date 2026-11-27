@@ -1,4 +1,4 @@
-import { CONTRACT_COPY } from './campaign';
+import { contractCopy } from './campaign';
 import type { Contract, MissionKind, PlanetId } from './campaign-types';
 import type { FrameId } from './frames';
 import type { Difficulty } from './operation';
@@ -16,7 +16,7 @@ export interface SituationSetup {
 }
 
 export const createSituationMission = function (setup: SituationSetup, seed: number, difficulty: Difficulty) {
-	const { title, briefing } = CONTRACT_COPY[setup.kind];
+	const { title, briefing } = contractCopy(setup.kind, setup.tier);
 	const contract: Contract = {
 		id: 'situation-sim', seed, planetId: setup.planetId, kind: setup.kind, tier: setup.tier,
 		employer: 'freeholds', opponent: 'combine', title, briefing, reward: 0, favor: 0, hostility: 0, requiredReputation: 0,
