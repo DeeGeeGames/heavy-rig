@@ -38,17 +38,7 @@ kbd { font: 10px var(--mono); color: var(--muted); border: 1px solid var(--borde
 .muted { font: 12px/1.6 var(--mono); color: var(--muted); }
 #hud { transition: opacity .2s; }
 .menu-open #hud, .menu-open .world-labels { opacity: 0; pointer-events: none; }
-.mission-bar { position: absolute; inset: 0 0 auto; display: flex; align-items: start; justify-content: space-between; gap: 20px; padding: max(24px, env(safe-area-inset-top)) 28px 28px; background: linear-gradient(#091315e0, transparent); pointer-events: none; }
-.mission-heading { display: flex; gap: 15px; align-items: center; }
 .insignia { font: 32px var(--display); border: 1px solid var(--border); padding: 7px 8px; letter-spacing: -2px; }
-.mission-heading>div { display: grid; gap: 4px; }
-.mission-heading b { font: 19px var(--display); letter-spacing: 1px; }
-#status { font: 11px var(--mono); color: var(--muted); }
-.system-buttons { pointer-events: auto; display: flex; gap: 7px; align-items: center; }
-.system-buttons button { font: 10px var(--mono); padding: 11px 12px; background: #0d1a20b8; }
-#input-mode { font: 9px var(--mono); color: var(--muted); margin-right: 6px; }
-.field-message { position: absolute; left: 50%; top: 17%; transform: translateX(-50%); max-width: 65%; padding: 10px 16px; font: 11px/1.6 var(--mono); letter-spacing: 1px; text-align: center; color: var(--amber); background: #101b20df; border-left: 2px solid var(--amber); pointer-events: none; }
-.field-message:empty { display: none; }
 .left-instruments { position: absolute; bottom: max(25px, env(safe-area-inset-bottom)); left: max(28px, env(safe-area-inset-left)); width: 232px; pointer-events: none; }
 .relay-readout { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; padding: 10px 12px; background: #0c191cce; border-left: 2px solid var(--cyan); }
 .signal-icon { font-size: 28px; color: var(--cyan); }
@@ -172,17 +162,12 @@ dd { margin: 0; color: var(--muted); }
 @media (max-width: 1000px) {
 	.weapon-console { width: 330px; right: 20px; }
 	.left-instruments { width: 200px; left: 20px; }
-	.mission-bar { padding: 20px; }
-	#input-mode { display: none; }
 	.weapon small kbd { display: none; }
 	.brief-content { margin-left: 5%; }
 }
 @media (pointer: coarse) {
 	#game { --touch: 1; }
 }
-.touch-enabled .left-instruments { bottom: 140px; }
-.touch-enabled .frame-readout { padding: 10px; }
-.touch-enabled .drive-heading { margin-top: 10px; }
 @media (max-width: 700px) {
 	.brief-screen { background: linear-gradient(90deg, #081417f5, #081417ce 70%, #0814178a); }
 	.brief-top { top: max(20px, env(safe-area-inset-top)); left: 24px; right: 24px; font-size: 8px; }
@@ -193,16 +178,7 @@ dd { margin: 0; color: var(--muted); }
 	.frame-dossier { display: none; }
 	.brief-footer { position: static; margin: 20px 24px; font-size: 8px; line-height: 1.6; }
 	.brief-footer span:last-child { display: none; }
-	.mission-bar { padding: 14px; gap: 5px; }
 	.insignia { display: none; }
-	.mission-heading b { font-size: 16px; }
-	.mission-heading .eyebrow { font-size: 8px; letter-spacing: 1px; }
-	#status { font-size: 9px; }
-	.system-buttons { gap: 5px; }
-	.system-buttons button { font-size: 9px; padding: 10px 8px; }
-	.system-buttons kbd { display: none; }
-	#sound { display: none; }
-	.field-message { top: 98px; width: max-content; max-width: calc(100% - 40px); font-size: 9px; }
 	.left-instruments { left: 14px; width: 144px; bottom: 16px; }
 	.frame-readout { padding: 10px; }
 	.readout-heading strong { font-size: 25px; }
@@ -224,8 +200,6 @@ dd { margin: 0; color: var(--muted); }
 	#weapon-hint { display: none; }
 	.coolant-button { font-size: 8px; min-height: 42px; align-items: center; padding: 8px; }
 	.coolant-button kbd { display: none; }
-	.touch-enabled .left-instruments { bottom: 120px; }
-	.touch-enabled .relay-readout { margin-bottom: 6px; }
 	.modal { width: calc(100% - 28px); max-height: calc(100% - 32px); padding: 24px 20px; }
 	h2 { font-size: 30px; }
 	.refit-cards { grid-template-columns: 1fr; gap: 8px; margin: 18px 0; }
@@ -258,15 +232,6 @@ dd { margin: 0; color: var(--muted); }
 	.weapon b { font-size: 18px; padding-top: 9px; }
 	.weapon-icon { font-size: 21px; }
 	.weapon-console-heading { margin-bottom: 5px; }
-	.field-message { top: 74px; font-size: 9px; padding: 7px 12px; }
-	.touch-enabled .left-instruments { bottom: 124px; }
-	.touch-enabled .frame-readout { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-	.touch-enabled .readout-heading { width: 100%; }
-	.touch-enabled .armor-track { width: 100%; margin: 0 0 3px; }
-	.touch-enabled .heat-heading { width: 100%; }
-	.touch-enabled .heat-track { width: 100%; margin: 0; }
-	.touch-enabled .drive-heading { width: 100%; margin-top: 4px; }
-	.touch-enabled .throttle-track { width: 100%; margin-top: 2px; }
 }
 
 @media (max-width: 380px) {
@@ -277,12 +242,6 @@ dd { margin: 0; color: var(--muted); }
 	.weapon small { font-size: 6.5px; }
 	.coolant-button { font-size: 7px; padding: 7px 5px; }
 	.readout-heading { gap: 5px; }
-}
-@media (max-width: 700px) {
-	.touch-enabled .left-instruments { top: 80px; bottom: auto; left: 14px; right: 14px; width: auto; display: flex; align-items: start; gap: 10px; }
-	.touch-enabled .relay-readout { flex: 0 0 128px; }
-	.touch-enabled .frame-readout { flex: 1; }
-	.touch-enabled .field-message { top: 220px; }
 }
 /* The large layout is automatic for a controller and available for every pilot. */
 .training-launch { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
@@ -297,11 +256,6 @@ dd { margin: 0; color: var(--muted); }
 .using-gamepad .difficulty-picker input:focus+span { outline: 3px solid var(--amber); outline-offset: 3px; background: #4c3c20; }
 .using-gamepad .weapon.selected { border-color: var(--border); box-shadow: none; }
 .using-gamepad .weapon.firing { border-color: var(--amber); box-shadow: inset 0 2px var(--amber); }
-.training-guide { position: absolute; left: max(28px, env(safe-area-inset-left)); top: 112px; width: min(410px, calc(100% - 56px)); padding: 18px 20px; background: #0c1b22f2; border-left: 3px solid var(--amber); pointer-events: none; }
-.training-guide b { display: block; margin-top: 6px; font: 25px var(--display); }
-.training-guide p { font-size: 15px; line-height: 1.5; color: var(--paper); margin: 8px 0 12px; }
-.training-guide small { color: var(--muted); font: 11px var(--mono); }
-.training-active #message { display: none; }
 .couch-ui { --couch-label: clamp(14px, 1.05vw, 18px); }
 .couch-ui .eyebrow, .couch-ui kbd { font-size: var(--couch-label); letter-spacing: 1px; }
 .couch-ui .muted, .couch-ui .modal>p { font-size: 16px; }
@@ -340,11 +294,7 @@ dd { margin: 0; color: var(--muted); }
 .couch-ui .frame-dossier>div { font-size: 14px; }
 .couch-ui .menu-controls { font-size: 15px; }
 @media (min-width: 1001px) {
-	.couch-ui .mission-bar { padding: 30px 40px; }
-	.couch-ui .mission-heading b { font-size: 25px; }
-	.couch-ui #status { font-size: var(--couch-label); }
-	.couch-ui .insignia, .couch-ui #input-mode, .couch-ui #sound { display: none; }
-	.couch-ui .system-buttons button { min-height: 48px; font-size: 15px; }
+	.couch-ui .insignia { display: none; }
 	.couch-ui .left-instruments { left: 40px; bottom: 32px; width: 285px; }
 	.couch-ui .relay-readout { margin-bottom: 8px; padding: 12px; }
 	.couch-ui .relay-readout b { font-size: 21px; }
@@ -364,7 +314,6 @@ dd { margin: 0; color: var(--muted); }
 	.couch-ui .weapon em { font-size: 16px; }
 	.couch-ui .weapon-icon { font-size: 22px; }
 	.couch-ui .coolant-button { font-size: 14px; min-height: 48px; align-items: center; }
-	.couch-ui .field-message { font-size: 15px; top: 18%; max-width: 52%; }
 }
 @media (min-width: 701px) and (max-height: 850px) {
 	.couch-ui .brief-content { margin-top: 66px; width: min(460px, 46%); }
@@ -382,8 +331,7 @@ dd { margin: 0; color: var(--muted); }
 	.couch-ui .modal.compact { width: min(580px, calc(100% - 40px)); }
 	.couch-ui .refit-card { padding: 18px; min-height: 250px; }
 	.couch-ui .refit-card p { font-size: 15px; }
-	.couch-ui .mission-heading b { font-size: 22px; }
-	.couch-ui #status, .couch-ui .heat-heading, .couch-ui .drive-heading { font-size: 12px; }
+	.couch-ui .heat-heading, .couch-ui .drive-heading { font-size: 12px; }
 	.couch-ui .weapon em { font-size: 13px; }
 	.couch-ui .weapon small kbd { display: inline; font-size: 12px; }
 	.couch-ui .menu-controls { font-size: 12px; }
@@ -399,23 +347,9 @@ dd { margin: 0; color: var(--muted); }
 	.couch-ui h2 { font-size: 32px; }
 	.couch-ui .handbook-grid { grid-template-columns: 1fr; gap: 5px; }
 	.couch-ui .training-launch { flex-wrap: wrap; }
-	.training-guide { top: 92px; left: 14px; width: calc(100% - 28px); padding: 12px 14px; }
-	.training-guide b { font-size: 21px; }
-	.training-guide p { font-size: 13px; margin-bottom: 8px; }
-	.training-guide small { font-size: 9px; }
-}
-@media (max-height: 540px) and (min-width: 701px) {
-	.training-guide { top: 88px; width: 340px; padding: 10px 14px; }
-	.training-guide b { font-size: 20px; }
-	.training-guide p { font-size: 13px; margin: 5px 0; }
-	.training-guide small { display: none; }
 }
 @media (max-width: 700px) {
-	.training-active .training-guide { top: 80px; padding: 10px 12px; }
-	.training-active .training-guide b { font-size: 18px; }
-	.training-active .training-guide p { font-size: 12px; line-height: 1.4; margin: 6px 0; }
-	.training-active .training-guide small { display: none; }
-	.training-active .left-instruments, .training-active.touch-enabled .left-instruments { top: auto; bottom: 172px; left: 14px; right: 14px; width: auto; display: block; }
+	.training-active .left-instruments { top: auto; bottom: 172px; left: 14px; right: 14px; width: auto; display: block; }
 	.training-active .relay-readout, .training-active .readout-heading, .training-active .armor-track, .training-active .throttle-track { display: none; }
 	.training-active .frame-readout { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; padding: 9px; }
 	.training-active .heat-heading { grid-column: 1; font-size: 11px; }
@@ -444,11 +378,10 @@ dd { margin: 0; color: var(--muted); }
 	.brief-content, .couch-ui .brief-content { margin-bottom: 36px; }
 }
 @media (max-width: 700px) {
-	.training-active .left-instruments, .training-active.touch-enabled .left-instruments { bottom: 190px; }
+	.training-active .left-instruments { bottom: 190px; }
 }
 @media (min-width: 701px) and (max-height: 540px) {
-	.training-active .training-guide { top: 78px; width: 310px; }
-	.training-active .left-instruments, .training-active.touch-enabled .left-instruments { top: auto; bottom: 116px; left: 20px; width: 280px; display: block; }
+	.training-active .left-instruments { top: auto; bottom: 116px; left: 20px; width: 280px; display: block; }
 	.training-active .relay-readout, .training-active .readout-heading, .training-active .armor-track, .training-active .throttle-track { display: none; }
 	.training-active .frame-readout { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; padding: 9px; }
 	.training-active .heat-heading { grid-column: 1; font-size: 11px; }
@@ -563,7 +496,7 @@ dd { margin: 0; color: var(--muted); }
 	#weapon-hint { display: none; }
 	.draft-progress, .couch-ui .draft-progress { font-size: 8px; padding: 6px 0 0; }
 	.coolant-button { min-height: 40px; flex-wrap: wrap; gap: 5px; }
-	.training-active .left-instruments, .training-active.touch-enabled .left-instruments { bottom: 248px; }
+	.training-active .left-instruments { bottom: 248px; }
 	.modal-kicker { font-size: 9px; gap: 8px; flex-wrap: wrap; }
 }
 @media (max-width: 380px) {

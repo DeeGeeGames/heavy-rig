@@ -159,6 +159,20 @@ export const stepTraining = function (training: Training, controls: Controls, dt
 	finishTraining(training, controls, dt, before);
 };
 
+// A single cue fits above the touch playfield. Pause keeps the complete drill briefing.
+export const touchDrillCue: Readonly<Record<TrainingStage, string>> = {
+	drive: 'Push the left stick to travel 100 m. Release to slow.',
+	neutral: 'Hold STOP until the frame settles.',
+	steer: 'Drag the left stick to turn the hull 60°.',
+	cannon: 'Tap a target. Arm mount 1 and hold FIRE.',
+	missiles: 'Track a target in your firing arc for 1.5 s. Arm mount 3 and hold FIRE.',
+	combined: 'Arm two mounts and hold FIRE together.',
+	heat: 'Arm mount 3 and hold FIRE to reach 45% heat.',
+	coolant: 'Tap VENT to purge reactor heat.',
+	evade: `Move at least ${RIG_RADIUS} m outside the impact circle, or destroy the gun with mount 3.`,
+	complete: 'Qualification complete.',
+};
+
 export const trainingCopy = function (stage: TrainingStage, controller: boolean, mappings: Pick<Settings, 'keyboard' | 'controller' | 'legControls' | 'torsoAim'> & { touch?: boolean; buttonLabel?: (index: number) => string } = defaultSettings()): { title: string; instruction: string; progress: string } {
 	const key = function (action: keyof KeyboardBindings) { return mappings.keyboard[action].map(keyLabel).join(' / ') || 'the on-screen control'; };
 	const arcade = mappings.touch || mappings.legControls === 'arcade';

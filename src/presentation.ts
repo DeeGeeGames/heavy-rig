@@ -103,6 +103,8 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 		const labels = document.createElement('canvas'); labels.className = 'world-labels'; labels.setAttribute('aria-hidden', 'true');
 		allocated.push(function () { labels.remove(); });
 		const ctx = labels.getContext('2d'); if (!ctx) throw new Error('Overlay unavailable');
+		const radarCanvas = canvas.parentElement?.querySelector('#tactical-radar');
+		const radar = radarCanvas instanceof HTMLCanvasElement ? radarCanvas.getContext('2d') : null;
 		const renderer = new WebGLRenderer({ canvas, antialias: true });
 		// Dispose GPU allocations and listeners without losing the canvas context;
 		// the same DOM canvas must remain usable when the application hot reloads.
@@ -486,7 +488,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				if (disposed || !overlay || width <= 0 || height <= 0) return;
 				const { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights } = overlay;
 				if (state.player.hp <= 0) { ctx.clearRect(0, 0, width, height); return; }
-				drawOverlay(ctx, width, height, state, aim, { showRadar: width > 700 && height > 520, gaits, camera, obstructions, couchMode, enemyLabelHeights, squadmateLabelHeights,
+				drawOverlay(ctx, width, height, state, aim, { radar, gaits, camera, obstructions, couchMode, enemyLabelHeights, squadmateLabelHeights,
 					armorHit: Math.max(0, 1 - (state.time - (player?.damage.hitAt ?? -10)) / 0.9),
 					...(player && getFrame(state.frame).chassisId !== 'warden' ? { armorHitHeight: player.model.labelHeight + 20 } : {}),
 					relayHit: Math.max(0, 1 - (state.time - relayHitAt) / 1.6) });

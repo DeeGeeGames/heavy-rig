@@ -1,4 +1,4 @@
-import { PICKUP_BOARD_AT, PICKUP_DURATION, PICKUP_LAND_AT, PICKUP_LIFT_AT } from './launch-surface';
+import { PICKUP_DURATION, PICKUP_LAND_AT, PICKUP_LIFT_AT } from './launch-surface';
 import { HARROW_MAX_RANGE, mortarProfile, mountInterval } from './frame-tactics';
 import { rigFrameId, rigName } from './rigs';
 import { getFrameOffer } from './market';
@@ -38,7 +38,7 @@ import { targetElevation, type ScreenRect } from './overlay';
 import { createAudio } from './audio';
 import { createGamepadInput, type PadInput } from './gamepad';
 import { createControllerFeedback } from './controller-feedback';
-import { createTraining, trainingCopy, trainingFireSlot, type Training, type TrainingSetup } from './training';
+import { createTraining, touchDrillCue, trainingCopy, trainingFireSlot, type Training, type TrainingSetup } from './training';
 import { mountTrainingSetup } from './training-ui';
 import { createSituationMission } from './situation-sim';
 import { mountSituationSetup } from './situation-sim-ui';
@@ -49,7 +49,9 @@ import { focusTerritoryMap } from './territory-map';
 import { renderBridge, renderStarmap, type BridgeActions, type ShipView } from './campaign-ui';
 import { MISSION_NAMES, type PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
-import { missionStructures, missionObjective } from './missions';
+import { combatTask } from './combat-task';
+import { fieldContacts } from './tactical-radar';
+import { missionStructures } from './missions';
 import { isFrameId, WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
 import { dismissPilot, getPilot, hirePilot } from './pilots';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
@@ -142,9 +144,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		relay: element('relay-value'), relayFill: element('relay-fill'), heat: element('heat-value'), heatFill: element('heat-fill'),
 		drive: element('drive-value'), throttleFill: element('throttle-fill'), speed: element('speed-value'), squad: element('squad-readout'),
 		coolant: element('coolant-value'), message: element('message'),
-		sound: element('sound'), inputMode: element('input-mode'),
+		sound: element('sound'), stripHull: element('strip-hull'), stripHeat: element('strip-heat'), stripDrive: element('strip-drive'),
+		stripHullFill: element('strip-hull-fill'), stripHeatFill: element('strip-heat-fill'), stripRelay: element('strip-relay'),
+		strip: element('combat-strip'), weapons: element('fire-console'), radar: element('tactical-radar'), radarButton: element('toggle-radar'), pauseRadar: element('pause-radar'),
 	};
-	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.mission-bar, .left-instruments, .weapon-console, #training-guide, #escape-guide')];
+	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.strip-vitals, .strip-task, .strip-actions, #tactical-radar, .left-instruments, .weapon-console')];
 	const touchClusters = [...container.querySelectorAll<HTMLElement>('.touch-drive-cluster, .touch-fire-cluster')];
 	const touchControls = [...element('touch').querySelectorAll<HTMLElement>('button, .touch-control-label, .zoom-panel')];
 	let hudObstructions: ScreenRect[] = [];
@@ -188,6 +192,36 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const consumedMouseButtons = new Set<number>();
 	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
 	let sortieEnding: { owner: typeof state; kind: 'fall' | 'pickup'; startedAt: number; elapsed: number; reveal?: (now: number) => void } | undefined;
+	const radarViewport = window.matchMedia('(width > 700px) and (height > 520px)');
+	let radarOwner: typeof state | undefined;
+	const radarAvailable = function () {
+		return radarViewport.matches && !container.classList.contains('touch-enabled') && state.outcome === 'playing' && sortieEnding?.owner !== state;
+	};
+	const updateRadar = function () {
+		const available = radarAvailable();
+		if (!available || radarOwner !== state) radarOwner = undefined;
+		const open = radarOwner === state;
+		ui.radarButton.hidden = !available;
+		ui.radarButton.setAttribute('aria-expanded', String(open));
+		ui.radar.hidden = !open;
+		if (available && navigation.screen === 'playing') ui.radarButton.textContent = `${String(fieldContacts(state).length).padStart(2, '0')} contacts ${open ? '▴' : '▾'}`;
+		if (open && navigation.screen === 'playing') {
+			const room = ui.weapons.getBoundingClientRect().top - ui.strip.getBoundingClientRect().bottom - 6;
+			ui.radar.style.maxHeight = `${Math.max(0, Math.floor(room))}px`;
+		}
+		if (navigation.screen === 'pause-panel') {
+			const changed = ui.pauseRadar.hidden === available;
+			ui.pauseRadar.hidden = !available;
+			ui.pauseRadar.textContent = open ? 'Hide tactical map' : 'Show tactical map';
+			if (changed && !element('pause-panel').hidden) updateDialogLayout();
+		}
+	};
+	const toggleRadar = function () {
+		if (!radarAvailable()) return false;
+		radarOwner = radarOwner === state ? undefined : state;
+		lastHud = 0;
+		return true;
+	};
 	const squadOrdersRoot = element('squad-orders');
 	const canIssueSquadOrders = function () {
 		return state.outcome === 'playing' && state.squadmates.some(function (mate) { return mate.hp > 0; });
@@ -356,7 +390,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		inputMode = value; container.dataset['input'] = value; container.dataset['promptDevice'] = promptDevice();
 		container.classList.toggle('using-gamepad', value === 'gamepad');
 		container.classList.toggle('couch-ui', value === 'gamepad' || profile.settings.couchUI);
-		ui.inputMode.textContent = value === 'gamepad' ? 'GAMEPAD' : value === 'touch' ? 'TOUCH' : 'KB / MOUSE';
 		render(touchLayout ? '' : renderGlyph(promptDevice(), inputMode === 'keyboard' ? 'back' : 'settings'), element('pause-prompt'));
 		element('weapon-hint').textContent = touchLayout ? 'TAP TO ARM / HOLD FIRE' : 'HOLD TO FIRE · COMBINE MOUNTS';
 		renderControllerMappings();
@@ -402,6 +435,15 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('leave').textContent = situationSim ? 'RETURN TO SIM SETUP' : trialSeed !== undefined ? 'FIELD BRIEFING' : escape ? 'RETURN TO TITLE' : state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('training-deploy').hidden = !campaign.active && !campaign.operations?.length;
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
+		if (navigation.screen === 'pause-panel') {
+			const contract = state.mission?.contract;
+			const operation = escape ? 'Stolen Freedom' : training ? 'Wayfarer training' : contract ? `${getPlanet(contract.planetId).name} / ${getFaction(contract.employer).shortName} · ${MISSION_NAMES[contract.kind]}` : 'Relay 09';
+			const detail = training && training.stage !== 'range' && inputMode === 'touch'
+				? trainingCopy(training.stage, false, { ...profile.settings, touch: true }).instruction : ui.status.textContent;
+			const squad = state.squadmates.map(function (mate) { return `${mate.callsign} ${mate.hp > 0 ? Math.ceil(mate.hp) + '%' : 'DOWN'}`; });
+			element('pause-mission').textContent = [operation, ui.phase.textContent, detail, ui.speed.textContent, element('weight-value').textContent, ...squad].filter(Boolean).join(' · ');
+			updateRadar();
+		}
 		element('pause-copy').textContent = finishingSortie ? sortieEnding?.kind === 'pickup' ? 'Extraction in progress. Resume to finish the pickup.' : 'Your rig was disabled. Resume to finish the sortie.'
 			: trialSeed !== undefined ? 'Resume this run, or return to the briefing to start the field again or generate another layout.'
 			: situationSim ? 'Restart to replay this situation with fresh rigs, or return to setup to change the mission and squad.'
@@ -994,6 +1036,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		else if (campaign.lastOperationDay) openOperations();
 		else toShip();
 	});
+	listen('toggle-radar', function () { toggleRadar(); canvas.focus({ preventScroll: true }); });
+	listen('pause-radar', function () { if (toggleRadar()) setPaused(false); });
 	listen('resume', function () { setPaused(false); });
 	listen('pause', function () { setPaused(true); });
 	listen('open-squad-orders', openSquadOrders);
@@ -1094,7 +1138,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('sound', function () {
 		if (audio.status() !== 'running') { muted = false; audio.setMuted(false); unlockSound(); }
 		else { muted = !muted; audio.setMuted(muted); }
-		canvas.focus({ preventScroll: true });
 	});
 	for (const input of container.querySelectorAll<HTMLInputElement>('input[data-difficulty]')) input.addEventListener('change', function () {
 		if (!isDifficulty(input.value)) return;
@@ -1495,45 +1538,37 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const p = state.player;
 		const touchLayout = container.classList.contains('touch-enabled');
 		if (touchLoadout !== state.loadout) { armedTouchMounts.clear(); state.loadout.forEach(function (mount, index) { armedTouchMounts.add(mount.slot ?? index); }); touchLoadout = state.loadout; }
-		ui.phase.textContent = 'FRAME TRAINING'; ui.status.textContent = 'SIMULATOR';
-		const contract = state.mission?.contract;
-		element('mission-name').textContent = contract ? `${getPlanet(contract.planetId).name.toUpperCase()} / ${situationSim ? 'SITUATION SIM' : getFaction(contract.employer).shortName}` : 'WAYFARER TRAINING';
-		element('relay-readout').hidden = Boolean(training || state.mission && state.mission.contract.kind !== 'defend');
+		const showRelay = !training && (!state.mission || state.mission.contract.kind === 'defend');
+		element('relay-readout').hidden = !showRelay;
 		element('relay-name').textContent = state.mission ? 'CONTRACT RELAY' : 'RELAY 09';
-		if (state.mission) { ui.phase.textContent = state.mission.stage === 'extract' ? 'OBJECTIVE COMPLETE / EXTRACT' : MISSION_NAMES[state.mission.contract.kind].toUpperCase(); ui.status.textContent = missionObjective(state); }
 		const pickup = sortieEnding?.owner === state && sortieEnding.kind === 'pickup' ? sortieEnding : undefined;
 		container.classList.toggle('pickup-active', pickup !== undefined);
-		if (pickup) {
-			ui.phase.textContent = 'EXTRACTION';
-			ui.status.textContent = pickup.elapsed < PICKUP_BOARD_AT ? 'Dropship inbound'
-				: pickup.elapsed < PICKUP_LIFT_AT ? 'Squad boarding' : 'Dropship departing';
-		}
-		if (escape) {
-			element('mission-name').textContent = 'RIG BAY / SECURITY ALERT'; ui.phase.textContent = 'STOLEN FREEDOM';
-			ui.status.textContent = state.mission && state.mission.extractTime > 0 ? `Evacuation in ${Math.ceil(3 - state.mission.extractTime)}s · hold position` : `REACH EVACUATION · ${Math.round(distance(state.player, state.mission?.map.extraction ?? state.player))} m`;
-		}
-		element('escape-guide').hidden = !escape || navigation.screen !== 'playing';
-		element('escape-guide').textContent = escape ? escapeMessage(state.time, { ...profile.settings, device: inputMode, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); } }) : '';
 		const drill = training && training.stage !== 'range' ? training.stage : undefined;
 		const drillSlot = trainingFireSlot(drill);
 		const practice = training?.stage === 'range';
-		element('training-guide').hidden = !drill || navigation.screen !== 'playing';
-		if (training) {
-			container.dataset['trainingStage'] = training.stage;
-			ui.phase.textContent = practice ? 'PRACTICE RANGE' : `${getFrame(state.frame).name} QUALIFICATION`;
-			ui.status.textContent = practice ? 'PAUSE TO CHANGE LOADOUT' : 'LOANED TRAINING FRAME · NO SCORED RECORD';
-		} else delete container.dataset['trainingStage'];
-		if (drill) {
-			const copy = trainingCopy(drill, inputMode === 'gamepad', { ...profile.settings, buttonLabel: function (index) { return controllerButtonLabel(controllerFamily, index); }, touch: inputMode === 'touch' });
-			element('training-progress').textContent = `DRILL ${copy.progress}`;
-			element('training-title').textContent = copy.title;
-			element('training-copy').textContent = inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'Release controller inputs to arm the controls, then follow the drill.' : copy.instruction;
-		}
+		if (training) container.dataset['trainingStage'] = training.stage;
+		else delete container.dataset['trainingStage'];
+		const prompts = { ...profile.settings, device: inputMode, buttonLabel: function (index: number) { return controllerButtonLabel(controllerFamily, index); }, touch: inputMode === 'touch' };
+		const drillCopy = drill ? trainingCopy(drill, inputMode === 'gamepad', prompts) : undefined;
+		const task = combatTask(state, {
+			pickupTime: pickup?.elapsed, escapeGuide: escape ? escapeMessage(state.time, prompts) : undefined,
+			drill: drillCopy, practice,
+		});
+		ui.phase.textContent = task.title;
+		ui.status.textContent = drill && inputMode === 'touch' ? touchDrillCue[drill] : task.detail;
 		ui.armor.textContent = `${Math.max(0, Math.ceil(p.hp))}%`; ui.armorFill.style.width = `${Math.max(0, p.hp)}%`; ui.armorFill.style.background = p.hp < 30 ? 'var(--danger)' : 'var(--cyan)';
 		ui.relay.textContent = `${Math.max(0, Math.ceil(state.relay))}%`; ui.relayFill.style.width = `${Math.max(0, state.relay)}%`; ui.relayFill.style.background = state.relay < 30 ? 'var(--danger)' : 'var(--cyan)';
 		ui.heat.textContent = p.overheated ? 'LOCKOUT' : `${Math.ceil(p.heat)}%`; ui.heatFill.style.width = `${p.heat}%`; ui.heatFill.style.background = p.heat > 80 ? 'var(--danger)' : 'var(--amber)';
 		const backing = p.arcadeBacking || p.throttle < 0;
 		ui.drive.textContent = `${Math.abs(p.throttle) < 0.005 ? 'N' : backing ? 'REV' : 'FWD'} ${Math.round(Math.abs(p.throttle) * 100)}%`;
+		ui.stripHull.textContent = ui.armor.textContent;
+		ui.stripHullFill.style.width = ui.armorFill.style.width;
+		ui.stripHeat.textContent = ui.heat.textContent;
+		ui.stripHeatFill.style.width = ui.heatFill.style.width;
+		ui.stripHeatFill.style.background = ui.heatFill.style.background;
+		ui.stripDrive.textContent = ui.drive.textContent;
+		ui.stripRelay.hidden = !showRelay;
+		if (showRelay) ui.stripRelay.textContent = `Relay ${ui.relay.textContent}`;
 		const definition = getFrame(state.frame);
 		const weight = frameWeight(state.frame, state.loadout);
 		element('combat-frame-name').textContent = `${definition.chassisName} ${definition.variant}`;
@@ -1595,11 +1630,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('touch-fire').toggleAttribute('disabled', p.overheated || !weaponButtons.some(function (button, index) { return !button.hidden && !button.disabled && button.dataset['resourceState'] !== 'dry' && armedTouchMounts.has(index); }));
 		ui.coolant.textContent = `${state.coolantCharges} ${state.coolantCharges === 1 ? 'CHARGE' : 'CHARGES'}`;
 		element('open-squad-orders').hidden = !canIssueSquadOrders();
-		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE CONTROLLER INPUTS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : state.time < messageUntil ? message : state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : '';
+		ui.message.textContent = !playing() ? '' : inputMode === 'gamepad' && currentPad?.connected && !currentPad.ready ? 'RELEASE CONTROLLER INPUTS TO ARM CONTROLS' : p.overheated ? 'REACTOR LOCKOUT / VENT COOLANT OR CEASE FIRE' : showRelay && state.relay < 30 ? 'RELAY INTEGRITY CRITICAL' : !drill && !escape && state.time < messageUntil ? message : '';
 		for (const action of ['target-nearest', 'target-next', 'coolant'] as const) {
 			const prompt = element(action).querySelector<HTMLElement>('.combat-prompt');
 			if (prompt) render(touchLayout ? '' : combatPrompt(action), prompt);
 		}
+		updateRadar();
 		refreshHudObstructions();
 		const audioState = audio.status(); const needsGesture = audioState === 'locked' || audioState === 'pending';
 		const soundState = audioState === 'unavailable' ? 'UNAVAILABLE' : needsGesture ? 'ENABLE SOUND' : muted ? 'SOUND OFF' : 'SOUND ON';

@@ -14,21 +14,11 @@
 	--rig-hazard: repeating-linear-gradient(125deg, var(--rig-amber) 0 3px, transparent 3px 6px);
 }
 #hud { color: var(--rig-ivory); }
-#hud .mission-bar { background: linear-gradient(#151817e8, #15181779 55%, transparent); }
-.mission-heading .insignia {
-	color: var(--rig-ivory);
-	border-color: var(--rig-edge);
-	box-shadow: inset 0 -2px var(--rig-amber);
-	background: var(--rig-panel);
-}
-.mission-heading .eyebrow { color: var(--rig-amber); }
-#hud :is(#status, #input-mode) { color: var(--rig-label); }
-#hud :is(.system-buttons button, .target-controls button, .coolant-button) {
+#hud :is(.target-controls button, .coolant-button) {
 	border-color: var(--rig-edge);
 	background: var(--rig-panel);
 }
-#hud :is(.system-buttons button, .target-controls button, .coolant-button):hover:not(:disabled) { border-color: var(--rig-amber); }
-#hud #open-squad-orders { border-inline-start: 2px solid var(--rig-amber); }
+#hud :is(.target-controls button, .coolant-button):hover:not(:disabled) { border-color: var(--rig-amber); }
 #hud .weapon-console-heading .eyebrow {
 	color: var(--rig-ivory);
 	background: var(--rig-hazard) left center / 12px 7px no-repeat;
@@ -60,8 +50,6 @@
 #hud .throttle-track { background: repeating-linear-gradient(90deg, #9ca5c039 0 1px, #9ca5c01a 1px calc(100% / 20)); }
 #hud .throttle-track i { z-index: 1; background: var(--rig-amber); }
 #hud .throttle-track>span { z-index: 2; background: var(--rig-ivory); }
-#hud :is(.field-message, #escape-guide) { background: var(--rig-panel); }
-#hud .field-message { color: var(--rig-amber); }
 #game.hull-critical #hud .frame-readout { border-block-start-color: var(--danger); }
 #game.hull-critical #armor-value, #game.reactor-locked #heat-value { color: var(--danger); }
 
@@ -73,14 +61,6 @@
 	--cockpit-label: 10px;
 }
 #game:where(.couch-ui):not(.touch-enabled) { --cockpit-label: clamp(12px, 1vw, 16px); }
-#game:not(.touch-enabled) .mission-bar { padding: var(--cockpit-edge); gap: 24px; }
-#game:not(.touch-enabled) .mission-heading { min-width: 0; gap: 12px; }
-#game:not(.touch-enabled) .mission-heading>div { min-width: 0; gap: 3px; }
-#game:not(.touch-enabled) .mission-heading .eyebrow { font-size: var(--cockpit-label); letter-spacing: 1.5px; }
-#game:not(.touch-enabled) .mission-heading b { font-size: 23px; }
-#game:not(.touch-enabled) #status { font: var(--cockpit-label)/1.5 var(--mono); max-width: 54vw; }
-#game:not(.touch-enabled) .system-buttons { flex-shrink: 0; }
-#game:not(.touch-enabled) .system-buttons button { min-height: 36px; font-size: var(--cockpit-label); }
 #game:not(.touch-enabled) .left-instruments { left: var(--cockpit-edge); bottom: var(--cockpit-edge); top: auto; right: auto; width: 240px; display: block; }
 #game:not(.touch-enabled) .relay-readout { display: flex; margin: 0 0 8px; padding: 9px 12px; gap: 10px; }
 #game:not(.touch-enabled) .relay-readout .eyebrow { font-size: var(--cockpit-label); letter-spacing: .5px; }
@@ -104,8 +84,6 @@
 .squad-contact { display: flex; align-items: baseline; gap: 4px; color: var(--cyan); font: 10px/1.2 var(--mono); text-transform: uppercase; }
 .squad-contact strong { font: inherit; font-weight: 700; color: var(--paper); }
 .squad-contact[data-disabled='true'] strong { color: var(--danger); }
-.touch-enabled .squad-readout { margin-top: 0; }
-.touch-enabled .squad-contact { font-size: 8px; }
 #game:not(.touch-enabled) #drive-prompts {
 	display: flex; flex-wrap: wrap; gap: 6px 12px; padding-top: 9px; margin-top: 9px;
 	border-top: 1px solid var(--rig-rule); font: var(--cockpit-label)/1.3 var(--mono); color: var(--rig-label);
@@ -155,13 +133,6 @@
 #game:not(.touch-enabled) .weapon.empty { border-left-color: var(--muted); }
 #game:not(.touch-enabled) .weapon.empty:not(.locked) em { color: var(--rig-label); }
 #game:not(.touch-enabled) .coolant-button { min-height: 36px; padding: 7px 11px; margin-top: 6px; align-items: center; font: var(--cockpit-label)/1.4 var(--mono); }
-#game:not(.touch-enabled) .training-guide { background: var(--rig-panel); }
-#game:not(.touch-enabled) .training-guide, #game:not(.touch-enabled) #escape-guide { top: 108px; left: var(--cockpit-edge); right: auto; width: min(390px, calc(100% - 28px)); max-width: none; transform: none; padding: 12px 15px; }
-#game:not(.touch-enabled) .training-guide b { font-size: 23px; }
-#game:not(.touch-enabled) .training-guide p { font-size: 13px; margin: 7px 0; }
-#game:not(.touch-enabled) .training-guide small { font-size: 9px; }
-#game:not(.touch-enabled) #escape-guide { font-size: 12px; }
-#game:not(.touch-enabled) .field-message { top: 108px; font-size: var(--cockpit-label); max-width: 45%; }
 #game:where(.couch-ui):not(.touch-enabled) .left-instruments { width: 280px; }
 #game:where(.couch-ui):not(.touch-enabled) .weapon-console { width: clamp(320px, 29vw, 440px); }
 #game:where(.couch-ui):not(.touch-enabled) .weapon { height: 62px; grid-template-columns: 42px minmax(0, 1fr) auto; }
@@ -170,8 +141,6 @@
 #game:where(.couch-ui):not(.touch-enabled) .weapon .weapon-icon { font-size: 27px; }
 #game:where(.couch-ui):not(.touch-enabled) .cockpit-frame b { font-size: 24px; }
 #game:where(.couch-ui):not(.touch-enabled) .cockpit-frame span, #game:where(.couch-ui):not(.touch-enabled) .drive-assist { font-size: 10px; }
-#game:where(.couch-ui):not(.touch-enabled) .training-guide { width: min(460px, calc(100% - 28px)); }
-#game:where(.couch-ui):not(.touch-enabled) .training-guide p, #game:where(.couch-ui):not(.touch-enabled) #escape-guide { font-size: clamp(14px, 1.1vw, 18px); }
 
 @media (max-width: 1000px) {
 	#game:not(.touch-enabled) .insignia { display: none; }
@@ -181,8 +150,6 @@
 }
 @media (max-width: 700px) {
 	#game:not(.touch-enabled) { --cockpit-label: 9px; }
-	#game:not(.touch-enabled) .mission-heading b { font-size: 18px; }
-	#game:not(.touch-enabled) .mission-heading .eyebrow { font-size: 8px; letter-spacing: .5px; }
 	#game:not(.touch-enabled) .left-instruments { width: calc(42% - 18px); }
 	#game:not(.touch-enabled) .frame-readout { padding: 9px; }
 	#game:not(.touch-enabled) .cockpit-frame { flex-wrap: wrap; gap: 3px; }
@@ -203,11 +170,9 @@
 	#game:not(.touch-enabled) .weapon b { font-size: 18px; }
 	#game:not(.touch-enabled) .weapon em { font-size: 8px; }
 	#game:not(.touch-enabled) .coolant-button { flex-wrap: wrap; gap: 4px; font-size: 9px; }
-	#game:not(.touch-enabled) .training-guide, #game:not(.touch-enabled) #escape-guide { top: 92px; }
 }
 @media (max-height: 540px) and (min-width: 701px) {
 	#game:not(.touch-enabled) { --cockpit-edge: 14px; --cockpit-label: 9px; }
-	#game:not(.touch-enabled) .mission-heading b { font-size: 18px; }
 	#game:not(.touch-enabled) .left-instruments { width: 230px; }
 	#game:not(.touch-enabled) .frame-readout { padding: 8px 11px; }
 	#game:not(.touch-enabled) .cockpit-frame { margin-bottom: 5px; padding-bottom: 5px; }
@@ -223,10 +188,6 @@
 	#game:not(.touch-enabled) .weapon :is(.weapon-mount, em) { font-size: 8px; }
 	#game:not(.touch-enabled) .weapon .weapon-icon { font-size: 20px; }
 	#game:not(.touch-enabled) .coolant-button { min-height: 30px; padding-block: 5px; }
-	#game:not(.touch-enabled) .training-guide, #game:not(.touch-enabled) #escape-guide { top: 76px; width: 300px; padding: 8px 11px; }
-	#game:not(.touch-enabled) .training-guide b { font-size: 18px; margin-top: 3px; }
-	#game:not(.touch-enabled) .training-guide p, #game:not(.touch-enabled) #escape-guide { font-size: 11px; line-height: 1.45; margin-block: 5px; }
-	#game:not(.touch-enabled) .training-guide small { display: none; }
 }
 
 .target-controls { display: flex; gap: 6px; margin-bottom: 6px; }
@@ -234,41 +195,62 @@
 .target-controls .combat-prompt { margin-left: 4px; }
 .touch-enabled .target-controls { display: none; }
 
-/* Keep the short portrait instruments attached to the header, even when mission copy wraps. */
 @media (orientation: portrait) and (max-height: 560px) {
-	.touch-enabled:not(.training-active) #hud { position: absolute; inset: 0; pointer-events: none; }
-	.touch-enabled:not(.training-active) #hud .mission-bar {
-		position: relative; inset: auto; gap: 6px;
-		padding: max(6px, env(safe-area-inset-top)) var(--short-touch-right) 5px var(--short-touch-left);
-	}
-	.touch-enabled .mission-heading>div { gap: 2px; }
-	.touch-enabled #phase { letter-spacing: .4px; }
-	.touch-enabled .system-buttons button { min-width: 44px; min-height: 44px; padding: 4px 6px; }
 	.touch-enabled #mobile-fullscreen {
 		top: max(6px, env(safe-area-inset-top)); right: var(--short-touch-right); width: 54px; padding-inline: 0;
 	}
-	.touch-enabled.has-mobile-fullscreen .system-buttons { margin-right: 60px; }
-	.touch-enabled:not(.training-active) .left-instruments {
-		position: relative; inset: auto; gap: 4px;
-		margin-inline: var(--short-touch-left) var(--short-touch-right);
-	}
-	.touch-enabled:not(.training-active) .frame-readout {
-		min-width: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.1fr);
-		gap: 2px 6px; padding: 4px 6px;
-	}
-	.touch-enabled:not(.training-active) .readout-heading strong { font-size: 15px; }
-	.touch-enabled:not(.training-active) .readout-heading { gap: 2px; }
-	.touch-enabled:not(.training-active) .heat-heading { gap: 2px; font-size: 8px; }
-	.touch-enabled:not(.training-active) .drive-heading {
-		grid-column: 3; grid-row: 1 / 3; display: grid; gap: 2px; margin: 0; font-size: 8px;
-	}
-	.touch-enabled:not(.training-active) .load-heading { grid-column: 1 / -1; margin: 0; }
-	.touch-enabled:not(.training-active) .squad-readout { padding-top: 3px; }
-	.touch-enabled:not(.training-active) .relay-readout { flex-basis: 52px; padding: 4px; margin: 0; }
-	.touch-enabled:not(.training-active) .relay-readout .track { margin-top: 2px; }
-	.touch-enabled:not(.training-active) #hud .weapon { pointer-events: auto; }
-	.touch-enabled:not(.training-active) .field-message { top: auto; bottom: calc(var(--touch-dock) + 6px); }
 }
 
 /* Keep the mission phase and pause controls on screen during pickup. */
 #game.pickup-active #hud :is(.left-instruments, .weapon-console, #touch) { display: none; }
+
+/* The gauges, task and actions share one row wherever the viewport permits it. */
+.combat-strip {
+	--strip-edge: max(8px, env(safe-area-inset-left));
+	position: absolute; inset: 0 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center; padding: env(safe-area-inset-top) max(8px, env(safe-area-inset-right)) 0 var(--strip-edge);
+	background: var(--rig-panel); box-shadow: 0 1px var(--rig-edge); pointer-events: none;
+}
+.strip-task {
+	display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; min-width: 0;
+	padding: 5px 10px; border-inline-start: 2px solid var(--rig-amber); overflow-wrap: anywhere;
+}
+.strip-task #phase { font: 18px/1.05 var(--display); color: var(--rig-ivory); }
+.strip-task :is(#status, #message) { font: 12px/1.35 var(--mono); color: var(--rig-label); }
+.strip-task #message { color: var(--rig-amber); }
+.strip-task :empty, .strip-task:has(#message:not(:empty)) #status { display: none; }
+.strip-actions { display: flex; align-self: stretch; pointer-events: auto; }
+.strip-actions button {
+	min-height: 38px; padding: 3px 12px; background: transparent; border: 0; border-inline-start: 1px solid var(--rig-edge);
+	font: 17px/1 var(--display); color: var(--rig-ivory);
+}
+.strip-actions button:hover { background: var(--rig-steel); }
+#hud .strip-actions #open-squad-orders { border-inline-start: 2px solid var(--rig-amber); }
+.strip-actions #toggle-radar { color: var(--cyan); }
+#tactical-radar { position: absolute; inset: calc(100% + 3px) max(8px, env(safe-area-inset-right)) auto auto; width: 176px; height: 165px; pointer-events: auto; }
+.couch-ui #tactical-radar { width: 210px; height: 185px; }
+.couch-ui .strip-actions button { min-height: 44px; font-size: 20px; }
+.couch-ui .strip-task #status, .couch-ui .strip-task #message { font-size: var(--couch-label); }
+.strip-vitals, #strip-relay { display: none; }
+#game[data-screen='playing'] #mobile-fullscreen, #game.touch-enabled #hud .left-instruments { display: none; }
+.touch-enabled .combat-strip { grid-template-columns: auto minmax(0, 1fr) auto; }
+.touch-enabled .strip-vitals { display: flex; gap: clamp(6px, 2vw, 16px); padding: 4px 10px 4px 0; }
+.strip-vitals>div { display: grid; align-content: start; gap: 1px; min-width: 39px; }
+.strip-vitals small { color: var(--rig-label); font: 9px/1 var(--mono); letter-spacing: .5px; text-transform: uppercase; }
+.strip-vitals b { font: 21px/1 var(--display); white-space: nowrap; }
+.strip-track { display: block; height: 2px; margin-top: 2px; background: var(--rig-rule); }
+.strip-track i { display: block; height: 100%; background: var(--cyan); }
+.hull-critical #strip-hull, .reactor-locked #strip-heat { color: var(--danger); }
+.hull-critical #strip-hull-fill { background: var(--danger); }
+.touch-enabled .strip-actions button { min-height: 44px; min-width: 44px; padding-inline: 8px; }
+.touch-enabled #strip-relay { display: inline; color: var(--cyan); font: 13px var(--display); }
+@media (orientation: portrait), (max-width: 600px) {
+	.touch-enabled .combat-strip { grid-template-columns: minmax(0, 1fr) auto; }
+	.touch-enabled .strip-actions { grid-column: 2; grid-row: 1; }
+	.touch-enabled .strip-task {
+		position: absolute; top: 100%; left: var(--strip-edge); right: max(8px, env(safe-area-inset-right)); width: fit-content;
+		padding: 5px 8px; background: var(--rig-panel);
+	}
+}
+.touch-enabled .strip-task #phase { font-size: 16px; }
+.touch-enabled .strip-task :is(#status, #message) { font-size: 12px; }
