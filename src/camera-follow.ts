@@ -67,15 +67,22 @@ export const cameraLookAhead = function (input: FollowInput): Point {
 	const { width, height, velocity, maxSpeed, turret, pointer } = input;
 	if (width <= 0 || height <= 0) return { x: 0, y: 0 };
 	const movement = screenDirection(velocity, width, height);
-	const facing = screenDirection({ x: Math.cos(turret), y: Math.sin(turret) }, width, height);
-	const speed = Math.min(1, Math.hypot(velocity.x, velocity.y) / Math.max(1, maxSpeed));
+	const heading = { x: Math.cos(turret), y: Math.sin(turret) };
+	const facing = screenDirection(heading, width, height);
+	const travelSpeed = Math.hypot(velocity.x, velocity.y);
+	const speed = Math.min(1, travelSpeed / Math.max(1, maxSpeed));
+	// Measure the 45-degree window on the ground, independent of viewport shape.
+	const alignment = travelSpeed > 0 ? (velocity.x * heading.x + velocity.y * heading.y) / travelSpeed : 0;
+	const aligned = Math.max(0, Math.min(1, (alignment - Math.SQRT1_2) / (1 - Math.SQRT1_2)));
+	const bonus = 0.05 * speed * aligned * aligned * (3 - 2 * aligned);
 	// The centered ground anchor is independent of the current camera offset.
 	const distance = pointer ? Math.hypot((pointer.x - width / 2) / (width / 2), (pointer.y - height * 0.52) / (height / 2)) : 0;
 	const reach = Math.max(0, Math.min(1, (distance - 0.12) / 0.68));
 	const aimLead = pointer ? 0.025 + 0.095 * reach * reach * (3 - 2 * reach) : 0.10;
-	const x = movement.x * speed * 0.08 + facing.x * aimLead;
-	const y = movement.y * speed * 0.08 + facing.y * aimLead;
-	const limit = Math.max(1, Math.hypot(x, y) / 0.18);
+	const travelLead = speed * 0.08 + bonus;
+	const x = movement.x * travelLead + facing.x * aimLead;
+	const y = movement.y * travelLead + facing.y * aimLead;
+	const limit = Math.max(1, Math.hypot(x, y) / (0.18 + bonus));
 	return { x: x / limit, y: y / limit };
 };
 

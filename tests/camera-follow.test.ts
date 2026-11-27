@@ -31,7 +31,30 @@ test('travel lead follows signed movement while retreating preserves a view towa
 		expect(reverse.x).toBeGreaterThan(0); expect(reverse.y).toBeGreaterThan(0);
 		const retreat = cameraLookAhead({ ...base, turret: Math.PI, velocity: { x: -90, y: 0 } });
 		expect(retreat.x).toBeLessThan(0); expect(retreat.y).toBeLessThan(0);
-		for (const offset of [forward, reverse, retreat]) expect(Math.hypot(offset.x, offset.y)).toBeLessThanOrEqual(0.18000001);
+		expect(Math.hypot(reverse.x, reverse.y)).toBeCloseTo(0.02);
+	}
+});
+
+test('aligned travel gets up to five extra points of lead, fading with speed and ground angle', function () {
+	for (const viewport of viewports) {
+		const base = { ...viewport, maxSpeed: 100, pointer: undefined };
+		const headOn = -Math.PI / 4;
+		const travel = Math.SQRT1_2 * base.maxSpeed;
+		const lead = function (turret: number, fraction: number, pointer?: { x: number; y: number }) {
+			const velocity = { x: travel * fraction, y: -travel * fraction };
+			const moving = cameraLookAhead({ ...base, turret, velocity, pointer });
+			const still = cameraLookAhead({ ...base, turret, velocity: { x: 0, y: 0 }, pointer });
+			return moving.x - still.x;
+		};
+		expect(lead(headOn, 1)).toBeCloseTo(0.13, 8);
+		expect(lead(headOn, 0.5)).toBeCloseTo(0.065, 8);
+		expect(lead(headOn, 0)).toBe(0);
+		const angled = lead(headOn + Math.PI / 8, 1);
+		expect(angled).toBeGreaterThan(0.08);
+		expect(angled).toBeLessThan(0.13);
+		expect(lead(headOn + Math.PI / 4, 1)).toBeCloseTo(0.08, 8);
+		expect(lead(headOn + Math.PI / 2, 1)).toBeCloseTo(0.08, 8);
+		expect(lead(headOn, 1, { x: viewport.width, y: viewport.height * 0.52 })).toBeCloseTo(0.11, 8);
 	}
 });
 
