@@ -68,10 +68,12 @@ export interface WeaponDefinition {
 }
 type HardwareWeapon = Omit<WeaponDefinition, 'modelId' | 'tier' | 'id'> & { id: WeaponModelId };
 type BaseWeapon = Omit<WeaponDefinition, 'mass' | 'ammunition' | 'modelId' | 'tier' | 'id'> & { id: WeaponModelId };
+const RATTLER_SPREAD = 2.75 * Math.PI / 180;
+const RATTLER_SPREAD_PER_TIER = 0.9985;
 const BASE_WEAPONS: readonly BaseWeapon[] = [
 	{ id: 'autocannon', family: 'ballistic', size: 'medium', name: 'AC/38', type: 'Auto Cannon', role: 'Precise impact', description: 'Heavy, accurate shells. Reliable opening fire with modest reactor demand.', color: '#ffd28b', icon: '╋', kind: 'cannon', damage: 38, interval: 1, heat: 7, range: 845, speed: 2600, projectiles: 1, spread: 0, splash: 0 },
 	{ id: 'laser', family: 'energy', size: 'small', name: 'ARC', type: 'Laser', role: 'Continuous beam', description: 'A continuous beam that stops at the first target. Track steadily; watch your heat.', color: '#8ff5e7', icon: 'ϟ', kind: 'laser', damage: 56, interval: 0, heat: 20, range: 1240, speed: 0, projectiles: 1, spread: 0, splash: 0 },
-	{ id: 'machine-gun', family: 'ballistic', size: 'small', name: 'RATTLER', type: 'Machine Gun', role: 'Cool sustained fire', description: 'Rapid low-heat tracers with a narrow spread. Best against nearby light rigs.', color: '#fff2ba', icon: '≋', kind: 'bullet', damage: 4, interval: 0.16, heat: 0.45, range: 700, speed: 4000, projectiles: 1, spread: 0.035, splash: 0 },
+	{ id: 'machine-gun', family: 'ballistic', size: 'small', name: 'RATTLER', type: 'Machine Gun', role: 'Cool sustained fire', description: 'Rapid low-heat tracers. Rounds spread wider the farther they travel.', color: '#fff2ba', icon: '≋', kind: 'bullet', damage: 4, interval: 0.16, heat: 0.45, range: 700, speed: 4000, projectiles: 1, spread: RATTLER_SPREAD, splash: 0 },
 	{ id: 'ppc', family: 'energy', size: 'medium', name: 'TEMPEST', type: 'Particle Projection Cannon', role: 'Piercing pulse', description: 'A fast charged particle bolt punches through a line of rigs. Long recharge; heavy heat.', color: '#b1a0ff', icon: '◉', kind: 'ppc', damage: 160, interval: 2.4, heat: 36, range: 1000, speed: 2200, projectiles: 1, spread: 0, splash: 0 },
 	{ id: 'stream-missiles', family: 'launcher', size: 'small', name: 'NEEDLE', type: 'Stream Missiles', role: 'Guided pressure', description: 'A steady stream of guided missiles follows your selected target after acquisition.', color: '#9be99e', icon: '↗', kind: 'missile', damage: 25, interval: 1.8, heat: 2.5, range: 2000, speed: 1200, projectiles: 1, spread: 0, splash: 0 },
 	{ id: 'cluster-missiles', family: 'launcher', size: 'small', name: 'TRIDENT', type: 'Cluster Missiles', role: 'Guided area salvo', description: 'Guided warheads fan out, converge and burst against clustered enemies.', color: '#b7e876', icon: '⋀', kind: 'missile', damage: 30, interval: 1.4, heat: 5, range: 2000, speed: 1080, projectiles: 3, spread: 0.28, splash: 65 },
@@ -98,12 +100,14 @@ const MODELS = BASE_WEAPONS.map(hardware).flatMap(function (weapon): HardwareWea
 			mass: weapon.mass + (rounds - 2) * 1.5, interval: Math.max(weapon.interval, rounds * 0.1), heat: weapon.heat * rounds };
 	});
 });
+const NON_MISSILE_RANGE_BONUS = 500;
 export const WEAPONS: readonly WeaponDefinition[] = MODELS.flatMap(function (model) {
 	return WEAPON_TIERS.map(function (quality): WeaponDefinition {
+		const spreadMultiplier = model.id === 'machine-gun' ? RATTLER_SPREAD_PER_TIER ** quality.tier : quality.spread;
 		return { ...model, id: weaponIdForTier(model.id, quality.tier), modelId: model.id, tier: quality.tier,
 			name: `${model.name} · T${quality.tier}`, damage: model.damage * quality.damage,
 			interval: model.interval * quality.interval, heat: model.heat * quality.heat,
-			range: model.range * quality.range, speed: model.speed * quality.speed, spread: model.spread * quality.spread };
+			range: model.range * quality.range + (model.kind === 'missile' ? 0 : NON_MISSILE_RANGE_BONUS), speed: model.speed * quality.speed, spread: model.spread * spreadMultiplier };
 	});
 });
 export const WEAPON_MODELS: readonly WeaponDefinition[] = WEAPONS.filter(function (weapon) { return weapon.tier === 0; });
