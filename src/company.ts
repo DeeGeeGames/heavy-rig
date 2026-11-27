@@ -5,7 +5,7 @@ import { getFrameOffer } from './market';
 import { unlockedMissionTier } from './reputation';
 import { WEAPONS, createWeaponRecord, getWeapon, type WeaponId } from './arsenal';
 import { getTransmission, MAX_CREDITS, type Campaign } from './campaign';
-import { bareChassisMass, PLAYABLE_FRAMES, type FrameId } from './frames';
+import { bareChassisMass, getFrame, PLAYABLE_FRAMES, type FrameId } from './frames';
 import { stockPackage, isFrameLoadout } from './hardpoints';
 import { defaultReserves, isReserveLoadout, loadedMounts, usableMount } from './combat-resources';
 import { isPilotId, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
@@ -19,7 +19,8 @@ export interface OwnedMech {
 	reserves: readonly number[];
 }
 interface WorkOrderDates { frameId: RigId; startedDay: number; readyDay: number }
-export type WorkOrder = (WorkOrderDates & { kind: 'repair' }) | (WorkOrderDates & { kind: 'refit'; loadout: Loadout; reserves: readonly number[] });
+interface RepairPayment { paid: number; deferred: number }
+export type WorkOrder = (WorkOrderDates & { kind: 'repair'; payment?: RepairPayment & { cost: number } }) | (WorkOrderDates & { kind: 'refit'; loadout: Loadout; reserves: readonly number[] });
 export interface DeployedRig { frameId: RigId; integrity: number; startingIntegrity: number }
 export interface DeployedPilot extends DeployedRig { pilotId: PilotId }
 export interface Deployment extends DeployedRig { coolantCharges: number; wing: readonly DeployedPilot[] }
@@ -48,15 +49,23 @@ export const newUpkeepDue = function (company: Campaign, days: number): number {
 	return months > 0 ? months * monthlyUpkeep(company) : 0;
 };
 
-const spendableUpkeepFunds = function (campaign: Campaign, day: number): number {
+const spendableMaintenanceFunds = function (campaign: Campaign, day: number): number {
 	const { credits, planetId } = campaign;
+	const offers = getTransmission(campaign)?.offers ?? [];
 	if (campaign.universe.boardVersion === 1 || getSystemIntel({ ...campaign, day }, planetId).conflict
-		|| getTransmission(campaign)?.offers.some(function ({ contract }) { return contract.planetId === planetId; })) return credits;
-	// Where there's no work, leave the company a way out if it could afford one.
-	const cheapestExit = PLANETS.reduce(function (fare, destination) {
-		return destination.id === planetId ? fare : Math.min(fare, getJumpRoute(planetId, destination.id).fare);
-	}, Infinity);
-	return credits >= cheapestExit ? credits - cheapestExit : credits;
+		|| offers.some(function ({ contract }) { return contract.planetId === planetId; })) return credits;
+	// A cheap jump to another quiet system is not a route back to paying work.
+	const arrival = { ...campaign, day: day + 1 };
+	let cheapestExit = Infinity;
+	let cheapestWork = Infinity;
+	for (const { id } of PLANETS) {
+		if (id === planetId) continue;
+		const fare = getJumpRoute(planetId, id).fare;
+		cheapestExit = Math.min(cheapestExit, fare);
+		if (fare < cheapestWork && (getSystemIntel(arrival, id).conflict || offers.some(function ({ contract }) { return contract.planetId === id; }))) cheapestWork = fare;
+	}
+	const reserve = credits >= cheapestWork ? cheapestWork : credits >= cheapestExit ? cheapestExit : 0;
+	return credits - reserve;
 };
 
 const MAX_INVENTORY = 1000;
@@ -195,12 +204,43 @@ export const buyWeapon = function (campaign: Campaign, weapon: WeaponId): Campai
 	if (campaign.deployed || !isWeaponId(weapon) || getWeapon(weapon).tier > unlockedMissionTier(campaign).weaponTier || campaign.credits < WEAPON_PRICES[weapon] || campaign.inventory[weapon] >= MAX_INVENTORY) return campaign;
 	return { ...campaign, credits: campaign.credits - WEAPON_PRICES[weapon], inventory: { ...campaign.inventory, [weapon]: campaign.inventory[weapon] + 1 } };
 };
-export const queueRepair = function (campaign: Campaign, frameId: RigId): Campaign {
+type RepairQuote = { cost: number; days: number; readyDay: number } & (
+	{ available: true; payment: RepairPayment } | { available: false; shortfall: number }
+);
+const repairCost = function ({ frameId, integrity }: OwnedMech): number {
+	const price = getFrame(rigFrameId(frameId)).price;
+	return Math.ceil(integrity === 0 ? price * .75 : price * (100 - integrity) / 200);
+};
+const hasInstalledWeapons = function ({ loadout }: Pick<OwnedMech, 'loadout'>): boolean {
+	return loadout.some(function (weapon) { return weapon !== null; });
+};
+export const quoteRepair = function (campaign: Campaign, frameId: RigId): RepairQuote | undefined {
 	const mech = getOwnedMech(campaign, frameId);
-	if (campaign.deployed || !mech || mech.integrity >= 100 || workOrderFor(campaign, frameId)) return campaign;
-	const readyDay = campaign.day + repairDays(mech.integrity);
-	if (readyDay >= MAX_DAY) return campaign;
-	return { ...campaign, workOrders: [...campaign.workOrders, { kind: 'repair', frameId, startedDay: campaign.day, readyDay }] };
+	if (!mech || mech.integrity >= 100 || workOrderFor(campaign, frameId)) return undefined;
+	const days = repairDays(mech.integrity);
+	const readyDay = campaign.day + days;
+	const cost = repairCost(mech);
+	const paid = Math.min(cost, spendableMaintenanceFunds(campaign, campaign.day), spendableMaintenanceFunds(campaign, readyDay));
+	const shortfall = cost - paid;
+	// A single recovery order can restore an armed rig when nothing else can
+	// deploy now or after scheduled work. Empty reserves can be refilled free.
+	const recovery = shortfall > 0 && hasInstalledWeapons(mech) && !campaign.fleet.some(function (rig) {
+		const order = workOrderFor(campaign, rig.frameId);
+		return order?.kind === 'repair' ? hasInstalledWeapons(rig) : rig.integrity > 0 && (
+			hasInstalledWeapons(rig) || order?.kind === 'refit' && hasInstalledWeapons(order)
+		);
+	});
+	return !campaign.deployed && readyDay < MAX_DAY && (shortfall === 0 || recovery)
+		? { available: true, cost, days, readyDay, payment: { paid, deferred: shortfall } }
+		: { available: false, cost, days, readyDay, shortfall };
+};
+export const queueRepair = function (campaign: Campaign, frameId: RigId): Campaign {
+	const quote = quoteRepair(campaign, frameId);
+	if (!quote?.available) return campaign;
+	return {
+		...campaign, credits: campaign.credits - quote.payment.paid,
+		workOrders: [...campaign.workOrders, { kind: 'repair', frameId, startedDay: campaign.day, readyDay: quote.readyDay, payment: { cost: quote.cost, ...quote.payment } }],
+	};
 };
 export const setAmmunition = function (campaign: Campaign, frameId: RigId, reserves: readonly number[]): Campaign {
 	const mech = getOwnedMech(campaign, frameId);
@@ -217,8 +257,10 @@ export const queueRefit = function (campaign: Campaign, frameId: RigId, loadout:
 	return { ...campaign, workOrders: [...campaign.workOrders, { kind: 'refit', frameId, startedDay: campaign.day, readyDay: campaign.day + days, loadout: [...loadout], reserves: [...desired] }] };
 };
 export const cancelWorkOrder = function (campaign: Campaign, frameId: RigId): Campaign {
-	if (campaign.deployed || !workOrderFor(campaign, frameId)) return campaign;
-	return { ...campaign, workOrders: campaign.workOrders.filter(function (order) { return order.frameId !== frameId; }) };
+	const order = workOrderFor(campaign, frameId);
+	if (campaign.deployed || !order) return campaign;
+	const refund = order.kind === 'repair' ? order.payment?.paid ?? 0 : 0;
+	return { ...campaign, credits: Math.min(MAX_CREDITS, campaign.credits + refund), workOrders: campaign.workOrders.filter(function (order) { return order.frameId !== frameId; }) };
 };
 export const advanceDays = function (campaign: Campaign, days: number): Campaign {
 	if (campaign.deployed || !isInteger(days, 1, MAX_DAY) || campaign.day + days > MAX_DAY - Number(Boolean(campaign.active))) return campaign;
@@ -228,9 +270,13 @@ export const advanceDays = function (campaign: Campaign, days: number): Campaign
 		if (!order || order.readyDay > day) return mech;
 		return order.kind === 'repair' ? { ...mech, integrity: 100 } : { ...mech, loadout: [...order.loadout], reserves: [...order.reserves] };
 	});
+	const deferredRepairs = campaign.workOrders.reduce(function (total, order) {
+		return total + (order.kind === 'repair' && order.readyDay <= day ? order.payment?.deferred ?? 0 : 0);
+	}, 0);
 	const due = newUpkeepDue(campaign, days) + (campaign.upkeepOwed ?? 0);
-	const paid = due ? Math.min(spendableUpkeepFunds(campaign, day), due) : 0;
+	const paid = due ? Math.min(spendableMaintenanceFunds(campaign, day), due) : 0;
 	return { ...campaign, day, fleet, workOrders: campaign.workOrders.filter(function (order) { return order.readyDay > day; }),
+		...(deferredRepairs ? { repairDebt: Math.min(MAX_CREDITS, (campaign.repairDebt ?? 0) + deferredRepairs) } : {}),
 		...(due ? { credits: campaign.credits - paid, upkeepOwed: Math.min(MAX_CREDITS, due - paid) } : {}) };
 };
 export const beginDeployment = function (campaign: Campaign): Campaign {
@@ -270,8 +316,13 @@ const isOwnedMech = function (value: unknown): value is OwnedMech {
 	return isObject(value) && isRigId(value['frameId']) && isIntegrity(value['integrity']) && isFrameLoadout(rigFrameId(value['frameId']), value['loadout']) && isReserveLoadout(value['loadout'], value['reserves']);
 };
 const isWorkOrder = function (value: unknown): value is WorkOrder {
-	return isObject(value) && isRigId(value['frameId']) && isInteger(value['startedDay'], 1, MAX_DAY) && isInteger(value['readyDay'], 2, MAX_DAY - 1)
-		&& value['readyDay'] > value['startedDay'] && (value['kind'] === 'repair' || value['kind'] === 'refit' && isFrameLoadout(rigFrameId(value['frameId']), value['loadout']) && isReserveLoadout(value['loadout'], value['reserves']));
+	if (!isObject(value) || !isRigId(value['frameId']) || !isInteger(value['startedDay'], 1, MAX_DAY) || !isInteger(value['readyDay'], 2, MAX_DAY - 1)
+		|| value['readyDay'] <= value['startedDay']) return false;
+	const payment = value['payment'];
+	return value['kind'] === 'repair'
+		? payment === undefined || isObject(payment) && isInteger(payment['cost'], 1, MAX_CREDITS) && isInteger(payment['paid'], 0, payment['cost'])
+			&& isInteger(payment['deferred'], 0, payment['cost']) && payment['paid'] + payment['deferred'] === payment['cost']
+		: value['kind'] === 'refit' && isFrameLoadout(rigFrameId(value['frameId']), value['loadout']) && isReserveLoadout(value['loadout'], value['reserves']);
 };
 const isDeployedRig = function (value: Record<string, unknown>): boolean {
 	return isRigId(value['frameId']) && isIntegrity(value['integrity']) && isIntegrity(value['startingIntegrity']) && value['startingIntegrity'] > 0 && value['startingIntegrity'] >= value['integrity'];
@@ -319,7 +370,7 @@ export const parseCompany = function (value: Record<string, unknown>, day: numbe
 	const company: CompanyState = {
 		fleet: fleet.map(function (mech) { return { frameId: mech.frameId, integrity: mech.integrity, loadout: [...mech.loadout], reserves: [...mech.reserves] }; }), selectedFrame, pilots, lineup,
 		inventory: { ...inventory }, workOrders: workOrders.map(function (order) { return order.kind === 'repair'
-			? { kind: 'repair', frameId: order.frameId, startedDay: order.startedDay, readyDay: order.readyDay }
+			? { kind: 'repair', frameId: order.frameId, startedDay: order.startedDay, readyDay: order.readyDay, ...(order.payment ? { payment: { cost: order.payment.cost, paid: order.payment.paid, deferred: order.payment.deferred } } : {}) }
 			: { kind: 'refit', frameId: order.frameId, startedDay: order.startedDay, readyDay: order.readyDay, loadout: [...order.loadout], reserves: [...order.reserves] }; }),
 		deployed,
 	};
