@@ -89,17 +89,24 @@
 		<div class="title-landscape">
 			<img class="title-plate" src="./public/brand/meridian-dusk.webp" width="416" height="234" alt="">
 		</div>
-		<header class="title-brand">
+		<section id="alpha-interstitial" class="alpha-interstitial" aria-labelledby="alpha-title" hidden>
+			<div class="alpha-card">
+				<header class="alpha-heading">
+					<img src="./public/brand/heavy-rig.png" width="76" height="76" alt="Heavy Rig">
+					<div><span>Development build</span><h2 id="alpha-title">Very early alpha</h2></div>
+				</header>
+				<p>Thanks for trying Heavy Rig this early.</p>
+				<p><strong>Updates will often break existing saves.</strong> When that happens, you’ll need to start a new campaign or career.</p>
+				<button id="alpha-continue" type="button" class="title-primary">Continue to main menu</button>
+			</div>
+		</section>
+		<header id="title-brand" class="title-brand">
 			<span class="title-studio"><img src="./public/brand/deegee-mark-small.svg" width="24" height="24" alt="">DeeGee Games</span>
 			<h1 id="title-name"><img class="title-logo" src="./public/brand/heavy-rig.png" width="1254" height="1254" alt="Heavy Rig"></h1>
 			<p>Your steel. Your crew.<br> Your next contract.</p>
 			<span class="title-location">Meridian <i>/</i> Badlands</span>
 		</header>
 		<nav id="title-deck" class="title-deck" aria-label="Main menu">
-			<div class="title-alpha-notice">
-				<strong>Early alpha · Save compatibility</strong>
-				<p>Thanks for trying this very early alpha. Updates will often break existing saves, requiring you to start a new campaign or career.</p>
-			</div>
 			<p id="title-save-status" class="title-save"></p>
 			<button id="title-continue" class="title-primary" data-menu-row><span id="title-company-label">New campaign</span></button>
 			<div class="title-links" data-menu-row>
