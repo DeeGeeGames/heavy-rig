@@ -152,6 +152,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		strip: element('combat-strip'), weapons: element('fire-console'), radar: element('tactical-radar'), radarButton: element('toggle-radar'), pauseRadar: element('pause-radar'),
 	};
 	const touchDock = element('touch');
+	const touchDriveButton = element('touch-drive');
+	const touchFireButton = element('touch-fire');
 	const zoomControl = element('touch-zoom');
 	const stripTask = ui.phase.parentElement;
 	const touchTargetStatus = element('touch-target-status');
@@ -162,11 +164,21 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const refreshHudObstructions = function () {
 		const field = canvas.getBoundingClientRect();
 		if (zoomControl.offsetWidth > 0) {
-			// The task may wrap below the strip and the mount row may sit above the dock.
-			const top = Math.max(ui.strip.getBoundingClientRect().bottom, stripTask?.getBoundingClientRect().bottom ?? 0);
-			const bottom = Math.min(touchDock.getBoundingClientRect().top, ui.weapons.getBoundingClientRect().top, touchTargetStatus.getBoundingClientRect().top);
-			zoomControl.style.setProperty('--touch-zoom-y', `${(top + bottom) / 2 - field.top}px`);
-			zoomControl.style.setProperty('--touch-zoom-room', `${bottom - top}px`);
+			if (portrait.matches) {
+				// The task may wrap below the strip and the mount row may sit above the dock.
+				const top = Math.max(ui.strip.getBoundingClientRect().bottom, stripTask?.getBoundingClientRect().bottom ?? 0);
+				const bottom = Math.min(touchDock.getBoundingClientRect().top, ui.weapons.getBoundingClientRect().top, touchTargetStatus.getBoundingClientRect().top);
+				zoomControl.style.setProperty('--touch-zoom-center', `${(top + bottom) / 2 - field.top}px`);
+				zoomControl.style.setProperty('--touch-zoom-room', `${bottom - top}px`);
+			} else {
+				// The compact dock has no cluster boxes. Its thumb controls bound the zoom row.
+				const driveCluster = touchDriveButton.parentElement;
+				const fireCluster = touchFireButton.parentElement;
+				const left = (driveCluster?.offsetWidth ? driveCluster : touchDriveButton).getBoundingClientRect().right;
+				const right = (fireCluster?.offsetWidth ? fireCluster : touchFireButton).getBoundingClientRect().left;
+				zoomControl.style.setProperty('--touch-zoom-center', `${(left + right) / 2 - field.left}px`);
+				zoomControl.style.setProperty('--touch-zoom-room', `${right - left}px`);
+			}
 		}
 		// The compact touch grid lays out the individual controls with display: contents on their clusters.
 		const touchObstructions = touchClusters.some(function (node) { return node.offsetWidth > 0; }) ? touchClusters : touchControls;
@@ -287,7 +299,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		event.preventDefault();
 		clearTouchFacing();
 	}, listenerOptions);
-	const touchZoom = mountTouchZoom(element('zoom-hold'), element('zoom-panel'), element('zoom-value'), element('zoom-knob'), abort.signal, playing, presentation);
+	const touchZoom = mountTouchZoom(element('zoom-hold'), element('zoom-panel'), element('zoom-value'), element('zoom-track'), portrait, abort.signal, playing, presentation);
 	const touchDrive = mountTouchDrive(element('touch-drive'), element('touch-drive-knob'), abort.signal, playing, element('touch-cruise'), element('touch-drive-hint'));
 	const touchContacts = function () {
 		const rect = canvas.getBoundingClientRect();
