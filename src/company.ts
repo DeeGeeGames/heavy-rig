@@ -35,12 +35,13 @@ export interface CompanyState {
 
 export const MAX_DAY = 1_000_000_000;
 export const UPKEEP_MONTH_DAYS = 30;
-export const PILOT_MONTHLY_UPKEEP = 25;
+const MECH_MONTHLY_UPKEEP_PER_TON = 15;
+export const PILOT_MONTHLY_UPKEEP = 750;
 const upkeepMonth = function (day: number): number { return Math.floor((day - 1) / UPKEEP_MONTH_DAYS); };
 export const nextUpkeepDay = function (day: number): number { return (upkeepMonth(day) + 1) * UPKEEP_MONTH_DAYS + 1; };
 export const monthlyUpkeep = function ({ fleet, pilots }: CompanyState): number {
 	const tons = fleet.reduce(function (total, mech) { return total + bareChassisMass(rigFrameId(mech.frameId)); }, 0);
-	return Math.round(tons / 2) + PILOT_MONTHLY_UPKEEP * pilots.filter(function (id) { return id !== 'player'; }).length;
+	return MECH_MONTHLY_UPKEEP_PER_TON * tons + PILOT_MONTHLY_UPKEEP * pilots.filter(function (id) { return id !== 'player'; }).length;
 };
 export const newUpkeepDue = function (company: Campaign, days: number): number {
 	const months = upkeepMonth(company.day + days) - upkeepMonth(company.day);

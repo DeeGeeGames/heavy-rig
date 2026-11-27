@@ -24,8 +24,8 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(beforeMonthEnd.credits).toBe(roster.credits);
 		const afterTwoBills = roundTrip(advanceDays(beforeMonthEnd, 31));
 		expect(afterTwoBills.day).toBe(61);
-		// 40T Kestrel + 65T Longbow, excluding the variant's extra mount. 53 CR + 25 CR per bill.
-		expect(afterTwoBills.credits).toBe(roster.credits - 2 * 78);
+		// 40T Kestrel + 65T Longbow, excluding the variant's extra mount, plus one pilot.
+		expect(afterTwoBills.credits).toBe(roster.credits - 2 * 2325);
 		expect(advanceDays(afterTwoBills, 1).credits).toBe(afterTwoBills.credits);
 	});
 
@@ -38,11 +38,11 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(arrival.planetId).toBe('cinder');
 		expect(arrival.day).toBe(31);
 		expect(arrival.credits).toBe(0);
-		expect(arrival.upkeepOwed).toBe(20);
+		expect(arrival.upkeepOwed).toBe(600);
 		const contract = posted(arrival);
 		const settled = settleContract(acceptContract(arrival, contract.id), true);
 		expect(settled.lastResult?.payout).toBe(contract.reward);
-		expect(settled.credits).toBe(contract.reward - 20);
+		expect(settled.credits).toBe(contract.reward - 600);
 		expect(settled.upkeepOwed).toBe(0);
 	});
 
@@ -54,7 +54,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		const arrival = roundTrip(travelTo(departure, destination));
 		expect(getContracts(arrival)).toHaveLength(0);
 		expect(arrival.credits).toBe(fare);
-		expect(arrival.upkeepOwed).toBe(20);
+		expect(arrival.upkeepOwed).toBe(600);
 		const home = travelTo(arrival, origin);
 		expect(home.planetId).toBe(origin);
 		expect(home.credits).toBe(0);
