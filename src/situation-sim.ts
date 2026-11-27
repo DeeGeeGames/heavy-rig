@@ -20,6 +20,7 @@ export const createSituationMission = function (setup: SituationSetup, seed: num
 	const contract: Contract = {
 		id: 'situation-sim', seed, planetId: setup.planetId, kind: setup.kind, tier: setup.tier,
 		employer: 'freeholds', opponent: 'combine', title, briefing, reward: 0, favor: 0, hostility: 0, requiredReputation: 0,
+		...(setup.kind === 'defend' ? { fieldLayout: 'extended-defense' } : {}),
 	};
 	const squadmates = setup.wing.flatMap(function ({ pilotId, frame }): SquadmateOptions[] {
 		if (!pilotId) return [];

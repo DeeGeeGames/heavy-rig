@@ -13,7 +13,7 @@ import type { Contract, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionField, missionHostileCount, missionSpawn, missionDeploymentSlot, squadDestination, type MissionSpawn } from './missions';
 import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint, type WeaponBody } from './weapon-rig';
 import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS, enemyRadius, enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
-import { fieldStructureKinds, moveOnTerrain, terrainPathClear, terrainPointClear, terrainShotContact, terrainShotFraction, terrainWaypoint, type FieldTerrain, type ObstacleField } from './field-terrain';
+import { fieldStructureKinds, hasTerrainRoute, moveOnTerrain, terrainPathClear, terrainPointClear, terrainShotContact, terrainShotFraction, terrainWaypoint, type FieldTerrain, type ObstacleField } from './field-terrain';
 import { groundAimSlope, groundContact, groundHeight, groundNormal } from './terrain-elevation';
 import type { FeedbackActor, FeedbackFamily, ImpactSurface, WeaponCue } from './weapon-feedback';
 import { inFiringArc, TORSO_LIMIT, turnTorso } from './torso-arc';
@@ -159,6 +159,7 @@ export const createMissionState = function (contract: Contract, options: Mission
 		...(contract.kind === 'raid' ? { raidTargets: map.sites.map(function (site) { return { ...site, hp: structureHp * .6, maxHp: structureHp * .6 }; }) } : {}),
 		...(contract.kind === 'recovery' || contract.kind === 'acquisition' ? { captureSites: (contract.kind === 'recovery' ? [map.objective] : map.sites).map(function (site) { return { ...site, holdTime: 0, complete: false }; }) } : {}),
 		...(contract.kind === 'acquisition' ? { acquisitionTime: ACQUISITION_SECONDS } : {}),
+		...(contract.kind === 'defend' && map.defenseApproach ? { defenseArrivalRadius: map.defenseApproach.arrivalRadius } : {}),
 		targetId: undefined, progress: 0, required: contract.kind === 'defend' || contract.kind === 'clearance' ? hostileCount : contract.kind === 'raid' || contract.kind === 'acquisition' ? 3 : 1, extractTime: 0,
 	};
 	const heading = Math.atan2(map.objective.y - map.drop.y, map.objective.x - map.drop.x);
@@ -172,7 +173,7 @@ export const createMissionState = function (contract: Contract, options: Mission
 			hp: Number.isFinite(integrity) ? clamp(integrity, 0, 100) : 0, heat: 0, overheated: false, throttle: 0, speed: 0, shotsFired: 0, coolantCharges: 2,
 		};
 	});
-	state.spawnIn = contract.kind === 'defend' && missionSpawn(contract, map, 0).formation !== undefined ? 5 : 9;
+	state.spawnIn = contract.kind === 'defend' ? map.defenseApproach?.firstWaveDelay ?? (missionSpawn(contract, map, 0).formation !== undefined ? 5 : 9) : 9;
 	if (contract.kind !== 'defend') {
 		for (const spawn of garrison) {
 			const enemy = createEnemy(state, spawn);
@@ -1165,7 +1166,15 @@ const queueReinforcements = function (state: CombatStateView, spawns: readonly M
 	const rigs = spawns.filter(isEnemyMech);
 	const lead = rigs[0];
 	const occupied = [state.player, ...state.squadmates, ...state.enemies, ...state.warnings.flatMap(function (w) { return w.drop ? [w, w.drop.flight.origin] : []; })];
-	const berths = lead ? planRigDrop(lead, objective, field, occupied, rigs.length, startedAt) : [];
+	const standoff = state.mission?.map.defenseApproach?.minimumStandoff;
+	const friendlies = [state.player, ...state.squadmates.filter(function (mate) { return mate.hp > 0; })];
+	const releasePolicy = standoff === undefined ? undefined : {
+		preferredSeparation: standoff,
+		accepts: function (at: Point) { return distance(at, objective) >= standoff
+			&& (!terrain || terrainPointClear(terrain, at, RIG_RADIUS) && hasTerrainRoute(terrain, at, objective, RIG_RADIUS)); },
+		separation: function (at: Point) { return Math.min(...friendlies.map(function (rig) { return distance(at, rig); })); },
+	};
+	const berths = lead ? planRigDrop(lead, objective, field, occupied, rigs.length, startedAt, releasePolicy) : [];
 	if (!berths) return false;
 	const warnings: Warning[] = [];
 	for (const spawn of spawns) {
@@ -1187,6 +1196,11 @@ const queueReinforcements = function (state: CombatStateView, spawns: readonly M
 
 export const spawningStep = function (state: CombatStateView, dt: number) {
 	const mission = state.mission;
+	if (mission?.defenseArrivalRadius !== undefined) {
+		// Arrival is a one-way gate. Keep the full countdown on the arrival tick.
+		if (distance(state.player, mission.map.objective) <= mission.defenseArrivalRadius) delete mission.defenseArrivalRadius;
+		return;
+	}
 	const wave = getWaveDefinition(state.wave);
 	const quota = mission?.required ?? wave.enemies.length;
 	state.spawnIn -= dt;

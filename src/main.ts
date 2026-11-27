@@ -5,7 +5,7 @@ import { getFrameOffer } from './market';
 import { companyRank } from './reputation';
 import ECSpresso from 'ecspresso';
 import { mountRigTest, rigTestEnabled } from './rig-test';
-import { createFieldTrial } from './field-trial';
+import { createFieldTrial, DEFENSE_TRIAL_SEED } from './field-trial';
 import { drawFieldSurvey, fieldTrialSeed } from './field-trial-ui';
 import { html, nothing, render } from 'lit-html';
 import { createHangarPreview, createHangarPreviewSlot } from './hangar-preview';
@@ -111,7 +111,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const feedback = createControllerFeedback();
 	onCleanup(feedback.dispose);
 	const profile = readProfile();
-	let trialSeed = rigTestEnabled ? undefined : fieldTrialSeed(new URLSearchParams(location.search).get('field-trial'));
+	const trialParams = new URLSearchParams(location.search);
+	const defensePacing = !rigTestEnabled && trialParams.has('defense-pacing');
+	let trialSeed = rigTestEnabled ? undefined : defensePacing ? DEFENSE_TRIAL_SEED : fieldTrialSeed(trialParams.get('field-trial'));
 	const sessionOnly = rigTestEnabled || trialSeed !== undefined;
 	presentation.setSkin(profile.settings.mechSkin);
 	const savedSnapshot = function (): string | null | undefined {
@@ -445,6 +447,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			updateRadar();
 		}
 		element('pause-copy').textContent = finishingSortie ? sortieEnding?.kind === 'pickup' ? 'Extraction in progress. Resume to finish the pickup.' : 'Your rig was disabled. Resume to finish the sortie.'
+			: defensePacing ? 'Resume this run, or return to the briefing to replay the same sortie.'
 			: trialSeed !== undefined ? 'Resume this run, or return to the briefing to start the field again or generate another layout.'
 			: situationSim ? 'Restart to replay this situation with fresh rigs, or return to setup to change the mission and squad.'
 			: escape ? 'The escape is paused. Resume when ready. This borrowed rig does not affect your company.'
@@ -568,18 +571,28 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		startLaunch();
 	};
 	const showFieldTrial = function (seed: number, outcome: 'playing' | 'won' | 'lost' = 'playing') {
-		const url = new URL(location.href);
-		url.searchParams.set('field-trial', String(seed)); history.replaceState(history.state, '', url);
+		if (!defensePacing) {
+			const url = new URL(location.href);
+			url.searchParams.set('field-trial', String(seed)); history.replaceState(history.state, '', url);
+		}
 		trialSeed = seed;
 		transition(navigation.setScreen('field-trial'), function () {
-			state = combatRuntime.attach(createFieldTrial(seed));
+			state = combatRuntime.attach(createFieldTrial(seed, defensePacing));
 			if (!state.mission) throw new Error('Missing field trial mission');
 			const map = state.mission.map;
 			gaits = createGaits(state); presentation.resetZoom();
 			pointer = undefined; aim = { ...map.objective };
 			aimMode = defaultAimMode();
 			audio.reset(); message = ''; messageUntil = 0; terminalUntil = 0;
-			element('field-trial-title').textContent = outcome === 'won' ? 'Recorder extracted' : outcome === 'lost' ? 'Frame disabled' : 'Courier recovery';
+			const titles = defensePacing ? { playing: 'Long approach', won: 'Relay secured', lost: 'Sortie failed' }
+				: { playing: 'Courier recovery', won: 'Recorder extracted', lost: 'Frame disabled' };
+			element('field-trial-title').textContent = titles[outcome];
+			element('field-trial-kicker').textContent = defensePacing ? 'GALEWARD / DEFENSE TRIAL' : 'CINDER / FIELD TRIAL';
+			element('field-trial-objective').textContent = defensePacing ? 'R · Relay' : 'R · Recorder';
+			element('field-trial-contacts').hidden = !defensePacing;
+			element('field-defense-orders').hidden = !defensePacing;
+			element('field-recovery-orders').hidden = defensePacing;
+			element('field-generate').hidden = defensePacing;
 			element('field-deploy').textContent = outcome === 'playing' ? 'DEPLOY →' : 'REPLAY FIELD →';
 			element('field-trial-seed').textContent = `SEED ${seed} · ${(map.width / 1000).toFixed(2)} × ${(map.height / 1000).toFixed(2)} KM`;
 			drawFieldSurvey(element('field-survey-map'), map);
@@ -1009,7 +1022,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('training-back', leaveTraining);
 	listen('field-deploy', function () { if (trialSeed !== undefined && !contextLost) startLaunch(); });
 	listen('skip-launch', finishLaunch);
-	listen('field-generate', function () { if (trialSeed !== undefined) showFieldTrial((trialSeed + 0x9e3779b9) >>> 0); });
+	listen('field-generate', function () { if (!defensePacing && trialSeed !== undefined) showFieldTrial((trialSeed + 0x9e3779b9) >>> 0); });
 	listen('pause-training-loadout', showTrainingSetup);
 	listen('result-training-loadout', showTrainingSetup);
 	listen('title-intro', function () { startIntro(true); });

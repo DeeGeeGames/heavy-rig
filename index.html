@@ -143,11 +143,13 @@
 		<footer class="dialog-actions"><button id="situation-replay" class="primary">REPLAY</button><button id="situation-edit" class="secondary">CHANGE SETUP</button><button id="situation-exit" class="text-button">RETURN TO TITLE</button></footer>
 	</section>
 	<section id="field-trial" class="modal compact menu-surface" role="dialog" aria-modal="true" aria-labelledby="field-trial-title" hidden>
-		<header class="dialog-heading"><div class="modal-kicker"><span class="eyebrow">CINDER / FIELD TRIAL</span><span id="field-trial-seed"></span></div><h2 id="field-trial-title">Courier recovery</h2></header>
+		<header class="dialog-heading"><div class="modal-kicker"><span id="field-trial-kicker" class="eyebrow">CINDER / FIELD TRIAL</span><span id="field-trial-seed"></span></div><h2 id="field-trial-title">Courier recovery</h2></header>
 		<div class="field-brief">
-			<figure class="field-survey"><div id="field-survey-map"></div><figcaption><span>D · Drop</span><span>R · Recorder</span><span>P · Pickup</span></figcaption></figure>
-			<div class="field-orders"><p>Cross the fissure with Kite. Hold the recorder for five seconds, then reach pickup and hold for three.</p>
+			<figure class="field-survey"><div id="field-survey-map"></div><figcaption><span>D · Drop</span><span id="field-trial-objective">R · Recorder</span><span>P · Pickup</span><span id="field-trial-contacts" hidden>A/B · Enemy approaches</span></figcaption></figure>
+			<div id="field-recovery-orders" class="field-orders"><p>Cross the fissure with Kite. Hold the recorder for five seconds, then reach pickup and hold for three.</p>
 				<p><b>Amber</b> follows the open haul road. <b>Cyan</b> takes the service road past the ore sheds.</p></div>
+			<div id="field-defense-orders" class="field-orders" hidden><p>Travel 2.27 km to the relay with Kite. Your arrival starts the defense countdown. Watch the eastern approaches for dropships.</p>
+				<p><b>Amber</b> is the direct route. <b>Cyan</b> swings south past pickup. The red approaches show likely enemy routes.</p></div>
 		</div>
 		<footer class="dialog-actions"><button id="field-deploy" class="primary">DEPLOY →</button><button id="field-generate" class="secondary">NEW LAYOUT</button></footer>
 	</section>

@@ -188,6 +188,31 @@ test('new mission contracts restore and settle their payment exactly once', func
 	}
 });
 
+test('new defense postings use the extended layout but already accepted defense saves keep their original layout', function () {
+	for (const boardVersion of [1, 2] as const) {
+		const fresh = createCampaign(317);
+		const campaign: Campaign = { ...fresh, universe: { ...fresh.universe, boardVersion } };
+		const defense = posted(campaign);
+		expect(defense.fieldLayout).toBe('extended-defense');
+		expect(getContracts(campaign).filter(function (contract) { return contract.fieldLayout !== undefined && contract.kind !== 'defend'; })).toHaveLength(0);
+
+		const accepted = acceptContract(campaign, defense.id);
+		expect(roundTrip(accepted).active).toEqual(defense);
+		const oldDefense = { ...defense };
+		delete oldDefense.fieldLayout;
+		const restored = roundTrip({ ...accepted, active: oldDefense });
+		expect(restored.active).toEqual(oldDefense);
+		expect(posted(restored)).toEqual(oldDefense);
+		expect(settleContract(restored, true).lastResult?.contract).toEqual(oldDefense);
+
+		// Tier 1 terms are the same across the six- and ten-tier boards.
+		const sixTierDefense = { ...oldDefense, id: oldDefense.id.replace(/^mission:/, '') };
+		const historical = roundTrip({ ...accepted, active: sixTierDefense });
+		expect(historical.active).toEqual(sixTierDefense);
+		expect(settleContract(historical, true).lastResult?.contract).toEqual(sixTierDefense);
+	}
+});
+
 test('accepted acquisition saves preserve their current deadline and reject altered terms', function () {
 	for (const boardVersion of [1, 2] as const) {
 		const campaign = { ...createCampaign(317), credits: 12500 };

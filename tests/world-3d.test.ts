@@ -13,6 +13,7 @@ import { createSituationMission } from '../src/situation-sim';
 import { groundHeight } from '../src/terrain-elevation';
 import { emplacementLaunch } from '../src/artillery-emplacement-rig';
 import { createWorldObjects } from '../src/world-3d';
+import { archivedDefense } from './defense-fixture';
 
 test('world pools track live combat state and restart removes transient objects', function () {
 	const scene = new Scene(); const presentation = createWorldObjects(scene); const state = createState();
@@ -67,6 +68,10 @@ test('one transport unloads two rigs, stays for departure, and clears on mission
 		spawningStep(state, dt); world.update(state);
 	};
 	try {
+		const relay = state.mission?.map.objective;
+		if (!relay) throw new Error('Expected a defense relay');
+		Object.assign(state.player, relay);
+		spawningStep(state, 1 / 60);
 		state.spawnIn = 0;
 		advanceTo(1 / 60);
 		const [first, second] = state.warnings;
@@ -105,7 +110,7 @@ test('reinforcement flights cross opposite sides of Wide View above the perimete
 	// These landings are visible from the pilot, with opposite approach bearings.
 	const entrySides = new Set<'left' | 'right'>();
 	for (const seed of [8, 593]) {
-		const state = createSituationMission({ kind: 'defend', planetId: 'meridian', tier: 3, frame: 'warden', wing: [] }, seed, 'story');
+		const state = archivedDefense('meridian', 3, seed, 'story');
 		const map = state.mission?.map;
 		if (!map) throw new Error('Expected a defense map');
 		const camera = new OrthographicCamera();

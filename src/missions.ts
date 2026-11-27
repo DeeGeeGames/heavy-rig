@@ -6,6 +6,7 @@ import { SQUAD_SIZE } from './pilots';
 import { isAuthoredContract } from './contract-chains';
 import { PLAYABLE_FRAMES, type FrameId } from './frames';
 import { createBiomeLayout, type TerrainMap } from './biome-layout';
+import { defenseLandingFootings, extendDefenseField } from './defense-layout';
 import { compoundFor } from './mission-compounds';
 import { objectiveSitePlan, placeObjectiveSite } from './objective-sites';
 import { generateElevation } from './mission-elevation';
@@ -120,6 +121,14 @@ const mobileSpawn = function (contract: Contract, map: MissionMap, index: number
 		: contract.tier >= firstHeavyRigTier(contract) ? 'siege' : contract.tier <= (legacy ? 1 : 4) ? 'scout' : 'striker';
 	const kind = commander ? commandKind : roster[index % roster.length] ?? 'helicopter';
 	const frameId = authored ? undefined : catalogFrame(contract, kind, random);
+	const staging = contract.kind === 'defend' ? map.defenseApproach?.staging : undefined;
+	if (staging) {
+		const pad = staging[formation % 2 === 0 ? 0 : 1];
+		if (frameId) return { ...pad, kind, frameId, formation };
+		const entryBearing = Math.atan2(pad.y - site.y, pad.x - site.x) + (wingOffsets[index % 3] ?? 0) * .48;
+		const range = separation(site, pad);
+		return { x: site.x + Math.cos(entryBearing) * range, y: site.y + Math.sin(entryBearing) * range, kind, formation };
+	}
 	const atBearing = function (bearing: number): Point {
 		return { x: Math.max(100, Math.min(map.width - 100, site.x + Math.cos(bearing) * radius)),
 			y: Math.max(100, Math.min(map.height - 100, site.y + Math.sin(bearing) * radius)) };
@@ -321,12 +330,14 @@ const surveyElevation = function (contract: Contract, map: TerrainMap, garrison:
 	const siteRadius = contract.kind === 'defend' ? 68 : contract.kind === 'demolition' || contract.kind === 'raid' ? FACILITY_RADIUS
 		: contract.kind === 'acquisition' || contract.kind === 'recovery' ? 24 : 0;
 	const sites = siteRadius ? map.sites.map(function (p) { return landingFootprint(p, siteRadius); }) : [];
-	return generateElevation(map, map.terrain.obstacles, [map.drop, ...slots], [...guards, ...sites], emplacements);
+	return generateElevation(map, map.terrain.obstacles, [map.drop, ...slots], [...guards, ...sites], [...emplacements, ...defenseLandingFootings(map)]);
 };
 
-const finishMissionField = function (contract: Contract, map: TerrainMap, obstacles: readonly TerrainObstacle[], random: () => number, compounds: readonly MissionCompound[]) {
-	const terrain = { ...map.terrain, obstacles, ...(compounds.length ? { compounds } : {}) };
-	const landmarkField = terrain.site ? { obstacles: [...obstacles, terrain.site] } : terrain;
+const finishMissionField = function (contract: Contract, base: TerrainMap, obstacles: readonly TerrainObstacle[], random: () => number, compounds: readonly MissionCompound[]) {
+	const built = { ...base, terrain: { ...base.terrain, obstacles, ...(compounds.length ? { compounds } : {}) } };
+	const map = contract.kind === 'defend' && contract.fieldLayout === 'extended-defense' ? extendDefenseField(built) : built;
+	const terrain = map.terrain;
+	const landmarkField = terrain.site ? { obstacles: [...terrain.obstacles, terrain.site] } : terrain;
 	const landmarks: Landmark[] = [];
 	const garrison = missionGarrison(contract, { ...map, terrain });
 	const guns = garrison.filter(function (spawn) { return spawn.kind === 'artillery'; });
@@ -476,7 +487,14 @@ export const missionObjective = function (state: CombatStateView): string {
 			: (mission.acquisitionTime ?? 0) <= 0 ? 'Target acquisition failed · deadline expired'
 			: `Beacons ${mission.progress}/3 · ${Math.ceil(mission.acquisitionTime ?? 0)}s remaining${action}`;
 	}
-	if (mission.contract.kind === 'defend') return `Protect the relay · ${mission.progress}/${mission.required} hostiles eliminated`;
+	if (mission.contract.kind === 'defend') {
+		if (mission.defenseArrivalRadius !== undefined) return `Reach the relay · ${Math.round(separation(state.player, mission.map.objective))} m`;
+		if (mission.map.defenseApproach && state.spawned === 0) {
+			const firstWave = !usesLegacyMissionTiers(mission.contract) && mission.contract.tier < FIRST_RIG_TIER ? 'first hostiles' : 'first dropship';
+			return `Protect the relay · ${firstWave} in ${Math.ceil(state.spawnIn)}s`;
+		}
+		return `Protect the relay · ${mission.progress}/${mission.required} hostiles eliminated`;
+	}
 	if (mission.contract.kind === 'demolition') return `Destroy the facility · ${Math.ceil(Math.max(0, mission.structure?.hp ?? 0) / (mission.structure?.maxHp ?? 1) * 100)}% integrity`;
 	if (mission.contract.kind === 'assassination') return `Hunt the marked ${commandTargetName(mission.contract)}`;
 	return `Clear the three hostile sites · ${mission.progress}/${mission.required} eliminated`;

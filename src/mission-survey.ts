@@ -117,7 +117,7 @@ export class MissionSurvey extends HTMLElement {
 			this.frame = 0;
 			const contract = this.posting;
 			if (!this.visible || !contract) return;
-			const key = [contract.id, contract.seed, contract.planetId, contract.kind, contract.tier].join('/');
+			const key = [contract.id, contract.seed, contract.planetId, contract.kind, contract.tier, contract.fieldLayout].join('/');
 			if (key === this.drawn) return;
 			let chart = this.charts.get(key);
 			if (!chart) {
