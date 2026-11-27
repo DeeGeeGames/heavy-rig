@@ -202,7 +202,7 @@
 }
 
 /* Keep the mission phase and pause controls on screen during pickup. */
-#game.pickup-active #hud :is(.left-instruments, .weapon-console, #touch) { display: none; }
+#game.pickup-active #hud :is(.left-instruments, .weapon-console, #touch, #touch-zoom) { display: none; }
 
 /* The gauges, task and actions share one row wherever the viewport permits it. */
 .combat-strip {
