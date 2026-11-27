@@ -75,8 +75,8 @@ test('a saved mixed day settles the same crew sortie after extraction or interru
 		expect(result.workOrders).toHaveLength(0);
 		const saved = roundTrip(result);
 		expect(saved.lastOperationDay).toEqual(result.lastOperationDay);
-		// Three Kestrels, a Warden, and two hired pilots share one 150 CR bill.
-		expect(saved.credits).toBe(ready.credits + (result.lastOperationDay?.reduce(function (total, report) { return total + report.payout; }, 0) ?? 0) - 150);
+		// Three Kestrels, a Warden, and two hired pilots share one 4,500 CR bill.
+		expect(saved.credits).toBe(ready.credits + (result.lastOperationDay?.reduce(function (total, report) { return total + report.payout; }, 0) ?? 0) - 4500);
 		expect(abandonContract(saved)).toBe(saved);
 		expect(recoverInterruptedDeployment(saved)).toBe(saved);
 	}

@@ -57,9 +57,12 @@ test('the opening offer survives ordinary contracts, front changes, transit and 
 	expect(canAcceptContract(arrived, recovery)).toBe(true);
 	const accepted = roundTrip(advanceDays(acceptContract(arrived, recovery.id), 4));
 	expect(accepted.active).toEqual(recovery);
+	expect(accepted.upkeepOwed).toBe(350);
 	expect(travelTo(accepted, 'meridian')).toBe(accepted);
 	const done = roundTrip(settleContract(accepted, true));
-	expect(done.credits).toBe(accepted.credits + recovery.reward);
+	expect(done.lastResult?.payout).toBe(recovery.reward);
+	expect(done.credits).toBe(accepted.credits + recovery.reward - 350);
+	expect(done.upkeepOwed).toBe(0);
 	expect(acceptContract(done, recovery.id)).toBe(done);
 	expect(getTransmission(done)?.offers.map(function ({ contract }) { return contract.kind; })).toEqual(['defend', 'demolition']);
 });
