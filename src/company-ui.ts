@@ -8,7 +8,7 @@ import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { FACTIONS, getFaction, getPlanet, type Campaign, type PlannedOperation } from './campaign';
 import type { FactionId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
-import { availableWeapons, canRefit, getOwnedMech, monthlyUpkeep, nextUpkeepDay, refitDays, repairDays, UPKEEP_MONTH_DAYS, WEAPON_PRICES, workOrderFor } from './company';
+import { availableWeapons, canRefit, getOwnedMech, monthlyUpkeep, nextUpkeepDay, quoteRepair, refitDays, UPKEEP_MONTH_DAYS, WEAPON_PRICES, workOrderFor } from './company';
 import { PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary, weaponClassLabel } from './loadout-ui';
 import { frameWeight, loadedMounts, usableMount } from './combat-resources';
@@ -155,7 +155,7 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 	const selectedHardpoint = slot === null ? undefined : hardpoints[slot];
 	const equipment = slot !== null && selectedHardpoint !== undefined && !order;
 	const story = campaign.active && getAuthoredStep(campaign.story, campaign.active);
-	const status = draft ? 'Apply or discard your loadout changes before deployment.' : order ? `This frame will be ready on day ${order.readyDay}. It cannot deploy while work is in progress.` : mech.integrity <= 0 ? 'Schedule a free repair and advance the Engineering calendar to deploy this frame.' : !loadedMounts(mech.loadout, mech.reserves).some(usableMount) ? 'This frame has no usable weapons. Load ammunition or fit an energy weapon before deployment.' : 'Assign this rig to a pilot on the Deploy screen.';
+	const status = draft ? 'Apply or discard your loadout changes before deployment.' : order ? `This frame will be ready on day ${order.readyDay}. It cannot deploy while work is in progress.` : mech.integrity <= 0 ? 'Schedule a rebuild and advance the Engineering calendar to deploy this frame.' : !loadedMounts(mech.loadout, mech.reserves).some(usableMount) ? 'This frame has no usable weapons. Load ammunition or fit an energy weapon before deployment.' : 'Assign this rig to a pilot on the Deploy screen.';
 	const mounts = hardpoints.map(function (hardpoint, index) {
 		const weaponId = editor.loadout[index]; const weapon = weaponId ? getWeapon(weaponId) : undefined;
 		const different = weaponId !== mech.loadout[index] || editor.reserves[index] !== mech.reserves[index];
@@ -269,17 +269,27 @@ const engineeringPanes = function (campaign: Campaign, actions: CompanyActions):
 			...textItems('Each frame has its own crew. Repairs and refits progress in parallel, completing on the ship calendar.'),
 			html`<p class="workspace-copy"><b>Monthly upkeep · ${creditsLabel(monthlyUpkeep(campaign))} due day ${nextUpkeepDay(campaign.day)}</b><br>Every ${UPKEEP_MONTH_DAYS} days. Includes all owned rigs and hired pilots, even when idle.</p>`,
 			...((campaign.upkeepOwed ?? 0) > 0 ? textItems(`${creditsLabel(campaign.upkeepOwed ?? 0)} unpaid. Carried forward until funds allow.`) : []),
+			...((campaign.repairDebt ?? 0) > 0 ? textItems(`${creditsLabel(campaign.repairDebt ?? 0)} in recovery repair debt. Repaid from up to 25% of each successful contract payout.`) : []),
 			...textItems('Each jump or operations day advances work by one day. Waiting does not refresh contract postings.'),
 		], actions: html`<button id="advance-day" class="secondary" ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.advanceDays(1); }}>ADVANCE 1 DAY</button><button id="advance-work" class="primary" ?disabled=${!next || Boolean(campaign.deployed)} @click=${function () { if (next) actions.advanceDays(next.readyDay - campaign.day); }}>${next ? `WAIT ${daysLabel(next.readyDay - campaign.day)}` : 'NO WORK PENDING'}</button>` },
 		{ id: 'orders', label: 'Work orders', items: ordered.length === 0 ? [html`<div class="company-empty"><b>ALL BAYS CLEAR</b><p>Schedule repairs in Condition or plan a refit in the Mech Bay.</p></div>`] : ordered.flatMap(function (order) {
 			const frame = getFrame(rigFrameId(order.frameId)); const total = order.readyDay - order.startedDay;
 			return [html`<article class="work-order" data-work-order=${order.frameId}><div class="work-order-heading"><div><span class="eyebrow">${order.kind === 'repair' ? 'RESTORATION' : 'WEAPON REFIT'}</span><h3>${rigName(order.frameId)}</h3></div><strong>${daysLabel(order.readyDay - campaign.day)}</strong></div><div class="work-order-dates"><span>STARTED ${order.startedDay}</span><b>READY DAY ${order.readyDay}</b></div><div class="track"><i style="width:${total > 0 ? (campaign.day - order.startedDay) / total * 100 : 100}%"></i></div></article>`, html`<button class="secondary" data-cancel-work=${order.frameId} @click=${function () { actions.cancelWork(order.frameId); }}>CANCEL ${rigName(order.frameId)} ORDER</button>`, ...textItems(order.kind === 'repair' ? `${frame.name}: restore integrity to 100%. Weapons stay installed.` : `${frame.name} refit: ${order.loadout.map(function (weapon, index) { const hardpoint = getHardpoints(frame.id)[index]; return `${index + 1}. ${hardpoint?.name ?? 'Mount'}${hardpoint ? ` (${weaponClassLabel(hardpoint.family, hardpoint.maxSize)})` : ''}: ${weapon ? getWeapon(weapon).name : 'Empty'}`; }).join(' · ')}`), ...(order.kind === 'refit' ? textItems(`PENDING: ${loadSummary(frame.id, order.loadout, order.reserves)} ${supplySummary(order.loadout, order.reserves)}`) : [])];
-		}).concat(textItems('Cancellation keeps the original condition and installed loadout. Elapsed days are not refunded.')) },
+		}).concat(textItems('Cancellation refunds repair payments and leaves the original condition and loadout unchanged. Elapsed days are not refunded.')) },
 		{ id: 'condition', label: 'Condition', scrollable: true, items: [
 			...campaign.fleet.map(function (mech) {
-				const order = workOrderFor(campaign, mech.frameId); const days = repairDays(mech.integrity);
-				return html`<div class="maintenance-entry"><article class="maintenance-frame" data-maintenance-frame=${mech.frameId}><div><b>${rigName(mech.frameId)}</b></div>${renderHullIntegrity(mech.integrity)}<p>${order ? `${order.kind === 'repair' ? 'Repair' : 'Refit'} underway · ready day ${order.readyDay}` : mech.integrity >= 100 ? 'Fully serviced.' : `${daysLabel(days)} to restore · ready day ${campaign.day + days}`}</p></article><button class="secondary" data-repair-frame=${mech.frameId} ?disabled=${Boolean(order) || mech.integrity >= 100 || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>${rigName(mech.frameId)} · ${order ? 'WORK IN PROGRESS' : mech.integrity >= 100 ? 'FRAME INTACT' : `REPAIR · ${daysLabel(days)}`}</button></div>`;
-			}), ...textItems('Your own crews repair without a credit fee. Every 20 missing integrity takes one day; a wrecked frame needs five days.'),
+				const order = workOrderFor(campaign, mech.frameId);
+				const quote = quoteRepair(campaign, mech.frameId);
+				const deferred = order?.kind === 'repair' ? order.payment?.deferred : quote?.available ? quote.payment.deferred : undefined;
+				const notes = deferred ? ` · ${creditsLabel(deferred)} deferred` : quote && !quote.available && quote.shortfall ? ` · need ${creditsLabel(quote.shortfall)} more` : '';
+				const status = order ? `${order.kind === 'repair' ? 'Repair' : 'Refit'} underway · ready day ${order.readyDay}`
+					: quote ? `${daysLabel(quote.days)} to restore · ready day ${quote.readyDay}` : 'Fully serviced.';
+				const label = order ? 'WORK IN PROGRESS' : quote ? `${mech.integrity === 0 ? 'REBUILD' : 'REPAIR'} · ${creditsLabel(quote.cost)}` : 'FRAME INTACT';
+				return html`<div class="maintenance-entry">
+					<article class="maintenance-frame" data-maintenance-frame=${mech.frameId}><div><b>${rigName(mech.frameId)}</b></div>${renderHullIntegrity(mech.integrity)}<p>${status}${notes}</p></article>
+					<button class="secondary" data-repair-frame=${mech.frameId} ?disabled=${!quote?.available} @click=${function () { actions.repair(mech.frameId); }}>${rigName(mech.frameId)} · ${label}</button>
+				</div>`;
+			}), ...textItems('Repairs scale with missing integrity at half the chassis price. Rebuilding a wreck costs 75% of its chassis price and takes five days. If no rig can deploy, Engineering can defer the balance on one recovery repair.'),
 		], actions: html`<button class="secondary" @click=${function () { actions.navigate('mechbay'); }}>MECH BAY →</button>` },
 	];
 };
@@ -311,13 +321,14 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 	const footer = html`<footer class="bridge-footer"><div><button ?disabled=${locked} @click=${actions.handbook}>HANDBOOK</button><button ?disabled=${locked} @click=${actions.settings}>SETTINGS</button></div><span class="company-notice" role="status">${editor.notice}</span><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'}>${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span></footer>`;
 	const mech = getOwnedMech(campaign); const frame = mech ? getFrame(rigFrameId(mech.frameId)) : undefined;
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
+	const repair = screen === 'mechbay' && mech ? quoteRepair(campaign, mech.frameId) : undefined;
 	const installedWeight = mech && frame ? frameWeight(frame.id, loadedMounts(mech.loadout, mech.reserves)) : undefined;
 	const hero = screen === 'mechbay' && mech && frame ? html`
 		<div class="hangar-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.variantName}</span><h2>${rigName(mech.frameId)} <small>/ ${frame.designation}</small></h2></div>${supportsMechSkin(frame.id) ? html`<button class="hangar-livery" ?disabled=${locked || Boolean(campaign.deployed)} @click=${function () { selectWorkspacePane(root, 'livery'); const target = root.querySelector<HTMLElement>('[data-mech-skin][aria-pressed="true"]'); if (target) { revealWorkspaceElement(target); target.focus({ preventScroll: true }); } }}>LIVERY</button>` : html`<span class="eyebrow">${assignedPilot(campaign, mech.frameId) ?? 'UNASSIGNED'}</span>`}</div>
 		<div class="hangar-model"><canvas data-hangar-frame=${frame.id} aria-label=${`${frame.name} frame preview`}></canvas><span class="hangar-fallback">${frame.name} / ${frame.role}</span><span class="mount-pin" aria-hidden="true" hidden></span></div>
 		<div class="hangar-service">
 			${renderHullIntegrity(mech.integrity)}
-			${order ? html`<button class="secondary hull-repair" ?disabled=${locked} @click=${function () { actions.navigate('engineering'); }}>VIEW ${order.kind === 'repair' ? 'REPAIRS' : 'REFIT'}<small>READY DAY ${order.readyDay}</small></button>` : mech.integrity < 100 ? html`<button class="secondary hull-repair" data-quick-repair=${mech.frameId} ?disabled=${locked || Boolean(campaign.deployed)} @click=${function () { actions.repair(mech.frameId); }}>REPAIR · ${daysLabel(repairDays(mech.integrity))}<small>0 CR</small></button>` : html``}
+			${order ? html`<button class="secondary hull-repair" ?disabled=${locked} @click=${function () { actions.navigate('engineering'); }}>VIEW ${order.kind === 'repair' ? 'REPAIRS' : 'REFIT'}<small>READY DAY ${order.readyDay}</small></button>` : repair ? html`<button class="secondary hull-repair" data-quick-repair=${mech.frameId} ?disabled=${locked || !repair.available} @click=${function () { actions.repair(mech.frameId); }}>${mech.integrity === 0 ? 'REBUILD' : 'REPAIR'} · ${daysLabel(repair.days)}<small>${creditsLabel(repair.cost)}${repair.available && repair.payment.deferred ? ' · FINANCING' : !repair.available && repair.shortfall ? ' · SHORT ON FUNDS' : ''}</small></button>` : html``}
 		</div>
 		<div class="hangar-specs"><div><small>LOADED CRUISE</small><b>${installedWeight?.speed.toFixed(1)}<em>m/s</em></b></div><div><small>COOLING</small><b>${frame.cooling}<em>heat/s</em></b></div></div>
 	` : undefined;

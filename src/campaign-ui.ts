@@ -111,7 +111,7 @@ const transmissionPane = function (root: HTMLElement, campaign: Campaign, transm
 		id: 'transmission', label: 'Bridge transmission',
 		items: [
 			html`<div class="signal-heading"><span class="eyebrow">${offers.length ? 'WAYFARER / CAMPAIGN SIGNAL' : 'WAYFARER / SIGNAL CLOSED'}</span><h2>${title}</h2>${opening ? html`<p class="workspace-copy">${opening.pitch}</p>` : ''}</div>`,
-			...(retry ? textItems(`The contact is holding the job for you. Retry when ready.${damaged ? ' Repair your frame in Engineering for 0 CR.' : ''}`) : last ? textItems(last.success) : []),
+			...(retry ? textItems(`The contact is holding the job for you. Retry when ready.${damaged ? ' Check the repair quote in Engineering.' : ''}`) : last ? textItems(last.success) : []),
 			...(choice ? textItems('Choose one offer when you commit the day. Both offers stay open while you take other work.') : []),
 			...offers.map(function ({ contract, contact, label, pitch }) {
 				return html`<article class="signal-contact"><span class="eyebrow">${contact}</span>${choice ? html`<h3>${label}</h3>` : ''}${opening?.contract.id === contract.id ? '' : html`<p class="workspace-copy">${pitch}</p>`}<small>${getPlanet(contract.planetId).name} · ${contract.reward.toLocaleString()} CR</small></article>`;

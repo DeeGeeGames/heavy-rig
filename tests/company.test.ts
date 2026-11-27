@@ -212,6 +212,60 @@ describe('Company ownership and workshop transactions', function () {
 		expect(repaired.inventory).toEqual(destroyed.inventory);
 	});
 
+	test('paid repairs charge missing integrity at the variant rate, but a wreck costs 75%, and only cancellation refunds the payment', function () {
+		const company = buyFrame(funded(), 'kestrel-b');
+		for (const [integrity, cost, days] of [[80, 900, 1], [0.5, 4478, 5], [0, 6750, 5]] as const) {
+			const damaged = { ...company, fleet: company.fleet.map(function (rig) {
+				return rig.frameId === 'kestrel-b' ? { ...rig, integrity } : rig;
+			}) };
+			const queued = roundTrip(queueRepair(damaged, 'kestrel-b'));
+			expect(queued.credits).toBe(company.credits - cost);
+			expect(queued.workOrders[0]?.readyDay).toBe(company.day + days);
+			expect(getOwnedMech(queued, 'kestrel-b')?.integrity).toBe(integrity);
+			expect(cancelWorkOrder(queued, 'kestrel-b')).toEqual(damaged);
+			const repaired = advanceDays(queued, days);
+			expect(repaired.credits).toBe(queued.credits);
+			expect(getOwnedMech(repaired, 'kestrel-b')?.integrity).toBe(100);
+			expect(cancelWorkOrder(repaired, 'kestrel-b')).toBe(repaired);
+		}
+	});
+
+	test('a spare rig prevents repair financing, and a pending recovery rebuild reserves only one rescue', function () {
+		const company = buyFrame(funded(), 'kestrel-b');
+		const fleet = company.fleet.map(function (rig) { return { ...rig, integrity: rig.frameId === 'kestrel' ? 0 : 100 }; });
+		const withSpare = { ...company, fleet, credits: 750 };
+		expect(queueRepair(withSpare, 'kestrel')).toBe(withSpare);
+		const unloaded = setAmmunition(withSpare, 'kestrel-b', [0, 0]);
+		expect(unloaded).not.toBe(withSpare);
+		expect(queueRepair(unloaded, 'kestrel')).toBe(unloaded);
+		const stranded = { ...withSpare, fleet: fleet.map(function (rig) { return { ...rig, integrity: 0 }; }) };
+		const queued = roundTrip(queueRepair(stranded, 'kestrel'));
+		expect(queued.credits).toBe(0);
+		expect(queued.repairDebt).toBeUndefined();
+		expect(queueRepair(queued, 'kestrel-b')).toBe(queued);
+		expect(cancelWorkOrder(queued, 'kestrel')).toEqual(stranded);
+		const repaired = advanceDays(queued, 5);
+		expect(repaired.repairDebt).toBe(5250);
+		expect(advanceDays(repaired, 1).repairDebt).toBe(5250);
+	});
+
+	test('repair spending cannot strand the company in a quiet system with only a jump to more quiet systems', function () {
+		const starter = createCampaign(317, 'career');
+		const arrived = travelTo(starter, 'system-0');
+		expect(arrived.planetId).toBe('system-0');
+		expect(getContracts(arrived)).toHaveLength(0);
+		const company = { ...arrived, credits: 2250, fleet: arrived.fleet.map(function (rig) { return { ...rig, integrity: 50 }; }) };
+		expect(queueRepair(company, 'kestrel')).toBe(company);
+		const fundedRepair = queueRepair({ ...company, credits: 2500 }, 'kestrel');
+		expect(fundedRepair.credits).toBe(500);
+		const finished = advanceDays(fundedRepair, 3);
+		expect(PLANETS.some(function (world) {
+			if (world.id === finished.planetId) return false;
+			const next = travelTo(finished, world.id);
+			return next !== finished && getContracts(next).length > 0;
+		})).toBe(true);
+	});
+
 	test('deployment locks workshop, purchasing, frame selection and time advancement, while an unarmed mech stays grounded', function () {
 		const company = stockFrame(funded(), 'warden');
 		const deployed = checkpointDeployment(beginDeployment(accept(company)), 70, 1);

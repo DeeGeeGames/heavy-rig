@@ -38,6 +38,7 @@ export interface CampaignResult {
 	won: boolean;
 	aborted: boolean;
 	payout: number;
+	repairRepayment?: number;
 	favor: number;
 	companyReputation: number;
 	day: number;
@@ -78,6 +79,7 @@ export interface Campaign extends CompanyState {
 	boardRevision: number;
 	credits: number;
 	upkeepOwed?: number;
+	repairDebt?: number;
 	companyReputation: number;
 	completed: number;
 	failed: number;
@@ -102,6 +104,7 @@ const MAX_OPERATIONS = MISSION_KINDS.length + 1;
 export const MAX_CREDITS = 1_000_000_000_000;
 export const STARTING_CREDITS = 750;
 export const fieldLeadFee = function (contract: Contract): number { return Math.round(contract.reward / 4); };
+const repairRepaymentLimit = function (payout: number): number { return Math.floor(payout / 4); };
 const isInteger = function (value: unknown, min: number, max: number): value is number {
 	return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
 };
@@ -359,6 +362,7 @@ const recordContract = function (campaign: Campaign, contract: Contract, won: bo
 	const fee = won && leaderId ? fieldLeadFee(contract) : 0;
 	const companyFee = leaderId === 'player' ? Math.min(fee, MAX_CREDITS - campaign.credits - basePay) : 0;
 	const payout = basePay + companyFee;
+	const repairRepayment = Math.min(campaign.repairDebt ?? 0, repairRepaymentLimit(payout));
 	const fieldLead = leaderId ? { pilotId: leaderId, fee: leaderId === 'player' ? companyFee : fee } : undefined;
 	const reputation = { ...campaign.reputation, [contract.employer]: boundedReputation(campaign.reputation[contract.employer] + favor) };
 	const companyReputation = won ? Math.min(getContractTier(contract).reputation, MAX_COMPANY_REPUTATION - campaign.companyReputation) : 0;
@@ -366,8 +370,9 @@ const recordContract = function (campaign: Campaign, contract: Contract, won: bo
 	const story = campaign.story;
 	return {
 		...campaign, universe: applyMissionInfluence(campaign.universe, contract.planetId, contract.employer, contract.opponent, won), reputation,
-		credits: campaign.credits + payout, companyReputation: campaign.companyReputation + companyReputation, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
-		lastResult: { contract, won, aborted, payout, favor, companyReputation, day, ...(fieldLead ? { fieldLead } : {}), ...(squad ? { squad } : {}), ...(crew ? { crew } : {}) },
+		credits: campaign.credits + payout - repairRepayment, companyReputation: campaign.companyReputation + companyReputation, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
+		...(repairRepayment ? { repairDebt: (campaign.repairDebt ?? 0) - repairRepayment } : {}),
+		lastResult: { contract, won, aborted, payout, favor, companyReputation, day, ...(repairRepayment ? { repairRepayment } : {}), ...(fieldLead ? { fieldLead } : {}), ...(squad ? { squad } : {}), ...(crew ? { crew } : {}) },
 		...(won && squad?.some(function (member) { return member.pilotId !== 'player'; }) ? { pilotWins: recordPilotWins(campaign, squad.map(function (member) { return member.pilotId; })) } : {}),
 		...(won && story?.committed === contract.id ? { story: { id: story.id, completed: [...story.completed, contract.id] } } : {}),
 	};
@@ -471,6 +476,7 @@ const isResult = function (value: unknown): value is CampaignResult {
 	const companyFee = fieldLead?.pilotId === 'player' ? fieldLead.fee : 0;
 	return typeof value['aborted'] === 'boolean' && !(won && value['aborted'])
 		&& isInteger(value['payout'], companyFee ? contract.reward + companyFee : 0, contract.reward + companyFee) && isInteger(value['favor'], 0, contract.favor)
+		&& (value['repairRepayment'] === undefined || isInteger(value['repairRepayment'], 1, repairRepaymentLimit(value['payout'])))
 		&& isInteger(value['companyReputation'], 0, getContractTier(contract).reputation)
 		&& (won || value['companyReputation'] === 0)
 		&& (fieldLead === undefined || (fieldLead.pilotId === 'player') === (crew === undefined))
@@ -550,6 +556,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['companyReputation'], 0, MAX_COMPANY_REPUTATION)
 			|| !isInteger(value['credits'], 0, MAX_CREDITS) || value['upkeepOwed'] !== undefined && !isInteger(value['upkeepOwed'], 0, MAX_CREDITS)
+			|| value['repairDebt'] !== undefined && !isInteger(value['repairDebt'], 0, MAX_CREDITS)
 			|| !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > Math.min(MAX_COUNT, value['boardRevision'] * MAX_OPERATIONS) || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
 			|| value['active'] !== undefined && !isContract(value['active']) || value['lastResult'] !== undefined && !isResult(value['lastResult'])) return createCampaign();
@@ -582,6 +589,7 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			...company, version: CAMPAIGN_VERSION, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], companyReputation: value['companyReputation'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
 			...(value['upkeepOwed'] === undefined ? {} : { upkeepOwed: value['upkeepOwed'] }),
+			...(value['repairDebt'] === undefined ? {} : { repairDebt: value['repairDebt'] }),
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 			...(operations ? { operations } : {}), ...(committedCrew ? { committedCrew } : {}), ...(lastOperationDay ? { lastOperationDay } : {}),
 			...(preferredLineup ? { preferredLineup } : {}), ...(pilotWins ? { pilotWins } : {}),

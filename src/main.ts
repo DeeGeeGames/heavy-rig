@@ -54,7 +54,7 @@ import { getAuthoredStep } from './contract-chains';
 import { combatTask } from './combat-task';
 import { fieldContacts } from './tactical-radar';
 import { missionStructures } from './missions';
-import { isFrameId, newUpkeepDue, PILOT_MONTHLY_UPKEEP, WEAPON_PRICES, refitDays, repairDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
+import { isFrameId, newUpkeepDue, PILOT_MONTHLY_UPKEEP, WEAPON_PRICES, quoteRepair, refitDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
 import { dismissPilot, getPilot, hirePilot } from './pilots';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import { availableMenuControl, focusMenuControl, menuControls, menuScrollArea, moveMenuFocus, scrollMenu, selectMenuControl, type MenuDirection } from './menu-focus';
@@ -828,8 +828,21 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			},
 			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${rigName(id)} purchased with its displayed weapon package. Select it in the Mech Bay.`); }, 'BUY RIG', `${getFrameOffer(campaign, id).price.toLocaleString()} CR. Includes this complete package: ${getFrameOffer(campaign, id).loadout.map(function (weapon) { return getWeapon(weapon).name; }).join(', ')}. Standard ammunition included; arrives ready to deploy.`, `BUY ${rigName(id)}?`); },
 			buyWeapon: function (id) { confirm(function () { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); }, 'BUY WEAPON', `${WEAPON_PRICES[id].toLocaleString()} CR. Delivered to stores. Installation requires a separate refit.`, `BUY ${getWeapon(id).name}?`); },
-			repair: function (id) { const days = repairDays(getOwnedMech(campaign, id)?.integrity ?? 100); confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech remains unavailable until its completion day.', 'engineering'); }, 'SCHEDULE REPAIR', `${days} calendar days · 0 CR. Ready day ${campaign.day + days}. The frame cannot deploy during repairs.`, `REPAIR ${rigName(id)}?`); },
-			cancelWork: function (id) { confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); }, 'CANCEL WORK ORDER', 'Installed weapons and current integrity are retained. Reserved equipment returns to stores; elapsed calendar time remains spent.', `CANCEL ${rigName(id)} WORK?`); },
+			repair: function (id) {
+				const quote = quoteRepair(campaign, id);
+				if (!quote?.available) return;
+				const { days, cost, readyDay, payment } = quote;
+				const terms = payment.deferred ? ` ${payment.paid.toLocaleString()} CR now. ${payment.deferred.toLocaleString()} CR deferred at completion, repaid from up to 25% of each successful contract payout.` : ' Charged when queued.';
+				const action = getOwnedMech(campaign, id)?.integrity === 0 ? 'REBUILD' : 'REPAIR';
+				confirm(function () { updateCompany(queueRepair(campaign, id), 'Repair queued. The mech cannot deploy until work is complete.', 'engineering'); },
+					`SCHEDULE ${action}`, `${cost.toLocaleString()} CR total.${terms} ${days} calendar ${days === 1 ? 'day' : 'days'}. Ready day ${readyDay}.`, `${action} ${rigName(id)}?`);
+			},
+			cancelWork: function (id) {
+				const order = workOrderFor(campaign, id);
+				const refund = order?.kind === 'repair' && order.payment?.paid ? ` ${order.payment.paid.toLocaleString()} CR refunded.` : '';
+				confirm(function () { updateCompany(cancelWorkOrder(campaign, id), 'Work order cancelled. Original equipment and condition retained.'); },
+					'CANCEL WORK ORDER', `Installed weapons and current integrity are retained. Reserved equipment returns to stores. Elapsed calendar time remains spent.${refund}`, `CANCEL ${rigName(id)} WORK?`);
+			},
 			advanceDays: function (days) { confirm(function () { updateCompany(advanceDays(campaign, days), `${days} calendar ${days === 1 ? 'day' : 'days'} elapsed. Due work orders are complete.`); }, `ADVANCE ${days} ${days === 1 ? 'DAY' : 'DAYS'}`, `Move from day ${campaign.day} to day ${campaign.day + days}. Work orders progress and contract postings stay the same.${upkeepNotice(campaign, days)}`, 'ADVANCE SHIP CALENDAR?'); },
 			hire: function (id) {
 				const pilot = getPilot(id);
@@ -1257,6 +1270,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const payment = !won ? 'no fee earned' : fieldLead.pilotId === 'player' ? `${fee} fee included in company pay` : `${fee} personal fee paid`;
 		return html`<p class="day-report-checks" data-field-lead-report data-dialog-text>Field lead ${name} · ${payment}</p>`;
 	};
+	const repairRepaymentReport = function ({ repairRepayment }: CampaignResult) {
+		return repairRepayment ? html`<p class="day-report-checks" data-dialog-text>${repairRepayment.toLocaleString()} CR withheld for recovery repairs.</p>` : '';
+	};
 	const showDayDebrief = function (results: readonly CampaignResult[], now: number, fieldReport?: ReturnType<typeof getOperationReport>) {
 		const first = results[0];
 		if (!first) return;
@@ -1285,6 +1301,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				<small>${mission.payout.toLocaleString()} CR · +${mission.favor} favor with ${getFaction(contract.employer).shortName} · +${mission.companyReputation} company reputation</small>
 			</article>
 			${fieldLeadReport(mission)}
+			${repairRepaymentReport(mission)}
 			${crew ? html`<p class="day-report-checks" data-dialog-text>Objective ${rollText(crew.objective)}. Extraction ${rollText(crew.extraction)}.</p>`
 				: fieldReport ? html`<p class="day-report-checks" data-dialog-text>${fieldReport.kills} eliminated · ${formatTime(fieldReport.time)} field time</p>` : ''}
 			${squad?.map(function (member) { return rigReport(member, mission.won); })}`;
@@ -1318,7 +1335,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('result-stats').hidden = false;
 		element('result-stats').replaceChildren(...stats.map(function ([value, label]) { const node = document.createElement('div'); const strong = document.createElement('b'); const small = document.createElement('small'); strong.textContent = value ?? ''; small.textContent = label ?? ''; node.append(strong, small); return node; }));
 		const upgrades = element('result-upgrades');
-		reportContent(html`${fieldLeadReport(result)}${squad.map(function (member) { return rigReport(member, won); })}`);
+		reportContent(html`${fieldLeadReport(result)}${repairRepaymentReport(result)}${squad.map(function (member) { return rigReport(member, won); })}`);
 		const funds = step ? `COMPANY FUNDS ${campaign.credits.toLocaleString()} CR · ` : '';
 		upgrades.textContent = `${funds}DAY ${campaign.day} · +${companyReputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
 		element('restart').textContent = step ? 'BRIDGE / SIGNAL →' : 'RETURN TO SHIP →';

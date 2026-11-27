@@ -132,14 +132,22 @@ incoming parts and keeps the original loadout; elapsed days are not refunded.
 
 Damage also persists. Engineering crews restore a frame to full integrity in
 **one day per 20 missing integrity, rounded up**. A frame at 65% needs two days;
-a destroyed frame needs five. Repairs have no credit fee, so a damaged starting
-Kestrel can recover even when the company has no money. Repair completion is
-applied on the due day, rather than healing a little each real-time second.
+a destroyed frame needs five. For a damaged frame, multiply half its listed
+chassis price by the fraction of integrity lost and round up. A destroyed
+frame costs 75% of its chassis price to rebuild, regardless of its weapons.
+Engineering charges when the repair is queued and refunds that payment if
+the order is cancelled. Integrity is restored on the due day.
+
+When no rig can deploy or return to service from existing work, Engineering can
+finance the shortfall on one recovery order. The balance becomes due when
+the work finishes, and up to 25% of each successful contract payout goes
+toward it. Where there are no local contracts, Engineering reserves an
+affordable jump fare to paying work when possible.
 
 The Mech Bay keeps a color-coded hull gauge visible on every page, including
 phones: green for intact, amber for damaged, and red for critical or disabled
 frames. Use **Repair** beside the gauge to queue work directly; its button shows
-the required days and zero-credit cost before the usual confirmation.
+the required days and credit cost before the usual confirmation.
 
 A frame can have one repair or refit order at a time and cannot deploy while
 that work is underway. Different frames have separate crews and work in
@@ -149,7 +157,7 @@ loadout edits to be applied, queued, or discarded before launch.
 
 Engineering can advance one day or wait until the next scheduled completion.
 Travel and settling the day's operations each advance work by one day. Waiting
-does not charge credits or reroll the board. Calendar time does not advance
+does not reroll the board, but monthly upkeep can come due. Calendar time does not advance
 while the browser is idle. A staged contract can remain open
 while the crew finishes work; company changes and calendar advancement are
 locked during a deployment.
