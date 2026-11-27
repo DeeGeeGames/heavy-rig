@@ -219,6 +219,12 @@ export const moveWorkspaceFocus = function (root: HTMLElement, direction: MenuDi
 		// Moving across the zoomed chart pans the next system into view.
 		const marker = directionalControl(items.filter(function (item) { return chart.contains(item); }), focused, direction);
 		if (marker) { focusMenuControl(marker); return; }
+		// The zoom row can sit too far left for spatial navigation from a bottom marker.
+		const reset = direction === 'down' && items.find(function (item) { return item.matches('[data-chart-reset]'); });
+		if (reset) { focusMenuControl(reset); return; }
+	} else if (chart && direction === 'up' && focused.closest('.chart-tools')) {
+		const marker = items.find(function (item) { return chart.contains(item) && item.matches('[aria-pressed="true"]'); });
+		if (marker) { focusMenuControl(marker); return; }
 	}
 	moveMenuFocus(root, direction, chart ? items.filter(function (item) { return !chart.contains(item) || centerInViewport(item, chart); }) : items);
 };

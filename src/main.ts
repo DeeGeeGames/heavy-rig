@@ -46,7 +46,7 @@ import { mountSituationSetup } from './situation-sim-ui';
 import { isDifficulty, readProfile, saveProfile, type Settings } from './profile';
 import { abandonContract, assignOperationLead, assignOperationSlot, commitOperations, createCampaign, CAMPAIGN_STORAGE_KEY, getFaction, getPlanet, getPlannedOperation, getTransmission, parseCampaign, recoverInterruptedDeployment, removeOperation, reviewOperations, saveCampaign, settleContract, stageOperation, travelTo, type Campaign, type CampaignResult } from './campaign';
 import type { Difficulty } from './operation';
-import { focusTerritoryMap } from './territory-map';
+import { focusTerritoryMap, handleTerritoryZoomKey } from './territory-map';
 import { renderBridge, renderStarmap, type BridgeActions, type BriefingOrigin, type ShipView } from './campaign-ui';
 import { MISSION_NAMES, type PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
@@ -1393,6 +1393,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (event.code === 'Escape') { event.preventDefault(); if (!event.repeat) back(); return; }
 		const root = menu();
 		if (root) {
+			if (root.id === 'starmap' && handleTerritoryZoomKey(root, event)) return;
 			const direction = event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down'
 				: event.code === 'ArrowLeft' ? 'left' : event.code === 'ArrowRight' ? 'right' : undefined;
 			if (direction) { event.preventDefault(); directMenu(root, direction); return; }
@@ -1439,6 +1440,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		menuPointer = undefined;
 		setInputMode(device);
 	};
+	// A chart drag or pinch can start on a marker but will not finish as a click.
+	container.addEventListener('chartgesture', finishMenuPointer, listenerOptions);
 	container.addEventListener('pointerdown', function (event) {
 		if (event.isTrusted) unlockSound();
 		// The battlefield picks the displayed scene before a touch reveals its dock.
@@ -1519,6 +1522,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (!playing() || event.ctrlKey || event.metaKey) return;
 		event.preventDefault(); presentation.zoomWithWheel(event); setInputMode('keyboard');
 	}, { ...listenerOptions, passive: false });
+	container.addEventListener('wheel', function (event) {
+		if (inputMode === 'gamepad' && event.target instanceof Element && event.target.closest('.territory-viewport')) setInputMode('keyboard');
+	}, { ...listenerOptions, passive: true });
 	// Keep native long-press menus, selection, and dragging off the game UI.
 	for (const type of ['contextmenu', 'selectstart', 'dragstart']) {
 		container.addEventListener(type, function (event) {

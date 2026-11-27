@@ -61,6 +61,25 @@ const updateTransform = function (root: HTMLElement) {
 	positionPlanetPopover(root);
 	const reset = root.querySelector<HTMLElement>('[data-chart-reset]'); if (reset) reset.dataset['zoom'] = String(Math.round(view.zoom * 100));
 };
+const zoomChart = function (root: HTMLElement, delta: number) {
+	const view = viewFor(root);
+	view.zoom = Math.max(1, Math.min(3, view.zoom + delta));
+	updateTransform(root);
+};
+const resetChart = function (root: HTMLElement) {
+	const view = viewFor(root);
+	view.zoom = 1; view.x = 0; view.y = 0;
+	updateTransform(root);
+};
+export const handleTerritoryZoomKey = function (root: HTMLElement, event: KeyboardEvent) {
+	if (root.dataset['view'] !== 'route' || event.ctrlKey || event.metaKey || event.altKey || root.querySelector('.planet-popover:popover-open')) return false;
+	if (event.key === '+' || event.key === '=') zoomChart(root, .5);
+	else if (event.key === '-') zoomChart(root, -.5);
+	else if (event.key === '0') resetChart(root);
+	else return false;
+	event.preventDefault();
+	return true;
+};
 export const focusTerritoryMap = function (root: HTMLElement, planetId: PlanetId) {
 	const stage = root.querySelector<HTMLElement>('.territory-stage');
 	if (!stage) return;
@@ -82,7 +101,6 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 		observer = new ResizeObserver(function () { updateTransform(root); });
 		observer.observe(element);
 	};
-	const zoom = function (delta: number) { view.zoom = Math.max(1, Math.min(3, view.zoom + delta)); updateTransform(root); };
 	const inspect = function (id: PlanetId, event: MouseEvent) {
 		if (event.detail > 0 && view.suppressClick) return;
 		select(id);
@@ -115,16 +133,22 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 				const target = event.target; if (!(target instanceof Element)) return;
 				if (view.pointers.size === 0) view.suppressClick = false;
 				view.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY });
-				if (view.pointers.size > 1) view.suppressClick = true;
 				// Keep marker taps targeted at the marker while capturing drags outside it.
 				target.setPointerCapture(event.pointerId);
+				if (view.pointers.size > 1 && !view.suppressClick) {
+					view.suppressClick = true;
+					root.dispatchEvent(new Event('chartgesture', { bubbles: true }));
+				}
 			}}
 			@pointermove=${function (event: PointerEvent) {
 				const previous = view.pointers.get(event.pointerId); if (!previous) return;
 				const next = { ...previous, x: event.clientX, y: event.clientY };
 				const other = Array.from(view.pointers.entries()).find(function ([id]) { return id !== event.pointerId; })?.[1];
 				view.pointers.set(event.pointerId, next);
-				if (Math.hypot(next.x - next.startX, next.y - next.startY) > 5) view.suppressClick = true;
+				if (!view.suppressClick && Math.hypot(next.x - next.startX, next.y - next.startY) > 5) {
+					view.suppressClick = true;
+					root.dispatchEvent(new Event('chartgesture', { bubbles: true }));
+				}
 				if (other) {
 					const viewport = event.currentTarget; if (!(viewport instanceof HTMLElement)) return;
 					const bounds = viewport.getBoundingClientRect();
@@ -147,7 +171,7 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 			@pointerup=${function (event: PointerEvent) { view.pointers.delete(event.pointerId); }}
 			@pointercancel=${function (event: PointerEvent) { view.pointers.delete(event.pointerId); view.suppressClick = true; }}
 			@lostpointercapture=${function (event: PointerEvent) { view.pointers.delete(event.pointerId); }}
-			@wheel=${function (event: WheelEvent) { event.preventDefault(); zoom(event.deltaY < 0 ? .2 : -.2); }}>
+			@wheel=${function (event: WheelEvent) { event.preventDefault(); zoomChart(root, event.deltaY < 0 ? .2 : -.2); }}>
 			<div class="territory-stage" @focusin=${function (event: FocusEvent) {
 					if (view.pointers.size > 0 || !(event.target instanceof HTMLElement) || !event.target.matches('.system-marker')) return;
 					const viewport = root.querySelector<HTMLElement>('.territory-viewport'); if (!viewport) return;
@@ -178,7 +202,12 @@ export const renderTerritoryMap = function (root: HTMLElement, campaign: Campaig
 			<button class="planet-popover-close" aria-label="Close planet details" @click=${function () { closePlanetDetails(root); }}>×</button>
 			${details}
 		</aside>
-		<div class="chart-tools"><button aria-label="Zoom out" @click=${function () { zoom(-.5); }}>−</button><button data-chart-reset data-zoom=${Math.round(view.zoom * 100)} @click=${function () { view.zoom = 1; view.x = 0; view.y = 0; updateTransform(root); }}>RESET</button><button aria-label="Zoom in" @click=${function () { zoom(.5); }}>+</button><span>PINCH / SCROLL TO ZOOM · DRAG TO PAN</span></div>
+		<div class="chart-tools">
+			<button aria-label="Zoom out" @click=${function () { zoomChart(root, -.5); }}>−</button>
+			<button data-chart-reset data-zoom=${Math.round(view.zoom * 100)} @click=${function () { resetChart(root); }}>RESET</button>
+			<button aria-label="Zoom in" @click=${function () { zoomChart(root, .5); }}>+</button>
+			<span>PINCH / SCROLL / + − TO ZOOM · 0 TO RESET · DRAG TO PAN</span>
+		</div>
 		<div class="chart-legend">${FACTIONS.map(function (faction) { return html`<span style="--legend-color:${faction.color}"><i></i>${faction.shortName}</span>`; })}<span style="--legend-color:#718792"><i></i>UNCLAIMED</span><span class="conflict-key">◌ CONFLICT</span></div>
 	</div>`;
 };
