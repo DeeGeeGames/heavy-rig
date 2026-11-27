@@ -123,21 +123,19 @@
 	.touch-enabled .weapon-console #weapon-hint { display: none; }
 }
 
-/* Keep zoom with the right-hand controls, clear of the central playfield. */
-.touch-zoom { position: absolute; left: -64px; bottom: 0; width: 52px; height: 52px; z-index: 3; }
-.touch-enabled #zoom-hold { position: absolute; inset: 0; width: 52px; height: 52px; min-height: 52px; padding: 0; border: 1px solid var(--rig-edge); border-radius: 50%; background: var(--rig-panel); color: var(--rig-ivory); display: grid; align-content: center; justify-items: center; gap: 3px; cursor: ns-resize; }
-#zoom-hold svg { width: 17px; height: 17px; pointer-events: none; }
-#touch #zoom-hold small { font: 8px var(--mono); pointer-events: none; }
-.touch-zoom:has(.zoom-panel:not([hidden])) #zoom-hold { opacity: 0; }
-.zoom-panel { position: absolute; top: -26px; left: 0; width: 52px; height: 104px; border: 1px solid var(--rig-edge); border-radius: 28px; background: var(--rig-panel); box-shadow: 0 5px 20px #0005; pointer-events: none; }
-.zoom-panel output { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 5px 8px; background: var(--rig-panel); border: 1px solid var(--rig-edge); color: var(--rig-ivory); font: 11px var(--mono); white-space: nowrap; }
+/* Center zoom in the right-side opening between the live HUD and control dock. */
+#touch-zoom { display: none; position: absolute; top: var(--touch-zoom-y, 50%); right: max(16px, env(safe-area-inset-right)); translate: 0 -50%; z-index: 3; }
+.touch-enabled #touch-zoom { display: block; }
+#zoom-hold { width: 60px; height: 60px; padding: 0; border: 1px solid var(--rig-edge); border-radius: 50%; background: var(--rig-panel); color: var(--rig-ivory); display: grid; align-content: center; justify-items: center; gap: 3px; touch-action: none; cursor: ns-resize; }
+#zoom-hold svg { width: 22px; height: 22px; pointer-events: none; }
+#zoom-hold small { font: 9px var(--mono); pointer-events: none; }
+#touch-zoom:has(.zoom-panel:not([hidden])) #zoom-hold { border-color: var(--rig-amber); }
+.zoom-panel { position: absolute; top: 50%; right: calc(100% + 8px); translate: 0 -50%; width: 44px; height: clamp(60px, var(--touch-zoom-room, 112px), 112px); border: 1px solid var(--rig-edge); border-radius: 28px; background: var(--rig-panel); box-shadow: 0 5px 20px #0005; pointer-events: none; }
+.zoom-panel output { position: absolute; top: 50%; right: calc(100% + 5px); translate: 0 -50%; padding: 5px 8px; background: var(--rig-panel); border: 1px solid var(--rig-edge); color: var(--rig-ivory); font: 11px var(--mono); white-space: nowrap; }
 .zoom-plus, .zoom-minus { position: absolute; left: 0; right: 0; text-align: center; color: var(--rig-ivory); font: 15px var(--mono); }
 .zoom-plus { top: 3px; }.zoom-minus { bottom: 3px; }
-.zoom-track { position: absolute; left: 24px; top: 20px; bottom: 20px; width: 2px; background: var(--rig-edge); }
-#zoom-knob { position: absolute; left: 16px; top: 42px; width: 18px; height: 18px; border-radius: 50%; background: var(--rig-amber); }
-@media (orientation: portrait) {
-	.touch-zoom { left: auto; right: 64px; }
-}
+.zoom-track { position: absolute; left: 50%; top: 27px; bottom: 27px; translate: -50% 0; width: 2px; background: var(--rig-edge); }
+#zoom-knob { position: absolute; left: 50%; width: 14px; height: 14px; translate: -50% -50%; border-radius: 50%; background: var(--rig-amber); }
 
 /* One mount row and two utility rows leave room for the battlefield on short phones. */
 @media (orientation: portrait) and (max-height: 560px) {
@@ -177,20 +175,17 @@
 	.touch-enabled #touch-next { grid-area: 2 / 4; }
 	.touch-enabled #touch-stop { grid-area: 3 / 2; }
 	.touch-enabled #touch-coolant { grid-area: 3 / 4; }
-	.touch-enabled .touch-zoom { position: relative; inset: auto; grid-area: 3 / 3; width: auto; height: auto; }
-	.touch-enabled #zoom-hold { width: 100%; height: 44px; min-height: 44px; border-radius: 5px; }
-	.touch-enabled .zoom-panel { left: 50%; transform: translateX(-50%); top: auto; bottom: 0; }
 	.touch-enabled .weapon-console {
 		bottom: calc(var(--touch-dock) - 48px); left: var(--short-touch-left); right: var(--short-touch-right);
 	}
 	.touch-enabled .weapon { height: 44px; min-height: 44px; }
 }
 
-/* Short landscape puts utilities and mounts between the two thumb controls. */
-@media (orientation: landscape) and (max-height: 300px) {
+/* Compact landscape keeps a gap above the lower controls even when the task wraps. */
+@media (orientation: landscape) and (max-height: 380px), (orientation: landscape) and (max-width: 600px) and (max-height: 410px) {
 	.touch-enabled #touch {
 		display: grid; height: calc(94px + env(safe-area-inset-bottom));
-		grid-template-columns: minmax(46px, 1fr) repeat(6, minmax(0, 46px)) minmax(46px, 1fr);
+		grid-template-columns: minmax(46px, 1fr) repeat(5, minmax(0, 46px)) minmax(46px, 1fr);
 		grid-template-rows: 44px 44px; gap: 3px;
 		padding: 0 max(5px,env(safe-area-inset-right)) calc(3px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left));
 		background: linear-gradient(transparent, #151918d9 90%);
@@ -206,20 +201,17 @@
 		width: min(100%, 78px); height: auto; aspect-ratio: 1; min-height: 0;
 	}
 	.touch-enabled #touch-drive { grid-column: 1; }
-	.touch-enabled #touch-fire { grid-column: 8; font-size: 24px; }
+	.touch-enabled #touch-fire { grid-column: 7; font-size: 24px; }
 	.touch-enabled #touch-drive-knob { width: 32px; height: 32px; left: calc(50% - 16px); top: calc(50% - 16px); }
 	.touch-enabled #touch-drive-knob::after { inset: 12px; }
-	.touch-enabled :is(#touch-cruise, #touch-stop, #touch-nearest, #touch-next, #touch-coolant, .touch-zoom) {
+	.touch-enabled :is(#touch-cruise, #touch-stop, #touch-nearest, #touch-next, #touch-coolant) {
 		position: relative; inset: auto; grid-row: 2; width: 100%; height: 44px; min-height: 44px; border-radius: 4px; font-size: 12px;
 	}
 	.touch-enabled #touch-cruise { grid-column: 2; }
 	.touch-enabled #touch-stop { grid-column: 3; }
-	.touch-enabled .touch-zoom { grid-column: 4; }
-	.touch-enabled #touch-nearest { grid-column: 5; }
-	.touch-enabled #touch-next { grid-column: 6; }
-	.touch-enabled #touch-coolant { grid-column: 7; }
-	.touch-enabled #zoom-hold { inset: 0; width: 100%; height: 44px; min-height: 44px; border-radius: 4px; }
-	.touch-enabled .zoom-panel { top: auto; bottom: 0; }
+	.touch-enabled #touch-nearest { grid-column: 4; }
+	.touch-enabled #touch-next { grid-column: 5; }
+	.touch-enabled #touch-coolant { grid-column: 6; }
 	.touch-enabled .weapon-console { left: 50%; right: auto; bottom: calc(50px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: max-content; }
 	.touch-enabled .weapon-console-heading { display: none; }
 	.touch-enabled .weapon { width: 46px; height: 44px; min-height: 44px; }

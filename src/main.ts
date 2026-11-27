@@ -151,12 +151,23 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		stripHullFill: element('strip-hull-fill'), stripHeatFill: element('strip-heat-fill'), stripRelay: element('strip-relay'),
 		strip: element('combat-strip'), weapons: element('fire-console'), radar: element('tactical-radar'), radarButton: element('toggle-radar'), pauseRadar: element('pause-radar'),
 	};
-	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.strip-vitals, .strip-task, .strip-actions, #tactical-radar, .left-instruments, .weapon-console')];
+	const touchDock = element('touch');
+	const zoomControl = element('touch-zoom');
+	const stripTask = ui.phase.parentElement;
+	const touchTargetStatus = element('touch-target-status');
+	const cockpitElements = [...container.querySelectorAll<HTMLElement>('.strip-vitals, .strip-task, .strip-actions, #tactical-radar, .left-instruments, .weapon-console, #zoom-hold, #zoom-panel, #zoom-value')];
 	const touchClusters = [...container.querySelectorAll<HTMLElement>('.touch-drive-cluster, .touch-fire-cluster')];
-	const touchControls = [...element('touch').querySelectorAll<HTMLElement>('button, .touch-control-label, .zoom-panel')];
+	const touchControls = [...touchDock.querySelectorAll<HTMLElement>('button, .touch-control-label')];
 	let hudObstructions: ScreenRect[] = [];
 	const refreshHudObstructions = function () {
 		const field = canvas.getBoundingClientRect();
+		if (zoomControl.offsetWidth > 0) {
+			// The task may wrap below the strip and the mount row may sit above the dock.
+			const top = Math.max(ui.strip.getBoundingClientRect().bottom, stripTask?.getBoundingClientRect().bottom ?? 0);
+			const bottom = Math.min(touchDock.getBoundingClientRect().top, ui.weapons.getBoundingClientRect().top, touchTargetStatus.getBoundingClientRect().top);
+			zoomControl.style.setProperty('--touch-zoom-y', `${(top + bottom) / 2 - field.top}px`);
+			zoomControl.style.setProperty('--touch-zoom-room', `${bottom - top}px`);
+		}
 		// The compact touch grid lays out the individual controls with display: contents on their clusters.
 		const touchObstructions = touchClusters.some(function (node) { return node.offsetWidth > 0; }) ? touchClusters : touchControls;
 		hudObstructions = [...cockpitElements, ...touchObstructions].filter(function (node) { return node.offsetWidth > 0; }).map(function (node) { const rect = node.getBoundingClientRect(); return { left: rect.left - field.left, right: rect.right - field.left, top: rect.top - field.top, bottom: rect.bottom - field.top }; });
@@ -1397,7 +1408,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		// The battlefield picks the displayed scene before a touch reveals its dock.
 		if (event.target === canvas && event.pointerType === 'touch') return;
 		const target = event.target instanceof Element ? event.target : undefined;
-		const device = event.pointerType === 'touch' || target?.closest('#touch') ? 'touch' : 'keyboard';
+		const device = event.pointerType === 'touch' || target?.closest('#touch, #touch-zoom') ? 'touch' : 'keyboard';
 		const control = target?.closest('button, input, select, a, label');
 		menuPointer = undefined;
 		// Changing the couch layout between down and up can move a different row
@@ -1688,7 +1699,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			audio.update(audioFrame(frameTime));
 		}
 		const elapsed = launchTimeNow();
-		const dockHeight = portrait.matches && container.classList.contains('touch-enabled') ? element('touch').offsetHeight : 0;
+		const dockHeight = portrait.matches && container.classList.contains('touch-enabled') ? touchDock.offsetHeight : 0;
 		presentation.setLaunchTime(launchSceneTime(elapsed), dockHeight);
 		if (elapsed >= LAUNCH_DURATION) finishLaunch();
 	});
