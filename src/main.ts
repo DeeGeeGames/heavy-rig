@@ -1,5 +1,5 @@
 import { PICKUP_DURATION, PICKUP_LAND_AT, PICKUP_LIFT_AT } from './launch-surface';
-import { HARROW_MAX_RANGE, mortarProfile, mountInterval } from './frame-tactics';
+import { HARROW_MAX_RANGE, HARROW_MIN_RANGE, mortarProfile, mountInterval } from './frame-tactics';
 import { rigFrameId, rigName } from './rigs';
 import { getFrameOffer } from './market';
 import { companyRank } from './reputation';
@@ -1660,7 +1660,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const mapped = touchLayout ? '' : ` ${profile.settings.keyboard[binding.action].map(keyLabel).join(' / ') || 'Unbound'}; controller ${controllerButtonLabel(controllerFamily, profile.settings.controller[binding.action])}.`;
 			button.setAttribute('aria-label', mount && weapon ? `${touchLayout ? 'Arm' : 'Fire'} mount ${index + 1}, ${hardpoint.name}, ${family}: ${weaponName}, ${weapon.ammunition ? `${mount.rounds} rounds remaining` : 'no ammunition required'}.${dry ? ' Empty ammunition.' : p.overheated ? ' Heat locked.' : ''}${mapped}` : `Mount ${index + 1}, ${hardpoint.name}, ${family}, empty. ${practice ? 'Pause to change loadout.' : 'Equip compatible purchased weapons in the Mech Bay.'}`);
 			const location = button.querySelector('.weapon-mount'); if (location) location.textContent = `${hardpoint.name}${!touchLayout && mount ? ` · ${weapon?.ammunition ? `${mount.rounds} RDS` : 'ENERGY'}` : ''}`;
-			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${mortar ? '200–1250 M · AC rounds' : weapon.type}` : ' · Empty'}`;
+			button.title = `${hardpoint.name} · ${family}${weapon ? ` · ${mortar ? `${HARROW_MIN_RANGE}–${HARROW_MAX_RANGE} M · AC rounds` : weapon.type}` : ' · Empty'}`;
 			const title = button.querySelector('b');
 			if (title) title.textContent = weaponName ?? 'EMPTY';
 			const icon = button.querySelector('.weapon-icon'); if (icon) icon.textContent = `${String(index + 1).padStart(2, '0')}`;

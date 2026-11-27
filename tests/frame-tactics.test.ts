@@ -36,14 +36,14 @@ test('Harrow cannot spend ammo before bracing, inside minimum range, outside ran
 	const mount = state.loadout[0];
 	if (!mount) throw new Error('Missing mortar');
 	const initial = mount.rounds;
-	const aim = { x: 1700, y: 800 };
+	const aim = { x: 2550, y: 800 };
 	weapons(state, input(aim), 47);
 	expect(mount.rounds).toBe(initial);
 	expect(state.strikes).toHaveLength(0);
 	weapons(state, input({ x: 999, y: 800 }), 1);
 	expect(artilleryAimStatus(state, { x: 999, y: 800 })).toBe('MIN RANGE 200 M');
-	weapons(state, input({ x: 2051, y: 800 }), 1);
-	expect(artilleryAimStatus(state, { x: 2051, y: 800 })).toBe('MAX RANGE 1250 M');
+	weapons(state, input({ x: 2551, y: 800 }), 1);
+	expect(artilleryAimStatus(state, { x: 2551, y: 800 })).toBe('MAX RANGE 1750 M');
 	weapons(state, input({ x: 500, y: 800 }), 1);
 	expect(mount.rounds).toBe(initial);
 	state.player.speed = 4;
@@ -56,7 +56,7 @@ test('Harrow cannot spend ammo before bracing, inside minimum range, outside ran
 	expect(mount.rounds).toBe(initial - 3);
 	expect(state.player.heat).toBe(21);
 	expect(state.effects.filter(function (effect) { return effect.feedback?.type === 'fire' && effect.feedback.family === 'artillery'; })).toHaveLength(3);
-	expect(state.strikes.map(function (strike) { return [strike.x, strike.y, strike.friendly]; })).toEqual([[1700, 710, true], [1700, 800, true], [1700, 890, true]]);
+	expect(state.strikes.map(function (strike) { return [strike.x, strike.y, strike.friendly]; })).toEqual([[2550, 710, true], [2550, 800, true], [2550, 890, true]]);
 	const [first, second, third] = state.strikes;
 	if (!first || !second || !third) throw new Error('Missing barrage');
 	expect(first.life).toBeLessThan(second.life); expect(second.life).toBeLessThan(third.life);

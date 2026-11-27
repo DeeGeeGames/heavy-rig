@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
 import { createMount, weaponIdForTier } from '../src/arsenal';
 import { createCombatRuntime } from '../src/combat-runtime';
-import { createState, weaponsStep, projectilesStep, type Controls, type EnemyKind, type Unit } from '../src/simulation';
+import { coolingStep, createState, weaponsStep, projectilesStep, type Controls, type EnemyKind, type Unit } from '../src/simulation';
 import { enemyVolume } from '../src/combat-spatial';
 import { getPlayerMuzzle } from '../src/weapon-rig';
 
@@ -80,7 +80,7 @@ test('guided missiles steer vertically while beams stop at the first 3D contact'
 });
 
 test('standard and exceptional ARC beams damage distant targets and stop at their tier limit on a miss', function () {
-	for (const [tier, range] of [[0, 1240], [5, 1550]] as const) {
+	for (const [tier, range] of [[0, 1740], [5, 2050]] as const) {
 		const state = createState({ frame: 'longbow', starter: weaponIdForTier('laser', tier) });
 		state.player.x = 40; state.player.angle = 0; state.player.turret = 0;
 		const target = enemy(1, state.player.x + range, 'vtol'); state.enemies = [target];
@@ -95,6 +95,29 @@ test('standard and exceptional ARC beams damage distant targets and stop at thei
 		expect(beam.contact).toBe(false); expect(target.hp).toBe(hp);
 		expect(Math.hypot(beam.x - beam.origin.x, beam.y - beam.origin.y, beam.elevation - beam.origin.elevation)).toBeCloseTo(range, 6);
 	}
+});
+
+test('RATTLER still hits beyond its old range but loses accuracy as the same burst travels farther', function () {
+	const burstHits = function (range: number): number {
+		const state = createState({ frame: 'kestrel', starter: 'machine-gun' });
+		Object.assign(state.player, { x: 100, angle: 0, turret: 0 });
+		const target = enemy(1, state.player.x + range, 'scout');
+		state.enemies = [target];
+		const controls: Controls = { ...idle, aim: target, targetId: target.id, fire: [true, false, false, false] };
+		for (let round = 0; round < 64; round++) {
+			coolingStep(state, controls, .17);
+			weaponsStep(state, controls, .17);
+			while (state.shots.length) projectilesStep(state, 1 / 60);
+		}
+		expect(state.stats.shotsFired).toBe(64);
+		return state.stats.shotsHit;
+	};
+	const close = burstHits(200);
+	const distant = burstHits(1_000);
+	expect(close).toBe(64);
+	expect(distant).toBeGreaterThan(0);
+	expect(distant).toBeLessThan(close);
+	expect(burstHits(1_400)).toBe(0);
 });
 
 test('ECS owns acquired identity through firing, pause and state replacement', async function () {

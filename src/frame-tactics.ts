@@ -3,7 +3,7 @@ import { getWeaponTier, type WeaponDefinition } from './arsenal';
 import type { SpatialPoint } from './weapon-rig';
 
 export const HARROW_MIN_RANGE = 200;
-export const HARROW_MAX_RANGE = 1250;
+export const HARROW_MAX_RANGE = 1750;
 export const HARROW_BRACE_SECONDS = .8;
 export const BASTION_PLATE_DAMAGE = .53;
 export const BASTION_PLATE_HALF_ARC = 55 * Math.PI / 180;

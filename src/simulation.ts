@@ -816,8 +816,8 @@ export const movementStep = function (state: CombatStateView, input: Controls, d
 
 const mortarAimStatus = function (body: RigBody, at: Point, bounds: { width: number; height: number }) {
 	const range = distance(body, at);
-	if (range < HARROW_MIN_RANGE - 1e-9) return 'MIN RANGE 200 M';
-	if (range > HARROW_MAX_RANGE + 1e-9) return 'MAX RANGE 1250 M';
+	if (range < HARROW_MIN_RANGE - 1e-9) return `MIN RANGE ${HARROW_MIN_RANGE} M`;
+	if (range > HARROW_MAX_RANGE + 1e-9) return `MAX RANGE ${HARROW_MAX_RANGE} M`;
 	if (at.x < 0 || at.y < 0 || at.x > bounds.width || at.y > bounds.height) return 'OFF FIELD';
 	if (!inFiringArc(body, body.angle, at)) return 'OUT OF ARC';
 	if (Math.abs(angleDelta(body.turret, Math.atan2(at.y - body.y, at.x - body.x))) > .1) return 'ALIGN TORSO';
@@ -863,6 +863,13 @@ const fireMortar = function (state: CombatStateView, gunner: RigGunner, mount: W
 	state.events.push('artillery');
 };
 type TriggerInput = Pick<Controls, 'aim' | 'fire' | 'targetId' | 'turretTurn'>;
+const bulletSpread = function (sequence: number): number {
+	// Hash the shot index so dispersion is repeatable without a rhythmic sweep.
+	let bits = Math.imul(sequence + 1, 0x9e3779b9);
+	bits = Math.imul(bits ^ (bits >>> 16), 0x21f0aaad);
+	bits = Math.imul(bits ^ (bits >>> 15), 0x735a2d97);
+	return ((bits ^ (bits >>> 15)) >>> 0) / 0x80000000 - 1;
+};
 const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, input: TriggerInput, targets: readonly FireContact[], hitBeam: (id: number, damage: number, origin: Point, incoming: SpatialPoint) => void, dt: number) {
 	const { body: p, frame, loadout } = gunner;
 	const automated = gunner.source.squadmateId !== undefined || gunner.source.owner !== undefined;
@@ -943,7 +950,8 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 		for (let projectile = 0; projectile < (weapon.kind === 'rocket' || weapon.stream ? 1 : weapon.projectiles); projectile++) {
 			if (!consumeFire(mount, p)) break;
 			const sequence = gunner.shots();
-			const spread = weapon.projectiles === 1 ? Math.sin(sequence * 2.4) * weapon.spread : (projectile - (weapon.projectiles - 1) / 2) * weapon.spread;
+			const dispersion = weapon.kind === 'bullet' ? bulletSpread(sequence) : weapon.projectiles === 1 ? Math.sin(sequence * 2.4) : projectile - (weapon.projectiles - 1) / 2;
+			const spread = dispersion * weapon.spread;
 			launchWeapon(state, gunner, base, mount, p.turret + spread * gunner.spread, slot, selected);
 		}
 		if ((weapon.kind === 'rocket' || weapon.stream) && weapon.projectiles > 1 && usableMount(mount) && !p.overheated) mount.rocketVolley = { remaining: Math.min(weapon.projectiles - 1, mount.rounds), nextIn: volleySpacing(weapon) };
