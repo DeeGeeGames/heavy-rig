@@ -25,7 +25,7 @@ test('a legacy staged defense retains its layout through review, mixed-day commi
 });
 
 test('a saved mixed day settles the same crew sortie after extraction or interruption and advances work once', function () {
-	const rigs = buyFrame(buyFrame(buyFrame({ ...createCampaign(318, 'career'), credits: 30_000 }, 'kestrel-b'), 'kestrel-c'), 'warden');
+	const rigs = buyFrame(buyFrame(buyFrame({ ...createCampaign(318, 'career'), credits: 60_000 }, 'kestrel-b'), 'kestrel-c'), 'warden');
 	const company = hirePilot(hirePilot(rigs, 'flint'), 'kite');
 	const ready = queueRepair({ ...company, fleet: company.fleet.map(function (rig) { return rig.frameId === 'kestrel-c' ? { ...rig, integrity: 82 } : rig; }) }, 'kestrel-c');
 	const [live, crew] = getContracts(ready);
