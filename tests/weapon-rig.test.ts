@@ -1,8 +1,9 @@
 import { expect, test } from 'bun:test';
 import { Vector3 } from 'three';
+import { createMount } from '../src/arsenal';
 import { emplacementLaunch } from '../src/artillery-emplacement-rig';
 import { sampleMechResponses } from '../src/mech-response';
-import { createState } from '../src/simulation';
+import { createState, playerAimPoint, weaponsStep, type Unit } from '../src/simulation';
 import { groundHeight, groundNormal } from '../src/terrain-elevation';
 import { FRAMES } from '../src/frames';
 import { createGait } from '../src/gait';
@@ -54,6 +55,40 @@ test('enemy muzzle and tube positions match combat while aircraft pivots follow 
 			}
 		} finally { model.dispose(); }
 	}
+});
+
+test('a retargeting laser pivots its barrel and muzzle with the collision ray, even during recoil from another mount', function () {
+	const state = createState({ frame: 'longbow-b' });
+	state.loadout.push({ ...createMount('laser'), slot: 1 });
+	const body = state.player;
+	body.angle = body.turret = 0;
+	const tank: Unit = { id: 1, kind: 'tank', x: body.x + 210, y: body.y, hp: 1000, maxHp: 1000, angle: Math.PI, cooldown: 999, heavy: true };
+	const air: Unit = { ...tank, id: 2, kind: 'vtol', x: body.x + 310, heavy: false };
+	state.enemies = [tank, air];
+	const model = createMech(undefined, false, state.frame);
+	model.root.position.set(body.x, 0, body.y);
+	const gait = createGait(body);
+	try {
+		const gimbal = model.root.getObjectByName('weapon-gimbal-1');
+		if (!gimbal) throw new Error('Missing ARC gimbal');
+		const elevations: number[] = [];
+		for (const [tick, target] of [tank, air, air].entries()) {
+			state.time = tick / 60;
+			weaponsStep(state, { drive: 0, turn: 0, stop: false, aim: target, targetId: target.id, coolant: false, fire: [tick === 0, true, false, false] }, 1 / 60);
+			const beam = state.beams[0], aim = playerAimPoint(state), response = sampleMechResponses(state).get(0);
+			if (!beam?.aim || !beam.origin || beam.elevation === undefined || !aim || !response) throw new Error('Missing beam or recoil pose');
+			if (tick > 0) expect(response.compression).toBeGreaterThan(0);
+			model.pose(gait, body.turret, { recoil: 0, hit: 0, heat: 0, time: state.time, target: aim, response, mountDirections: new Map([[beam.slot, beam.aim.direction]]) });
+			assertPosition(model.muzzles[1], beam.origin, body);
+			const axis = new Vector3(1, 0, 0).transformDirection(gimbal.matrixWorld);
+			const ray = new Vector3(beam.x - beam.origin.x, beam.elevation - beam.origin.elevation, beam.y - beam.origin.y).normalize();
+			expect(axis.distanceTo(ray)).toBeLessThan(1e-6);
+			elevations.push(axis.y);
+		}
+		expect(elevations[1]).toBeGreaterThan(elevations[0] ?? 0);
+		expect(elevations[2]).toBeGreaterThan(elevations[1] ?? 0);
+		expect(air.hp).toBe(1000);
+	} finally { model.dispose(); }
 });
 
 test('the emplacement stays planted on a slope as its barrel traverses, fires from the bore and recoils along it', function () {

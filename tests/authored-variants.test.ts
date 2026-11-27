@@ -1,13 +1,14 @@
 import { expect, spyOn, test } from 'bun:test';
-import { FileLoader, Mesh, type Object3D } from 'three';
-import { getWeapon } from '../src/arsenal';
+import { FileLoader, Mesh, Raycaster, Vector3, type Object3D } from 'three';
+import { createMount, getWeapon, type FireInputs } from '../src/arsenal';
 import { authoredMuzzleError, loadPlayableMechFamily, playableMechUrl } from '../src/authored-mech';
 import { createGait } from '../src/gait';
-import { getHardpoints } from '../src/hardpoints';
+import { canEquipWeapon, getHardpoints } from '../src/hardpoints';
 import { createMech } from '../src/mech-3d';
 import { getMechAssetBinding } from '../src/mech-asset-registry';
 import { getPlayerWeaponRig } from '../src/weapon-rig';
 import { CHASSIS_IDS, PLAYABLE_FRAMES } from '../src/frames';
+import { createState, weaponsStep, type Unit } from '../src/simulation';
 
 const chassisMeshes = function (node: Object3D) {
 	return node.children.flatMap(function collect(part): Mesh[] {
@@ -64,6 +65,82 @@ test('playable B/C cartridges fit their approved body and use their physical fir
 				}
 			} finally {
 				for (const model of models) model.dispose();
+				for (const uninstall of remove) uninstall();
+				for (const factory of factories) factory.dispose();
+			}
+		}
+	} finally { load.mockRestore(); }
+});
+
+test('every playable authored ARC socket holds its pivot and moves the physical muzzle with the retargeting beam', async function () {
+	const load = spyOn(FileLoader.prototype, 'loadAsync').mockImplementation(async function (url: string) {
+		return Bun.file(new URL(url.replace('./assets/', '../public/assets/'), import.meta.url)).arrayBuffer();
+	});
+	try {
+		for (const chassis of CHASSIS_IDS) {
+			const factories = await loadPlayableMechFamily(chassis, playableMechUrl(chassis));
+			const remove = factories.map(function (factory) { return factory.install(); });
+			try {
+				for (const { frame } of factories) for (const slot of getHardpoints(frame).keys()) {
+					if (!canEquipWeapon(frame, slot, 'laser')) continue;
+					const state = createState({ frame, starter: 'laser' });
+					state.loadout = [{ ...createMount('laser'), slot }];
+					const body = state.player;
+					body.angle = body.turret = -.67;
+					const gait = createGait(body);
+					const tank: Unit = { id: 1, kind: 'tank', x: body.x + Math.cos(body.turret) * 210, y: body.y + Math.sin(body.turret) * 210, hp: 500, maxHp: 500, angle: 0, cooldown: 999, heavy: true };
+					const air: Unit = { ...tank, id: 2, kind: 'vtol', x: body.x + Math.cos(body.turret) * 310, y: body.y + Math.sin(body.turret) * 310 };
+					state.enemies = [tank, air];
+					const context = getMechAssetBinding(frame)?.advancePose?.(undefined, body, 0);
+					if (!context) throw new Error(`Missing ${frame} authored pose`);
+					state.authoredPose = context;
+					const model = createMech(undefined, false, frame);
+					model.root.position.set(body.x, 0, body.y);
+					const fire: FireInputs = [slot === 0, slot === 1, slot === 2, slot === 3];
+					try {
+						const gimbal = model.root.getObjectByName(`laser-gimbal-${slot}`);
+						if (!gimbal) throw new Error(`Missing ${frame}/${slot} gimbal`);
+						const poses = [];
+						for (const [tick, target] of [tank, air, ...Array<Unit>(28).fill(air)].entries()) {
+							weaponsStep(state, { drive: 0, turn: 0, stop: false, aim: target, targetId: target.id, fire, coolant: false }, 1 / 60);
+							const beam = state.beams[0]; if (!beam?.aim || !beam.origin) throw new Error(`Missing ${frame}/${slot} beam`);
+							model.pose(gait, body.turret, { recoil: 0, hit: 0, heat: 0, time: tick / 60, authoredPose: context, mountDirections: new Map([[slot, beam.aim.direction]]) });
+							const origin = new Vector3(beam.origin.x - body.x, beam.origin.elevation, beam.origin.y - body.y);
+							expect(model.muzzles[slot]?.distanceTo(origin)).toBeLessThan(1e-6);
+							poses.push({ pivot: gimbal.getWorldPosition(new Vector3()), rotation: gimbal.quaternion.clone() });
+							if (tick === 1) expect(air.hp).toBe(500);
+						}
+						const first = poses[0], next = poses[1], last = poses.at(-1);
+						if (!first || !next || !last) throw new Error('Missing retarget poses');
+						expect(first.pivot.distanceTo(last.pivot)).toBeLessThan(1e-6);
+						expect(first.rotation.angleTo(next.rotation)).toBeGreaterThan(0.001);
+						expect(first.rotation.angleTo(next.rotation)).toBeLessThan(first.rotation.angleTo(last.rotation));
+						expect(tank.hp).toBeLessThan(500);
+						expect(air.hp).toBeLessThan(500);
+						if (frame === 'maul-c' && slot === 1) {
+							// The close centerline requires more inboard traverse than
+							// this gauntlet has before its ray crosses the chassis.
+							for (const enemy of [tank, air]) {
+								state.beams = [];
+								enemy.x = body.x + Math.cos(body.turret) * 45;
+								enemy.y = body.y + Math.sin(body.turret) * 45;
+								state.enemies = [enemy];
+								weaponsStep(state, { drive: 0, turn: 0, stop: false, aim: enemy, targetId: enemy.id, fire, coolant: false }, 1 / 60);
+								const beam = state.beams[0]; if (!beam?.aim || !beam.origin) throw new Error('Missing point-blank beam');
+								const direction = beam.aim.direction;
+								model.pose(gait, body.turret, { recoil: 0, hit: 0, heat: 0, time: 1, authoredPose: context, mountDirections: new Map([[slot, direction]]) });
+								const axis = new Vector3(direction.x, direction.elevation, direction.y);
+								const origin = new Vector3(beam.origin.x, beam.origin.elevation, beam.origin.y).addScaledVector(axis, 0.04);
+								const hits = new Raycaster(origin, axis, 0, 80).intersectObject(model.root);
+								expect(hits.filter(function ({ object }) {
+									for (let node: Object3D | null = object; node; node = node.parent) if (node === gimbal) return false;
+									return true;
+								})).toHaveLength(0);
+							}
+						}
+					} finally { model.dispose(); }
+				}
+			} finally {
 				for (const uninstall of remove) uninstall();
 				for (const factory of factories) factory.dispose();
 			}

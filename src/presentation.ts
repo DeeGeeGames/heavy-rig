@@ -13,7 +13,7 @@ import { alignCamera, toGround, toScreen, viewScale } from './projection-3d';
 import { cameraLookAhead, constrainCameraOffset, smoothCameraOffset, weaponCameraKick } from './camera-follow';
 import { ARENA, playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind, type Point, type CombatStateView, type Wreck } from './simulation';
 import { RIG_DEFEAT_SECONDS } from './rig-defeat-timing';
-import type { SpatialPoint } from './weapon-rig';
+import type { MountDirections, SpatialPoint } from './weapon-rig';
 import type { AuthoredPoseContext } from './authored-pose';
 import type { WeaponMount } from './arsenal';
 import { createWorldObjects } from './world-3d';
@@ -67,6 +67,7 @@ interface MechPose {
 	visible?: boolean;
 	heat?: number;
 	target?: SpatialPoint | undefined;
+	mountDirections?: MountDirections | undefined;
 	manualAim?: Point | undefined;
 	authoredPose?: AuthoredPoseContext | undefined;
 	legGait?: AuthoredGait | undefined;
@@ -227,7 +228,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				};
 				views = {
 					ensure,
-					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain, defeatedAt = time, defeatElapsed = 0 }) {
+					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, mountDirections, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain, defeatedAt = time, defeatElapsed = 0 }) {
 						const wasPosed = view.damage.hp !== undefined && view.model.root.visible;
 						if (view.damage.hp !== undefined && hp < view.damage.hp) {
 							view.damage.hitAt = time;
@@ -243,6 +244,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 							recoil: weaponRecoil(loadout, 'energy'), heat, time, ...(response ? { response } : {}),
 							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
 							...(legGait ? { legGait } : {}), ...(authoredPose ? { authoredPose } : {}),
+							...(mountDirections ? { mountDirections } : {}),
 							...(terrain?.elevation ? { terrain } : {}), ...(target ? { target: { ...target, elevation: target.elevation - elevation } } : {}),
 							...(terrain?.elevation && manualAim && !target ? { aimSlope: groundAimSlope(terrain, position, manualAim, elevation) } : {}),
 						});
@@ -420,6 +422,14 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					camera.updateProjectionMatrix();
 				}
 				const responses = sampleMechResponses(state);
+				const laserMounts = new Map<number | string | undefined, Map<number, Readonly<SpatialPoint>>>();
+				for (const beam of state.beams) {
+					if (!beam.aim) continue;
+					const actor = beam.owner ?? beam.squadmateId;
+					const mounts = laserMounts.get(actor) ?? new Map<number, Readonly<SpatialPoint>>();
+					mounts.set(beam.slot, beam.aim.direction);
+					laserMounts.set(actor, mounts);
+				}
 				if (player && playerId !== undefined) {
 					const arrival = landing?.poses[0];
 					const heading = arrival?.gait.body.angle ?? (attract ? Math.PI / 4 - 0.22 : state.player.turret);
@@ -429,6 +439,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: landing?.visible ?? true,
 						legGait: arrival?.gait ?? (attract ? undefined : sampledLegs(state.player, state.authoredPose?.gait ?? gait)),
 						target: attract || hangar || landing ? undefined : playerAimPoint(state),
+						mountDirections: attract || hangar || landing ? undefined : laserMounts.get(undefined),
 						manualAim: attract || hangar || landing ? undefined : aim,
 					});
 					views.scale(playerId, hangar ? Math.min(width > 700 ? 1.55 : 0.9, height / (width > 700 ? 520 : 900)) : attract && width > 700 ? 1.55 : 1);
@@ -446,6 +457,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 						terrain, position: arrival?.position, heightAboveGround: arrival?.elevation ?? 0, visible: !arrival || (landing?.visible ?? true),
 						legGait: arrival?.gait ?? sampledLegs(mate, mate.authoredPose?.gait ?? gait),
 						target: !landing && mate.hp > 0 ? squadmateAimPoint(state, mate) : undefined,
+						mountDirections: landing ? undefined : laserMounts.get(mate.pilotId),
 					});
 					squadmateLabelHeights.set(mate.pilotId, (view.fall?.pose.labelHeight ?? view.model.labelHeight) + 12);
 				}
@@ -459,7 +471,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const gait = gaits.enemies.get(enemy.id) ?? createEnemyGait(enemy);
 					views.pose(id, view, gait, enemy.angle, enemy.hp, state.time, {
 						terrain, loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, response: responses.get(enemy.id), authoredPose: enemy.catalog?.authoredPose,
-						target: enemyAimPoint(state, enemy), legGait: sampledLegs(enemy, enemy.catalog?.authoredPose?.gait ?? gait),
+						target: enemyAimPoint(state, enemy), mountDirections: laserMounts.get(enemy.id), legGait: sampledLegs(enemy, enemy.catalog?.authoredPose?.gait ?? gait),
 					});
 					if (enemy.catalog || enemy.kind === 'artillery' || isVehicleKind(enemy.kind)) enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}

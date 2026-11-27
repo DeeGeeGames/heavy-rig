@@ -11,7 +11,7 @@ import { createLowPolyParts } from './low-poly-parts';
 import { buildLowPolyChassis } from './low-poly-chassis';
 import type { EnemyKind } from './simulation';
 import { articulateWeapons, defeatWeaponJoints } from './weapon-articulation';
-import { getEnemyWeaponRig, getPlayerWeaponRig, type SpatialPoint } from './weapon-rig';
+import { getEnemyWeaponRig, getPlayerWeaponRig, type MountDirections, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { createArtilleryEmplacement } from './artillery-emplacement';
 import { getMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
@@ -25,7 +25,7 @@ import { createMechResponseRig, type MechResponse } from './mech-response';
 import type { FieldTerrain } from './field-terrain';
 import { groundHeight, groundNormal } from './terrain-elevation';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; response?: MechResponse; target?: SpatialPoint; aimSlope?: number; terrain?: FieldTerrain; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; response?: MechResponse; target?: SpatialPoint; mountDirections?: MountDirections; aimSlope?: number; terrain?: FieldTerrain; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
@@ -179,7 +179,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			turret.rotation.x = (Math.cos(relativeHeading) * roll - Math.sin(relativeHeading) * pitch) * suspension;
 			turret.rotation.z = (Math.sin(relativeHeading) * roll + Math.cos(relativeHeading) * pitch) * suspension;
 			const recoil = feedback?.recoil ?? 0;
-			poseWeapons(feedback?.aimSlope ? { ...gait.body, aimSlope: feedback.aimSlope } : gait.body, heading, feedback?.target);
+			poseWeapons(feedback?.aimSlope ? { ...gait.body, aimSlope: feedback.aimSlope } : gait.body, heading, feedback?.target, feedback?.mountDirections);
 			if (!kind) for (const [slot, assembly] of hardware.assemblies.entries()) assembly.part.visible = feedback?.equippedSlots === undefined || feedback.equippedSlots.includes(slot);
 			for (const slide of hardware.slides) slide.position.x = -recoil * 5 * (kind ? 1 : definition.recoil);
 			for (const shutter of hardware.shutters) shutter.part.position.y = shutter.y + recoil * 5;
@@ -211,7 +211,7 @@ export const createMech = function (kind?: EnemyKind, commander = false, frame: 
 			for (const [slot, exits] of indexedExits.entries()) for (const [index, exit] of exits.entries()) rocketMuzzles[slot]?.[index]?.setFromMatrixPosition(exit.matrixWorld).applyMatrix4(inverseRoot);
 			exhaust.set(0, 0, 0); for (const anchor of hardware.vents) exhaust.add(vertex.setFromMatrixPosition(anchor.matrixWorld).applyMatrix4(inverseRoot));
 			if (hardware.vents.length > 0) exhaust.divideScalar(hardware.vents.length);
-			responseRig.apply(feedback?.response);
+			responseRig.apply(feedback?.response, feedback?.mountDirections);
 			labelHeight = 0;
 			for (const bound of bounds) {
 				relative.multiplyMatrices(inverseRoot, bound.part.matrixWorld);

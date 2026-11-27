@@ -79,6 +79,32 @@ test('guided missiles steer vertically while beams stop at the first 3D contact'
 	expect(air.hp).toBeLessThan(1000); expect(beamState.beams[0]?.origin).toBeDefined(); expect(beamState.beams[0]?.elevation).toBeGreaterThan(120);
 });
 
+test('a held laser sweeps from a ground target to aircraft before damaging it, while a new trigger starts on aim', function () {
+	const state = createState({ frame: 'longbow', starter: 'laser' });
+	state.player.angle = state.player.turret = 0;
+	const tank = enemy(1, state.player.x + 210, 'tank');
+	const air = enemy(2, state.player.x + 310, 'vtol');
+	state.enemies = [tank, air];
+	const dt = 1 / 60;
+	const fire: Controls = { ...idle, aim: air, fire: [true, false, false, false] };
+	weaponsStep(state, { ...fire, targetId: tank.id }, dt);
+	const low = state.beams[0]?.aim?.direction.elevation ?? 0;
+	expect(tank.hp).toBeLessThan(1000);
+	weaponsStep(state, { ...fire, targetId: air.id }, dt);
+	const rising = state.beams[0]?.aim?.direction.elevation ?? 0;
+	expect(rising).toBeGreaterThan(low);
+	expect(air.hp).toBe(1000);
+	for (let tick = 0; tick < 30; tick++) weaponsStep(state, { ...fire, targetId: air.id }, dt);
+	expect(state.beams[0]?.elevation).toBeGreaterThan(120);
+	expect(air.hp).toBeLessThan(1000);
+
+	const tankHp = tank.hp;
+	weaponsStep(state, idle, dt);
+	expect(state.beams).toHaveLength(0);
+	weaponsStep(state, { ...fire, targetId: tank.id }, dt);
+	expect(tank.hp).toBeLessThan(tankHp);
+});
+
 test('standard and exceptional ARC beams damage distant targets and stop at their tier limit on a miss', function () {
 	for (const [tier, range] of [[0, 1740], [5, 2050]] as const) {
 		const state = createState({ frame: 'longbow', starter: weaponIdForTier('laser', tier) });

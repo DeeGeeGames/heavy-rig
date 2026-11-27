@@ -4,7 +4,7 @@ import type { WalkerGait } from './gait';
 import { getHardpoints } from './hardpoints';
 import type { MechFeedback } from './mech-3d';
 import type { AuthoredPoseContext } from './authored-pose';
-import type { SpatialPoint, WeaponBody, WeaponRig } from './weapon-rig';
+import type { SpatialPoint, WeaponBody, WeaponRig, WeaponTraverse } from './weapon-rig';
 import type { MechFinish } from './mech-skin';
 import type { FieldTerrain } from './field-terrain';
 import type { CollapseSite, FallenRigPose } from './rig-collapse';
@@ -25,6 +25,7 @@ export interface MechAssetBinding {
 	readonly weaponRigs: readonly WeaponRig[];
 	readonly advancePose?: (previous: AuthoredPoseContext | undefined, body: WeaponBody, time: number, terrain?: FieldTerrain) => AuthoredPoseContext;
 	readonly muzzle?: (body: WeaponBody, heading: number, slot: number, tubeIndex: number | undefined, context: AuthoredPoseContext | undefined) => SpatialPoint;
+	readonly laserMount?: (body: WeaponBody, heading: number, slot: number, context: AuthoredPoseContext | undefined) => { pivot: SpatialPoint; offset: SpatialPoint; traverse: WeaponTraverse } | undefined;
 }
 
 // A single optional binding changes rendering and combat origins together.

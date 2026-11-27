@@ -8,6 +8,8 @@ import { snapMechHeading } from './torso-arc';
 import { emplacementWeaponRig } from './artillery-emplacement-rig';
 
 export interface SpatialPoint extends Point { elevation: number }
+export type MountDirections = ReadonlyMap<number, Readonly<SpatialPoint>>;
+export interface WeaponTraverse { readonly heading: number; readonly yaw: number; readonly down: number; readonly up: number }
 export interface WeaponBody extends Point {
 	angle?: number; hullAngle?: number;
 	/** World height of the rig's feet. Model-space articulation defaults to zero. */
@@ -114,14 +116,16 @@ export const weaponPivot = function (rig: WeaponRig, body: WeaponBody, heading: 
 };
 export const weaponDirection = function (rig: WeaponRig, body: WeaponBody, heading: number, target?: SpatialPoint): SpatialPoint {
 	if (rig.fixedPitch !== undefined) return forwardDirection(heading, Math.tan(rig.fixedPitch));
-	const pivot = weaponPivot(rig, body, heading);
 	if (!target) return forwardDirection(mountHeading(rig, heading), body.aimSlope);
+	return convergeWeapon(weaponPivot(rig, body, heading), mountOffset(rig), heading, target);
+};
+export const convergeWeapon = function (pivot: SpatialPoint, offset: SpatialPoint, heading: number, target: SpatialPoint): SpatialPoint {
 	// Gimbals converge toward targets ahead, without swiveling backward through the chassis.
 	const forward = (target.x - pivot.x) * Math.cos(heading) + (target.y - pivot.y) * Math.sin(heading);
 	const adjustment = Math.max(0, 1 - forward);
 	const ahead = { x: target.x + Math.cos(heading) * adjustment, y: target.y + Math.sin(heading) * adjustment, elevation: target.elevation };
 	const baseline = getFiringDirection(pivot, heading, ahead);
-	const lateral = rig.muzzle.y - rig.pivot.y; const vertical = rig.muzzle.elevation - rig.pivot.elevation;
+	const { y: lateral, elevation: vertical, x: barrelLength } = offset;
 	if (lateral === 0 && vertical === 0) return baseline;
 	const dx = ahead.x - pivot.x; const dy = ahead.y - pivot.y; const dz = ahead.elevation - pivot.elevation;
 	const horizontalSquared = dx * dx + dy * dy - lateral * lateral;
@@ -129,7 +133,6 @@ export const weaponDirection = function (rig: WeaponRig, body: WeaponBody, headi
 	// Offset hinges need the barrel axis, rather than the pivot-to-target line,
 	// to converge. Targets inside the transverse offset or behind the muzzle
 	// have no forward solution; retain the stable ahead-facing fallback there.
-	const barrelLength = rig.muzzle.x - rig.pivot.x;
 	if (horizontalSquared <= 0 || alongSquared <= barrelLength * barrelLength) return baseline;
 	const horizontal = Math.sqrt(horizontalSquared); const along = Math.sqrt(alongSquared);
 	const yaw = Math.atan2(dy, dx) - Math.atan2(lateral, horizontal);
@@ -137,18 +140,35 @@ export const weaponDirection = function (rig: WeaponRig, body: WeaponBody, headi
 	const direction = { x: Math.cos(yaw) * Math.cos(pitch), y: Math.sin(yaw) * Math.cos(pitch), elevation: Math.sin(pitch) };
 	return direction.x * Math.cos(heading) + direction.y * Math.sin(heading) > 0 ? direction : baseline;
 };
+export const mountOffset = function (rig: WeaponRig): SpatialPoint {
+	return { x: rig.muzzle.x - rig.pivot.x, y: rig.muzzle.y - rig.pivot.y, elevation: rig.muzzle.elevation - rig.pivot.elevation };
+};
 export const rigMuzzle = function (rig: WeaponRig, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint): SpatialPoint {
-	const pivot = weaponPivot(rig, body, heading); const direction = weaponDirection(rig, body, heading, target);
-	const yaw = Math.atan2(direction.y, direction.x); const horizontal = Math.hypot(direction.x, direction.y);
+	return rigMuzzleAlong(rig, body, heading, weaponDirection(rig, body, heading, target), tubeIndex);
+};
+const rigMuzzleAlong = function (rig: WeaponRig, body: WeaponBody, heading: number, direction: Readonly<SpatialPoint>, tubeIndex?: number): SpatialPoint {
+	const pivot = weaponPivot(rig, body, heading);
 	const tube = tubeIndex === undefined || rig.tubes.length === 0 ? undefined : rig.tubes[((Math.floor(tubeIndex) % rig.tubes.length) + rig.tubes.length) % rig.tubes.length];
-	const forward = rig.muzzle.x - rig.pivot.x + (tube?.x ?? 0);
-	const lateral = rig.muzzle.y - rig.pivot.y + (tube?.y ?? 0);
-	const vertical = rig.muzzle.elevation - rig.pivot.elevation + (tube?.elevation ?? 0);
+	const offset = mountOffset(rig);
+	return weaponExitAlong(pivot, tube ? { x: offset.x + tube.x, y: offset.y + tube.y, elevation: offset.elevation + tube.elevation } : offset, direction);
+};
+export const weaponExitAlong = function (pivot: SpatialPoint, offset: SpatialPoint, direction: Readonly<SpatialPoint>): SpatialPoint {
+	const yaw = Math.atan2(direction.y, direction.x); const horizontal = Math.hypot(direction.x, direction.y);
+	const { x: forward, y: lateral, elevation: vertical } = offset;
 	return {
 		x: pivot.x + direction.x * forward - Math.sin(yaw) * lateral - Math.cos(yaw) * direction.elevation * vertical,
 		y: pivot.y + direction.y * forward + Math.cos(yaw) * lateral - Math.sin(yaw) * direction.elevation * vertical,
 		elevation: pivot.elevation + direction.elevation * forward + horizontal * vertical,
 	};
+};
+export const limitWeaponTraverse = function (direction: SpatialPoint, limit: WeaponTraverse): SpatialPoint {
+	const pitch = Math.atan2(direction.elevation, Math.hypot(direction.x, direction.y));
+	const relative = Math.atan2(direction.y, direction.x) - limit.heading;
+	const yaw = Math.atan2(Math.sin(relative), Math.cos(relative));
+	if (Math.abs(yaw) <= limit.yaw && pitch >= -limit.down && pitch <= limit.up) return direction;
+	const bearing = limit.heading + Math.max(-limit.yaw, Math.min(limit.yaw, yaw));
+	const elevation = Math.max(-limit.down, Math.min(limit.up, pitch));
+	return { x: Math.cos(bearing) * Math.cos(elevation), y: Math.sin(bearing) * Math.cos(elevation), elevation: Math.sin(elevation) };
 };
 export const getPlayerMuzzle = function (frame: FrameId, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint, context?: AuthoredPoseContext): SpatialPoint {
 	const binding = getMechAssetBinding(frame);

@@ -132,8 +132,8 @@ export const createMechResponseRig = function (root: Object3D, torso: Object3D, 
 		const back = new Vector3(-1, 0, 0).applyMatrix4(basis).sub(center.setFromMatrixPosition(basis));
 		return { part, parent, back, home: part.position.clone() };
 	});
-	const upper = [torso, ...(independentGimbals ? mounts.map(function (mount) { return mount.parent; }) : [])].map(function (part) {
-		return { part, position: new Vector3(), rotation: new Quaternion() };
+	const upper = [torso, ...(independentGimbals ? mounts.map(function (mount) { return mount.parent; }) : [])].map(function (part, index) {
+		return { part, slot: index - 1, position: new Vector3(), rotation: new Quaternion() };
 	});
 	let active = false;
 	return {
@@ -143,10 +143,11 @@ export const createMechResponseRig = function (root: Object3D, torso: Object3D, 
 			for (const { part, position, rotation } of upper) { part.position.copy(position); part.quaternion.copy(rotation); }
 			active = false;
 		},
-		apply: function (response: MechResponse | undefined) {
+		apply: function (response: MechResponse | undefined, stabilizedMounts?: Pick<ReadonlySet<number>, 'has'>, stabilizeTorso = false) {
 			if (!response || response.compression === 0) return;
 			active = true;
 			for (const [slot, stroke] of response.mounts) {
+				if (stabilizedMounts?.has(slot)) continue;
 				const mount = mounts[slot];
 				if (mount) mount.part.position.addScaledVector(mount.back, stroke.distance);
 			}
@@ -165,6 +166,8 @@ export const createMechResponseRig = function (root: Object3D, torso: Object3D, 
 				if (!parent) continue;
 				entry.position.copy(part.position);
 				entry.rotation.copy(part.quaternion);
+				// A live beam shares the mount frame with combat, not cosmetic body rock.
+				if (stabilizedMounts?.has(entry.slot) || entry.slot === -1 && stabilizeTorso) continue;
 				basis.multiplyMatrices(inverse, parent.matrixWorld);
 				local.copy(basis).invert().multiply(offset).multiply(basis).multiply(part.matrix);
 				local.decompose(part.position, part.quaternion, scale);

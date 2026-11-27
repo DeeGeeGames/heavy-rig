@@ -11,7 +11,7 @@ import { canEquipWeapon, stockPackage, getEnemyHardpoints, getHardpoints, isFram
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionField, missionHostileCount, missionSpawn, missionDeploymentSlot, squadDestination, type MissionSpawn } from './missions';
-import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, weaponDirection, type SpatialPoint, type WeaponBody } from './weapon-rig';
+import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, convergeWeapon, limitWeaponTraverse, mountOffset, weaponDirection, weaponExitAlong, weaponPivot, type SpatialPoint, type WeaponBody } from './weapon-rig';
 import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS, enemyRadius, enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
 import { fieldStructureKinds, hasTerrainRoute, moveOnTerrain, terrainPathClear, terrainPointClear, terrainShotContact, terrainShotFraction, terrainWaypoint, type FieldTerrain, type ObstacleField } from './field-terrain';
 import { groundAimSlope, groundContact, groundHeight, groundNormal } from './terrain-elevation';
@@ -24,7 +24,8 @@ import { advancePerimeterEntry, isFieldContact, planPerimeterEntry, type Perimet
 import { SQUAD_SIZE, type Pilot } from './pilots';
 
 export interface Point { x: number; y: number }
-export interface Beam extends Point { slot: number; elevation?: number; origin?: SpatialPoint; contact?: boolean; squadmateId?: string; owner?: number }
+interface BeamAim { readonly direction: Readonly<SpatialPoint>; readonly targetId: number | undefined; readonly sweeping: boolean }
+export interface Beam extends Point { slot: number; elevation?: number; origin?: SpatialPoint; contact?: boolean; squadmateId?: string; owner?: number; aim?: BeamAim }
 export type MechEnemyKind = 'scout' | 'striker' | 'siege';
 export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank' | 'artillery';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'rig-defeat' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
@@ -863,6 +864,48 @@ const fireMortar = function (state: CombatStateView, gunner: RigGunner, mount: W
 	state.events.push('artillery');
 };
 type TriggerInput = Pick<Controls, 'aim' | 'fire' | 'targetId' | 'turretTurn'>;
+const LASER_YAW_RATE = 4; // rad/s, faster than torso traverse
+const LASER_PITCH_RATE = 1.5;
+// The weapon phase starts a fresh beam list before the player, squad and enemies fire in order.
+const previousBeams = new WeakMap<CombatStateView, readonly Beam[]>();
+const sweepLaser = function (previous: Readonly<SpatialPoint>, desired: SpatialPoint, dt: number): SpatialPoint {
+	const oldYaw = Math.atan2(previous.y, previous.x);
+	const yawTravel = angleDelta(oldYaw, Math.atan2(desired.y, desired.x));
+	const oldPitch = Math.atan2(previous.elevation, Math.hypot(previous.x, previous.y));
+	const pitchTravel = Math.atan2(desired.elevation, Math.hypot(desired.x, desired.y)) - oldPitch;
+	if (Math.abs(yawTravel) <= LASER_YAW_RATE * dt && Math.abs(pitchTravel) <= LASER_PITCH_RATE * dt) return desired;
+	const yaw = oldYaw + clamp(yawTravel, -LASER_YAW_RATE * dt, LASER_YAW_RATE * dt);
+	const pitch = oldPitch + clamp(pitchTravel, -LASER_PITCH_RATE * dt, LASER_PITCH_RATE * dt);
+	return { x: Math.cos(yaw) * Math.cos(pitch), y: Math.sin(yaw) * Math.cos(pitch), elevation: Math.sin(pitch) };
+};
+const aimLaser = function (state: CombatStateView, gunner: RigGunner, base: WeaponBody, slot: number, selected: FireContact | undefined, dt: number) {
+	const { frame, source, body, pose } = gunner;
+	const { turret } = body;
+	const terrain = state.mission?.map.terrain;
+	const target = selected ? projectAim(body, turret, selected.volume) : undefined;
+	const binding = getMechAssetBinding(frame);
+	const rig = binding ? undefined : getPlayerWeaponRig(frame)[slot];
+	const authoredMount = binding?.laserMount?.(base, turret, slot, pose);
+	const mount = authoredMount
+		?? (rig && rig.fixedPitch === undefined ? { pivot: weaponPivot(rig, base, turret), offset: mountOffset(rig) } : undefined);
+	if (!mount) {
+		const muzzle = getPlayerMuzzle(frame, slot, base, turret, undefined, target, pose);
+		const origin = exposedMuzzle(terrain, body, muzzle);
+		return { muzzle, origin, direction: getPlayerFiringDirection(frame, slot, base, turret, origin, target) };
+	}
+	const rawAim = target ? convergeWeapon(mount.pivot, mount.offset, turret, target) : getPlayerFiringDirection(frame, slot, base, turret, mount.pivot);
+	const desired = authoredMount ? limitWeaponTraverse(rawAim, authoredMount.traverse) : rawAim;
+	const previous = previousBeams.get(state)?.find(function (beam) {
+		return beam.slot === slot && beam.owner === source.owner && beam.squadmateId === source.squadmateId;
+	})?.aim;
+	const targetId = selected?.id;
+	// Only retargeting slews. Ordinary tracking and the first shot remain responsive.
+	const swept = previous && (previous.sweeping || previous.targetId !== targetId)
+		? sweepLaser(previous.direction, desired, dt) : desired;
+	const direction = authoredMount && swept !== desired ? limitWeaponTraverse(swept, authoredMount.traverse) : swept;
+	const muzzle = weaponExitAlong(mount.pivot, mount.offset, direction);
+	return { muzzle, origin: exposedMuzzle(terrain, body, muzzle), direction, aim: { direction, targetId, sweeping: swept !== desired } };
+};
 const bulletSpread = function (sequence: number): number {
 	// Hash the shot index so dispersion is repeatable without a rhythmic sweep.
 	let bits = Math.imul(sequence + 1, 0x9e3779b9);
@@ -911,7 +954,7 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 		}
 		const withinRange = withinWeaponRange(targetRange, weapon.range);
 		if (!canFire || weapon.kind === 'missile' && (!locked || !withinRange) || automated && (!withinRange || !input.fire[slot])) { delete mount.rocketVolley; return; }
-		if (automated && selected && terrain) {
+		if (automated && selected && terrain && weapon.kind !== 'laser') {
 			const muzzle = getPlayerMuzzle(frame, slot, base, p.turret, tubeIndex(getPlayerWeaponRig(frame)[slot]?.tubes.length ?? 0, Math.max(0, mount.rounds - 1)), projectAim(p, p.turret, selected.volume), gunner.pose);
 			if (muzzleBlocked(terrain, p, muzzle, selected.volume)) { delete mount.rocketVolley; return; }
 		}
@@ -929,11 +972,9 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 		}
 		if (p.overheated || !usableMount(mount) || !input.fire[slot]) return;
 		if (weapon.kind === 'laser') {
+			const { muzzle, origin, direction, aim } = aimLaser(state, gunner, base, slot, selected, fireDt);
+			if (automated && selected && terrain && (origin !== muzzle || terrainShotFraction(terrain, origin, selected.volume) !== undefined)) return;
 			if (!consumeFire(mount, p, fireDt)) return;
-			const aim = (selected ? projectAim(p, p.turret, selected.volume) : undefined);
-			const muzzle = getPlayerMuzzle(frame, slot, base, p.turret, undefined, aim, gunner.pose);
-			const origin = exposedMuzzle(terrain, p, muzzle);
-			const direction = getPlayerFiringDirection(frame, slot, base, p.turret, origin, aim);
 			const end = { x: origin.x + direction.x * weapon.range, y: origin.y + direction.y * weapon.range, elevation: origin.elevation + direction.elevation * weapon.range };
 			const hits = targets.filter(contactAlive).map(function (target) { return { target, entry: hitVolumeFraction(origin, end, target.volume) }; }).filter(function (hit): hit is { target: FireContact; entry: number } { return hit.entry !== undefined; }).sort(function (a, b) { return a.entry - b.entry; });
 			const cover = terrain ? terrainShotFraction(terrain, origin, end) : groundContact(undefined, origin, end)?.fraction;
@@ -941,7 +982,7 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 			const hit = first && first.entry < (cover ?? Infinity) ? first : undefined;
 			const endpoint = pointAlong(origin, end, hit?.entry ?? cover ?? 1);
 			const contact = hit !== undefined || cover !== undefined;
-			state.beams.push({ ...endpoint, slot, origin, contact, ...gunner.source });
+			state.beams.push({ ...endpoint, slot, origin, contact, ...(aim ? { aim } : {}), ...gunner.source });
 			if (hit) hitBeam(hit.target.id, weapon.damage * gunner.damage * fireDt, origin, { x: -direction.x, y: -direction.y, elevation: -direction.elevation });
 			mount.firing = true;
 			return;
@@ -978,6 +1019,7 @@ const fireRigWeapons = function (state: CombatStateView, input: TriggerInput, dt
 	}, dt);
 };
 export const weaponsStep = function (state: CombatStateView, input: Controls, dt: number) {
+	previousBeams.set(state, state.beams);
 	state.beams = [];
 	fireRigWeapons(state, input, dt);
 };

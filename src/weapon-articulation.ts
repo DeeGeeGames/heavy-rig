@@ -1,6 +1,6 @@
 import { Group, Matrix4, Vector3, type Object3D } from 'three';
 import type { ChassisId } from './frames';
-import { weaponDirection, weaponPivot, type SpatialPoint, type WeaponRig, type WeaponBody } from './weapon-rig';
+import { weaponDirection, weaponPivot, type MountDirections, type SpatialPoint, type WeaponRig, type WeaponBody } from './weapon-rig';
 
 export interface WeaponAssembly { readonly part: Group; readonly muzzle: Object3D }
 
@@ -32,9 +32,9 @@ export const articulateWeapons = function (root: Group, assemblies: readonly Wea
 		assembly.part.position.add(new Vector3(rig.muzzle.x - current.x, rig.muzzle.elevation - current.y, rig.muzzle.y - current.z));
 		return { pivot, rig };
 	});
-	return function (body: WeaponBody, heading: number, target?: SpatialPoint) {
-		for (const { pivot, rig } of gimbals) {
-			const at = weaponPivot(rig, body, heading); const direction = weaponDirection(rig, body, heading, target);
+	return function (body: WeaponBody, heading: number, target?: SpatialPoint, directions?: MountDirections) {
+		for (const [slot, { pivot, rig }] of gimbals.entries()) {
+			const at = weaponPivot(rig, body, heading); const direction = directions?.get(slot) ?? weaponDirection(rig, body, heading, target);
 			pivot.position.set(at.x - body.x, at.elevation, at.y - body.y);
 			pivot.rotation.order = 'YXZ'; pivot.rotation.set(0, -Math.atan2(direction.y, direction.x), Math.atan2(direction.elevation, Math.hypot(direction.x, direction.y)), 'YXZ');
 		}
