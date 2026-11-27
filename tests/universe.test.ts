@@ -1,10 +1,22 @@
 import { describe, expect, test } from 'bun:test';
 import { acceptContract, createCampaign, getContracts, parseCampaign, settleContract, travelTo } from '../src/campaign';
 import { advanceDays } from '../src/company';
-import { applyMissionInfluence, FACTION_IDS, getPlanet, getSystemIntel, PLANETS, territoryScores } from '../src/universe';
+import { applyMissionInfluence, FACTION_IDS, getJumpRoute, getPlanet, getSystemIntel, PLANETS, territoryScores } from '../src/universe';
 import { generateMissionMap } from '../src/missions';
 
 describe('territory campaign', function () {
+	test('jump fares include the last light-year of each band and charge the same price in either direction', function () {
+		for (const [origin, destination, distanceLy, fare] of [
+			['meridian', 'meridian', 0, 0],
+			['system-2', 'system-5', 25, 250],
+			['system-32', 'iolith', 26, 500],
+			['system-0', 'system-71', 120, 1250],
+		] as const) {
+			expect(getJumpRoute(origin, destination)).toEqual({ distanceLy, fare });
+			expect(getJumpRoute(destination, origin)).toEqual({ distanceLy, fare });
+		}
+	});
+
 	test('the seeded chart has faction interiors, conflict fronts, and unclaimed systems', function () {
 		for (const seed of [0, 317, 0x7fffffff, 0xffffffff]) {
 			const campaign = createCampaign(seed);
@@ -90,6 +102,6 @@ describe('territory campaign', function () {
 			{ ...campaign.universe, influence: [{ planetId: 'meridian', factionId: 'pirates', value: 3 }] },
 			{ ...campaign.universe, influence: [{ planetId: 'meridian', factionId: 'combine', value: 19 }] },
 			{ ...campaign.universe, influence: Array.from({ length: 2 }, function () { return { planetId: 'meridian', factionId: 'combine', value: 3 }; }) },
-		]) expect(parseCampaign(JSON.stringify({ ...campaign, credits: 123, universe })).credits).toBe(0);
+		]) expect(parseCampaign(JSON.stringify({ ...campaign, credits: 123, universe })).credits).toBe(campaign.credits);
 	});
 });

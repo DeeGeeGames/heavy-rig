@@ -6,9 +6,10 @@ import { PLAYABLE_FRAMES } from '../src/frames';
 import { createStarterLoadout } from '../src/hardpoints';
 import { defaultReserves, frameWeight, loadedMounts } from '../src/combat-resources';
 import { createMissionState } from '../src/simulation';
-import { abandonContract, acceptContract, createCampaign, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
+import { abandonContract, acceptContract, createCampaign, forecastArrival, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import { advanceDays, applyRigCheat, assignPilot, assignRig, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, setAmmunition, unlockAllRigs, WEAPON_PRICES } from '../src/company';
 import { dismissPilot, hirePilot } from '../src/pilots';
+import { getJumpRoute } from '../src/universe';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
 const accept = function (campaign: Campaign): Campaign {
@@ -29,8 +30,8 @@ const stockedWeapon = function (campaign: Campaign, weapon: Parameters<typeof bu
 };
 
 test('squad departures reserve unique pilot and rig pairs and recover every rig exactly once', function () {
-	const fresh = createCampaign(23);
-	expect(hirePilot(fresh, 'flint')).toBe(fresh);
+	const shortOfFee = { ...createCampaign(23), credits: 499 };
+	expect(hirePilot(shortOfFee, 'flint')).toBe(shortOfFee);
 	const fundedCompany = stockFrame(stockFrame(funded(), 'kestrel-b'), 'kestrel-c');
 	const hired = hirePilot(hirePilot(fundedCompany, 'flint'), 'kite');
 	expect(hired.credits).toBe(fundedCompany.credits - 1000);
@@ -142,6 +143,29 @@ describe('Company ownership and workshop transactions', function () {
 		expect(advanceDays(queued, Number.NaN)).toBe(queued);
 	});
 
+	test('an unaffordable jump can preview the destination but only a paid arrival advances the board and workshop', function () {
+		const queued = queueRefit(createCampaign(23, 'career'), 'kestrel', [null, 'machine-gun']);
+		const destination = 'iolith';
+		const fare = getJumpRoute(queued.planetId, destination).fare;
+		const short = { ...queued, credits: fare - 1 };
+		const before = structuredClone(short);
+		const forecast = forecastArrival(short, destination);
+		expect(forecast.day).toBe(2);
+		expect(forecast.planetId).toBe(destination);
+		expect(travelTo(short, destination)).toBe(short);
+		expect(short).toEqual(before);
+		expect(short.workOrders).toHaveLength(1);
+
+		const arrived = travelTo({ ...queued, credits: fare }, destination);
+		expect(arrived.credits).toBe(0);
+		expect(arrived.day).toBe(forecast.day);
+		expect(arrived.boardRevision).toBe(queued.boardRevision + 1);
+		expect(arrived.workOrders).toHaveLength(0);
+		const advertised = getContracts(forecast);
+		expect(advertised.length).toBeGreaterThan(0);
+		expect(getContracts(arrived)).toEqual(advertised);
+	});
+
 	test('damage survives success, abort, failure, and interrupted deployment without a free repair or duplicate payout', function () {
 		for (const outcome of ['success', 'failure', 'abort', 'interruption']) {
 			const deployed = beginDeployment(accept(createCampaign(91)));
@@ -155,7 +179,8 @@ describe('Company ownership and workshop transactions', function () {
 			expect(finished.active).toBeUndefined();
 			expect(getOwnedMech(finished)?.integrity).toBe(36.25);
 			expect(finished.day).toBe(2);
-			expect(finished.credits > 0).toBe(outcome === 'success');
+			if (outcome === 'success') expect(finished.credits).toBeGreaterThan(deployed.credits);
+			else expect(finished.credits).toBe(deployed.credits);
 			expect(finished.lastResult?.aborted).toBe(outcome === 'abort' || outcome === 'interruption');
 			expect(recoverInterruptedDeployment(roundTrip(finished))).toEqual(finished);
 			expect(settleContract(finished, true)).toBe(finished);
@@ -168,7 +193,8 @@ describe('Company ownership and workshop transactions', function () {
 	});
 
 	test('the sole destroyed Kestrel can be repaired at zero credits, but cannot deploy or heal before its due day', function () {
-		const destroyed = settleContract(checkpointDeployment(beginDeployment(accept(createCampaign(87))), 0, 0), false);
+		const company = { ...createCampaign(87), credits: 0 };
+		const destroyed = settleContract(checkpointDeployment(beginDeployment(accept(company)), 0, 0), false);
 		expect(destroyed.credits).toBe(0);
 		expect(canDeploy(accept(destroyed))).toBe(false);
 		const queued = queueRepair(destroyed, 'kestrel');
@@ -232,7 +258,7 @@ describe('Company ownership and workshop transactions', function () {
 		for (const value of malformed) {
 			const restored = parseCampaign(JSON.stringify(value));
 			expect(restored.day).toBe(1);
-			expect(restored.credits).toBe(0);
+			expect(restored.credits).toBe(STARTING_CREDITS);
 			expect(restored.fleet).toEqual(createCampaign(1).fleet);
 			expect(restored.workOrders).toEqual([]);
 			expect(restored.deployed).toBeUndefined();
@@ -252,7 +278,7 @@ test('retired prototype contracts stay out of the market when their new producti
 		const fleet = [...company.fleet, { frameId, loadout, reserves, integrity: 100 },
 			{ frameId: `${frameId}#2` as const, loadout, reserves, integrity: 100 }];
 		const restored = roundTrip({ ...company, fleet, inventory });
-		expect(restored.credits).toBe(0);
+		expect(restored.credits).toBe(STARTING_CREDITS);
 		expect(restored.fleet).toEqual(createCampaign(1).fleet);
 	}
 });
@@ -290,7 +316,7 @@ test('fresh campaign saves require every weapon inventory entry', function () {
 	const inventory = Object.fromEntries(Object.entries(company.inventory).filter(function ([id]) { return !id.endsWith('-4') && !id.endsWith('-6'); }));
 	const restored = parseCampaign(JSON.stringify({ ...company, inventory }));
 	expect(restored.fleet).toEqual(createCampaign().fleet);
-	expect(restored.credits).toBe(0);
+	expect(restored.credits).toBe(STARTING_CREDITS);
 	expect(roundTrip(company)).toEqual(company);
 });
 
@@ -329,11 +355,11 @@ test('new-format saves reject invalid ammunition counts and loadout mismatches',
 		expect(setAmmunition(company, 'kestrel', [rounds, 0])).toBe(company);
 		expect(queueRefit(company, 'kestrel', [null, 'machine-gun'], [0, rounds])).toBe(company);
 		const corrupt = { ...company, credits: 77, fleet: [{ ...mech, reserves: [rounds, 0] }] };
-		expect(parseCampaign(JSON.stringify(corrupt)).credits).toBe(0);
+		expect(parseCampaign(JSON.stringify(corrupt)).credits).toBe(STARTING_CREDITS);
 	}
 	for (const reserves of [[], [1], [1, 0.5], [1, 0, 0]]) {
 		expect(setAmmunition(company, 'kestrel', reserves)).toBe(company);
-		expect(parseCampaign(JSON.stringify({ ...company, credits: 77, fleet: [{ ...mech, reserves }] })).credits).toBe(0);
+		expect(parseCampaign(JSON.stringify({ ...company, credits: 77, fleet: [{ ...mech, reserves }] })).credits).toBe(STARTING_CREDITS);
 	}
 	const energy = stockFrame(funded(), 'kestrel-b');
 	expect(setAmmunition(energy, 'kestrel-b', [0, 1])).toBe(energy);
@@ -342,7 +368,7 @@ test('new-format saves reject invalid ammunition counts and loadout mismatches',
 	const pending = queueRefit(company, 'kestrel', [null, 'machine-gun'], [0, 23]);
 	const order = pending.workOrders[0];
 	if (!order || order.kind !== 'refit') throw new Error('Missing refit');
-	expect(parseCampaign(JSON.stringify({ ...pending, credits: 77, workOrders: [{ ...order, reserves: [23, 0] }] })).credits).toBe(0);
+	expect(parseCampaign(JSON.stringify({ ...pending, credits: 77, workOrders: [{ ...order, reserves: [23, 0] }] })).credits).toBe(STARTING_CREDITS);
 });
 
 test('sorties consume independent runtime supplies and replenish selected reserves after every settlement path', function () {
@@ -365,7 +391,7 @@ test('sorties consume independent runtime supplies and replenish selected reserv
 		expect(state.loadout[0]?.rounds).toBe(37);
 		expect(getOwnedMech(roundTrip(finished))?.reserves).toEqual([37, 0]);
 		const fee = outcome === 'success' ? Math.round(contract.reward / 4) : 0;
-		expect(finished.credits).toBe(outcome === 'success' ? contract.reward + fee : 0);
+		expect(finished.credits).toBe(prepared.credits + (outcome === 'success' ? contract.reward + fee : 0));
 		expect(finished.lastResult?.fieldLead).toEqual({ pilotId: 'player', fee });
 		expect(recoverInterruptedDeployment(roundTrip(finished))).toEqual(finished);
 	}
@@ -419,10 +445,10 @@ test('tiers retain separate ownership and refit reservations through cancellatio
 	expect(complete.inventory).toEqual(company.inventory);
 	expect(roundTrip(complete)).toEqual(complete);
 	const forged = { ...complete, credits: 81, inventory: { ...complete.inventory, 'machine-gun:t4': 0, 'machine-gun': 99 } };
-	expect(parseCampaign(JSON.stringify(forged)).credits).toBe(0);
+	expect(parseCampaign(JSON.stringify(forged)).credits).toBe(STARTING_CREDITS);
 	for (const id of ['machine-gun:t0', 'machine-gun:t6', 'machine-gun:t1.5', 'laser:t4']) {
 		const fleet = complete.fleet.map(function (mech) { return mech.frameId === 'kestrel' ? { ...mech, loadout: [id, 'machine-gun'] } : mech; });
-		expect(parseCampaign(JSON.stringify({ ...complete, credits: 81, fleet })).credits).toBe(0);
+		expect(parseCampaign(JSON.stringify({ ...complete, credits: 81, fleet })).credits).toBe(STARTING_CREDITS);
 	}
 });
 
@@ -463,6 +489,6 @@ test('rig save validation accepts fleets beyond the catalogue and rejects forged
 	expect(roundTrip(expanded)).toEqual(expanded);
 	for (const id of ['kestrel#0', 'kestrel#1', 'kestrel#02', 'kestrel#NaN', 'unknown#2', 'kestrel#9007199254740992']) {
 		const forged = { ...expanded, fleet: expanded.fleet.map(function (mech) { return mech.frameId === 'kestrel#2' ? { ...mech, frameId: id } : mech; }) };
-		expect(parseCampaign(JSON.stringify(forged)).credits).toBe(0);
+		expect(parseCampaign(JSON.stringify(forged)).credits).toBe(STARTING_CREDITS);
 	}
 });

@@ -901,18 +901,22 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			travel: function () {
 				if (navigation.screen !== 'starmap' || navigation.auxiliary || contextLost) return;
 				const target = destination;
+				const departure = campaign;
+				const next = travelTo(departure, target);
+				if (next === departure) return;
+				const fare = departure.credits - next.credits;
 				const transmission = guidedCourse === target;
 				// The plotted course is consumed by this confirmation, even if cancelled.
 				guidedCourse = undefined;
 				confirm(function () {
-					const origin = getPlanet(campaign.planetId); const next = travelTo(campaign, target); if (next === campaign) return;
-					if (!replaceCampaign(next)) return;
+					if (campaign !== departure || !replaceCampaign(next)) return;
+					const origin = getPlanet(departure.planetId);
 					cinematicElapsed = 0;
 					jumpArrival = { view: presentation.createJump(origin, getPlanet(target)), transmission, arriving: false, drive: 0 };
 					element('jump-location').textContent = origin.name;
 					element('jump-copy').textContent = `DEPARTURE ORBIT · DAY ${campaign.day - 1}`;
 					transition(navigation.setScreen('jump'));
-				}, 'CONFIRM JUMP', `One calendar day · 0 CR. Arrive at ${getPlanet(target).name} on day ${campaign.day + 1}. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
+				}, 'CONFIRM JUMP', `Pay ${fare.toLocaleString()} CR to jump to ${getPlanet(target).name}. Arrive on day ${next.day} with ${next.credits.toLocaleString()} CR. Work orders progress and contract postings change.`, 'CONFIRM TRANSIT?');
 			},
 			stage: function (contract) {
 				if (navigation.screen !== 'bridge' || navigation.auxiliary || destination !== campaign.planetId) return;
