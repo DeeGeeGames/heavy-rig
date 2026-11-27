@@ -1,7 +1,8 @@
 import { expect, test } from 'bun:test';
-import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, getTransmission, parseCampaign, recoverInterruptedDeployment, settleContract, travelTo, type Campaign } from '../src/campaign';
+import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, getTransmission, parseCampaign, recoverInterruptedDeployment, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import type { MissionKind } from '../src/campaign-types';
 import { advanceDays, beginDeployment, checkpointDeployment, getOwnedMech, queueRepair, repairDays } from '../src/company';
+import { hirePilot } from '../src/pilots';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
 const opening = function () { return { ...createCampaign(317, 'campaign'), introComplete: true }; };
@@ -19,10 +20,12 @@ test('only an explicitly started Campaign opens the chain after the escape, pres
 	const starter = roundTrip(createCampaign(317, 'campaign'));
 	const career = roundTrip(createCampaign(317, 'career'));
 	expect(starter.mode).toBe('campaign');
+	expect(starter.credits).toBe(750);
 	expect(starter.introComplete).toBe(false);
 	expect(getTransmission(starter)).toBeUndefined();
 	expect(getTransmission({ ...starter, introComplete: true })?.offers).toHaveLength(1);
 	expect(career.mode).toBe('career');
+	expect(career.credits).toBe(starter.credits);
 	expect(career.introComplete).toBe(true);
 	expect(getTransmission(career)).toBeUndefined();
 	for (const introComplete of [false, true]) {
@@ -46,7 +49,7 @@ test('the opening offer survives ordinary contracts, front changes, transit and 
 	const ordinary = getContracts(starter)[0];
 	if (!ordinary) throw new Error('Missing ordinary contract');
 	const detour = settleContract(acceptContract(starter, ordinary.id), true);
-	expect(detour.credits).toBe(ordinary.reward);
+	expect(detour.credits).toBe(starter.credits + ordinary.reward);
 	expect(detour.story).toEqual(starter.story);
 	expect(getContracts(detour).some(function (contract) { return contract.id === ordinary.id; })).toBe(false);
 	const arrived = roundTrip(travelTo(advanceDays(travelTo(detour, 'borealis'), 91), recovery.planetId));
@@ -56,7 +59,7 @@ test('the opening offer survives ordinary contracts, front changes, transit and 
 	expect(accepted.active).toEqual(recovery);
 	expect(travelTo(accepted, 'meridian')).toBe(accepted);
 	const done = roundTrip(settleContract(accepted, true));
-	expect(done.credits).toBe(ordinary.reward + recovery.reward);
+	expect(done.credits).toBe(accepted.credits + recovery.reward);
 	expect(acceptContract(done, recovery.id)).toBe(done);
 	expect(getTransmission(done)?.offers.map(function ({ contract }) { return contract.kind; })).toEqual(['defend', 'demolition']);
 });
@@ -82,7 +85,7 @@ test('choosing a branch commits on acceptance and pays out its distinct ending o
 		const returned = roundTrip(travelTo(detour, chosen.contract.planetId));
 		expect(getTransmission(returned)?.offers).toEqual([chosen]);
 		const completed = roundTrip(settleContract(acceptContract(returned, chosen.contract.id), true));
-		expect(completed.credits).toBe(detour.credits + chosen.contract.reward);
+		expect(completed.credits).toBe(returned.credits + chosen.contract.reward);
 		expect(completed.lastResult?.contract).toEqual(chosen.contract);
 		expect(getTransmission(completed)?.last?.success).toBe(chosen.success);
 		expect(getTransmission(completed)?.offers).toEqual([]);
@@ -97,7 +100,8 @@ test('choosing a branch commits on acceptance and pays out its distinct ending o
 });
 
 test('failure, abort and interrupted deployment all allow a wrecked starter to repair and retry at zero credits', function () {
-	const arrived = travelTo(opening(), 'cinder');
+	const arrived = travelTo(hirePilot(opening(), 'flint'), 'cinder');
+	expect(arrived.credits).toBe(0);
 	const recovery = offer(arrived, 'recovery').contract;
 	const launched = beginDeployment(acceptContract(arrived, recovery.id));
 	const wrecked = checkpointDeployment(launched, 0, 0);
@@ -134,7 +138,7 @@ test('a saved story transaction rejects a skipped step, a changed choice or alte
 	for (const save of forged) {
 		const restored = parseCampaign(JSON.stringify(save));
 		expect(restored.active).toBeUndefined();
-		expect(restored.credits).toBe(0);
+		expect(restored.credits).toBe(STARTING_CREDITS);
 		expect(getTransmission(restored)).toBeUndefined();
 	}
 });

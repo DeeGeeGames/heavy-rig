@@ -15,7 +15,7 @@ torso turn independently in 15° steps. Chassis travel, targeting and weapon
 effects update at game speed. The game uses standard Three.js rendering on GPUs
 that cannot run the ink pass.
 
-A new company starts on **day 1 at Meridian with zero credits and one Kestrel**,
+A new company starts on **day 1 at Meridian with 750 credits and one Kestrel**,
 with a Rattler machine gun fitted to each of its two mounts.
 Campaign missions and a separate Frame Training simulator are the playable modes.
 
@@ -191,8 +191,10 @@ influence supply employers and opponents; briefings describe their settlement,
 industrial, or relay interests. Quiet interiors and unclaimed systems away from
 a contested front have no military work. Accepted contracts keep their factions,
 objective, and payment even as time moves the border. Unaccepted listings follow
-the current front. A jump takes one day, costs no fuel, and refreshes the board;
-remote listings preview postings after arrival. Resolve or remove staged
+the current front. A jump takes one day and costs **250 CR per 25 light-years or
+part thereof**, payable in full at departure. Meridian to Cinder is 21 light-years
+and costs 250 CR. The Starmap shows the fare and remote listings preview the
+arrival-day board even when the company cannot afford passage. Resolve or remove staged
 contracts before traveling. A confirmed jump follows the Wayfarer from its
 four-drive afterburn over the departure world to orbit at the destination.
 **Skip Jump** goes straight to the arrival Starmap or the plotted story signal.

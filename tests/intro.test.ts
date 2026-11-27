@@ -26,7 +26,7 @@ test('current companies preserve escape completion and earlier campaign versions
 	const oldCompany = parseCampaign(JSON.stringify({ ...completed, version: 3, credits: 9000 }));
 	expect(oldCompany.version).toBe(fresh.version);
 	expect(oldCompany.introComplete).toBe(false);
-	expect(oldCompany.credits).toBe(0);
+	expect(oldCompany.credits).toBe(fresh.credits);
 });
 
 for (const frame of INTRO_FRAMES) test(`${frame} can escape through real ECS combat without killing the guards`, async function () {

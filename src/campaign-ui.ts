@@ -2,11 +2,11 @@ import { rigName } from './rigs';
 import { companyRank, getContractTier, reputationProgress, unlockedMissionTier } from './reputation';
 import { ACQUISITION_SECONDS, commandTargetName, missionOpposition } from './missions';
 import { DEFENSE_APPROACH_BRIEFING } from './defense-layout';
-import { getSystemIntel } from './universe';
+import { getJumpRoute, getSystemIntel, JUMP_FARE_PER_LEG, JUMP_RANGE_LY } from './universe';
 import { closePlanetDetails, renderTerritoryMap } from './territory-map';
 import { html } from 'lit-html';
 import { inspectWorkspacePane, renderWorkspace, selectWorkspacePane, textItems, workspaceBackTarget, type WorkspacePane } from './workspace';
-import { canStageOperation, FACTIONS, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, travelTo, type Campaign } from './campaign';
+import { canStageOperation, FACTIONS, forecastArrival, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, type Campaign } from './campaign';
 import { BIOME_NAMES, MISSION_NAMES, type Contract, type MissionKind, type PlanetId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
 import { getOwnedMech, workOrderFor } from './company';
@@ -52,11 +52,14 @@ const renderCampaignFooter = function (saved: boolean, actions: BridgeActions) {
 
 export const renderStarmap = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, saved: boolean, actions: BridgeActions) {
 	const planet = getPlanet(destination);
-	const forecast = destination === campaign.planetId ? campaign : travelTo(campaign, destination);
+	const forecast = forecastArrival(campaign, destination);
 	const intel = getSystemIntel(forecast, destination);
 	const local = destination === campaign.planetId;
-	const active = campaign.active;
-	const travelLock = active ? 'CONTRACT ACTIVE' : campaign.operations?.length ? 'OPERATIONS STAGED' : '';
+	const { distanceLy, fare } = getJumpRoute(campaign.planetId, destination);
+	const transit = local ? 'Current location' : `${distanceLy} LY · 1 DAY · ${fare.toLocaleString()} CR`;
+	const travelLock = campaign.active ? 'CONTRACT ACTIVE' : campaign.operations?.length ? 'OPERATIONS STAGED'
+		: !local && forecast === campaign ? 'TRANSIT UNAVAILABLE'
+		: campaign.credits < fare ? `NEED ${(fare - campaign.credits).toLocaleString()} CR MORE` : '';
 	const playerFrame = campaign.lineup[0]?.frameId;
 	const mech = playerFrame ? getOwnedMech(campaign, playerFrame) : undefined;
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
@@ -71,7 +74,7 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 		<p class=${intel.conflict ? 'system-conflict' : 'system-quiet'}>${intel.conflict ? '◌ ACTIVE CONFLICT ZONE' : 'NO ACTIVE CONFLICT'}</p>
 		<p class="planet-summary">${intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No ordinary contracts posted.'}</p>
 		<p class="planet-summary"><b>${BIOME_NAMES[planet.biome]}</b> · ${planet.description}</p>
-		<div class="planet-transit">${local ? 'Current location' : 'TRANSIT · 1 DAY · 0 CR'}</div>
+		<div class="planet-transit">${transit}</div>
 		<div class="planet-actions">${local && storyHere ? html`<button class="primary" @click=${function () { closePlanetDetails(root); openTransmission(); }}>OPEN SIGNAL →</button>` : html`<button class="primary" ?disabled=${local || Boolean(travelLock)} @click=${function () { actions.travel(); closePlanetDetails(root); }}>${local ? 'ORBIT ESTABLISHED' : travelLock || 'JUMP HERE →'}</button>`}<button @click=${function () { closePlanetDetails(root); actions.navigate('bridge', 'board'); }}>CONTRACTS →</button></div>
 		<button class="planet-full-intel" @click=${function (event: Event) { closePlanetDetails(root); inspectWorkspacePane(root, 'system', event.currentTarget); }}>FULL SYSTEM INTEL →</button>`;
 	const panes: WorkspacePane[] = [
@@ -82,8 +85,10 @@ export const renderStarmap = function (root: HTMLElement, campaign: Campaign, de
 			html`<p class=${intel.conflict ? 'system-conflict' : 'system-quiet'}>${intel.conflict ? '◌ ACTIVE CONFLICT ZONE' : 'NO ACTIVE CONFLICT'}</p>`,
 			...textItems(intel.conflict ? intel.participants.map(function (id) { return getFaction(id).name; }).join(' / ') : 'No ordinary contracts posted.'),
 			...textItems(`${BIOME_NAMES[planet.biome]} · ${planet.description}`),
+			html`<div class="planet-transit">${transit}</div>`,
+			...textItems(`Each full or partial ${JUMP_RANGE_LY}-light-year leg costs ${JUMP_FARE_PER_LEG} CR.`),
 			...textItems('Fronts move with calendar days. Victories strengthen the employer locally; defeat or abort strengthens the opposition.'),
-			...textItems(order ? `Player rig in Engineering until day ${order.readyDay}.` : mech ? `${rigName(mech.frameId)} · ${Math.ceil(mech.integrity)}% integrity. Transit: one day, no fuel cost.` : 'Assign a rig to the player pilot before deploying.'),
+			...textItems(order ? `Player rig in Engineering until day ${order.readyDay}.` : mech ? `${rigName(mech.frameId)} · ${Math.ceil(mech.integrity)}% integrity.` : 'Assign a rig to the player pilot before deploying.'),
 		], actions: html`${local && storyHere ? html`<button class="primary" @click=${openTransmission}>OPEN SIGNAL →</button>` : html`<button id="bridge-travel" class="primary" ?disabled=${local || Boolean(travelLock)} @click=${actions.travel}>${local ? 'ORBIT ESTABLISHED' : travelLock || `JUMP TO ${planet.name.toUpperCase()} →`}</button>`}<button @click=${function () { actions.navigate('bridge', 'board'); }}>CONTRACTS →</button>` },
 	];
 	renderWorkspace(root, renderShipHeader(campaign, 'starmap', actions), panes, renderCampaignFooter(saved, actions), 'route', [
@@ -125,7 +130,7 @@ const transmissionPane = function (root: HTMLElement, campaign: Campaign, transm
 
 export const renderBridge = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, selection: string | undefined, saved: boolean, actions: BridgeActions, briefingOrigin: BriefingOrigin) {
 	const planet = getPlanet(destination);
-	const forecast = destination === campaign.planetId ? campaign : travelTo(campaign, destination);
+	const forecast = forecastArrival(campaign, destination);
 	const unlocked = unlockedMissionTier(campaign);
 	const postings = new Map<MissionKind, Contract>();
 	for (const contract of getContracts(forecast, destination)) {

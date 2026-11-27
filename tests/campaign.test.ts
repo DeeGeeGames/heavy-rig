@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, parseCampaign, settleContract, travelTo, type Campaign } from '../src/campaign';
+import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, parseCampaign, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import type { Contract, MissionKind } from '../src/campaign-types';
+import { getJumpRoute } from '../src/universe';
 
 const posted = function (campaign: Campaign, kind: MissionKind = 'defend'): Contract {
 	const contract = getContracts(campaign).find(function (entry) { return entry.kind === kind; });
@@ -20,7 +21,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(otherWorld.every(function (contract) { return !canAcceptContract(campaign, contract); })).toBe(true);
 		expect(travelTo(campaign, 'meridian')).toBe(campaign);
 		const returned = travelTo(travelTo(campaign, 'borealis'), 'meridian');
-		expect(returned.credits).toBe(0);
+		expect(returned.credits).toBe(campaign.credits - 2 * getJumpRoute('meridian', 'borealis').fare);
 		expect(returned.day).toBe(3);
 		expect(getContracts(returned).map(function (entry) { return entry.seed; })).not.toEqual(contracts.map(function (entry) { return entry.seed; }));
 		expect(acceptContract(returned, posted(campaign).id)).toBe(returned);
@@ -35,7 +36,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(accepted.active).toEqual(contract);
 		expect(accepted.reputation[contract.opponent]).toBe(-contract.hostility);
 		expect(accepted.reputation[contract.employer]).toBe(0);
-		expect(accepted.credits).toBe(0);
+		expect(accepted.credits).toBe(campaign.credits);
 		expect(getContracts(accepted)).toEqual(getContracts(campaign));
 		expect(JSON.stringify(campaign)).toBe(before);
 		expect(acceptContract(accepted, contract.id)).toBe(accepted);
@@ -54,7 +55,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(settled.active).toBeUndefined();
 		expect(settled.reputation[contract.employer]).toBe(contract.favor);
 		expect(settled.reputation[contract.opponent]).toBe(-contract.hostility);
-		expect(settled.credits).toBe(contract.reward);
+		expect(settled.credits).toBe(campaign.credits + contract.reward);
 		expect(settled.completed).toBe(1);
 		expect(settled.failed).toBe(0);
 		expect(settled.lastResult).toEqual({ contract, won: true, aborted: false, payout: contract.reward, favor: contract.favor, companyReputation: 50, day: 2 });
@@ -73,7 +74,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 			const accepted = acceptContract(campaign, contract.id);
 			const failed = abort ? abandonContract(accepted) : settleContract(accepted, false);
 			expect(failed.active).toBeUndefined();
-			expect(failed.credits).toBe(0);
+			expect(failed.credits).toBe(campaign.credits);
 			expect(failed.reputation).toEqual(accepted.reputation);
 			expect(failed.completed).toBe(0);
 			expect(failed.failed).toBe(1);
@@ -123,7 +124,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		for (const value of malformed) {
 			const restored = parseCampaign(JSON.stringify(value) ?? null);
 			expect(restored.active).toBeUndefined();
-			expect(restored.credits).toBe(0);
+			expect(restored.credits).toBe(STARTING_CREDITS);
 			expect(restored.reputation).toEqual({ freeholds: 0, combine: 0, accord: 0 });
 			expect(restored.day).toBe(1);
 		}
@@ -151,18 +152,18 @@ test('v8 storage purges incompatible campaigns while preserving profile and unre
 		storage.setItem('other-game:campaign:v4', 'keep other game');
 		const fresh = readCampaign();
 		expect(fresh.version).toBe(8);
-		expect(fresh.credits).toBe(0);
+		expect(fresh.credits).toBe(STARTING_CREDITS);
 		for (const version of [1, 2, 3, 4, 5, 6, 7]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
 		expect(storage.getItem('heavy-rig:profile:v1')).toBe('keep settings');
 		expect(storage.getItem('other-game:campaign:v4')).toBe('keep other game');
-		const current = createCampaign(84);
+		const current = { ...createCampaign(84), credits: 0 };
 		expect(saveCampaign(current)).toBe(true);
 		expect(storage.getItem(CAMPAIGN_STORAGE_KEY)).toBe(JSON.stringify(current));
 		expect(readCampaign()).toEqual(current);
 		storage.setItem('heavy-rig:campaign:v4', 'obsolete');
 		expect(saveCampaign(current)).toBe(true);
 		expect(storage.getItem('heavy-rig:campaign:v4')).toBeNull();
-		expect(parseCampaign(JSON.stringify({ ...current, version: 4, credits: 900 })).credits).toBe(0);
+		expect(parseCampaign(JSON.stringify({ ...current, version: 4, credits: 900 })).credits).toBe(STARTING_CREDITS);
 	} finally {
 		if (original) Object.defineProperty(globalThis, 'localStorage', original);
 		else Reflect.deleteProperty(globalThis, 'localStorage');
@@ -174,7 +175,7 @@ test('an accepted v6 contract is discarded with the rest of the old company', as
 	const restored = parseCampaign(raw);
 	expect(restored.active).toBeUndefined();
 	expect(restored.pilots).toEqual(['player']);
-	expect(restored.credits).toBe(0);
+	expect(restored.credits).toBe(STARTING_CREDITS);
 });
 
 test('new mission contracts restore and settle their payment exactly once', function () {
@@ -183,7 +184,7 @@ test('new mission contracts restore and settle their payment exactly once', func
 		const accepted = roundTrip(acceptContract(campaign, offer.id));
 		expect(accepted.active).toEqual(offer);
 		const settled = roundTrip(settleContract(accepted, true));
-		expect(settled.credits).toBe(offer.reward); expect(settled.completed).toBe(1);
+		expect(settled.credits).toBe(campaign.credits + offer.reward); expect(settled.completed).toBe(1);
 		expect(settleContract(settled, true)).toBe(settled);
 	}
 });
@@ -227,7 +228,7 @@ test('accepted acquisition saves preserve their current deadline and reject alte
 		for (const active of [{ ...contract, reward: contract.reward + 1 }, { ...contract, briefing: contract.briefing.replace('within 4 minutes.', 'within three minutes.') }]) {
 			const rejected = roundTrip({ ...accepted, active });
 			expect(rejected.active).toBeUndefined();
-			expect(rejected.credits).toBe(0);
+			expect(rejected.credits).toBe(STARTING_CREDITS);
 		}
 	}
 });

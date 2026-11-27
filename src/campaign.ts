@@ -3,7 +3,7 @@ import { ACQUISITION_SECONDS } from './missions';
 import type { Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
 import type { MissionTier } from './reputation';
 import { createOpeningProgress, getAuthoredStep, getChainStatus, isAuthoredContract, parseChainProgress, type ChainProgress } from './contract-chains';
-import { applyMissionInfluence, createUniverse, FACTION_IDS, getSystemIntel, isPlanetId, mixSeed, PLANETS, type UniverseState } from './universe';
+import { applyMissionInfluence, createUniverse, FACTION_IDS, getJumpRoute, getSystemIntel, isPlanetId, mixSeed, PLANETS, type UniverseState } from './universe';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
 
 import { advanceDays, beginDeployment, createCompany, deploymentIssue, isAssignment, isDeployedSquad, isSortieSquad, MAX_DAY, parseCompany, type CompanyState, type DeployedPilot } from './company';
@@ -99,6 +99,7 @@ export const MISSION_KINDS: readonly MissionKind[] = ['defend', 'demolition', 'a
 const MAX_COUNT = 1_000_000;
 const MAX_OPERATIONS = MISSION_KINDS.length + 1;
 export const MAX_CREDITS = 1_000_000_000_000;
+export const STARTING_CREDITS = 750;
 export const fieldLeadFee = function (contract: Contract): number { return Math.round(contract.reward / 4); };
 const isInteger = function (value: unknown, min: number, max: number): value is number {
 	return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
@@ -115,7 +116,7 @@ const freshSeed = function () {
 export const createCampaign = function (seed?: number, mode?: Campaign['mode']): Campaign {
 	return {
 		...createCompany(), version: CAMPAIGN_VERSION, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
-		credits: 0, companyReputation: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
+		credits: STARTING_CREDITS, companyReputation: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
 		...(mode ? { mode, introComplete: mode === 'career' } : {}),
 		...(mode === 'campaign' ? { story: createOpeningProgress() } : {}),
 	};
@@ -232,9 +233,17 @@ export const acceptContract = function (campaign: Campaign, contractId: string):
 	};
 };
 
-export const travelTo = function (campaign: Campaign, planetId: PlanetId): Campaign {
+export const forecastArrival = function (campaign: Campaign, planetId: PlanetId): Campaign {
 	if (campaign.active || campaign.deployed || campaign.operations?.length || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
 	return { ...advanceDays(campaign, 1), planetId, universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 }, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation } };
+};
+
+export const travelTo = function (campaign: Campaign, planetId: PlanetId): Campaign {
+	const arrival = forecastArrival(campaign, planetId);
+	if (arrival === campaign) return campaign;
+	const { fare } = getJumpRoute(campaign.planetId, planetId);
+	if (campaign.credits < fare) return campaign;
+	return { ...arrival, credits: campaign.credits - fare };
 };
 
 const emptyLineup = function (): readonly PilotAssignment[] {

@@ -73,6 +73,15 @@ export const getPlanet = function (id: PlanetId): PlanetDefinition {
 	if (!planet) throw new Error(`Unknown system: ${id}`);
 	return planet;
 };
+export const JUMP_RANGE_LY = 25;
+export const JUMP_FARE_PER_LEG = 250;
+export const getJumpRoute = function (origin: PlanetId, destination: PlanetId) {
+	const from = getPlanet(origin);
+	const to = getPlanet(destination);
+	const distanceLy = Math.ceil(Math.hypot(to.x - from.x, to.y - from.y));
+	const legs = Math.ceil(distanceLy / JUMP_RANGE_LY);
+	return { distanceLy, fare: legs * JUMP_FARE_PER_LEG };
+};
 export const createUniverse = function (): UniverseState { return { influence: [], boardDay: 1, boardVersion: 2 }; };
 
 export const territoryScores = function (context: TerritoryContext, x: number, y: number): Readonly<Record<FactionId, number>> {
