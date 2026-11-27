@@ -3,8 +3,7 @@ design/mechs/assets/**/*.glb filter=lfs diff=lfs merge=lfs -text
 design/mechs/assets/**/*.png filter=lfs diff=lfs merge=lfs -text
 design/mechs/assets/**/*.gif filter=lfs diff=lfs merge=lfs -text
 public/assets/mechs/**/*.glb filter=lfs diff=lfs merge=lfs -text
-design/mechs/chassis/longbow/concept/a/*.png filter=lfs diff=lfs merge=lfs -text
-design/mechs/chassis/morrow/concept/a/*.png filter=lfs diff=lfs merge=lfs -text
-design/mechs/chassis/bastion/concept/a/*.png filter=lfs diff=lfs merge=lfs -text
-design/mechs/chassis/harrow/concept/a/*.png filter=lfs diff=lfs merge=lfs -text
-design/mechs/chassis/specter/concept/a/*.png filter=lfs diff=lfs merge=lfs -text
+public/audio/**/*.flac filter=lfs diff=lfs merge=lfs -text
+public/audio/**/*.wav filter=lfs diff=lfs merge=lfs -text
+design/mechs/chassis/*/concept/**/*.png filter=lfs diff=lfs merge=lfs -text
+design/mechs/chassis/*/turnaround/**/*.png filter=lfs diff=lfs merge=lfs -text

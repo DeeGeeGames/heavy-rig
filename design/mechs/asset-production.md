@@ -34,8 +34,9 @@ coordinate thresholds. See [commands and boundaries](../../scripts/mech-design/b
 Keep one approved advancing result per named step. Concepts and turnarounds live
 under `chassis/<id>/concept/` and `chassis/<id>/turnaround/`. Required 3D source
 inputs and accepted intermediate checkpoints live under `assets/<id>/`.
-Blender and GLB files use Git LFS; manifests, recipes and approval records use
-ordinary Git. Candidates and generated previews stay ignored under `generated/`.
+Blender and GLB files use Git LFS, as do concept and turnaround PNGs. Manifests,
+recipes and approval records use ordinary Git. Candidates and generated previews
+stay ignored under `generated/`.
 Use Git history for previous accepted states rather than retaining v1/v2/v3
 folders. A necessary donor or intermediate remains even if it is not itself the
 final production model. Never overwrite the raw provider inputs.

@@ -707,12 +707,17 @@ See the [asset credits](./ASSET_CREDITS.md) for third-party contributions and li
 
 ## Development and verification
 
-Use **Bun 1.3.14**. From this repository:
+Use **Bun 1.3.14** and Git LFS. From this repository:
 
 ```sh
+git lfs install --local
+git lfs pull --include='public/**,design/mechs/assets/playable-a-lineup.png,design/mechs/chassis/**/concept/**' --exclude=''
 bun install --frozen-lockfile
 bun run dev
 ```
+
+This fetches the shipped models and audio plus the design references used by
+the tests. For all authoring assets, run `git lfs pull` without an include filter.
 
 Bun's native HTML development server bundles TypeScript, CSS, and fonts with
 hot reload. To inspect model animations without starting a campaign:
