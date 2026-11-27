@@ -479,7 +479,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				drapeGroundGeometry(barrelGeometry, terrain, state.player, state.player.turret);
 				overlay = { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights };
 			},
-			drawOverlay: function () {
+			drawOverlay: function (showIndicatorInfo: boolean) {
 				if (launchTime !== undefined || pickup) {
 					ctx.clearRect(0, 0, width, height);
 					if (launchTime !== undefined) clouds?.(ctx, width, height, launchTime);
@@ -488,7 +488,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				if (disposed || !overlay || width <= 0 || height <= 0) return;
 				const { state, aim, gaits, obstructions, couchMode, player, enemyLabelHeights, squadmateLabelHeights } = overlay;
 				if (state.player.hp <= 0) { ctx.clearRect(0, 0, width, height); return; }
-				drawOverlay(ctx, width, height, state, aim, { radar, gaits, camera, obstructions, couchMode, enemyLabelHeights, squadmateLabelHeights,
+				drawOverlay(ctx, width, height, state, aim, { radar, gaits, camera, obstructions, couchMode, enemyLabelHeights, squadmateLabelHeights, showIndicatorInfo,
 					armorHit: Math.max(0, 1 - (state.time - (player?.damage.hitAt ?? -10)) / 0.9),
 					...(player && getFrame(state.frame).chassisId !== 'warden' ? { armorHitHeight: player.model.labelHeight + 20 } : {}),
 					relayHit: Math.max(0, 1 - (state.time - relayHitAt) / 1.6) });

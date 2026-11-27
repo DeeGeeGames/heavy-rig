@@ -28,6 +28,7 @@ export interface OverlayOptions {
 	gaits: Gaits;
 	camera: OrthographicCamera;
 	couchMode?: boolean;
+	showIndicatorInfo: boolean;
 	armorHit?: number;
 	armorHitHeight?: number;
 	relayHit?: number;
@@ -126,15 +127,21 @@ const drawArtilleryTargeting = function (ctx: CanvasRenderingContext2D, enemies:
 	}
 	if (!guns) return;
 	ctx.save();
+	const showInfo = options.showIndicatorInfo;
 	const title = 'ARTILLERY TARGETING YOU';
-	const timer = `${guns > 1 ? `×${guns}  ` : ''}${artilleryClock(remaining)}`;
 	const titleFont = `700 ${fontSize + 6}px "Barlow Condensed", sans-serif`;
-	ctx.font = titleFont;
-	const titleWidth = ctx.measureText(title).width;
-	ctx.font = `600 ${fontSize}px monospace`;
-	const timerWidth = ctx.measureText(timer).width;
+	const timerFont = `600 ${fontSize}px monospace`;
+	const timer = showInfo ? `${guns > 1 ? `×${guns}  ` : ''}${artilleryClock(remaining)}` : '';
 	const barHeight = fontSize + 18;
-	const barWidth = Math.min(width - 8, Math.ceil(barHeight + titleWidth + timerWidth + 30));
+	let timerWidth = 0;
+	let barWidth = barHeight + 18;
+	if (showInfo) {
+		ctx.font = timerFont;
+		timerWidth = ctx.measureText(timer).width;
+		ctx.font = titleFont;
+		barWidth = Math.ceil(barHeight + ctx.measureText(title).width + timerWidth + 30);
+	}
+	barWidth = Math.min(width - 8, barWidth);
 	const left = Math.round(Math.max(4, Math.min(width - barWidth - 4, anchor.x - barWidth / 2)));
 	const panels = (options.obstructions ?? []).filter(function (rect) { return rect.right > left - 6 && rect.left < left + barWidth + 6; });
 	const rows = [anchor.y, ...panels.flatMap(function (rect) { return [rect.top - barHeight - 6, rect.bottom + 6]; })]
@@ -142,16 +149,18 @@ const drawArtilleryTargeting = function (ctx: CanvasRenderingContext2D, enemies:
 		.sort(function (a, b) { return Math.abs(a - anchor.y) - Math.abs(b - anchor.y); });
 	const top = rows.find(function (row) { return panels.every(function (rect) { return row >= rect.bottom || row + barHeight <= rect.top; }); }) ?? rows[0] ?? 4;
 	const middle = top + barHeight / 2;
-	const icon = left + barHeight / 2;
+	const icon = left + (showInfo ? barHeight : barWidth) / 2;
 	ctx.fillStyle = '#151c20f5'; ctx.fillRect(left, top, barWidth, barHeight);
 	ctx.strokeStyle = '#a5814c'; ctx.lineWidth = 1; ctx.strokeRect(left + .5, top + .5, barWidth - 1, barHeight - 1);
 	ctx.fillStyle = '#ffc574'; ctx.beginPath();
 	ctx.moveTo(icon, middle - 9); ctx.lineTo(icon + 9, middle + 7); ctx.lineTo(icon - 9, middle + 7); ctx.closePath(); ctx.fill();
 	ctx.fillStyle = '#35251a'; ctx.fillRect(icon - 1, middle - 3, 2, 5); ctx.fillRect(icon - 1, middle + 3, 2, 2);
-	ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; ctx.fillStyle = '#ffd399';
-	ctx.fillText(timer, left + barWidth - 10, middle);
-	ctx.textAlign = 'left'; ctx.font = titleFont; ctx.fillStyle = '#fff0d8';
-	ctx.fillText(title, left + barHeight + 2, middle, Math.max(1, barWidth - barHeight - timerWidth - 26));
+	if (showInfo) {
+		ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; ctx.fillStyle = '#ffd399'; ctx.font = timerFont;
+		ctx.fillText(timer, left + barWidth - 10, middle);
+		ctx.textAlign = 'left'; ctx.font = titleFont; ctx.fillStyle = '#fff0d8';
+		ctx.fillText(title, left + barHeight + 2, middle, Math.max(1, barWidth - barHeight - timerWidth - 26));
+	}
 	ctx.fillStyle = '#ffc574';
 	ctx.fillRect(left, top + barHeight - 2, barWidth * (1 - Math.min(1, remaining / ARTILLERY_TARGETING_SECONDS)), 2);
 	ctx.restore();
@@ -169,6 +178,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const ground = at(state.player); const above = at(state.player, 1);
 	const scale = Math.hypot(above.x - ground.x, above.y - ground.y);
 	const minimumText = options.couchMode ? 16 : width > 700 ? 13 : 11;
+	const showInfo = options.showIndicatorInfo;
 	const vignette = ctx.createRadialGradient(width / 2, height / 2, height * 0.3, width / 2, height / 2, Math.max(width, height) * 0.7);
 	vignette.addColorStop(0, '#07141900'); vignette.addColorStop(1, '#0714198c'); ctx.fillStyle = vignette; ctx.fillRect(0, 0, width, height);
 	if ((options.armorHit ?? 0) > 0) {
@@ -177,6 +187,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.strokeRect(2, 2, width - 4, height - 4); ctx.restore();
 	}
 	const text = function (content: string, point: Point, elevation: number, color: string, size = 10, offsetY = 0) {
+		if (!showInfo) return;
 		const anchor = at(point, elevation);
 		const fontSize = Math.max(minimumText, size * scale); const y = anchor.y + offsetY * scale;
 		ctx.font = `600 ${fontSize}px monospace`; ctx.textAlign = 'center';
@@ -188,7 +199,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const relay = mission?.map.objective ?? { x: ARENA.relayX, y: ARENA.relayY };
 	const showRelay = !mission || mission.contract.kind === 'defend';
 	if (showRelay) text((options.relayHit ?? 0) > 0 ? 'UPLINK UNDER FIRE' : mission ? missionSiteName(mission.map, 0)?.toUpperCase() ?? 'DEFEND UPLINK' : 'UPLINK / 09', relay, 206, (options.relayHit ?? 0) > 0 || state.relay < 30 ? '#ffac83' : '#aee2d5', 10);
-	if ((options.armorHit ?? 0) > 0) {
+	if (showInfo && (options.armorHit ?? 0) > 0) {
 		const elevation = options.armorHitHeight ?? 124;
 		// Taller frames can fill the view when zoomed in. Keep the entire
 		// feedback label on screen even when its model-relative anchor cannot.
@@ -254,12 +265,12 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.fillStyle = '#112329dd'; ctx.fillRect(label.x - 42, label.y, 84, 4);
 		ctx.fillStyle = '#e5a778'; ctx.fillRect(label.x - 42, label.y, 84 * Math.max(0, facility.hp / facility.maxHp), 4);
 	}
-	for (const [index, site] of (mission?.captureSites ?? []).entries()) {
+	for (const [index, site] of (showInfo ? mission?.captureSites ?? [] : []).entries()) {
 		const duration = mission?.contract.kind === 'recovery' ? RECOVERY_SECONDS : BEACON_SECONDS;
 		const label = mission?.contract.kind === 'recovery' ? 'DATA CACHE' : `BEACON ${index + 1}`;
 		text(site.complete ? `${label} / ${mission?.contract.kind === 'recovery' ? 'RECOVERED' : 'ACTIVE'}` : `${label} / ${site.holdTime > 0 ? `HOLD ${(duration - site.holdTime).toFixed(1)}s` : 'ENTER ZONE'}`, site, 90, site.complete ? '#b9f5ca' : '#ffd199', 11);
 	}
-	if (mission?.stage === 'extract') {
+	if (showInfo && mission?.stage === 'extract') {
 		const remaining = Math.max(0, EXTRACTION_SECONDS - mission.extractTime);
 		const outside = distance(state.player, mission.map.extraction) > EXTRACTION_RADIUS;
 		const label = mission.extractTime === 0 ? 'EXTRACTION / ENTER THE GREEN ZONE'
@@ -268,7 +279,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		text(label, mission.map.extraction, 40, '#b9f5ca', 12);
 	}
 	const inbound = state.warnings;
-	for (const warning of inbound) {
+	for (const warning of showInfo ? inbound : []) {
 		const flight = warning.drop?.flight;
 		const group = flight ? inbound.filter(function (w) { return w.drop?.flight === flight; }) : [warning];
 		if (warning !== group[0]) continue;
@@ -289,8 +300,8 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const elevation = enemy.catalog ? enemyVolume(enemy).elevation : ENEMY_STATS[enemy.kind].elevation;
 		const labelHeight = enemy === selected && selectedReticle?.guided ? Math.max(modelLabelHeight, elevation + selectedReticle.labelOffset / scale) : modelLabelHeight;
 		const anchor = at(enemy, labelHeight);
-		const marked = targetMarked(state, enemy.id);
-		const jammed = isJammed(state, enemy, true);
+		const marked = showInfo && targetMarked(state, enemy.id);
+		const jammed = showInfo && isJammed(state, enemy, true);
 		if (marked || jammed) {
 			const rows = 1 + (isPriorityTarget(state, enemy) ? 1 : 0) + (enemy.attack ? 1 : 0);
 			text(marked && jammed ? 'MARKED +20% / JAMMED' : marked ? 'MARKED +20%' : 'JAMMED', enemy, labelHeight, '#91eadd', 10, -rows * (minimumText + 6) / scale);
@@ -311,7 +322,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			text(label, enemy, labelHeight, defense.exposed ? '#adf7d7' : '#ffd5a5', 11, -(enemy.commander ? minimumText * 2 + 15 : minimumText + 6) / scale);
 		}
 	}
-	for (const mate of state.squadmates) {
+	for (const mate of showInfo ? state.squadmates : []) {
 		const heightAboveRig = options.squadmateLabelHeights?.get(mate.pilotId);
 		if (heightAboveRig === undefined) continue;
 		const anchor = at(mate, heightAboveRig);
@@ -322,7 +333,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		const marked = active && targetMarked(state, state.squadmates.indexOf(mate) + 1, true);
 		text(`${mate.callsign.toUpperCase()}${active ? [jammed ? 'JAMMED' : '', marked ? 'MARKED' : ''].filter(Boolean).map(function (status) { return ` / ${status}`; }).join('') : ' / OFFLINE'}`, mate, heightAboveRig, active ? '#84e3eb' : '#a8bcc0', 9);
 	}
-	if (selected && selectedReticle) {
+	if (showInfo && selected && selectedReticle) {
 		const elevation = selected.catalog ? enemyVolume(selected).elevation : ENEMY_STATS[selected.kind].elevation;
 		const reticle = selectedReticle;
 		const solution = targetSolution(state, selected, aim);
@@ -332,7 +343,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		text(role, selected, elevation, '#ffe1aa', 10, reticle.labelOffset / scale);
 		text(`${Math.round(distance(selected, state.player))} M / ${getWeaponFeedback(state, selected, selected.id)}`, selected, elevation, reticle.locked ? '#ff6863' : solution.inRange ? '#ebc184' : '#98a8a7', 8, (reticle.labelOffset + minimumText + 7) / scale);
 	}
-	if (selectedFacility && selectedStructure && facilityReticle) {
+	if (showInfo && selectedFacility && selectedStructure && facilityReticle) {
 		const reticle = facilityReticle;
 		text(`${Math.round(distance(selectedFacility, state.player))} M / ${getWeaponFeedback(state, selectedFacility, selectedStructure.id)}`, selectedFacility, 45, reticle.locked ? '#ff6863' : '#ebc184', 10, reticle.labelOffset / scale);
 	}
@@ -384,7 +395,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		ctx.save(); ctx.translate(edge.point.x, edge.point.y); ctx.rotate(edge.angle);
 		ctx.fillStyle = '#0b1c23dd'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
 		ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-4, -4); ctx.lineTo(-2, 0); ctx.lineTo(-4, 4); ctx.closePath(); ctx.fill(); ctx.restore();
-		if (label) {
+		if (showInfo && label) {
 			ctx.font = `${minimumText}px monospace`; ctx.textAlign = 'center'; const half = ctx.measureText(label).width / 2;
 			const labelY = edge.point.y + 26;
 			const candidates = [edge.point.x, ...(options.obstructions ?? []).flatMap(function (rect) { return [rect.left - half - 8, rect.right + half + 8]; })];
@@ -407,7 +418,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	for (const warning of state.warnings) marker(warning, '#d29b66');
 	if (navigation) marker(navigation.point, navigation.color, `${navigation.label} ${Math.round(distance(navigation.point, state.player))} M`);
 	else marker(relay, '#a3ddd0', 'UPLINK');
-	for (const [index, strike] of strikes.entries()) {
+	for (const [index, strike] of (showInfo ? strikes : []).entries()) {
 		if (strikes.some(function (other, otherIndex) { return other.friendly === strike.friendly && Boolean(other.emplacement) === Boolean(strike.emplacement) && otherIndex !== index && distance(other, strike) < 12 && (other.life < strike.life || other.life === strike.life && otherIndex < index); })) continue;
 		if (!strike.emplacement) text(`${strike.friendly ? 'FRIENDLY' : 'INCOMING'} ${strike.life.toFixed(1)}s`, strike, 8, strike.friendly ? '#94ebe4' : '#ffd2a6', 11, -14);
 		else {

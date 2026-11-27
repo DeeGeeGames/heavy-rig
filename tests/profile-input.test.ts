@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createGamepadInput, type GamepadSnapshot } from '../src/gamepad';
 import { addOperationRecord, defaultSettings, parseProfile } from '../src/profile';
 import { createControllerFeedback } from '../src/controller-feedback';
+import { defaultController, INDICATOR_INFO_BUTTON } from '../src/bindings';
 
 const pad = function (pressed: number[] = [], axes = [0, 0, 0, 0], index = 0, id = `Controller ${index}`): GamepadSnapshot {
 	return { axes, buttons: Array.from({ length: 17 }, function (_, at) { return { pressed: pressed.includes(at), touched: pressed.includes(at), value: pressed.includes(at) ? 1 : 0 }; }), connected: true, index, id, mapping: 'standard' };
@@ -22,6 +23,20 @@ class NativeGamepadSnapshot implements GamepadSnapshot {
 	get mapping() { return this.snapshot.mapping; }
 }
 describe('Heavy Rig player preferences and input boundaries', function () {
+	test('View toggles indicator info once per press unless assigned to combat', function () {
+		const input = claimedInput();
+		const view = pad([INDICATOR_INFO_BUTTON]);
+		expect(input.read([view], 16).indicatorInfo).toBe(true);
+		expect(input.read([view], 32).indicatorInfo).toBe(false);
+		input.read([pad()], 48);
+		input.requireNeutral();
+		expect(input.read([view], 64).indicatorInfo).toBe(false);
+		input.read([pad()], 80);
+		const bindings = { ...defaultController(), 'mount-0': INDICATOR_INFO_BUTTON };
+		const remapped = input.read([view], 96, bindings);
+		expect(remapped.indicatorInfo).toBe(false);
+		expect(remapped.fire[0]).toBe(true);
+	});
 	test('native gamepads with an empty mapping use standard button and axis indices', function () {
 		const input = createGamepadInput();
 		const raw = function (buttons: number[] = [], axes = [0, 0, 0, 0, 0, 0]): GamepadSnapshot {
