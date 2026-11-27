@@ -348,6 +348,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const titleDeck = element('title-deck');
 	const titlePicker = element('title-picker');
+	const titleBrand = element('title-brand');
+	const alphaInterstitial = element('alpha-interstitial');
+	let alphaNoticePending = !sessionOnly;
 	type TitleGroup = 'company' | 'simulator';
 	let titleGroup: TitleGroup | undefined;
 	const setTitleGroup = function (group: TitleGroup | undefined) {
@@ -362,6 +365,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		screenRevision++;
 	};
 	const titleInitial = function () {
+		if (alphaNoticePending) return element('alpha-continue');
 		if (titleGroup === 'company') return element('title-new-campaign');
 		if (titleGroup === 'simulator') return element('title-situation');
 		return element('title-continue');
@@ -460,7 +464,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const menu = function () {
 		if (choicePicker.root) return choicePicker.root;
 		if (navigation.auxiliary) return element(navigation.auxiliary);
-		if (navigation.screen === 'title') return titleGroup ? titlePicker : titleDeck;
+		if (navigation.screen === 'title') return alphaNoticePending ? alphaInterstitial : titleGroup ? titlePicker : titleDeck;
 		if (navigation.screen === 'playing') return undefined;
 		const screen = element(navigation.screen);
 		return navigation.screen === 'starmap' ? screen.querySelector<HTMLElement>('.planet-popover:popover-open') ?? screen : screen;
@@ -507,7 +511,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		container.classList.toggle('menu-open', modal); container.dataset['screen'] = navigation.auxiliary ?? navigation.screen;
 		if (!ordersWasOpen && !squadOrdersRoot.hidden) squadOrders.open(state);
 		else if (ordersWasOpen && squadOrdersRoot.hidden) squadOrders.close();
-		if (navigation.screen === 'title') refreshTitleCompany();
+		if (navigation.screen === 'title') {
+			alphaInterstitial.hidden = !alphaNoticePending;
+			titleBrand.hidden = alphaNoticePending;
+			titleDeck.hidden = alphaNoticePending;
+			refreshTitleCompany();
+		}
 		updateMenuHint();
 		element('hud').inert = modal; canvas.inert = modal;
 		resetInput(); lastHud = 0;
@@ -1027,6 +1036,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		setPaused(navigation.screen === 'playing');
 	};
 	const listen = function (id: string, callback: () => void) { element(id).addEventListener('click', function () { if (!navigation.transitioning) callback(); }, listenerOptions); };
+	listen('alpha-continue', function () {
+		if (!alphaNoticePending) return;
+		alphaNoticePending = false;
+		syncScreen();
+	});
 	for (const group of ['company', 'simulator'] as const) {
 		listen(`title-${group}`, function () {
 			setTitleGroup(group);
@@ -1391,7 +1405,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			}
 			cancelKeyCapture();
 		}
-		if (capture || navigation.auxiliary || campaignConflict || trialSeed !== undefined || situationSim || training || navigation.screen === 'training-setup' || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLElement && event.target.isContentEditable) {
+		if (alphaNoticePending || capture || navigation.auxiliary || campaignConflict || trialSeed !== undefined || situationSim || training || navigation.screen === 'training-setup' || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLElement && event.target.isContentEditable) {
 			rigCodeInput = [];
 		} else if (!event.repeat) {
 			rigCodeInput = [...rigCodeInput, event.code].slice(-rigCode.length);
