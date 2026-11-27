@@ -296,7 +296,9 @@ Iolith's crystal barrens have branching pockets of quartz, with short ridges
 and isolated spires along the survey tracks.
 Shots can cross open cuts and water. Solid cover can interrupt missile tracking.
 The radar and squad orders map show terrain contours at 40-metre intervals
-alongside obstacles and routes. The radar also shows the elevation under your rig.
+alongside obstacles and routes. On larger keyboard and controller layouts, select
+the contact count or choose **Show tactical map** in Pause to open the radar. It
+also shows the elevation under your rig.
 Situation Sim offers all seven mission types
 in each biome.
 New Defense postings and Situation Sim Defense use larger fields with a roughly
@@ -620,11 +622,13 @@ or tap empty ground to lock a heading instead. Tap its FACING marker again to
 clear it. A destroyed target drops the lock. There is no automatic retargeting,
 shot leading, or automatic firing.
 Portrait reserves a control dock below the battlefield; landscape puts controls
-at the lower edges. Training and the escape use the same controls.
+at the lower edges. The top strip shows hull, heat and drive beside Orders and Pause.
+The objective shares its detail line with field messages and drill instructions.
+Orders shows each squadmate’s hull. Pause has the full drill briefing.
 
 The FULL button is available on touch-capable devices without a detected
 controller when the browser allows element fullscreen. It requests fullscreen
-on a tap and becomes EXIT while active. Unsupported browsers and standalone
+on a tap and becomes EXIT while active. During combat, open Pause to reach it. Unsupported browsers and standalone
 home-screen launches omit it; a rejected request leaves a retry message.
 
 ## Presentation and audio

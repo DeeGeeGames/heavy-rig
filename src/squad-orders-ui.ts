@@ -241,7 +241,7 @@ export const mountSquadOrders = function (
 							return html`<button type="button" class="squad-pilot" data-squad-pilot=${mate.pilotId}
 								aria-pressed=${selected.has(mate.pilotId)} ?disabled=${disabled} @click=${function () { toggle(mate.pilotId); }}>
 								<strong><span>${index + 1}</span>${mate.callsign}</strong>
-								<small ?data-staged=${Boolean(change?.order)}>${disabled ? 'Disabled' : orderLabel(order)}</small>
+								<small ?data-staged=${Boolean(change?.order)}>${disabled ? 'Down' : `${Math.ceil(mate.hp)}% · ${orderLabel(order)}`}</small>
 								${disabled ? nothing : html`<small data-fire-state=${mode} ?data-staged=${Boolean(change?.fireDiscipline)}>${mode === 'hold' ? 'Hold Fire' : 'Weapons Free'}${mode === 'hold' && order?.kind === 'attack' ? ' · ordered target only' : ''}</small>`}
 							</button>`;
 						})}
