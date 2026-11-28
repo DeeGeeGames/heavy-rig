@@ -107,7 +107,7 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 		expect(settled.credits).toBe(campaign.credits + contract.reward);
 		expect(settled.completed).toBe(1);
 		expect(settled.failed).toBe(0);
-		expect(settled.lastResult).toEqual({ contract, won: true, aborted: false, payout: contract.reward, favor: contract.favor, companyReputation: 50, day: 2 });
+		expect(settled.lastResult).toMatchObject({ contract, won: true, aborted: false, payout: contract.reward, favor: contract.favor, companyReputation: 50, day: 2 });
 		const restored = roundTrip(settled);
 		expect(restored).toEqual(settled);
 		expect(settleContract(restored, true)).toBe(restored);
@@ -213,10 +213,14 @@ test('new defense postings use the extended layout but already accepted defense 
 		expect(roundTrip(accepted).active).toEqual(defense);
 		const oldDefense = { ...defense };
 		delete oldDefense.fieldLayout;
+		delete oldDefense.strategy;
 		const restored = roundTrip({ ...accepted, active: oldDefense });
 		expect(restored.active).toEqual(oldDefense);
 		expect(posted(restored)).toEqual(oldDefense);
-		expect(settleContract(restored, true).lastResult?.contract).toEqual(oldDefense);
+		const settled = settleContract(restored, true).lastResult;
+		expect(settled?.contract).toEqual(oldDefense);
+		expect(settled?.territory).toMatchObject({ employerDelta: 6, opponentDelta: -6 });
+		expect(abandonContract(restored).lastResult?.territory).toMatchObject({ employerDelta: -3, opponentDelta: 3 });
 
 		// Tier 1 terms are the same across the six- and ten-tier boards.
 		const sixTierDefense = { ...oldDefense, id: oldDefense.id.replace(/^mission:/, '') };

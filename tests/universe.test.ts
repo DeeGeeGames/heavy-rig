@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { acceptContract, createCampaign, getContracts, parseCampaign, settleContract, travelTo } from '../src/campaign';
 import { advanceDays } from '../src/company';
-import { applyMissionInfluence, FACTION_IDS, getJumpRoute, getPlanet, getSystemIntel, PLANETS, territoryScores } from '../src/universe';
+import { applyMissionInfluence, FACTION_IDS, getJumpRoute, getPlanet, getSystemIntel, missionInfluenceDelta, PLANETS, settleMissionTerritory, territoryScores } from '../src/universe';
 import { generateMissionMap } from '../src/missions';
+import { strategicBriefing } from '../src/strategic-impact';
 
 describe('territory campaign', function () {
 	test('jump fares include the last light-year of each band and charge the same price in either direction', function () {
@@ -31,7 +32,7 @@ describe('territory campaign', function () {
 		}
 	});
 
-	test('every posted contract uses local belligerents and the selected system biome', function () {
+	test('every local posting has a target rationale, a whole impact rating in its tier band, and the correct factions and biome', function () {
 		for (const seed of [1, 317, 0xffffffff]) {
 			const campaign = createCampaign(seed);
 			for (const world of PLANETS) {
@@ -39,6 +40,12 @@ describe('territory campaign', function () {
 				const contracts = getContracts(campaign, world.id);
 				expect(contracts.length).toBe(intel.conflict ? 70 : 0);
 				for (const contract of contracts) {
+					const impact = contract.strategy?.impact;
+					if (impact === undefined) throw new Error('Ordinary posting has no strategic impact');
+					expect(Number.isInteger(impact)).toBe(true);
+					expect(impact).toBeGreaterThanOrEqual(contract.tier <= 3 ? 10 : 20);
+					expect(impact).toBeLessThanOrEqual(contract.tier <= 3 ? 30 : contract.tier <= 6 ? 40 : 50);
+					expect(strategicBriefing(contract).length).toBeGreaterThan(0);
 					expect(contract.employer).not.toBe(contract.opponent);
 					expect(intel.participants).toContain(contract.employer);
 					expect(intel.participants).toContain(contract.opponent);
@@ -83,6 +90,44 @@ describe('territory campaign', function () {
 		expect(parseCampaign(JSON.stringify(traveled))).toEqual(traveled);
 	});
 
+	test('the debrief compares ownership on the departure and return maps when the border also drifts overnight', function () {
+		const company = { ...createCampaign(2654435769, 'career'), planetId: 'system-29' as const, day: 2 };
+		const defense = getContracts(company).find(function (job) { return job.kind === 'defend' && job.tier === 1; });
+		if (!defense) throw new Error('Missing local defense');
+		const active = acceptContract(company, defense.id);
+		expect(getSystemIntel(active, company.planetId).owner).toBe('freeholds');
+		const won = settleContract(active, true);
+		expect(getSystemIntel(won, company.planetId).owner).toBe('freeholds');
+		expect(won.lastResult?.front).toBeUndefined();
+		const lost = settleContract(active, false);
+		expect(getSystemIntel(lost, company.planetId).owner).toBe('combine');
+		expect(lost.lastResult?.front).toEqual({ ownerBefore: 'freeholds', ownerAfter: 'combine', wentQuiet: false });
+	});
+
+	test('rated wins and withdrawals scale monotonically, and the report respects each faction’s remaining headroom', function () {
+		let priorWin = 0, priorLoss = 0;
+		for (let impact = 10; impact <= 50; impact++) {
+			const win = missionInfluenceDelta(impact, true);
+			const loss = -missionInfluenceDelta(impact, false);
+			expect(win).toBeGreaterThanOrEqual(priorWin);
+			expect(loss).toBeGreaterThanOrEqual(priorLoss);
+			expect(loss).toBeGreaterThan(0);
+			expect(loss).toBeLessThan(win);
+			priorWin = win; priorLoss = loss;
+		}
+		expect(missionInfluenceDelta(10, true)).toBeLessThan(priorWin);
+		expect(priorWin).toBeLessThan(18);
+		const company = createCampaign(317);
+		const [job] = getContracts(company);
+		if (!job) throw new Error('Missing rated posting');
+		const universe = { ...company.universe, influence: [
+			{ planetId: job.planetId, factionId: job.employer, value: 18 }, { planetId: job.planetId, factionId: job.opponent, value: -17 },
+		] };
+		const { territory } = settleMissionTerritory(universe, job, true);
+		expect(territory.employerDelta).toBe(0);
+		expect(territory.opponentDelta).toBe(-1);
+	});
+
 	test('older campaign versions and missing universe snapshots start a fresh company', function () {
 		const campaign = createCampaign(41);
 		const offer = getContracts(campaign)[0]; if (!offer) throw new Error('Missing offer');
@@ -102,6 +147,7 @@ describe('territory campaign', function () {
 			{ ...campaign.universe, influence: [{ planetId: 'meridian', factionId: 'pirates', value: 3 }] },
 			{ ...campaign.universe, influence: [{ planetId: 'meridian', factionId: 'combine', value: 19 }] },
 			{ ...campaign.universe, influence: Array.from({ length: 2 }, function () { return { planetId: 'meridian', factionId: 'combine', value: 3 }; }) },
+			{ ...campaign.universe, disruptedReserves: [{ planetId: 'meridian', factionId: 'pirates' }] },
 		]) expect(parseCampaign(JSON.stringify({ ...campaign, credits: 123, universe })).credits).toBe(campaign.credits);
 	});
 });

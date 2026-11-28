@@ -1,9 +1,10 @@
 import { companyRank, FIRST_RIG_TIER, getContractTier, getPostingTiers, isMissionTier, MAX_COMPANY_REPUTATION, missionTierPressure, usesLegacyMissionTiers } from './reputation';
-import { ACQUISITION_SECONDS } from './missions';
+import { ACQUISITION_SECONDS, defenseFieldsTanks } from './missions';
 import type { Contract, FactionId, MissionKind, PlanetId } from './campaign-types';
 import type { MissionTier } from './reputation';
 import { createOpeningProgress, getAuthoredStep, getChainStatus, isAuthoredContract, parseChainProgress, type ChainProgress } from './contract-chains';
-import { applyMissionInfluence, createUniverse, FACTION_IDS, getJumpRoute, getSystemIntel, isPlanetId, mixSeed, PLANETS, type UniverseState } from './universe';
+import { createUniverse, dayFrontChange, FACTION_IDS, getJumpRoute, getSystemIntel, isPlanetId, missionInfluenceDelta, mixSeed, PLANETS, settleMissionTerritory, type DisruptedReserve, type FrontChange, type TerritoryResult, type UniverseState } from './universe';
+import { isArmoredReserveRaid, isStrategicTerms, strategicTerms } from './strategic-impact';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
 
 import { advanceDays, beginDeployment, createCompany, deploymentIssue, isAssignment, isDeployedSquad, isSortieSquad, MAX_DAY, parseCompany, type CompanyState, type DeployedPilot } from './company';
@@ -42,6 +43,8 @@ export interface CampaignResult {
 	favor: number;
 	companyReputation: number;
 	day: number;
+	territory?: TerritoryResult;
+	front?: FrontChange;
 	fieldLead?: FieldLeadPayment;
 	squad?: readonly DeployedPilot[];
 	crew?: Pick<CrewResolution, 'objective' | 'extraction'>;
@@ -61,6 +64,7 @@ interface CrewSortie {
 
 interface OperationReview {
 	operation: PlannedOperation;
+	postingAvailable: boolean;
 	live: boolean;
 	leaderId: PilotId | undefined;
 	issues: readonly string[];
@@ -150,12 +154,6 @@ export const contractCopy = function (kind: MissionKind, tier: MissionTier, lega
 const getContractTemplates = function (campaign: Campaign, planetId: PlanetId, legacy: boolean): Contract[] {
 	const planetIndex = ['meridian', 'cinder', 'borealis'].indexOf(planetId);
 	const boardSeed = mixSeed(mixSeed(campaign.seed, campaign.boardRevision + 1), planetIndex + 1);
-	// A ten-tier posting already accepted or staged before the new layout
-	// keeps the layout the pilot agreed to when the board is regenerated.
-	const legacyDefenseIds = new Set([campaign.active, ...(campaign.operations ?? []).map(function ({ contract }) { return contract; }),
-		...(campaign.committedCrew ?? []).map(function ({ contract }) { return contract; })].flatMap(function (contract) {
-		return contract?.kind === 'defend' && contract.fieldLayout === undefined ? [contract.id] : [];
-	}));
 	return getPostingTiers(legacy).flatMap(function (level) {
 		return MISSION_KINDS.map(function (kind, index) {
 			const seed = mixSeed(mixSeed(boardSeed, level.tier), index + 1);
@@ -171,7 +169,6 @@ const getContractTemplates = function (campaign: Campaign, planetId: PlanetId, l
 			return {
 				...contract, title: copy.title, briefing: copy.briefing, reward, favor: 8 + standingChange, hostility: 6 + standingChange,
 				requiredReputation: level.standing,
-				...(kind === 'defend' && !legacy && !legacyDefenseIds.has(id) ? { fieldLayout: 'extended-defense' as const } : {}),
 			};
 		});
 	});
@@ -179,7 +176,7 @@ const getContractTemplates = function (campaign: Campaign, planetId: PlanetId, l
 
 // Accepted postings retain their front snapshot. Unaccepted work follows the
 // live front, including after Engineering advances the calendar.
-const getBoardContracts = function (campaign: Campaign, planetId: PlanetId, legacy: boolean): Contract[] {
+const getFrontContracts = function (campaign: Campaign, planetId: PlanetId, legacy: boolean): Contract[] {
 	if (campaign.universe.boardVersion === 1) return getContractTemplates(campaign, planetId, legacy);
 	const intel = getSystemIntel({ ...campaign, day: campaign.active ? campaign.universe.boardDay : campaign.day }, planetId);
 	const [holder, challenger] = intel.participants;
@@ -205,6 +202,31 @@ const getBoardContracts = function (campaign: Campaign, planetId: PlanetId, lega
 		};
 	});
 };
+const reserveMatches = function (reserve: DisruptedReserve, contract: Contract): boolean {
+	return reserve.planetId === contract.planetId && reserve.factionId === contract.opponent;
+};
+const getBoardContracts = function (campaign: Campaign, planetId: PlanetId, legacy: boolean): Contract[] {
+	const postings = getFrontContracts(campaign, planetId, legacy);
+	if (legacy) return postings;
+	const agreed = [campaign.active, ...(campaign.operations ?? []).map(function (op) { return op.contract; }),
+		...(campaign.committedCrew ?? []).map(function (sortie) { return sortie.contract; })];
+	// Capture the reserve claimed by the live sortie when regenerating its committed board on reload.
+	const claimed = campaign.active?.delayedTanks ? campaign.active : undefined;
+	return postings.map(function (posting): Contract {
+		const saved = agreed.find(function (entry) { return entry?.id === posting.id; });
+		// Agreed jobs can predate either the long defense layout or strategic terms.
+		if (saved && !saved.strategy) {
+			const historical = saved.fieldLayout ? { ...posting, fieldLayout: saved.fieldLayout } : posting;
+			if (sameContract(saved, historical)) return historical;
+		}
+		const contract = posting.kind === 'defend' ? { ...posting, fieldLayout: 'extended-defense' as const } : posting;
+		const disrupted = campaign.universe.disruptedReserves?.some(function (reserve) { return reserveMatches(reserve, contract); })
+			|| claimed?.planetId === planetId && claimed.opponent === contract.opponent;
+		const rated = { ...contract, strategy: strategicTerms(contract, disrupted) };
+		if (isArmoredReserveRaid(rated)) return { ...rated, title: 'Raid the armored reserve depots' };
+		return disrupted && defenseFieldsTanks(contract) ? { ...rated, delayedTanks: true } : rated;
+	});
+};
 export const getContracts = function (campaign: Campaign, planetId: PlanetId = campaign.planetId): Contract[] {
 	return getBoardContracts(campaign, planetId, false);
 };
@@ -227,25 +249,32 @@ export const canAcceptContract = function (campaign: Campaign, contract: Contrac
 		&& Boolean(findPosting(campaign, contract.id));
 };
 
+const commitBoard = function (campaign: Campaign, live: Contract | undefined): UniverseState {
+	const { universe, day } = campaign;
+	const reserves = universe.disruptedReserves;
+	return { ...universe, boardDay: day, ...(live?.delayedTanks && reserves
+		? { disruptedReserves: reserves.filter(function (reserve) { return !reserveMatches(reserve, live); }) } : {}) };
+};
+
 export const acceptContract = function (campaign: Campaign, contractId: string): Campaign {
 	const contract = findPosting(campaign, contractId);
 	if (campaign.operations?.length || !contract || !canAcceptContract(campaign, contract)) return campaign;
 	return {
-		...campaign, universe: { ...campaign.universe, boardDay: campaign.day }, active: contract,
+		...campaign, universe: commitBoard(campaign, contract), active: contract,
 		reputation: { ...campaign.reputation, [contract.opponent]: boundedReputation(campaign.reputation[contract.opponent] - contract.hostility) },
 		...(campaign.story && isAuthoredContract(contract) ? { story: { ...campaign.story, committed: contract.id } } : {}),
 	};
 };
 
 export const forecastArrival = function (campaign: Campaign, planetId: PlanetId): Campaign {
-	if (campaign.active || campaign.deployed || campaign.operations?.length || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
+	if (campaign.active || campaign.deployed || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
 	return advanceDays({
-		...campaign, planetId, universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 }, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation },
+		...campaign, planetId, operations: undefined, universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 }, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation },
 	}, 1);
 };
 
 export const travelTo = function (campaign: Campaign, planetId: PlanetId): Campaign {
-	if (!isPlanetId(planetId)) return campaign;
+	if (!isPlanetId(planetId) || campaign.operations?.length) return campaign;
 	const { fare } = getJumpRoute(campaign.planetId, planetId);
 	if (campaign.credits < fare) return campaign;
 	const departure = { ...campaign, credits: campaign.credits - fare };
@@ -258,12 +287,12 @@ const emptyLineup = function (): readonly PilotAssignment[] {
 };
 
 export const getPlannedOperation = function (campaign: Campaign, id: string | undefined): PlannedOperation | undefined {
-	return campaign.operations?.find(function (operation) { return operation.contract.id === id; });
+	return id === undefined ? undefined : campaign.operations?.find(function (operation) { return postingKey(operation.contract.id) === postingKey(id); });
 };
 
 export const canStageOperation = function (campaign: Campaign, contract: Contract): boolean {
 	return (campaign.operations?.length ?? 0) < MAX_OPERATIONS
-		&& !campaign.operations?.some(function (operation) { return postingKey(operation.contract.id) === postingKey(contract.id); })
+		&& !getPlannedOperation(campaign, contract.id)
 		&& (!isAuthoredContract(contract) || !campaign.operations?.some(function (operation) { return isAuthoredContract(operation.contract); }))
 		&& canAcceptContract(campaign, contract);
 };
@@ -279,8 +308,9 @@ export const stageOperation = function (campaign: Campaign, id: string): Campaig
 };
 
 export const removeOperation = function (campaign: Campaign, id: string): Campaign {
-	return campaign.deployed || !getPlannedOperation(campaign, id) ? campaign : {
-		...campaign, operations: campaign.operations?.filter(function (entry) { return entry.contract.id !== id; }),
+	const operation = getPlannedOperation(campaign, id);
+	return campaign.deployed || !operation ? campaign : {
+		...campaign, operations: campaign.operations?.filter(function (entry) { return entry !== operation; }),
 	};
 };
 
@@ -321,8 +351,9 @@ export const reviewOperations = function (campaign: Campaign): { entries: readon
 		const seats = lineup.filter(function (seat) { return seat.pilotId !== null; });
 		const leaderId = live ? 'player' : operation.leaderId ?? seats.find(function (seat) { return seat.frameId !== null; })?.pilotId ?? undefined;
 		const current = isAuthoredContract(contract) ? storyOffers.find(function (offer) { return offer.contract.id === contract.id; })?.contract : postings.get(contract.id);
-		if (contract.planetId !== campaign.planetId || !current || !sameContract(contract, current) || campaign.reputation[contract.employer] < contract.requiredReputation
-			|| companyRank(campaign) < getContractTier(contract).rank) issues.push('This posting changed. Remove it and review the board.');
+		const postingAvailable = Boolean(current && contract.planetId === campaign.planetId && sameContract(contract, current)
+			&& campaign.reputation[contract.employer] >= contract.requiredReputation && companyRank(campaign) >= getContractTier(contract).rank);
+		if (!postingAvailable) issues.push('This posting changed. Remove it and review the board.');
 		if (isAuthoredContract(contract) && !live) issues.push('Commander required.');
 		if (!seats.length) issues.push('Assign at least one pilot and rig.');
 		for (const { pilotId, frameId } of seats) {
@@ -335,7 +366,7 @@ export const reviewOperations = function (campaign: Campaign): { entries: readon
 			const problem = deploymentIssue(campaign, frameId);
 			if (problem) issues.push(`${rigName(frameId)}: ${problem}`);
 		}
-		return { operation, live, leaderId, issues, ...(!live && !issues.length && leaderId ? { forecast: forecastCrew(campaign, contract, lineup, leaderId) } : {}) };
+		return { operation, postingAvailable, live, leaderId, issues, ...(!live && !issues.length && leaderId ? { forecast: forecastCrew(campaign, contract, lineup, leaderId) } : {}) };
 	});
 	const issues = [...new Set(entries.flatMap(function (entry) { return entry.issues; }))];
 	if (campaign.active || campaign.deployed) issues.push('Finish the active contract first.');
@@ -368,21 +399,30 @@ const recordContract = function (campaign: Campaign, contract: Contract, won: bo
 	const companyReputation = won ? Math.min(getContractTier(contract).reputation, MAX_COMPANY_REPUTATION - campaign.companyReputation) : 0;
 	const day = campaign.day + 1;
 	const story = campaign.story;
+	const { universe, territory } = settleMissionTerritory(campaign.universe, contract, won);
+	const reserves = universe.disruptedReserves ?? [];
+	const disrupt = won && isArmoredReserveRaid(contract) && !reserves.some(function (reserve) { return reserveMatches(reserve, contract); });
 	return {
-		...campaign, universe: applyMissionInfluence(campaign.universe, contract.planetId, contract.employer, contract.opponent, won), reputation,
+		...campaign, universe: disrupt ? { ...universe, disruptedReserves: [...reserves, { planetId: contract.planetId, factionId: contract.opponent }] } : universe, reputation,
 		credits: campaign.credits + payout - repairRepayment, companyReputation: campaign.companyReputation + companyReputation, completed: campaign.completed + Number(won), failed: campaign.failed + Number(!won),
 		...(repairRepayment ? { repairDebt: (campaign.repairDebt ?? 0) - repairRepayment } : {}),
-		lastResult: { contract, won, aborted, payout, favor, companyReputation, day, ...(repairRepayment ? { repairRepayment } : {}), ...(fieldLead ? { fieldLead } : {}), ...(squad ? { squad } : {}), ...(crew ? { crew } : {}) },
+		lastResult: { contract, won, aborted, payout, favor, companyReputation, day, territory, ...(repairRepayment ? { repairRepayment } : {}), ...(fieldLead ? { fieldLead } : {}), ...(squad ? { squad } : {}), ...(crew ? { crew } : {}) },
 		...(won && squad?.some(function (member) { return member.pilotId !== 'player'; }) ? { pilotWins: recordPilotWins(campaign, squad.map(function (member) { return member.pilotId; })) } : {}),
 		...(won && story?.committed === contract.id ? { story: { id: story.id, completed: [...story.completed, contract.id] } } : {}),
 	};
 };
 
-const endDay = function (campaign: Campaign): Campaign {
-	return advanceDays({ ...campaign,
+const endDay = function (departure: Campaign, campaign: Campaign, reports?: readonly CampaignResult[]): Campaign {
+	const returned = advanceDays({ ...campaign,
 		universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 },
 		active: undefined, deployed: undefined, committedCrew: undefined, boardReputation: { ...campaign.reputation }, boardRevision: campaign.boardRevision + 1,
 	}, 1);
+	// All committed sorties share this local front and return on the same day.
+	// Compare the two maps the commander actually sees, after the entire batch has settled.
+	const primary = reports?.[0] ?? campaign.lastResult;
+	const front = dayFrontChange(departure, returned, campaign.planetId);
+	const lastResult = primary && front ? { ...primary, front } : primary;
+	return { ...returned, lastResult, lastOperationDay: reports && lastResult ? [lastResult, ...reports.slice(1)] : undefined };
 };
 
 const finishOperations = function (campaign: Campaign, won: boolean, aborted: boolean): Campaign {
@@ -404,9 +444,9 @@ const finishOperations = function (campaign: Campaign, won: boolean, aborted: bo
 		reports.push(recorded.lastResult);
 		next = recorded;
 	}
-	return endDay({ ...next, lastResult: reports[0], lastOperationDay: reports,
+	return endDay(campaign, { ...next,
 		fleet: next.fleet.map(function (rig) { const integrity = damage.get(rig.frameId); return integrity === undefined ? rig : { ...rig, integrity }; }),
-	});
+	}, reports);
 };
 
 export const commitOperations = function (campaign: Campaign): Campaign {
@@ -428,7 +468,7 @@ export const commitOperations = function (campaign: Campaign): Campaign {
 	}
 	crew.sort(function (left, right) { return left.contract.id.localeCompare(right.contract.id); });
 	next = { ...next, committedCrew: crew, reputation: chargeHostility(campaign.reputation, review.entries.map(function (entry) { return entry.operation.contract; })),
-		universe: { ...campaign.universe, boardDay: campaign.day },
+		universe: commitBoard(campaign, live?.contract),
 		...(campaign.story && live && isAuthoredContract(live.contract) ? { story: { ...campaign.story, committed: live.contract.id } } : {}),
 	};
 	return live ? next : finishOperations(next, false, false);
@@ -438,7 +478,7 @@ const finishContract = function (campaign: Campaign, won: boolean, aborted: bool
 	const contract = campaign.active;
 	if (!contract || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY) return campaign;
 	if (campaign.committedCrew) return finishOperations(campaign, won, aborted);
-	return endDay(recordContract({ ...campaign, lastOperationDay: undefined }, contract, won, aborted));
+	return endDay(campaign, recordContract(campaign, contract, won, aborted));
 };
 
 export const settleContract = function (campaign: Campaign, won: boolean): Campaign { return finishContract(campaign, won, false); };
@@ -455,7 +495,20 @@ const isContract = function (value: unknown): value is Contract {
 		&& typeof value['title'] === 'string' && value['title'].length <= 100 && typeof value['briefing'] === 'string' && value['briefing'].length <= 500
 		&& isInteger(value['reward'], 0, 100_000) && isInteger(value['favor'], 0, 100) && isInteger(value['hostility'], 0, 100)
 		&& isMissionTier(value['tier']) && isInteger(value['requiredReputation'], -100, 100)
+		&& (value['strategy'] === undefined || value['id'].startsWith(postingPrefix) && isStrategicTerms(value['strategy'], { tier: value['tier'], kind: value['kind'] }))
+		&& (value['delayedTanks'] === undefined || value['delayedTanks'] === true && value['kind'] === 'defend' && value['strategy'] !== undefined)
 		&& (value['fieldLayout'] === undefined || value['fieldLayout'] === 'extended-defense' && value['kind'] === 'defend' && value['id'].startsWith(postingPrefix));
+};
+
+const isTerritoryResult = function (value: unknown, contract: Contract, won: boolean): value is TerritoryResult {
+	const change = missionInfluenceDelta(contract.strategy?.impact, won);
+	return object(value) && isInteger(value['employerDelta'], Math.min(0, change), Math.max(0, change))
+		&& isInteger(value['opponentDelta'], Math.min(0, -change), Math.max(0, -change));
+};
+const isFrontChange = function (value: unknown): value is FrontChange {
+	return object(value) && (value['ownerBefore'] === null || isFactionId(value['ownerBefore']))
+		&& (value['ownerAfter'] === null || isFactionId(value['ownerAfter'])) && typeof value['wentQuiet'] === 'boolean'
+		&& (value['ownerBefore'] !== value['ownerAfter'] || value['wentQuiet']);
 };
 
 const isResultLead = function (value: unknown, squad: unknown, fee: number): value is FieldLeadPayment {
@@ -474,6 +527,8 @@ const isResult = function (value: unknown): value is CampaignResult {
 	if (typeof won !== 'boolean' || fieldLead !== undefined && !isResultLead(fieldLead, squad, won ? fieldLeadFee(contract) : 0)) return false;
 	const companyFee = fieldLead?.pilotId === 'player' ? fieldLead.fee : 0;
 	return typeof value['aborted'] === 'boolean' && !(won && value['aborted'])
+		&& (value['territory'] === undefined ? contract.strategy === undefined : isTerritoryResult(value['territory'], contract, won))
+		&& (value['front'] === undefined || value['territory'] !== undefined && isFrontChange(value['front']))
 		&& isInteger(value['payout'], companyFee ? contract.reward + companyFee : 0, contract.reward + companyFee) && isInteger(value['favor'], 0, contract.favor)
 		&& (value['repairRepayment'] === undefined || isInteger(value['repairRepayment'], 1, repairRepaymentLimit(value['payout'])))
 		&& isInteger(value['companyReputation'], 0, getContractTier(contract).reputation)
@@ -530,7 +585,8 @@ const sameContract = function (saved: Contract, generated: Contract): boolean {
 	return saved.id === generated.id && saved.seed === generated.seed && saved.planetId === generated.planetId && saved.kind === generated.kind
 		&& saved.employer === generated.employer && saved.opponent === generated.opponent && sameCopy
 		&& saved.reward === generated.reward && saved.favor === generated.favor && saved.hostility === generated.hostility
-		&& saved.tier === generated.tier && saved.requiredReputation === generated.requiredReputation && saved.fieldLayout === generated.fieldLayout;
+		&& saved.tier === generated.tier && saved.requiredReputation === generated.requiredReputation && saved.fieldLayout === generated.fieldLayout
+		&& saved.strategy?.role === generated.strategy?.role && saved.strategy?.impact === generated.strategy?.impact && saved.delayedTanks === generated.delayedTanks;
 };
 
 const parseUniverse = function (value: unknown, day: number): UniverseState | undefined {
@@ -542,7 +598,17 @@ const parseUniverse = function (value: unknown, day: number): UniverseState | un
 			|| influence.some(function (prior) { return prior.planetId === entry['planetId'] && prior.factionId === entry['factionId']; })) return undefined;
 		influence.push({ planetId: entry['planetId'], factionId: entry['factionId'], value: entry['value'] });
 	}
-	return { influence, boardDay: value['boardDay'], boardVersion: value['boardVersion'] };
+	const universe = { influence, boardDay: value['boardDay'], boardVersion: value['boardVersion'] } satisfies UniverseState;
+	const reserves = value['disruptedReserves'];
+	if (reserves === undefined) return universe;
+	if (!Array.isArray(reserves) || reserves.length > PLANETS.length * FACTION_IDS.length) return undefined;
+	const disruptedReserves: DisruptedReserve[] = [];
+	for (const reserve of reserves) {
+		if (!object(reserve) || !isPlanetId(reserve['planetId']) || !isFactionId(reserve['factionId'])
+			|| disruptedReserves.some(function (entry) { return entry.planetId === reserve['planetId'] && entry.factionId === reserve['factionId']; })) return undefined;
+		disruptedReserves.push({ planetId: reserve['planetId'], factionId: reserve['factionId'] });
+	}
+	return { ...universe, disruptedReserves };
 };
 
 // Validate the saved transaction, including the already-paid acceptance penalty.

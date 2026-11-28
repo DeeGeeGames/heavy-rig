@@ -1,9 +1,10 @@
 import { html } from 'lit-html';
-import { fieldLeadFee, getPlanet, reviewOperations, type Campaign } from './campaign';
+import { fieldLeadFee, getPlanet, type reviewOperations, type Campaign } from './campaign';
 import { MISSION_NAMES, type MissionKind } from './campaign-types';
 import { isAuthoredContract } from './contract-chains';
 import { getPilot, SQUAD_SIZE } from './pilots';
 import { rigName } from './rigs';
+import { TANK_DELAY_SECONDS } from './strategic-impact';
 import type { WorkspacePane } from './workspace';
 
 export interface OperationsActions {
@@ -33,12 +34,13 @@ const operationCard = function (entry: OperationEntry, actions: OperationsAction
 		<button type="button" class="operation-card" data-edit-operation=${contract.id} @click=${function () { actions.editOperation(contract.id); }}>
 			<span class="operation-mark" aria-hidden="true">${MISSION_MARKS[contract.kind]}</span>
 			<span class="operation-description">
-				<span class="operation-kind">${story ? html`<em>Story</em> / ` : ''}${MISSION_NAMES[contract.kind]}</span>
+				<span class="operation-kind">${story ? html`<em>Story</em> / ` : ''}${MISSION_NAMES[contract.kind]}${contract.strategy ? ` · Strategic impact ${contract.strategy.impact}/50` : ''}</span>
 				<strong class="operation-name">${contract.title}</strong>
 				<span class="operation-pilots">${assigned.length ? assigned.map(function ({ pilotId, frameId }) {
 					return pilotId ? html`<span><b>${getPilot(pilotId).callsign}</b>${pilotId === leaderId ? html` <em class="operation-field-lead">Lead</em>` : ''} / ${frameId ? rigName(frameId) : 'Rig needed'}</span>` : '';
 				}) : 'No squad assigned'}</span>
 				<span class="operation-status">${mode ? html`<span class="operation-mode">${mode}</span>` : ''}<span class="operation-seats" role="img" aria-label=${`${readyRigs} of ${SQUAD_SIZE} rigs assigned`}>${lineup.map(function (_, index) { return html`<i data-filled=${String(index < readyRigs)}></i>`; })}</span>${issues.length ? html`<span class="operation-held">On hold</span>` : forecast ? html`<span>${Math.round(forecast.successChance)}% success</span>` : ''}</span>
+				${contract.delayedTanks ? html`<span class="operation-kind">${live ? `Enemy tanks arrive ${TANK_DELAY_SECONDS}s later` : 'Tank delay reserved for player-led defense'}</span>` : ''}
 				${issues[0] ? html`<span class="operation-blocker">${issues[0]}</span>` : ''}
 			</span>
 			<span class="operation-card-end"><span class="operation-pay">${companyPay(entry).toLocaleString()} <small>CR</small></span><span class="operation-edit">Edit lineup ↗</span></span>
@@ -50,8 +52,7 @@ const ordersLeg = function (label: string, value: string, detail?: string, live 
 	return html`<li data-live=${String(live)}><span class="operation-kind">${label}</span><strong>${value}</strong>${detail ? html`<span>${detail}</span>` : ''}</li>`;
 };
 
-export const operationPanes = function (campaign: Campaign, actions: OperationsActions): WorkspacePane[] {
-	const { entries, issues } = reviewOperations(campaign);
+export const operationPanes = function (campaign: Campaign, actions: OperationsActions, { entries, issues }: ReturnType<typeof reviewOperations>): WorkspacePane[] {
 	const planet = getPlanet(campaign.planetId);
 	const groups = new Map<string, OperationEntry[]>();
 	for (const entry of entries) {

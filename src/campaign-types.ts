@@ -1,4 +1,5 @@
 import type { MissionTier } from './reputation';
+import type { StrategicTerms } from './strategic-impact';
 import type { Point } from './simulation';
 import type { FieldTerrain } from './field-terrain';
 
@@ -31,6 +32,8 @@ export interface Contract {
 	tier: MissionTier;
 	requiredReputation: number;
 	fieldLayout?: 'extended-defense';
+	strategy?: StrategicTerms;
+	delayedTanks?: true;
 }
 
 export interface Landmark extends Point {

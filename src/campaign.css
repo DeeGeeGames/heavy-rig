@@ -41,9 +41,12 @@
 .contract-type { text-transform: uppercase; font: 9px var(--mono); letter-spacing: .6px; color: var(--muted); }
 .contract-card>b { font: 24px/1.1 var(--display); }
 .contract-employer { font: 10px var(--mono); }
-.contract-bottom { display: flex; justify-content: space-between; gap: 6px; align-items: center; margin-top: 4px; }
+.contract-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 6px; align-items: baseline; margin-top: 4px; }
+.contract-terms { display: flex; flex-wrap: wrap; gap: 1px 8px; align-items: baseline; }
 .contract-bottom strong { font: 12px var(--mono); color: var(--amber); white-space: nowrap; }
 .contract-bottom small { font: 7px/1.5 var(--mono); text-align: right; color: var(--muted); }
+.contract-bottom > small { margin-inline-start: auto; }
+.contract-bottom .contract-impact { text-align: start; }
 .board-note, .accepted-note p { color: var(--muted); font: 11px/1.7 Arial, sans-serif; }
 .accepted-note { border: 1px solid #92d6c540; padding: 15px; margin-top: 18px; }
 .accepted-note b { font: 10px var(--mono); color: var(--cyan); }

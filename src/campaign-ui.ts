@@ -6,15 +6,16 @@ import { getJumpRoute, getSystemIntel, JUMP_FARE_PER_LEG, JUMP_RANGE_LY } from '
 import { closePlanetDetails, renderTerritoryMap } from './territory-map';
 import { html } from 'lit-html';
 import { inspectWorkspacePane, renderWorkspace, selectWorkspacePane, textItems, workspaceBackTarget, type WorkspacePane } from './workspace';
-import { canStageOperation, FACTIONS, forecastArrival, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, type Campaign } from './campaign';
+import { canStageOperation, FACTIONS, forecastArrival, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, reviewOperations, type Campaign } from './campaign';
 import { BIOME_NAMES, MISSION_NAMES, type Contract, type MissionKind, type PlanetId } from './campaign-types';
-import { getAuthoredStep } from './contract-chains';
+import { getAuthoredStep, isAuthoredContract } from './contract-chains';
 import { getOwnedMech, newUpkeepDue, workOrderFor } from './company';
 import { renderShipHeader, type ShipScreen } from './company-ui';
 import { MissionSurvey } from './mission-survey';
 import { live } from 'lit-html/directives/live.js';
 import type { ChoicePicker } from './choice-picker';
 import { operationPanes, type OperationsActions } from './operations-ui';
+import { strategicBriefing, TANK_DELAY_SECONDS } from './strategic-impact';
 
 export type ShipView = 'rigs' | 'weapons' | 'board' | 'transmission' | 'operations' | 'route' | 'system' | 'loadout' | 'condition' | 'calendar' | 'squad';
 export type BriefingOrigin = 'board' | 'transmission';
@@ -131,7 +132,12 @@ const transmissionPane = function (root: HTMLElement, campaign: Campaign, transm
 
 export const renderBridge = function (root: HTMLElement, campaign: Campaign, destination: PlanetId, selection: string | undefined, saved: boolean, actions: BridgeActions, briefingOrigin: BriefingOrigin) {
 	const planet = getPlanet(destination);
+	const local = destination === campaign.planetId;
 	const forecast = forecastArrival(campaign, destination);
+	const review = reviewOperations(campaign);
+	const currentPlans = new Map(review.entries.filter(function (entry) { return local && entry.postingAvailable; }).map(function ({ operation }) {
+		return [operation.contract.id, operation];
+	}));
 	const unlocked = unlockedMissionTier(campaign);
 	const postings = new Map<MissionKind, Contract>();
 	for (const contract of getContracts(forecast, destination)) {
@@ -140,6 +146,13 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 	}
 	const active = campaign.active;
 	const contracts = active ? [active] : [...postings.values()];
+	// A saved agreement may belong to a different tier than today's highest offer of its kind.
+	for (const operation of currentPlans.values()) {
+		if (isAuthoredContract(operation.contract)) continue;
+		const index = contracts.findIndex(function (shown) { return getPlannedOperation(campaign, shown.id) === operation; });
+		if (index < 0) contracts.push(operation.contract);
+		else contracts[index] = operation.contract;
+	}
 	const transmission = getTransmission(campaign);
 	const briefingParent = transmission ? briefingOrigin : 'board';
 	const backFromBriefing = function () {
@@ -158,8 +171,13 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 		const survey = root.querySelector('mission-survey');
 		if (survey instanceof MissionSurvey) survey.contract = contract;
 	};
-	const planned = getPlannedOperation(campaign, selected?.id);
-	const local = destination === campaign.planetId;
+	const planned = selected && currentPlans.get(selected.id);
+	const crewOnlyDefense = planned && planned.lineup.some(function (seat) { return seat.pilotId !== null; })
+		&& !planned.lineup.some(function (seat) { return seat.pilotId === 'player'; });
+	const reserveIntel = selected?.delayedTanks
+		? crewOnlyDefense ? `This crew-only sortie preserves your depot raid’s ${TANK_DELAY_SECONDS}-second delay for the next defense you lead against ${getFaction(selected.opponent).name} tanks here.`
+			: `Your depot raid delays ${getFaction(selected.opponent).name} tanks by ${TANK_DELAY_SECONDS} seconds${active ? '.' : ' if you lead this defense. Crew sorties preserve the delay.'}`
+		: '';
 	const storyStep = selected ? getAuthoredStep(campaign.story, selected) : undefined;
 	const localSignal = transmission?.offers.some(function ({ contract }) { return contract.planetId === campaign.planetId; });
 	const signalCopy = `A campaign contract is available at ${getPlanet(campaign.planetId).name}. Open Signal to review the offer.`;
@@ -175,37 +193,47 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 					@focus=${function () { previewPosting(contract); }}
 					@pointermove=${function (event: PointerEvent) {
 						if (event.pointerType === 'mouse' && event.currentTarget instanceof HTMLButtonElement && event.currentTarget !== document.activeElement) event.currentTarget.focus({ preventScroll: true });
-					}} @click=${function (event: Event) { actions.selectContract(contract.id, 'board', event.currentTarget); }} data-contract=${contract.kind}><span class="contract-type">${MISSION_NAMES[contract.kind]}</span><b>${contract.title}</b><span class="contract-employer">${employer.name}</span><span class="contract-bottom"><strong>${contract.reward.toLocaleString()} CR</strong><small>${active ? 'ACCEPTED' : getPlannedOperation(campaign, contract.id) ? 'STAGED' : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span></button>`;
+					}} @click=${function (event: Event) { actions.selectContract(contract.id, 'board', event.currentTarget); }} data-contract=${contract.kind}>
+					<span class="contract-type">${MISSION_NAMES[contract.kind]}</span><b>${contract.title}</b><span class="contract-employer">${employer.name}</span>
+					<span class="contract-bottom"><span class="contract-terms"><strong>${contract.reward.toLocaleString()} CR</strong>${contract.strategy ? html`<small class="contract-impact">Strategic impact ${contract.strategy.impact}/50</small>` : ''}</span><small>${active ? 'ACCEPTED' : currentPlans.has(contract.id) ? 'STAGED' : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span>
+				</button>`;
 			}),
 			...(!emptyBoard ? textItems(active ? `${getFaction(active.opponent).name}: −${active.hostility} reputation applied on acceptance. Assign pilots and rigs before deployment.` : `Current postings on ${planet.name}. ${local ? 'Local uplink.' : `Arrival-day ${forecast.day} forecast; travel here to accept work.`}`) : []),
 		], ...(emptyBoard ? { actions: signalAction ?? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` } : {}) },
 		{ id: 'briefing', label: 'Briefing', items: selected ? [
 			html`<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span><h2>${selected.title}</h2>`,
 			...(storyStep ? [html`<span class="eyebrow">${storyStep.contact} · COMMANDER REQUIRED</span>`, ...textItems(storyStep.pitch)] : []),
+			...(selected.strategy ? [
+				html`<p class="stake-line"><small>PAYMENT AFTER EXTRACTION</small>${selected.reward.toLocaleString()} CR · <strong>Strategic impact ${selected.strategy.impact}/50</strong></p>`,
+				...textItems(strategicBriefing(selected)),
+			] : []),
+			...textItems(reserveIntel),
 			...textItems(selected.briefing),
 			...(selected.fieldLayout === 'extended-defense' ? textItems(DEFENSE_APPROACH_BRIEFING) : []),
 			...textItems(missionOpposition(selected)),
 			...textItems(`SUCCESS: +${getContractTier(selected).reputation} company reputation. ${reputationProgress(campaign)}.`),
-			...textItems('Success expands employer influence around this system. Failure or abort strengthens the opposition. Repeated victories can move the border and end a local conflict.'),
+			...textItems(selected.strategy
+				? 'Higher strategic impact can move the border further on success. Enough pressure can end a local conflict.'
+				: 'Success increases local pressure in the employer’s favor. Enough pressure can end a local conflict.'),
 			...(storyStep ? [] : [html`<span class="eyebrow">SURFACE OBJECTIVE</span>`, ...textItems(selected.kind === 'assassination' ? `Track down the marked ${commandTargetName(selected)}. Destroy it and reach extraction alive.` : OBJECTIVES[selected.kind])]),
 			...(storyOffer && transmission && transmission.offers.length > 1 ? textItems('Committing the day with this offer closes the other signal.') : []),
 			html`<p class="stake-line"><small>EMPLOYER</small>${getFaction(selected.employer).name}<br><strong class="positive">+${selected.favor} on success</strong></p>`,
 			html`<p class="stake-line"><small>OPPOSITION</small>${getFaction(selected.opponent).name}<br><strong class="negative">−${selected.hostility} ${active ? 'applied on acceptance' : 'on day commitment'}</strong></p>`,
-			html`<p class="stake-line"><small>PAYMENT AFTER EXTRACTION</small>${selected.reward.toLocaleString()} CR</p>`,
+			...(selected.strategy ? [] : [html`<p class="stake-line"><small>PAYMENT AFTER EXTRACTION</small>${selected.reward.toLocaleString()} CR</p>`]),
 			...textItems('Rig damage carries over. Failure or abort keeps the standing penalty and strengthens the opposition.'),
 		] : [], actions: selected ? html`${active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE SQUAD ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>`
 			: planned ? html`<button class="primary" @click=${function () { actions.editOperation(selected.id); }}>EDIT LINEUP ↗</button>`
 				: html`<button id="bridge-accept" class="primary" ?disabled=${!local || !canStageOperation(campaign, selected)} @click=${function () { actions.stage(selected); }}>${!local ? 'TRAVEL HERE TO STAGE' : 'STAGE CONTRACT'} →</button>${!local ? html`<button @click=${function () { actions.navigate('starmap', 'system'); }}>STARMAP / JUMP →</button>` : ''}`}
 			<button class="text-button" @click=${backFromBriefing}>← BACK TO ${briefingParent === 'transmission' ? 'SIGNAL' : 'BOARD'}</button>` : html`` },
 		...(selected ? [{ id: 'survey', label: 'Field survey', scrollable: true, items: [html`<mission-survey .contract=${live(selected)}></mission-survey>`] }] : []),
-		...operationPanes(campaign, actions),
+		...operationPanes(campaign, actions, review),
 		{ id: 'factions', label: 'Reputation', secondary: true, items: [
 			html`<span class="eyebrow">COMPANY REPUTATION</span><h2>RANK ${companyRank(campaign)} / 15</h2>`,
 			...textItems(reputationProgress(campaign)),
 			...textItems('Successful extractions build company reputation. Higher rank opens tougher contracts and better weapons. Faction standing affects which jobs each employer offers.'),
 			...FACTIONS.map(function (faction) { const value = campaign.reputation[faction.id]; return html`<div class="faction-standing" style="--faction-color:${faction.color}"><div><b>${faction.name}</b><strong>${signed(value)}</strong></div><span>${reputationLabel(value)}</span><div class="reputation-track"><i style="left:${value < 0 ? 50 + value / 2 : 50}%;width:${Math.abs(value) / 2}%"></i></div></div>`; }),
 			...(campaign.lastResult ? textItems(`${campaign.lastResult.aborted ? 'ABORTED' : campaign.lastResult.won ? 'COMPLETED' : 'FAILED'}: ${campaign.lastResult.contract.title} · ${campaign.lastResult.payout.toLocaleString()} CR · ${signed(campaign.lastResult.favor)} employer favor · +${campaign.lastResult.companyReputation} company reputation`) : []),
-		], ...(campaign.lastOperationDay ? { actions: html`<button class="secondary" @click=${actions.openLastReport}>OPEN LATEST DEBRIEF →</button>` } : {}) },
+		], ...(campaign.lastResult ? { actions: html`<button class="secondary" @click=${actions.openLastReport}>OPEN LATEST DEBRIEF →</button>` } : {}) },
 	];
 	renderWorkspace(root, renderShipHeader(campaign, 'bridge', actions), panes, renderCampaignFooter(saved, actions), 'board', [
 		{ id: 'board', label: 'Board', panes: emptyBoard ? ['board'] : ['board', 'survey'], select: function () {

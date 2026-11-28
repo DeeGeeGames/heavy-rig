@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { getWeapon, weaponIdForTier } from '../src/arsenal';
-import { acceptContract, abandonContract, canAcceptContract, canStageOperation, createCampaign, getContracts, parseCampaign, reviewOperations, settleContract, stageOperation, travelTo, type Campaign } from '../src/campaign';
+import { acceptContract, abandonContract, canAcceptContract, canStageOperation, createCampaign, getContracts, getPlannedOperation, parseCampaign, removeOperation, reviewOperations, settleContract, stageOperation, travelTo, type Campaign } from '../src/campaign';
 import type { Contract } from '../src/campaign-types';
 import { advanceDays, buyFrame, buyWeapon, getOwnedMech } from '../src/company';
 import { frameWeight, loadedMounts } from '../src/combat-resources';
@@ -50,6 +50,8 @@ test('six-tier v8 saves retain accepted and staged missions, payout, and opposit
 	if (!operation) throw new Error('Missing staged operation');
 	const staged = parseCampaign(JSON.stringify({ ...state, operations: [{ ...operation, contract }] }));
 	expect(staged.operations?.[0]?.contract).toEqual(contract);
+	expect(getPlannedOperation(staged, current.id)?.contract).toEqual(contract);
+	expect(removeOperation(staged, current.id).operations).toEqual([]);
 	expect(reviewOperations(staged).issues).toEqual([]);
 	expect(canStageOperation(staged, current)).toBe(false);
 	const accepted = parseCampaign(JSON.stringify({ ...state, active: contract, reputation: { ...state.reputation, freeholds: 42 } }));
