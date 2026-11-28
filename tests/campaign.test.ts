@@ -182,43 +182,6 @@ describe('Heavy Rig campaign transactions and recovery', function () {
 	});
 });
 
-test('v8 storage purges incompatible campaigns while preserving profile and unrelated browser data', async function () {
-	const { CAMPAIGN_STORAGE_KEY, readCampaign, saveCampaign } = await import('../src/campaign');
-	const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
-	const data = new Map<string, string>();
-	const storage: Storage = {
-		get length() { return data.size; },
-		clear: function () { data.clear(); },
-		getItem: function (key) { return data.get(key) ?? null; },
-		key: function (index) { return [...data.keys()][index] ?? null; },
-		removeItem: function (key) { data.delete(key); },
-		setItem: function (key, value) { data.set(key, value); },
-	};
-	Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
-	try {
-		for (const version of [1, 2, 3, 4, 5, 6, 7]) storage.setItem(`heavy-rig:campaign:v${version}`, JSON.stringify({ ...createCampaign(72), version, credits: 900 }));
-		storage.setItem('heavy-rig:profile:v1', 'keep settings');
-		storage.setItem('other-game:campaign:v4', 'keep other game');
-		const fresh = readCampaign();
-		expect(fresh.version).toBe(8);
-		expect(fresh.credits).toBe(STARTING_CREDITS);
-		for (const version of [1, 2, 3, 4, 5, 6, 7]) expect(storage.getItem(`heavy-rig:campaign:v${version}`)).toBeNull();
-		expect(storage.getItem('heavy-rig:profile:v1')).toBe('keep settings');
-		expect(storage.getItem('other-game:campaign:v4')).toBe('keep other game');
-		const current = { ...createCampaign(84), credits: 0 };
-		expect(saveCampaign(current)).toBe(true);
-		expect(storage.getItem(CAMPAIGN_STORAGE_KEY)).toBe(JSON.stringify(current));
-		expect(readCampaign()).toEqual(current);
-		storage.setItem('heavy-rig:campaign:v4', 'obsolete');
-		expect(saveCampaign(current)).toBe(true);
-		expect(storage.getItem('heavy-rig:campaign:v4')).toBeNull();
-		expect(parseCampaign(JSON.stringify({ ...current, version: 4, credits: 900 })).credits).toBe(STARTING_CREDITS);
-	} finally {
-		if (original) Object.defineProperty(globalThis, 'localStorage', original);
-		else Reflect.deleteProperty(globalThis, 'localStorage');
-	}
-});
-
 test('an accepted v6 contract is discarded with the rest of the old company', async function () {
 	const raw = await Bun.file(new URL('./fixtures/accepted-contract-v6.json', import.meta.url)).text();
 	const restored = parseCampaign(raw);

@@ -36,6 +36,7 @@ export const createTouchTargeting = function () {
 	};
 	return {
 		clear,
+		track: function (targetId: number) { id = targetId; },
 		select: function (point: Point, contacts: readonly TouchContact[]) {
 			const nearest = contacts.reduce<TouchContact | undefined>(function (best, contact) { return !best || distance(contact.screen, point) < distance(best.screen, point) ? contact : best; }, undefined);
 			const selected = nearest && distance(nearest.screen, point) <= 44 ? nearest : undefined;

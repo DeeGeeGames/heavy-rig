@@ -21,7 +21,7 @@ import { planSquads, type SquadOrder as EnemySquadOrder } from './enemy-squads';
 import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './enemy-tactics';
 import { dropRigPose, planRigDrop, rigReleaseTime, type DropPassenger } from './enemy-deployment';
 import { advancePerimeterEntry, isFieldContact, planPerimeterEntry, type PerimeterEntry } from './enemy-perimeter';
-import { SQUAD_SIZE, type Pilot } from './pilots';
+import { pilotExperienceMultiplier, SQUAD_SIZE, type Pilot, type PilotExperienceBonus } from './pilots';
 
 export interface Point { x: number; y: number }
 interface BeamAim { readonly direction: Readonly<SpatialPoint>; readonly targetId: number | undefined; readonly sweeping: boolean }
@@ -54,8 +54,12 @@ export const MISSILE_LOCK_SECONDS = 1.5;
 export const MISSILE_LOCK_GRACE = 0.3;
 export interface MissileLock { targetId: number; progress: number; interrupted: number }
 export type FireDiscipline = 'free' | 'hold';
-export type SquadOrder = { kind: 'form' } | { kind: 'hold' | 'move'; point: Point } | { kind: 'attack'; targetId: number };
-interface SquadMoveProgress { order: SquadOrder; searchAfter: number; firingPosition?: Point | undefined }
+interface SquadMoveProgress { searchAfter: number; firingPosition?: Point | undefined }
+export type SquadOrder =
+	| { kind: 'form' }
+	| { kind: 'hold'; point: Point }
+	| { kind: 'move'; point: Point; progress?: SquadMoveProgress }
+	| { kind: 'attack'; targetId: number };
 interface RigBody extends Point, ReactorState {
 	brace?: number | undefined;
 	designation?: { targetId: number; seconds: number } | undefined;
@@ -72,12 +76,13 @@ export interface SquadmateOptions {
 	pilotId: string;
 	callsign: string;
 	specialty: Exclude<Pilot['specialty'], 'commander'>;
+	experienceBonus?: PilotExperienceBonus;
 	frameId: FrameId;
 	loadout: readonly (WeaponId | null)[];
 	reserves: readonly number[];
 	integrity: number;
 }
-export interface Squadmate extends RigBody, Pick<SquadmateOptions, 'pilotId' | 'callsign' | 'specialty' | 'frameId'> {
+export interface Squadmate extends RigBody, Pick<SquadmateOptions, 'pilotId' | 'callsign' | 'specialty' | 'experienceBonus' | 'frameId'> {
 	defeatedAt?: number;
 	loadout: WeaponMount[];
 	shotsFired: number;
@@ -115,7 +120,6 @@ const squadMoveOffsets = [.5, .9].flatMap(function (fraction) {
 		return { x: Math.cos(angle) * SQUAD_MOVE_RADIUS * fraction, y: Math.sin(angle) * SQUAD_MOVE_RADIUS * fraction };
 	});
 });
-const squadMoveProgress = new WeakMap<Squadmate, SquadMoveProgress>();
 interface EnemyStats { mass: number; recommendedMass: number; cooling: number; hp: number; speed: number; range: number; reload: number; damage: number; aggro: number; elevation: number; score: number }
 export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
 	scout: { mass: 35, recommendedMass: 42, cooling: 10, hp: 600, speed: 66, range: 310, reload: 2, damage: 3.5, aggro: 650, elevation: 42, score: 200 },
@@ -165,11 +169,11 @@ export const createMissionState = function (contract: Contract, options: Mission
 	};
 	const heading = Math.atan2(map.objective.y - map.drop.y, map.objective.x - map.drop.x);
 	state.player.x = map.drop.x; state.player.y = map.drop.y; state.player.angle = heading; state.player.turret = heading;
-	state.squadmates = squadmates.map(function ({ pilotId, callsign, specialty, frameId, loadout, reserves, integrity }, index) {
+	state.squadmates = squadmates.map(function ({ pilotId, callsign, specialty, experienceBonus = 0, frameId, loadout, reserves, integrity }, index) {
 		if (!isFrameLoadout(frameId, loadout)) throw new RangeError(`Invalid loadout for ${frameId}`);
 		const at = missionDeploymentSlot(map, index);
 		return {
-			pilotId, callsign, specialty, frameId, loadout: loadedMounts(loadout, reserves),
+			pilotId, callsign, specialty, experienceBonus, frameId, loadout: loadedMounts(loadout, reserves),
 			x: clamp(at.x, EDGE_CLEARANCE, map.width - EDGE_CLEARANCE), y: clamp(at.y, EDGE_CLEARANCE, map.height - EDGE_CLEARANCE), angle: heading, turret: heading,
 			hp: Number.isFinite(integrity) ? clamp(integrity, 0, 100) : 0, heat: 0, overheated: false, throttle: 0, speed: 0, shotsFired: 0, coolantCharges: 2,
 		};
@@ -1007,9 +1011,10 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 };
 const fireRigWeapons = function (state: CombatStateView, input: TriggerInput, dt: number, mate?: Squadmate) {
 	const targets = combatTargets(state);
+	const baseSpread = mate?.specialty === 'marksman' ? 0.5 : 1;
 	fireMountedRig(state, {
 		body: mate ?? state.player, frame: mate?.frameId ?? state.frame, loadout: mate?.loadout ?? state.loadout,
-		pose: mate ? mate.authoredPose : state.authoredPose, spread: mate?.specialty === 'marksman' ? 0.5 : 1, damage: 1,
+		pose: mate ? mate.authoredPose : state.authoredPose, spread: baseSpread / pilotExperienceMultiplier(mate?.experienceBonus), damage: 1,
 		source: mate ? { squadmateId: mate.pilotId } : {},
 		shots: function () { return mate ? mate.shotsFired : state.stats.shotsFired; },
 		countShot: function () { return mate ? ++mate.shotsFired : ++state.stats.shotsFired; },
@@ -1103,8 +1108,7 @@ const squadmateMoveDestination = function (state: CombatStateView, mate: Squadma
 				if (other === mate) return true;
 				const order = other.order;
 				const assigned = order?.kind === 'move' || order?.kind === 'hold' ? order.point : other;
-				const otherProgress = squadMoveProgress.get(other);
-				const reserved = otherProgress && otherProgress.order === order ? otherProgress.firingPosition : undefined;
+				const reserved = order?.kind === 'move' ? order.progress?.firingPosition : undefined;
 				return distance(point, other) >= 2 * RIG_RADIUS && distance(point, assigned) >= 2 * RIG_RADIUS
 					&& (!reserved || distance(point, reserved) >= 2 * RIG_RADIUS);
 			});
@@ -1167,17 +1171,17 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 		let destination = ordered ? (target ? mate : squadmateAttackDestination(state, mate, ordered, targets, range)) : squadmateDestination(state, active, mate, index);
 		let anchor: Point | undefined;
 		if (order?.kind === 'move') {
-			let progress = squadMoveProgress.get(mate);
-			if (progress?.order !== order && distance(mate, order.point) <= SQUAD_ARRIVAL_RADIUS
+			let progress = order.progress;
+			if (!progress && distance(mate, order.point) <= SQUAD_ARRIVAL_RADIUS
 				&& (!navigation || terrainPathClear(navigation, mate, order.point, RIG_RADIUS))) {
-				progress = { order, searchAfter: 0 };
-				squadMoveProgress.set(mate, progress);
+				progress = { searchAfter: 0 };
+				mate.order = { ...order, progress };
 			}
-			if (progress?.order === order) {
+			if (progress) {
 				anchor = order.point;
 				destination = squadmateMoveDestination(state, mate, anchor, active, targets, range, target, progress);
 			}
-		} else squadMoveProgress.delete(mate);
+		}
 		const mortar = mate.loadout.find(function (mount, index) { return mortarProfile(mate.frameId, mount.slot ?? index) && usableMount(mount); });
 		if (mortar && target && groundArtilleryTarget(target) && mortarInRange(distance(mate, target.body)) && (!order || order.kind === 'form')) destination = mate;
 		const at = { x: clamp(destination.x, EDGE_CLEARANCE, bounds.width - EDGE_CLEARANCE), y: clamp(destination.y, EDGE_CLEARANCE, bounds.height - EDGE_CLEARANCE) };
@@ -1202,7 +1206,7 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 		}
 		const aim = target?.body ?? { x: mate.x + Math.cos(mate.angle), y: mate.y + Math.sin(mate.angle) };
 		const aimAngle = Math.atan2(aim.y - mate.y, aim.x - mate.x);
-		mate.turret = turnTorso(mate.angle, mate.turret, aimAngle, cycleDt * frame.turretRate);
+		mate.turret = turnTorso(mate.angle, mate.turret, aimAngle, cycleDt * frame.turretRate * pilotExperienceMultiplier(mate.experienceBonus));
 		if (advancePose) mate.authoredPose = advancePose(previousPose, mate, state.time, terrain);
 		const fire = target !== undefined && Math.abs(angleDelta(mate.turret, aimAngle)) <= (mate.specialty === 'marksman' ? 0.035 : 0.075);
 		fireRigWeapons(state, { aim, fire: [fire, fire, fire, fire], ...(target ? { targetId: target.id } : {}) }, dt, mate);

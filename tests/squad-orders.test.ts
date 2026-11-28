@@ -1,10 +1,12 @@
 import { expect, test } from 'bun:test';
 import { getWeapon } from '../src/arsenal';
+import { createCampaign } from '../src/campaign';
 import type { Contract } from '../src/campaign-types';
 import { RIG_RADIUS } from '../src/combat-spatial';
 import type { FieldTerrain } from '../src/field-terrain';
 import { generateMissionMap } from '../src/missions';
-import { createMissionState, distance, projectilesStep, squadmatesStep, squadMoveDestinations, type SquadmateOptions, type State, type Unit } from '../src/simulation';
+import { getPilot, getPilotStats } from '../src/pilots';
+import { angleDelta, createMissionState, distance, projectilesStep, squadmatesStep, squadMoveDestinations, type SquadmateOptions, type State, type Unit } from '../src/simulation';
 
 const contract: Contract = { id: 'squad-orders', seed: 123, planetId: 'meridian', kind: 'clearance', employer: 'freeholds', opponent: 'combine', title: 'Clear', briefing: 'Clear the site', reward: 100, favor: 8, hostility: 5, tier: 1, requiredReputation: -100 };
 const mate: SquadmateOptions = { pilotId: 'rook', callsign: 'Rook', specialty: 'marksman', frameId: 'warden', loadout: [null, null, 'stream-rockets-4', null], reserves: [0, 0, 4, 0], integrity: 100 };
@@ -15,6 +17,52 @@ const advanceSquad = function (state: State) {
 	squadmatesStep(state, dt);
 	projectilesStep(state, dt);
 };
+
+test('both live wingmate specialties acquire a contact sooner and fire more accurately at each experience milestone', function () {
+	const company = createCampaign(2, 'career');
+	const map = { ...generateMissionMap(contract), terrain: { obstacles: [], roads: [] } };
+	const engage = function (pilotId: 'flint' | 'kite', wins: number) {
+		const { callsign, specialty } = getPilot(pilotId);
+		if (specialty === 'commander') throw new Error('Expected hired wingmate');
+		const experienceBonus = getPilotStats({ ...company, pilotWins: { [pilotId]: wins } }, pilotId).bonus;
+		const state = createMissionState(contract, { map, squadmates: [
+			{ pilotId, callsign, specialty, experienceBonus, frameId: 'kestrel', loadout: ['machine-gun', null], reserves: [500, 0], integrity: 100 },
+		] });
+		const wing = state.squadmates[0];
+		if (!wing) throw new Error('Missing wingmate');
+		const point = { x: 1000, y: 1000 };
+		Object.assign(wing, point, { angle: 0, turret: -1.8 });
+		wing.order = { kind: 'hold', point };
+		const target: Unit = { id: state.nextId++, x: 1450, y: 1000, angle: 0, hp: 2000, maxHp: 2000, heavy: false, kind: 'scout', cooldown: 100 };
+		state.enemies = [target];
+		let firstShot = 0;
+		for (let tick = 1; tick <= 180; tick++) {
+			state.time += dt;
+			squadmatesStep(state, dt);
+			if (!firstShot && wing.shotsFired) firstShot = tick;
+			// The fifth round samples dispersion after the turret has settled on the target.
+			if (wing.shotsFired === 5) {
+				const shot = state.shots.at(-1);
+				if (!shot?.origin) throw new Error('Expected a round from the wingmate');
+				const bearing = Math.atan2(target.y - shot.origin.y, target.x - shot.origin.x);
+				return { firstShot, error: Math.abs(angleDelta(bearing, Math.atan2(shot.vy, shot.vx))) };
+			}
+		}
+		throw new Error('Wingmate never delivered its burst');
+	};
+	for (const pilot of ['flint', 'kite'] as const) {
+		const rookie = engage(pilot, 0);
+		const experienced = engage(pilot, 3);
+		const veteran = engage(pilot, 6);
+		expect(engage(pilot, 2)).toEqual(rookie);
+		expect(engage(pilot, 5)).toEqual(experienced);
+		expect(engage(pilot, 7)).toEqual(veteran);
+		expect(experienced.firstShot).toBeLessThan(rookie.firstShot);
+		expect(veteran.firstShot).toBeLessThan(experienced.firstShot);
+		expect(experienced.error).toBeLessThan(rookie.error);
+		expect(veteran.error).toBeLessThan(experienced.error);
+	}
+});
 
 test('Hold Fire stops a live salvo and permits fire at only the designated contact until it is destroyed', function () {
 	const map = { ...generateMissionMap(contract), terrain: { obstacles: [], roads: [] } };
@@ -120,7 +168,7 @@ test('a move order lets an armed pilot clear cover within its waypoint radius an
 	expect(furthest).toBeGreaterThan(20);
 	expect(furthest).toBeLessThanOrEqual(2 * RIG_RADIUS + 1e-6);
 	expect(target.hp).toBeLessThan(target.maxHp);
-	expect(wing.order).toEqual({ kind: 'move', point });
+	expect(wing.order).toMatchObject({ kind: 'move', point });
 
 	state.enemies = [];
 	for (let tick = 0; tick < 600; tick++) advanceSquad(state);

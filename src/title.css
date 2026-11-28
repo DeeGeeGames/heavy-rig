@@ -141,6 +141,8 @@
 .title-options b { display: block; font: 700 24px/1.05 var(--display); }
 .title-options small { display: block; margin-top: 3px; color: var(--hangar-ui-muted); font: 13px/1.3 Arial, sans-serif; }
 .title-options button:is(:hover, :focus) small { color: inherit; }
+.title-backups { display: flex; flex-wrap: wrap; gap: 4px; }
+.title-backups button { flex: 1 1 auto; width: auto; padding: 6px 8px; font: 600 13px var(--display); }
 
 @media (orientation: portrait) {
 	.title-screen {
