@@ -44,10 +44,9 @@ import { mountTrainingSetup } from './training-ui';
 import { createSituationMission } from './situation-sim';
 import { mountSituationSetup } from './situation-sim-ui';
 import { isDifficulty, readProfile, saveProfile, type Settings } from './profile';
-import { abandonContract, assignOperationLead, assignOperationSlot, CAMPAIGN_STORAGE_KEY, commitOperations, createCampaign, getFaction, getPlanet, getPlannedOperation, getTransmission, recoverInterruptedDeployment, removeOperation, reviewOperations, settleContract, stageOperation, travelTo, type Campaign, type CampaignResult } from './campaign';
+import { abandonContract, assignOperationLead, assignOperationSlot, CAMPAIGN_STORAGE_KEY, commitOperations, createCampaign, getFaction, getPlanet, getPlannedOperation, getTransmission, removeOperation, reviewOperations, settleContract, stageOperation, travelTo, type Campaign, type CampaignResult } from './campaign';
 import { companySlots, createCompanySession, slotName } from './company-session';
 import { companySlotKey, exportCompanyBackup, importCompanyBackup, type CompanySlot, type SlotSave } from './company-saves';
-import { restoreSortie, tryCaptureSortie, type SortieCheckpoint } from './sortie-checkpoint';
 import type { Difficulty } from './operation';
 import { focusTerritoryMap, handleTerritoryZoomKey } from './territory-map';
 import { renderBridge, renderStarmap, type BridgeActions, type BriefingOrigin, type ShipView } from './campaign-ui';
@@ -227,8 +226,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const mouseButtons = new Set<number>();
 	const consumedMouseButtons = new Set<number>();
 	let state = combatRuntime.attach(createState({ difficulty: profile.settings.difficulty })); let gaits = createGaits(state); let muted = false;
-	let lastCheckpointTime = 0;
-	let checkpointFailed = false;
 	let sortieEnding: { owner: typeof state; kind: 'fall' | 'pickup'; startedAt: number; elapsed: number; reveal?: (now: number) => void } | undefined;
 	const radarViewport = window.matchMedia('(width > 700px) and (height > 520px)');
 	let radarOwner: typeof state | undefined;
@@ -267,7 +264,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const squadOrders = mountSquadOrders(squadOrdersRoot, {
 		apply: function (current, changes) {
 			if (navigation.auxiliary !== 'squad-orders' || navigation.transitioning || campaignConflict || contextLost) return;
-			if (combatRuntime.applySquadOrders(current, changes)) { checkpoint(); setPaused(false); }
+			if (combatRuntime.applySquadOrders(current, changes)) setPaused(false);
 		},
 		back: function () { backFromSquadOrders(); },
 	}, abort.signal);
@@ -378,11 +375,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		return element('title-continue');
 	};
 	const unreadableSlot = function (save: SlotSave) { return !save.company && Boolean(save.token || save.backupToken); };
-	const deploymentAction = function (save: SlotSave) {
-		if (!save.company?.deployed) return undefined;
-		if (save.checkpoint) return 'Resume sortie';
-		return save.company.deployed.integrity === 0 ? 'Recover squad' : 'Resume from landing';
-	};
 	const refreshTitleCompany = function () {
 		const career = element('title-direct-career');
 		const careerHadFocus = document.activeElement === career;
@@ -393,12 +385,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			element(`title-open-${slot}`).hidden = !save.company;
 			element(`title-export-${slot}`).hidden = !save.company;
 			if (save.company) {
-				const recovery = save.company.deployed && !save.checkpoint ? ` · ${deploymentAction(save)}` : save.recovered ? ' · Backup recovered' : '';
-				element(`title-${slot}-summary`).textContent = `Day ${save.company.day} · ${getPlanet(save.company.planetId).name}${save.company.deployed && save.company.active ? ' · ' + save.company.active.title : ''}${recovery}`;
+				const deployment = save.company.deployed && save.company.active ? ` · ${save.company.active.title} · Restart sortie` : '';
+				element(`title-${slot}-summary`).textContent = `Day ${save.company.day} · ${getPlanet(save.company.planetId).name}${deployment}${save.recovered ? ' · Backup recovered' : ''}`;
 			}
 			element(`title-${slot}-detail`).textContent = unreadableSlot(save) ? 'Local save unreadable. Restore a backup or start again.' : slot === 'career' ? 'Start directly aboard the Wayfarer.' : 'Escape the Rig Bay and pick up a signal on the Bridge.';
 		}
-		element('title-company-label').textContent = !current.company ? 'New campaign' : deploymentAction(current) ?? (campaign.introComplete ? `Continue ${slotName(current.slot)}` : 'Continue escape');
+		element('title-company-label').textContent = !current.company ? 'New campaign' : current.company.deployed ? 'Restart sortie' : campaign.introComplete ? `Continue ${slotName(current.slot)}` : 'Continue escape';
 		const storage = current.recovered ? 'Recovered save' : campaignSaved ? slotName(current.slot) : 'Session only · storage unavailable';
 		element('title-save-status').textContent = current.company ? `${storage} / Day ${String(campaign.day).padStart(2, '0')} · ${getPlanet(campaign.planetId).name}` : unreadableSlot(current) ? 'Local save unreadable · Restore a backup in Companies' : 'No company started';
 		if (careerHadFocus && career.hidden) element('title-company').focus();
@@ -503,7 +495,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('pause-training-loadout').hidden = !training;
 		element('pause-squad-orders').hidden = !canIssueSquadOrders();
 		element('leave').hidden = finishingSortie;
-		element('suspend-sortie').hidden = finishingSortie || !campaign.deployed || !state.mission || training !== undefined || escape || situationSim !== undefined || trialSeed !== undefined;
+		element('sortie-to-title').hidden = finishingSortie || !campaign.deployed || !state.mission || training !== undefined || escape || situationSim !== undefined || trialSeed !== undefined;
 		element('leave').textContent = situationSim ? 'RETURN TO SIM SETUP' : trialSeed !== undefined ? 'FIELD BRIEFING' : escape ? 'RETURN TO TITLE' : state.mission && !training ? 'ABORT CONTRACT & RETURN TO SHIP' : trainingOrigin === 'title' && training ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
 		element('training-deploy').hidden = !companies.openForPlay || !campaign.active && !campaign.operations?.length;
 		element('training-briefing').textContent = trainingOrigin === 'title' ? 'RETURN TO TITLE' : 'RETURN TO SHIP';
@@ -524,9 +516,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			: escape ? 'The escape is paused. Resume when ready. This borrowed rig does not affect your company.'
 			: practice ? 'Change loadout to start a fresh run. Reset Range refills your selected ammunition and coolant.'
 			: training ? 'Resume the drills or change loadout to practice in the range.'
-			: checkpointFailed ? 'Could not checkpoint this moment. Resume and try suspending again. The previous save is available.'
-			: !campaignSaved ? 'Storage unavailable. Suspend to title and use Companies to download a backup before closing this tab.'
-			: 'Suspend to continue this sortie later. Aborting returns the squad to the ship and advances the day.';
+			: !campaignSaved ? 'Storage unavailable. Return to title and download a company backup before closing this tab. The sortie restarts from launch.'
+			: 'Returning to title or reloading restarts the sortie from launch. Aborting returns the squad to the ship and advances the day.';
 		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'launch', 'pause-panel', 'squad-orders', 'result', 'training-setup', 'training-result', 'situation-setup', 'situation-result', 'field-trial', 'settings', 'handbook', 'confirm', 'save-conflict']) {
 			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
@@ -584,9 +575,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		presentation.setLaunchTime(undefined);
 		audio.reset();
 	});
-	const launchLive = function (next: Campaign, resuming = false) {
+	const launchLive = function (next: Campaign, restarting = false) {
 		if (contextLost || navigation.auxiliary) return;
-		if (!next.active || !next.deployed || !resuming && next === campaign) return;
+		if (!next.active || !next.deployed || !restarting && next === campaign) return;
 		const mech = getOwnedMech(next, next.deployed.frameId);
 		if (!mech) return;
 		const squadmates: SquadmateOptions[] = [];
@@ -596,38 +587,17 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			if (!rig || specialty === 'commander') return;
 			squadmates.push({ pilotId: member.pilotId, callsign, specialty, experienceBonus: getPilotStats(next, member.pilotId).bonus, frameId: rigFrameId(rig.frameId), loadout: rig.loadout, reserves: rig.reserves, integrity: member.integrity });
 		}
-		const saved = resuming ? companies.current.checkpoint : undefined;
-		const initial = createMissionState(next.active, { difficulty: saved?.difficulty ?? profile.settings.difficulty, frame: rigFrameId(mech.frameId), loadout: mech.loadout, reserves: mech.reserves, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges, squadmates });
-		const restored = saved ? restoreSortie(initial, saved) : initial;
-		if (!restored) {
-			companies.close();
-			setTitleGroup('company');
-			titleFileStatus('This sortie could not be restored. Choose a company backup to recover it.');
-			return;
-		}
-		if (!saved) {
-			const snapshot = tryCaptureSortie(restored, next.deployed);
-			if (!snapshot) {
-				if (resuming) { companies.close(); setTitleGroup('company'); titleFileStatus('Could not prepare this field. Your company save is preserved.'); }
-				else confirm(function () {}, 'RETURN', 'Could not prepare a field checkpoint. Your contracts remain available aboard the ship.', 'DEPLOYMENT PAUSED');
-				return;
-			}
-			if (!replaceCampaign(next, snapshot)) return;
-		}
+		const initial = createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: rigFrameId(mech.frameId), loadout: mech.loadout, reserves: mech.reserves, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges, squadmates });
+		if (!restarting && !replaceCampaign(next)) return;
 		presentation.resetZoom(); training = undefined;
-		state = combatRuntime.attach(restored);
-		lastCheckpointTime = state.time;
-		checkpointFailed = false;
+		state = combatRuntime.attach(initial);
 		gaits = createGaits(state); aimMode = defaultAimMode();
-		aim = resuming ? { x: state.player.x + 500 * Math.cos(state.player.turret), y: state.player.y + 500 * Math.sin(state.player.turret) } : { ...(initial.mission?.map.objective ?? state.player) };
+		aim = { ...(initial.mission?.map.objective ?? state.player) };
 		pointer = undefined;
 		message = squadmates.length ? '' : `${rigName(mech.frameId)} ON SURFACE · ${MISSION_NAMES[next.active.kind].toUpperCase()}`;
 		messageUntil = message ? 5 : 0;
 		terminalUntil = 0;
-		if (!resuming) { startLaunch(); return; }
-		if (state.outcome !== 'playing') { showResult(performance.now()); return; }
-		audio.beginSortie();
-		transition(navigation.setScreen('playing').then(navigation.pause));
+		startLaunch();
 	};
 	const start = function () {
 		if (navigation.screen === 'deploy') launchLive(beginDeployment(campaign));
@@ -724,7 +694,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const setPaused = function (paused: boolean) {
 		if (campaignConflict) return;
 		if (paused) silenceAudio();
-		if (paused && navigation.screen === 'playing') { checkpoint(); transition(navigation.pause()); }
+		if (paused && navigation.screen === 'playing') transition(navigation.pause());
 		else if (!paused && navigation.screen === 'pause-panel' && !contextLost) {
 			aimMode = defaultAimMode();
 			transition(navigation.resume(), function () {
@@ -781,23 +751,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			return rig ? [{ frameId: rig.frameId, hp: mate.hp }] : [];
 		}));
 	};
-	const checkpoint = function () {
-		if (!companies.openForPlay || campaignConflict || situationSim || trialSeed !== undefined || training || escape || !state.mission || !campaign.deployed || state.mission.contract.id !== campaign.active?.id) return false;
-		lastCheckpointTime = state.time;
-		const snapshot = tryCaptureSortie(state, campaign.deployed);
-		checkpointFailed = !snapshot;
-		if (!snapshot) {
-			message = 'CHECKPOINT UNAVAILABLE · PREVIOUS SAVE KEPT'; messageUntil = state.time + 5;
-			return false;
-		}
-		return replaceCampaign(fieldCondition(), snapshot);
-	};
 	const resetEditor = function (notice = '') {
 		editor = { loadout: [...(getOwnedMech(campaign)?.loadout ?? [])], reserves: [...(getOwnedMech(campaign)?.reserves ?? [])], slot: null, notice };
 	};
-	const replaceCampaign = function (next: Campaign, checkpoint?: SortieCheckpoint): boolean {
+	const replaceCampaign = function (next: Campaign): boolean {
 		if (!companies.openForPlay || situationSim || replayingEscape || campaignConflict) return false;
-		if (!companies.write(next, checkpoint)) { stopForConflict(); return false; }
+		if (!companies.write(next)) { stopForConflict(); return false; }
 		const current = getOwnedMech(campaign); const upcoming = getOwnedMech(next);
 		const installedChanged = current?.frameId !== upcoming?.frameId || current?.loadout.some(function (weapon, index) { return weapon !== upcoming?.loadout[index]; }) || current?.reserves.some(function (rounds, index) { return rounds !== upcoming?.reserves[index]; });
 		campaign = next;
@@ -1164,14 +1123,8 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	};
 	const continueCompany = function (save: SlotSave) {
 		void selectCompany(save, function () {
-			if (campaign.deployed) {
-				const recovered = save.checkpoint ? campaign : recoverInterruptedDeployment(campaign);
-				if (recovered === campaign) { launchLive(campaign, true); return; }
-				if (recovered.lastResult && replaceCampaign(recovered)) {
-					if (recovered.lastOperationDay) showDayDebrief(recovered.lastOperationDay, performance.now());
-					else showDebrief(recovered.lastResult, performance.now());
-				}
-			} else if (!campaign.introComplete) startIntro();
+			if (campaign.deployed) launchLive(campaign, true);
+			else if (!campaign.introComplete) startIntro();
 			else if (campaign.active) navigateShip('deploy');
 			else if (campaign.operations?.length) openOperations();
 			else if (getTransmission(campaign)?.offers.length) toTransmission();
@@ -1224,7 +1177,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const name = slotName(backup.slot);
 		confirm(function () {
 			void selectCompany(save, function () {
-				if (!replaceCampaign(backup.company, backup.checkpoint)) return;
+				if (!replaceCampaign(backup.company)) return;
 				destination = campaign.planetId; selectedContract = undefined; editedOperation = undefined; resetEditor();
 				companies.close(); setTitleGroup('company'); refreshTitleCompany(); titleInitial().focus();
 				titleFileStatus(companies.saved ? `${name} restored to day ${campaign.day}.` : `${name} restored for this session. Device storage is unavailable.`);
@@ -1275,7 +1228,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	listen('pause-radar', function () { if (toggleRadar()) setPaused(false); });
 	listen('resume', function () { setPaused(false); });
 	listen('pause', function () { setPaused(true); });
-	listen('suspend-sortie', function () { if (checkpoint()) toTitle(); else if (!campaignConflict) syncScreen(); });
+	listen('sortie-to-title', function () {
+		confirm(toTitle, 'RETURN TO TITLE', 'This attempt ends without settling the contract. Continue your company to restart the same sortie from launch.', 'RETURN TO TITLE?');
+	});
 	listen('open-squad-orders', openSquadOrders);
 	listen('pause-squad-orders', openSquadOrders);
 	listen('reset', function () {
@@ -1662,11 +1617,14 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	}, { ...listenerOptions, capture: true });
 	let reopenCompanyOnBack = false;
 	window.addEventListener('pagehide', function (event) {
-		checkpoint();
 		reopenCompanyOnBack = event.persisted && companies.openForPlay && campaignSaved;
 		if (!event.persisted || reopenCompanyOnBack) companies.close();
 	}, listenerOptions);
-	window.addEventListener('pageshow', function (event) { if (event.persisted && reopenCompanyOnBack) window.location.reload(); }, listenerOptions);
+	window.addEventListener('pageshow', function (event) {
+		if (!event.persisted) return;
+		if (reopenCompanyOnBack) window.location.reload();
+		else if (companies.openForPlay && campaign.deployed && !campaignConflict) toTitle();
+	}, listenerOptions);
 	window.addEventListener('blur', function () { focused = false; padInput.suspend(); resetInput(); setPaused(true); }, listenerOptions);
 	window.addEventListener('focus', function () { focused = true; padInput.suspend(); }, listenerOptions);
 	document.addEventListener('visibilitychange', function () { padInput.suspend(); if (document.hidden) { silenceAudio(); resetInput(); setPaused(true); } }, listenerOptions);
@@ -2196,7 +2154,6 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			}
 			else if (situationSim && state.outcome !== 'playing') afterSortieEnding(now, showSituationResult);
 			else if (!training && state.outcome !== 'playing') showResult(now);
-			else if (state.time - lastCheckpointTime >= 2 && campaign.deployed && !training && !escape && !situationSim && trialSeed === undefined) checkpoint();
 		},
 	});
 	const battlefieldVisible = function () {
@@ -2317,7 +2274,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	frame = requestAnimationFrame(tick);
 	return function () {
 		if (stopped) return; stopped = true;
-		checkpoint(); cancelAnimationFrame(frame); abort.abort(); resetInput();
+		cancelAnimationFrame(frame); abort.abort(); resetInput();
 	};
 });
 if (import.meta.hot) import.meta.hot.dispose(shutdown);

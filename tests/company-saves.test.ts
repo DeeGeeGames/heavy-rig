@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test';
-import { CAMPAIGN_STORAGE_KEY, commitOperations, createCampaign, getContracts, parseCampaign, readCampaign, saveCampaign, stageOperation, STARTING_CREDITS } from '../src/campaign';
+import { assignOperationSlot, CAMPAIGN_STORAGE_KEY, commitOperations, createCampaign, getContracts, parseCampaign, readCampaign, saveCampaign, stageOperation, STARTING_CREDITS } from '../src/campaign';
 import { companySlotKey, exportCompanyBackup, importCompanyBackup, lastCompanySlot, readCompanySlot, rememberCompanySlot, slotChanged, writeCompanySlot } from '../src/company-saves';
-import { createMissionState } from '../src/simulation';
-import { captureSortie } from '../src/sortie-checkpoint';
+import { buyFrame, checkpointDeployment } from '../src/company';
+import { hirePilot } from '../src/pilots';
 
 const withStorage = function (run: (storage: Storage) => void) {
 	const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
@@ -64,42 +64,51 @@ test('keeps unmarked v8 companies playable without inventing a story and purges 
 	});
 });
 
-test('restores a portable in-flight company across cleared storage and falls back to a valid checkpoint after corruption', function () {
+test('old in-flight saves restart with launch condition, keep committed crews and export without field state', function () {
 	withStorage(function (storage) {
-		const fresh = createCampaign(42, 'career');
-		const contract = getContracts(fresh).find(function (offer) { return offer.kind === 'recovery' && offer.tier === 1; });
-		if (!contract) throw new Error('Missing recovery posting');
-		const live = commitOperations(stageOperation(fresh, contract.id));
-		const company = parseCampaign(JSON.stringify(live));
-		const state = createMissionState(contract, { frame: 'kestrel' });
-		state.time = 10;
-		const first = writeCompanySlot(readCompanySlot('career'), live, captureSortie(state, live.deployed));
-		if (first.status !== 'saved') throw new Error('First checkpoint failed');
-		state.time = 30;
-		const latest = writeCompanySlot(first.save, live, captureSortie(state, live.deployed));
-		if (latest.status !== 'saved') throw new Error('Second checkpoint failed');
-		const exported = exportCompanyBackup(latest.save);
-		if (!exported) throw new Error('Missing backup');
+		const fresh = createCampaign(318, 'career');
+		const ready = hirePilot(hirePilot(buyFrame(buyFrame({ ...fresh, credits: 60_000 }, 'kestrel-b'), 'warden'), 'flint'), 'kite');
+		const [field, crew] = getContracts(ready);
+		if (!field || !crew) throw new Error('Missing paired contracts');
+		const company = { ...ready, fleet: ready.fleet.map(function (rig) {
+			return rig.frameId === 'kestrel' ? { ...rig, integrity: 82 } : rig;
+		}) };
+		const staged = stageOperation(stageOperation(company, field.id), crew.id);
+		const assigned = assignOperationSlot(assignOperationSlot(staged, field.id, 1, { pilotId: 'flint', frameId: 'kestrel-b' }),
+			crew.id, 0, { pilotId: 'kite', frameId: 'warden' });
+		const launched = commitOperations(assigned);
+		expect(launched.deployed?.wing).toHaveLength(1);
+		expect(launched.committedCrew).toHaveLength(1);
+		const interrupted = checkpointDeployment(launched, 0, 0, [{ frameId: 'kestrel-b', hp: 35 }]);
 		const key = companySlotKey('career');
-		const missingField = JSON.stringify({ format: 'heavy-rig-company', version: 1, slot: 'career', company: live });
-		storage.setItem(key, missingField);
-		expect(importCompanyBackup(missingField)).toBeUndefined();
-		expect(readCompanySlot('career')).toMatchObject({ recovered: true, checkpoint: first.save.checkpoint });
-		const damaged = JSON.stringify({ format: 'heavy-rig-company', version: 1, slot: 'career', company: live, checkpoint: { damaged: true } });
-		storage.setItem(key, damaged);
-		expect(slotChanged(latest.save)).toBe(true);
-		expect(importCompanyBackup(damaged)).toBeUndefined();
+		const oldSave = JSON.stringify({ format: 'heavy-rig-company', version: 1, slot: 'career', company: interrupted, checkpoint: { time: 51, outcome: 'lost' } });
+
+		storage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(interrupted));
+		expect(readCompanySlot('career').company).toEqual(parseCampaign(JSON.stringify(launched)));
+		storage.removeItem(CAMPAIGN_STORAGE_KEY);
+
+		storage.setItem(key, oldSave);
+		const loaded = readCompanySlot('career');
+		expect(loaded.company).toEqual(launched);
+		expect(importCompanyBackup(oldSave)?.company).toEqual(launched);
+		const exported = exportCompanyBackup(loaded);
+		if (!exported) throw new Error('Missing portable backup');
+		expect(JSON.parse(exported)).not.toHaveProperty('checkpoint');
+
+		storage.setItem(key + ':backup', oldSave);
+		storage.setItem(key, '{damaged');
+		expect(slotChanged(loaded)).toBe(true);
 		const recovered = readCompanySlot('career');
-		expect(recovered).toMatchObject({ recovered: true, checkpoint: first.save.checkpoint, company });
+		expect(recovered.recovered).toBe(true);
+		expect(recovered.company).toEqual(launched);
 		storage.removeItem(key + ':backup');
-		expect(writeCompanySlot(recovered, live, recovered.checkpoint).status).toBe('conflict');
-		expect(readCompanySlot('career')).toMatchObject({ recovered: true, checkpoint: undefined, company });
+		expect(writeCompanySlot(recovered, launched).status).toBe('conflict');
+
 		storage.clear();
 		const restored = importCompanyBackup(exported);
-		if (!restored) throw new Error('Portable backup failed to load');
-		expect(restored.slot).toBe('career');
-		expect(writeCompanySlot(readCompanySlot(restored.slot), restored.company, restored.checkpoint).status).toBe('saved');
-		expect(readCompanySlot('career')).toMatchObject({ company, checkpoint: latest.save.checkpoint });
+		if (!restored) throw new Error('Missing restored company');
+		expect(writeCompanySlot(readCompanySlot(restored.slot), restored.company).status).toBe('saved');
+		expect(readCompanySlot('career').company).toEqual(launched);
 		expect(readCompanySlot('campaign').company).toBeUndefined();
 	});
 });

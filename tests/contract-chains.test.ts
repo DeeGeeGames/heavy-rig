@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, getTransmission, parseCampaign, recoverInterruptedDeployment, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
+import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, getTransmission, parseCampaign, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import type { MissionKind } from '../src/campaign-types';
 import { advanceDays, beginDeployment, checkpointDeployment, getOwnedMech, queueRepair, repairDays } from '../src/company';
 import { hirePilot } from '../src/pilots';
@@ -102,14 +102,14 @@ test('choosing a branch commits on acceptance and pays out its distinct ending o
 	}
 });
 
-test('failure, abort and interrupted deployment all allow a wrecked starter to repair and retry at zero credits', function () {
+test('failure and explicit abort allow a wrecked starter to repair and retry at zero credits', function () {
 	const arrived = travelTo(hirePilot(opening(), 'flint'), 'cinder');
 	expect(arrived.credits).toBe(0);
 	const recovery = offer(arrived, 'recovery').contract;
 	const launched = beginDeployment(acceptContract(arrived, recovery.id));
 	const wrecked = checkpointDeployment(launched, 0, 0);
 	expect(getOwnedMech(roundTrip(wrecked))?.integrity).toBe(0);
-	for (const failed of [settleContract(wrecked, false), abandonContract(wrecked), recoverInterruptedDeployment(roundTrip(wrecked))]) {
+	for (const failed of [settleContract(wrecked, false), abandonContract(wrecked)]) {
 		expect(failed.credits).toBe(0);
 		expect(failed.failed).toBe(1);
 		expect(failed.active).toBeUndefined();
