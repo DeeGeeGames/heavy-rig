@@ -7,7 +7,8 @@ import { defaultReserves } from '../src/combat-resources';
 import { createStarterLoadout } from '../src/hardpoints';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS } from '../src/missions';
 import { RIG_DEFEAT_SECONDS } from '../src/rig-defeat-timing';
-import { createMissionState, createState, distance, step, type CombatStateView, type Controls, type SquadmateOptions } from '../src/simulation';
+import { combatTargets, createMissionState, createState, distance, step, type CombatStateView, type Controls, type SquadmateOptions } from '../src/simulation';
+import { fieldContacts } from '../src/tactical-radar';
 import { createTraining, stepTraining } from '../src/training';
 import { createSituationMission } from '../src/situation-sim';
 
@@ -28,6 +29,49 @@ const scenario = function () {
 	state.shots.push({ x: 900, y: 650, vx: 0, vy: -4000, life: 1, kind: 'ppc', target: undefined, damage: 38, hitIds: [] });
 	return state;
 };
+
+test('a squadmate uncovers a silo and its exposed head can be destroyed before it fires', async function () {
+	const initial = createSituationMission({ kind: 'demolition', planetId: 'meridian', tier: 3, frame: 'warden', wing: [{ pilotId: 'kite', frame: 'kestrel' }] }, 123, 'standard');
+	const map = initial.mission?.map;
+	const post = initial.enemies.find(function (enemy) { return enemy.kind === 'silo-turret'; });
+	if (!map || !post) throw new Error('Missing silo encounter');
+	delete map.terrain;
+	initial.enemies = [post];
+	const { world, combat, state } = await harness(initial);
+	const ticks = function (count: number) { for (let i = 0; i < count; i++) world.update(1 / 60); };
+	try {
+		const gun = state.enemies[0];
+		const mate = state.squadmates[0];
+		if (!gun?.silo || !mate) throw new Error('Missing deployed units');
+		mate.fireDiscipline = 'hold';
+		ticks(30);
+		expect(gun.silo.deployment).toBe(0);
+		expect(fieldContacts(state)).toHaveLength(0);
+		expect(combatTargets(state).map(function (target) { return target.id; })).not.toContain(gun.id);
+		const fireAcrossHatch = function () {
+			state.shots.push({ x: gun.x - 40, y: gun.y, elevation: 12, vx: 2400, vy: 0, life: 1, kind: 'cannon', target: undefined, damage: gun.maxHp * 2 });
+			ticks(2);
+		};
+		fireAcrossHatch();
+		expect(gun.hp).toBe(gun.maxHp);
+		Object.assign(mate, { x: gun.x - 300, y: gun.y, order: { kind: 'hold', point: { x: gun.x - 300, y: gun.y } } });
+		ticks(15);
+		const started = gun.silo.deployment;
+		expect(started).toBeGreaterThan(0);
+		combat.setEnabled(false); ticks(60);
+		expect(gun.silo.deployment).toBe(started);
+		combat.setEnabled(true); ticks(94);
+		expect(gun.silo.deployment).toBeLessThan(1);
+		expect(fieldContacts(state).map(function (enemy) { return enemy.id; })).toEqual([gun.id]);
+		expect(combatTargets(state).some(function (target) { return target.id === gun.id; })).toBe(true);
+		expect(gun.silo.shotsFired).toBe(0);
+		fireAcrossHatch();
+		expect(state.kills).toBe(1);
+		expect(state.wrecks[0]?.kind).toBe('silo-turret');
+		ticks(160);
+		expect(state.stats.damageTaken).toBe(0); expect(mate.hp).toBe(100);
+	} finally { await world.dispose(); }
+});
 
 test('a fixed battery can engage across the entire map and each committed round gets two full seconds of flight', async function () {
 	const initial = createSituationMission({ kind: 'clearance', planetId: 'meridian', tier: 4, frame: 'warden', wing: [] }, 15, 'standard');

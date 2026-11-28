@@ -1,4 +1,4 @@
-import type { EnemyKind } from './simulation';
+import type { PresetEnemyKind } from './simulation';
 
 export type Difficulty = 'story' | 'standard' | 'veteran';
 export interface DifficultyDefinition {
@@ -14,7 +14,7 @@ export const DIFFICULTIES: readonly DifficultyDefinition[] = [
 	{ id: 'standard', name: 'Pilot', description: 'The intended fight. Manage heat, intercept artillery, protect the relay.', enemyArmor: 1, enemyDamage: 1, scoreMultiplier: 1 },
 	{ id: 'veteran', name: 'Veteran', description: 'Reinforced hostiles and harder hits. Preparation and positioning matter.', enemyArmor: 1.2, enemyDamage: 1.3, scoreMultiplier: 1.4 },
 ];
-export interface EnemySpawn { kind: Exclude<EnemyKind, 'artillery'>; commander?: boolean }
+export interface EnemySpawn { kind: Exclude<PresetEnemyKind, 'artillery'>; commander?: boolean }
 export interface WaveDefinition {
 	number: number;
 	name: string;

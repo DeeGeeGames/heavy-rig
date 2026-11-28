@@ -15,7 +15,7 @@ import { ARENA, playerAimPoint, enemyAimPoint, squadmateAimPoint, type EnemyKind
 import { RIG_DEFEAT_SECONDS } from './rig-defeat-timing';
 import type { MountDirections, SpatialPoint } from './weapon-rig';
 import type { AuthoredPoseContext } from './authored-pose';
-import type { WeaponMount } from './arsenal';
+import type { WeaponId, WeaponMount } from './arsenal';
 import { createWorldObjects } from './world-3d';
 import { SURFACE_PALETTES } from './mission-environment';
 import type { Biome } from './campaign-types';
@@ -37,6 +37,7 @@ import type { FallenRigPose } from './rig-collapse';
 import { groundAimSlope, groundHeight } from './terrain-elevation';
 import { drapeGroundGeometry } from './terrain-decals';
 import { fieldClippingPlanes } from './field-clipping';
+import { isFixedEmplacement } from './combat-spatial';
 
 interface CombatEntities {
 	entityForPlayer: () => number | undefined;
@@ -49,11 +50,12 @@ interface MechView {
 	commander: boolean;
 	frame: FrameId;
 	skin: MechFinish;
+	siloWeapon: WeaponId | undefined;
 	damage: { hp?: number; hitAt?: number; genericHitAt?: number; sampledAt?: number };
 	fall?: { since: number; sample: (elapsed: number) => FallenRigPose; pose: FallenRigPose };
 }
 interface ViewBindings {
-	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechFinish, entryPlanes?: Plane[]) => MechView;
+	ensure: (id: number, kind?: EnemyKind, commander?: boolean, frame?: FrameId, skin?: MechFinish, entryPlanes?: Plane[], siloWeapon?: WeaponId) => MechView;
 	pose: (id: number, view: MechView, gait: Gaits['player'], heading: number, hp: number, time: number, pose: MechPose) => void;
 	scale: (id: number, scale: number) => void;
 	poseWrecks: (time: number, terrain: FieldTerrain | undefined, finish: MechFinish) => { rigWrecks: ReadonlySet<Wreck>; fallenShadows: readonly FallenRigPose['shadow'][] };
@@ -73,6 +75,7 @@ interface MechPose {
 	legGait?: AuthoredGait | undefined;
 	defeatedAt?: number;
 	defeatElapsed?: number;
+	siloDeployment?: number;
 }
 interface OverlayFrame {
 	state: CombatStateView; aim: Point; gaits: Gaits; obstructions: readonly ScreenRect[]; couchMode: boolean;
@@ -212,11 +215,11 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				});
 				world.registerDispose('mechView', function ({ value }) { value.model.dispose(); });
 				const releaseView = function (id: number) { world.removeComponent(id, 'group'); world.removeComponent(id, 'mechView'); };
-				const ensure: ViewBindings['ensure'] = function (id, kind, commander = false, frame = 'warden', skin = 'original', entryPlanes) {
+				const ensure: ViewBindings['ensure'] = function (id, kind, commander = false, frame = 'warden', skin = 'original', entryPlanes, siloWeapon) {
 					const previous = world.getComponent(id, 'mechView');
-					if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame && previous.skin === skin) return previous;
+					if (previous && previous.kind === kind && previous.commander === commander && previous.frame === frame && previous.skin === skin && previous.siloWeapon === siloWeapon) return previous;
 					if (previous) releaseView(id);
-					const view: MechView = { model: createMech(kind, commander, frame, skin, entryPlanes), kind, commander, frame, skin, damage: {} };
+					const view: MechView = { model: createMech(kind, commander, frame, skin, entryPlanes, siloWeapon), kind, commander, frame, skin, siloWeapon, damage: {} };
 					world.addComponents(id, { ...createGroupComponents(view.model.root), mechView: view });
 					return view;
 				};
@@ -228,7 +231,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 				};
 				views = {
 					ensure,
-					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, mountDirections, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain, defeatedAt = time, defeatElapsed = 0 }) {
+					pose: function (id, view, gait, heading, hp, time, { loadout, response, heat = 0, authoredPose, target, mountDirections, manualAim, legGait, position = gait.body, heightAboveGround = 0, visible = true, terrain, defeatedAt = time, defeatElapsed = 0, siloDeployment }) {
 						const wasPosed = view.damage.hp !== undefined && view.model.root.visible;
 						if (view.damage.hp !== undefined && hp < view.damage.hp) {
 							view.damage.hitAt = time;
@@ -245,6 +248,7 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 							...(!view.kind ? { equippedSlots: loadout.map(function (mount, index) { return mount.slot ?? index; }) } : {}),
 							...(legGait ? { legGait } : {}), ...(authoredPose ? { authoredPose } : {}),
 							...(mountDirections ? { mountDirections } : {}),
+							...(siloDeployment !== undefined ? { siloDeployment } : {}),
 							...(terrain?.elevation ? { terrain } : {}), ...(target ? { target: { ...target, elevation: target.elevation - elevation } } : {}),
 							...(terrain?.elevation && manualAim && !target ? { aimSlope: groundAimSlope(terrain, position, manualAim, elevation) } : {}),
 						});
@@ -467,13 +471,14 @@ export const createPresentation = function (canvas: HTMLCanvasElement) {
 					const id = combat.entityForEnemy(enemy.id);
 					if (id === undefined) continue;
 					const view = views.ensure(id, enemy.catalog ? undefined : enemy.kind, Boolean(enemy.commander), enemy.catalog?.frameId ?? 'warden', opponentFinish,
-						enemy.entry ? fieldClippingPlanes(state.mission?.map ?? ARENA) : undefined);
+						enemy.entry ? fieldClippingPlanes(state.mission?.map ?? ARENA) : undefined, enemy.kind === 'silo-turret' ? enemy.loadout?.[0]?.weapon : undefined);
 					const gait = gaits.enemies.get(enemy.id) ?? createEnemyGait(enemy);
 					views.pose(id, view, gait, enemy.angle, enemy.hp, state.time, {
 						terrain, loadout: enemy.loadout ?? [], heat: enemy.reactor?.heat ?? 0, response: responses.get(enemy.id), authoredPose: enemy.catalog?.authoredPose,
+						...(enemy.silo ? { siloDeployment: enemy.silo.deployment } : {}),
 						target: enemyAimPoint(state, enemy), mountDirections: laserMounts.get(enemy.id), legGait: sampledLegs(enemy, enemy.catalog?.authoredPose?.gait ?? gait),
 					});
-					if (enemy.catalog || enemy.kind === 'artillery' || isVehicleKind(enemy.kind)) enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
+					if (enemy.catalog || isFixedEmplacement(enemy.kind) || isVehicleKind(enemy.kind)) enemyLabelHeights.set(enemy.id, view.model.labelHeight + 16);
 				}
 				const worldAnchor = function (anchor: Vector3) { return new Vector3(anchor.x + state.player.x, anchor.y + playerGround, anchor.z + state.player.y); };
 				// The simulation clock starts at touchdown handoff. Run surface scenery

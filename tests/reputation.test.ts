@@ -4,13 +4,14 @@ import { acceptContract, abandonContract, canAcceptContract, canStageOperation, 
 import type { Contract } from '../src/campaign-types';
 import { advanceDays, buyFrame, buyWeapon, getOwnedMech } from '../src/company';
 import { frameWeight, loadedMounts } from '../src/combat-resources';
+import { isFixedEmplacement } from '../src/combat-spatial';
 import { PLAYABLE_FRAMES } from '../src/frames';
 import { isFrameLoadout } from '../src/hardpoints';
 import { getFrameOffer } from '../src/market';
 import { companyRank, MISSION_TIERS, REPUTATION_RANKS, unlockedMissionTier, weaponUnlockRank } from '../src/reputation';
 import { createMissionState } from '../src/simulation';
 import { visibleTouchContacts } from '../src/touch-controls';
-import { generateMissionMap, isPriorityTarget, missionArtilleryCount, missionHostileCount, missionObjective, missionSpawn } from '../src/missions';
+import { generateMissionMap, isPriorityTarget, missionHostileCount, missionObjective, missionSpawn } from '../src/missions';
 
 const ranked = function (rank: number): Campaign {
 	return { ...createCampaign(317), companyReputation: REPUTATION_RANKS[rank - 1] ?? 0, credits: 1_000_000, reputation: { freeholds: 100, combine: 100, accord: 100 }, boardReputation: { freeholds: 100, combine: 100, accord: 100 } };
@@ -132,7 +133,8 @@ test('mission tiers increase pressure and replace marked vehicles with rigs at t
 		expect(Boolean(commander.commander)).toBe(level.tier >= 7);
 		expect(visibleTouchContacts(assassination, function () { return { x: 100, y: 100 }; }, 400, 400, []).find(function (contact) { return contact.id === commander.id; })?.label).toBe('PRIORITY TARGET');
 		expect(state.enemies.every(function (enemy) { return enemy.loadout?.every(function (mount) { return getWeapon(mount.weapon).tier === level.weaponTier; }); })).toBe(true);
-		expect(state.enemies.length - missionArtilleryCount(contract, state.mission?.map)).toBe(level.patrol - (level.tier >= 7 ? 2 : 1));
+		const mobile = state.enemies.filter(function (enemy) { return !isFixedEmplacement(enemy.kind); });
+		expect(mobile).toHaveLength(level.patrol - (level.tier >= 7 ? 2 : 1));
 		expect(assassination.enemies).toHaveLength(level.patrol);
 		const restored = parseCampaign(JSON.stringify(acceptContract(company, contract.id))).active;
 		if (!restored) throw new Error('Missing saved contract');
@@ -140,7 +142,7 @@ test('mission tiers increase pressure and replace marked vehicles with rigs at t
 		const surveyed = Array.from({ length: missionHostileCount(restored) }, function (_, i) { return missionSpawn(restored, map, i); });
 		expect(surveyed.map(function ({ kind, x, y }) { return { kind, x, y }; })).toEqual(
 			state.enemies.map(function ({ kind, x, y }) { return { kind, x, y }; }));
-		if (level.tier < 3) expect(state.enemies.every(function (enemy) { return enemy.kind === 'helicopter' || enemy.kind === 'tank' || enemy.kind === 'artillery'; })).toBe(true);
+		if (level.tier < 3) expect(mobile.every(function (enemy) { return enemy.kind === 'helicopter' || enemy.kind === 'tank'; })).toBe(true);
 		if (level.tier >= 7) expect(state.enemies.some(function (enemy) { return enemy.kind === 'siege'; })).toBe(true);
 		previousObjective = state.mission?.structure?.hp ?? 0;
 	}

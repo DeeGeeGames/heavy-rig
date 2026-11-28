@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import type { Contract } from '../src/campaign-types';
-import { EMPLACEMENT_RADIUS, enemyRadius, RIG_RADIUS } from '../src/combat-spatial';
+import { EMPLACEMENT_RADIUS, enemyRadius, isFixedEmplacement, RIG_RADIUS } from '../src/combat-spatial';
 import { defaultReserves } from '../src/combat-resources';
 import { createOpeningProgress, getChainStatus } from '../src/contract-chains';
 import { createStarterLoadout } from '../src/hardpoints';
@@ -104,10 +104,10 @@ test('the built-up objectives keep distinct combat approaches through both surve
 				if (!flank || !gate) throw new Error('Missing service road around the hangar');
 				expect(terrainShotFraction(terrain, muzzle(flank), target)).toBeDefined();
 				expect(terrainShotFraction(terrain, muzzle(gate), target)).toBeUndefined();
-				const guns = garrison.filter(function (p) { return p.kind === 'artillery'; });
-				expect(guns.length).toBe(missionArtilleryCount(contract));
+				const guns = garrison.filter(function (p) { return isFixedEmplacement(p.kind); });
+				expect(guns.filter(function (p) { return p.kind === 'artillery'; })).toHaveLength(missionArtilleryCount(contract));
 				const field = { obstacles: [...terrain.obstacles, ...guns.map(function (p) { return landingFootprint(p, EMPLACEMENT_RADIUS); })] };
-				for (const guard of garrison) if (guard.kind !== 'artillery') {
+				for (const guard of garrison) if (!isFixedEmplacement(guard.kind)) {
 					expect(terrainPathClear(field, guard, guard, RIG_RADIUS)).toBe(true);
 					expect(terrainWaypoint(field, guard, target, RIG_RADIUS)).not.toEqual(guard);
 				}
@@ -140,11 +140,11 @@ test('gun foundations leave the demolition patrol a route out of a compound', fu
 	const { map, garrison } = generateMissionField(contract);
 	const terrain = map.terrain;
 	if (!terrain) throw new Error('Missing compound terrain');
-	const pads = garrison.filter(function (guard) { return guard.kind === 'artillery'; })
+	const pads = garrison.filter(function (guard) { return isFixedEmplacement(guard.kind); })
 		.map(function (guard) { return landingFootprint(guard, EMPLACEMENT_RADIUS); });
-	expect(pads.length).toBe(missionArtilleryCount(contract));
+	expect(garrison.filter(function (guard) { return guard.kind === 'artillery'; })).toHaveLength(missionArtilleryCount(contract));
 	const field = { obstacles: [...terrain.obstacles, ...pads] };
-	for (const guard of garrison) if (guard.kind !== 'artillery') {
+	for (const guard of garrison) if (!isFixedEmplacement(guard.kind)) {
 		expect(terrainPathClear(field, guard, guard, RIG_RADIUS)).toBe(true);
 		expect(terrainWaypoint(field, guard, map.objective, RIG_RADIUS)).not.toEqual(guard);
 	}

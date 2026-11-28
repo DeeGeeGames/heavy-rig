@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 import { Mesh, Vector3, type BufferGeometry, type Material } from 'three';
 import { createMount, WEAPONS } from '../src/arsenal';
 import type { Contract } from '../src/campaign-types';
-import { enemyVolume } from '../src/combat-spatial';
+import { enemyVolume, isFixedEmplacement } from '../src/combat-spatial';
 import { createGait } from '../src/gait';
 import { createMech } from '../src/mech-3d';
 import { missionArtilleryCount, missionHostileCount } from '../src/missions';
@@ -38,7 +38,7 @@ test('campaign rosters deploy mixed forces at every difficulty and keep the assa
 				continue;
 			}
 			expect(state.enemies).toHaveLength(missionHostileCount(contract));
-			const mobile = state.enemies.filter(function (enemy) { return enemy.kind !== 'artillery'; });
+			const mobile = state.enemies.filter(function (enemy) { return !isFixedEmplacement(enemy.kind); });
 			const tier = getMissionTier(contract.tier);
 			const mobileCount = kind === 'clearance' ? tier.assault - 2 : kind === 'demolition' ? tier.patrol - 2 : tier.patrol;
 			expect(mobile).toHaveLength(mobileCount);

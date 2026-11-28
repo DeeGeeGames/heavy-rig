@@ -533,6 +533,11 @@ Ground units on either side can take damage inside the circle. Destroying an
 emplacement during targeting interrupts its shot. A shell already in flight
 still lands.
 
+Procedural Demolition and Raid contracts can also post one underground silo
+turret near an installation. A closed hatch opens when you or a squadmate
+comes within 500 m. The turret rises before it can fire. Each silo carries
+one weapon from the mech arsenal at the contract's weapon tier.
+
 ## Frame Training
 
 Open Frame Training from the title, Bridge, or Starmap. Choose any frame

@@ -8,7 +8,7 @@ import { EMPLACEMENT_RADIUS, RIG_RADIUS } from '../src/combat-spatial';
 import { getFrame, rigIntegrityDamage, type FrameId } from '../src/frames';
 import { createStarterLoadout } from '../src/hardpoints';
 import { createTouchFacing } from '../src/touch-controls';
-import { artilleryAimStatus, artilleryStep, coolingStep, createMissionState, createState, deathsStep, enemiesStep, movementStep, projectilesStep, squadmatesStep, squadOrderDestinationClear, surveyed, targetMarked, weaponsStep, type CombatStateView, type Controls, type Point, type Shot, type Unit } from '../src/simulation';
+import { artilleryAimStatus, artilleryStep, coolingStep, createMissionState, createState, deathsStep, enemiesStep, movementStep, projectilesStep, squadmatesStep, squadOrderDestinationClear, surveyed, targetMarked, weaponsStep, type CombatStateView, type Controls, type Point, type Shot, type PresetEnemyKind, type Unit } from '../src/simulation';
 
 const dt = 1 / 60;
 const terrain = { roads: [], obstacles: [{ kind: 'shed' as const, x: 1050, y: 800, width: 35, depth: 100, height: 120 }] };
@@ -18,7 +18,7 @@ const contract: Contract = { id: 'frame-tactics', seed: 1, planetId: 'meridian',
 const input = function (aim: Point, firing = true, targetId?: number): Controls {
 	return { drive: 0, stop: false, turn: 0, coolant: false, aim, fire: [firing, false, false, false], ...(targetId === undefined ? {} : { targetId }) };
 };
-const hostile = function (id: number, point: Point, kind: Unit['kind'] = 'scout', frameId?: FrameId): Unit {
+const hostile = function (id: number, point: Point, kind: PresetEnemyKind = 'scout', frameId?: FrameId): Unit {
 	return { ...point, id, hp: 500, maxHp: 500, kind, heavy: false, angle: 0, hullAngle: 0, cooldown: 0, stationary: true, engaged: true,
 		...(frameId ? { catalog: { frameId, speed: 0, throttle: 0, shotsFired: 0 }, loadout: loadedMounts(createStarterLoadout(frameId)) } : {}) };
 };

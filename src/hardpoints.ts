@@ -1,6 +1,6 @@
 import { WEAPONS, WEAPON_MODELS, getWeapon, type WeaponFamily, type WeaponId, type WeaponModelId, type WeaponSize } from './arsenal';
 import type { FrameId } from './frames';
-import type { EnemyKind } from './simulation';
+import type { PresetEnemyKind } from './simulation';
 
 export interface Hardpoint {
 	readonly id: string;
@@ -77,7 +77,7 @@ const TANK_HARDPOINTS: readonly Hardpoint[] = [fixedHardpoint('turret-cannon', '
 const EMPLACEMENT_HARDPOINTS: readonly Hardpoint[] = [fixedHardpoint('emplaced-gun', 'Emplaced artillery gun', 'autocannon')];
 
 export const getHardpoints = function (frame: FrameId): readonly Hardpoint[] { return FRAME_HARDPOINTS[frame]; };
-export const getEnemyHardpoints = function (kind: EnemyKind, commander = false): readonly Hardpoint[] {
+export const getEnemyHardpoints = function (kind: PresetEnemyKind, commander = false): readonly Hardpoint[] {
 	if (kind === 'artillery') return EMPLACEMENT_HARDPOINTS;
 	if (kind === 'helicopter') return HELICOPTER_HARDPOINTS;
 	if (kind === 'vtol') return VTOL_HARDPOINTS;

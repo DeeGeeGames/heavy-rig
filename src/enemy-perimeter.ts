@@ -1,12 +1,14 @@
 import { ENEMY_RADIUS } from './combat-spatial';
 import { terrainPathClear, type FieldTerrain } from './field-terrain';
 import { sceneryFlightBounds } from './scenery-flight';
+import { SILO_EXPOSED, type SiloTurret } from './silo-turret';
 import type { EnemyKind, Point } from './simulation';
 
 export interface PerimeterEntry { start: Point; end: Point }
 interface Bounds { width: number; height: number }
 
-export const isFieldContact = function (enemy: Point & { entry?: Point }, bounds: Bounds): boolean {
+export const isFieldContact = function (enemy: Point & { entry?: Point; silo?: SiloTurret }, bounds: Bounds): boolean {
+	if (enemy.silo && enemy.silo.deployment < SILO_EXPOSED) return false;
 	return !enemy.entry || enemy.x >= 0 && enemy.x <= bounds.width && enemy.y >= 0 && enemy.y <= bounds.height;
 };
 
