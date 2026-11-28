@@ -6,8 +6,8 @@ import { getJumpRoute, getSystemIntel, JUMP_FARE_PER_LEG, JUMP_RANGE_LY } from '
 import { closePlanetDetails, renderTerritoryMap } from './territory-map';
 import { html } from 'lit-html';
 import { inspectWorkspacePane, renderWorkspace, selectWorkspacePane, textItems, workspaceBackTarget, type WorkspacePane } from './workspace';
-import { canStageOperation, FACTIONS, forecastArrival, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, reviewOperations, type Campaign } from './campaign';
-import { BIOME_NAMES, MISSION_NAMES, type Contract, type MissionKind, type PlanetId } from './campaign-types';
+import { canStageOperation, FACTIONS, forecastArrival, getContracts, getFaction, getPlanet, getPlannedOperation, getTransmission, reputationLabel, reviewOperations, type Campaign, type FactionDefinition } from './campaign';
+import { BIOME_NAMES, MISSION_NAMES, type Contract, type FactionId, type MissionKind, type PlanetId } from './campaign-types';
 import { getAuthoredStep, isAuthoredContract } from './contract-chains';
 import { getOwnedMech, newUpkeepDue, workOrderFor } from './company';
 import { renderShipHeader, type ShipScreen } from './company-ui';
@@ -28,6 +28,19 @@ const OBJECTIVES: Readonly<Record<Exclude<MissionKind, 'assassination'>, string>
 	clearance: 'Sweep the marked sectors and eliminate every hostile. Extract once the area is clear.',
 };
 const signed = function (value: number) { return `${value > 0 ? '+' : ''}${value}`; };
+
+const factionEmblem = function (faction: FactionDefinition) {
+	return html`<svg class="faction-emblem" viewBox="0 0 40 40" fill="currentColor" style="color:${faction.color}" aria-hidden="true"><use href=${`./brand/faction-emblems.svg#${faction.id}`}></use></svg>`;
+};
+
+const briefingFaction = function (id: FactionId, role: 'Employer' | 'Opposition', standing: string) {
+	const faction = getFaction(id);
+	return html`<div class="briefing-faction">
+		${factionEmblem(faction)}
+		<small>${role}</small><b>${faction.name}</b>
+		<span class=${role === 'Employer' ? 'positive' : 'negative'}>${standing}</span>
+	</div>`;
+};
 
 export interface BridgeActions extends OperationsActions {
 	picker: ChoicePicker;
@@ -115,7 +128,14 @@ const transmissionPane = function (root: HTMLElement, campaign: Campaign, transm
 			...(retry ? textItems(`The contact is holding the job for you. Retry when ready.${damaged ? ' Check the repair quote in Engineering.' : ''}`) : last ? textItems(last.success) : []),
 			...(choice ? textItems('Choose one offer when you commit the day. Both offers stay open while you take other work.') : []),
 			...offers.map(function ({ contract, contact, label, pitch }) {
-				return html`<article class="signal-contact"><span class="eyebrow">${contact}</span>${choice ? html`<h3>${label}</h3>` : ''}${opening?.contract.id === contract.id ? '' : html`<p class="workspace-copy">${pitch}</p>`}<small>${getPlanet(contract.planetId).name} · ${contract.reward.toLocaleString()} CR</small></article>`;
+				const employer = getFaction(contract.employer);
+				return html`<article class="signal-contact">
+					${factionEmblem(employer)}
+					<div><span class="eyebrow">${contact}</span>${choice ? html`<h3>${label}</h3>` : ''}
+						${opening?.contract.id === contract.id ? '' : html`<p class="workspace-copy">${pitch}</p>`}
+						<span class="contract-employer">For ${employer.name}</span><small>${getPlanet(contract.planetId).name} · ${contract.reward.toLocaleString()} CR</small>
+					</div>
+				</article>`;
 			}),
 			...(!last && !committed ? textItems('Optional contract. Take ordinary work from the Board whenever you like.') : []),
 		],
@@ -194,7 +214,8 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 					@pointermove=${function (event: PointerEvent) {
 						if (event.pointerType === 'mouse' && event.currentTarget instanceof HTMLButtonElement && event.currentTarget !== document.activeElement) event.currentTarget.focus({ preventScroll: true });
 					}} @click=${function (event: Event) { actions.selectContract(contract.id, 'board', event.currentTarget); }} data-contract=${contract.kind}>
-					<span class="contract-type">${MISSION_NAMES[contract.kind]}</span><b>${contract.title}</b><span class="contract-employer">${employer.name}</span>
+					${factionEmblem(employer)}
+					<span class="contract-type">${MISSION_NAMES[contract.kind]}</span><b>${contract.title}</b><span class="contract-employer">For ${employer.name}</span>
 					<span class="contract-bottom"><span class="contract-terms"><strong>${contract.reward.toLocaleString()} CR</strong>${contract.strategy ? html`<small class="contract-impact">Strategic impact ${contract.strategy.impact}/50</small>` : ''}</span><small>${active ? 'ACCEPTED' : currentPlans.has(contract.id) ? 'STAGED' : `+${contract.favor} FAVOR / −${contract.hostility} OPPOSITION`}</small></span>
 				</button>`;
 			}),
@@ -202,6 +223,10 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 		], ...(emptyBoard ? { actions: signalAction ?? html`<button @click=${function () { actions.navigate('starmap', 'route'); }}>FIND CONFLICT ZONE →</button>` } : {}) },
 		{ id: 'briefing', label: 'Briefing', items: selected ? [
 			html`<span class="eyebrow">${getPlanet(selected.planetId).name.toUpperCase()} / ${MISSION_NAMES[selected.kind].toUpperCase()}</span><h2>${selected.title}</h2>`,
+			html`<div class="briefing-factions">
+				${briefingFaction(selected.employer, 'Employer', `+${selected.favor} on success`)}
+				${briefingFaction(selected.opponent, 'Opposition', `−${selected.hostility} ${active ? 'applied on acceptance' : 'on day commitment'}`)}
+			</div>`,
 			...(storyStep ? [html`<span class="eyebrow">${storyStep.contact} · COMMANDER REQUIRED</span>`, ...textItems(storyStep.pitch)] : []),
 			...(selected.strategy ? [
 				html`<p class="stake-line"><small>PAYMENT AFTER EXTRACTION</small>${selected.reward.toLocaleString()} CR · <strong>Strategic impact ${selected.strategy.impact}/50</strong></p>`,
@@ -217,8 +242,6 @@ export const renderBridge = function (root: HTMLElement, campaign: Campaign, des
 				: 'Success increases local pressure in the employer’s favor. Enough pressure can end a local conflict.'),
 			...(storyStep ? [] : [html`<span class="eyebrow">SURFACE OBJECTIVE</span>`, ...textItems(selected.kind === 'assassination' ? `Track down the marked ${commandTargetName(selected)}. Destroy it and reach extraction alive.` : OBJECTIVES[selected.kind])]),
 			...(storyOffer && transmission && transmission.offers.length > 1 ? textItems('Committing the day with this offer closes the other signal.') : []),
-			html`<p class="stake-line"><small>EMPLOYER</small>${getFaction(selected.employer).name}<br><strong class="positive">+${selected.favor} on success</strong></p>`,
-			html`<p class="stake-line"><small>OPPOSITION</small>${getFaction(selected.opponent).name}<br><strong class="negative">−${selected.hostility} ${active ? 'applied on acceptance' : 'on day commitment'}</strong></p>`,
 			...(selected.strategy ? [] : [html`<p class="stake-line"><small>PAYMENT AFTER EXTRACTION</small>${selected.reward.toLocaleString()} CR</p>`]),
 			...textItems('Rig damage carries over. Failure or abort keeps the standing penalty and strengthens the opposition.'),
 		] : [], actions: selected ? html`${active ? html`<button id="bridge-deploy" class="primary" @click=${actions.deploy}>PREPARE SQUAD ↘</button><button class="text-button" @click=${actions.abandon}>ABORT</button>`

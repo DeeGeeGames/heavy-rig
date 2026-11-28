@@ -103,8 +103,9 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .page-item { flex: none; min-width: 0; }
 .page-item>p, .workspace-copy { margin: 0; font: 15px/1.5 Arial, sans-serif; color: var(--muted); }
 .signal-heading .workspace-copy { color: var(--paper); }
-.signal-contact { border-inline-start: 2px solid var(--cyan); padding: 4px 12px; }
+.signal-contact { display: flex; align-items: flex-start; gap: 10px; border-inline-start: 2px solid var(--cyan); padding: 4px 12px; }
 .signal-contact .workspace-copy { color: var(--paper); margin: 3px 0; }
+.signal-contact .contract-employer { display: block; color: var(--paper); margin-block: 2px; }
 .signal-contact small { display: block; font: 11px var(--mono); color: var(--amber); }
 .workspace .page-item h2 { margin: 2px 0 6px; font: clamp(32px, 4vw, 56px)/.97 var(--display); text-transform: uppercase; }
 .workspace .page-item h3 { margin: 0 0 6px; font: 26px/1.03 var(--display); }
