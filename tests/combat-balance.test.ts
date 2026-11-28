@@ -7,11 +7,11 @@ import type { FrameId } from '../src/frames';
 import { createStarterLoadout } from '../src/hardpoints';
 import { missionHostileCount } from '../src/missions';
 import { getMissionTier, type MissionTier } from '../src/reputation';
-import { createMissionState, distance, spawningStep, type Controls, type EnemyKind } from '../src/simulation';
+import { createMissionState, distance, spawningStep, type Controls, type PresetEnemyKind } from '../src/simulation';
 
 // Broad engagement budgets protect against instant kills, unusable stock builds,
 // and tier/volley regressions. They are not exact tuning values or owner acceptance.
-const engage = async function (frame: FrameId, kind: EnemyKind, tier: MissionTier, options: { loadout?: readonly (WeaponId | null)[]; defense?: 'front' | 'rear' | 'exposed' } = {}) {
+const engage = async function (frame: FrameId, kind: Exclude<PresetEnemyKind, 'artillery'>, tier: MissionTier, options: { loadout?: readonly (WeaponId | null)[]; defense?: 'front' | 'rear' | 'exposed' } = {}) {
 	const contract: Contract = { id: 'combat-balance', seed: 123, planetId: 'meridian', kind: 'defend', employer: 'freeholds', opponent: 'combine', title: 'Combat balance', briefing: '', reward: 1000, favor: 8, hostility: 5, tier, requiredReputation: -100 };
 	const quality = getMissionTier(tier).weaponTier;
 	const loadout = options.loadout ?? createStarterLoadout(frame).map(function (id) { return weaponIdForTier(getWeapon(id).modelId, quality); });

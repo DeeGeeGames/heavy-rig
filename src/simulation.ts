@@ -1,6 +1,8 @@
 import { BASTION_PLATE_DAMAGE, HARROW_BRACE_SECONDS, HARROW_MAX_RANGE, HARROW_MIN_RANGE, SPECTER_JAM_RANGE, SPECTER_JAM_RATE, SPECTER_MARK_DAMAGE, SPECTER_MARK_RANGE, SPECTER_MARK_SECONDS, SPECTER_SURVEY_RANGE, hasBastionPlate, incomingArmor, mortarInRange, mortarProfile, mountInterval } from './frame-tactics';
 import { ARTILLERY_FLIGHT_SECONDS, ARTILLERY_TARGETING_SECONDS, EMPLACEMENT_BLAST_RADIUS, scatteredImpact, type ArtilleryAim, type EmplacementShot } from './artillery';
 import { emplacementLaunch } from './artillery-emplacement-rig';
+import { SILO_DEPLOY_SECONDS, SILO_TRIGGER_RADIUS, type SiloTurret } from './silo-turret';
+import { SILO_HEAD_HEIGHT, siloWeaponRig } from './silo-turret-rig';
 import { firstHeavyRigTier, getContractTier, getMissionTier } from './reputation';
 import type { AuthoredPoseContext } from './authored-pose';
 import { getMechAssetBinding } from './mech-asset-registry';
@@ -11,8 +13,8 @@ import { canEquipWeapon, stockPackage, getEnemyHardpoints, getHardpoints, isFram
 import { getDifficultyDefinition, getWaveDefinition, WAVES, type Difficulty } from './operation';
 import type { Contract, MissionMap, MissionRuntime } from './campaign-types';
 import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_RADIUS, missionStructures, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, ACQUISITION_SECONDS, generateMissionField, missionHostileCount, missionSpawn, missionDeploymentSlot, squadDestination, type MissionSpawn } from './missions';
-import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, convergeWeapon, limitWeaponTraverse, mountOffset, weaponDirection, weaponExitAlong, weaponPivot, type SpatialPoint, type WeaponBody } from './weapon-rig';
-import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS, enemyRadius, enemyVolume, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
+import { getPlayerMuzzle, getPlayerFiringDirection, getEnemyMuzzle, getFiringDirection, getPlayerWeaponRig, getEnemyWeaponRig, convergeWeapon, limitWeaponTraverse, mountOffset, rigMuzzle, weaponDirection, weaponExitAlong, weaponPivot, type SpatialPoint, type WeaponBody, type WeaponRig } from './weapon-rig';
+import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, RIG_RADIUS, enemyRadius, enemyVolume, isFixedEmplacement, playerVolume, facilityVolume, spatialDistance, hitVolumeFraction, pointAlong, projectAim, type HitVolume } from './combat-spatial';
 import { fieldStructureKinds, hasTerrainRoute, moveOnTerrain, terrainPathClear, terrainPointClear, terrainShotContact, terrainShotFraction, terrainWaypoint, type FieldTerrain, type ObstacleField } from './field-terrain';
 import { groundAimSlope, groundContact, groundHeight, groundNormal } from './terrain-elevation';
 import type { FeedbackActor, FeedbackFamily, ImpactSurface, WeaponCue } from './weapon-feedback';
@@ -28,11 +30,15 @@ export interface Point { x: number; y: number }
 interface BeamAim { readonly direction: Readonly<SpatialPoint>; readonly targetId: number | undefined; readonly sweeping: boolean }
 export interface Beam extends Point { slot: number; elevation?: number; origin?: SpatialPoint; contact?: boolean; squadmateId?: string; owner?: number; aim?: BeamAim }
 export type MechEnemyKind = 'scout' | 'striker' | 'siege';
-export type EnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank' | 'artillery';
+export type PresetEnemyKind = MechEnemyKind | 'helicopter' | 'vtol' | 'tank' | 'artillery';
+export type EnemyKind = PresetEnemyKind | 'silo-turret';
 export type CombatEvent = 'artillery' | 'machine-gun' | 'ppc' | 'rocket' | 'cannon' | 'missile' | 'impact' | 'player-hit' | 'relay-hit' | 'explosion' | 'rig-defeat' | 'wave' | 'objective-complete' | 'coolant' | 'overheat' | 'defeat' | 'victory';
 export interface AttackCycle { phase: 'committed' | 'recovery'; remaining: number; cycle: number }
 interface CatalogPilot extends Pick<RigBody, 'throttle' | 'speed' | 'motorSpeed' | 'missileLock' | 'targetId' | 'brace' | 'designation'> { frameId: FrameId; shotsFired: number; authoredPose?: AuthoredPoseContext | undefined }
-export interface Unit extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; kind: EnemyKind; commander?: boolean; attack?: AttackCycle; artilleryAim?: ArtilleryAim; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: EnemySquadOrder; tactics?: EnemyTactics; stationary?: true; catalog?: CatalogPilot; formation?: number; entry?: Point }
+interface EnemyBody extends Point { reactor?: ReactorState; id: number; hp: number; maxHp: number; angle: number; hullAngle?: number; cooldown: number; heavy: boolean; commander?: boolean; attack?: AttackCycle; artilleryAim?: ArtilleryAim; engaged?: boolean; loadout?: WeaponMount[]; attackSlot?: number; squad?: EnemySquadOrder; tactics?: EnemyTactics; stationary?: true; catalog?: CatalogPilot; formation?: number; entry?: Point }
+type PresetUnit = EnemyBody & { kind: PresetEnemyKind; silo?: never };
+type SiloUnit = EnemyBody & { kind: 'silo-turret'; silo: SiloTurret };
+export type Unit = PresetUnit | SiloUnit;
 type EnemyTarget = 'player' | 'relay' | { squadmateId: string };
 export interface Shot extends Point { elevation?: number; vElevation?: number; origin?: SpatialPoint; age?: number; vx: number; vy: number; life: number; kind: 'cannon' | 'missile' | 'enemy' | 'bullet' | 'ppc' | 'rocket'; target: number | undefined; damage: number; splash?: number; hitIds?: number[]; weapon?: WeaponId; slot?: number; owner?: number; enemyTarget?: EnemyTarget; squadmateId?: string }
 export interface Effect extends Point { life: number; size: number; color: string; elevation?: number; source?: 'muzzle'; slot?: number; squadmateId?: string; feedback?: WeaponCue }
@@ -130,6 +136,7 @@ export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
 	vtol: { mass: 30, recommendedMass: 62, cooling: 10, hp: 260, speed: 82, range: 440, reload: 2.8, damage: 4, aggro: 850, elevation: 147, score: 400 },
 	tank: { mass: 60, recommendedMass: 72, cooling: 11, hp: 480, speed: 32, range: 390, reload: 3.4, damage: 9, aggro: 600, elevation: 30, score: 450 },
 	artillery: { mass: 75, recommendedMass: 95, cooling: 11, hp: 420, speed: 0, range: Infinity, reload: 5.5, damage: 160, aggro: Infinity, elevation: 36, score: 450 },
+	'silo-turret': { mass: 50, recommendedMass: 75, cooling: 11, hp: 300, speed: 0, range: 0, reload: 0, damage: 0, aggro: SILO_TRIGGER_RADIUS, elevation: SILO_HEAD_HEIGHT / 2, score: 350 },
 };
 export interface MissionDeployment {
 	map?: MissionMap;
@@ -204,10 +211,12 @@ const createEnemy = function (state: CombatStateView, spawn: MissionSpawn): Unit
 	const target = relayPosition(state) ?? state.player;
 	const tier = level?.weaponTier ?? 0;
 	const stock = frameId && stockPackage(frameId);
-	const loadout = stock ? loadedMounts(stock.loadout.map(function (weapon) { return weaponIdForTier(getWeapon(weapon).modelId, tier); }), stock.reserves) : createEnemyLoadout(spawn.kind, commander, tier);
+	const loadout = spawn.kind === 'silo-turret' ? loadedMounts([spawn.siloWeapon])
+		: stock ? loadedMounts(stock.loadout.map(function (weapon) { return weaponIdForTier(getWeapon(weapon).modelId, tier); }), stock.reserves) : createEnemyLoadout(spawn.kind, commander, tier);
 	const angle = Math.atan2(target.y - spawn.y, target.x - spawn.x);
-	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle, cooldown: 1.2, heavy: spawn.kind === 'siege' || spawn.kind === 'tank' || spawn.kind === 'artillery', kind: spawn.kind, reactor: { heat: 0, overheated: false }, loadout,
-		...(spawn.kind === 'artillery' ? { stationary: true, hullAngle: angle } : {}), ...(commander ? { commander: true } : {}), ...(frameId ? { catalog: { frameId, speed: 0, throttle: 0, shotsFired: 0 } } : {}), ...(spawn.formation === undefined ? {} : { formation: spawn.formation }) };
+	return { id: state.nextId++, x: spawn.x, y: spawn.y, hp, maxHp: hp, angle, cooldown: 1.2, heavy: spawn.kind === 'siege' || spawn.kind === 'tank' || isFixedEmplacement(spawn.kind), reactor: { heat: 0, overheated: false }, loadout,
+		...(spawn.kind === 'silo-turret' ? { kind: spawn.kind, silo: { deployment: 0, shotsFired: 0 } } : { kind: spawn.kind }),
+		...(isFixedEmplacement(spawn.kind) ? { stationary: true, hullAngle: angle } : {}), ...(commander ? { commander: true } : {}), ...(frameId ? { catalog: { frameId, speed: 0, throttle: 0, shotsFired: 0 } } : {}), ...(spawn.formation === undefined ? {} : { formation: spawn.formation }) };
 };
 export type CombatTarget = { id: number; kind: 'enemy'; body: Unit; radius: number } | { id: number; kind: 'structure'; body: NonNullable<MissionRuntime['structure']>; radius: number };
 export const combatTargets = function (state: CombatStateView): CombatTarget[] {
@@ -224,8 +233,8 @@ const groundNavigation = function (state: CombatStateView): ObstacleField | unde
 	// The concrete pads remain after the carriage is destroyed. Keep a stable obstacle
 	// field so every ground mover shares the terrain pathfinder's clearance cache.
 	const pads: Point[] = [];
-	for (const unit of state.enemies) if (unit.kind === 'artillery') pads.push(unit);
-	for (const wreck of state.wrecks) if (wreck.kind === 'artillery') pads.push(wreck);
+	for (const unit of state.enemies) if (isFixedEmplacement(unit.kind)) pads.push(unit);
+	for (const wreck of state.wrecks) if (isFixedEmplacement(wreck.kind)) pads.push(wreck);
 	if (!pads.length) return terrain;
 	const cached = foundationFields.get(state);
 	if (cached && cached.terrain === terrain && cached.pads.length === pads.length
@@ -358,14 +367,14 @@ const muzzleFlash = function (state: CombatStateView, origin: SpatialPoint, dire
 	const feedback: WeaponCue | undefined = family ? { type: 'fire', family, heavy: family === 'artillery' || weapon.splash > 0, shooter: source.owner ?? source.squadmateId ?? 0, time: state.time, direction, slot } : undefined;
 	burst(state, origin, 20, weapon.color, { source: 'muzzle', slot, ...(source.squadmateId === undefined ? {} : { squadmateId: source.squadmateId }), ...(feedback ? { feedback } : {}) });
 };
-export const createEnemyLoadout = function (kind: EnemyKind, commander = false, tier: WeaponTier = 0): WeaponMount[] {
+export const createEnemyLoadout = function (kind: PresetEnemyKind, commander = false, tier: WeaponTier = 0): WeaponMount[] {
 	return getEnemyHardpoints(kind, commander).flatMap(function (hardpoint, slot) {
 		const weapon = hardpoint.family === 'launcher' ? 'stream-missiles' : hardpoint.weapons.includes('autocannon') ? 'autocannon' : 'machine-gun';
 		return hardpoint.weapons.includes(weapon) ? [{ ...createMount(weaponIdForTier(weapon, tier)), slot }] : [];
 	});
 };
 const enemyMounts = function (enemy: Unit): WeaponMount[] {
-	if (enemy.catalog) return enemy.loadout ?? [];
+	if (enemy.catalog || enemy.kind === 'silo-turret') return enemy.loadout ?? [];
 	const hardpoints = getEnemyHardpoints(enemy.kind, enemy.commander);
 	const seen = new Set<number>();
 	return (enemy.loadout ??= createEnemyLoadout(enemy.kind, enemy.commander)).filter(function (mount, index) {
@@ -388,10 +397,15 @@ const contactObstructs = function (origin: SpatialPoint, at: SpatialPoint, id: n
 		return other.id !== id && other.body.hp > 0 && hitVolumeFraction(origin, at, targetVolume(other, terrain)) !== undefined;
 	});
 };
-export const missileLockRange = function (frame: FrameId, loadout: readonly WeaponMount[]): number {
+// A mech supplies its chassis hardpoints. A silo supplies one swiveling weapon rig.
+type WeaponPlatform = FrameId | WeaponRig;
+const acceptsMount = function (platform: WeaponPlatform, slot: number, weapon: WeaponId) {
+	return typeof platform === 'string' ? canEquipWeapon(platform, slot, weapon) : slot === 0;
+};
+export const missileLockRange = function (platform: WeaponPlatform, loadout: readonly WeaponMount[]): number {
 	return loadout.reduce(function (range, mount, index) {
 		const weapon = getWeapon(mount.weapon);
-		return weapon.kind === 'missile' && canEquipWeapon(frame, mount.slot ?? index, mount.weapon) ? Math.max(range, weapon.range) : range;
+		return weapon.kind === 'missile' && acceptsMount(platform, mount.slot ?? index, mount.weapon) ? Math.max(range, weapon.range) : range;
 	}, 0);
 };
 interface FireContact { id: number; body: Point & { hp?: number }; volume: HitVolume; airborne?: boolean }
@@ -399,12 +413,12 @@ const contactAlive = function (contact: FireContact): boolean { return (contact.
 const weaponContacts = function (targets: readonly CombatTarget[], terrain: FieldTerrain | undefined): FireContact[] {
 	return targets.map(function (target) { return { id: target.id, body: target.body, volume: targetVolume(target, terrain), airborne: !groundArtilleryTarget(target) }; });
 };
-const trackMissile = function (rig: RigBody, frame: FrameId, loadout: readonly WeaponMount[], targets: readonly FireContact[], target: FireContact | undefined, terrain: FieldTerrain | undefined): 'NO GUIDANCE' | 'OUT OF RANGE' | 'OUT OF ARC' | 'BLOCKED' | 'TRACKING' {
-	const range = missileLockRange(frame, loadout);
+const trackMissile = function (rig: RigBody, platform: WeaponPlatform, loadout: readonly WeaponMount[], targets: readonly FireContact[], target: FireContact | undefined, terrain: FieldTerrain | undefined): 'NO GUIDANCE' | 'OUT OF RANGE' | 'OUT OF ARC' | 'BLOCKED' | 'TRACKING' {
+	const range = missileLockRange(platform, loadout);
 	if (!target || range === 0) return 'NO GUIDANCE';
 	if (!withinWeaponRange(distance(rig, target.body), range)) return 'OUT OF RANGE';
 	if (!inFiringArc(rig, rig.angle, target.body)) return 'OUT OF ARC';
-	const origin = playerVolume(rig, frame, terrain);
+	const origin = typeof platform === 'string' ? playerVolume(rig, platform, terrain) : weaponPivot(platform, weaponBase(rig, terrain), rig.turret);
 	const at = target.volume;
 	if (terrain && terrainShotFraction(terrain, origin, at) !== undefined) return 'BLOCKED';
 	if (targets.some(function (other) { return other.id !== target.id && contactAlive(other) && hitVolumeFraction(origin, at, other.volume) !== undefined; })) return 'BLOCKED';
@@ -442,8 +456,11 @@ const enemyTargetVolume = function (state: CombatStateView, target: Point): HitV
 };
 export const enemyAimPoint = function (state: CombatStateView, enemy: Unit): SpatialPoint | undefined {
 	const relay = relayPosition(state);
-	if (enemy.catalog) {
-		const target = friendlyContacts(state, relay).find(function (contact) { return contact.id === enemy.catalog?.targetId; });
+	const operator = enemy.catalog ?? enemy.silo;
+	if (operator) {
+		const targetId = operator.targetId;
+		if (targetId === undefined) return undefined;
+		const target = friendlyContacts(state, relay).find(function (contact) { return contact.id === targetId; });
 		return target ? projectAim(enemy, enemy.angle, target.volume) : undefined;
 	}
 	const rig = closestRig(state.player, state.squadmates, enemy);
@@ -469,7 +486,7 @@ const exposedMuzzle = function (terrain: FieldTerrain | undefined, body: Point, 
 const muzzleBlocked = function (terrain: FieldTerrain, body: Point, muzzle: SpatialPoint, target: SpatialPoint) {
 	return exposedMuzzle(terrain, body, muzzle) !== muzzle || terrainShotFraction(terrain, muzzle, target) !== undefined;
 };
-const launchEnemy = function (state: CombatStateView, enemy: Unit, mount: WeaponMount, target: Point, damage: number): boolean {
+const launchEnemy = function (state: CombatStateView, enemy: PresetUnit, mount: WeaponMount, target: Point, damage: number): boolean {
 	if (!enemyCanFire(enemy, target)) return false;
 	const angle = enemy.angle;
 	const slot = mount.slot ?? 0; const weapon = getWeapon(mount.weapon);
@@ -496,7 +513,7 @@ const launchEnemy = function (state: CombatStateView, enemy: Unit, mount: Weapon
 	mount.firing = true;
 	return true;
 };
-const fireEnemyMount = function (state: CombatStateView, enemy: Unit, mount: WeaponMount, target: Point, damage: number) {
+const fireEnemyMount = function (state: CombatStateView, enemy: PresetUnit, mount: WeaponMount, target: Point, damage: number) {
 	const weapon = getWeapon(mount.weapon);
 	const delayed = weapon.kind === 'rocket' || weapon.stream;
 	let emitted = 0;
@@ -510,7 +527,7 @@ const fireEnemyMount = function (state: CombatStateView, enemy: Unit, mount: Wea
 };
 interface RigGunner {
 	body: RigBody;
-	frame: FrameId;
+	platform: WeaponPlatform;
 	loadout: WeaponMount[];
 	pose: AuthoredPoseContext | undefined;
 	shots: () => number;
@@ -519,20 +536,30 @@ interface RigGunner {
 	damage: number;
 	source: Pick<Shot, 'owner' | 'squadmateId'>;
 }
+const mountedMuzzle = function (gunner: RigGunner, base: WeaponBody, slot: number, round: number | undefined, target: SpatialPoint | undefined) {
+	const { platform, body: { turret } } = gunner;
+	if (typeof platform !== 'string') return rigMuzzle(platform, base, turret, round, target);
+	const tube = round === undefined ? undefined : tubeIndex(getPlayerWeaponRig(platform)[slot]?.tubes.length ?? 0, round);
+	return getPlayerMuzzle(platform, slot, base, turret, tube, target, gunner.pose);
+};
+const mountedDirection = function (gunner: RigGunner, base: WeaponBody, slot: number, origin: SpatialPoint, target?: SpatialPoint) {
+	const { platform, body: { turret } } = gunner;
+	return typeof platform === 'string' ? getPlayerFiringDirection(platform, slot, base, turret, origin, target) : weaponDirection(platform, base, turret, target);
+};
 const launchWeapon = function (state: CombatStateView, gunner: RigGunner, base: WeaponBody, mount: WeaponMount, angle: number, slot: number, selected: FireContact | undefined, volleyRound?: number) {
 	const weapon = getWeapon(mount.weapon);
 	if (weapon.kind === 'laser') throw new RangeError('Beam weapons do not launch projectiles');
-	const { body, frame, pose, source } = gunner;
+	const { body, platform, source } = gunner;
 	gunner.countShot();
 	const aim = selected ? projectAim(body, body.turret, selected.volume) : undefined;
 	// Each rack cycles its own physical exits even when both triggers are held.
 	const terrain = state.mission?.map.terrain;
-	const muzzle = getPlayerMuzzle(frame, slot, base, body.turret, tubeIndex(getPlayerWeaponRig(frame)[slot]?.tubes.length ?? 0, mount.rounds), aim, pose);
+	const muzzle = mountedMuzzle(gunner, base, slot, mount.rounds, aim);
 	const origin = exposedMuzzle(terrain, body, muzzle);
-	const direction = getPlayerFiringDirection(frame, slot, base, body.turret, origin, aim);
+	const direction = mountedDirection(gunner, base, slot, origin, aim);
 	// The six tubes cover a deterministic fan, including every follow-up.
 	const saturation = [0, -2, 2, -1, 1, -.5][volleyRound ?? 0] ?? 0;
-	const dispersion = frame === 'morrow-saturation' && weapon.kind === 'rocket' ? saturation * .043 + (slot === 0 ? -.023 : .023) : 0;
+	const dispersion = platform === 'morrow-saturation' && weapon.kind === 'rocket' ? saturation * .043 + (slot === 0 ? -.023 : .023) : 0;
 	const spread = angle - body.turret + dispersion; const cosine = Math.cos(spread); const sine = Math.sin(spread);
 	const heading = { x: direction.x * cosine - direction.y * sine, y: direction.y * cosine + direction.x * sine, elevation: direction.elevation };
 	state.shots.push({ ...origin, origin, age: 0, vx: heading.x * weapon.speed, vy: heading.y * weapon.speed, vElevation: heading.elevation * weapon.speed, life: weapon.range / weapon.speed,
@@ -657,7 +684,7 @@ export const surveyed = function (state: CombatStateView, enemy: Unit): boolean 
 	return enemy.hp > 0 && (state.frame === 'specter' && near(state.player) || state.squadmates.some(function (mate) { return mate.frameId === 'specter' && near(mate); }));
 };
 
-const commitBarrage = function (state: CombatStateView, enemy: Unit, target: Point, mount: WeaponMount) {
+const commitBarrage = function (state: CombatStateView, enemy: PresetUnit, target: Point, mount: WeaponMount) {
 	if (!enemyCanFire(enemy, target)) return;
 	const commander = Boolean(enemy.commander);
 	const enraged = getEnemyDefense(state, enemy).enraged;
@@ -844,8 +871,8 @@ export const artilleryAimStatus = function (state: CombatStateView, at: Point): 
 	if (mount.cooldown > 0) return `RELOAD ${mount.cooldown.toFixed(1)}s`;
 	return 'BRACED / READY';
 };
-const fireMortar = function (state: CombatStateView, gunner: RigGunner, mount: WeaponMount, at: Point) {
-	const { body, frame, source } = gunner;
+const fireMortar = function (state: CombatStateView, gunner: RigGunner, frame: FrameId, mount: WeaponMount, at: Point) {
+	const { body, source } = gunner;
 	const profile = mortarProfile(frame);
 	const bounds = state.mission?.map ?? ARENA;
 	if (!profile || (body.brace ?? 0) < HARROW_BRACE_SECONDS - 1e-9 || mortarAimStatus(body, at, bounds) || mount.cooldown > 0) return;
@@ -884,21 +911,21 @@ const sweepLaser = function (previous: Readonly<SpatialPoint>, desired: SpatialP
 	return { x: Math.cos(yaw) * Math.cos(pitch), y: Math.sin(yaw) * Math.cos(pitch), elevation: Math.sin(pitch) };
 };
 const aimLaser = function (state: CombatStateView, gunner: RigGunner, base: WeaponBody, slot: number, selected: FireContact | undefined, dt: number) {
-	const { frame, source, body, pose } = gunner;
+	const { platform, source, body, pose } = gunner;
 	const { turret } = body;
 	const terrain = state.mission?.map.terrain;
 	const target = selected ? projectAim(body, turret, selected.volume) : undefined;
-	const binding = getMechAssetBinding(frame);
-	const rig = binding ? undefined : getPlayerWeaponRig(frame)[slot];
+	const binding = typeof platform === 'string' ? getMechAssetBinding(platform) : undefined;
+	const rig = typeof platform !== 'string' ? platform : binding ? undefined : getPlayerWeaponRig(platform)[slot];
 	const authoredMount = binding?.laserMount?.(base, turret, slot, pose);
 	const mount = authoredMount
 		?? (rig && rig.fixedPitch === undefined ? { pivot: weaponPivot(rig, base, turret), offset: mountOffset(rig) } : undefined);
 	if (!mount) {
-		const muzzle = getPlayerMuzzle(frame, slot, base, turret, undefined, target, pose);
+		const muzzle = mountedMuzzle(gunner, base, slot, undefined, target);
 		const origin = exposedMuzzle(terrain, body, muzzle);
-		return { muzzle, origin, direction: getPlayerFiringDirection(frame, slot, base, turret, origin, target) };
+		return { muzzle, origin, direction: mountedDirection(gunner, base, slot, origin, target) };
 	}
-	const rawAim = target ? convergeWeapon(mount.pivot, mount.offset, turret, target) : getPlayerFiringDirection(frame, slot, base, turret, mount.pivot);
+	const rawAim = target ? convergeWeapon(mount.pivot, mount.offset, turret, target) : mountedDirection(gunner, base, slot, mount.pivot);
 	const desired = authoredMount ? limitWeaponTraverse(rawAim, authoredMount.traverse) : rawAim;
 	const previous = previousBeams.get(state)?.find(function (beam) {
 		return beam.slot === slot && beam.owner === source.owner && beam.squadmateId === source.squadmateId;
@@ -919,11 +946,12 @@ const bulletSpread = function (sequence: number): number {
 	return ((bits ^ (bits >>> 15)) >>> 0) / 0x80000000 - 1;
 };
 const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, input: TriggerInput, targets: readonly FireContact[], hitBeam: (id: number, damage: number, origin: Point, incoming: SpatialPoint) => void, dt: number) {
-	const { body: p, frame, loadout } = gunner;
+	const { body: p, platform, loadout } = gunner;
+	const frame = typeof platform === 'string' ? platform : undefined;
 	const automated = gunner.source.squadmateId !== undefined || gunner.source.owner !== undefined;
 	const selected = targets.find(function (target) { return target.id === input.targetId && contactAlive(target); });
 	p.targetId = selected?.id;
-	if (mortarProfile(frame)) p.brace = braceMoving(p) ? 0 : Math.min(HARROW_BRACE_SECONDS, (p.brace ?? 0) + dt);
+	if (frame && mortarProfile(frame)) p.brace = braceMoving(p) ? 0 : Math.min(HARROW_BRACE_SECONDS, (p.brace ?? 0) + dt);
 	const fireDt = targetingDt(state, p, dt, gunner.source.owner !== undefined);
 	const terrain = state.mission?.map.terrain;
 	const base = weaponBase(p, terrain, !automated && !selected ? input.aim : undefined);
@@ -934,7 +962,7 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 			p.designation = { targetId: selected.id, seconds: Math.min(SPECTER_MARK_SECONDS, (previousMark?.targetId === selected.id ? previousMark.seconds : 0) + fireDt) };
 		}
 	}
-	const tracking = trackMissile(p, frame, loadout, targets, selected, terrain);
+	const tracking = trackMissile(p, platform, loadout, targets, selected, terrain);
 	const previous = p.missileLock;
 	if (!selected || tracking === 'NO GUIDANCE') p.missileLock = undefined;
 	else {
@@ -950,17 +978,17 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 	const firingSlots = new Set<number>();
 	loadout.forEach(function (mount, index) {
 		const slot = mount.slot ?? index;
-		if (!canEquipWeapon(frame, slot, mount.weapon) || firingSlots.has(slot)) return;
+		if (!acceptsMount(platform, slot, mount.weapon) || firingSlots.has(slot)) return;
 		firingSlots.add(slot);
 		const weapon = getWeapon(mount.weapon);
-		if (mortarProfile(frame, slot)) {
-			if (input.fire[slot] && (!automated || !selected?.airborne)) fireMortar(state, gunner, mount, selected?.body ?? input.aim);
+		if (frame && mortarProfile(frame, slot)) {
+			if (input.fire[slot] && (!automated || !selected?.airborne)) fireMortar(state, gunner, frame, mount, selected?.body ?? input.aim);
 			return;
 		}
 		const withinRange = withinWeaponRange(targetRange, weapon.range);
 		if (!canFire || weapon.kind === 'missile' && (!locked || !withinRange) || automated && (!withinRange || !input.fire[slot])) { delete mount.rocketVolley; return; }
 		if (automated && selected && terrain && weapon.kind !== 'laser') {
-			const muzzle = getPlayerMuzzle(frame, slot, base, p.turret, tubeIndex(getPlayerWeaponRig(frame)[slot]?.tubes.length ?? 0, Math.max(0, mount.rounds - 1)), projectAim(p, p.turret, selected.volume), gunner.pose);
+			const muzzle = mountedMuzzle(gunner, base, slot, Math.max(0, mount.rounds - 1), projectAim(p, p.turret, selected.volume));
 			if (muzzleBlocked(terrain, p, muzzle, selected.volume)) { delete mount.rocketVolley; return; }
 		}
 		const volley = mount.rocketVolley;
@@ -1001,7 +1029,7 @@ const fireMountedRig = function (state: CombatStateView, gunner: RigGunner, inpu
 			launchWeapon(state, gunner, base, mount, p.turret + spread * gunner.spread, slot, selected);
 		}
 		if ((weapon.kind === 'rocket' || weapon.stream) && weapon.projectiles > 1 && usableMount(mount) && !p.overheated) mount.rocketVolley = { remaining: Math.min(weapon.projectiles - 1, mount.rounds), nextIn: volleySpacing(weapon) };
-		mount.cooldown = mountInterval(frame, slot, weapon); mount.firing = true;
+		mount.cooldown = frame ? mountInterval(frame, slot, weapon) : weapon.interval; mount.firing = true;
 		if (!automated) {
 			if (weapon.kind === 'cannon' || weapon.kind === 'ppc') state.cannonIn = 0.65;
 			if (weapon.kind === 'ppc') state.shake = 4;
@@ -1014,7 +1042,7 @@ const fireRigWeapons = function (state: CombatStateView, input: TriggerInput, dt
 	const targets = combatTargets(state);
 	const baseSpread = mate?.specialty === 'marksman' ? 0.5 : 1;
 	fireMountedRig(state, {
-		body: mate ?? state.player, frame: mate?.frameId ?? state.frame, loadout: mate?.loadout ?? state.loadout,
+		body: mate ?? state.player, platform: mate?.frameId ?? state.frame, loadout: mate?.loadout ?? state.loadout,
 		pose: mate ? mate.authoredPose : state.authoredPose, spread: baseSpread / pilotExperienceMultiplier(mate?.experienceBonus), damage: 1,
 		source: mate ? { squadmateId: mate.pilotId } : {},
 		shots: function () { return mate ? mate.shotsFired : state.stats.shotsFired; },
@@ -1299,6 +1327,50 @@ export const spawningStep = function (state: CombatStateView, dt: number) {
 
 };
 
+const fireHostileWeapons = function (state: CombatStateView, enemy: Unit, body: RigBody, platform: WeaponPlatform, operator: SiloTurret | CatalogPilot, contacts: readonly FriendlyContact[], selected: FriendlyContact | undefined, ready: boolean, dt: number) {
+	fireMountedRig(state, {
+		body, platform, loadout: enemyMounts(enemy), pose: enemy.catalog?.authoredPose, spread: 1, damage: getDifficultyDefinition(state.difficulty).enemyDamage,
+		source: { owner: enemy.id }, shots: function () { return operator.shotsFired; }, countShot: function () { return ++operator.shotsFired; },
+	}, { aim: selected?.body ?? body, fire: [ready, ready, ready, ready], ...(selected ? { targetId: selected.id } : {}) }, contacts, function (id, damage, _origin, incoming) {
+		const contact = contacts.find(function (candidate) { return candidate.id === id; });
+		if (contact) hurtFriendlyWithWeapon(state, contact, damage, false, incoming);
+	}, dt);
+	operator.missileLock = body.missileLock; operator.targetId = body.targetId;
+	const reactor = enemyReactor(enemy);
+	reactor.heat = body.heat; reactor.overheated = body.overheated;
+};
+
+const operateSilo = function (state: CombatStateView, gun: SiloUnit, contacts: readonly FriendlyContact[], dt: number) {
+	const { silo } = gun;
+	if (silo.deployment < 1) {
+		if (silo.deployment === 0 && !contacts.some(function (contact) {
+			return contact.side !== 'relay' && contactAlive(contact) && distance(gun, contact.body) <= SILO_TRIGGER_RADIUS;
+		})) return;
+		silo.deployment = Math.min(1, silo.deployment + dt / SILO_DEPLOY_SECONDS);
+		return;
+	}
+	const mount = gun.loadout?.[0];
+	if (!mount) return;
+	const terrain = state.mission?.map.terrain;
+	const platform = siloWeaponRig(getWeapon(mount.weapon));
+	const pivot = weaponPivot(platform, weaponBase(gun, terrain), gun.angle);
+	const targets = contacts.filter(function (contact) { return contact.side !== 'relay' && contactAlive(contact); })
+		.sort(function (a, b) { return distance(gun, a.body) - distance(gun, b.body); });
+	const target = targets.find(function (contact) { return !terrain || terrainShotFraction(terrain, pivot, contact.volume) === undefined; }) ?? targets[0];
+	const bearing = target ? Math.atan2(target.body.y - gun.y, target.body.x - gun.x) : gun.angle;
+	const cycleDt = targetingDt(state, gun, dt, true);
+	const turn = angleDelta(gun.angle, bearing);
+	const traverse = 1.6 * cycleDt;
+	gun.angle += clamp(turn, -traverse, traverse);
+	mount.firing = false;
+	mount.cooldown = Math.max(0, mount.cooldown - cycleDt);
+	const reactor = enemyReactor(gun);
+	coolReactor(reactor, ENEMY_STATS['silo-turret'].cooling, dt);
+	const body: RigBody = { x: gun.x, y: gun.y, hp: gun.hp, angle: gun.angle, turret: gun.angle, throttle: 0, speed: 0,
+		heat: reactor.heat, overheated: reactor.overheated, missileLock: silo.missileLock };
+	fireHostileWeapons(state, gun, body, platform, silo, contacts, target, target !== undefined && Math.abs(turn) <= traverse, dt);
+};
+
 const catalogFight = function (state: CombatStateView, enemy: Unit, pilot: CatalogPilot, target: Point, contacts: readonly FriendlyContact[], bounds: { width: number; height: number }, navigation: ObstacleField | undefined, dt: number) {
 	const terrain = state.mission?.map.terrain;
 	const frame = getFrame(pilot.frameId);
@@ -1331,16 +1403,9 @@ const catalogFight = function (state: CombatStateView, enemy: Unit, pilot: Catal
 	if (advancePose) pilot.authoredPose = advancePose(before, body, state.time, terrain);
 	enemy.cooldown -= cycleDt;
 	const ready = enemy.cooldown <= 0 && Boolean(selected) && Math.abs(angleDelta(body.turret, Math.atan2(target.y - body.y, target.x - body.x))) < .18;
-	fireMountedRig(state, {
-		body, frame: frame.id, loadout, pose: pilot.authoredPose, spread: 1, damage: getDifficultyDefinition(state.difficulty).enemyDamage,
-		source: { owner: enemy.id }, shots: function () { return pilot.shotsFired; }, countShot: function () { return ++pilot.shotsFired; },
-	}, { aim: target, fire: [ready, ready, ready, ready], ...(selected ? { targetId: selected.id } : {}) }, contacts, function (id, damage, _origin, incoming) {
-		const contact = contacts.find(function (candidate) { return candidate.id === id; });
-		if (contact) hurtFriendlyWithWeapon(state, contact, damage, false, incoming);
-	}, dt);
+	fireHostileWeapons(state, enemy, body, frame.id, pilot, contacts, selected, ready, dt);
 	enemy.x = body.x; enemy.y = body.y; enemy.hullAngle = body.angle; enemy.angle = body.turret;
-	pilot.speed = body.speed; pilot.motorSpeed = body.motorSpeed; pilot.throttle = body.throttle; pilot.missileLock = body.missileLock; pilot.targetId = body.targetId; pilot.brace = body.brace; pilot.designation = body.designation;
-	reactor.heat = body.heat; reactor.overheated = body.overheated;
+	pilot.speed = body.speed; pilot.motorSpeed = body.motorSpeed; pilot.throttle = body.throttle; pilot.brace = body.brace; pilot.designation = body.designation;
 };
 
 export const enemiesStep = function (state: CombatStateView, dt: number) {
@@ -1352,11 +1417,12 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 	const navigation = groundNavigation(state);
 	const difficulty = getDifficultyDefinition(state.difficulty);
 	const enemies = state.enemies;
-	const contacts = enemies.some(function (enemy) { return enemy.catalog; }) ? friendlyContacts(state, relay) : [];
+	const contacts = enemies.some(function (enemy) { return enemy.catalog || enemy.kind === 'silo-turret'; }) ? friendlyContacts(state, relay) : [];
 	const squadmates = state.squadmates;
 	const nearestRig = squadmates.length > 0 ? new Map(enemies.map(function (enemy) { return [enemy.id, closestRig(p, squadmates, enemy)]; })) : undefined;
 	// Wake units before planning so idle garrisons cannot be recruited remotely.
 	if (mission && !relay) for (const enemy of enemies) {
+		if (enemy.kind === 'silo-turret') continue;
 		if (enemy.hp > 0 && (distance(enemy, nearestRig?.get(enemy.id) ?? p) < Math.max(enemy.catalog && mortarProfile(enemy.catalog.frameId) ? HARROW_MAX_RANGE + 1 : 850, ENEMY_STATS[enemy.kind].aggro) || enemy.hp < enemy.maxHp)) enemy.engaged = true;
 	}
 	const sectionLead = new Map<number, Unit>();
@@ -1379,6 +1445,10 @@ export const enemiesStep = function (state: CombatStateView, dt: number) {
 			target, at: target === 'relay' && relay ? relay : rig, ...(order ? { squad: order } : {}), ...(enemy.tactics ? { tactics: enemy.tactics } : {}) };
 	}), ground, bounds, dt);
 	for (const enemy of enemies) {
+		if (enemy.kind === 'silo-turret') {
+			if (enemy.hp > 0) operateSilo(state, enemy, contacts, dt);
+			continue;
+		}
 		if (enemy.entry) {
 			if (enemy.hp > 0 && advancePerimeterEntry(enemy, enemy.entry, ENEMY_STATS[enemy.kind].speed * enemyWeight(enemy).modifier, dt)) delete enemy.entry;
 			continue;

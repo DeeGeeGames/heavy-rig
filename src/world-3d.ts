@@ -16,6 +16,8 @@ import type { FieldTerrain } from './field-terrain';
 import type { FallenRigPose } from './rig-collapse';
 import { fieldClippingPlanes } from './field-clipping';
 import { createArtilleryWreckAssets } from './artillery-emplacement';
+import { createSiloWreck } from './silo-turret-model';
+import { isFixedEmplacement } from './combat-spatial';
 
 interface PooledObject { root: Object3D; dispose?: () => void }
 interface FrameEffects { muzzles: readonly Vector3[]; exhaust: Vector3 | undefined; rigWrecks?: ReadonlySet<Wreck>; fallenShadows?: readonly FallenRigPose['shadow'][]; defeatElapsed?: number }
@@ -135,6 +137,7 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 		return wreckAssets.create();
 	};
 	const emplacementWrecks: ReturnType<typeof createEmplacementWreck>[] = [];
+	const siloWrecks: ReturnType<typeof createSiloWreck>[] = [];
 	const warnings: PooledObject[] = []; const shots: ReturnType<typeof createShot>[] = []; const effects: ReturnType<typeof createEffect>[] = [];
 	const strikePools: { emplacement: boolean; views: ReturnType<typeof createStrike>[] }[] = [{ emplacement: false, views: [] }, { emplacement: true, views: [] }];
 	const defenses: ReturnType<typeof createDefense>[] = [];
@@ -307,10 +310,15 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 				view.root.scale.set(shape.length, 1, shape.width);
 				drapeGroundGeometry(view.root.geometry, terrain, shape, shape.heading, shape.length, shape.width);
 			});
-			const vehicleWrecks = fallen.filter(function (wreck) { return wreck.kind !== 'artillery' && !frameEffects?.rigWrecks?.has(wreck); });
+			const vehicleWrecks = fallen.filter(function (wreck) { return !isFixedEmplacement(wreck.kind) && !frameEffects?.rigWrecks?.has(wreck); });
 			const gunWrecks = fallen.filter(function (wreck) { return wreck.kind === 'artillery'; });
 			sync(root, emplacementWrecks, gunWrecks.length, createEmplacementWreck, function (view, index) {
 				const wreck = gunWrecks[index]; if (wreck) view.place(terrain, wreck);
+			});
+			const destroyedSilos = fallen.filter(function (wreck) { return wreck.kind === 'silo-turret'; });
+			sync(root, siloWrecks, destroyedSilos.length, createSiloWreck, function (view, index) {
+				const wreck = destroyedSilos[index];
+				if (wreck) { placeOnGround(view.root, terrain, wreck); view.remains.rotation.y = -wreck.angle; }
 			});
 			sync(root, wrecks, vehicleWrecks.length, function () {
 				const value = new Group(); value.name = 'wreck'; disc(value, shadow, 40).position.y = 0.04;
@@ -350,7 +358,7 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 				const enemy = state.enemies[index - 1];
 				const mate = state.squadmates[index - state.enemies.length - 1];
 				const unit = enemy ?? (landingShadows ? landingShadows[index === 0 ? 0 : index - state.enemies.length] : index === 0 ? state.player : mate);
-				value.root.visible = unit !== undefined && (enemy !== undefined || (mate ?? state.player).hp > 0);
+				value.root.visible = unit !== undefined && enemy?.kind !== 'silo-turret' && (enemy !== undefined || (mate ?? state.player).hp > 0);
 				if (!unit) return;
 				const scale = enemy ? mechScale(enemy.kind) : mate ? getFrame(mate.frameId).size : 1;
 				placeOnGround(value.root, terrain, unit, .15); value.root.scale.setScalar(scale);
@@ -403,6 +411,7 @@ export const createWorldObjects = function (scene: Scene, wideViewWidth = functi
 			weaponVfx.dispose();
 			for (const pool of strikePools) for (const strike of pool.views) strike.dispose();
 			wreckAssets?.dispose();
+			for (const view of siloWrecks) view.dispose();
 			for (const batch of relayBatches) batch.dispose();
 			missionEnvironment?.dispose();
 			resetTerrainBake();

@@ -3,12 +3,12 @@ import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
 import { createMount, weaponIdForTier } from '../src/arsenal';
 import { createCombatRuntime } from '../src/combat-runtime';
-import { coolingStep, createState, weaponsStep, projectilesStep, type Controls, type EnemyKind, type Unit } from '../src/simulation';
+import { coolingStep, createState, weaponsStep, projectilesStep, type Controls, type PresetEnemyKind, type Unit } from '../src/simulation';
 import { enemyVolume } from '../src/combat-spatial';
 import { getPlayerMuzzle } from '../src/weapon-rig';
 
 const idle: Controls = { drive: 0, turn: 0, stop: false, aim: { x: 1300, y: 780 }, fire: [false, false, false, false], coolant: false };
-const enemy = function (id: number, x: number, kind: EnemyKind): Unit { return { id, x, y: 780, kind, hp: 1000, maxHp: 1000, angle: 0, cooldown: 999, heavy: false }; };
+const enemy = function (id: number, x: number, kind: PresetEnemyKind): Unit { return { id, x, y: 780, kind, hp: 1000, maxHp: 1000, angle: 0, cooldown: 999, heavy: false }; };
 const setup = function () { const state = createState(); state.spawnIn = 999; state.player.turret = 0; return state; };
 
 test('frontal armor takes the same glancing hit at the old and new ballistic speeds', function () {

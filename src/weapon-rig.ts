@@ -3,7 +3,7 @@ import { getFrame, type FrameId } from './frames';
 import { FRAME_RIGS } from './frame-rig';
 import { getHardpoints } from './hardpoints';
 import { getMechAssetBinding } from './mech-asset-registry';
-import type { EnemyKind, Point } from './simulation';
+import type { PresetEnemyKind, Point } from './simulation';
 import { snapMechHeading } from './torso-arc';
 import { emplacementWeaponRig } from './artillery-emplacement-rig';
 
@@ -82,7 +82,7 @@ export const getPlayerWeaponRig = function (frame: FrameId): readonly WeaponRig[
 	const result = rigs.map(function (rig) { return scaleMechRig(rig, definition.size, FRAME_RIGS[frame].torsoRise ?? 0); });
 	playerRigs.set(frame, result); return result;
 };
-export const getEnemyWeaponRig = function (kind: EnemyKind, commander = false): readonly WeaponRig[] {
+export const getEnemyWeaponRig = function (kind: PresetEnemyKind, commander = false): readonly WeaponRig[] {
 	if (kind === 'artillery') return [emplacementWeaponRig];
 	if (kind === 'helicopter') return [{ ...mount(44, 84, 0), pivot: { x: 15, y: 0, elevation: 84 }, hullMounted: true }];
 	if (kind === 'tank') return [mount(57, 36, 0)];
@@ -179,7 +179,7 @@ export const getPlayerMuzzle = function (frame: FrameId, slot: number, body: Wea
 	const rig = getPlayerWeaponRig(frame)[slot]; if (!rig) throw new RangeError(`Missing weapon rig ${frame}/${slot}`);
 	return rigMuzzle(rig, body, heading, tubeIndex, target);
 };
-export const getEnemyMuzzle = function (kind: EnemyKind, commander: boolean, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint): SpatialPoint {
+export const getEnemyMuzzle = function (kind: PresetEnemyKind, commander: boolean, slot: number, body: WeaponBody, heading: number, tubeIndex?: number, target?: SpatialPoint): SpatialPoint {
 	const rig = getEnemyWeaponRig(kind, commander)[slot]; if (!rig) throw new RangeError(`Missing enemy weapon rig ${kind}/${slot}`);
 	return rigMuzzle(rig, body, heading, tubeIndex, target);
 };

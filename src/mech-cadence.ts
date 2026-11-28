@@ -1,5 +1,6 @@
 import type { AuthoredGait } from './authored-run';
 import { isVehicleKind } from './enemy-vehicles';
+import { isFixedEmplacement } from './combat-spatial';
 import type { FrameId } from './frames';
 import type { Gaits } from './gait';
 import type { CombatStateView, EnemyKind, Point } from './simulation';
@@ -116,7 +117,7 @@ export const createMechCadences = function () {
 			stepActor(mate, mate.frameId, mate.authoredPose?.gait ?? gaits.squadmates.get(mate.pilotId), state.time);
 		}
 		for (const enemy of state.enemies) {
-			if (enemy.kind !== 'artillery' && !isVehicleKind(enemy.kind)) stepActor(enemy, enemy.kind, gaits.enemies.get(enemy.id), state.time);
+			if (!isFixedEmplacement(enemy.kind) && !isVehicleKind(enemy.kind)) stepActor(enemy, enemy.kind, gaits.enemies.get(enemy.id), state.time);
 		}
 	};
 	const visualGait = function (actor: Point, gait: AuthoredGait) {

@@ -19,7 +19,7 @@ export const visibleTouchContacts = function (state: CombatStateView, project: (
 		}
 		const enemy = target.body;
 		const frame = enemy.catalog ? getFrame(enemy.catalog.frameId) : undefined;
-		const label = isPriorityTarget(state, enemy) ? 'PRIORITY TARGET' : frame ? `${frame.chassisName} ${frame.variant}` : enemy.kind.toUpperCase();
+		const label = isPriorityTarget(state, enemy) ? 'PRIORITY TARGET' : frame ? `${frame.chassisName} ${frame.variant}` : enemy.silo ? 'SILO TURRET' : enemy.kind.toUpperCase();
 		return { id: enemy.id, point: enemy, screen: project(enemy, targetElevation(enemy)), label };
 	});
 	return contacts.filter(function (contact) { return isContactVisible(contact.screen, width, height, obstructions); })

@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { MISSION_KINDS } from '../src/campaign';
 import type { Contract } from '../src/campaign-types';
-import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, playerVolume, RIG_RADIUS } from '../src/combat-spatial';
+import { EMPLACEMENT_RADIUS, ENEMY_RADIUS, isFixedEmplacement, playerVolume, RIG_RADIUS } from '../src/combat-spatial';
 import { terrainPathClear, terrainPointClear, terrainShotFraction, terrainWaypoint } from '../src/field-terrain';
 import { groundHeight } from '../src/terrain-elevation';
 import { CAPTURE_RADIUS, EXTRACTION_RADIUS, generateMissionField, generateMissionMap, missionArtilleryCount, missionDeploymentSlot, missionHostileCount, missionSpawn } from '../src/missions';
@@ -72,8 +72,8 @@ test('squads can deploy and reach every objective and pickup in the four new bio
 			return missionSpawn(job, map, i);
 		}) : garrison;
 		expect(spawns).toHaveLength(missionHostileCount(job));
-		const guns = spawns.filter(function (spawn) { return spawn.kind === 'artillery'; });
-		expect(guns).toHaveLength(missionArtilleryCount(job));
+		const guns = spawns.filter(function (spawn) { return isFixedEmplacement(spawn.kind); });
+		expect(guns.filter(function (spawn) { return spawn.kind === 'artillery'; })).toHaveLength(missionArtilleryCount(job));
 		for (const gun of guns) {
 			const base = groundHeight(terrain, gun);
 			for (const dx of [-EMPLACEMENT_RADIUS, EMPLACEMENT_RADIUS]) for (const dy of [-EMPLACEMENT_RADIUS, EMPLACEMENT_RADIUS]) {
@@ -81,7 +81,7 @@ test('squads can deploy and reach every objective and pickup in the four new bio
 			}
 		}
 		for (const spawn of spawns) expect(terrainPointClear(terrain, spawn,
-			spawn.kind === 'artillery' ? EMPLACEMENT_RADIUS : spawn.frameId ? RIG_RADIUS : ENEMY_RADIUS)).toBe(true);
+			isFixedEmplacement(spawn.kind) ? EMPLACEMENT_RADIUS : spawn.frameId ? RIG_RADIUS : ENEMY_RADIUS)).toBe(true);
 	}
 });
 

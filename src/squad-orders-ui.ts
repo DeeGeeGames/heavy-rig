@@ -48,6 +48,7 @@ const MOVE_VECTORS: Readonly<Record<MenuDirection, Point>> = {
 const targetLabel = function (contact: Contact, map: MissionMap | undefined): string {
 	if (contact.kind === 'structure') return missionFacilityName(map, contact.id) ?? (contact.id === -1 ? 'Facility' : `Facility ${-contact.id - 1}`);
 	if (contact.body.commander) return 'Commander';
+	if (contact.body.silo) return 'Silo turret';
 	const kind = contact.body.kind;
 	return kind === 'vtol' ? 'VTOL' : kind.charAt(0).toUpperCase() + kind.slice(1);
 };

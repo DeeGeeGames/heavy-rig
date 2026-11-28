@@ -1,7 +1,7 @@
 import { acquireMissileTarget } from './missile-fixture';
 import { describe, expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
-import { createMount, WEAPONS } from '../src/arsenal';
+import { createMount, getWeapon, WEAPON_MODELS, WEAPONS, type WeaponModelId } from '../src/arsenal';
 import type { Contract, MissionKind, MissionMap } from '../src/campaign-types';
 import { createOpeningProgress, getChainStatus } from '../src/contract-chains';
 import { createCombatRuntime } from '../src/combat-runtime';
@@ -9,7 +9,8 @@ import { isFieldContact } from '../src/enemy-perimeter';
 import { createFieldTrial, DEFENSE_TRIAL_SEED } from '../src/field-trial';
 import { RIG_RADIUS } from '../src/combat-spatial';
 import { hasTerrainRoute, terrainPathClear } from '../src/field-terrain';
-import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, defenseFieldsTanks, missionStructures, generateMissionMap, missionArtilleryCount, missionHostileCount, missionObjective, missionOpposition, missionSpawn } from '../src/missions';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, defenseFieldsTanks, missionStructures, generateMissionField, generateMissionMap, missionArtilleryCount, missionDeploymentSlot, missionHostileCount, missionObjective, missionOpposition, missionSpawn } from '../src/missions';
+import { SILO_TRIGGER_RADIUS } from '../src/silo-turret';
 import { getMissionTier, MISSION_TIERS } from '../src/reputation';
 import { ARENA, createState, createMissionState, distance, spawningStep, step, type Controls, type State } from '../src/simulation';
 import { createSituationMission } from '../src/situation-sim';
@@ -222,6 +223,42 @@ describe('Heavy Rig surface contracts', function () {
 		expect(onSlope.enemies.every(function (unit) { return unit.kind !== 'artillery'; })).toBe(true);
 		expect(onSlope.mission?.required).toBe(getMissionTier(10).assault - 2);
 		expect(missionOpposition(job, hillside)).toContain('0 fixed artillery guns');
+	});
+
+	test('silo postings draw from the entire arsenal and leave the landing party outside trigger range', function () {
+		const objective = { x: 1700, y: 1500 };
+		const map: MissionMap = { seed: 5, biome: 'badlands', width: 3000, height: 2800, sites: [objective], objective,
+			drop: { x: 250, y: 500 }, extraction: { x: 250, y: 2300 }, landmarks: [] };
+		const deployed = [map.drop, ...[0, 1, 2].map(function (index) { return missionDeploymentSlot(map, index); })];
+		const models = new Set<WeaponModelId>();
+		for (let index = 0; index < 128; index++) {
+			const job: Contract = { ...contract(index % 2 ? 'raid' : 'demolition', Math.imul(index + 1, 0x9e3779b1) >>> 0), tier: index % 2 ? 2 : 9 };
+			const { garrison } = generateMissionField(job, map);
+			const silos = garrison.filter(function (post) { return post.kind === 'silo-turret'; });
+			expect(silos).toHaveLength(1);
+			const [silo] = silos;
+			if (!silo) throw new Error('Missing seeded silo');
+			expect(deployed.every(function (rig) { return distance(rig, silo) > SILO_TRIGGER_RADIUS; })).toBe(true);
+			const weapon = getWeapon(silo.siloWeapon);
+			models.add(weapon.modelId);
+			expect(weapon.tier).toBe(getMissionTier(job.tier).weaponTier);
+			if (index === 0) {
+				expect(generateMissionField(job, map).garrison).toEqual(garrison);
+				expect(missionOpposition(job, map)).toContain(`${garrison.length} hostiles.`);
+				expect(missionOpposition(job, map)).toContain('silo turret guards');
+			}
+		}
+		expect(models).toEqual(new Set(WEAPON_MODELS.map(function (model) { return model.modelId; })));
+
+		const job = contract('demolition');
+		const drop = { x: 290, y: 290 };
+		const tight = { ...map, width: 580, height: 580, objective: drop, sites: [drop], drop, extraction: drop };
+		for (const [posting, field] of [[job, tight], [{ ...job, id: '4-33-meridian-demolition-1' }, map], [{ ...job, id: 'story:test' }, map]] as const) {
+			const { garrison } = generateMissionField(posting, field);
+			expect(garrison.some(function (post) { return post.kind === 'silo-turret'; })).toBe(false);
+			expect(missionHostileCount(posting, field)).toBe(garrison.length);
+			expect(missionOpposition(posting, field)).not.toContain('silo turret');
+		}
 	});
 
 	test('artillery surrounds demolition facilities, guards the far side of raid yards, and covers clearance road shoulders', function () {

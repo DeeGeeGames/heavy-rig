@@ -2,11 +2,11 @@ import { expect, test } from 'bun:test';
 import ECSpresso from 'ecspresso';
 import type { Contract } from '../src/campaign-types';
 import { createCombatRuntime } from '../src/combat-runtime';
-import { createMissionState, createState, distance, enemiesStep, ENEMY_STATS, type State, type Unit } from '../src/simulation';
+import { createMissionState, createState, distance, enemiesStep, ENEMY_STATS, type State, type PresetEnemyKind, type Unit } from '../src/simulation';
 
 const clearance: Contract = { id: 'squad-clearance', seed: 123, planetId: 'meridian', kind: 'clearance', employer: 'freeholds', opponent: 'combine', title: 'Test', briefing: 'Test', reward: 1000, favor: 8, hostility: 5, tier: 1, requiredReputation: 0 };
 
-const unit = function (id: number, kind: Unit['kind'], x: number, y: number): Unit {
+const unit = function (id: number, kind: PresetEnemyKind, x: number, y: number): Unit {
 	const hp = ENEMY_STATS[kind].hp;
 	return { id, kind, x, y, hp, maxHp: hp, angle: 0, heavy: kind === 'siege' || kind === 'tank', cooldown: 0 };
 };

@@ -1,4 +1,5 @@
 import { getFrame } from './frames';
+import { isFixedEmplacement } from './combat-spatial';
 import { FRAME_RIGS, STANDARD_LEG_RIG, type LegRig } from './frame-rig';
 import { angleDelta, distance, type EnemyKind, type Point, type Unit, type CombatStateView } from './simulation';
 export { STANDARD_LEG_RIG, type LegRig } from './frame-rig';
@@ -240,7 +241,7 @@ export const advanceGaits = function (gaits: Gaits, state: CombatStateView): Gai
 				const frame = getFrame(enemy.catalog.frameId);
 				return [enemy.id, advanceGait(previous, body, dt, frame.size, frame.stride, FRAME_RIGS[frame.id])];
 			}
-			if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank' || enemy.kind === 'artillery') {
+			if (enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'tank' || isFixedEmplacement(enemy.kind)) {
 				const forward = (body.x - previous.body.x) * Math.cos(body.angle) + (body.y - previous.body.y) * Math.sin(body.angle);
 				return [enemy.id, { ...previous, body, travelSpeed: forward / dt }];
 			}

@@ -5,13 +5,13 @@ import { createMount, type WeaponId } from '../src/arsenal';
 import { createCombatRuntime } from '../src/combat-runtime';
 import { getFrame, FRAMES } from '../src/frames';
 import { targetSolution } from '../src/overlay';
-import { angleDelta, createState, enemiesStep, movementStep, weaponsStep, type Controls, type Unit } from '../src/simulation';
+import { angleDelta, createState, enemiesStep, movementStep, weaponsStep, type Controls, type PresetEnemyKind, type Unit } from '../src/simulation';
 import { inFiringArc, TORSO_LIMIT } from '../src/torso-arc';
 
 const dt = 1 / 60;
 const idle: Controls = { drive: 0, stop: false, turn: 0, aim: { x: 1500, y: 780 }, fire: [false, false, false, false], coolant: false };
 const point = function (body: { x: number; y: number }, angle: number, range = 150) { return { x: body.x + Math.cos(angle) * range, y: body.y + Math.sin(angle) * range }; };
-const enemy = function (id: number, kind: Unit['kind'], x = 1100, y = 780): Unit {
+const enemy = function (id: number, kind: PresetEnemyKind, x = 1100, y = 780): Unit {
 	return { id, kind, x, y, angle: 0, hullAngle: 0, hp: 1000, maxHp: 1000, cooldown: 0, heavy: kind === 'siege' };
 };
 

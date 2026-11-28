@@ -10,15 +10,19 @@ import { ARENA, artilleryAimStatus, missileTracking, distance, ENEMY_STATS, getE
 import { isPriorityTarget, missionStructures, EXTRACTION_RADIUS, EXTRACTION_SECONDS, RECOVERY_SECONDS, BEACON_SECONDS } from './missions';
 import { missionFacilityName, missionSiteName } from './mission-site-labels';
 import { drawTacticalRadar, fieldContacts } from './tactical-radar';
-import { enemyVolume, playerVolume } from './combat-spatial';
+import { isFixedEmplacement, playerVolume, siloTargetElevation } from './combat-spatial';
 import { getFrame, type FrameId } from './frames';
 
 export interface ScreenRect { left: number; right: number; top: number; bottom: number }
-export const targetElevation = function (target: Point & { catalog?: { frameId: FrameId } }): number {
+export const targetElevation = function (target: Point & { catalog?: { frameId: FrameId }; silo?: { deployment: number } }): number {
+	if (target.silo) return siloTargetElevation(target.silo.deployment);
 	if (target.catalog) return playerVolume(target, target.catalog.frameId).elevation;
 	if (!('kind' in target)) return 45;
 	const kind = target.kind;
 	return kind === 'helicopter' || kind === 'vtol' || kind === 'tank' || kind === 'artillery' ? ENEMY_STATS[kind].elevation : 45;
+};
+const indicatorElevation = function (enemy: Unit) {
+	return enemy.catalog || enemy.silo ? targetElevation(enemy) : ENEMY_STATS[enemy.kind].elevation;
 };
 export interface OverlayOptions {
 	enemyLabelHeights?: ReadonlyMap<number, number>;
@@ -252,7 +256,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const enemies = fieldContacts(state);
 	const selected = enemies.find(function (enemy) { return enemy.hp > 0 && enemy.id === state.player.targetId; });
 	const selectedSize = (selected?.commander ? 90 : 74) * scale;
-	const selectedReticle = selected ? drawTargetReticle(selected, selected.id, selected.catalog ? enemyVolume(selected).elevation : ENEMY_STATS[selected.kind].elevation, selectedSize, selectedSize) : undefined;
+	const selectedReticle = selected ? drawTargetReticle(selected, selected.id, indicatorElevation(selected), selectedSize, selectedSize) : undefined;
 	const facilityReticle = selectedFacility && selectedStructure ? drawTargetReticle(selectedFacility, selectedStructure.id, 45, 130 * scale, 110 * scale) : undefined;
 	for (const [index, { id, body: facility }] of structures.entries()) {
 		const siteName = missionFacilityName(mission?.map, id)?.toUpperCase();
@@ -295,9 +299,9 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 	const strikes = state.strikes;
 	for (const enemy of enemies) {
 		const defense = getEnemyDefense(state, enemy);
-		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol' || enemy.kind === 'artillery';
+		const vehicle = enemy.kind === 'tank' || enemy.kind === 'helicopter' || enemy.kind === 'vtol' || isFixedEmplacement(enemy.kind);
 		const modelLabelHeight = options.enemyLabelHeights?.get(enemy.id) ?? (vehicle ? ENEMY_STATS[enemy.kind].elevation + 38 : (enemy.commander ? 152 : enemy.kind === 'siege' ? 126 : 112) * mechScale(enemy.kind));
-		const elevation = enemy.catalog ? enemyVolume(enemy).elevation : ENEMY_STATS[enemy.kind].elevation;
+		const elevation = indicatorElevation(enemy);
 		const labelHeight = enemy === selected && selectedReticle?.guided ? Math.max(modelLabelHeight, elevation + selectedReticle.labelOffset / scale) : modelLabelHeight;
 		const anchor = at(enemy, labelHeight);
 		const marked = showInfo && targetMarked(state, enemy.id);
@@ -307,7 +311,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 			text(marked && jammed ? 'MARKED +20% / JAMMED' : marked ? 'MARKED +20%' : 'JAMMED', enemy, labelHeight, '#91eadd', 10, -rows * (minimumText + 6) / scale);
 		}
 		if (enemy.hp >= enemy.maxHp && enemy !== selected && !isPriorityTarget(state, enemy) && !defense.exposed) {
-			if (enemy.catalog || enemy.kind === 'artillery') {
+			if (enemy.catalog || isFixedEmplacement(enemy.kind)) {
 				ctx.beginPath(); ctx.moveTo(anchor.x - 5, anchor.y - 5); ctx.lineTo(anchor.x + 5, anchor.y - 5); ctx.lineTo(anchor.x, anchor.y + 2); ctx.closePath();
 				ctx.fillStyle = '#ff9c78'; ctx.fill(); ctx.strokeStyle = '#261414'; ctx.lineWidth = 1; ctx.stroke();
 			}
@@ -334,12 +338,14 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		text(`${mate.callsign.toUpperCase()}${active ? [jammed ? 'JAMMED' : '', marked ? 'MARKED' : ''].filter(Boolean).map(function (status) { return ` / ${status}`; }).join('') : ' / OFFLINE'}`, mate, heightAboveRig, active ? '#84e3eb' : '#a8bcc0', 9);
 	}
 	if (showInfo && selected && selectedReticle) {
-		const elevation = selected.catalog ? enemyVolume(selected).elevation : ENEMY_STATS[selected.kind].elevation;
+		const elevation = indicatorElevation(selected);
 		const reticle = selectedReticle;
 		const solution = targetSolution(state, selected, aim);
 		const defense = getEnemyDefense(state, selected);
 		const frame = selected.catalog ? getFrame(selected.catalog.frameId) : undefined;
-		const role = frame ? `${frame.chassisName} ${frame.variant}` : isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'artillery' ? 'ARTILLERY EMPLACEMENT' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
+		const mount = selected.silo && selected.loadout?.[0];
+		const role = mount ? `SILO TURRET / ${getWeapon(mount.weapon).name}`
+			: frame ? `${frame.chassisName} ${frame.variant}` : isPriorityTarget(state, selected) ? 'PRIORITY TARGET' : selected.kind === 'artillery' ? 'ARTILLERY EMPLACEMENT' : selected.kind === 'tank' ? 'TANK / FLANK ARMOR' : selected.kind === 'siege' ? defense.exposed ? 'SIEGE / EXPOSED' : 'SIEGE / FLANK ARMOR' : selected.kind.toUpperCase();
 		text(role, selected, elevation, '#ffe1aa', 10, reticle.labelOffset / scale);
 		text(`${Math.round(distance(selected, state.player))} M / ${getWeaponFeedback(state, selected, selected.id)}`, selected, elevation, reticle.locked ? '#ff6863' : solution.inRange ? '#ebc184' : '#98a8a7', 8, (reticle.labelOffset + minimumText + 7) / scale);
 	}
@@ -411,7 +417,7 @@ export const drawOverlay = function (ctx: CanvasRenderingContext2D, width: numbe
 		.sort(function (a, b) { return distance(a, state.player) - distance(b, state.player) || a.id - b.id; });
 	for (const enemy of enemies) {
 		const detailed = survey.indexOf(enemy) >= 0 && survey.indexOf(enemy) < 2;
-		const category = enemy.catalog ? getFrame(enemy.catalog.frameId).chassisName : enemy.kind;
+		const category = enemy.catalog ? getFrame(enemy.catalog.frameId).chassisName : enemy.silo ? 'silo turret' : enemy.kind;
 		marker(enemy, detailed ? '#94ebe4' : isPriorityTarget(state, enemy) ? '#ffd3a3' : '#eead7c',
 			detailed ? `${category.toUpperCase()} ${Math.round(distance(enemy, state.player))} M` : undefined);
 	}

@@ -4,7 +4,7 @@ import { Box3, Group, Matrix4, Mesh, Quaternion, Vector3, type Plane } from 'thr
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { getFrame, type FrameId } from './frames';
 import { mountInterval } from './frame-tactics';
-import { getWeapon, type WeaponFamily, type WeaponMount } from './arsenal';
+import { getWeapon, type WeaponFamily, type WeaponId, type WeaponMount } from './arsenal';
 import { ankleJoint, footPose, solveLegToAnkle, mechScale, posedLegRig, STANDARD_LEG_RIG, type WalkerGait } from './gait';
 import { FRAME_RIGS } from './frame-rig';
 import { createLowPolyParts } from './low-poly-parts';
@@ -14,6 +14,7 @@ import { articulateWeapons, defeatWeaponJoints } from './weapon-articulation';
 import { getEnemyWeaponRig, getPlayerWeaponRig, type MountDirections, type SpatialPoint } from './weapon-rig';
 import { createEnemyVehicle, isVehicleKind } from './enemy-vehicles';
 import { createArtilleryEmplacement } from './artillery-emplacement';
+import { createSiloTurret } from './silo-turret-model';
 import { getMechAssetBinding, type MechAssetModel } from './mech-asset-registry';
 import { beginRigDefeat } from './rig-defeat-bursts';
 import { registerProceduralRigGeometry } from './rig-collapse-geometry';
@@ -25,7 +26,7 @@ import { createMechResponseRig, type MechResponse } from './mech-response';
 import type { FieldTerrain } from './field-terrain';
 import { groundHeight, groundNormal } from './terrain-elevation';
 
-export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; response?: MechResponse; target?: SpatialPoint; mountDirections?: MountDirections; aimSlope?: number; terrain?: FieldTerrain; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[] }
+export interface MechFeedback { recoil: number; hit: number; heat: number; time: number; response?: MechResponse; target?: SpatialPoint; mountDirections?: MountDirections; aimSlope?: number; terrain?: FieldTerrain; authoredPose?: AuthoredPoseContext; legGait?: AuthoredGait; equippedSlots?: readonly number[]; siloDeployment?: number }
 
 // Recover the shot envelope from simulation-owned cooldowns, so firing freezes
 // with combat and works for every equipped family, including purchased armaments.
@@ -44,7 +45,8 @@ export const weaponRecoil = function (loadout: readonly WeaponMount[], family?: 
 
 // Weapon geometry shares its stable rig with combat. Suspension and leg motion
 // remain presentation data; every view uses this same production factory.
-export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original', entryPlanes?: Plane[]): MechAssetModel {
+export const createMech = function (kind?: EnemyKind, commander = false, frame: FrameId = 'warden', skin: MechFinish = 'original', entryPlanes?: Plane[], siloWeapon: WeaponId = 'autocannon'): MechAssetModel {
+	if (kind === 'silo-turret') return createSiloTurret(siloWeapon);
 	if (kind === 'artillery') return createArtilleryEmplacement(entryPlanes);
 	if (kind && isVehicleKind(kind)) return createEnemyVehicle(kind, entryPlanes);
 	const authored = kind ? undefined : getMechAssetBinding(frame);
