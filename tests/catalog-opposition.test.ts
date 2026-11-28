@@ -108,9 +108,9 @@ test('demolition and raid targets withstand a squad opening volley and fall fast
 		};
 		const solo = engage(false);
 		const squad = engage(true);
-		expect(solo).toBeGreaterThan(kind === 'demolition' ? 15 : 9);
-		expect(solo).toBeLessThan(40);
-		expect(squad).toBeGreaterThan(kind === 'demolition' ? 4 : 2);
+		expect(solo).toBeGreaterThan(kind === 'demolition' ? 7.5 : 4.5);
+		expect(solo).toBeLessThan(kind === 'demolition' ? 15 : 9);
+		expect(squad).toBeGreaterThan(kind === 'demolition' ? 2 : 1);
 		expect(squad).toBeLessThan(solo * .5);
 	}
 });
