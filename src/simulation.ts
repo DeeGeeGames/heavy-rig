@@ -158,7 +158,7 @@ export const createMissionState = function (contract: Contract, options: Mission
 	state.coolantCharges = options.coolantCharges === undefined ? 2 : Number.isFinite(options.coolantCharges) ? Math.max(0, Math.min(3, Math.floor(options.coolantCharges))) : 0;
 	const { map, garrison } = generateMissionField(contract, options.map);
 	const hostileCount = contract.kind === 'defend' ? missionHostileCount(contract) : garrison.length;
-	const structureHp = getContractTier(contract).objectiveHp * getDifficultyDefinition(state.difficulty).enemyArmor;
+	const structureHp = getContractTier(contract).objectiveHp * getDifficultyDefinition(state.difficulty).enemyArmor * .5;
 	state.mission = {
 		contract, map, stage: 'active',
 		structure: contract.kind === 'demolition' ? { ...map.objective, hp: structureHp, maxHp: structureHp } : undefined,
