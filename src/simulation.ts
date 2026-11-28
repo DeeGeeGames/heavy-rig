@@ -22,6 +22,7 @@ import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './ene
 import { dropRigPose, planRigDrop, rigReleaseTime, type DropPassenger } from './enemy-deployment';
 import { advancePerimeterEntry, isFieldContact, planPerimeterEntry, type PerimeterEntry } from './enemy-perimeter';
 import { pilotExperienceMultiplier, SQUAD_SIZE, type Pilot, type PilotExperienceBonus } from './pilots';
+import { TANK_DELAY_SECONDS } from './strategic-impact';
 
 export interface Point { x: number; y: number }
 interface BeamAim { readonly direction: Readonly<SpatialPoint>; readonly targetId: number | undefined; readonly sweeping: boolean }
@@ -1214,13 +1215,15 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 };
 
 const queueReinforcements = function (state: CombatStateView, spawns: readonly MissionSpawn[], vehicleNotice: number, startedAt: number) {
-	const field = state.mission?.map ?? ARENA;
-	const terrain = state.mission?.map.terrain;
+	const mission = state.mission;
+	const field = mission?.map ?? ARENA;
+	const terrain = mission?.map.terrain;
+	const delayTanks = mission?.contract.kind === 'defend' && mission.contract.delayedTanks === true;
 	const objective = relayPosition(state) ?? state.player;
 	const rigs = spawns.filter(isEnemyMech);
 	const lead = rigs[0];
 	const occupied = [state.player, ...state.squadmates, ...state.enemies, ...state.warnings.flatMap(function (w) { return w.drop ? [w, w.drop.flight.origin] : []; })];
-	const standoff = state.mission?.map.defenseApproach?.minimumStandoff;
+	const standoff = mission?.map.defenseApproach?.minimumStandoff;
 	const friendlies = [state.player, ...state.squadmates.filter(function (mate) { return mate.hp > 0; })];
 	const releasePolicy = standoff === undefined ? undefined : {
 		preferredSeparation: standoff,
@@ -1241,7 +1244,8 @@ const queueReinforcements = function (state: CombatStateView, spawns: readonly M
 		} else {
 			const perimeter = planPerimeterEntry(spawn, objective, field, terrain, state.player);
 			if (!perimeter) return false;
-			warnings.push({ ...spawn, ...perimeter.end, perimeter, life: vehicleNotice });
+			const life = vehicleNotice + (delayTanks && spawn.kind === 'tank' ? TANK_DELAY_SECONDS : 0);
+			warnings.push({ ...spawn, ...perimeter.end, perimeter, life });
 		}
 	}
 	state.warnings.push(...warnings);

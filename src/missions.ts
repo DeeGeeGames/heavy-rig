@@ -89,6 +89,18 @@ const formations: Readonly<Record<Contract['tier'], readonly MobileEnemyKind[]>>
 	9: ['siege', 'striker', 'tank', 'siege', 'striker', 'vtol'],
 	10: ['siege', 'striker', 'vtol', 'siege', 'scout', 'tank'],
 };
+const mobileRosterKind = function (contract: Contract, index: number): MobileEnemyKind {
+	const roster = (usesLegacyMissionTiers(contract) ? legacyFormations[contract.tier] : undefined) ?? formations[contract.tier];
+	return roster[index % roster.length] ?? 'helicopter';
+};
+export const defenseFieldsTanks = function (contract: Contract): boolean {
+	if (contract.kind !== 'defend') return false;
+	const count = mobileHostileCount(contract);
+	for (let index = 0; index < count; index++) {
+		if (mobileRosterKind(contract, index) === 'tank') return true;
+	}
+	return false;
+};
 const catalogFrame = function (contract: Contract, role: EnemyKind, random: () => number): FrameId | undefined {
 	if (role !== 'scout' && role !== 'striker' && role !== 'siege') return undefined;
 	const firstVariant = usesLegacyMissionTiers(contract) ? 2 : 4;
@@ -116,10 +128,9 @@ const mobileSpawn = function (contract: Contract, map: MissionMap, index: number
 	const wingOffsets = [0, 0.65, -0.26];
 	const angle = (authored ? index * 2.399963 : formation * 2.399963 + (wingOffsets[index % 3] ?? 0)) + random() * (authored ? .6 : .16);
 	const radius = commander ? 0 : contract.kind === 'defend' ? 760 + random() * 160 + (!authored && index % 3 === 2 ? 90 : 0) : 180 + random() * 250;
-	const roster = (legacy ? legacyFormations[contract.tier] : undefined) ?? formations[contract.tier];
 	const commandKind = commandTargetName(contract) === 'command vehicle' ? (contract.tier === 1 ? 'helicopter' : 'tank')
 		: contract.tier >= firstHeavyRigTier(contract) ? 'siege' : contract.tier <= (legacy ? 1 : 4) ? 'scout' : 'striker';
-	const kind = commander ? commandKind : roster[index % roster.length] ?? 'helicopter';
+	const kind = commander ? commandKind : mobileRosterKind(contract, index);
 	const frameId = authored ? undefined : catalogFrame(contract, kind, random);
 	const staging = contract.kind === 'defend' ? map.defenseApproach?.staging : undefined;
 	if (staging) {

@@ -1,4 +1,4 @@
-import type { Biome, FactionId, PlanetId } from './campaign-types';
+import type { Biome, Contract, FactionId, PlanetId } from './campaign-types';
 
 export interface PlanetDefinition {
 	id: PlanetId;
@@ -11,8 +11,10 @@ export interface PlanetDefinition {
 }
 export const FACTION_IDS: readonly FactionId[] = ['freeholds', 'combine', 'accord'];
 export interface TerritoryInfluence { planetId: PlanetId; factionId: FactionId; value: number }
+export type DisruptedReserve = Pick<TerritoryInfluence, 'planetId' | 'factionId'>;
 export interface UniverseState {
 	influence: readonly TerritoryInfluence[];
+	disruptedReserves?: readonly DisruptedReserve[];
 	boardDay: number;
 	boardVersion: 1 | 2;
 }
@@ -110,11 +112,42 @@ export const getSystemIntel = function (context: TerritoryContext, planetId: Pla
 	const conflict = scores[second] > -9 && scores[first] - scores[second] < 18;
 	return { owner, conflict, participants: conflict ? [first, second] : owner ? [owner] : [] };
 };
-export const applyMissionInfluence = function (universe: UniverseState, planetId: PlanetId, employer: FactionId, opponent: FactionId, won: boolean): UniverseState {
-	const changes = [{ factionId: employer, delta: won ? 6 : -3 }, { factionId: opponent, delta: won ? -6 : 3 }];
+export const missionInfluenceDelta = function (impact: number | undefined, won: boolean): number {
+	// A rated win moves 2–7 points on each side of a front. Older contracts keep their six-point win.
+	const win = impact === undefined ? 6 : 2 + Math.round((impact - 10) / 8);
+	return won ? win : -Math.floor(win / 2);
+};
+const localInfluence = function (universe: UniverseState, planetId: PlanetId, factionId: FactionId): number {
+	return universe.influence.find(function (entry) { return entry.planetId === planetId && entry.factionId === factionId; })?.value ?? 0;
+};
+export const applyMissionInfluence = function (universe: UniverseState, planetId: PlanetId, employer: FactionId, opponent: FactionId, won: boolean, impact?: number): UniverseState {
+	const delta = missionInfluenceDelta(impact, won);
+	const changes = [{ factionId: employer, delta }, { factionId: opponent, delta: -delta }];
 	const retained = universe.influence.filter(function (entry) { return entry.planetId !== planetId || !changes.some(function (change) { return change.factionId === entry.factionId; }); });
 	return { ...universe, influence: [...retained, ...changes.map(function (change) {
-		const prior = universe.influence.find(function (entry) { return entry.planetId === planetId && entry.factionId === change.factionId; })?.value ?? 0;
+		const prior = localInfluence(universe, planetId, change.factionId);
 		return { planetId, factionId: change.factionId, value: Math.max(-18, Math.min(18, prior + change.delta)) };
 	})] };
+};
+export interface TerritoryResult {
+	employerDelta: number;
+	opponentDelta: number;
+}
+export interface FrontChange {
+	ownerBefore: FactionId | null;
+	ownerAfter: FactionId | null;
+	wentQuiet: boolean;
+}
+export const settleMissionTerritory = function (previous: UniverseState, contract: Contract, won: boolean): { universe: UniverseState; territory: TerritoryResult } {
+	const { planetId, employer, opponent } = contract;
+	const universe = applyMissionInfluence(previous, planetId, employer, opponent, won, contract.strategy?.impact);
+	const delta = function (id: FactionId) { return localInfluence(universe, planetId, id) - localInfluence(previous, planetId, id); };
+	return { universe, territory: { employerDelta: delta(employer), opponentDelta: delta(opponent) } };
+};
+export const dayFrontChange = function (departure: TerritoryContext, returned: TerritoryContext, planetId: PlanetId): FrontChange | undefined {
+	const before = getSystemIntel(departure, planetId);
+	const after = getSystemIntel(returned, planetId);
+	const wentQuiet = before.conflict && !after.conflict;
+	return before.owner !== after.owner || wentQuiet
+		? { ownerBefore: before.owner ?? null, ownerAfter: after.owner ?? null, wentQuiet } : undefined;
 };

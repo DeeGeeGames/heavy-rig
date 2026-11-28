@@ -189,13 +189,20 @@ zones. Zoom with the controls or wheel, drag to pan, and use Intel's conflict
 buttons to cycle active fronts. Keyboard/controller focus reveals offscreen
 systems when zoomed. Phone layouts open system Intel as a separate page.
 
-Borders evolve with calendar days, including Engineering waits. A successful
-sortie adds six local influence to its employer and removes six from the opponent;
-a failure or abort applies three in the opposite direction. Influence is bounded
-to ±18 per faction per system, spreads to nearby space, and persists across reloads.
-Calendar pressure is bounded and does not erase mission influence. Repeated wins
-can change system control or quiet a front; new conflicts can open elsewhere.
-These are initial campaign rules, with balance still requiring playtesting.
+Borders evolve with calendar days, including Engineering waits. New ordinary contracts
+show **Strategic impact** beside the pay. The briefing explains the target’s role on
+the front. A successful sortie shifts 2–7 local influence points toward the employer
+and away from its opponent. Failure or abort reverses 1–3 points. Each faction’s local
+influence is capped at ±18, affects nearby space, and persists across reloads.
+The debrief shows each sortie’s actual influence change and compares the front at
+departure and return. It calls out a change of control or a front going quiet after
+all player and crew sorties have settled. Previously agreed and authored contracts
+retain their six-point win and three-point reversal.
+
+Completing an armored reserve depot raid disrupts the raided faction in that system.
+Its tanks arrive 18 seconds later on the next tank-bearing local defense you commit
+to lead against it. The defense briefing identifies the delay. A crew can earn the
+disruption, and sending a crew to defend preserves it for a later player-led sortie.
 
 Only conflict zones post ordinary contracts. Story transmissions can offer work
 in quiet systems. The two factions with competing local

@@ -56,6 +56,7 @@ import { getAuthoredStep } from './contract-chains';
 import { combatTask } from './combat-task';
 import { fieldContacts } from './tactical-radar';
 import { missionStructures } from './missions';
+import { isArmoredReserveRaid, TANK_DELAY_SECONDS } from './strategic-impact';
 import { isFrameId, newUpkeepDue, PILOT_MONTHLY_UPKEEP, WEAPON_PRICES, quoteRepair, refitDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
 import { dismissPilot, getPilot, getPilotStats, hirePilot } from './pilots';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
@@ -925,7 +926,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					else if (replaceCampaign(next) && next.lastOperationDay) showDayDebrief(next.lastOperationDay, performance.now());
 				}, live ? 'COMMIT & PLAY' : 'COMMIT & ADVANCE', `${orders} Advance to day ${campaign.day + 1}.${upkeepNotice(campaign, 1)} Opposition standing on commitment. ${stakes}.`, `COMMIT DAY ${campaign.day}?`);
 			},
-			openLastReport: function () { if (campaign.lastOperationDay) showDayDebrief(campaign.lastOperationDay, performance.now()); },
+			openLastReport: function () {
+				if (campaign.lastOperationDay) showDayDebrief(campaign.lastOperationDay, performance.now());
+				else if (campaign.lastResult) showDebrief(campaign.lastResult, performance.now());
+			},
 			selectPlanet: function (id) {
 				if (campaign.active) return;
 				if (id !== destination) guidedCourse = undefined;
@@ -1377,6 +1381,22 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 	const repairRepaymentReport = function ({ repairRepayment }: CampaignResult) {
 		return repairRepayment ? html`<p class="day-report-checks" data-dialog-text>${repairRepayment.toLocaleString()} CR withheld for recovery repairs.</p>` : '';
 	};
+	const territoryReport = function ({ contract, territory, won }: CampaignResult) {
+		if (!territory) return '';
+		const { employerDelta, opponentDelta } = territory;
+		const employer = getFaction(contract.employer).name;
+		const opponent = getFaction(contract.opponent).name;
+		const delta = function (value: number) { return value < 0 ? `−${-value}` : value > 0 ? `+${value}` : '0'; };
+		return html`<p class="day-report-checks" data-territory-report data-dialog-text>Local influence · ${employer} ${delta(employerDelta)} · ${opponent} ${delta(opponentDelta)}</p>
+			${won && isArmoredReserveRaid(contract) ? html`<p class="day-report-checks" data-reserve-report data-dialog-text>Armored reserve disrupted. ${opponent} tank arrivals delayed by ${TANK_DELAY_SECONDS} seconds on the next eligible defense you lead here.</p>` : ''}`;
+	};
+	const frontReport = function ({ front }: CampaignResult) {
+		if (!front) return '';
+		const before = front.ownerBefore ? getFaction(front.ownerBefore).name : 'Unclaimed';
+		const after = front.ownerAfter ? getFaction(front.ownerAfter).name : 'Unclaimed';
+		return html`${front.ownerBefore !== front.ownerAfter ? html`<p class="day-report-checks" data-dialog-text>Control changed · ${before} → ${after}</p>` : ''}
+			${front.wentQuiet ? html`<p class="day-report-checks" data-dialog-text>The front went quiet.</p>` : ''}`;
+	};
 	const showDayDebrief = function (results: readonly CampaignResult[], now: number, fieldReport?: ReturnType<typeof getOperationReport>) {
 		const first = results[0];
 		if (!first) return;
@@ -1396,7 +1416,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const heading = element('result-score').previousElementSibling; if (heading) heading.textContent = 'TOTAL COMPANY PAY';
 		element('result-stats').hidden = true;
 		element('result-stats').replaceChildren();
-		reportContent(html`${results.map(function (mission) {
+		reportContent(html`${frontReport(first)}${results.map(function (mission) {
 			const { contract, crew, squad } = mission;
 			const rollText = function (check: NonNullable<CampaignResult['crew']>['objective']) { return `${check.passed ? 'passed' : 'failed'} · rolled ${check.roll} / needed ${check.chance} or less`; };
 			return html`<article class="day-report-line" data-operation-result=${contract.id} data-outcome=${mission.won ? 'won' : 'lost'}>
@@ -1404,6 +1424,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				<strong>${mission.won ? 'Complete' : mission.aborted ? 'Aborted' : 'Failed'}</strong>
 				<small>${mission.payout.toLocaleString()} CR · +${mission.favor} favor with ${getFaction(contract.employer).shortName} · +${mission.companyReputation} company reputation</small>
 			</article>
+			${territoryReport(mission)}
 			${fieldLeadReport(mission)}
 			${repairRepaymentReport(mission)}
 			${crew ? html`<p class="day-report-checks" data-dialog-text>Objective ${rollText(crew.objective)}. Extraction ${rollText(crew.extraction)}.</p>`
@@ -1427,10 +1448,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('result-title').textContent = won ? 'CONTRACT COMPLETE.' : aborted ? 'CONTRACT ABORTED.' : 'CONTRACT FAILED.';
 		element('result-story').hidden = !step;
 		element('result-story').textContent = step ? won ? step.success : `${step.contact} is holding the job for you. Retry from the Bridge when ready.` : '';
-		const failure = aborted ? 'The company withdrew.' : state.mission?.acquisitionTime === 0 ? 'The targeting deadline expired.' : 'The sortie was lost.';
+		const failure = aborted ? 'The company withdrew.' : report && state.mission?.acquisitionTime === 0 ? 'The targeting deadline expired.' : 'The sortie was lost.';
 		element('result-copy').textContent = won
-			? `${getPlanet(contract.planetId).name} extraction complete. ${getFaction(contract.employer).name} released payment and strengthened its local influence.`
-			: `${failure} ${getFaction(contract.opponent).name} gained local influence.`;
+			? `${getPlanet(contract.planetId).name} extraction complete.`
+			: failure;
 		element('result-difficulty').textContent = report ? state.difficulty.toUpperCase() : '';
 		element('result-score').textContent = `${payout.toLocaleString()} CR`;
 		element('result-rank').textContent = won ? '✓' : '×';
@@ -1439,9 +1460,9 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		element('result-stats').hidden = false;
 		element('result-stats').replaceChildren(...stats.map(function ([value, label]) { const node = document.createElement('div'); const strong = document.createElement('b'); const small = document.createElement('small'); strong.textContent = value ?? ''; small.textContent = label ?? ''; node.append(strong, small); return node; }));
 		const upgrades = element('result-upgrades');
-		reportContent(html`${fieldLeadReport(result)}${repairRepaymentReport(result)}${squad.map(function (member) { return rigReport(member, won); })}`);
+		reportContent(html`${frontReport(result)}${territoryReport(result)}${fieldLeadReport(result)}${repairRepaymentReport(result)}${squad.map(function (member) { return rigReport(member, won); })}`);
 		const funds = step ? `COMPANY FUNDS ${campaign.credits.toLocaleString()} CR · ` : '';
-		upgrades.textContent = `${funds}DAY ${campaign.day} · +${companyReputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
+		upgrades.textContent = `${funds}DAY ${result.day} · +${companyReputation} COMPANY REPUTATION · RANK ${companyRank(campaign)} / 15. ${getFaction(contract.opponent).name}: −${contract.hostility} reputation applied on acceptance.`;
 		element('restart').textContent = step ? 'BRIDGE / SIGNAL →' : 'RETURN TO SHIP →';
 		element('result-company').hidden = !step && !damage;
 		element('result-company').textContent = damage ? 'ENGINEERING →' : 'MECH BAY →';
@@ -1484,7 +1505,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (next === campaign || !replaceCampaign(next)) return;
 		const result = next.lastResult;
 		if (next.lastOperationDay) showDayDebrief(next.lastOperationDay, performance.now(), report);
-		else if (result && (result.squad || getAuthoredStep(next.story, result.contract))) showDebrief(result, performance.now(), report);
+		else if (result) showDebrief(result, performance.now(), report);
 		else toShip();
 	};
 	container.addEventListener('focusin', function (event) { if (event.target instanceof HTMLElement && !event.target.closest('.menu-controls')) updateMenuHint(); }, listenerOptions);

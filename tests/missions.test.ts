@@ -1,15 +1,19 @@
 import { acquireMissileTarget } from './missile-fixture';
 import { describe, expect, test } from 'bun:test';
+import ECSpresso from 'ecspresso';
 import { createMount, WEAPONS } from '../src/arsenal';
 import type { Contract, MissionKind, MissionMap } from '../src/campaign-types';
 import { createOpeningProgress, getChainStatus } from '../src/contract-chains';
+import { createCombatRuntime } from '../src/combat-runtime';
+import { isFieldContact } from '../src/enemy-perimeter';
 import { createFieldTrial, DEFENSE_TRIAL_SEED } from '../src/field-trial';
 import { RIG_RADIUS } from '../src/combat-spatial';
 import { hasTerrainRoute, terrainPathClear } from '../src/field-terrain';
-import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, missionStructures, generateMissionMap, missionArtilleryCount, missionHostileCount, missionObjective, missionOpposition, missionSpawn } from '../src/missions';
+import { EXTRACTION_RADIUS, EXTRACTION_SECONDS, FACILITY_TARGET_ID, CAPTURE_RADIUS, RECOVERY_SECONDS, BEACON_SECONDS, defenseFieldsTanks, missionStructures, generateMissionMap, missionArtilleryCount, missionHostileCount, missionObjective, missionOpposition, missionSpawn } from '../src/missions';
 import { getMissionTier, MISSION_TIERS } from '../src/reputation';
 import { ARENA, createState, createMissionState, distance, spawningStep, step, type Controls, type State } from '../src/simulation';
 import { createSituationMission } from '../src/situation-sim';
+import { TANK_DELAY_SECONDS } from '../src/strategic-impact';
 
 const contract = function (kind: MissionKind, seed = 123): Contract {
 	return { id: `test-${kind}-${seed}`, seed, planetId: 'meridian', kind, employer: 'freeholds', opponent: 'combine', title: 'Field test', briefing: 'Complete the objective and extract.', reward: 1000, favor: 8, hostility: 5, tier: 1, requiredReputation: 0 };
@@ -42,6 +46,57 @@ describe('Heavy Rig surface contracts', function () {
 		run(state, 0.2);
 		expect(state.warnings.filter(function (warning) { return warning.drop; })).toHaveLength(2);
 	});
+
+	test('the reserve raid delays every tank crossing the Defense perimeter without changing helicopter arrivals or section dispatch', async function () {
+		const job: Contract = { ...contract('defend', 1272562579), id: 'mission:317-2-meridian-defend-2', opponent: 'accord', tier: 2, fieldLayout: 'extended-defense' };
+		expect(defenseFieldsTanks(job)).toBe(true);
+		expect(defenseFieldsTanks({ ...contract('assassination'), tier: 2 })).toBe(false);
+		expect(defenseFieldsTanks({ ...contract('defend'), id: '317-2-meridian-defend-2', tier: 2 })).toBe(false); // Legacy tier 2 has no tanks.
+		const dt = 1 / 60;
+		const arrivals = async function (posting: Contract) {
+			const combat = createCombatRuntime();
+			const world = ECSpresso.create().withPlugin(combat.plugin).withFixedTimestep(dt).build();
+			try {
+				await world.initialize();
+				const initial = createMissionState(posting);
+				const { map, required } = missionOf(initial);
+				Object.assign(initial.player, map.objective);
+				// Keep both stationary runs alive through the last section's arrival.
+				initial.player.hp = 10_000;
+				initial.relay = 10_000;
+				const state = combat.attach(initial);
+				combat.setControls(function () { return idle; });
+				combat.setEnabled(true);
+				const tanks: number[] = [], helicopters: number[] = [], dispatch: number[] = [];
+				const contacted = new Set<number>();
+				for (let tick = 1; tick <= 110 * 60 && contacted.size < required; tick++) {
+					const dispatched = state.spawned;
+					world.update(dt);
+					if (state.spawned !== dispatched) dispatch.push(tick);
+					for (const enemy of state.enemies) {
+						if (contacted.has(enemy.id) || !isFieldContact(enemy, map)) continue;
+						contacted.add(enemy.id);
+						if (enemy.kind === 'tank') tanks.push(tick);
+						if (enemy.kind === 'helicopter') helicopters.push(tick);
+					}
+				}
+				return { tanks, helicopters, dispatch };
+			} finally { await world.dispose(); }
+		};
+		const baseline = await arrivals(job);
+		const delayed = await arrivals({ ...job, delayedTanks: true });
+		expect(baseline.tanks).toHaveLength(3);
+		expect(baseline.helicopters).toHaveLength(4);
+		expect(delayed.helicopters).toEqual(baseline.helicopters);
+		expect(delayed.dispatch).toEqual(baseline.dispatch);
+		expect(delayed.tanks).toHaveLength(baseline.tanks.length);
+		for (const [index, baselineTick] of baseline.tanks.entries()) {
+			const delayedTick = delayed.tanks[index];
+			if (delayedTick === undefined) throw new Error('Missing delayed tank boundary contact');
+			// Fractional fixed-step subtraction can round the warning expiry by one tick.
+			expect(Math.abs((delayedTick - baselineTick) - TANK_DELAY_SECONDS * 60)).toBeLessThanOrEqual(1);
+		}
+	}, 30_000);
 
 	test('extended Defense across biomes has a clear insertion road and can dispatch every section at standoff', function () {
 		const planets = ['meridian', 'cinder', 'borealis', 'brackwater', 'elderholt', 'galeward', 'iolith'] as const;

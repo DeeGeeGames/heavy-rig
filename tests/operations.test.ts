@@ -1,9 +1,95 @@
 import { expect, test } from 'bun:test';
-import { abandonContract, assignOperationLead, assignOperationSlot, commitOperations, createCampaign, getContracts, parseCampaign, removeOperation, reviewOperations, settleContract, stageOperation, type Campaign } from '../src/campaign';
-import { buyFrame, checkpointDeployment, getOwnedMech, queueRepair } from '../src/company';
+import { abandonContract, acceptContract, assignOperationLead, assignOperationSlot, commitOperations, createCampaign, forecastArrival, getContracts, parseCampaign, removeOperation, reviewOperations, settleContract, stageOperation, travelTo, type Campaign } from '../src/campaign';
+import { advanceDays, buyFrame, checkpointDeployment, getOwnedMech, queueRepair } from '../src/company';
 import { dismissPilot, getPilotStats, hirePilot } from '../src/pilots';
+import { isArmoredReserveRaid } from '../src/strategic-impact';
+import { getSystemIntel } from '../src/universe';
 
 const roundTrip = function (campaign: Campaign): Campaign { return parseCampaign(JSON.stringify(campaign)); };
+
+test('a local plan locks travel while the remote board still forecasts the actual arrival', function () {
+	const company = createCampaign(317, 'career');
+	const [local] = getContracts(company);
+	if (!local) throw new Error('Missing local posting');
+	const staged = stageOperation(company, local.id);
+	const destination = 'system-4';
+	expect(travelTo(staged, destination)).toBe(staged);
+	const advertised = getContracts(forecastArrival(staged, destination));
+	const arrival = travelTo(removeOperation(staged, local.id), destination);
+	expect(arrival.planetId).toBe(destination);
+	expect(advertised).toEqual(getContracts(arrival));
+	expect(advertised.some(function (job) { return job.tier === 1 && isArmoredReserveRaid(job); })).toBe(true);
+});
+
+test('an expired staged defense remains in Operations when the local board goes quiet', function () {
+	const company = advanceDays(travelTo(createCampaign(317, 'career'), 'system-28'), 2);
+	const defense = getContracts(company).find(function (job) { return job.kind === 'defend' && job.tier === 1; });
+	if (!defense) throw new Error('Missing defense at Redoubt Crossing');
+	const staged = stageOperation(company, defense.id);
+	expect(reviewOperations(staged).entries[0]?.postingAvailable).toBe(true);
+	const quiet = roundTrip(advanceDays(staged, 1));
+	expect(getContracts(quiet)).toBeEmpty();
+	expect(reviewOperations(quiet).entries[0]).toMatchObject({ postingAvailable: false, operation: { contract: defense } });
+	expect(commitOperations(quiet)).toBe(quiet);
+});
+
+test('a crew sortie that reopens the front suppresses an intermediate closure in the day debrief', function () {
+	const start = { ...createCampaign(0, 'career'), credits: 25_000, planetId: 'system-6' as const };
+	const company = hirePilot(buyFrame(start, 'kestrel-b'), 'flint');
+	const board = getContracts(company);
+	const defense = board.find(function (job) { return job.kind === 'defend' && job.tier === 1; });
+	const strike = board.find(function (job) { return job.kind === 'assassination' && job.tier === 1; });
+	if (!defense || !strike) throw new Error('Missing opposing contracts');
+	const alone = settleContract(acceptContract(company, defense.id), true);
+	expect(alone.lastResult?.front?.wentQuiet).toBe(true);
+	const staged = stageOperation(stageOperation(company, defense.id), strike.id);
+	const paired = assignOperationSlot(staged, strike.id, 0, { pilotId: 'flint', frameId: 'kestrel-b' });
+	const returned = roundTrip(settleContract(commitOperations(paired), true));
+	expect(getSystemIntel(returned, start.planetId)).toEqual(getSystemIntel(start, start.planetId));
+	expect(returned.lastOperationDay?.map(function (report) { return [report.won, report.front, report.territory?.employerDelta]; })).toEqual([
+		[true, undefined, 4], [true, undefined, 4],
+	]);
+});
+
+test('a successful crew raid disrupts the same local opponent for one later player-led tank defense', function () {
+	const start = createCampaign(4, 'career');
+	const opening = getContracts(start).find(function (job) { return job.kind === 'raid' && job.tier === 1; });
+	if (!opening) throw new Error('Missing opening raid');
+	const returned = settleContract(acceptContract(start, opening.id), true);
+	const company = assignOperationSlot(hirePilot(returned, 'flint'), undefined, 0, { pilotId: 'flint', frameId: 'kestrel' });
+	const raid = getContracts(company).find(function (job) { return job.tier === 1 && isArmoredReserveRaid(job); });
+	if (!raid) throw new Error('Missing reserve raid');
+	const staged = roundTrip(stageOperation(company, raid.id));
+	expect(staged.operations?.[0]?.contract).toEqual(raid);
+	expect(abandonContract(acceptContract(company, raid.id)).universe.disruptedReserves).toBeUndefined();
+	const earned = roundTrip(commitOperations(staged));
+	const reserves = [{ planetId: raid.planetId, factionId: raid.opponent }];
+	expect(earned.universe.disruptedReserves).toEqual(reserves);
+	const alreadyDisrupted = { ...company, universe: { ...company.universe, disruptedReserves: reserves } };
+	expect(getContracts(alreadyDisrupted).some(isArmoredReserveRaid)).toBe(false);
+	expect(earned.lastResult?.territory).toEqual({ employerDelta: 3, opponentDelta: -3 });
+	expect(earned.lastResult?.front).toEqual({ ownerBefore: raid.opponent, ownerAfter: raid.employer, wentQuiet: false });
+	expect(earned.lastResult?.crew?.extraction.passed).toBe(true);
+	expect(settleContract(earned, true)).toBe(earned);
+	const local = getContracts(earned).filter(function (job) { return job.kind === 'defend'; });
+	const defense = local.find(function (job) { return job.tier === 2; });
+	if (!defense?.delayedTanks) throw new Error('Expected a tagged tier-two defense');
+	expect(defense.opponent).toBe(raid.opponent);
+	expect(local.filter(function (job) { return job.tier === 1 || job.tier === 3; }).every(function (job) { return !job.delayedTanks; })).toBe(true);
+	const elsewhere = getContracts(earned, 'system-5').find(function (job) { return job.kind === 'defend' && job.tier === 2; });
+	expect(elsewhere?.opponent).toBe(raid.opponent);
+	expect(elsewhere?.delayedTanks).toBeUndefined();
+	const planned = roundTrip(stageOperation(earned, defense.id));
+	expect(removeOperation(planned, defense.id).universe.disruptedReserves).toEqual(reserves);
+	expect(commitOperations(planned).universe.disruptedReserves).toEqual(reserves); // Flint still leads.
+	const live = roundTrip(commitOperations(assignOperationSlot(planned, defense.id, 0, { pilotId: 'player', frameId: 'kestrel' })));
+	expect(live.active).toEqual(defense);
+	expect(live.universe.disruptedReserves).toEqual([]);
+	const after = roundTrip(abandonContract(live));
+	expect(after.lastResult?.contract).toEqual(defense);
+	expect(after.universe.disruptedReserves).toEqual([]);
+	expect(abandonContract(after)).toBe(after);
+});
 
 test('a legacy staged defense retains its layout through review, mixed-day commitment, and save restoration', function () {
 	const company = hirePilot(buyFrame({ ...createCampaign(317, 'career'), credits: 25_000 }, 'kestrel-b'), 'kite');
@@ -12,6 +98,7 @@ test('a legacy staged defense retains its layout through review, mixed-day commi
 	const staged = assignOperationSlot(stageOperation(stageOperation(company, live.id), crew.id), crew.id, 0, { pilotId: 'kite', frameId: 'kestrel-b' });
 	const oldDefense = { ...crew };
 	delete oldDefense.fieldLayout;
+	delete oldDefense.strategy;
 	const saved = roundTrip({ ...staged, operations: staged.operations?.map(function (operation) {
 		return operation.contract.id === crew.id ? { ...operation, contract: oldDefense } : operation;
 	}) });
