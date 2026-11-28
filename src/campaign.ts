@@ -443,7 +443,7 @@ const finishContract = function (campaign: Campaign, won: boolean, aborted: bool
 
 export const settleContract = function (campaign: Campaign, won: boolean): Campaign { return finishContract(campaign, won, false); };
 export const abandonContract = function (campaign: Campaign): Campaign { return finishContract(campaign, false, true); };
-export const recoverInterruptedDeployment = function (campaign: Campaign): Campaign { return campaign.deployed ? abandonContract(campaign) : campaign; };
+export const recoverInterruptedDeployment = function (campaign: Campaign): Campaign { return campaign.deployed?.integrity === 0 ? settleContract(campaign, false) : campaign; };
 
 const isReputation = function (value: unknown): value is Record<FactionId, number> {
 	return object(value) && FACTION_IDS.every(function (id) { return isInteger(value[id], -100, 100); });
@@ -547,11 +547,8 @@ const parseUniverse = function (value: unknown, day: number): UniverseState | un
 };
 
 // Validate the saved transaction, including the already-paid acceptance penalty.
-// Invalid saves are reset as a unit; never restore a partly accepted contract.
-export const parseCampaign = function (raw: string | null): Campaign {
-	if (!raw) return createCampaign();
+export const parseSavedCompany = function (value: unknown): Campaign | undefined {
 	try {
-		const value: unknown = JSON.parse(raw);
 		if (!object(value) || value['version'] !== CAMPAIGN_VERSION || typeof value['introComplete'] !== 'boolean' || !isInteger(value['seed'], 0, 0xffffffff) || !isPlanetId(value['planetId'])
 			|| !isInteger(value['day'], 1, MAX_DAY) || !isInteger(value['boardRevision'], 0, MAX_COUNT) || value['day'] < value['boardRevision'] + 1
 			|| !isInteger(value['companyReputation'], 0, MAX_COMPANY_REPUTATION)
@@ -559,32 +556,32 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			|| value['repairDebt'] !== undefined && !isInteger(value['repairDebt'], 0, MAX_CREDITS)
 			|| !isInteger(value['completed'], 0, MAX_COUNT) || !isInteger(value['failed'], 0, MAX_COUNT)
 			|| value['completed'] + value['failed'] > Math.min(MAX_COUNT, value['boardRevision'] * MAX_OPERATIONS) || !isReputation(value['reputation']) || !isReputation(value['boardReputation'])
-			|| value['active'] !== undefined && !isContract(value['active']) || value['lastResult'] !== undefined && !isResult(value['lastResult'])) return createCampaign();
+			|| value['active'] !== undefined && !isContract(value['active']) || value['lastResult'] !== undefined && !isResult(value['lastResult'])) return undefined;
 		const universe = parseUniverse(value['universe'], value['day']);
-		if (!universe) return createCampaign();
+		if (!universe) return undefined;
 		const company = parseCompany(value, value['day'], value['active'] !== undefined);
-		if (!company) return createCampaign();
+		if (!company) return undefined;
 		const operations = value['operations']; const committedCrew = value['committedCrew']; const lastOperationDay = value['lastOperationDay'];
 		const preferredLineup = value['preferredLineup']; const pilotWins = value['pilotWins'];
-		if (preferredLineup !== undefined && !isLineup(preferredLineup) || pilotWins !== undefined && !isPilotWins(pilotWins)) return createCampaign();
+		if (preferredLineup !== undefined && !isLineup(preferredLineup) || pilotWins !== undefined && !isPilotWins(pilotWins)) return undefined;
 		if (operations !== undefined && (!Array.isArray(operations) || operations.length > MAX_OPERATIONS || !operations.every(isPlannedOperation)
 			|| new Set(operations.map(function (entry) { return postingKey(entry.contract.id); })).size !== operations.length
 			|| operations.some(function (entry) { return entry.contract.planetId !== value['planetId']; })
 			|| operations.filter(function (entry) { return isAuthoredContract(entry.contract); }).length > 1
-			|| operations.length > 0 && value['active'] !== undefined)) return createCampaign();
+			|| operations.length > 0 && value['active'] !== undefined)) return undefined;
 		if (committedCrew !== undefined && (!Array.isArray(committedCrew) || committedCrew.length >= MAX_OPERATIONS || !committedCrew.every(isCrewSortie)
-			|| !value['active'] || !company.deployed || value['completed'] + value['failed'] + committedCrew.length + 1 > MAX_COUNT)) return createCampaign();
+			|| !value['active'] || !company.deployed || value['completed'] + value['failed'] + committedCrew.length + 1 > MAX_COUNT)) return undefined;
 		if (lastOperationDay !== undefined && (!Array.isArray(lastOperationDay) || !lastOperationDay.length || lastOperationDay.length > MAX_OPERATIONS || !lastOperationDay.every(isResult)
 			|| lastOperationDay.filter(function (result) { return !result.crew; }).length > 1
 			|| new Set(lastOperationDay.map(function (result) { return result.contract.id; })).size !== lastOperationDay.length
 			|| lastOperationDay.some(function (result) { return result.day !== lastOperationDay[0]?.day; })
-			|| JSON.stringify(lastOperationDay[0]) !== JSON.stringify(value['lastResult']))) return createCampaign();
+			|| JSON.stringify(lastOperationDay[0]) !== JSON.stringify(value['lastResult']))) return undefined;
 		const mode = value['mode'];
-		if (mode !== undefined && mode !== 'campaign' && mode !== 'career') return createCampaign();
+		if (mode !== undefined && mode !== 'campaign' && mode !== 'career') return undefined;
 		const story = parseChainProgress(value['story']);
 		if (mode === 'campaign') {
-			if (!story || story.completed.length > value['completed'] || !value['introComplete'] && (story.completed.length > 0 || story.committed)) return createCampaign();
-		} else if (value['story'] !== undefined) return createCampaign();
+			if (!story || story.completed.length > value['completed'] || !value['introComplete'] && (story.completed.length > 0 || story.committed)) return undefined;
+		} else if (value['story'] !== undefined) return undefined;
 		const campaign: Campaign = {
 			...company, version: CAMPAIGN_VERSION, introComplete: value['introComplete'], universe, seed: value['seed'], planetId: value['planetId'], day: value['day'], boardRevision: value['boardRevision'],
 			credits: value['credits'], companyReputation: value['companyReputation'], completed: value['completed'], failed: value['failed'], reputation: { ...value['reputation'] },
@@ -596,21 +593,21 @@ export const parseCampaign = function (raw: string | null): Campaign {
 			...(mode ? { mode } : {}), ...(story ? { story } : {}),
 		};
 		const result = campaign.lastResult;
-		if (result && result.day > campaign.day) return createCampaign();
+		if (result && result.day > campaign.day) return undefined;
 		if (result && isAuthoredContract(result.contract)) {
 			const step = getAuthoredStep(story, result.contract);
 			const reported = result.won ? story?.completed.at(-1) : story?.committed;
-			if (!step || reported !== result.contract.id || !sameContract(result.contract, step.contract)) return createCampaign();
+			if (!step || reported !== result.contract.id || !sameContract(result.contract, step.contract)) return undefined;
 		}
 		const active = campaign.active;
 		const contracts = active ? [active, ...(committedCrew?.map(function (sortie) { return sortie.contract; }) ?? [])] : [];
 		const expectedReputation = chargeHostility(campaign.boardReputation, contracts);
-		if (!FACTION_IDS.every(function (id) { return campaign.reputation[id] === expectedReputation[id]; })) return createCampaign();
+		if (!FACTION_IDS.every(function (id) { return campaign.reputation[id] === expectedReputation[id]; })) return undefined;
 		if (active) {
-			if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT) return createCampaign();
-			if (isAuthoredContract(active) && story?.committed !== active.id) return createCampaign();
+			if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT) return undefined;
+			if (isAuthoredContract(active) && story?.committed !== active.id) return undefined;
 			const generated = findPosting(campaign, active.id, usesLegacyMissionTiers(active));
-			if (!generated || !sameContract(active, generated) || companyRank(campaign) < getContractTier(active).rank || campaign.boardReputation[active.employer] < active.requiredReputation) return createCampaign();
+			if (!generated || !sameContract(active, generated) || companyRank(campaign) < getContractTier(active).rank || campaign.boardReputation[active.employer] < active.requiredReputation) return undefined;
 			campaign.active = generated;
 		}
 		if (committedCrew) {
@@ -624,19 +621,17 @@ export const parseCampaign = function (raw: string | null): Campaign {
 							return !campaign.pilots.includes(member.pilotId) || deploymentIssue(campaign, member.frameId) !== undefined
 								|| campaign.fleet.find(function (rig) { return rig.frameId === member.frameId; })?.integrity !== member.startingIntegrity;
 						});
-				})) return createCampaign();
+				})) return undefined;
 		}
 		return campaign;
-	} catch { return createCampaign(); }
+	} catch { return undefined; }
 };
 
-const purgePreviousCampaigns = function () {
-	for (let version = 1; version < CAMPAIGN_VERSION; version++) localStorage.removeItem(`heavy-rig:campaign:v${version}`);
-};
-export const readCampaign = function (): Campaign {
-	try { purgePreviousCampaigns(); return recoverInterruptedDeployment(parseCampaign(localStorage.getItem(CAMPAIGN_STORAGE_KEY))); } catch { return createCampaign(); }
+export const parseCampaign = function (raw: string | null): Campaign {
+	if (raw) {
+		try { return parseSavedCompany(JSON.parse(raw)) ?? createCampaign(); } catch { /* Start fresh for invalid JSON. */ }
+	}
+	return createCampaign();
 };
 
-export const saveCampaign = function (campaign: Campaign): boolean {
-	try { purgePreviousCampaigns(); localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(campaign)); return true; } catch { return false; }
-};
+export { readCampaign, saveCampaign } from './company-saves';

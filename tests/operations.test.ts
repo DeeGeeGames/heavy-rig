@@ -51,8 +51,10 @@ test('a saved mixed day settles the same crew sortie after extraction or interru
 	expect(interrupted.deployed?.integrity).toBe(74);
 	expect(interrupted.committedCrew?.[0]?.resolution.leaderId).toBe('kite');
 
-	const won = settleContract(interrupted, true);
-	const aborted = recoverInterruptedDeployment(interrupted);
+	const resumed = recoverInterruptedDeployment(interrupted);
+	expect(resumed).toBe(interrupted);
+	const won = settleContract(resumed, true);
+	const aborted = abandonContract(resumed);
 	expect(aborted.lastOperationDay?.[0]?.aborted).toBe(true);
 	expect(won.lastOperationDay?.[0]?.won).toBe(true);
 	const liveFee = Math.round(live.reward / 4);
@@ -83,7 +85,7 @@ test('a saved mixed day settles the same crew sortie after extraction or interru
 	const legacy = roundTrip({ ...interrupted, committedCrew: interrupted.committedCrew?.map(function ({ contract, resolution: { objective, extraction, squad } }) {
 		return { contract, resolution: { objective, extraction, squad } };
 	}) });
-	const legacyReport = recoverInterruptedDeployment(legacy).lastOperationDay?.[1];
+	const legacyReport = settleContract(recoverInterruptedDeployment(legacy), true).lastOperationDay?.[1];
 	expect(legacyReport?.crew).toEqual(crewReport.crew);
 	expect(legacyReport?.payout).toBe(crewReport.payout);
 	expect(legacyReport?.fieldLead).toBeUndefined();

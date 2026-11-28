@@ -4,7 +4,7 @@ import { getWeapon } from './arsenal';
 import { fieldLeadFee, reviewOperations, type Campaign } from './campaign';
 import { canDeploySquad, deploymentIssue, getOwnedMech, type OwnedMech } from './company';
 import type { CompanyActions } from './company-ui';
-import { getPilot, getPilotStats, getRecruitOffers, type Pilot } from './pilots';
+import { getPilot, getPilotStats, getRecruitOffers, pilotExperienceMultiplier, type Pilot } from './pilots';
 import { textItems, type WorkspacePane } from './workspace';
 
 export interface AssignmentPicker { slot: number; kind: 'pilot' | 'rig' }
@@ -22,7 +22,9 @@ const slotName = function (slot: number, planned: boolean) { return planned ? `S
 const skillText = function (campaign: Campaign, pilot: Pilot, roster: boolean) {
 	if (pilot.id === 'player') return '';
 	const { gunnery, maneuver, leadership, wins, bonus, nextMilestone } = getPilotStats(campaign, pilot.id);
-	return html`<p class="pilot-dispatch-stats">Gunnery ${gunnery}/5 · Maneuver ${maneuver}/5 · Leadership ${leadership}/5${roster ? html`<br>${wins} successful ${wins === 1 ? 'sortie' : 'sorties'}${bonus ? ` · +${bonus} dispatch bonus` : ''}${nextMilestone ? ` · Next bonus at ${nextMilestone}` : ''}` : ''}</p>`;
+	const trackingGain = Math.round((pilotExperienceMultiplier(bonus) - 1) * 100);
+	const experience = roster ? html`<br>${wins} successful ${wins === 1 ? 'sortie' : 'sorties'}${bonus ? ` · ${trackingGain}% faster target tracking · Tighter shot grouping · Better dispatch odds` : ''}${nextMilestone ? ` · Next bonus at ${nextMilestone} wins` : ''}` : '';
+	return html`<p class="pilot-dispatch-stats">Gunnery ${gunnery}/5 · Maneuver ${maneuver}/5 · Leadership ${leadership}/5${experience}</p>`;
 };
 
 export const pilotPanes = function (campaign: Campaign, actions: CompanyActions): WorkspacePane[] {

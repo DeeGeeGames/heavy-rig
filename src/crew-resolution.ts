@@ -4,7 +4,7 @@ import type { Contract, MissionKind } from './campaign-types';
 import { frameWeight, HEAT_LOCK, loadedMounts, usableMount } from './combat-resources';
 import { getOwnedMech, type DeployedPilot, type OwnedMech } from './company';
 import { getFrame } from './frames';
-import { getPilotStats, type PilotAssignment, type PilotId } from './pilots';
+import { getPilotStats, pilotExperienceMultiplier, type PilotAssignment, type PilotId } from './pilots';
 import { getContractTier, missionTierPressure } from './reputation';
 import { rigFrameId, type RigId } from './rigs';
 import { randomSource } from './universe';
@@ -50,10 +50,11 @@ const weaponPressure = function (mech: OwnedMech) {
 	const mounts = loadedMounts(mech.loadout, mech.reserves);
 	const pressure = mounts.filter(usableMount).reduce(function (total, mount) {
 		const weapon = getWeapon(mount.weapon);
-		const beams = weapon.kind === 'laser';
-		const roundsPerSecond = beams ? 1 : Math.min(weapon.projectiles / weapon.interval, mount.rounds / FIRE_WINDOW_SECONDS);
-		const damage = weapon.damage * roundsPerSecond;
-		const heat = beams ? weapon.heat : weapon.heat * roundsPerSecond / weapon.projectiles;
+		// Beam ratings are per second. Pulsed weapons emit a finite number of projectiles per cycle.
+		const cycleRate = weapon.kind === 'laser' ? 1 : weapon.projectiles / weapon.interval;
+		const fireRate = weapon.ammunition ? Math.min(cycleRate, mount.rounds / FIRE_WINDOW_SECONDS) : cycleRate;
+		const damage = weapon.damage * fireRate;
+		const heat = weapon.heat * fireRate / weapon.projectiles;
 		const precision = (weapon.range / 800) / (1 + 2 * weapon.spread);
 		return { damage: total.damage + damage, precisionDamage: total.precisionDamage + damage * precision, heat: total.heat + heat };
 	}, { damage: 0, precisionDamage: 0, heat: 0 });
@@ -81,7 +82,7 @@ const membersFor = function (campaign: Campaign, lineup: readonly PilotAssignmen
 		const condition = mech.integrity / 100;
 		const gunnery = 1 + (pilot.gunnery - 3) * .14;
 		const maneuver = 1 + (pilot.maneuver - 3) * .14;
-		const experience = 1 + pilot.bonus * .06;
+		const experience = pilotExperienceMultiplier(pilot.bonus);
 		return [{
 			pilotId,
 			frameId: mech.frameId,

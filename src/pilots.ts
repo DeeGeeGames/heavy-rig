@@ -37,6 +37,10 @@ export const getPilot = function (id: PilotId): Pilot { return { id, ...pilots[i
 
 export const MAX_PILOT_WINS = 1_000_000;
 const PILOT_MILESTONES = [3, 6] as const;
+export type PilotExperienceBonus = 0 | 1 | 2;
+export const pilotExperienceMultiplier = function (bonus: PilotExperienceBonus = 0): number {
+	return 1 + bonus * .06;
+};
 const SKILLS = {
 	commander: { gunnery: 3, maneuver: 3 },
 	marksman: { gunnery: 4, maneuver: 2 },
@@ -45,12 +49,14 @@ const SKILLS = {
 
 export const getPilotStats = function (campaign: Campaign, id: PilotId) {
 	const wins = campaign.pilotWins?.[id] ?? 0;
-	const nextMilestone = PILOT_MILESTONES.find(function (milestone) { return wins < milestone; });
+	const [first, second] = PILOT_MILESTONES;
+	const bonus: PilotExperienceBonus = wins >= second ? 2 : wins >= first ? 1 : 0;
+	const nextMilestone = PILOT_MILESTONES.at(bonus);
 	return {
 		...SKILLS[pilots[id].specialty],
 		leadership: pilots[id].leadership,
 		wins,
-		bonus: PILOT_MILESTONES.filter(function (milestone) { return wins >= milestone; }).length,
+		bonus,
 		...(nextMilestone === undefined ? {} : { nextMilestone }),
 	};
 };

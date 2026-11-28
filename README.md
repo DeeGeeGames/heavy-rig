@@ -42,8 +42,9 @@ leaves the same job available to retry. New Career opens directly on the Starmap
 The title screen overlooks Meridian’s relay yard at dusk. Distant tracer fire
 and explosions animate against a 416 × 234 pixel-art landscape. Choose **New
 Campaign** for the escape or **New Career** to start aboard the Wayfarer. With
-a saved company, the main action resumes your progress and **New company**
-offers both fresh starts. **Simulator** contains Situation Sim, Frame Training,
+a saved company, the main action continues your last company. **Companies**
+lets you switch between Campaign and Career, start either one again, and back
+up or restore each company. **Simulator** contains Situation Sim, Frame Training,
 and Replay Escape. The arrow keys or Tab move between actions and Enter selects.
 Controller and touch prompts follow the active input device. Escape or the
 controller's east face button opens a confirmation to return to the title from
@@ -82,13 +83,16 @@ Pilots and bench any assigned pilot to free their rig. The first lineup carries
 over to the next day. The commander can play one mission and is required for
 story contracts. All other missions use objective and extraction checks driven
 by pilot skills, equipment, hull condition, and mission tier. The rolls are tied
-to the posting. Successful sorties build a hired pilot's experience and unlock
-dispatch bonuses at three and six wins.
+to the posting. Successful sorties build a hired pilot's experience. At three
+and six wins they track targets 6% and 12% faster, respectively, and group
+shots more tightly in live combat. Each milestone also improves dispatch
+odds. Energy weapons contribute to the forecast without ammunition reserves.
 
 Stage multiple local contracts, then commit them together from **Contracts →
 Operations**. When the commander deploys, play that mission first. The campaign
-advances one day and opens a shared debrief, including after a live abort or
-interrupted deployment. Crew-only days resolve immediately at commitment. The
+advances one day and opens a shared debrief when that mission ends or you
+explicitly abort it. Suspended sorties keep their committed crews pending.
+Crew-only days resolve immediately at commitment. The
 debrief reports every result and links damaged rigs to Engineering.
 
 Playable contracts, Situation Sim and the Cinder field trial open aboard the
@@ -166,8 +170,8 @@ Ammunition reserves are selected per mount in the Mech Bay. Ammunition-only
 changes take **zero credits and zero days**; changes to fitted hardware retain
 the refit timing above. Pending refits keep their own desired reserves until
 completion. Every new sortie loads the selected quantities for free, including
-after failure, abort, or interrupted deployment. Remaining battlefield rounds
-are runtime state and never replace the ship's desired load. No ordinary sortie
+after failure or abort. A resumed sortie keeps its remaining battlefield rounds.
+The ship retains its desired load. No ordinary sortie
 replenishes ammunition in combat.
 
 ## Contracts and surface missions
@@ -337,10 +341,11 @@ upgrades**. Every rig carries two coolant charges. Cooling and venting
 manage reactor heat; neither repairs frame damage. Difficulty settings affect
 the next deployment's hostile armor and damage.
 
-Damage and the commander's spent coolant are checkpointed during combat. A live
-abort or reload recovers the squad with its recorded damage and settles any crew
-sorties that were committed with it. Drafted squads survive reload. Successful
-extraction pays once.
+Company sorties save every two seconds of simulation and when paused or
+leaving the page. **Suspend to title** keeps the contract open.
+After a reload, **Resume sortie** opens the field paused with the same
+position, damage, ammunition, heat, squad orders, enemies and objective
+progress. An abort or completed mission settles the full committed day once.
 
 ## Frames and variants
 
@@ -808,19 +813,25 @@ The Pages workflow deploys `master` after the complete check. Pull requests must
 satisfy live branch protection; workflow definitions alone do not establish
 merge readiness. The custom domain is configured in `CNAME`.
 
-Company progression uses **`heavy-rig:campaign:v8`**. Existing v8 saves retain
-their company and start new pilot experience counters at zero. Earlier campaign
-namespaces (v1–v7) are purged when company data is read or saved.
+Campaign and Career use separate browser-local slots,
+`heavy-rig:company:campaign:v1` and `heavy-rig:company:career:v1`. Each
+retains a previous save for automatic recovery. Existing
+`heavy-rig:campaign:v8` saves open in their matching mode. Older companies
+without a mode open in the Campaign slot with their original progress. An
+in-flight v8 company restarts its committed mission at the landing site with
+its recorded damage and coolant. A commander already recorded as disabled
+returns to a loss debrief. Earlier v1–v7 namespaces are purged on save.
 Preferences remain under `heavy-rig:profile:v1`; historical classic records in
 that profile are retained but the classic operation is no longer a playable mode.
 
-Saves are browser-local and scoped to the origin. If another tab changes the
-company save, the stale tab stops play and requires reloading before it can
-write again. Opening another tab during deployment recovers that sortie as an
-abort; use one active company tab. Invalid company transactions
-reset the campaign as a unit. If storage is unavailable, play continues for the
-current session with a visible warning. Saves from the earlier Iron Wake on
-experiments.deegeegames.com are not transferred automatically.
+**Companies → Back up Campaign** or **Back up Career** downloads a portable
+copy, including a suspended sortie. **Restore backup** previews the mode and
+day before replacing that slot. Different tabs can play different companies.
+If a tab loses ownership of its save, it must reload before writing again.
+If device storage is unavailable, play continues in memory and backups can
+still be downloaded. Local saves belong to the browser and origin that created
+them. Saves from the earlier Iron Wake on experiments.deegeegames.com are
+not transferred automatically.
 
 Heavy Rig was extracted from DeeGeeGames/playground at commit
 `7e255d2b0676c80a79206f0a55c492d4b83cc692`, where it was named Iron Wake.

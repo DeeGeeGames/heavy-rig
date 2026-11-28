@@ -1,8 +1,31 @@
 import { expect, test } from 'bun:test';
 import { createCampaign, getContracts, parseCampaign } from '../src/campaign';
-import { buyFrame } from '../src/company';
+import { advanceDays, buyFrame, buyWeapon, getOwnedMech, queueRefit } from '../src/company';
 import { forecastCrew, resolveCrew } from '../src/crew-resolution';
 import { hirePilot, type PilotAssignment } from '../src/pilots';
+
+test('a Tempest with zero ammunition contributes to the preview and the actual demolition check', function () {
+	const hired = hirePilot(buyFrame({ ...createCampaign(2, 'career'), credits: 40_000 }, 'warden-b'), 'flint');
+	const company = buyWeapon(buyWeapon(hired, 'machine-gun'), 'ppc');
+	const lineup = [{ pilotId: 'flint', frameId: 'warden-b' }] as const;
+	const demolition = function (shoulder: 'ppc' | null) {
+		const loadout = [null, 'machine-gun', null, shoulder] as const;
+		const ready = advanceDays(queueRefit(company, 'warden-b', loadout), 4);
+		const rig = getOwnedMech(ready, 'warden-b');
+		expect(rig?.loadout).toEqual(loadout);
+		expect(rig?.reserves[3]).toBe(0);
+		const posting = getContracts(ready).find(function (item) { return item.kind === 'demolition' && item.tier === 1; });
+		if (!posting) throw new Error('Missing demolition posting');
+		const forecast = forecastCrew(ready, posting, lineup, 'flint');
+		const { objective } = resolveCrew(ready, posting, lineup, 'flint');
+		expect(objective.chance).toBe(forecast.objectiveChance);
+		return objective;
+	};
+	const empty = demolition(null);
+	const armed = demolition('ppc');
+	expect(armed.roll).toBe(empty.roll);
+	expect(armed.chance).toBeGreaterThan(empty.chance);
+});
 
 test('a posting keeps its dice across reload, waiting, and lineup edits while readiness changes the odds', function () {
 	const company = hirePilot(hirePilot(buyFrame({ ...createCampaign(23), credits: 20_000 }, 'warden'), 'flint'), 'kite');
