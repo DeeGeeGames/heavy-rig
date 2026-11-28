@@ -540,6 +540,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 .pilot-record[data-recruit-pilot] { border-inline-start-color: var(--amber); }
 .workspace .pilot-record h3 { margin: 1px 0 0; color: var(--paper); text-transform: uppercase; }
 .pilot-record p { margin: 0; font: 13px/1.4 Arial, sans-serif; color: var(--muted); }
+.pilot-gender { display: inline-block; width: 1em; color: var(--paper); font: 600 18px/1 system-ui, sans-serif; vertical-align: -.1em; }
 .pilot-record small { display: block; margin-top: 5px; font: 10px/1.3 var(--mono); color: var(--cyan); }
 .pilot-record button { min-height: 38px; padding: 7px 10px; font: 16px/1 var(--display); }
 .pilot-record:focus-within { border-inline-start-color: var(--amber); background: var(--console-row); }

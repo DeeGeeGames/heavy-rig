@@ -29,7 +29,7 @@ test('ports keep distinct applicants, and a dismissed hire can be rehired only a
 });
 
 test('a retiring couple permanently frees one local recruiting place on each home world', function () {
-	const start = { ...createCampaign(317, 'career'), credits: 20_000 };
+	const start = { ...createCampaign(1, 'career'), credits: 20_000 };
 	const homeBoard = getRecruitOffers(start);
 	const first = homeBoard.find(function (candidate) { return candidate.gender === 'male'; });
 	if (!first) throw new Error('Expected a male Meridian recruit for this company');
@@ -51,6 +51,46 @@ test('a retiring couple permanently frees one local recruiting place on each hom
 	expect(getRecruitOffers(home)).toHaveLength(homeBoard.length);
 	expect(getRecruitOffers(home)).toEqual(expect.arrayContaining(homeBoard.filter(function (pilot) { return pilot.id !== first.id; })));
 	expect(hirePilot(home, first.id)).toBe(home);
+});
+
+test('fresh hiring boards draw about one female applicant in ten across campaign seeds', function () {
+	let female = 0;
+	let total = 0;
+	for (let index = 0; index < 64; index++) {
+		const company = createCampaign(Math.imul(index, 0x9e3779b1) >>> 0);
+		for (const { id } of PLANETS) {
+			const offers = getRecruitOffers({ ...company, planetId: id });
+			female += offers.filter(function (pilot) { return pilot.gender === 'female'; }).length;
+			total += offers.length;
+		}
+	}
+	expect(female / total).toBeCloseTo(.10, 2);
+});
+
+test('an older company keeps its prior replacements and partners, then fills new vacancies under the new odds', function () {
+	const a = 'recruit:317:meridian:3';
+	const b = 'recruit:317:meridian:4'; // A replacement already offered before the update.
+	const oldSave = {
+		...createCampaign(317, 'career'), legacyRecruitSlots: undefined, credits: 20_000, pilots: ['player', a, b],
+		relationships: [
+			{ a: 'recruit:317:meridian:0', b: 'recruit:317:meridian:1', affinity: 2, romance: 'retired' },
+			{ a, b, affinity: 2, romance: 'committed' },
+		],
+	};
+	const company = parseSavedCompany(JSON.parse(JSON.stringify(oldSave)));
+	if (!company) throw new Error('Could not load a company with a previously retired couple');
+	expect(getPilot(b)).toMatchObject({ name: 'Petra Lau', gender: 'female' });
+	expect(getRecruitOffers(dismissPilot(company, b))).toContainEqual(getPilot(b));
+	expect(getRecruitOffers({ ...company, planetId: 'cinder' })[0]).toMatchObject({ name: 'Priya Tan', gender: 'female' });
+	const retired = retireCouple(company, a, b);
+	const offers = getRecruitOffers(retired);
+	expect(offers.map(function ({ id, gender }) { return [id, gender]; })).toEqual([
+		['recruit:317:meridian:2', 'female'], ['recruit:317:meridian:5', 'male'],
+		['recruit-v2:317:meridian:6', 'male'], ['recruit-v2:317:meridian:7', 'male'],
+	]);
+	const reloaded = parseSavedCompany(JSON.parse(JSON.stringify(retired)));
+	if (!reloaded) throw new Error('Could not reload the updated board');
+	expect(getRecruitOffers(reloaded)).toEqual(offers);
 });
 
 test('a dismissed pilot from a legacy save can rejoin their partner at home, including before their first win', function () {

@@ -1,6 +1,6 @@
 import type { Campaign } from './campaign';
 import type { PlanetId } from './campaign-types';
-import { localApplicants, readRegistration, registeredPilot, type LocalPilotId } from './local-pilots';
+import { localApplicants, readRegistration, registeredPilot, registryForSlot, type LocalPilotId } from './local-pilots';
 import { retiredPilots } from './pilot-relationships';
 import type { RigId } from './rigs';
 
@@ -42,8 +42,10 @@ const isNamedPilot = function (value: unknown): value is NamedPilotId {
 export const isPilotId = function (value: unknown): value is PilotId {
 	return isNamedPilot(value) || readRegistration(value) !== undefined;
 };
-export const isCompanyPilotId = function (value: unknown, seed: number): value is PilotId {
-	return isNamedPilot(value) || readRegistration(value)?.seed === seed;
+export const isCompanyPilotId = function (value: unknown, campaign: Campaign): value is PilotId {
+	if (isNamedPilot(value)) return true;
+	const entry = readRegistration(value);
+	return entry?.seed === campaign.seed && entry.registry === registryForSlot(entry.index, campaign.legacyRecruitSlots[entry.planetId]);
 };
 
 export const getPilot = function (id: PilotId): Pilot {
@@ -93,7 +95,7 @@ export const getRecruitOffers = function (campaign: Campaign): readonly Pilot[] 
 	const veterans = RECRUIT_IDS.filter(function (id) {
 		return campaign.pilotWins?.[id] !== undefined && pilots[id].home === campaign.planetId && !retired.has(id);
 	});
-	return [...veterans, ...localApplicants(campaign.seed, campaign.planetId, retired)]
+	return [...veterans, ...localApplicants(campaign.seed, campaign.planetId, retired, campaign.legacyRecruitSlots)]
 		.filter(function (id) { return !campaign.pilots.includes(id); }).map(getPilot);
 };
 

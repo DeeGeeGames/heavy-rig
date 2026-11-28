@@ -3,21 +3,24 @@ import type { Pilot, PilotId } from './pilots';
 import { isPlanetId, mixSeed, PLANETS, randomSource } from './universe';
 
 // This registration format and its name tables identify the same person in saved rosters and reports.
-export type LocalPilotId = `recruit:${number}:${PlanetId}:${number}`;
-interface Registration { id: LocalPilotId; seed: number; planetId: PlanetId; index: number }
+type Registry = 'recruit' | 'recruit-v2';
+export type LocalPilotId = `${Registry}:${number}:${PlanetId}:${number}`;
+interface Registration { id: LocalPilotId; registry: Registry; seed: number; planetId: PlanetId; index: number }
+/** Number of registrations already issued at each port when an older company first loads. */
+export type LegacyRecruitSlots = Readonly<Partial<Record<PlanetId, number>>>;
 
-const registrationId = function (seed: number, planetId: PlanetId, index: number): LocalPilotId {
-	return `recruit:${seed}:${planetId}:${index}`;
+const registrationId = function (registry: Registry, seed: number, planetId: PlanetId, index: number): LocalPilotId {
+	return `${registry}:${seed}:${planetId}:${index}`;
 };
 export const readRegistration = function (value: unknown): Registration | undefined {
-	if (typeof value !== 'string' || !value.startsWith('recruit:') || value.length > 54) return undefined;
-	const [, seedText, planetId, indexText] = value.split(':');
-	if (!isPlanetId(planetId)) return undefined;
+	if (typeof value !== 'string' || value.length > 54) return undefined;
+	const [registry, seedText, planetId, indexText] = value.split(':');
+	if ((registry !== 'recruit' && registry !== 'recruit-v2') || !isPlanetId(planetId)) return undefined;
 	const seed = Number(seedText);
 	const index = Number(indexText);
 	if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff || !Number.isInteger(index) || index < 0 || index > 0xffffffff) return undefined;
-	const id = registrationId(seed, planetId, index);
-	return id === value ? { id, seed, planetId, index } : undefined;
+	const id = registrationId(registry, seed, planetId, index);
+	return id === value ? { id, registry, seed, planetId, index } : undefined;
 };
 
 const firstNames = {
@@ -42,23 +45,45 @@ const homeIndex = function (planetId: PlanetId) {
 };
 const largestBoard = 5;
 const boardSeed = function (seed: number, home: number): number { return mixSeed(seed ^ 0x43524557, home); };
+const boardSize = function (seed: number, planetId: PlanetId): number { return 3 + boardSeed(seed, homeIndex(planetId)) % 3; };
+export const registryForSlot = function (index: number, legacyCount = 0): Registry { return index < legacyCount ? 'recruit' : 'recruit-v2'; };
 
-export const localApplicants = function (seed: number, planetId: PlanetId, retired: ReadonlySet<PilotId>): readonly LocalPilotId[] {
-	const count = 3 + boardSeed(seed, homeIndex(planetId)) % 3;
+export const isLegacyRecruitSlots = function (value: unknown): value is LegacyRecruitSlots {
+	return value !== null && typeof value === 'object' && !Array.isArray(value) && Object.entries(value).every(function ([planet, count]) {
+		return isPlanetId(planet) && typeof count === 'number' && Number.isInteger(count) && count >= 0 && count <= 0x100000000;
+	});
+};
+
+export const snapshotLegacyRecruitSlots = function (seed: number, retired: ReadonlySet<PilotId>): LegacyRecruitSlots {
+	const slots: Partial<Record<PlanetId, number>> = {};
+	for (const { id } of PLANETS) {
+		let issued = boardSize(seed, id);
+		// Each past retirement opened one more registration on the original board.
+		for (let index = 0; index < issued; index++) {
+			if (retired.has(registrationId('recruit', seed, id, index))) issued++;
+		}
+		slots[id] = issued;
+	}
+	return slots;
+};
+
+export const localApplicants = function (seed: number, planetId: PlanetId, retired: ReadonlySet<PilotId>, legacySlots: LegacyRecruitSlots): readonly LocalPilotId[] {
+	const count = boardSize(seed, planetId);
 	const applicants: LocalPilotId[] = [];
 	// A retired pilot frees a place at home. Active hires still occupy their original place.
 	for (let index = 0; applicants.length < count; index++) {
-		const id = registrationId(seed, planetId, index);
+		const id = registrationId(registryForSlot(index, legacySlots[planetId]), seed, planetId, index);
 		if (!retired.has(id)) applicants.push(id);
 	}
 	return applicants;
 };
 
-export const registeredPilot = function ({ id, seed, planetId, index }: Registration): Pilot {
+export const registeredPilot = function ({ id, registry, seed, planetId, index }: Registration): Pilot {
 	const home = homeIndex(planetId);
 	const localSeed = boardSeed(seed, home);
 	const random = randomSource(mixSeed(localSeed, index));
-	const gender = random() < .5 ? 'female' : 'male';
+	const femaleChance = registry === 'recruit' ? .5 : .1;
+	const gender = random() < femaleChance ? 'female' : 'male';
 	const specialty = random() < .5 ? 'marksman' : 'skirmisher';
 	// Permute names and radio identifiers across the chart. Each board reserves five distinct positions per intake.
 	const series = Math.floor(index / largestBoard);
