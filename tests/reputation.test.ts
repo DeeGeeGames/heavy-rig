@@ -2,12 +2,12 @@ import { expect, test } from 'bun:test';
 import { getWeapon, weaponIdForTier } from '../src/arsenal';
 import { acceptContract, abandonContract, canAcceptContract, canStageOperation, createCampaign, getContracts, getPlannedOperation, parseCampaign, removeOperation, reviewOperations, settleContract, stageOperation, travelTo, type Campaign } from '../src/campaign';
 import type { Contract } from '../src/campaign-types';
-import { advanceDays, buyFrame, buyWeapon, getOwnedMech } from '../src/company';
+import { advanceDays, buyFrame, buyWeapon, getOwnedMech, quoteRepair } from '../src/company';
 import { frameWeight, loadedMounts } from '../src/combat-resources';
 import { isFixedEmplacement } from '../src/combat-spatial';
 import { PLAYABLE_FRAMES } from '../src/frames';
 import { isFrameLoadout } from '../src/hardpoints';
-import { getFrameOffer } from '../src/market';
+import { getFrameOffer, getMarketFrames, getMarketWeapons } from '../src/market';
 import { companyRank, MISSION_TIERS, REPUTATION_RANKS, unlockedMissionTier, weaponUnlockRank } from '../src/reputation';
 import { createMissionState } from '../src/simulation';
 import { visibleTouchContacts } from '../src/touch-controls';
@@ -16,7 +16,7 @@ import { generateMissionMap, isPriorityTarget, missionHostileCount, missionObjec
 const ranked = function (rank: number): Campaign {
 	return { ...createCampaign(317), companyReputation: REPUTATION_RANKS[rank - 1] ?? 0, credits: 1_000_000, reputation: { freeholds: 100, combine: 100, accord: 100 }, boardReputation: { freeholds: 100, combine: 100, accord: 100 } };
 };
-test('company milestones gate contract acceptance and both purchase paths, independently of money and faction favor', function () {
+test('company milestones gate contract acceptance and market weapon grades independently of faction favor', function () {
 	expect(MISSION_TIERS).toHaveLength(10);
 	expect(([0, 1, 2, 3, 4, 5] as const).map(weaponUnlockRank)).toEqual([1, 3, 6, 9, 12, 15]);
 	for (const milestone of MISSION_TIERS) {
@@ -29,8 +29,10 @@ test('company milestones gate contract acceptance and both purchase paths, indep
 				expect(canAcceptContract(campaign, contract)).toBe(unlocked);
 				expect(acceptContract(campaign, contract.id) === campaign).toBe(!unlocked);
 			}
-			const id = weaponIdForTier('laser', milestone.weaponTier);
-			expect(buyWeapon(campaign, id) === campaign).toBe(rank < weaponUnlockRank(milestone.weaponTier));
+			const [listing] = getMarketWeapons(campaign);
+			if (!listing) throw new Error('Missing market weapon');
+			const id = weaponIdForTier(listing.modelId, milestone.weaponTier);
+			expect(buyWeapon(campaign, id) === campaign).toBe(listing.id !== id);
 			for (const frame of PLAYABLE_FRAMES) {
 				const offer = getFrameOffer(campaign, frame.id);
 				expect(offer.loadout.every(function (weapon) { return getWeapon(weapon).tier <= unlockedMissionTier(campaign).weaponTier; })).toBe(true);
@@ -98,8 +100,12 @@ test('sale packages are complete, compatible, bounded in weight, reproducible, a
 		const weight = frameWeight(frame.id, loadedMounts(offer.loadout, offer.reserves));
 		expect(weight.total).toBeLessThanOrEqual(weight.recommended * 1.1 + .000001);
 		packages.add(JSON.stringify(offer.loadout));
-		if (frame.id === 'kestrel') continue;
+		if (frame.id === 'kestrel' || !getMarketFrames(campaign).some(function (item) { return item.id === frame.id; })) continue;
 		const purchased = buyFrame(campaign, frame.id);
+		expect(getOwnedMech(purchased, frame.id)?.integrity).toBe(offer.integrity);
+		expect(offer.integrity).toBeGreaterThanOrEqual(30);
+		expect(offer.integrity).toBeLessThanOrEqual(95);
+		expect(quoteRepair(purchased, frame.id)?.cost).toBe(offer.restorationCost);
 		expect(getOwnedMech(purchased, frame.id)?.loadout).toEqual(offer.loadout);
 		expect(getOwnedMech(purchased, frame.id)?.reserves).toEqual(offer.reserves);
 		expect(purchased.credits).toBe(campaign.credits - offer.price);
@@ -107,6 +113,41 @@ test('sale packages are complete, compatible, bounded in weight, reproducible, a
 		expect(parseCampaign(JSON.stringify(purchased))).toEqual(purchased);
 	}
 	expect(packages.size).toBeGreaterThan(40);
+});
+test('market listings stay fixed until a jump or settlement and only listed price bands and models can be bought', function () {
+	const listings = function (campaign: Campaign) {
+		return {
+			rigs: getMarketFrames(campaign).map(function (frame) { return getFrameOffer(campaign, frame.id); }),
+			weapons: getMarketWeapons(campaign).map(function (weapon) { return weapon.id; }),
+		};
+	};
+	const early = ranked(1); const stock = listings(early);
+	const [job] = getContracts(early); const [weapon] = stock.weapons; const [rig] = stock.rigs;
+	if (!job || !weapon || !rig) throw new Error('Missing starting posting');
+	expect(listings(parseCampaign(JSON.stringify(early)))).toEqual(stock);
+	expect(listings(advanceDays(early, 2))).toEqual(stock);
+	expect(listings(buyFrame(buyWeapon(early, weapon), rig.frameId))).toEqual(stock);
+	const jumped = listings(travelTo(early, 'cinder'));
+	const settled = listings(settleContract(acceptContract(early, job.id), true));
+	for (const restock of [jumped, settled]) {
+		expect(restock.rigs.map(function (offer) { return offer.frameId; })).not.toEqual(stock.rigs.map(function (offer) { return offer.frameId; }));
+		expect(restock.weapons).not.toEqual(stock.weapons);
+	}
+	for (const [rank, floor, ceiling] of [[1, 0, 11400], [3, 11400, 12600], [6, 12600, 13800], [9, 13800, 17500]] as const) {
+		const campaign = ranked(rank);
+		const rigs = getMarketFrames(campaign);
+		const weapons = getMarketWeapons(campaign);
+		expect(rigs).toHaveLength(rank === 1 ? 4 : 6);
+		expect(new Set(rigs.map(function (item) { return item.id; })).size).toBe(rigs.length);
+		expect(Math.max(...rigs.map(function (item) { return item.price; }))).toBeGreaterThan(floor);
+		expect(rigs.every(function (item) { return item.price <= ceiling; })).toBe(true);
+		expect(rigs.some(function (item) { return item.price <= 11400; })).toBe(true);
+		expect(weapons).toHaveLength(8);
+		expect(new Set(weapons.map(function (item) { return item.id; })).size).toBe(8);
+		expect(new Set(weapons.map(function (item) { return item.family; })).size).toBe(3);
+		for (const frame of PLAYABLE_FRAMES.filter(function (item) { return !rigs.includes(item); })) expect(buyFrame(campaign, frame.id)).toBe(campaign);
+		for (const item of getMarketWeapons({ ...campaign, seed: campaign.seed + 1 })) if (!weapons.includes(item)) expect(buyWeapon(campaign, item.id)).toBe(campaign);
+	}
 });
 test('mission tiers increase pressure and replace marked vehicles with rigs at tier 3 without inflating rig integrity', function () {
 	let previousObjective = 0;

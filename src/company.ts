@@ -1,9 +1,8 @@
 import { isRigId, rigFrameId, type RigId } from './rigs';
-import { WEAPON_PRICES } from './equipment-prices';
+import { hullRepairCost, WEAPON_PRICES } from './equipment-prices';
 export { WEAPON_PRICES } from './equipment-prices';
-import { getFrameOffer } from './market';
-import { unlockedMissionTier } from './reputation';
-import { WEAPONS, createWeaponRecord, getWeapon, type WeaponId } from './arsenal';
+import { getFrameOffer, getMarketFrames, getMarketWeapons } from './market';
+import { WEAPONS, createWeaponRecord, type WeaponId } from './arsenal';
 import { getTransmission, MAX_CREDITS, type Campaign } from './campaign';
 import { bareChassisMass, getFrame, PLAYABLE_FRAMES, type FrameId } from './frames';
 import { stockPackage, isFrameLoadout } from './hardpoints';
@@ -170,13 +169,13 @@ export const selectFrame = function (campaign: Campaign, frameId: RigId): Campai
 	return { ...campaign, selectedFrame: frameId };
 };
 export const buyFrame = function (campaign: Campaign, frameId: FrameId): Campaign {
-	if (campaign.deployed || !isFrameId(frameId)) return campaign;
+	if (campaign.deployed || !getMarketFrames(campaign).some(function (frame) { return frame.id === frameId; })) return campaign;
 	const offer = getFrameOffer(campaign, frameId);
 	if (campaign.credits < offer.price) return campaign;
 	let serial = 1;
 	while (getOwnedMech(campaign, serial === 1 ? frameId : `${frameId}#${serial}`)) serial++;
 	const id: RigId = serial === 1 ? frameId : `${frameId}#${serial}`;
-	const mech: OwnedMech = { frameId: id, integrity: 100, loadout: offer.loadout, reserves: offer.reserves };
+	const mech: OwnedMech = { frameId: id, integrity: offer.integrity, loadout: offer.loadout, reserves: offer.reserves };
 	const inventory = includeLoadout(campaign.inventory, mech.loadout);
 	if (!inventory) return campaign;
 	return {
@@ -201,16 +200,12 @@ export const applyRigCheat = function (campaign: Campaign): Campaign {
 	return unlockAllRigs({ ...campaign, credits: Math.min(MAX_CREDITS, campaign.credits + 1_000_000) });
 };
 export const buyWeapon = function (campaign: Campaign, weapon: WeaponId): Campaign {
-	if (campaign.deployed || !isWeaponId(weapon) || getWeapon(weapon).tier > unlockedMissionTier(campaign).weaponTier || campaign.credits < WEAPON_PRICES[weapon] || campaign.inventory[weapon] >= MAX_INVENTORY) return campaign;
+	if (campaign.deployed || !getMarketWeapons(campaign).some(function (item) { return item.id === weapon; }) || campaign.credits < WEAPON_PRICES[weapon] || campaign.inventory[weapon] >= MAX_INVENTORY) return campaign;
 	return { ...campaign, credits: campaign.credits - WEAPON_PRICES[weapon], inventory: { ...campaign.inventory, [weapon]: campaign.inventory[weapon] + 1 } };
 };
 type RepairQuote = { cost: number; days: number; readyDay: number } & (
 	{ available: true; payment: RepairPayment } | { available: false; shortfall: number }
 );
-const repairCost = function ({ frameId, integrity }: OwnedMech): number {
-	const price = getFrame(rigFrameId(frameId)).price;
-	return Math.ceil(integrity === 0 ? price * .75 : price * (100 - integrity) / 200);
-};
 const hasInstalledWeapons = function ({ loadout }: Pick<OwnedMech, 'loadout'>): boolean {
 	return loadout.some(function (weapon) { return weapon !== null; });
 };
@@ -219,7 +214,7 @@ export const quoteRepair = function (campaign: Campaign, frameId: RigId): Repair
 	if (!mech || mech.integrity >= 100 || workOrderFor(campaign, frameId)) return undefined;
 	const days = repairDays(mech.integrity);
 	const readyDay = campaign.day + days;
-	const cost = repairCost(mech);
+	const cost = hullRepairCost(getFrame(rigFrameId(mech.frameId)).price, mech.integrity);
 	const paid = Math.min(cost, spendableMaintenanceFunds(campaign, campaign.day), spendableMaintenanceFunds(campaign, readyDay));
 	const shortfall = cost - paid;
 	// A single recovery order can restore an armed rig when nothing else can

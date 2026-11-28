@@ -1,14 +1,14 @@
 import { rigFrameId, rigName, type RigId } from './rigs';
-import { getFrameOffer } from './market';
-import { companyRank, reputationProgress, unlockedMissionTier } from './reputation';
+import { getFrameOffer, getMarketFrames, getMarketWeapons } from './market';
+import { companyRank, reputationProgress } from './reputation';
 import { html } from 'lit-html';
 import { inspectWorkspacePane, renderWorkspace, revealWorkspaceElement, selectWorkspacePane, textItems, workspaceBackTarget, type WorkspacePane } from './workspace';
-import { getWeapon, getWeaponTier, tierLabel, weaponIdForTier, WEAPONS, WEAPON_FAMILY_LABELS, WEAPON_SIZE_LABELS, type WeaponId, type WeaponModelId } from './arsenal';
+import { getWeapon, getWeaponTier, tierLabel, WEAPONS, WEAPON_FAMILY_LABELS, WEAPON_SIZE_LABELS, type WeaponId, type WeaponModelId } from './arsenal';
 import { canEquipWeapon, getHardpoints } from './hardpoints';
 import { FACTIONS, getFaction, getPlanet, type Campaign, type PlannedOperation } from './campaign';
 import type { FactionId } from './campaign-types';
 import { getAuthoredStep } from './contract-chains';
-import { availableWeapons, canRefit, getOwnedMech, monthlyUpkeep, nextUpkeepDay, quoteRepair, refitDays, UPKEEP_MONTH_DAYS, WEAPON_PRICES, workOrderFor } from './company';
+import { availableWeapons, canRefit, getOwnedMech, monthlyUpkeep, nextUpkeepDay, quoteRepair, refitDays, repairDays, UPKEEP_MONTH_DAYS, WEAPON_PRICES, workOrderFor } from './company';
 import { PLAYABLE_FRAMES, getFrame, type FrameId } from './frames';
 import { hardpointSummary, loadSummary, massLabel, sustainedHeat, supplySummary, weaponClassLabel } from './loadout-ui';
 import { frameWeight, loadedMounts, usableMount } from './combat-resources';
@@ -212,12 +212,21 @@ const mechBayPanes = function (campaign: Campaign, editor: CompanyEditor, action
 };
 
 const marketPanes = function (root: HTMLElement, campaign: Campaign, view: CompanyView, actions: CompanyActions, refresh: () => void): WorkspacePane[] {
-	const tier = unlockedMissionTier(campaign).weaponTier;
-	const weapon = getWeapon(weaponIdForTier(view.weapon, tier)); const frame = getFrame(view.frame);
-	const quality = getWeaponTier(tier);
-	const offer = getFrameOffer(campaign, frame.id);
-	const stock = offer.loadout; const stockReserves = offer.reserves;
+	const weapons = getMarketWeapons(campaign);
+	const rigs = getMarketFrames(campaign).map(function (frame) { return { frame, offer: getFrameOffer(campaign, frame.id) }; });
+	const weapon = weapons.find(function (item) { return item.modelId === view.weapon; }) ?? weapons[0];
+	const rig = rigs.find(function (item) { return item.frame.id === view.frame; }) ?? rigs[0];
 	const weaponMarket = view.kind === 'weapons';
+	const catalogueLabel = weaponMarket ? 'Weapon catalogue' : 'Rig catalogue';
+	if (!weapon || !rig) return [
+		{ id: 'catalogue', label: catalogueLabel, items: textItems('No offers available at this posting.') },
+		{ id: 'details', label: 'Item details', items: [] },
+	];
+	const { frame, offer } = rig;
+	view.weapon = weapon.modelId;
+	view.frame = frame.id;
+	const quality = getWeaponTier(weapon.tier);
+	const stock = offer.loadout; const stockReserves = offer.reserves;
 	const price = weaponMarket ? WEAPON_PRICES[weapon.id] : offer.price;
 	const owned = campaign.fleet.filter(function (mech) { return rigFrameId(mech.frameId) === frame.id; }).length;
 	const affordable = campaign.credits >= price;
@@ -230,9 +239,9 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 		if (selected) { revealWorkspaceElement(selected); selected.focus({ preventScroll: true }); }
 	};
 	return [
-		{ id: 'catalogue', label: weaponMarket ? 'Weapon catalogue' : 'Rig catalogue', scrollable: true, items: [
-			...(weaponMarket ? WEAPONS.filter(function (item) { return item.tier === tier; }).map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function (event: Event) { view.weapon = item.modelId; select(event); }}><span><b>${item.name}</b><small>${weaponClassLabel(item.family, item.size)} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : PLAYABLE_FRAMES.map(function (item) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function (event: Event) { view.frame = item.id; select(event); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.variantName} · ${item.mass}T</small></span><span>${creditsLabel(getFrameOffer(campaign, item.id).price)}</span></button>`; })),
-			...textItems(weaponMarket ? 'Weapon purchases arrive in stores. Install them through a Mech Bay refit.' : 'Rigs include the displayed weapons and standard ammunition. Packages refresh after a jump or contract. You can buy multiple copies of any variant.'),
+		{ id: 'catalogue', label: catalogueLabel, scrollable: true, items: [
+			...(weaponMarket ? weapons.map(function (item) { return html`<button class="catalogue-item" data-market-weapon=${item.id} data-weapon-tier=${item.tier} style="--item-color:${quality.color}" aria-pressed=${item.id === weapon.id} @click=${function (event: Event) { view.weapon = item.modelId; select(event); }}><span><b>${item.name}</b><small>${weaponClassLabel(item.family, item.size)} · ${campaign.inventory[item.id]} owned</small></span><span>${creditsLabel(WEAPON_PRICES[item.id])}</span></button>`; }) : rigs.map(function ({ frame: item, offer: listing }) { return html`<button class="catalogue-item" data-market-frame=${item.id} style="--item-color:${item.color}" aria-pressed=${item.id === frame.id} @click=${function (event: Event) { view.frame = item.id; select(event); }}><span><b>${item.chassisName} ${item.variant}</b><small>${item.mass}T · ${integrityLabel(listing.integrity)} hull</small></span><span>${creditsLabel(listing.price)}</span></button>`; })),
+			...textItems(weaponMarket ? 'Stock changes after a jump or contract settlement. Purchases arrive in stores for a Mech Bay refit.' : 'Stock changes after a jump or contract settlement. Higher company ranks unlock pricier rigs. Purchase prices reflect hull damage.'),
 		] },
 		{ id: 'details', label: 'Item details', items: weaponMarket ? [
 			html`<span class="eyebrow">${weapon.type.toUpperCase()}</span><h2 style="color:${weapon.color}">${weapon.name}</h2>`,
@@ -247,6 +256,8 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 			html`<dl class="frame-specifications"><dt>OWNED</dt><dd>${campaign.inventory[weapon.id]}</dd><dt>IN STORES</dt><dd>${availableWeapons(campaign, weapon.id)}</dd></dl>`,
 		] : [
 			html`<div class="market-rig-heading"><div><span class="eyebrow">${frame.mass}T / ${frame.role.toUpperCase()}</span><h2>${frame.chassisName} ${frame.variant}</h2><p class="workspace-copy">${frame.variantName} · ${owned} owned</p></div><canvas data-market-model=${frame.id} aria-label=${`${frame.name} rig preview`}></canvas></div>`,
+			renderHullIntegrity(offer.integrity),
+			html`<dl class="frame-specifications"><dt>FULL REPAIR</dt><dd>${creditsLabel(offer.restorationCost)} · ${daysLabel(repairDays(offer.integrity))}</dd></dl>`,
 			...textItems(frame.description), ...textItems(frame.tradeoff),
 			html`<dl class="frame-specifications"><dt>BASE MASS</dt><dd>${massLabel(frame.mass)}</dd><dt>RECOMMENDED WEIGHT</dt><dd>${massLabel(frame.recommendedMass)}</dd></dl>`,
 			...textItems(hardpointSummary(frame.id)),

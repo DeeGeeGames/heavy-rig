@@ -358,15 +358,22 @@ memory. An explicit abort or completed mission settles the full committed day on
 
 ## Frames and variants
 
-The Market and Simulator offer 27 separately fitted variants across nine chassis.
+The rig roster has 27 separately fitted variants across nine chassis. The
+Simulator offers all of them; the Market rotates four early on and six from
+company rank 3. The starting selection draws from chassis priced up to 11,400 CR.
+At ranks 3 and 6 the base-price ceiling rises to 12,600 and 13,800 CR, and at
+rank 9 the most expensive chassis enter the pool. Cheaper rigs remain eligible.
 Each family shares its faceted body and articulated legs. Its cartridges and specialist equipment distinguish the three variants. [Roster comparison](design/mechs/assets/field-roster.png) · [Model records](design/mechs/assets/README.md)
 
 Longbow keeps its three original IDs. Rook Lancer and Escort, and Morrow Saturation and Pursuer, use distinct IDs to preserve the retired prototypes’ equipment contracts.
 Each variant has its own crew, equipment, ammunition settings, and condition;
 shared weapon inventory prevents double allocation. Dealer purchases include a
-complete random loadout within unlocked weapon quality. The Market lists every
-included weapon, ammunition reserve, exact package price, and resulting loaded
-weight before purchase. The tables below describe baseline loadouts and base prices. Included weapons remain ordinary inventory copies that can be removed
+complete random loadout within unlocked weapon quality. Dealer rigs arrive at
+30–95% hull integrity, with the estimated repair cost deducted from their price.
+The Market lists the hull condition, included weapons and ammunition, and loaded
+weight before purchase. Stock refreshes after a jump or contract settlement,
+not while browsing, waiting, buying, or reloading. The tables below describe
+baseline loadouts and base prices. Included weapons remain ordinary inventory copies that can be removed
 and refitted elsewhere.
 
 | Chassis | A | B | C |
@@ -456,8 +463,9 @@ missile consumes one round. A partly loaded launcher fires only its remaining
 rounds; staggered rounds obey heat lock at emission. Already launched ordnance
 continues to resolve.
 
-Weapon quality runs from **tier 0 through tier 5**. The Market shows the same
-16 weapon models as your company advances. The item panel displays damage,
+Weapon quality runs from **tier 0 through tier 5**. The Market stocks eight of
+the 16 weapon models, each at your company's highest unlocked grade.
+Weapons have no hull-style wear or repair costs. The item panel displays damage,
 firing cycle, range, sustained heat, projectile speed, and spread.
 
 | Tier | Quality | Price multiplier |

@@ -69,8 +69,8 @@ test('Longbow auxiliary structure costs mass and mobility even with the secondar
 });
 
 test('separately purchased variants preserve independent equipment, reserves, damage and workshop orders', function () {
-	const purchased = buyFrame(buyFrame({ ...createCampaign(83), credits: 50000 }, 'kestrel-b'), 'kestrel-c');
-	const company = buyWeapon(buyWeapon({ ...purchased, companyReputation: 250 }, 'laser:t1'), 'stream-rockets');
+	const purchased = buyFrame(buyFrame({ ...createCampaign(39), credits: 50000 }, 'kestrel-b'), 'kestrel-c');
+	const company = buyWeapon({ ...buyWeapon(purchased, 'stream-rockets'), companyReputation: 250 }, 'laser:t1');
 	expect(company.fleet.map(function (mech) { return mech.frameId; })).toEqual(['kestrel', 'kestrel-b', 'kestrel-c']);
 	expect(company.inventory['machine-gun']).toBe(4);
 	expect(getOwnedMech(buyFrame(company, 'kestrel-b'), 'kestrel-b#2')?.loadout).toEqual(getFrameOffer(company, 'kestrel-b').loadout);
@@ -81,9 +81,9 @@ test('separately purchased variants preserve independent equipment, reserves, da
 	expect(getOwnedMech(complete, 'kestrel-c')?.reserves).toEqual([400, 45]);
 	const deployed = beginDeployment(accept(assignRig(selectFrame(complete, 'kestrel-b'), 0, 'kestrel-b')));
 	expect(deployed.deployed?.frameId).toBe('kestrel-b');
-	const damaged = checkpointDeployment(deployed, 53, 1);
-	expect(getOwnedMech(damaged, 'kestrel-b')?.integrity).toBe(53);
-	expect(getOwnedMech(damaged, 'kestrel-c')?.integrity).toBe(100);
+	const damaged = checkpointDeployment(deployed, 23, 1);
+	expect(getOwnedMech(damaged, 'kestrel-b')?.integrity).toBe(23);
+	expect(getOwnedMech(damaged, 'kestrel-c')?.integrity).toBe(getFrameOffer(company, 'kestrel-c').integrity);
 	expect(getOwnedMech(damaged, 'kestrel')?.integrity).toBe(100);
 	const returned = abandonContract(parseCampaign(JSON.stringify(damaged)));
 	const repairing = queueRepair(returned, 'kestrel-b');
