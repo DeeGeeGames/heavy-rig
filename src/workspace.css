@@ -296,6 +296,9 @@ html, body { width: 100%; height: 100%; overflow: clip; overscroll-behavior: non
 .menu-key { display: inline-flex; align-items: center; gap: 6px; color: var(--paper); font: 12px var(--menu-rail-font, Arial, sans-serif); }
 button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none; }
 .menu-key .key-label { max-width: 230px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#game:not([data-input='touch']) [data-touch-menu-action] { display: none; }
+#game[data-input='touch']:is(:not([data-controller-state='available'], [data-controller-state='disconnected']), :has(.workspace:not([hidden]))) > .menu-controls:not(:has(#audio-status:not(:empty))) { display: none; }
+#game[data-input='touch'] .workspace { bottom: max(var(--dialog-bottom-gap, 18px), env(safe-area-inset-bottom)); }
 #controller-status { color: var(--muted); font-size: 9px; }
 #game[data-controller-state='connected'] #controller-status { display: none; }
 #game.menu-open:is([data-screen='starmap'], [data-screen='bridge'], [data-screen='mechbay'], [data-screen='market'], [data-screen='engineering'], [data-screen='pilots'], [data-screen='deploy']) .menu-controls {
@@ -366,6 +369,7 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 	.pane-actions>button { min-height: 36px; padding: 8px; font-size: 16px; }
 	.workspace .bridge-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; min-height: 24px; gap: 3px 5px; }
 	.workspace .bridge-footer>div { gap: 12px; }
+	#game[data-input='touch'] .workspace .bridge-footer>div { gap: 6px; flex-wrap: wrap; }
 	.workspace .bridge-footer button { font-size: 13px; }
 	.workspace .save-notice { grid-row: 1; grid-column: 2; font-size: 8px; text-align: right; }
 	.workspace .bridge-footer :is(.company-notice, .ship-controller-status) { grid-column: 1 / -1; max-width: 100%; font-size: 10px; }
@@ -511,6 +515,10 @@ button.menu-key { pointer-events: auto; padding: 0; border: 0; background: none;
 }
 @media (max-width: 380px) {
 	.workspace-tabs button { padding-inline: 4px; font-size: 15px; white-space: nowrap; }
+}
+@media (max-width: 360px) {
+	#game[data-input='touch'] .workspace .bridge-footer>div { gap: 2px; }
+	#game[data-input='touch'] .workspace .bridge-footer button { padding: 4px 2px; font-size: 12px; letter-spacing: 0; }
 }
 @media (max-width: 560px) and (max-height: 700px), (max-height: 520px) and (orientation: landscape) {
 	.workspace .fleet-frame { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 3px 8px; padding: 3px 8px; }

@@ -53,6 +53,7 @@ export interface CompanyActions {
 	deploy: () => void;
 	settings: () => void;
 	handbook: () => void;
+	title: () => void;
 }
 
 export const SHIP_SECTIONS: readonly { id: ShipScreen; label: string }[] = [
@@ -318,7 +319,7 @@ export const renderCompany = function (root: HTMLElement, campaign: Campaign, sc
 		: engineeringPanes(campaign, actions);
 	const locked = screen === 'mechbay' && editor.slot !== null || screen === 'deploy' && view.assignment !== undefined;
 	root.dataset['picker'] = String(locked);
-	const footer = html`<footer class="bridge-footer"><div><button ?disabled=${locked} @click=${actions.handbook}>HANDBOOK</button><button ?disabled=${locked} @click=${actions.settings}>SETTINGS</button></div><span class="company-notice" role="status">${editor.notice}</span><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'}>${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span></footer>`;
+	const footer = html`<footer class="bridge-footer"><div><button ?disabled=${locked} @click=${actions.handbook}>HANDBOOK</button><button ?disabled=${locked} @click=${actions.settings}>SETTINGS</button><button data-touch-menu-action ?disabled=${locked} @click=${actions.title}>RETURN TO TITLE</button></div><span class="company-notice" role="status">${editor.notice}</span><span class="ship-controller-status" hidden></span><span class=${saved ? 'save-notice' : 'save-notice storage-warning'}>${saved ? 'COMPANY SAVED' : 'STORAGE UNAVAILABLE · SESSION ONLY'}</span></footer>`;
 	const mech = getOwnedMech(campaign); const frame = mech ? getFrame(rigFrameId(mech.frameId)) : undefined;
 	const order = mech ? workOrderFor(campaign, mech.frameId) : undefined;
 	const repair = screen === 'mechbay' && mech ? quoteRepair(campaign, mech.frameId) : undefined;
