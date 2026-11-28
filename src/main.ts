@@ -849,7 +849,10 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 				if (days === 0) { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Ammunition load saved. 0 CR · no calendar time.', undefined, true); return; }
 				confirm(function () { updateCompany(queueRefit(campaign, campaign.selectedFrame, editor.loadout, editor.reserves), 'Refit queued. Advance the calendar to finish installation.', 'engineering', true); }, 'QUEUE REFIT', `${days} calendar days. Ready day ${campaign.day + days}. ${loadSummary(rigFrameId(campaign.selectedFrame), editor.loadout, editor.reserves)} The frame cannot deploy until work finishes.`, 'QUEUE THIS REFIT?');
 			},
-			buyFrame: function (id) { confirm(function () { updateCompany(buyFrame(campaign, id), `${rigName(id)} purchased with its displayed weapon package. Select it in the Mech Bay.`); }, 'BUY RIG', `${getFrameOffer(campaign, id).price.toLocaleString()} CR. Includes this complete package: ${getFrameOffer(campaign, id).loadout.map(function (weapon) { return getWeapon(weapon).name; }).join(', ')}. Standard ammunition included; arrives ready to deploy.`, `BUY ${rigName(id)}?`); },
+			buyFrame: function (id) {
+				const offer = getFrameOffer(campaign, id);
+				confirm(function () { updateCompany(buyFrame(campaign, id), `${rigName(id)} purchased at ${offer.integrity}% hull integrity. Select it in the Mech Bay or repair it in Engineering.`); }, 'BUY RIG', `${offer.price.toLocaleString()} CR as-is at ${offer.integrity}% hull integrity. Full hull repair costs ${offer.restorationCost.toLocaleString()} CR in Engineering. Includes standard ammunition and ${offer.loadout.map(function (weapon) { return getWeapon(weapon).name; }).join(', ')}.`, `BUY ${rigName(id)}?`);
+			},
 			buyWeapon: function (id) { confirm(function () { updateCompany(buyWeapon(campaign, id), `${getWeapon(id).name} purchased. Fit it in the Mech Bay.`); }, 'BUY WEAPON', `${WEAPON_PRICES[id].toLocaleString()} CR. Delivered to stores. Installation requires a separate refit.`, `BUY ${getWeapon(id).name}?`); },
 			repair: function (id) {
 				const quote = quoteRepair(campaign, id);

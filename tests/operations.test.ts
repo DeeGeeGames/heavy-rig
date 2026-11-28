@@ -1,6 +1,7 @@
+import { withRigs } from './company-fixture';
 import { expect, test } from 'bun:test';
 import { abandonContract, acceptContract, assignOperationLead, assignOperationSlot, commitOperations, createCampaign, forecastArrival, getContracts, parseCampaign, removeOperation, reviewOperations, settleContract, stageOperation, travelTo, type Campaign } from '../src/campaign';
-import { advanceDays, buyFrame, checkpointDeployment, getOwnedMech, queueRepair } from '../src/company';
+import { advanceDays, checkpointDeployment, getOwnedMech, queueRepair } from '../src/company';
 import { dismissPilot, getPilotStats, hirePilot } from '../src/pilots';
 import { isArmoredReserveRaid } from '../src/strategic-impact';
 import { getSystemIntel } from '../src/universe';
@@ -35,7 +36,7 @@ test('an expired staged defense remains in Operations when the local board goes 
 
 test('a crew sortie that reopens the front suppresses an intermediate closure in the day debrief', function () {
 	const start = { ...createCampaign(0, 'career'), credits: 25_000, planetId: 'system-6' as const };
-	const company = hirePilot(buyFrame(start, 'kestrel-b'), 'flint');
+	const company = hirePilot(withRigs(start, 'kestrel-b'), 'flint');
 	const board = getContracts(company);
 	const defense = board.find(function (job) { return job.kind === 'defend' && job.tier === 1; });
 	const strike = board.find(function (job) { return job.kind === 'assassination' && job.tier === 1; });
@@ -92,7 +93,7 @@ test('a successful crew raid disrupts the same local opponent for one later play
 });
 
 test('a legacy staged defense retains its layout through review, mixed-day commitment, and save restoration', function () {
-	const company = hirePilot(buyFrame({ ...createCampaign(317, 'career'), credits: 25_000 }, 'kestrel-b'), 'kite');
+	const company = hirePilot(withRigs({ ...createCampaign(317, 'career'), credits: 25_000 }, 'kestrel-b'), 'kite');
 	const [crew, live] = getContracts(company);
 	if (!crew || crew.kind !== 'defend' || !live) throw new Error('Missing local defense and live contracts');
 	const staged = assignOperationSlot(stageOperation(stageOperation(company, live.id), crew.id), crew.id, 0, { pilotId: 'kite', frameId: 'kestrel-b' });
@@ -112,7 +113,7 @@ test('a legacy staged defense retains its layout through review, mixed-day commi
 });
 
 test('a saved mixed day settles the same crew sortie after extraction or explicit abort and advances work and upkeep once', function () {
-	const rigs = buyFrame(buyFrame(buyFrame({ ...createCampaign(318, 'career'), day: 30, credits: 60_000 }, 'kestrel-b'), 'kestrel-c'), 'warden');
+	const rigs = withRigs({ ...createCampaign(318, 'career'), day: 30, credits: 60_000 }, 'kestrel-b', 'kestrel-c', 'warden');
 	const company = hirePilot(hirePilot(rigs, 'flint'), 'kite');
 	const ready = queueRepair({ ...company, fleet: company.fleet.map(function (rig) { return rig.frameId === 'kestrel-c' ? { ...rig, integrity: 82 } : rig; }) }, 'kestrel-c');
 	const [live, crew] = getContracts(ready);
@@ -175,7 +176,7 @@ test('a saved mixed day settles the same crew sortie after extraction or explici
 });
 
 test('a crew-only day saves every result and keeps the commander benched for the next plan', function () {
-	const company = hirePilot(hirePilot(buyFrame({ ...createCampaign(317, 'career'), credits: 25_000 }, 'kestrel-b'), 'flint'), 'kite');
+	const company = hirePilot(hirePilot(withRigs({ ...createCampaign(317, 'career'), credits: 25_000 }, 'kestrel-b'), 'flint'), 'kite');
 	const [first, second] = getContracts(company);
 	if (!first || !second) throw new Error('Missing local contracts');
 	const lineup = assignOperationSlot(company, undefined, 0, { pilotId: 'flint', frameId: 'kestrel' });

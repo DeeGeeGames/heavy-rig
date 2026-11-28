@@ -9,3 +9,6 @@ const MODEL_PRICES: Readonly<Record<WeaponModelId, number>> = {
 export const WEAPON_PRICES: Readonly<Record<WeaponId, number>> = createWeaponRecord(function (weapon) {
 	return Math.round(MODEL_PRICES[weapon.modelId] * getWeaponTier(weapon.tier).price);
 });
+export const hullRepairCost = function (chassisPrice: number, integrity: number): number {
+	return Math.ceil(integrity === 0 ? chassisPrice * .75 : chassisPrice * (100 - integrity) / 200);
+};
