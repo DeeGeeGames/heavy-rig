@@ -4,7 +4,8 @@ import type { Contract, MissionKind } from './campaign-types';
 import { frameWeight, HEAT_LOCK, loadedMounts, usableMount } from './combat-resources';
 import { getOwnedMech, type DeployedPilot, type OwnedMech } from './company';
 import { getFrame } from './frames';
-import { getPilotStats, pilotExperienceMultiplier, type PilotAssignment, type PilotId } from './pilots';
+import { getPilotStats, type PilotAssignment, type PilotId } from './pilots';
+import { pilotCombatMultiplier, pilotCoordination } from './pilot-relationships';
 import { getContractTier, missionTierPressure } from './reputation';
 import { rigFrameId, type RigId } from './rigs';
 import { randomSource } from './universe';
@@ -82,16 +83,16 @@ const membersFor = function (campaign: Campaign, lineup: readonly PilotAssignmen
 		const condition = mech.integrity / 100;
 		const gunnery = 1 + (pilot.gunnery - 3) * .14;
 		const maneuver = 1 + (pilot.maneuver - 3) * .14;
-		const experience = pilotExperienceMultiplier(pilot.bonus);
+		const effectiveness = pilotCombatMultiplier(pilot.bonus, pilotCoordination(campaign, pilotId, lineup));
 		return [{
 			pilotId,
 			frameId: mech.frameId,
 			integrity: mech.integrity,
 			incomingDamage: weapons.incomingDamage,
 			capability: {
-				firepower: fireRating(weapons.damage) * gunnery * condition * experience,
-				precision: fireRating(weapons.precisionDamage) * gunnery * condition * experience,
-				mobility: weapons.speed / 100 * maneuver * condition * experience,
+				firepower: fireRating(weapons.damage) * gunnery * condition * effectiveness,
+				precision: fireRating(weapons.precisionDamage) * gunnery * condition * effectiveness,
+				mobility: weapons.speed / 100 * maneuver * condition * effectiveness,
 				armor: condition / weapons.incomingDamage,
 			},
 		}];

@@ -7,9 +7,12 @@ import { createUniverse, dayFrontChange, FACTION_IDS, getJumpRoute, getSystemInt
 import { isArmoredReserveRaid, isStrategicTerms, strategicTerms } from './strategic-impact';
 export { getPlanet, PLANETS, type PlanetDefinition } from './universe';
 
-import { advanceDays, beginDeployment, createCompany, deploymentIssue, isAssignment, isDeployedSquad, isSortieSquad, MAX_DAY, parseCompany, type CompanyState, type DeployedPilot } from './company';
+import { advanceDays, beginDeployment, createCompany, deploymentIssue, forecastCalendar, isAssignment, isDeployedSquad, isSortieSquad, MAX_DAY, parseCompany, type CompanyState, type DeployedPilot } from './company';
+import { isCompanyEventState, scheduleCompanyEvent, type CompanyEventState } from './company-events';
+import { isEventEligible } from './company-event-catalog';
+import { isPilotRelationships, retiredPilots, type PilotRelationship } from './pilot-relationships';
 import { forecastCrew, resolveCrew, type CrewCheck, type CrewForecast, type CrewResolution } from './crew-resolution';
-import { getPilot, isPilotId, MAX_PILOT_WINS, recordPilotWins, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
+import { getPilot, isCompanyPilotId, isPilotId, MAX_PILOT_WINS, recordPilotWins, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
 import { rigName, type RigId } from './rigs';
 
 export interface FactionDefinition {
@@ -96,6 +99,8 @@ export interface Campaign extends CompanyState {
 	lastOperationDay?: readonly CampaignResult[] | undefined;
 	preferredLineup?: readonly PilotAssignment[];
 	pilotWins?: Partial<Record<PilotId, number>>;
+	events?: CompanyEventState;
+	relationships?: readonly PilotRelationship[];
 }
 
 const CAMPAIGN_VERSION = 8;
@@ -243,7 +248,7 @@ const findPosting = function (campaign: Campaign, id: string, legacy = false): C
 };
 
 export const canAcceptContract = function (campaign: Campaign, contract: Contract): boolean {
-	return !campaign.active && !campaign.deployed && campaign.boardRevision < MAX_COUNT && campaign.day < MAX_DAY
+	return !campaign.events?.pending && !campaign.active && !campaign.deployed && campaign.boardRevision < MAX_COUNT && campaign.day < MAX_DAY
 		&& companyRank(campaign) >= getContractTier(contract).rank
 		&& contract.planetId === campaign.planetId && campaign.reputation[contract.employer] >= contract.requiredReputation
 		&& Boolean(findPosting(campaign, contract.id));
@@ -267,8 +272,8 @@ export const acceptContract = function (campaign: Campaign, contractId: string):
 };
 
 export const forecastArrival = function (campaign: Campaign, planetId: PlanetId): Campaign {
-	if (campaign.active || campaign.deployed || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
-	return advanceDays({
+	if (campaign.events?.pending || campaign.active || campaign.deployed || campaign.planetId === planetId || campaign.boardRevision >= MAX_COUNT || campaign.day >= MAX_DAY || !isPlanetId(planetId)) return campaign;
+	return forecastCalendar({
 		...campaign, planetId, operations: undefined, universe: { ...campaign.universe, boardDay: campaign.day + 1, boardVersion: 2 }, boardRevision: campaign.boardRevision + 1, boardReputation: { ...campaign.reputation },
 	}, 1);
 };
@@ -279,7 +284,7 @@ export const travelTo = function (campaign: Campaign, planetId: PlanetId): Campa
 	if (campaign.credits < fare) return campaign;
 	const departure = { ...campaign, credits: campaign.credits - fare };
 	const arrival = forecastArrival(departure, planetId);
-	return arrival === departure ? campaign : arrival;
+	return arrival === departure ? campaign : scheduleCompanyEvent(campaign.day, arrival);
 };
 
 const emptyLineup = function (): readonly PilotAssignment[] {
@@ -369,6 +374,7 @@ export const reviewOperations = function (campaign: Campaign): { entries: readon
 		return { operation, postingAvailable, live, leaderId, issues, ...(!live && !issues.length && leaderId ? { forecast: forecastCrew(campaign, contract, lineup, leaderId) } : {}) };
 	});
 	const issues = [...new Set(entries.flatMap(function (entry) { return entry.issues; }))];
+	if (campaign.events?.pending) issues.push('Resolve the shipboard decision first.');
 	if (campaign.active || campaign.deployed) issues.push('Finish the active contract first.');
 	if (campaign.day >= MAX_DAY || campaign.boardRevision >= MAX_COUNT || campaign.completed + campaign.failed + operations.length > MAX_COUNT) issues.push('The campaign calendar is full.');
 	return { entries, issues };
@@ -579,6 +585,20 @@ const isPilotWins = function (value: unknown): value is Partial<Record<PilotId, 
 	return object(value) && Object.entries(value).every(function ([id, wins]) { return isPilotId(id) && id !== 'player' && isInteger(wins, 0, MAX_PILOT_WINS); });
 };
 
+// Standing orders and historical reports can legitimately name pilots who left.
+// Their registrations still belong to the same company's seeded hiring boards.
+const validCompanyPilots = function (campaign: Campaign): boolean {
+	const belongs = function (id: unknown) { return isCompanyPilotId(id, campaign.seed); };
+	const lineup = function (seats: readonly PilotAssignment[]) { return seats.every(function ({ pilotId }) { return pilotId === null || belongs(pilotId); }); };
+	const report = function (result: CampaignResult) { return result.squad?.every(function (member) { return belongs(member.pilotId); }) ?? true; };
+	const retired = retiredPilots(campaign);
+	return campaign.pilots.every(function (id) { return belongs(id) && !retired.has(id); })
+		&& (campaign.relationships ?? []).every(function ({ a, b }) { return belongs(a) && belongs(b); })
+		&& Object.keys(campaign.pilotWins ?? {}).every(belongs)
+		&& lineup(campaign.preferredLineup ?? []) && (campaign.operations ?? []).every(function (op) { return lineup(op.lineup); })
+		&& (!campaign.lastResult || report(campaign.lastResult)) && (campaign.lastOperationDay ?? []).every(report);
+};
+
 const sameContract = function (saved: Contract, generated: Contract): boolean {
 	// Authored copy can be revised while a pilot still has the original terms.
 	const sameCopy = isAuthoredContract(generated) || saved.title === generated.title && saved.briefing === generated.briefing;
@@ -628,6 +648,8 @@ export const parseSavedCompany = function (value: unknown): Campaign | undefined
 		if (!company) return undefined;
 		const operations = value['operations']; const committedCrew = value['committedCrew']; const lastOperationDay = value['lastOperationDay'];
 		const preferredLineup = value['preferredLineup']; const pilotWins = value['pilotWins'];
+		const events = value['events']; const relationships = value['relationships'];
+		if (events !== undefined && !isCompanyEventState(events, value['day']) || relationships !== undefined && !isPilotRelationships(relationships)) return undefined;
 		if (preferredLineup !== undefined && !isLineup(preferredLineup) || pilotWins !== undefined && !isPilotWins(pilotWins)) return undefined;
 		if (operations !== undefined && (!Array.isArray(operations) || operations.length > MAX_OPERATIONS || !operations.every(isPlannedOperation)
 			|| new Set(operations.map(function (entry) { return postingKey(entry.contract.id); })).size !== operations.length
@@ -655,8 +677,11 @@ export const parseSavedCompany = function (value: unknown): Campaign | undefined
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 			...(operations ? { operations } : {}), ...(committedCrew ? { committedCrew } : {}), ...(lastOperationDay ? { lastOperationDay } : {}),
 			...(preferredLineup ? { preferredLineup } : {}), ...(pilotWins ? { pilotWins } : {}),
+			...(events ? { events } : {}), ...(relationships ? { relationships } : {}),
 			...(mode ? { mode } : {}), ...(story ? { story } : {}),
 		};
+		if (campaign.events?.pending && (!campaign.introComplete || !isEventEligible(campaign, campaign.events.pending))) return undefined;
+		if (!validCompanyPilots(campaign)) return undefined;
 		const result = campaign.lastResult;
 		if (result && result.day > campaign.day) return undefined;
 		if (result && isAuthoredContract(result.contract)) {

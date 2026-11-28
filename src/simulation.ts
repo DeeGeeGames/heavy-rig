@@ -23,7 +23,8 @@ import { planSquads, type SquadOrder as EnemySquadOrder } from './enemy-squads';
 import { ENEMY_FIRING_MARGIN, planGroundTactics, type EnemyTactics } from './enemy-tactics';
 import { dropRigPose, planRigDrop, rigReleaseTime, type DropPassenger } from './enemy-deployment';
 import { advancePerimeterEntry, isFieldContact, planPerimeterEntry, type PerimeterEntry } from './enemy-perimeter';
-import { pilotExperienceMultiplier, SQUAD_SIZE, type Pilot, type PilotExperienceBonus } from './pilots';
+import { SQUAD_SIZE, type Pilot, type PilotExperienceBonus } from './pilots';
+import { pilotCombatMultiplier, type PilotCoordination } from './pilot-relationships';
 import { TANK_DELAY_SECONDS } from './strategic-impact';
 
 export interface Point { x: number; y: number }
@@ -84,12 +85,13 @@ export interface SquadmateOptions {
 	callsign: string;
 	specialty: Exclude<Pilot['specialty'], 'commander'>;
 	experienceBonus?: PilotExperienceBonus;
+	coordination?: PilotCoordination;
 	frameId: FrameId;
 	loadout: readonly (WeaponId | null)[];
 	reserves: readonly number[];
 	integrity: number;
 }
-export interface Squadmate extends RigBody, Pick<SquadmateOptions, 'pilotId' | 'callsign' | 'specialty' | 'experienceBonus' | 'frameId'> {
+export interface Squadmate extends RigBody, Pick<SquadmateOptions, 'pilotId' | 'callsign' | 'specialty' | 'experienceBonus' | 'coordination' | 'frameId'> {
 	defeatedAt?: number;
 	loadout: WeaponMount[];
 	shotsFired: number;
@@ -177,11 +179,11 @@ export const createMissionState = function (contract: Contract, options: Mission
 	};
 	const heading = Math.atan2(map.objective.y - map.drop.y, map.objective.x - map.drop.x);
 	state.player.x = map.drop.x; state.player.y = map.drop.y; state.player.angle = heading; state.player.turret = heading;
-	state.squadmates = squadmates.map(function ({ pilotId, callsign, specialty, experienceBonus = 0, frameId, loadout, reserves, integrity }, index) {
+	state.squadmates = squadmates.map(function ({ pilotId, callsign, specialty, experienceBonus = 0, coordination = 0, frameId, loadout, reserves, integrity }, index) {
 		if (!isFrameLoadout(frameId, loadout)) throw new RangeError(`Invalid loadout for ${frameId}`);
 		const at = missionDeploymentSlot(map, index);
 		return {
-			pilotId, callsign, specialty, experienceBonus, frameId, loadout: loadedMounts(loadout, reserves),
+			pilotId, callsign, specialty, experienceBonus, coordination, frameId, loadout: loadedMounts(loadout, reserves),
 			x: clamp(at.x, EDGE_CLEARANCE, map.width - EDGE_CLEARANCE), y: clamp(at.y, EDGE_CLEARANCE, map.height - EDGE_CLEARANCE), angle: heading, turret: heading,
 			hp: Number.isFinite(integrity) ? clamp(integrity, 0, 100) : 0, heat: 0, overheated: false, throttle: 0, speed: 0, shotsFired: 0, coolantCharges: 2,
 		};
@@ -1043,7 +1045,7 @@ const fireRigWeapons = function (state: CombatStateView, input: TriggerInput, dt
 	const baseSpread = mate?.specialty === 'marksman' ? 0.5 : 1;
 	fireMountedRig(state, {
 		body: mate ?? state.player, platform: mate?.frameId ?? state.frame, loadout: mate?.loadout ?? state.loadout,
-		pose: mate ? mate.authoredPose : state.authoredPose, spread: baseSpread / pilotExperienceMultiplier(mate?.experienceBonus), damage: 1,
+		pose: mate ? mate.authoredPose : state.authoredPose, spread: baseSpread / pilotCombatMultiplier(mate?.experienceBonus, mate?.coordination), damage: 1,
 		source: mate ? { squadmateId: mate.pilotId } : {},
 		shots: function () { return mate ? mate.shotsFired : state.stats.shotsFired; },
 		countShot: function () { return mate ? ++mate.shotsFired : ++state.stats.shotsFired; },
@@ -1235,7 +1237,7 @@ export const squadmatesStep = function (state: CombatStateView, dt: number) {
 		}
 		const aim = target?.body ?? { x: mate.x + Math.cos(mate.angle), y: mate.y + Math.sin(mate.angle) };
 		const aimAngle = Math.atan2(aim.y - mate.y, aim.x - mate.x);
-		mate.turret = turnTorso(mate.angle, mate.turret, aimAngle, cycleDt * frame.turretRate * pilotExperienceMultiplier(mate.experienceBonus));
+		mate.turret = turnTorso(mate.angle, mate.turret, aimAngle, cycleDt * frame.turretRate * pilotCombatMultiplier(mate.experienceBonus, mate.coordination));
 		if (advancePose) mate.authoredPose = advancePose(previousPose, mate, state.time, terrain);
 		const fire = target !== undefined && Math.abs(angleDelta(mate.turret, aimAngle)) <= (mate.specialty === 'marksman' ? 0.035 : 0.075);
 		fireRigWeapons(state, { aim, fire: [fire, fire, fire, fire], ...(target ? { targetId: target.id } : {}) }, dt, mate);

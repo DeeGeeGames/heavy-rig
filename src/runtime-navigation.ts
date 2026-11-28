@@ -2,7 +2,7 @@ import { definePlugin, type ScreenConfiguratorFn, type ScreenDefinition, type Sc
 import type { ShipScreen } from './company-ui';
 
 export type RuntimeBaseScreen = ShipScreen | 'title' | 'intro' | 'rig-bay' | 'escape-result' | 'jump' | 'launch' | 'playing' | 'pause-panel' | 'result' | 'training-setup' | 'training-result' | 'situation-setup' | 'situation-result' | 'field-trial';
-export type RuntimeAuxiliary = 'settings' | 'handbook' | 'confirm' | 'save-conflict' | 'squad-orders';
+export type RuntimeAuxiliary = 'settings' | 'handbook' | 'confirm' | 'company-event' | 'save-conflict' | 'squad-orders';
 export type RuntimeScreen = RuntimeBaseScreen | RuntimeAuxiliary | 'training';
 type RuntimeScreens = Record<RuntimeScreen, ScreenDefinition>;
 
@@ -15,7 +15,7 @@ interface NavigationWorld {
 }
 
 const isAuxiliary = function (screen: RuntimeScreen | null): screen is RuntimeAuxiliary {
-	return screen === 'settings' || screen === 'handbook' || screen === 'confirm' || screen === 'save-conflict' || screen === 'squad-orders';
+	return screen === 'settings' || screen === 'handbook' || screen === 'confirm' || screen === 'company-event' || screen === 'save-conflict' || screen === 'squad-orders';
 };
 const definition: Pick<ScreenDefinition, 'initialState'> = { initialState: function () { return {}; } };
 
@@ -49,6 +49,7 @@ const screens: ScreenConfiguratorFn<RuntimeScreens> = function (configurator) {
 		.add('settings', definition)
 		.add('handbook', definition)
 		.add('confirm', definition)
+		.add('company-event', definition)
 		.add('save-conflict', definition);
 };
 

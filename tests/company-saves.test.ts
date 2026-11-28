@@ -1,9 +1,8 @@
-import { withRigs } from './company-fixture';
+import { withPilots, withRigs } from './company-fixture';
 import { expect, test } from 'bun:test';
 import { assignOperationSlot, CAMPAIGN_STORAGE_KEY, commitOperations, createCampaign, getContracts, parseCampaign, readCampaign, saveCampaign, stageOperation, STARTING_CREDITS } from '../src/campaign';
 import { companySlotKey, exportCompanyBackup, importCompanyBackup, lastCompanySlot, readCompanySlot, rememberCompanySlot, slotChanged, writeCompanySlot } from '../src/company-saves';
 import { checkpointDeployment } from '../src/company';
-import { hirePilot } from '../src/pilots';
 
 const withStorage = function (run: (storage: Storage) => void) {
 	const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
@@ -68,7 +67,7 @@ test('keeps unmarked v8 companies playable without inventing a story and purges 
 test('old in-flight saves restart with launch condition, keep committed crews and export without field state', function () {
 	withStorage(function (storage) {
 		const fresh = createCampaign(318, 'career');
-		const ready = hirePilot(hirePilot(withRigs({ ...fresh, credits: 60_000 }, 'kestrel-b', 'warden'), 'flint'), 'kite');
+		const ready = withPilots(withRigs({ ...fresh, credits: 60_000 }, 'kestrel-b', 'warden'), 'flint', 'kite');
 		const [field, crew] = getContracts(ready);
 		if (!field || !crew) throw new Error('Missing paired contracts');
 		const company = { ...ready, fleet: ready.fleet.map(function (rig) {

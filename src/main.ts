@@ -59,9 +59,12 @@ import { missionStructures } from './missions';
 import { isArmoredReserveRaid, TANK_DELAY_SECONDS } from './strategic-impact';
 import { isFrameId, newUpkeepDue, PILOT_MONTHLY_UPKEEP, WEAPON_PRICES, quoteRepair, refitDays, advanceDays, applyRigCheat, assignPilot, assignRig, beginDeployment, buyFrame, buyWeapon, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, workOrderFor, type DeployedPilot } from './company';
 import { dismissPilot, getPilot, getPilotStats, hirePilot } from './pilots';
+import { pilotCoordination } from './pilot-relationships';
 import { adjacentShipScreen, isShipScreen, renderCompany, type CompanyEditor, type ShipScreen } from './company-ui';
 import { availableMenuControl, focusMenuControl, menuControls, menuScrollArea, moveMenuFocus, scrollMenu, selectMenuControl, type MenuDirection } from './menu-focus';
 import { mountChoicePicker } from './choice-picker';
+import { resolveCompanyEvent } from './company-events';
+import { renderCompanyEvent } from './company-event-ui';
 import { mountWorkspaceLayout, revealWorkspaceElement, selectWorkspacePane, focusWorkspace, rememberWorkspaceFocus, moveWorkspaceFocus, cycleWorkspaceView, inspectWorkspacePane, workspaceBackTarget, workspaceControls, workspaceNavigationLocked } from './workspace';
 import { mountDialogLayout, stepDialogNavigation } from './dialog-layout';
 import { createEscape, escapeMessage, INTRO_FRAMES, INTRO_LINES, narrativeFrame, SADDLE_LINES, type IntroFrame } from './intro';
@@ -422,7 +425,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		const canSelect = target && (target.matches('button, a') || toggling);
 		const popoverId = root?.matches('.planet-popover:popover-open') ? root.id : nothing;
 		const companyShortcuts = companyNavigationReady();
-		const canGoBack = choicePicker.root || (navigation.auxiliary ? navigation.auxiliary !== 'save-conflict'
+		const canGoBack = choicePicker.root || (navigation.auxiliary ? navigation.auxiliary !== 'save-conflict' && !(navigation.auxiliary === 'company-event' && campaign.events?.pending)
 			: root === titlePicker || onCompany || ['intro', 'rig-bay', 'escape-result', 'pause-panel', 'training-setup', 'training-result', 'situation-setup', 'situation-result'].includes(navigation.screen));
 		const backLabel = choicePicker.root || capture || pickingOrder ? 'Cancel' : navigation.auxiliary ? 'Back' : navigation.screen === 'pause-panel' ? 'Resume'
 			: companyShortcuts && !workspaceBackTarget(element(navigation.screen)) ? 'Title' : 'Back';
@@ -520,7 +523,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			: training ? 'Resume the drills or change loadout to practice in the range.'
 			: !campaignSaved ? 'Storage unavailable. Return to title and download a company backup before closing this tab. The sortie restarts from launch.'
 			: 'Returning to title or reloading restarts the sortie from launch. Aborting returns the squad to the ship and advances the day.';
-		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'launch', 'pause-panel', 'squad-orders', 'result', 'training-setup', 'training-result', 'situation-setup', 'situation-result', 'field-trial', 'settings', 'handbook', 'confirm', 'save-conflict']) {
+		for (const id of ['title', 'intro', 'rig-bay', 'escape-result', 'bridge', 'starmap', 'mechbay', 'market', 'engineering', 'pilots', 'deploy', 'jump', 'launch', 'pause-panel', 'squad-orders', 'result', 'training-setup', 'training-result', 'situation-setup', 'situation-result', 'field-trial', 'settings', 'handbook', 'confirm', 'company-event', 'save-conflict']) {
 			const node = element(id); const visible = navigation.auxiliary ? id === navigation.auxiliary : id === navigation.screen;
 			node.hidden = !visible; node.inert = !visible;
 		}
@@ -543,6 +546,12 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		updateWorkspaceLayout(); updateDialogLayout();
 		if (!focus) return;
 		const root = menu();
+		if (navigation.auxiliary === 'company-event' && root) {
+			root.querySelector<HTMLElement>('.event-dispatch')?.scrollTo(0, 0);
+			root.querySelector<HTMLButtonElement>('button:enabled')?.focus({ preventScroll: true });
+			updateMenuHint(); updateDialogLayout();
+			return;
+		}
 		if (root === squadOrdersRoot) {
 			if (!root.contains(document.activeElement)) menuControls(root)[0]?.focus();
 			updateMenuHint(); updateDialogLayout();
@@ -587,7 +596,11 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			const rig = getOwnedMech(next, member.frameId);
 			const { callsign, specialty } = getPilot(member.pilotId);
 			if (!rig || specialty === 'commander') return;
-			squadmates.push({ pilotId: member.pilotId, callsign, specialty, experienceBonus: getPilotStats(next, member.pilotId).bonus, frameId: rigFrameId(rig.frameId), loadout: rig.loadout, reserves: rig.reserves, integrity: member.integrity });
+			squadmates.push({
+				pilotId: member.pilotId, callsign, specialty, experienceBonus: getPilotStats(next, member.pilotId).bonus,
+				coordination: pilotCoordination(next, member.pilotId, next.lineup),
+				frameId: rigFrameId(rig.frameId), loadout: rig.loadout, reserves: rig.reserves, integrity: member.integrity,
+			});
 		}
 		const initial = createMissionState(next.active, { difficulty: profile.settings.difficulty, frame: rigFrameId(mech.frameId), loadout: mech.loadout, reserves: mech.reserves, integrity: mech.integrity, coolantCharges: next.deployed.coolantCharges, squadmates });
 		if (!restarting && !replaceCampaign(next)) return;
@@ -718,7 +731,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		transition(navigation.showAuxiliary(value));
 	};
 	const closeAuxiliary = function () {
-		if (campaignConflict) return;
+		if (campaignConflict || navigation.auxiliary === 'company-event' && campaign.events?.pending) return;
 		capture = undefined; renderMappings();
 		confirmedAction = undefined;
 		transition(navigation.closeAuxiliary(), function () {
@@ -770,12 +783,29 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 		if (navigation.screen === 'title') refreshTitleCompany();
 		return true;
 	};
+	const refreshEvent = function () {
+		const presented = campaign;
+		renderCompanyEvent(element('company-event'), campaign, function (id) {
+			if (navigation.auxiliary !== 'company-event' || navigation.transitioning || campaignConflict || presented !== campaign) return;
+			const next = resolveCompanyEvent(campaign, presented.day, id);
+			if (next === campaign || !replaceCampaign(next)) return;
+			if (navigation.screen === 'bridge' || navigation.screen === 'starmap') refreshCampaign();
+			else refreshCompany();
+			refreshEvent();
+			syncScreen();
+		}, closeAuxiliary);
+	};
+	const presentShipDecision = function () {
+		if (!campaign.events?.pending || !isShipScreen(navigation.screen) || navigation.auxiliary || campaignConflict) return;
+		refreshEvent();
+		showAuxiliary('company-event');
+	};
 	const updateCompany = function (next: Campaign, notice: string, nextScreen?: ShipScreen, clearDraft = false) {
 		if (next === campaign || !replaceCampaign(next)) return;
 		if (clearDraft) resetEditor(notice);
 		else editor = { ...editor, notice };
-		if (nextScreen && nextScreen !== 'bridge') { transition(navigation.setScreen(nextScreen), function () { refreshCompany(); syncScreen(); }); }
-		else refreshCompany();
+		if (nextScreen && nextScreen !== 'bridge') { transition(navigation.setScreen(nextScreen), function () { refreshCompany(); syncScreen(); presentShipDecision(); }); }
+		else { refreshCompany(); presentShipDecision(); }
 	};
 	const discardDraft = function () {
 		if (!hasRefitDraft()) return;
@@ -876,7 +906,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 			},
 			dismiss: function (id) {
 				const pilot = getPilot(id);
-				confirm(function () { updateCompany(dismissPilot(campaign, id), `${pilot.callsign} left the roster.`); }, 'DISMISS PILOT', `${pilot.callsign} leaves the company and frees their rig assignment. The hiring fee is spent.`, `DISMISS ${pilot.callsign.toUpperCase()}?`);
+				confirm(function () { updateCompany(dismissPilot(campaign, id), `${pilot.callsign} left the roster.`); }, 'DISMISS PILOT', `${pilot.callsign} leaves the company and frees their rig assignment.${pilot.home ? ` They can sign on again at ${getPlanet(pilot.home).name}.` : ''} The hiring fee is spent.`, `DISMISS ${pilot.callsign.toUpperCase()}?`);
 			},
 			assignPilot: function (slot, id) {
 				const assignment = { pilotId: id, frameId: id ? lineup[slot]?.frameId ?? null : null };
@@ -1016,6 +1046,7 @@ const shutdown = await mountGame('game', async function (container, onCleanup) {
 					root.querySelector<HTMLElement>('.planet-popover:popover-open .planet-actions .primary')?.focus({ preventScroll: true });
 				}
 			}
+			presentShipDecision();
 		});
 	};
 	const toShip = function () { guidedCourse = undefined; destination = campaign.planetId; selectedContract = undefined; navigateShip('starmap', 'route', true); };

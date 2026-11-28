@@ -9,6 +9,7 @@ import { stockPackage, isFrameLoadout } from './hardpoints';
 import { defaultReserves, isReserveLoadout, loadedMounts, usableMount } from './combat-resources';
 import { isPilotId, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
 import { getJumpRoute, getSystemIntel, PLANETS } from './universe';
+import { scheduleCompanyEvent } from './company-events';
 
 export type Loadout = readonly (WeaponId | null)[];
 export interface OwnedMech {
@@ -48,7 +49,7 @@ export const newUpkeepDue = function (company: Campaign, days: number): number {
 	return months > 0 ? months * monthlyUpkeep(company) : 0;
 };
 
-const spendableMaintenanceFunds = function (campaign: Campaign, day: number): number {
+export const spendableMaintenanceFunds = function (campaign: Campaign, day: number): number {
 	const { credits, planetId } = campaign;
 	const offers = getTransmission(campaign)?.offers ?? [];
 	if (campaign.universe.boardVersion === 1 || getSystemIntel({ ...campaign, day }, planetId).conflict
@@ -257,8 +258,8 @@ export const cancelWorkOrder = function (campaign: Campaign, frameId: RigId): Ca
 	const refund = order.kind === 'repair' ? order.payment?.paid ?? 0 : 0;
 	return { ...campaign, credits: Math.min(MAX_CREDITS, campaign.credits + refund), workOrders: campaign.workOrders.filter(function (order) { return order.frameId !== frameId; }) };
 };
-export const advanceDays = function (campaign: Campaign, days: number): Campaign {
-	if (campaign.deployed || !isInteger(days, 1, MAX_DAY) || campaign.day + days > MAX_DAY - Number(Boolean(campaign.active))) return campaign;
+export const forecastCalendar = function (campaign: Campaign, days: number): Campaign {
+	if (campaign.events?.pending || campaign.deployed || !isInteger(days, 1, MAX_DAY) || campaign.day + days > MAX_DAY - Number(Boolean(campaign.active))) return campaign;
 	const day = campaign.day + days;
 	const fleet = campaign.fleet.map(function (mech) {
 		const order = workOrderFor(campaign, mech.frameId);
@@ -273,6 +274,9 @@ export const advanceDays = function (campaign: Campaign, days: number): Campaign
 	return { ...campaign, day, fleet, workOrders: campaign.workOrders.filter(function (order) { return order.readyDay > day; }),
 		...(deferredRepairs ? { repairDebt: Math.min(MAX_CREDITS, (campaign.repairDebt ?? 0) + deferredRepairs) } : {}),
 		...(due ? { credits: campaign.credits - paid, upkeepOwed: Math.min(MAX_CREDITS, due - paid) } : {}) };
+};
+export const advanceDays = function (campaign: Campaign, days: number): Campaign {
+	return scheduleCompanyEvent(campaign.day, forecastCalendar(campaign, days));
 };
 export const beginDeployment = function (campaign: Campaign): Campaign {
 	const frameId = campaign.lineup[0]?.frameId;

@@ -6,6 +6,7 @@ import { RIG_RADIUS } from '../src/combat-spatial';
 import type { FieldTerrain } from '../src/field-terrain';
 import { generateMissionMap } from '../src/missions';
 import { getPilot, getPilotStats } from '../src/pilots';
+import { changeRelationship, pilotCoordination } from '../src/pilot-relationships';
 import { angleDelta, createMissionState, distance, projectilesStep, squadmatesStep, squadMoveDestinations, type SquadmateOptions, type State, type Unit } from '../src/simulation';
 
 const contract: Contract = { id: 'squad-orders', seed: 123, planetId: 'meridian', kind: 'clearance', employer: 'freeholds', opponent: 'combine', title: 'Clear', briefing: 'Clear the site', reward: 100, favor: 8, hostility: 5, tier: 1, requiredReputation: -100 };
@@ -18,15 +19,18 @@ const advanceSquad = function (state: State) {
 	projectilesStep(state, dt);
 };
 
-test('both live wingmate specialties acquire a contact sooner and fire more accurately at each experience milestone', function () {
-	const company = createCampaign(2, 'career');
+test('wingmates acquire and group shots according to experience and trust in a deployed partner', function () {
+	const company = { ...createCampaign(2, 'career'), pilots: ['player', 'flint', 'kite'] as const };
 	const map = { ...generateMissionMap(contract), terrain: { obstacles: [], roads: [] } };
-	const engage = function (pilotId: 'flint' | 'kite', wins: number) {
+	const engage = function (pilotId: 'flint' | 'kite', wins: number, trust = 0) {
 		const { callsign, specialty } = getPilot(pilotId);
 		if (specialty === 'commander') throw new Error('Expected hired wingmate');
 		const experienceBonus = getPilotStats({ ...company, pilotWins: { [pilotId]: wins } }, pilotId).bonus;
+		const coordination = pilotCoordination(changeRelationship(company, pilotId, 'player', trust), pilotId, [
+			{ pilotId: 'player', frameId: 'warden' }, { pilotId, frameId: 'kestrel' },
+		]);
 		const state = createMissionState(contract, { map, squadmates: [
-			{ pilotId, callsign, specialty, experienceBonus, frameId: 'kestrel', loadout: ['machine-gun', null], reserves: [500, 0], integrity: 100 },
+			{ pilotId, callsign, specialty, experienceBonus, coordination, frameId: 'kestrel', loadout: ['machine-gun', null], reserves: [500, 0], integrity: 100 },
 		] });
 		const wing = state.squadmates[0];
 		if (!wing) throw new Error('Missing wingmate');
@@ -61,6 +65,12 @@ test('both live wingmate specialties acquire a contact sooner and fire more accu
 		expect(veteran.firstShot).toBeLessThan(experienced.firstShot);
 		expect(experienced.error).toBeLessThan(rookie.error);
 		expect(veteran.error).toBeLessThan(experienced.error);
+		const trusted = engage(pilot, 3, 2);
+		const rivals = engage(pilot, 3, -2);
+		expect(trusted.firstShot).toBeLessThan(experienced.firstShot);
+		expect(rivals.firstShot).toBeGreaterThan(experienced.firstShot);
+		expect(trusted.error).toBeLessThan(experienced.error);
+		expect(rivals.error).toBeGreaterThan(experienced.error);
 	}
 });
 

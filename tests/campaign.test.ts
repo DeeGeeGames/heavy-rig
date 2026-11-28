@@ -1,10 +1,10 @@
-import { withRigs } from './company-fixture';
+import { withPilots, withRigs } from './company-fixture';
 import { describe, expect, test } from 'bun:test';
 import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, parseCampaign, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import type { Contract, MissionKind } from '../src/campaign-types';
 import { getJumpRoute } from '../src/universe';
 import { advanceDays } from '../src/company';
-import { dismissPilot, hirePilot } from '../src/pilots';
+import { dismissPilot } from '../src/pilots';
 
 const posted = function (campaign: Campaign, kind: MissionKind = 'defend'): Contract {
 	const contract = getContracts(campaign).find(function (entry) { return entry.kind === kind; });
@@ -16,7 +16,7 @@ const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stri
 describe('Heavy Rig campaign transactions and recovery', function () {
 	test('monthly upkeep bills owned rigs and retained pilots only at crossed month boundaries', function () {
 		const bought = withRigs({ ...createCampaign(7), credits: 60_000 }, 'longbow-b');
-		const staffed = hirePilot(hirePilot(bought, 'flint'), 'kite');
+		const staffed = withPilots(bought, 'flint', 'kite');
 		const roster = dismissPilot(staffed, 'kite');
 		expect(roster.fleet).toHaveLength(2);
 		expect(roster.pilots).toEqual(['player', 'flint']);
