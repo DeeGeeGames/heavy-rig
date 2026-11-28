@@ -74,6 +74,8 @@ Draft (**X / square / X**) when a refit is staged. D-pad, left stick, or arrow
 keys move focus toward the control on that side of the screen. The right stick
 scrolls longer panels. Previous/Next buttons turn measured content pages.
 Pages remember their focus and refit drafts survive department changes.
+With touch input, use the on-screen controls instead of the button key. The ship
+footer has Return to Title, and you can discard a staged refit in Mech Bay.
 Purchases, work orders, calendar advances, travel, and committing deployments
 show a confirmation with their cost or consequences first.
 

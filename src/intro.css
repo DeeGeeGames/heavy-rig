@@ -65,7 +65,8 @@
 	background: radial-gradient(ellipse at 67% 0, #383027, var(--hangar-ui-floor) 69%);
 }
 .has-mobile-fullscreen .rig-bay header { padding-inline-end: 62px; }
-.rig-bay header, .rig-choices { width: min(940px, 100%); margin-inline: auto; }
+.rig-bay header, .rig-choices, .rig-bay-exit { width: min(940px, 100%); margin-inline: auto; }
+.rig-bay-exit .text-button { min-height: 36px; padding: 6px 10px; border: 1px solid var(--hangar-ui-edge); }
 .rig-bay header .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--hangar-ui-amber); }
 .rig-bay header .eyebrow::before { content: ''; flex: 0 0 20px; height: 3px; background: var(--hangar-ui-amber); }
 .rig-bay h2 { font: 700 clamp(29px, 5vw, 56px)/1 var(--display); margin: 8px 0; }
