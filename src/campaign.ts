@@ -11,6 +11,7 @@ import { advanceDays, beginDeployment, createCompany, deploymentIssue, forecastC
 import { isCompanyEventState, scheduleCompanyEvent, type CompanyEventState } from './company-events';
 import { isEventEligible } from './company-event-catalog';
 import { isPilotRelationships, retiredPilots, type PilotRelationship } from './pilot-relationships';
+import { isLegacyRecruitSlots, snapshotLegacyRecruitSlots, type LegacyRecruitSlots } from './local-pilots';
 import { forecastCrew, resolveCrew, type CrewCheck, type CrewForecast, type CrewResolution } from './crew-resolution';
 import { getPilot, isCompanyPilotId, isPilotId, MAX_PILOT_WINS, recordPilotWins, SQUAD_SIZE, type PilotAssignment, type PilotId } from './pilots';
 import { rigName, type RigId } from './rigs';
@@ -99,6 +100,7 @@ export interface Campaign extends CompanyState {
 	lastOperationDay?: readonly CampaignResult[] | undefined;
 	preferredLineup?: readonly PilotAssignment[];
 	pilotWins?: Partial<Record<PilotId, number>>;
+	legacyRecruitSlots: LegacyRecruitSlots;
 	events?: CompanyEventState;
 	relationships?: readonly PilotRelationship[];
 }
@@ -129,7 +131,7 @@ const freshSeed = function () {
 export const createCampaign = function (seed?: number, mode?: Campaign['mode']): Campaign {
 	return {
 		...createCompany(), version: CAMPAIGN_VERSION, introComplete: false, universe: createUniverse(), seed: isInteger(seed, 0, 0xffffffff) ? seed : freshSeed(), planetId: 'meridian', day: 1, boardRevision: 0,
-		credits: STARTING_CREDITS, companyReputation: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined,
+		credits: STARTING_CREDITS, companyReputation: 0, completed: 0, failed: 0, reputation: zeroReputation(), boardReputation: zeroReputation(), active: undefined, lastResult: undefined, legacyRecruitSlots: {},
 		...(mode ? { mode, introComplete: mode === 'career' } : {}),
 		...(mode === 'campaign' ? { story: createOpeningProgress() } : {}),
 	};
@@ -588,7 +590,7 @@ const isPilotWins = function (value: unknown): value is Partial<Record<PilotId, 
 // Standing orders and historical reports can legitimately name pilots who left.
 // Their registrations still belong to the same company's seeded hiring boards.
 const validCompanyPilots = function (campaign: Campaign): boolean {
-	const belongs = function (id: unknown) { return isCompanyPilotId(id, campaign.seed); };
+	const belongs = function (id: unknown) { return isCompanyPilotId(id, campaign); };
 	const lineup = function (seats: readonly PilotAssignment[]) { return seats.every(function ({ pilotId }) { return pilotId === null || belongs(pilotId); }); };
 	const report = function (result: CampaignResult) { return result.squad?.every(function (member) { return belongs(member.pilotId); }) ?? true; };
 	const retired = retiredPilots(campaign);
@@ -648,6 +650,8 @@ export const parseSavedCompany = function (value: unknown): Campaign | undefined
 		if (!company) return undefined;
 		const operations = value['operations']; const committedCrew = value['committedCrew']; const lastOperationDay = value['lastOperationDay'];
 		const preferredLineup = value['preferredLineup']; const pilotWins = value['pilotWins'];
+		const legacyRecruitSlots = value['legacyRecruitSlots'];
+		if (legacyRecruitSlots !== undefined && !isLegacyRecruitSlots(legacyRecruitSlots)) return undefined;
 		const events = value['events']; const relationships = value['relationships'];
 		if (events !== undefined && !isCompanyEventState(events, value['day']) || relationships !== undefined && !isPilotRelationships(relationships)) return undefined;
 		if (preferredLineup !== undefined && !isLineup(preferredLineup) || pilotWins !== undefined && !isPilotWins(pilotWins)) return undefined;
@@ -676,10 +680,11 @@ export const parseSavedCompany = function (value: unknown): Campaign | undefined
 			...(value['repairDebt'] === undefined ? {} : { repairDebt: value['repairDebt'] }),
 			boardReputation: { ...value['boardReputation'] }, active: value['active'], lastResult: value['lastResult'],
 			...(operations ? { operations } : {}), ...(committedCrew ? { committedCrew } : {}), ...(lastOperationDay ? { lastOperationDay } : {}),
-			...(preferredLineup ? { preferredLineup } : {}), ...(pilotWins ? { pilotWins } : {}),
+			...(preferredLineup ? { preferredLineup } : {}), ...(pilotWins ? { pilotWins } : {}), legacyRecruitSlots: legacyRecruitSlots ?? {},
 			...(events ? { events } : {}), ...(relationships ? { relationships } : {}),
 			...(mode ? { mode } : {}), ...(story ? { story } : {}),
 		};
+		if (legacyRecruitSlots === undefined) campaign.legacyRecruitSlots = snapshotLegacyRecruitSlots(campaign.seed, retiredPilots(campaign));
 		if (campaign.events?.pending && (!campaign.introComplete || !isEventEligible(campaign, campaign.events.pending))) return undefined;
 		if (!validCompanyPilots(campaign)) return undefined;
 		const result = campaign.lastResult;

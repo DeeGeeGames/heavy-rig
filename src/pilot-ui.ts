@@ -15,8 +15,9 @@ const pilotRole = function (pilot: Pilot) {
 	return pilot.specialty === 'commander' ? 'Player pilot' : pilot.specialty === 'marksman' ? 'Marksman' : 'Skirmisher';
 };
 
-const personnelName = function (pilot: Pilot): string {
-	return pilot.gender === 'unspecified' ? pilot.name : `${pilot.name} · ${pilot.gender}`;
+const personnelName = function (pilot: Pilot) {
+	if (pilot.gender === 'unspecified') return pilot.name;
+	return html`<span class="pilot-gender">${pilot.gender === 'female' ? '♀' : '♂'}</span> ${pilot.name}`;
 };
 
 const frameKit = function (mech: OwnedMech) {

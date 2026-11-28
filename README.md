@@ -81,8 +81,10 @@ show a confirmation with their cost or consequences first.
 
 Stage a contract to open Deploy. Assign up to four pilots and rigs per contract.
 Each pilot and rig can deploy once per day. Hire squadmates for 500 CR each in
-Pilots. Each planet has its own pool of three to five applicants. A pilot you
-hire travels with the company. Dismissed pilots can be hired again at home.
+Pilots. Each planet has its own pool of three to five applicants. Each new
+applicant has a 10% chance to be female. Existing hiring boards keep their
+pilots. A pilot you hire travels with the company. Dismissed pilots can be
+hired again at home.
 Pilots from older saves with a service record can also return at their home port. Bench an assigned pilot to free their rig. The first lineup carries
 over to the next day. The commander can play one mission and is required for
 story contracts. All other missions use objective and extraction checks driven
