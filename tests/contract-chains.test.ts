@@ -1,8 +1,9 @@
+import { answerDecision } from './company-fixture';
 import { expect, test } from 'bun:test';
 import { abandonContract, acceptContract, canAcceptContract, createCampaign, getContracts, getTransmission, parseCampaign, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import type { MissionKind } from '../src/campaign-types';
 import { advanceDays, beginDeployment, checkpointDeployment, getOwnedMech, queueRepair, repairDays } from '../src/company';
-import { hirePilot } from '../src/pilots';
+import { getRecruitOffers, hirePilot } from '../src/pilots';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
 const opening = function () { return { ...createCampaign(317, 'campaign'), introComplete: true }; };
@@ -52,16 +53,18 @@ test('the opening offer survives ordinary contracts, front changes, transit and 
 	expect(detour.credits).toBe(starter.credits + ordinary.reward);
 	expect(detour.story).toEqual(starter.story);
 	expect(getContracts(detour).some(function (contract) { return contract.id === ordinary.id; })).toBe(false);
-	const arrived = roundTrip(travelTo(advanceDays(travelTo(detour, 'borealis'), 91), recovery.planetId));
+	const waited = advanceDays(travelTo(detour, 'borealis'), 91);
+	expect(waited.upkeepOwed).toBe(350);
+	const arrived = roundTrip(travelTo(answerDecision(waited), recovery.planetId));
 	expect(offer(arrived, 'recovery').contract).toEqual(recovery);
 	expect(canAcceptContract(arrived, recovery)).toBe(true);
 	const accepted = roundTrip(advanceDays(acceptContract(arrived, recovery.id), 4));
 	expect(accepted.active).toEqual(recovery);
-	expect(accepted.upkeepOwed).toBe(350);
+	expect(accepted.upkeepOwed).toBeGreaterThan(0);
 	expect(travelTo(accepted, 'meridian')).toBe(accepted);
 	const done = roundTrip(settleContract(accepted, true));
 	expect(done.lastResult?.payout).toBe(recovery.reward);
-	expect(done.credits).toBe(accepted.credits + recovery.reward - 350);
+	expect(done.credits).toBe(accepted.credits + recovery.reward - (accepted.upkeepOwed ?? 0));
 	expect(done.upkeepOwed).toBe(0);
 	expect(acceptContract(done, recovery.id)).toBe(done);
 	expect(getTransmission(done)?.offers.map(function ({ contract }) { return contract.kind; })).toEqual(['defend', 'demolition']);
@@ -81,7 +84,7 @@ test('choosing a branch commits on acceptance and pays out its distinct ending o
 		const aborted = roundTrip(abandonContract(accepted));
 		expect(aborted.credits).toBe(recovered.credits);
 		expect(acceptContract(aborted, other.contract.id)).toBe(aborted);
-		const departed = travelTo(aborted, 'meridian');
+		const departed = answerDecision(travelTo(aborted, 'meridian'));
 		const job = getContracts(departed)[0];
 		if (!job) throw new Error('Missing ordinary contract');
 		const detour = settleContract(acceptContract(departed, job.id), true);
@@ -103,7 +106,10 @@ test('choosing a branch commits on acceptance and pays out its distinct ending o
 });
 
 test('failure and explicit abort allow a wrecked starter to repair and retry at zero credits', function () {
-	const arrived = travelTo(hirePilot(opening(), 'flint'), 'cinder');
+	const start = opening();
+	const [applicant] = getRecruitOffers(start);
+	if (!applicant) throw new Error('Missing Meridian applicant');
+	const arrived = travelTo(hirePilot(start, applicant.id), 'cinder');
 	expect(arrived.credits).toBe(0);
 	const recovery = offer(arrived, 'recovery').contract;
 	const launched = beginDeployment(acceptContract(arrived, recovery.id));

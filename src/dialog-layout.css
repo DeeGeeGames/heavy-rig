@@ -290,3 +290,25 @@
 	#game[data-input='touch'] .dialog-actions > button { min-height: 44px; }
 	#game[data-input='touch'] .dialog-pager button { min-height: 40px; }
 }
+
+#game #company-event {
+	width: min(650px, calc(100% - 24px));
+	height: auto;
+	max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 24px);
+}
+.event-dispatch { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 3px; }
+.event-context { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 14px; margin-top: 12px; padding-block: 7px; border-block: 1px solid var(--border); color: var(--muted); font: 12px/1.4 var(--mono); }
+.event-narrative { margin: 16px 0; color: var(--paper); font: 16px/1.5 Arial, sans-serif; }
+.event-choices { display: grid; gap: 6px; }
+#company-event .event-choices button { display: grid; gap: 4px; width: 100%; padding: 10px 14px; text-align: left; white-space: normal; background: var(--hangar-ui-floor); border: 1px solid var(--border); border-inline-start: 3px solid var(--hangar-ui-rail); }
+#company-event .event-choices button:enabled:is(:hover, :focus) { background: var(--hangar-ui-raised); border-inline-start-color: var(--amber); }
+.event-choices strong, .event-order { font: 700 18px/1.2 var(--display); }
+.event-choices small { color: var(--muted); font: 13px/1.4 Arial, sans-serif; text-transform: none; }
+.event-order { margin: 18px 0 0; color: var(--amber); }
+#game.couch-ui .event-choices small { font-size: 16px; }
+@media (max-width: 550px), (max-height: 480px) {
+	.event-context { margin-top: 8px; font-size: 10px; }
+	.event-narrative { margin: 10px 0; font-size: 14px; }
+	#company-event .event-choices button { padding: 8px 10px; }
+	#game.has-mobile-fullscreen #company-event { max-height: calc(100% - var(--dialog-bottom-gap, 70px) - 64px); }
+}

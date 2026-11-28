@@ -1,4 +1,4 @@
-import { withRigs, withWeapons } from './company-fixture';
+import { answerDecision, withPilots, withRigs, withWeapons } from './company-fixture';
 import { rigFrameId } from '../src/rigs';
 import { getFrameOffer } from '../src/market';
 import { describe, expect, test } from 'bun:test';
@@ -9,7 +9,7 @@ import { defaultReserves, frameWeight, loadedMounts } from '../src/combat-resour
 import { createMissionState } from '../src/simulation';
 import { abandonContract, acceptContract, createCampaign, forecastArrival, getContracts, PLANETS, parseCampaign, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import { advanceDays, applyRigCheat, assignPilot, assignRig, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, setAmmunition, unlockAllRigs, WEAPON_PRICES } from '../src/company';
-import { dismissPilot, hirePilot } from '../src/pilots';
+import { dismissPilot, getRecruitOffers, hirePilot } from '../src/pilots';
 import { getJumpRoute } from '../src/universe';
 
 const roundTrip = function (campaign: Campaign) { return parseCampaign(JSON.stringify(campaign)); };
@@ -22,15 +22,17 @@ const funded = function (): Campaign { return { ...createCampaign(23), credits: 
 
 test('squad departures reserve unique pilot and rig pairs and recover every rig exactly once', function () {
 	const shortOfFee = { ...createCampaign(23), credits: 499 };
-	expect(hirePilot(shortOfFee, 'flint')).toBe(shortOfFee);
+	const [wing, reserve] = getRecruitOffers(shortOfFee);
+	if (!wing || !reserve) throw new Error('Need two local applicants');
+	expect(hirePilot(shortOfFee, wing.id)).toBe(shortOfFee);
 	const fundedCompany = withRigs(funded(), 'kestrel-b', 'kestrel-c');
-	const hired = hirePilot(hirePilot(fundedCompany, 'flint'), 'kite');
+	const hired = hirePilot(hirePilot(fundedCompany, wing.id), reserve.id);
 	expect(hired.credits).toBe(fundedCompany.credits - 1000);
-	expect(hirePilot(hired, 'flint')).toBe(hired);
-	expect(assignPilot(hired, 0, 'kite')).toBe(hired);
-	const incomplete = assignPilot(accept(hired), 1, 'flint');
+	expect(hirePilot(hired, wing.id)).toBe(hired);
+	expect(assignPilot(hired, 0, reserve.id)).toBe(hired);
+	const incomplete = assignPilot(accept(hired), 1, wing.id);
 	expect(assignRig(incomplete, 1, 'kestrel')).toBe(incomplete);
-	expect(assignPilot(incomplete, 2, 'flint')).toBe(incomplete);
+	expect(assignPilot(incomplete, 2, wing.id)).toBe(incomplete);
 	expect(canDeploySquad(incomplete)).toBe(false);
 	const assigned = assignRig(incomplete, 1, 'kestrel-b');
 	const docked = queueRefit(assigned, 'kestrel-b', [null, 'laser']);
@@ -38,15 +40,15 @@ test('squad departures reserve unique pilot and rig pairs and recover every rig 
 	const selected = selectFrame(assigned, 'kestrel-c');
 	const launched = beginDeployment(roundTrip(selected));
 	expect(launched.deployed?.frameId).toBe('kestrel');
-	expect(dismissPilot(launched, 'flint')).toBe(launched);
+	expect(dismissPilot(launched, wing.id)).toBe(launched);
 	const damaged = checkpointDeployment(launched, 71, 1, [{ frameId: 'kestrel-b', hp: 0 }, { frameId: 'kestrel-c', hp: 25 }]);
 	expect(getOwnedMech(damaged, 'kestrel-c')?.integrity).toBe(100);
 	const recovered = abandonContract(damaged);
-	expect(recovered.lastResult?.squad?.map(function (member) { return [member.pilotId, member.integrity]; })).toEqual([['player', 71], ['flint', 0]]);
+	expect(recovered.lastResult?.squad?.map(function (member) { return [member.pilotId, member.integrity]; })).toEqual([['player', 71], [wing.id, 0]]);
 	expect(getOwnedMech(recovered, 'kestrel-b')?.integrity).toBe(0);
-	expect(recovered.pilots).toEqual(['player', 'flint', 'kite']);
+	expect(recovered.pilots).toEqual(['player', wing.id, reserve.id]);
 	expect(roundTrip(recovered)).toEqual(recovered);
-	const dismissed = dismissPilot(recovered, 'flint');
+	const dismissed = dismissPilot(recovered, wing.id);
 	expect(dismissed.lineup[1]).toEqual({ pilotId: null, frameId: null });
 	expect(dismissed.credits).toBe(recovered.credits);
 });
@@ -248,7 +250,7 @@ describe('Company ownership and workshop transactions', function () {
 		expect(queueRepair(company, 'kestrel')).toBe(company);
 		const fundedRepair = queueRepair({ ...company, credits: 2500 }, 'kestrel');
 		expect(fundedRepair.credits).toBe(500);
-		const finished = advanceDays(fundedRepair, 3);
+		const finished = answerDecision(advanceDays(fundedRepair, 3));
 		expect(PLANETS.some(function (world) {
 			if (world.id === finished.planetId) return false;
 			const next = travelTo(finished, world.id);
@@ -504,7 +506,7 @@ test('same-type rigs retain separate equipment, squad damage and workshop jobs t
 	expect(purchased.fleet.map(function (mech) { return mech.frameId; })).toEqual(['kestrel', 'kestrel#2', 'kestrel#3']);
 	expect(purchased.credits).toBe(original.credits - offer.price * 2);
 	expect(roundTrip(purchased)).toEqual(purchased);
-	const hired = hirePilot(purchased, 'flint');
+	const hired = withPilots(purchased, 'flint');
 	const assigned = assignRig(assignPilot(accept(hired), 1, 'flint'), 1, 'kestrel#2');
 	expect(assignRig(assigned, 1, 'kestrel')).toBe(assigned);
 	const launched = beginDeployment(roundTrip(selectFrame(assigned, 'kestrel#3')));

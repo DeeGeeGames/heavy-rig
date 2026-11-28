@@ -81,7 +81,9 @@ show a confirmation with their cost or consequences first.
 
 Stage a contract to open Deploy. Assign up to four pilots and rigs per contract.
 Each pilot and rig can deploy once per day. Hire squadmates for 500 CR each in
-Pilots and bench any assigned pilot to free their rig. The first lineup carries
+Pilots. Each planet has its own pool of three to five applicants. A pilot you
+hire travels with the company. Dismissed pilots can be hired again at home.
+Pilots from older saves with a service record can also return at their home port. Bench an assigned pilot to free their rig. The first lineup carries
 over to the next day. The commander can play one mission and is required for
 story contracts. All other missions use objective and extraction checks driven
 by pilot skills, equipment, hull condition, and mission tier. The rolls are tied
@@ -89,6 +91,21 @@ to the posting. Successful sorties build a hired pilot's experience. At three
 and six wins they track targets 6% and 12% faster, respectively, and group
 shots more tightly in live combat. Each milestone also improves dispatch
 odds. Energy weapons contribute to the forecast without ammunition reserves.
+
+Aboard the Wayfarer, the first ship or environmental decision comes after
+4–7 campaign days. Later decisions are spaced 6–12 days apart. Engineering
+waits, jumps, and completed operations all count. A long wait can raise one
+decision. Read the stakes, choose a response, and see the outcome. Reloading
+keeps the pending decision and its roll. Engineering’s calendar records the
+latest decision.
+
+Once you hire crew, their interactions can build trust or create friction.
+Check Pilots for their relationships and Deploy for the effect of assigning
+them together. Trust affects a wing pilot’s tracking and shot grouping in
+live combat and the crew’s capabilities on dispatch. A man and a woman on
+the roster can begin a relationship, commit, break up, or choose to retire
+together to marry and start a family. Both leave their seats and their rigs
+stay with the company.
 
 Stage multiple local contracts, then commit them together from **Contracts →
 Operations**. When the commander deploys, play that mission first. The campaign

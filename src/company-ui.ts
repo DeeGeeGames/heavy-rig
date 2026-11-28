@@ -273,6 +273,7 @@ const marketPanes = function (root: HTMLElement, campaign: Campaign, view: Compa
 const engineeringPanes = function (campaign: Campaign, actions: CompanyActions): WorkspacePane[] {
 	const ordered = [...campaign.workOrders].sort(function (a, b) { return a.readyDay - b.readyDay; });
 	const next = ordered[0];
+	const decision = campaign.events?.last;
 	return [
 		{ id: 'calendar', label: 'Calendar', items: [
 			html`<span class="eyebrow">SHIP CALENDAR</span><h2>DAY ${String(campaign.day).padStart(2, '0')}</h2>`,
@@ -283,6 +284,7 @@ const engineeringPanes = function (campaign: Campaign, actions: CompanyActions):
 			...((campaign.upkeepOwed ?? 0) > 0 ? textItems(`${creditsLabel(campaign.upkeepOwed ?? 0)} unpaid. Carried forward until funds allow.`) : []),
 			...((campaign.repairDebt ?? 0) > 0 ? textItems(`${creditsLabel(campaign.repairDebt ?? 0)} in recovery repair debt. Repaid from up to 25% of each successful contract payout.`) : []),
 			...textItems('Each jump or operations day advances work by one day. Waiting does not refresh contract postings.'),
+			...(decision ? [html`<article class="workspace-copy" data-last-decision><span class="eyebrow">Ship log · Day ${decision.day}</span><h3>${decision.title}</h3><p><b>${decision.choice}</b> · ${decision.outcome}</p></article>`] : []),
 		], actions: html`<button id="advance-day" class="secondary" ?disabled=${Boolean(campaign.deployed)} @click=${function () { actions.advanceDays(1); }}>ADVANCE 1 DAY</button><button id="advance-work" class="primary" ?disabled=${!next || Boolean(campaign.deployed)} @click=${function () { if (next) actions.advanceDays(next.readyDay - campaign.day); }}>${next ? `WAIT ${daysLabel(next.readyDay - campaign.day)}` : 'NO WORK PENDING'}</button>` },
 		{ id: 'orders', label: 'Work orders', items: ordered.length === 0 ? [html`<div class="company-empty"><b>ALL BAYS CLEAR</b><p>Schedule repairs in Condition or plan a refit in the Mech Bay.</p></div>`] : ordered.flatMap(function (order) {
 			const frame = getFrame(rigFrameId(order.frameId)); const total = order.readyDay - order.startedDay;
