@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { abandonContract, assignOperationLead, assignOperationSlot, commitOperations, createCampaign, getContracts, parseCampaign, recoverInterruptedDeployment, removeOperation, reviewOperations, settleContract, stageOperation, type Campaign } from '../src/campaign';
+import { abandonContract, assignOperationLead, assignOperationSlot, commitOperations, createCampaign, getContracts, parseCampaign, removeOperation, reviewOperations, settleContract, stageOperation, type Campaign } from '../src/campaign';
 import { buyFrame, checkpointDeployment, getOwnedMech, queueRepair } from '../src/company';
 import { dismissPilot, getPilotStats, hirePilot } from '../src/pilots';
 
@@ -24,7 +24,7 @@ test('a legacy staged defense retains its layout through review, mixed-day commi
 	expect(restagedOffer?.fieldLayout).toBe('extended-defense');
 });
 
-test('a saved mixed day settles the same crew sortie after extraction or interruption and advances work and upkeep once', function () {
+test('a saved mixed day settles the same crew sortie after extraction or explicit abort and advances work and upkeep once', function () {
 	const rigs = buyFrame(buyFrame(buyFrame({ ...createCampaign(318, 'career'), day: 30, credits: 60_000 }, 'kestrel-b'), 'kestrel-c'), 'warden');
 	const company = hirePilot(hirePilot(rigs, 'flint'), 'kite');
 	const ready = queueRepair({ ...company, fleet: company.fleet.map(function (rig) { return rig.frameId === 'kestrel-c' ? { ...rig, integrity: 82 } : rig; }) }, 'kestrel-c');
@@ -47,14 +47,11 @@ test('a saved mixed day settles the same crew sortie after extraction or interru
 	expect(committed.deployed?.frameId).toBe('kestrel');
 	expect(committed.day).toBe(ready.day);
 	expect(committed.reputation[live.opponent]).toBe(ready.reputation[live.opponent] - live.hostility - (crew.opponent === live.opponent ? crew.hostility : 0));
-	const interrupted = roundTrip(checkpointDeployment(committed, 74, 1));
-	expect(interrupted.deployed?.integrity).toBe(74);
-	expect(interrupted.committedCrew?.[0]?.resolution.leaderId).toBe('kite');
-
-	const resumed = recoverInterruptedDeployment(interrupted);
-	expect(resumed).toBe(interrupted);
-	const won = settleContract(resumed, true);
-	const aborted = abandonContract(resumed);
+	const restarted = roundTrip(committed);
+	expect(restarted.committedCrew?.[0]?.resolution.leaderId).toBe('kite');
+	const damaged = checkpointDeployment(restarted, 74, 1);
+	const won = settleContract(damaged, true);
+	const aborted = abandonContract(damaged);
 	expect(aborted.lastOperationDay?.[0]?.aborted).toBe(true);
 	expect(won.lastOperationDay?.[0]?.won).toBe(true);
 	const liveFee = Math.round(live.reward / 4);
@@ -80,12 +77,11 @@ test('a saved mixed day settles the same crew sortie after extraction or interru
 		// Three Kestrels, a Warden, and two hired pilots share one 4,500 CR bill.
 		expect(saved.credits).toBe(ready.credits + (result.lastOperationDay?.reduce(function (total, report) { return total + report.payout; }, 0) ?? 0) - 4500);
 		expect(abandonContract(saved)).toBe(saved);
-		expect(recoverInterruptedDeployment(saved)).toBe(saved);
 	}
-	const legacy = roundTrip({ ...interrupted, committedCrew: interrupted.committedCrew?.map(function ({ contract, resolution: { objective, extraction, squad } }) {
+	const legacy = roundTrip({ ...restarted, committedCrew: restarted.committedCrew?.map(function ({ contract, resolution: { objective, extraction, squad } }) {
 		return { contract, resolution: { objective, extraction, squad } };
 	}) });
-	const legacyReport = settleContract(recoverInterruptedDeployment(legacy), true).lastOperationDay?.[1];
+	const legacyReport = settleContract(legacy, true).lastOperationDay?.[1];
 	expect(legacyReport?.crew).toEqual(crewReport.crew);
 	expect(legacyReport?.payout).toBe(crewReport.payout);
 	expect(legacyReport?.fieldLead).toBeUndefined();

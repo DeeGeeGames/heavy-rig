@@ -443,7 +443,6 @@ const finishContract = function (campaign: Campaign, won: boolean, aborted: bool
 
 export const settleContract = function (campaign: Campaign, won: boolean): Campaign { return finishContract(campaign, won, false); };
 export const abandonContract = function (campaign: Campaign): Campaign { return finishContract(campaign, false, true); };
-export const recoverInterruptedDeployment = function (campaign: Campaign): Campaign { return campaign.deployed?.integrity === 0 ? settleContract(campaign, false) : campaign; };
 
 const isReputation = function (value: unknown): value is Record<FactionId, number> {
 	return object(value) && FACTION_IDS.every(function (id) { return isInteger(value[id], -100, 100); });

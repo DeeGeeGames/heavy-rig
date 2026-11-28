@@ -2,8 +2,8 @@ import { RIG_ARMOR_BURSTS } from './rig-defeat-timing';
 
 export type ArmorBurst = (typeof RIG_ARMOR_BURSTS)[number];
 
-// Only new defeats enter the sound mix. Recreating an old wreck to draw it
-// or reloading a checkpoint never starts a second sequence.
+// Only new defeats enter the sound mix. Drawing an existing wreck does not
+// start another sequence.
 export const createRigDefeatAudio = function () {
 	const missions = new WeakMap<object, Map<number, number>>();
 	return {

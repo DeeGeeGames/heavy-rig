@@ -1,6 +1,5 @@
 import type { Campaign } from './campaign';
 import { claimCompanySlot, emptyCompanySlot, lastCompanySlot, readCompanySlot, rememberCompanySlot, slotChanged, writeCompanySlot, type CompanySlot, type SlotSave } from './company-saves';
-import type { SortieCheckpoint } from './sortie-checkpoint';
 
 export const companySlots = ['campaign', 'career'] as const;
 export const slotName = function (slot: CompanySlot): string { return slot === 'career' ? 'Career' : 'Campaign'; };
@@ -40,15 +39,15 @@ export const createCompanySession = function (isolated: boolean) {
 				return 'opened';
 			} finally { acquiring = false; }
 		},
-		write: function (company: Campaign, checkpoint?: SortieCheckpoint) {
+		write: function (company: Campaign) {
 			const previous = saves[slot];
-			const result = isolated ? undefined : writeCompanySlot(previous, company, checkpoint);
+			const result = isolated ? undefined : writeCompanySlot(previous, company);
 			if (result?.status === 'conflict') return false;
 			if (result?.status === 'saved') {
 				saves[slot] = result.save;
 				sessionOnly.delete(slot);
 			} else {
-				saves[slot] = { ...previous, company, checkpoint, recovered: false };
+				saves[slot] = { ...previous, company, recovered: false };
 				sessionOnly.add(slot);
 			}
 			return true;

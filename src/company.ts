@@ -291,6 +291,23 @@ export const beginDeployment = function (campaign: Campaign): Campaign {
 	});
 	return { ...campaign, deployed: { ...snapshot(mech), coolantCharges: 2, wing } };
 };
+
+/** Older saves may contain field damage. A restart uses the condition at launch. */
+export const rewindDeployment = function (campaign: Campaign): Campaign {
+	const deployed = campaign.deployed;
+	if (!deployed || deployed.integrity === deployed.startingIntegrity && deployed.coolantCharges === 2
+		&& deployed.wing.every(function (rig) { return rig.integrity === rig.startingIntegrity; })) return campaign;
+	const restore = function <T extends DeployedRig>(rig: T): T { return { ...rig, integrity: rig.startingIntegrity }; };
+	const next = { ...restore(deployed), coolantCharges: 2, wing: deployed.wing.map(restore) };
+	const condition = new Map([next, ...next.wing].map(function (rig) { return [rig.frameId, rig.integrity] as const; }));
+	return {
+		...campaign, deployed: next,
+		fleet: campaign.fleet.map(function (mech) {
+			const integrity = condition.get(mech.frameId);
+			return integrity === undefined || integrity === mech.integrity ? mech : { ...mech, integrity };
+		}),
+	};
+};
 export const checkpointDeployment = function (campaign: Campaign, integrity: number, coolantCharges: number, wing: readonly { frameId: RigId; hp: number }[] = []): Campaign {
 	const deployed = campaign.deployed;
 	if (!deployed || !Number.isFinite(integrity) || !isInteger(coolantCharges, 0, 2)) return campaign;

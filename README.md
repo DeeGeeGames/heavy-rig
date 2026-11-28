@@ -91,7 +91,7 @@ odds. Energy weapons contribute to the forecast without ammunition reserves.
 Stage multiple local contracts, then commit them together from **Contracts →
 Operations**. When the commander deploys, play that mission first. The campaign
 advances one day and opens a shared debrief when that mission ends or you
-explicitly abort it. Suspended sorties keep their committed crews pending.
+explicitly abort it. Interrupted sorties restart with their committed crews still pending.
 Crew-only days resolve immediately at commitment. The
 debrief reports every result and links damaged rigs to Engineering.
 
@@ -170,7 +170,7 @@ Ammunition reserves are selected per mount in the Mech Bay. Ammunition-only
 changes take **zero credits and zero days**; changes to fitted hardware retain
 the refit timing above. Pending refits keep their own desired reserves until
 completion. Every new sortie loads the selected quantities for free, including
-after failure or abort. A resumed sortie keeps its remaining battlefield rounds.
+after failure, abort, or a restart. Unpausing a live sortie keeps its remaining battlefield rounds.
 The ship retains its desired load. No ordinary sortie
 replenishes ammunition in combat.
 
@@ -341,11 +341,11 @@ upgrades**. Every rig carries two coolant charges. Cooling and venting
 manage reactor heat; neither repairs frame damage. Difficulty settings affect
 the next deployment's hostile armor and damage.
 
-Company sorties save every two seconds of simulation and when paused or
-leaving the page. **Suspend to title** keeps the contract open.
-After a reload, **Resume sortie** opens the field paused with the same
-position, damage, ammunition, heat, squad orders, enemies and objective
-progress. An abort or completed mission settles the full committed day once.
+Company sorties save the committed day at launch, not the battlefield during
+play. Reloading or choosing **Return to title** ends the attempt without settling
+the contract. **Restart sortie** starts the same mission from launch with the
+squad's original condition and supplies. Ordinary pause keeps the attempt in
+memory. An explicit abort or completed mission settles the full committed day once.
 
 ## Frames and variants
 
@@ -817,15 +817,15 @@ Campaign and Career use separate browser-local slots,
 `heavy-rig:company:campaign:v1` and `heavy-rig:company:career:v1`. Each
 retains a previous save for automatic recovery. Existing
 `heavy-rig:campaign:v8` saves open in their matching mode. Older companies
-without a mode open in the Campaign slot with their original progress. An
-in-flight v8 company restarts its committed mission at the landing site with
-its recorded damage and coolant. A commander already recorded as disabled
-returns to a loss debrief. Earlier v1–v7 namespaces are purged on save.
+without a mode open in the Campaign slot with their original progress. Existing
+in-flight companies keep their committed mission and restart from launch with
+their original hull condition and supplies. Older battlefield snapshots are
+ignored. Earlier v1–v7 namespaces are purged on save.
 Preferences remain under `heavy-rig:profile:v1`; historical classic records in
 that profile are retained but the classic operation is no longer a playable mode.
 
 **Companies → Back up Campaign** or **Back up Career** downloads a portable
-copy, including a suspended sortie. **Restore backup** previews the mode and
+copy, including any committed mission to restart. **Restore backup** previews the mode and
 day before replacing that slot. Different tabs can play different companies.
 If a tab loses ownership of its save, it must reload before writing again.
 If device storage is unavailable, play continues in memory and backups can

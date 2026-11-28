@@ -6,7 +6,7 @@ import { PLAYABLE_FRAMES } from '../src/frames';
 import { createStarterLoadout } from '../src/hardpoints';
 import { defaultReserves, frameWeight, loadedMounts } from '../src/combat-resources';
 import { createMissionState } from '../src/simulation';
-import { abandonContract, acceptContract, createCampaign, forecastArrival, getContracts, PLANETS, parseCampaign, recoverInterruptedDeployment, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
+import { abandonContract, acceptContract, createCampaign, forecastArrival, getContracts, PLANETS, parseCampaign, settleContract, STARTING_CREDITS, travelTo, type Campaign } from '../src/campaign';
 import { advanceDays, applyRigCheat, assignPilot, assignRig, availableWeapons, beginDeployment, buyFrame, buyWeapon, canDeploy, canDeploySquad, cancelWorkOrder, checkpointDeployment, getOwnedMech, queueRefit, queueRepair, selectFrame, setAmmunition, unlockAllRigs, WEAPON_PRICES } from '../src/company';
 import { dismissPilot, hirePilot } from '../src/pilots';
 import { getJumpRoute } from '../src/universe';
@@ -50,13 +50,11 @@ test('squad departures reserve unique pilot and rig pairs and recover every rig 
 	expect(dismissPilot(launched, 'flint')).toBe(launched);
 	const damaged = checkpointDeployment(launched, 71, 1, [{ frameId: 'kestrel-b', hp: 0 }, { frameId: 'kestrel-c', hp: 25 }]);
 	expect(getOwnedMech(damaged, 'kestrel-c')?.integrity).toBe(100);
-	const resumed = recoverInterruptedDeployment(roundTrip(damaged));
-	expect(resumed.deployed).toEqual(damaged.deployed);
-	const recovered = abandonContract(resumed);
+	const recovered = abandonContract(damaged);
 	expect(recovered.lastResult?.squad?.map(function (member) { return [member.pilotId, member.integrity]; })).toEqual([['player', 71], ['flint', 0]]);
 	expect(getOwnedMech(recovered, 'kestrel-b')?.integrity).toBe(0);
 	expect(recovered.pilots).toEqual(['player', 'flint', 'kite']);
-	expect(recoverInterruptedDeployment(roundTrip(recovered))).toEqual(recovered);
+	expect(roundTrip(recovered)).toEqual(recovered);
 	const dismissed = dismissPilot(recovered, 'flint');
 	expect(dismissed.lineup[1]).toEqual({ pilotId: null, frameId: null });
 	expect(dismissed.credits).toBe(recovered.credits);
@@ -168,16 +166,14 @@ describe('Company ownership and workshop transactions', function () {
 		expect(getContracts(arrived)).toEqual(advertised);
 	});
 
-	test('damage survives success, abort, failure, and interrupted deployment without a free repair or duplicate payout', function () {
+	test('damage survives success, abort, and failure without a free repair or duplicate payout', function () {
 		for (const outcome of ['success', 'failure', 'abort']) {
 			const deployed = beginDeployment(accept(createCampaign(91)));
 			const damaged = checkpointDeployment(deployed, 36.25, 1);
 			expect(getOwnedMech(damaged)?.integrity).toBe(36.25);
 			expect(checkpointDeployment(damaged, 100, 2)).toBe(damaged);
 			expect(roundTrip(damaged)).toEqual(damaged);
-			const resumed = recoverInterruptedDeployment(roundTrip(damaged));
-			expect(resumed).toEqual(damaged);
-			const finished = outcome === 'abort' ? abandonContract(resumed) : settleContract(resumed, outcome === 'success');
+			const finished = outcome === 'abort' ? abandonContract(damaged) : settleContract(damaged, outcome === 'success');
 			expect(finished.deployed).toBeUndefined();
 			expect(finished.active).toBeUndefined();
 			expect(getOwnedMech(finished)?.integrity).toBe(36.25);
@@ -185,7 +181,7 @@ describe('Company ownership and workshop transactions', function () {
 			if (outcome === 'success') expect(finished.credits).toBeGreaterThan(deployed.credits);
 			else expect(finished.credits).toBe(deployed.credits);
 			expect(finished.lastResult?.aborted).toBe(outcome === 'abort');
-			expect(recoverInterruptedDeployment(roundTrip(finished))).toEqual(finished);
+			expect(roundTrip(finished)).toEqual(finished);
 			expect(settleContract(finished, true)).toBe(finished);
 			// A successful defense may quiet this front; the next job can be elsewhere.
 			const nextWorld = PLANETS.find(function (world) { return getContracts(finished, world.id).length > 0; });
@@ -440,8 +436,7 @@ test('sorties consume independent runtime supplies and replenish selected reserv
 		mount.rounds = 0;
 		expect(getOwnedMech(deployed)?.reserves).toEqual([37, 0]);
 		const damaged = checkpointDeployment(deployed, 80, 1);
-		const resumed = recoverInterruptedDeployment(roundTrip(damaged));
-		const finished = outcome === 'abort' ? abandonContract(resumed) : settleContract(resumed, outcome === 'success');
+		const finished = outcome === 'abort' ? abandonContract(damaged) : settleContract(damaged, outcome === 'success');
 		const nextMech = getOwnedMech(finished);
 		if (!nextMech) throw new Error('Missing settled mech');
 		const state = createMissionState(contract, { frame: rigFrameId(nextMech.frameId), loadout: nextMech.loadout, reserves: nextMech.reserves });
@@ -450,7 +445,7 @@ test('sorties consume independent runtime supplies and replenish selected reserv
 		const fee = outcome === 'success' ? Math.round(contract.reward / 4) : 0;
 		expect(finished.credits).toBe(prepared.credits + (outcome === 'success' ? contract.reward + fee : 0));
 		expect(finished.lastResult?.fieldLead).toEqual({ pilotId: 'player', fee });
-		expect(recoverInterruptedDeployment(roundTrip(finished))).toEqual(finished);
+		expect(roundTrip(finished)).toEqual(finished);
 	}
 });
 
@@ -525,7 +520,7 @@ test('same-type rigs retain separate equipment, squad damage and workshop jobs t
 	expect(getOwnedMech(damaged, 'kestrel')?.integrity).toBe(61);
 	expect(getOwnedMech(damaged, 'kestrel#2')?.integrity).toBe(23);
 	expect(getOwnedMech(damaged, 'kestrel#3')?.integrity).toBe(100);
-	const returned = abandonContract(recoverInterruptedDeployment(roundTrip(damaged)));
+	const returned = abandonContract(damaged);
 	const repairing = queueRepair(returned, 'kestrel#2');
 	const refitting = queueRefit(repairing, 'kestrel#3', [null, null]);
 	expect(roundTrip(refitting)).toEqual(refitting);

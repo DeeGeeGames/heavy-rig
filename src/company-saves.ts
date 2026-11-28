@@ -1,16 +1,14 @@
-import { CAMPAIGN_STORAGE_KEY, createCampaign, parseSavedCompany, recoverInterruptedDeployment, type Campaign } from './campaign';
-import { parseSortieCheckpoint, sortieMatchesCompany, type SortieCheckpoint } from './sortie-checkpoint';
+import { CAMPAIGN_STORAGE_KEY, createCampaign, parseSavedCompany, type Campaign } from './campaign';
+import { rewindDeployment } from './company';
 
 export type CompanySlot = NonNullable<Campaign['mode']>;
 export interface CompanyBackup {
 	readonly slot: CompanySlot;
 	readonly company: Campaign;
-	readonly checkpoint: SortieCheckpoint | undefined;
 }
 export interface SlotSave {
 	readonly slot: CompanySlot;
 	readonly company: Campaign | undefined;
-	readonly checkpoint: SortieCheckpoint | undefined;
 	/** Exact primary observed when loading this company, including a damaged primary. */
 	readonly token: string | null | undefined;
 	/** Fallback bytes are also guarded when a healthy primary was unavailable. */
@@ -19,21 +17,20 @@ export interface SlotSave {
 	readonly recovered: boolean;
 }
 type SlotWrite = { status: 'saved'; save: SlotSave } | { status: 'conflict' | 'unavailable' };
-type DecodedRecord = CompanyBackup & { damagedCheckpoint: boolean };
 const LAST_SLOT_KEY = 'heavy-rig:company:last-slot';
 export const companySlotKey = function (slot: CompanySlot): string { return `heavy-rig:company:${slot}:v1`; };
 const isSlot = function (value: unknown): value is CompanySlot { return value === 'campaign' || value === 'career'; };
 // Unmarked v8 companies retain their original mode and progression inside the Campaign slot.
 const slotOf = function (company: Campaign): CompanySlot { return company.mode ?? 'campaign'; };
 export const emptyCompanySlot = function (slot: CompanySlot): SlotSave {
-	return { slot, company: undefined, checkpoint: undefined, token: undefined, recovered: false };
+	return { slot, company: undefined, token: undefined, recovered: false };
 };
 
-const encode = function ({ slot, company, checkpoint }: CompanyBackup): string {
-	return JSON.stringify({ format: 'heavy-rig-company', version: 1, slot, company, checkpoint,
-		...(company.deployed && !checkpoint ? { resumeFromLanding: true } : {}) });
+const encode = function ({ slot, company }: CompanyBackup): string {
+	return JSON.stringify({ format: 'heavy-rig-company', version: 1, slot, company,
+		...(company.deployed ? { resumeFromLanding: true } : {}) });
 };
-const decode = function (text: string | null): DecodedRecord | undefined {
+const decode = function (text: string | null): CompanyBackup | undefined {
 	if (!text) return undefined;
 	try {
 		const value: unknown = JSON.parse(text);
@@ -41,25 +38,21 @@ const decode = function (text: string | null): DecodedRecord | undefined {
 			|| !('version' in value) || value.version !== 1 || !('slot' in value) || !isSlot(value.slot) || !('company' in value)) return undefined;
 		const company = parseSavedCompany(value.company);
 		if (!company || slotOf(company) !== value.slot) return undefined;
-		const hasCheckpoint = 'checkpoint' in value;
-		const checkpoint = hasCheckpoint && company.deployed && company.active ? parseSortieCheckpoint(value.checkpoint, company.active, company) : undefined;
-		// Condition-only legacy deployments can be exported before their first field checkpoint.
-		const fromLanding = 'resumeFromLanding' in value && value.resumeFromLanding === true;
-		const damagedCheckpoint = hasCheckpoint ? !checkpoint || fromLanding : Boolean(company.deployed) !== fromLanding;
-		return { slot: value.slot, company, checkpoint, damagedCheckpoint };
+		// The optional battlefield snapshot from older saves is no longer used.
+		return { slot: value.slot, company: rewindDeployment(company) };
 	} catch { return undefined; }
 };
 export const exportCompanyBackup = function (save: SlotSave): string | undefined {
-	return save.company && encode({ slot: save.slot, company: save.company, checkpoint: save.checkpoint });
+	return save.company && encode({ slot: save.slot, company: save.company });
 };
-export const importCompanyBackup = function (text: string): CompanyBackup | undefined {
-	const saved = decode(text);
-	return saved && !saved.damagedCheckpoint ? { slot: saved.slot, company: saved.company, checkpoint: saved.checkpoint } : undefined;
-};
+export const importCompanyBackup = decode;
 
 const readLegacyCompany = function (text: string | null): Campaign | undefined {
 	if (!text) return undefined;
-	try { return parseSavedCompany(JSON.parse(text)); } catch { return undefined; }
+	try {
+		const company = parseSavedCompany(JSON.parse(text));
+		return company && rewindDeployment(company);
+	} catch { return undefined; }
 };
 export const readCompanySlot = function (slot: CompanySlot): SlotSave {
 	const empty = emptyCompanySlot(slot);
@@ -67,13 +60,10 @@ export const readCompanySlot = function (slot: CompanySlot): SlotSave {
 		const key = companySlotKey(slot);
 		const token = localStorage.getItem(key);
 		const primary = decode(token);
-		if (primary?.slot === slot && !primary.damagedCheckpoint) return { slot, company: primary.company, checkpoint: primary.checkpoint, token, recovered: false };
+		if (primary?.slot === slot) return { slot, company: primary.company, token, recovered: false };
 		const backupToken = localStorage.getItem(key + ':backup');
 		const backup = decode(backupToken);
-		if (backup?.slot === slot && !backup.damagedCheckpoint) return { slot, company: backup.company, checkpoint: backup.checkpoint, token, backupToken, recovered: true };
-		// An otherwise valid company can still relaunch from its recorded damage if both world snapshots failed.
-		const partial = primary?.slot === slot ? primary : backup?.slot === slot ? backup : undefined;
-		if (partial) return { ...empty, company: partial.company, token, backupToken, recovered: true };
+		if (backup?.slot === slot) return { slot, company: backup.company, token, backupToken, recovered: true };
 		const legacyToken = localStorage.getItem(CAMPAIGN_STORAGE_KEY);
 		const company = readLegacyCompany(legacyToken);
 		return legacyToken && company && slotOf(company) === slot
@@ -131,14 +121,14 @@ export const claimCompanySlot = async function (slot: CompanySlot): Promise<(() 
 const purgeObsolete = function (): void {
 	for (let version = 1; version < 8; version++) localStorage.removeItem(`heavy-rig:campaign:v${version}`);
 };
-export const writeCompanySlot = function (previous: SlotSave, company: Campaign, checkpoint?: SortieCheckpoint): SlotWrite {
-	if (slotOf(company) !== previous.slot || checkpoint && !sortieMatchesCompany(checkpoint, company)) return { status: 'unavailable' };
+export const writeCompanySlot = function (previous: SlotSave, company: Campaign): SlotWrite {
+	if (slotOf(company) !== previous.slot) return { status: 'unavailable' };
 	try {
 		if (changed(previous)) return { status: 'conflict' };
 		const slot = previous.slot;
 		const key = companySlotKey(slot);
 		const backupKey = key + ':backup';
-		const token = encode({ slot, company, checkpoint });
+		const token = encode({ slot, company });
 		if (token !== previous.token || previous.recovered) {
 			// Archive the last valid transaction before the atomic primary replacement. Never copy a damaged primary.
 			const healthyPrimary = previous.backupToken === undefined && !previous.legacyToken ? previous.token : undefined;
@@ -146,8 +136,8 @@ export const writeCompanySlot = function (previous: SlotSave, company: Campaign,
 			localStorage.setItem(key, token);
 			if (!healthyPrimary) {
 				try {
-					const fallback = previous.backupToken && decode(previous.backupToken);
-					if (!fallback || fallback.slot !== slot || fallback.damagedCheckpoint) localStorage.setItem(backupKey, exportCompanyBackup(previous) ?? token);
+					const fallback = decode(previous.backupToken ?? null);
+					if (fallback?.slot !== slot) localStorage.setItem(backupKey, exportCompanyBackup(previous) ?? token);
 				} catch { /* A valid primary is already durable. */ }
 			}
 		}
@@ -157,19 +147,15 @@ export const writeCompanySlot = function (previous: SlotSave, company: Campaign,
 			purgeObsolete();
 		} catch { /* The new slot is authoritative. */ }
 		rememberCompanySlot(slot);
-		return { status: 'saved', save: { slot, company, checkpoint, token, recovered: false } };
+		return { status: 'saved', save: { slot, company, token, recovered: false } };
 	} catch { return { status: 'unavailable' }; }
 };
 
 // Domain callers which only need the current company retain the original synchronous interface.
 export const readCampaign = function (): Campaign {
 	try { purgeObsolete(); } catch { /* The slot reader handles unavailable storage. */ }
-	const saved = readCompanySlot(lastCompanySlot()).company;
-	return saved ? recoverInterruptedDeployment(saved) : createCampaign();
+	return readCompanySlot(lastCompanySlot()).company ?? createCampaign();
 };
 export const saveCampaign = function (company: Campaign): boolean {
-	const previous = readCompanySlot(slotOf(company));
-	const checkpoint = previous.checkpoint && company.deployed && company.active
-		? parseSortieCheckpoint(previous.checkpoint, company.active, company) : undefined;
-	return writeCompanySlot(previous, company, checkpoint).status === 'saved';
+	return writeCompanySlot(readCompanySlot(slotOf(company)), company).status === 'saved';
 };
